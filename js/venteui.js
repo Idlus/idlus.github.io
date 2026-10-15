@@ -132,7 +132,7 @@
     }
     const x = now(n); const u = b * x.c * mult(); curve(n);
     const price = `<div class="vd-price"><span class="big num">${kTxt(u)} k</span><span class="small">l'unité</span><span class="${x.c < 1 ? "vd-dn" : "vd-up"}">${arrowHtml(x.trend)} ${coefTxt(x.c)}</span><span class="xs muted">valeur de base ${fmt(b)} k</span></div>`;
-    const gauge = `<div class="vd-gauge" title="${coefTxt(x.c)}"><b style="left:calc(${pos(x.c)}% - 2px)"></b></div><div class="vd-scale xs muted"><span>×0,1 (plancher)</span><span style="left:${pos(1)}%">×1</span><span>×3 (plafond)</span></div>`;
+    const gauge = `<div class="vd-gauge" title="${coefTxt(x.c)}"><b style="left:calc(${pos(x.c)}% - 2px)"></b></div><div class="vd-scale xs muted"><span>×0,1 (plancher)</span><span style="left:${pos(1)}%">×1</span><span>×${String(VV.MAX).replace(".", ",")} (plafond)</span></div>`;
     const spark = `${sparkHtml(n)}<span class="xs muted">48 dernières heures : chaque vente du serveur fait baisser le prix, jusqu'à ×0,1 ; il remonte tout seul (moitié de l'écart en 6 h).${x.q24 ? ` ${fmt(x.q24)} vendues sur le serveur en 24 h.` : ""}</span>`;
     if (!sellOk()) {
       const solo = ON.user && ON.solo && ON.solo();
@@ -180,14 +180,14 @@
     const log = (Array.isArray(s.venteLog) ? s.venteLog : []).slice(0, 6);
     return `<div class="grid2g even">
       <section class="panel vd-cours"><div class="phead"><h2>Les plus chères (rares)</h2></div><div class="list">${top.map(row).join("")}</div></section>
-      <section class="panel vd-cours"><div class="phead"><h2>Les plus vendues</h2><span class="xs muted">24 dernières heures</span></div><div class="list">${sold.map(row).join("") || `<div class="empty">Personne n'a vendu de ressource ces dernières heures : tout est au plus haut (×3).</div>`}</div></section></div>
+      <section class="panel vd-cours"><div class="phead"><h2>Les plus vendues</h2><span class="xs muted">24 dernières heures</span></div><div class="list">${sold.map(row).join("") || `<div class="empty">Personne n'a vendu de ressource ces dernières heures : tout est au plus haut (×${String(VV.MAX).replace(".", ",")}).</div>`}</div></section></div>
       ${mine.length ? `<section class="panel vd-cours"><div class="phead"><h2>Ton sac au prix du moment</h2><span class="xs muted">les ressources qui valent le plus</span></div><div class="list">${mine.map(row).join("")}</div></section>` : ""}
       ${log.length ? `<section class="panel"><div class="phead"><h2>Tes dernières ventes directes</h2></div><div class="list">${log.map((l) => `<div class="li small"><span class="grow">${h(l.t)}</span></div>`).join("")}</div></section>` : ""}`;
   }
   function page(main) {
     const s = S();
     const head = `<div class="pagehead"><h1>Cours des ressources</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s.kamas)}</b> kamas</span></div>`;
-    const intro = `<p class="note">Le prix de vente directe de chaque ressource, pour tout le serveur, de ×0,1 à ×3 sa valeur. Plus une ressource est vendue, moins elle rapporte ; elle remonte quand personne n'en vend (moitié de l'écart en 6 h). ▲ remonte, ▼ baisse, = stable.</p>`;
+    const intro = `<p class="note">Le prix de vente directe de chaque ressource, pour tout le serveur, de ×0,1 à ×${String(VV.MAX).replace(".", ",")} sa valeur. Plus une ressource est vendue, moins elle rapporte ; elle remonte quand personne n'en vend (moitié de l'écart en 6 h). ▲ remonte, ▼ baisse, = stable.</p>`;
     const solo = ON && ON.user && ON.solo && ON.solo();
     const gate = !online() ? "" : solo ? X().soloPanel("la vente directe") : !acct() ? `<div class="panel vd-guest"><div class="pad row between"><span><b>Crée ton compte pour vendre</b><br><span class="xs muted">C'est gratuit, et ta partie te suit. La vente directe et l'HdV passent par le serveur. En attendant, tu peux regarder les prix.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>` : "";
     let body;

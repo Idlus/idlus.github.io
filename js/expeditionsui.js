@@ -24,7 +24,7 @@
   const st = { pick: {}, conf: null, confT: 0 };
 
   /* ---------- expéditions ---------- */
-  const xpTxt = (c, xp) => { if (!xp || c.lvl >= E.MAX_LVL) return ""; const f = xp / E.xpNeed(c.lvl); return f >= 0.01 ? `≈ ${String(Math.round(f * 100) / 100).replace(".", ",")} niveau` : `${kfmt(xp)} XP`; };
+  const xpTxt = (c, xp) => { if (!xp || c.lvl >= E.MAX_LVL) return ""; const f = xp / E.heroXpNeed(c); return f >= 0.01 ? `≈ ${String(Math.round(f * 100) / 100).replace(".", ",")} niveau` : `${kfmt(xp)} XP`; };
   const rewardTxt = (c, m, R) => {
     const T = E.MIS_TYPES[m.t]; const parts = [`≈ ${kfmt(R.kamas)} k`, `${fmt(R.res)} ressources de la zone`];
     if (R.keys) parts.push(`${R.keys} ${pl(R.keys, "clé")}`);

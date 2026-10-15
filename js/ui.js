@@ -21,9 +21,26 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.34.1";
+const GAME_VERSION = "1.0.35.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.35.1", name: "Textes de la Renaissance", items: [
+    "Les anciens textes qui parlaient de « +30 % d'XP par renaissance » sont corrigés (conseil d'accueil, notes de mise à jour) : depuis la 1.0.35, chaque renaissance apprend un sort d'une autre classe et demande +50 % d'XP par niveau",
+  ] },
+  { v: "1.0.35", name: "Mémoire des vies", items: [
+    "Renaissance : plus de bonus d'XP. À la place, chaque renaissance rend la vie suivante plus longue : +50 % d'XP par niveau à chaque renaissance (×6 à la Renaissance X). Les héros gardent leur niveau et leur XP",
+    "Mémoire des vies : à chaque renaissance, le héros apprend pour toujours un sort d'une autre classe, au choix parmi 3 (3 classes différentes, sans invocation). Il en équipe 1 dans sa barre, 2 dès la Renaissance V, 3 à la X",
+    "Les héros déjà renés reçoivent un choix par renaissance déjà faite : bouton « Apprendre un sort » sur la page Renaissance et dans le Grimoire",
+    "Grimoire : nouvelle section « Mémoire des vies » avec le blason de la classe de chaque sort appris",
+  ] },
+  { v: "1.0.34.3", name: "Cours rééquilibré", items: [
+    "Vente directe : le prix de base d'une ressource suit maintenant le monstre le plus faible qui la donne, là où on la farme. Avant, il suivait le plus fort : le Pollenectar et l'Oueille, que donnent des Pious niveau 11, valaient le prix d'une ressource niveau 200 (142 au lieu de 13)",
+    "183 ressources baissent (Pollenectar, Oueille, Minowang, Muldo d'eau, Sachets, Tonneaux…). Les ressources rares, données seulement par des monstres forts, ne changent pas, et aucun prix ne monte",
+    "Le marchand de secours, les Commandes du jour et la valeur affichée à l'hôtel de vente suivent le nouveau prix. Le fonctionnement du cours (de ×0,1 à ×3) ne change pas",
+  ] },
+  { v: "1.0.34.2", name: "Tout prendre", items: [
+    "Coffre de trop-plein : nouveau bouton « Tout prendre », qui remet d'un coup dans le sac autant d'objets que la place le permet (les plus récents d'abord). S'il n'y a pas assez de place, le jeu dit combien restent au trop-plein",
+  ] },
   { v: "1.0.34.1", name: "Quitter la guilde", items: [
     "Bouton « Quitter la guilde » dans le bandeau de ta guilde, visible depuis chaque onglet (avant, il était tout en bas de l'onglet Membres)",
     "Une confirmation s'affiche avec « Oui, quitter » et « Annuler », et explique ce qui se passe : si tu es Meneur, ta place passe au Bras droit (ou au membre) le plus ancien ; si tu es seul, la guilde est dissoute avec son coffre",
@@ -1418,7 +1435,7 @@ const CHANGELOG = [
     "Page Équipe, choix du héros et plateau Réorganiser : nom doré et médaillon pour les héros renés" ] },
   { v: "0.1.12", name: "Renaissance", items: [
     "Renaissance : au niveau 200, un héros peut renaître à la Statue du Phénix (Équipe › Renaissance, ou le bouton sur sa fiche). Il repart au niveau 1 en gardant son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier, sa monture et ses parchemins ; son équipement est rangé dans le sac",
-    "Chaque renaissance donne à ce héros +30 % d'XP (en plus du plafond commun) et un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
+    "Chaque renaissance donne à ce héros un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
     "Renaissances V et X : l'Éveil de classe, qui renforce le passif de la classe (la Colère du Iop éclate à 5 puis 4 charges, le Crâ garde son bonus un tour de plus, l'Horloge du Xélor sonne plus tôt…) ; 10 renaissances au plus par héros",
     "Récompenses visibles : médaillon du Phénix sur la carte du héros, aura Braise, Flamme, Brasier puis Phénix, titres « Né des cendres », « Flamme éternelle » et « Phénix d'Idlus », ornement « Ailes du Phénix » à la dixième ; trois succès",
     "Courbe d'XP : au-delà du niveau 100, l'XP demandée par niveau baisse progressivement (moitié vers 160, un tiers à 200) ; la première montée 1 → 200 prend environ 250 h pour une équipe équipée au lieu de 1 400 h (simulation). Les niveaux 1 à 100 ne changent pas ; les héros qui avaient déjà l'XP nécessaire montent à l'ouverture de la partie",
@@ -1801,7 +1818,7 @@ const EL_ICON = { t: "fo", f: "ine", e: "cha", a: "age", n: "vit" };
 function heroCard(c, size = "", opts = {}) {
   const st = E.charStats(S, c); const el = E.domEl(st); const fi = E.frameIdx(c.lvl); const C = CLASSES[c.cls];
   const rad = E.radiantWorn(S, c); const orn = opts.orn || (c.orn && E.ornUnlocked(S, c.orn) ? c.orn : null); // 0.1.49 : opts.orn = aperçu d'un ornement pas encore obtenu
-  const need = E.xpNeed(c.lvl);
+  const need = E.heroXpNeed(c);
   const stats3 = size === "big" ? [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa]];
   let ornHtml = "", ornCls = "";
   if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}${c.wing ? " wing-" + c.wing : ""}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
@@ -2407,7 +2424,7 @@ function homeHtml() {
   const reco = B && best !== S.sub ? `<div class="ac-reco">${G("star")}<span class="grow">Zone conseillée pour ton niveau : <b>${h(B.name)}</b> <span class="xs">niv. ${B.lvl[0]}-${B.lvl[1]}</span></span><button class="btn sm primary" data-act="hunt" data-id="${best}">Y aller</button></div>` : "";
   const al = teamAlerts();
   const heads = S.chars.map((c) => { const out = !(c.inTeam && !c.job); const g = al.some((a) => a.c === c && a.k === "gear"); const p = !c.autoStat && c.pts > 0;
-    return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${!out && c.lvl < E.MAX_LVL ? `<i class="ac-x"><i style="width:${Math.max(6, Math.min(100, Math.round(100 * c.xp / E.xpNeed(c.lvl))))}%"></i></i>` : ""}${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
+    return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${!out && c.lvl < E.MAX_LVL ? `<i class="ac-x"><i style="width:${Math.max(6, Math.min(100, Math.round(100 * c.xp / E.heroXpNeed(c))))}%"></i></i>` : ""}${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
     + (S.chars.length < E.HERO_MAX ? `<button class="ac-h ac-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="${h(`Recruter un héros : ${recruitPrice() ? `${fmt(recruitPrice())} kamas` : "gratuit"}`)}" aria-label="Recruter un héros"><span class="head">+</span></button>` : "");
   const { html: tiles, todo } = homeTiles();
   const q = E.questStep(S); const qp = E.questProgress(S);
@@ -2519,7 +2536,7 @@ function roomBody(R) {
   let b = "";
   if (R.post === "enclos") b = enclosBody();
   if (R.post === "train") { const t = E.trainee(S);
-    b = t ? `<div class="trainee">${head(t)}<div class="grow"><b>${h(t.name)}</b> <span class="xs muted">${CLASSES[t.cls].name} niv. ${t.lvl}</span><div class="xs">Gagne <b class="plus">${fmt(Math.round(E.trainShare(S, t) * 1000) / 10)} %</b> de l'XP moyenne de l'équipe, sans combattre${E.trainMult(S, t) < 1 ? ` <span class="muted">(malus : ${E.trainGap(S, t)} niveaux sous l'équipe)</span>` : ""}</div><div class="bar xp"><i style="width:${t.lvl >= E.MAX_LVL ? 100 : pct(t.xp, E.xpNeed(t.lvl))}%"></i></div></div><button class="btn sm" data-act="trainpick">Changer</button></div>`
+    b = t ? `<div class="trainee">${head(t)}<div class="grow"><b>${h(t.name)}</b> <span class="xs muted">${CLASSES[t.cls].name} niv. ${t.lvl}</span><div class="xs">Gagne <b class="plus">${fmt(Math.round(E.trainShare(S, t) * 1000) / 10)} %</b> de l'XP moyenne de l'équipe, sans combattre${E.trainMult(S, t) < 1 ? ` <span class="muted">(malus : ${E.trainGap(S, t)} niveaux sous l'équipe)</span>` : ""}</div><div class="bar xp"><i style="width:${t.lvl >= E.MAX_LVL ? 100 : pct(t.xp, E.heroXpNeed(t))}%"></i></div></div><button class="btn sm" data-act="trainpick">Changer</button></div>`
       : `<div class="trainee"><div class="grow small">Un héros hors de l'équipe peut s'entraîner ici : il gagne <b class="plus">${Math.round(E.TRAIN_SHARE * 100)} %</b> de l'XP moyenne de l'équipe, sans combattre, moins s'il a plus de ${E.TRAIN_FREE_GAP} niveaux de retard.</div><button class="btn sm primary" data-act="trainpick">Choisir</button></div>`; }
   if (R.post === "atelier") { const A = S.atelier;
     if (!A.built) return `<p class="note">Un héros affecté à l'atelier fabrique une recette toutes les ${E.ATELIER_PERIOD_S / 60} min, même hors ligne, tant que les ressources suffisent. Il quitte l'équipe pendant ce temps.</p><button class="btn sm ${S.kamas >= E.ATELIER_COST ? "primary" : ""}" data-act="atbuild" ${S.kamas >= E.ATELIER_COST ? "" : "disabled"}>Construire · ${fmt(E.ATELIER_COST)} k</button>`;
@@ -2561,7 +2578,7 @@ function altarHtml() {
 }
 function bonusBox() {
   const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
-  const extra = [ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : `Renaissance +${Math.round(E.REN_XP * 100)} % d'XP par renaissance`, syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
   const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
   return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
@@ -4604,7 +4621,7 @@ function lootHtml(F) {
   const r = F.rewards; const res = Object.entries(r.res);
   $("#fres").textContent = "Victoire";
   el.innerHTML = `<div class="stack" style="gap:8px">
-    <div class="small">${Object.entries(r.xp).map(([cid, x]) => { const c = char(+cid); return `${h(c?.name || "")} <b class="num">+${fmt(x)} XP</b>${r.pen && r.pen[cid] ? ` <span class="xs xppen" data-tip="Malus de niveau : ${h(c?.name || "")} a ${r.pen[cid][1]} niveaux de plus que le plus fort monstre (niveau ${r.pen[cid][2]}). Au-delà de ${E.XP_PEN.free} niveaux d'écart, −${Math.round(E.XP_PEN.step * 100)} % d'XP par niveau, −${Math.round((1 - E.XP_PEN.min) * 100)} % au plus. Pour tout gagner, combattez des monstres de son niveau.">−${Math.round((1 - r.pen[cid][0]) * 100)} %</span>` : ""}${c && c.ren ? ` <span class="xs renxp" data-tip="Renaissance ${E.roman(c.ren)} : XP ×${E.renXpMult(c).toFixed(1).replace(".", ",")}, déjà comptée">×${E.renXpMult(c).toFixed(1).replace(".", ",")}</span>` : ""}`; }).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
+    <div class="small">${Object.entries(r.xp).map(([cid, x]) => { const c = char(+cid); return `${h(c?.name || "")} <b class="num">+${fmt(x)} XP</b>${r.pen && r.pen[cid] ? ` <span class="xs xppen" data-tip="Malus de niveau : ${h(c?.name || "")} a ${r.pen[cid][1]} niveaux de plus que le plus fort monstre (niveau ${r.pen[cid][2]}). Au-delà de ${E.XP_PEN.free} niveaux d'écart, −${Math.round(E.XP_PEN.step * 100)} % d'XP par niveau, −${Math.round((1 - E.XP_PEN.min) * 100)} % au plus. Pour tout gagner, combattez des monstres de son niveau.">−${Math.round((1 - r.pen[cid][0]) * 100)} %</span>` : ""}${c && c.ren && E.renXpMult(c) > 1 ? ` <span class="xs renxp" data-tip="Renaissance ${E.roman(c.ren)} : XP ×${E.renXpMult(c).toFixed(1).replace(".", ",")}, déjà comptée">×${E.renXpMult(c).toFixed(1).replace(".", ",")}</span>` : ""}`; }).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length || r.tk ? `<div class="loot">${r.tk ? `<div class="lcard tkcard" data-tip="Un combat classé au Kolizéum">${im("assets/ui/coffres/ticket_koli.svg", "ico sm", "Ticket de Koli")}<div class="n"><b>Ticket de Koli</b> <span class="muted num">×${r.tk}</span></div></div>` : ""}${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
     ${r.idol ? `<div class="chalres idolres"><div class="h">${idolIco()} Idoles · score ${r.idol.score}</div><div class="row xs" style="gap:4px;flex-wrap:wrap">${r.idol.ids.map((id) => E.IDOLS[id] ? `<span class="pill">${im(idolImg(id), "iico", E.IDOLS[id].name)} ${h(E.IDOLS[id].name)} <b class="num">${E.IDOLS[id].score}</b></span>` : "").join("")}</div><div class="r tot"><span>Bonus XP et butin</span><span>+${pctTxt(r.idol.pct)} %</span></div></div>` : ""}
@@ -4916,7 +4933,7 @@ function teamRow(x, al) {
   return `<button class="trow ${x.id === ui.cid ? "on" : ""} ${["f", "b"].includes(z) ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === ui.cid}" data-tip="${h(tip)}" style="--cc:${CLASSES[x.cls].color}">
     ${head(x)}<span class="tr-tx"><span class="tr-nm"><b class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""}</b>${mainHero() === x ? `<span class="tr-star" title="Héros principal">★</span>` : ""}<span class="grow"></span><span class="tr-lv num">${x.lvl}</span></span>
     <span class="tr-sub"><span class="xs muted tr-sl">${h(CLASSES[x.cls].name)} · <span class="tr-st ${st[0]}">${ico}${h(st[1])}</span></span><span class="grow"></span>${g ? `<i class="tr-g" title="Meilleur objet dans le sac">▲</i>` : ""}${p ? `<i class="tr-p num" title="Points à répartir">${x.pts}</i>` : ""}</span>
-    <span class="tr-xp"><i style="width:${pct(x.xp, E.xpNeed(x.lvl))}%"></i></span></span></button>`;
+    <span class="tr-xp"><i style="width:${pct(x.xp, E.heroXpNeed(x))}%"></i></span></span></button>`;
 }
 function teamListHtml() {
   const al = teamAlerts(); const team = E.team(S); const fs = E.frontSet(S);
@@ -4937,7 +4954,7 @@ function renameHtml(c) {
 }
 function heroesHtml() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
-  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const C = CLASSES[c.cls];
+  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.heroXpNeed(c); const C = CLASSES[c.cls];
   const al = teamAlerts(); const inT = c.inTeam && !c.job;
   const others = (() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return inT && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })();
   const strip = `<div class="tstrip"><button class="btn sm" data-act="teamlist">← Équipe</button>${S.chars.map((x) => `<button class="ts-h ${x.id === c.id ? "on" : ""} ${x.inTeam && !x.job ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-label="${h(x.name)}">${head(x)}${al.some((a) => a.c === x && a.k === "gear") ? `<i class="ts-g"></i>` : ""}${!x.autoStat && x.pts > 0 ? `<i class="ts-p num">${x.pts}</i>` : ""}</button>`).join("")}${S.chars.length < E.HERO_MAX ? `<button class="ts-h ts-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>`;
@@ -4955,8 +4972,8 @@ function heroesHtml() {
     <div class="hb-main"><div class="hb-l1">${renameHtml(c)}<span class="muted small">${C.name} · niveau ${c.lvl}</span><button class="hb-fr" data-fr="${E.heroFrame(S, c)}" data-act="looksheet" data-id="${c.id}" data-tip="${h((E.SFRAMES[E.heroFrame(S, c)] ? "Cadre spécial · " : c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)} · ` : "Cadre maximum · ") + "changer dans Apparence")}">${h(frameName(c))}</button>${actPill(c)}</div>
       <div class="hb-xp xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div><span class="xs muted num">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)} XP`}</span></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
-      ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP</span></div>` : ""}
-      ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et +${Math.round(E.REN_XP * 100)} % d'XP</span></div>` : ""}</div>
+      ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· ${memTxt(c)} · +${Math.round(E.REN_NEED * 100 * Math.min(E.REN_MAX, c.ren))} % d'XP par niveau</span></div>${c.memPend > 0 ? `<div class="row small"><button class="btn sm ren" data-act="memsheet" data-id="${c.id}">${IC("phenix")} Apprendre un sort</button><span class="muted">Mémoire des vies : ${c.memPend} sort${c.memPend > 1 ? "s" : ""} d'autres classes à choisir</span></div>` : ""}` : ""}
+      ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et un sort d'une autre classe</span></div>` : ""}</div>
     <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
   <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
@@ -5261,7 +5278,7 @@ function combatStats(c, st) {
     ${row("Chances de coup critique", `${crit} %`, `5 % de base + ${fmt(st.cri)} % de Critique, 60 % au plus. Un coup critique fait ×1,25 puis +3 dégâts (+ Dommages critiques).`)}
     ${ev.main ? row("Soins et boucliers", `+${6 * ev.main} %`, "Éveil Main bienveillante.") : ""}
     ${over.length ? row("Résistances plafonnées", over.map((k) => STATS[k].name.replace("% Rés. ", "")).join(", "), "Une résistance en % compte au plus 50 % : les points au-delà ne servent à rien.") : ""}
-    ${row("Expérience gagnée", `+${fmt(xp)} %`, `Sagesse (+${fmt(st.sa)} %)${c.ren ? ` et Renaissance (×${E.renXpMult(c).toFixed(2).replace(".", ",")})` : ""}. S'ajoutent les bonus de l'équipe (Synergie, Havre-Sac, guilde…). Plus l'équipe est grande, plus chaque héros reçoit d'XP.`)}
+    ${row("Expérience gagnée", `+${fmt(xp)} %`, `Sagesse (+${fmt(st.sa)} %)${E.renXpMult(c) > 1 ? ` et Renaissance (×${E.renXpMult(c).toFixed(2).replace(".", ",")})` : ""}. S'ajoutent les bonus de l'équipe (Synergie, Havre-Sac, guilde…). Plus l'équipe est grande, plus chaque héros reçoit d'XP.`)}
     ${row("Prospection de l'équipe", fmt(Math.round(E.effProspection(ppRaw))), `Somme de la Prospection des héros de l'équipe (${fmt(ppRaw)}), comptée entièrement jusqu'à 100, puis à moitié jusqu'à 300 et au quart au-delà. Chaque point donne +1 % de butin.`)}
     </div></div>`;
 }
@@ -5605,6 +5622,8 @@ const spTip = (c, sp) => { const x = spSentence(c, sp); return `${sp.name} — $
 function spPlace(c, id, at, replace) {
   const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl) return `${sp ? sp.name : "Ce sort"} se débloque au niveau ${sp ? sp.lvl : "?"}.`;
   const N = E.spellSlots(c); const pi = c.spells.findIndex((x) => E.spellDef(c.cls, x.id).pair === sp.pair);
+  if (sp.mem && pi < 0) { const L = c.spells.length; const r = L < N && !(replace && at < L) ? -1 : at !== undefined && at < L ? at : L - 1; const d = r >= 0 && E.spellDef(c.cls, c.spells[r].id);
+    if (E.memCount(c) - (d && d.mem ? 1 : 0) >= E.MEM_SLOTS(c)) return E.MEM_SLOTS(c) > 1 ? `${E.MEM_SLOTS(c)} sorts d'autres classes au plus à cette renaissance : remplace l'un d'eux.` : "Un seul sort d'une autre classe à cette renaissance (2 dès la V, 3 à la X) : remplace celui de ta barre."; } // 1.0.35
   let idx;
   if (pi >= 0) { if (c.spells[pi].id === id) idx = pi; else { E.equipSpell(S, c, id); idx = pi; } }
   else if (c.spells.length < N && !(replace && at < c.spells.length)) { E.equipSpell(S, c, id); idx = c.spells.length - 1; }
@@ -5627,7 +5646,7 @@ function spCardNew(c, sp, x, i) {
   const fxRows = sp.desc && s.adapt ? `<details class="dofd"><summary>Pourquoi ce sort est différent de DOFUS ?</summary><p class="xs muted">Dans DOFUS : ${h(sp.desc).replace(/\n+/g, "<br>")}</p><p class="xs">Le combat d'idlus est automatique et sans cases : les déplacements et les états du jeu original sont remplacés par l'effet ci-dessus.</p></details>` : "";
   const varHtml = other ? `<div class="splab">${sp.variant ? "Sort de base" : "Variante"} · on n'équipe que l'un des deux</div>${other.lvl <= c.lvl
     ? `<button class="spvar" data-act="spg" data-id="${other.id}">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b> ${roleBadge(c, other)}<br><span class="xs muted">${spSentence(c, other).txt.replace(/<[^>]+>/g, "")}</span></span><span class="btn sm">⇄ Échanger</span></button>`
-    : `<div class="spvar off">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">se débloque au niveau ${other.lvl}</span></span>🔒</div>`}` : "";
+    : `<div class="spvar off">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">se débloque au niveau ${other.lvl}</span></span>🔒</div>`}` : sp.mem ? `<div class="splab">Mémoire des vies</div><p class="xs" style="margin:0">${clsTag(sp.mem)} Sort appris d'une vie passée. ${h(c.name)} peut équiper ${E.MEM_SLOTS(c) > 1 ? `${E.MEM_SLOTS(c)} sorts` : "1 sort"} d'autres classes en même temps (2 dès la Renaissance V, 3 à la X).</p>` : "";
   return `<div class="spdet spnew">
     <div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2>${h(sp.name)}</h2>${roleBadge(c, sp)}</div></div>
     <p class="spsent">${s.txt}</p>
@@ -5773,7 +5792,7 @@ function grimNew(c, pairs, eqIds, F) {
     const dbl = ok ? spDouble(c, sp) : null;
     return `<button class="gcell ${eqIds.has(sp.id) ? "on" : ""} ${ok ? "" : "lock"} ${off ? "offel" : ""}" data-act="${canHover ? "spg" : "spsee"}" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""}>
       ${spIcon(sp)}<span class="gtx"><span class="gnm"><b>${h(sp.name)}</b>${eqIds.has(sp.id) ? `<span class="gin">✓ dans ta barre</span>` : ""}${ok ? "" : `<span class="glv">🔒 niv. ${sp.lvl}</span>`}</span>
-      <span class="gbd">${roleBadge(c, sp)}${s.perTurn ? `<span class="gpt">≈ ${fmt(s.perTurn)}/tour</span>` : ""}${off ? `<span class="gof">pas ton élément</span>` : ""}${dbl ? `<span class="gdb">moins fort que ${h(dbl.name)}</span>` : ""}</span>
+      <span class="gbd">${sp.mem ? clsTag(sp.mem) : ""}${roleBadge(c, sp)}${s.perTurn ? `<span class="gpt">≈ ${fmt(s.perTurn)}/tour</span>` : ""}${off ? `<span class="gof">pas ton élément</span>` : ""}${dbl ? `<span class="gdb">moins fort que ${h(dbl.name)}</span>` : ""}</span>
       <span class="gsn">${s.txt.replace(/<[^>]+>/g, "")}</span></span></button>`; };
   const row = (pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
     return `<div class="gpair ${has ? "has" : ""}">${list.map((sp) => cell(sp, has)).join(`<span class="gor">ou</span>`)}</div>`; };
@@ -5781,7 +5800,9 @@ function grimNew(c, pairs, eqIds, F) {
   const best = (pr) => Math.max(...pr.filter(Boolean).map((sp) => (sp.lvl <= c.lvl ? spSentence(c, sp).perTurn : -1)));
   const atk = all.filter(isAtkP).sort((a, b) => best(b) - best(a)); const sup = all.filter((pr) => !isAtkP(pr)).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl);
   const sec = (t, d, l) => (l.length ? `<div class="gsec"><div class="gsh"><b>${t}</b> <span class="xs muted">${d}</span></div>${l.map(row).join("")}</div>` : "");
-  return (F !== "sup" ? sec("Attaques", "de la plus forte à la plus faible avec tes caractéristiques", atk) : "") + (F !== "atk" ? sec("Soutien", "soins, boucliers, bonus, malus et invocations", sup) : "");
+  const mem = (c.mem || []).map(E.memDef).filter((sp) => sp && (F === "all" || (F === "atk") === isAtkP([sp]))).map((sp) => [sp]); // 1.0.35 : Mémoire des vies
+  const memSec = mem.length || c.memPend > 0 ? `<div class="gsec"><div class="gsh"><b>Mémoire des vies</b> <span class="xs muted">sorts d'autres classes · ${E.memCount(c)}/${E.MEM_SLOTS(c)} dans ta barre</span>${c.memPend > 0 ? ` <button class="btn sm ren" data-act="memsheet" data-id="${c.id}">${IC("phenix")} Apprendre un sort${c.memPend > 1 ? ` (${c.memPend})` : ""}</button>` : ""}</div>${mem.map(row).join("")}</div>` : "";
+  return memSec + (F !== "sup" ? sec("Attaques", "de la plus forte à la plus faible avec tes caractéristiques", atk) : "") + (F !== "atk" ? sec("Soutien", "soins, boucliers, bonus, malus et invocations", sup) : "");
 }
 function charSpellsView(c) {
   const eq = c.spells; const N = E.spellSlots(c);
@@ -6115,7 +6136,7 @@ function overHtml() {
   const hdv = hdvOn();
   return `<section class="panel"><div class="phead"><h2>Coffre de trop-plein</h2><span class="xs muted num">${L.length} / ${cap} places</span></div>
     <div class="pad stack"><span class="small muted">Quand le sac est plein, les nouveaux objets arrivent ici au lieu d'être perdus. Quand ce coffre est plein à son tour, le plus ancien est brisé en runes. ${room > 0 ? `Place libre dans le sac : <b>${fmt(room)}</b>.` : `<b>Le sac est plein</b> : brise des objets ou mets-les en vente pour en reprendre.`}</span>
-      <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
+      <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm primary" data-act="overtakeall" ${L.length && room > 0 ? "" : "disabled"} title="Remet dans le sac autant d'objets que la place le permet">Tout prendre</button><button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
     <div class="list">${L.map((it) => { const T = ITEMS[it.tpl]; return `<div class="li mkrow">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.at ? ` · ${agoTxt(it.at)}` : ""}</span></span>
       <button class="btn sm primary" data-act="overtake" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Prendre</button>${hdv ? `<button class="btn sm" data-act="overhdv" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="overbreak" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Le trop-plein est vide.</div>`}</div></section>`;
 }
@@ -6798,25 +6819,41 @@ function closeSheet() { if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null;
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
   const c = char(cid); if (!c) return; const err = E.canRenaissance(S, c); const n = (c.ren || 0) + 1; const choices = E.renChoices(c); const pick = ui.renPick && choices.some(([id]) => id === ui.renPick) ? ui.renPick : null;
-  const keep = ["Nom, classe, sexe, tête et couleurs", "Succès, titres et ornements", "Dofus toujours équipés, trophées toujours actifs", "Familier ou montilier, et monture", "Parchemins de caractéristiques", "Ses Éveils déjà choisis"];
+  const keep = ["Nom, classe, sexe, tête et couleurs", "Succès, titres et ornements", "Dofus toujours équipés, trophées toujours actifs", "Familier ou montilier, et monture", "Parchemins de caractéristiques", "Ses Éveils déjà choisis", "Les sorts appris des vies passées"];
   const reset = ["Niveau 1 et expérience", "Points de caractéristiques (répartis à nouveau en montant)", "Sorts : réappris avec les niveaux", "Équipement rangé dans le sac (rien n'est perdu)"];
   const ch = (id, r) => `<button class="evbtn ${pick === id ? "on" : ""} ${id === "classe" ? "cls" : ""}" data-act="renpick" data-id="${c.id}" data-v="${id}" aria-pressed="${pick === id}"><span class="n">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)}<span class="rk">rang ${E.roman(r)} → ${E.roman(r + 1)}</span></span><span class="xs">${h(id === "classe" ? E.CLASS_EVEIL[c.cls] || "Renforce le passif de la classe" : E.EVEILS[id].desc(r + 1))}</span></button>`;
   openSheet(`<div class="renhead"><div class="renstage"><span class="renfl"></span>${lookImg(c, "renlook")}</div><div class="stack"><h2>${IC("phenix")} Statue du Phénix</h2><p class="small muted"><b>${h(c.name)}</b> · ${h(CLASSES[c.cls].name)} niveau ${c.lvl} · Renaissance ${E.roman(c.ren || 0)} → ${E.roman(n)} · gratuit</p>
     <div class="rencols"><div><div class="cap keep">Il garde</div><ul class="xs">${keep.map((t) => `<li>${t}</li>`).join("")}</ul></div><div><div class="cap reset">Il repart à zéro</div><ul class="xs">${reset.map((t) => `<li>${t}</li>`).join("")}</ul></div></div></div></div>
     ${err ? `<p class="note">${h(err)}</p>` : `<h3>Choisir l'Éveil de cette renaissance</h3>${E.isClassRen(n) ? `<p class="xs muted" style="margin:0">Renaissance ${E.roman(n)} : l'Éveil de classe renforce le passif ${h(CLASSES[c.cls].passive.name)}.</p>` : ""}<div class="evgrid">${choices.map(([id, r]) => ch(id, r)).join("")}</div>
-    <div class="renconfirm"><span class="small">${pick ? `<b>${h(pick === "classe" ? "Éveil de classe" : E.EVEILS[pick].name)} ${E.roman(E.eveil(c, pick) + 1)}</b> · ${h(c.name)} repartira du niveau 1 avec +${Math.round(E.REN_XP * 100 * n)} % d'XP ; ses objets iront dans le sac.` : "Choisissez un Éveil pour continuer."}</span>
+    <div class="renconfirm"><span class="small">${pick ? `<b>${h(pick === "classe" ? "Éveil de classe" : E.EVEILS[pick].name)} ${E.roman(E.eveil(c, pick) + 1)}</b> · ${h(c.name)} repartira du niveau 1, chaque niveau demandera +${Math.round(E.REN_NEED * 100 * n)} % d'XP et il apprendra un sort d'une autre classe ; ses objets iront dans le sac.` : "Choisissez un Éveil pour continuer."}</span>
     <div class="row"><button class="btn primary ren" data-act="renaitre" data-id="${c.id}" ${pick ? "" : "disabled"}>${IC("phenix")} Renaître</button><button class="btn" data-act="closesheet">Plus tard</button></div></div>`}`);
 }
+/* 1.0.35 « Mémoire des vies » : un sort d'une autre classe appris à chaque renaissance */
+const memTxt = (c) => { const n = (c.mem || []).length; return `${n ? `${n} sort${n > 1 ? "s" : ""} d'autres classes` : "aucun sort d'une autre classe"} (${E.MEM_SLOTS(c)} équipable${E.MEM_SLOTS(c) > 1 ? "s" : ""})`; };
+const clsTag = (k) => `<span class="memcls" style="--cc:${CLASSES[k].color}"><img src="${symImg(k)}" alt="">${h(CLASSES[k].name)}</span>`;
+function memSheet(cid) {
+  const c = char(cid); if (!c) return; const off = E.memOffer(S, c); if (!off) { closeSheet(); return; } dirty = true;
+  const pick = ui.memPick && off.includes(ui.memPick) ? ui.memPick : null;
+  const card = (id) => { const sp = E.memDef(id); const s = spSentence(c, sp);
+    return `<button class="evbtn memopt ${pick === id ? "on" : ""}" data-act="mempick" data-id="${c.id}" data-v="${id}" aria-pressed="${pick === id}"><span class="n"><span class="row" style="gap:6px;align-items:center">${spIcon(sp)}${h(sp.name)}</span><span class="rk">niv. ${sp.lvl}</span></span>${clsTag(sp.mem)}<span>${roleBadge(c, sp)}</span><span class="xs">${s.txt}</span><span class="xs muted">${s.use.join(" · ")}</span></button>`; };
+  const known = (c.mem || []).map(E.memDef).filter(Boolean);
+  openSheet(`<div class="stack"><h2>${IC("phenix")} Mémoire des vies</h2>
+    <p class="small muted" style="margin:0"><b>${h(c.name)}</b> se souvient d'une vie passée. Choisis le sort qu'il apprend pour toujours : il pourra l'équiper à la place d'un des siens dans le Grimoire. Renaissance ${E.roman(c.ren)} : <b>${E.MEM_SLOTS(c)} sort${E.MEM_SLOTS(c) > 1 ? "s" : ""} d'autres classes</b> équipable${E.MEM_SLOTS(c) > 1 ? "s" : ""} en même temps (2 dès la V, 3 à la X).${c.memPend > 1 ? ` Encore <b>${c.memPend}</b> choix à faire.` : ""}</p>
+    <div class="evgrid memgrid">${off.map(card).join("")}</div>
+    ${known.length ? `<p class="xs muted" style="margin:0">Déjà appris : ${known.map((sp) => `${h(sp.name)} (${h(CLASSES[sp.mem].name)})`).join(", ")}</p>` : ""}
+    <div class="renconfirm"><span class="small">${pick ? `<b>${h(E.memDef(pick).name)}</b> rejoint le Grimoire de ${h(c.name)}${E.memDef(pick).lvl > c.lvl ? `, utilisable dès le niveau ${E.memDef(pick).lvl}` : ""}.` : "Choisis un des 3 sorts."}</span>
+    <div class="row"><button class="btn primary ren" data-act="memlearn" data-id="${c.id}" ${pick ? "" : "disabled"}>${IC("phenix")} Apprendre</button><button class="btn" data-act="closesheet">Plus tard</button></div></div></div>`);
+}
 function renderRenaissance() {
-  const rows = S.chars.map((c) => { const err = E.canRenaissance(S, c); const can = !err; const need = E.xpNeed(c.lvl); const full = (c.ren || 0) >= E.REN_MAX;
+  const rows = S.chars.map((c) => { const err = E.canRenaissance(S, c); const can = !err; const need = E.heroXpNeed(c); const full = (c.ren || 0) >= E.REN_MAX;
     return `<div class="renrow ${can ? "can" : ""}" style="--cc:${CLASSES[c.cls].color}"><button class="tart" data-act="teamgo" data-id="${c.id}" data-v="equip">${lookImg(c, "tlook")}</button>
-      <div class="grow" style="min-width:0"><b>${h(c.name)}</b> ${c.ren ? `<span class="renm inline">${E.roman(c.ren)}</span>` : ""}<span class="xs muted"> ${h(CLASSES[c.cls].name)} · ${c.ren ? `Renaissance ${E.roman(c.ren)} · ${h(E.eveilSummary(c))} · +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP` : "aucune renaissance"}</span>
+      <div class="grow" style="min-width:0"><b>${h(c.name)}</b> ${c.ren ? `<span class="renm inline">${E.roman(c.ren)}</span>` : ""}<span class="xs muted"> ${h(CLASSES[c.cls].name)} · ${c.ren ? `Renaissance ${E.roman(c.ren)} · ${h(E.eveilSummary(c))} · ${memTxt(c)}` : "aucune renaissance"}</span>
         <div class="xpb"><i style="width:${c.lvl >= E.MAX_LVL ? 100 : pct(c.xp, need)}%"></i></div></div>
-      ${full ? `<span class="tag ren">Phénix</span>` : can ? `<button class="btn sm primary ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button>` : `<span class="pill muted xs">${c.lvl >= E.MAX_LVL ? h(err) : `niv. ${c.lvl}`}</span>`}</div>`; }).join("");
+      <div class="renbtns">${c.memPend > 0 ? `<button class="btn sm ren" data-act="memsheet" data-id="${c.id}">${IC("phenix")} Apprendre un sort${c.memPend > 1 ? ` (${c.memPend})` : ""}</button>` : ""}${full ? `<span class="tag ren">Phénix</span>` : can ? `<button class="btn sm primary ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button>` : `<span class="pill muted xs">${c.lvl >= E.MAX_LVL ? h(err) : `niv. ${c.lvl}`}</span>`}</div></div>`; }).join("");
   const tot = S.chars.reduce((a, c) => a + (c.ren || 0), 0);
   $("#main").innerHTML = `<div class="pagehead"><h1>Renaissance</h1><span class="small muted">${tot} renaissance${tot > 1 ? "s" : ""} en tout</span></div>
   <section class="panel" style="margin-bottom:12px"><div class="pad renintro"><div class="renstage small"><span class="renfl"></span>${IC("phenix", "renbig")}</div><div class="stack">
-    <p class="small" style="margin:0">Au <b>niveau ${E.MAX_LVL}</b>, un héros peut renaître à la Statue du Phénix : il repart au niveau 1 en gardant son apparence, ses titres, ses Dofus, son familier et sa monture (l'équipement est rangé dans le sac). Chaque renaissance lui donne <b>+${Math.round(E.REN_XP * 100)} % d'XP</b> et un <b>Éveil</b> au choix ; aux renaissances V et X, l'Éveil de classe renforce son passif. ${E.REN_MAX} renaissances au plus : impossible de tout prendre, chaque héros se forge son caractère.</p>
+    <p class="small" style="margin:0">Au <b>niveau ${E.MAX_LVL}</b>, un héros peut renaître à la Statue du Phénix : il repart au niveau 1 en gardant son apparence, ses titres, ses Dofus, son familier et sa monture (l'équipement est rangé dans le sac). Chaque renaissance lui donne un <b>Éveil</b> au choix (aux renaissances V et X, l'Éveil de classe renforce son passif) et la <b>Mémoire des vies</b> : il apprend pour toujours un sort d'une autre classe, au choix parmi 3, et peut en équiper 1 (2 dès la Renaissance V, 3 à la X). En échange, chaque vie est plus longue : <b>+${Math.round(E.REN_NEED * 100)} % d'XP par niveau</b> à chaque renaissance. ${E.REN_MAX} renaissances au plus : impossible de tout prendre, chaque héros se forge son caractère.</p>
     <p class="xs muted" style="margin:0">Récompenses : médaillon et aura (Braise dès la 1ʳᵉ, Flamme à la 4ᵉ, Brasier à la 7ᵉ, Phénix à la 10ᵉ), titres « Né des cendres » (I), « Flamme éternelle » (V) et « Phénix d'Idlus » (X), ornement « Ailes du Phénix » (X).</p></div></div></section>
   <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="pad stack">${rows}</div></section>
   <section class="panel" style="margin-top:12px"><div class="phead"><h2>Les Éveils</h2><span class="xs muted">3 rangs chacun</span></div><div class="pad achgrid">${E.EVEIL_ORDER.map((id) => `<div class="ach ok"><span class="ic">${G("sparkle")}</span><span><b>${h(E.EVEILS[id].name)}</b><br><span class="xs muted">${h([1, 2, 3].map((r) => E.EVEILS[id].desc(r).replace(/^\+/, "+")).join(" · "))}</span></span></div>`).join("")}<div class="ach ok cls"><span class="ic">${IC("phenix")}</span><span><b>Éveil de classe</b><br><span class="xs muted">Renaissances V et X : renforce le passif de la classe, différent pour chacune des 19 classes</span></span></div></div></section>`;
@@ -7132,7 +7169,7 @@ function celeHtml(ev) {
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
   if (ev.t === "ren") { const c = char(ev.cid); if (!c) return "";
-    return `<div class="cele-art lvl ren">${LK.CLASS_LOOKS[c.cls] ? `<span class="lookwrap">${lookImg(c, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`}</div><div class="cele-k">${IC("phenix")} Renaissance ${E.roman(ev.n)}</div><div class="cele-t">${h(c.name)} renaît</div><div class="cele-s">${h(ev.eveil)} ${E.roman(ev.rank)} · +${Math.round(E.REN_XP * 100 * ev.n)} % d'XP${ev.title ? ` · titre « ${h(ev.title)} »` : ""}</div>`; }
+    return `<div class="cele-art lvl ren">${LK.CLASS_LOOKS[c.cls] ? `<span class="lookwrap">${lookImg(c, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`}</div><div class="cele-k">${IC("phenix")} Renaissance ${E.roman(ev.n)}</div><div class="cele-t">${h(c.name)} renaît</div><div class="cele-s">${h(ev.eveil)} ${E.roman(ev.rank)} · un sort d'une autre classe à apprendre${ev.title ? ` · titre « ${h(ev.title)} »` : ""}</div>`; }
   if (ev.t === "jobren") { const img = jobImg(ev.jk === "fm" ? (E.FM_JOBS[ev.job] || {}).base : ev.job); // 1.0.25 : renaissance d'un métier
     return `<div class="cele-art pet ren">${im(img, "celepet", ev.name)}</div><div class="cele-k">${IC("phenix")} Renaissance ${E.roman(ev.n)}</div><div class="cele-t">${h(ev.name)} renaît</div><div class="cele-s">${h(jobRenFx(ev.jk, ev.n))}${ev.n === 1 ? " · titre « Artisan renaissant »" : ev.n === 5 ? " · titre « Main d'or »" : ev.n === 10 ? " · titre « Maître éternel » et ornement « Enclume du Phénix »" : ""}</div>`; }
   if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
@@ -8884,7 +8921,10 @@ document.addEventListener("click", (ev) => {
     case "jobrensheet": jobRenSheet(d.k, d.v); return; // 1.0.25 : renaissance d'un métier
     case "jobren": { const err = E.jobRenaissance(S, d.k, d.v); if (err) { msg(err); return; } closeSheet(); dirty = true; break; }
     case "renpick": ui.renPick = d.v; renSheet(+d.id); return;
-    case "renaitre": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; closeSheet(); dirty = true; break; } // 1.0.10.3 : action à part (le « rengo » du renommage passait avant et bloquait la Renaissance)
+    case "renaitre": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; ui.memPick = null; closeSheet(); dirty = true; memSheet(+d.id); break; }
+    case "memsheet": ui.memPick = null; memSheet(+d.id); return; // 1.0.35 : Mémoire des vies
+    case "mempick": ui.memPick = d.v; memSheet(+d.id); return;
+    case "memlearn": { const c = char(+d.id); const err = E.memPick(S, +d.id, ui.memPick); if (err) { msg(err); return; } const sp = E.memDef(ui.memPick); ui.memPick = null; dirty = true; if (c && c.memPend > 0) memSheet(c.id); else closeSheet(); toast(`${c ? c.name : ""} a appris « ${sp.name} ». ${c && c.spells.some((x) => x.id === sp.id) ? "Il est dans sa barre de sorts." : "Équipe-le dans le Grimoire."}`); break; } // 1.0.10.3 : action à part (le « rengo » du renommage passait avant et bloquait la Renaissance)
     case "idols": idolSheet(); return;
     case "idoltog": { const r = E.toggleIdol(S, d.id); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "idolclear": E.clearIdols(S); dirty = true; idolSheet(); break;
@@ -8952,6 +8992,7 @@ document.addEventListener("click", (ev) => {
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
     case "overtake": { const r = E.overTake(S, +d.uid); if (r) toast(r, "warn"); else toast("Remis dans le sac."); break; }
     case "overbreak": { const r = E.overBreak(S, +d.uid); if (typeof r === "string") toast(r, "warn"); else toast("Runes : " + runesTxt(r)); break; }
+    case "overtakeall": { const r = E.overTakeAll(S); toast(!r.n ? "Le sac est plein : fais de la place d'abord." : r.left ? `${fmt(r.n)} objets remis dans le sac. Il en reste ${fmt(r.left)} au trop-plein : le sac est plein.` : `${fmt(r.n)} objet${r.n > 1 ? "s" : ""} remis dans le sac.`, r.n && !r.left ? "" : "warn"); if (!r.left) ui.inv = "items"; break; }
     case "overallask": ui.confirm = "overall"; break;
     case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
     case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }

@@ -1734,6 +1734,9 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .evbtn{display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;color:var(--ink)}
 .evbtn .n{font-weight:800;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}.evbtn .rk{font-size:11px;color:var(--muted);font-weight:700}
+.memcls{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--cc)}.memcls img{width:16px;height:16px;object-fit:contain}
+.renbtns{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.memgrid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.memopt .spicon{flex:none}
 .evbtn.on{border-color:#d9541e;background:color-mix(in srgb,#d9541e 14%,var(--panel2))}.evbtn.cls{border-style:dashed}
 .renconfirm{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;border:1px dashed #d9541e;background:color-mix(in srgb,#d9541e 8%,var(--panel))}
 .renintro{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.renintro .stack{flex:1;min-width:220px}
@@ -1744,7 +1747,7 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .renrow .pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
 .ach.cls{border:1px dashed #d9541e}
 .cele.ren .cele-k{color:#f2a33a}
-@media (max-width:520px){.rencols{grid-template-columns:1fr}.renrow{grid-template-columns:52px minmax(0,1fr)}.renrow>.btn,.renrow>.tag,.renrow>.pill{grid-column:2}}
+@media (max-width:520px){.rencols{grid-template-columns:1fr}.renrow{grid-template-columns:52px minmax(0,1fr)}.renrow>.btn,.renrow>.tag,.renrow>.pill,.renrow>.renbtns{grid-column:2}.renbtns{flex-direction:row;flex-wrap:wrap;justify-content:flex-start}}
 /* ===== 0.1.13 : album des archimonstres et Dofus ===== */
 .archibtn.on{border-color:var(--archi)}
 .archipill{cursor:pointer}

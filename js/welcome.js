@@ -72,7 +72,7 @@
       txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Il te fait aussi entrer dans les classements et écrire dans le chat. Ta partie actuelle te suit. Options › Compte, connexion avec Discord." },
     { id: "ren", name: "La Renaissance", hint: "premier héros niveau 200", anchor: '#nav [data-nk="ren"], #nav [data-nk="menu"]',
       cond: (S) => maxLvl(S) >= (E.MAX_LVL || 200),
-      txt: "Un héros au niveau 200 peut renaître : il repart du niveau 1 avec +30 % d'XP et un Éveil. Il garde son apparence, ses titres et ses Dofus (Héros › Renaissance)." },
+      txt: "Un héros au niveau 200 peut renaître : il repart du niveau 1 avec un Éveil et apprend un sort d'une autre classe (chaque vie demande +50 % d'XP par niveau). Il garde son apparence, ses titres et ses Dofus (Héros › Renaissance)." },
   ];
   E.TIP_GAP_MS = 2 * 60 * 1000;      // au plus une bulle toutes les 2 minutes
   E.TIP_LATER_MS = 10 * 60 * 1000;   // « Plus tard » : elle revient après 10 minutes

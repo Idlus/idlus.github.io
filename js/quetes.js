@@ -24,7 +24,7 @@
   const dayOf = (t = E.now()) => (E.defiDay ? E.defiDay(t) : Math.floor(t / 86400000));
   E.weekOf = (t = E.now()) => Math.floor((dayOf(t) + 3) / 7); // semaines du lundi au dimanche
   E.weekLeft = (t = E.now()) => { const d = dayOf(t); const end = (E.weekOf(t) + 1) * 7 - 3; return Math.max(0, (end - d - 1) * 86400000 + (E.defiLeft ? E.defiLeft(t) : 0)); };
-  const giveXp = (S, pctOfLevel) => { const list = E.team(S).length ? E.team(S) : S.chars; list.forEach((c) => E.giveXp(S, c, Math.round(E.xpNeed(c.lvl) * pctOfLevel))); };
+  const giveXp = (S, pctOfLevel) => { const list = E.team(S).length ? E.team(S) : S.chars; list.forEach((c) => E.giveXp(S, c, Math.round(E.heroXpNeed(c) * pctOfLevel))); };
   const addTitle = (S, t) => { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t); };
   const stasisMax = (S, did) => ((S.stasis || {})[did] || {}).max || 0;
   const zoneOfSub = {}; ZONES.forEach((z) => z.subs.forEach((s) => (zoneOfSub[s.id] = z.id)));

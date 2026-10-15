@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 9;
+  E.VERSION = 10;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -70,11 +70,23 @@
     const m = MONSTERS[id];
     m.drops.forEach(([r]) => { RES_LVL[r] = Math.max(RES_LVL[r] || 0, m.lvl[1]); });
   }
-  Object.values(GATHER_JOBS).forEach((j) => j.items.forEach(([r, l]) => (RES_LVL[r] = Math.max(1, Math.round(l / 2)))));
+  /* « Cours rééquilibré » : le prix suit le monstre le plus faible qui donne la ressource (là où elle se farme),
+     plus le plus fort : Pollenectar et Oueille (Pious niveau 11-15… jusqu'au niveau 200) valaient le prix du niveau 200.
+     E.PRICE_LVL : "min" (choix 1A de Mathis, 15/10), "med" (niveau médian), "max" (avant). Le niveau affiché (E.resLvl) ne change pas. */
+  const PRICE_LVLS = {};
+  for (const id in MONSTERS) MONSTERS[id].drops.forEach(([r]) => (PRICE_LVLS[r] = PRICE_LVLS[r] || []).push(MONSTERS[id].lvl[1]));
+  Object.values(PRICE_LVLS).forEach((a) => a.sort((x, y) => x - y));
+  Object.values(GATHER_JOBS).forEach((j) => j.items.forEach(([r, l]) => { RES_LVL[r] = Math.max(1, Math.round(l / 2)); delete PRICE_LVLS[r]; }));
+  E.PRICE_LVL = "min";
+  E.resPriceLvl = (name) => {
+    const a = PRICE_LVLS[name];
+    if (a && E.PRICE_LVL === "min") return a[0];
+    if (a && E.PRICE_LVL === "med") return a[Math.floor(a.length / 2)];
+    return RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
+  };
   E.resPrice = (name) => {
     if (SPECIAL_CRAFTS[name]) return 0;
-    const l = RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
-    return Math.max(1, Math.round(2 + l * 0.7));
+    return Math.max(1, Math.round(2 + E.resPriceLvl(name) * 0.7));
   };
   E.resLvl = (name) => RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
   E.isKey = (name) => /^Clef /.test(name);
@@ -88,8 +100,12 @@
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
   /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
-  E.REN_MAX = 10; E.REN_XP = 0.3;
+  E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
+  /* 1.0.35 : chaque renaissance demande +50 % d'XP pour remonter (×6 à la X) : renaître devient un objectif de fin de jeu */
+  E.REN_NEED = 0.5;
+  E.renNeedMult = (c) => 1 + E.REN_NEED * Math.min(E.REN_MAX, (c && c.ren) || 0);
+  E.heroXpNeed = (c, l) => Math.floor(E.xpNeed(l === undefined ? c.lvl : l) * E.renNeedMult(c));
   E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
   /* 1.0.34 « Les 19 classes » : les places 14 à 19 ont un prix adouci (la courbe aurait mené le 19e à 199 M). Choix de Mathis 1B 2B */
   E.RECRUIT_HIGH = { 14: 2500000, 15: 3500000, 16: 5000000, 17: 7000000, 18: 10000000, 19: 15000000 };
@@ -209,9 +225,18 @@
   /* ---------------- Sorts (v3 : vrais kits DOFUS 3, grades et variantes) ---------------- */
   E.DMG_SCALE = 0.62; // calibrage des valeurs DOFUS pour le combat automatique
   E.spellSlots = (c) => 6 + (c.lvl >= 50 ? 1 : 0) + (c.lvl >= 100 ? 1 : 0);
-  E.spellDef = (cls, id) => CLASSES[cls] && CLASSES[cls].spells.find((s) => s.id === id);
+  /* 1.0.35 « Mémoire des vies » : un héros rené peut connaître des sorts d'autres classes (c.mem). Les identifiants de sorts sont
+     uniques entre les classes : un sort étranger est trouvé dans l'index de toutes les classes, avec sa propre paire (« m: » + id) */
+  const SPELL_IDX = {}; const MEM_DEF = {};
+  E.spellCls = (id) => { if (!SPELL_IDX.ready) { for (const k in CLASSES) CLASSES[k].spells.forEach((s) => (SPELL_IDX[s.id] = k)); SPELL_IDX.ready = 1; } return SPELL_IDX[id]; };
+  E.memDef = (id) => { if (MEM_DEF[id]) return MEM_DEF[id]; const k = E.spellCls(id); const s = k && CLASSES[k].spells.find((x) => x.id === id); return s ? (MEM_DEF[id] = Object.assign({}, s, { pair: "m:" + id, mem: k })) : null; };
+  E.spellDef = (cls, id) => (CLASSES[cls] && CLASSES[cls].spells.find((s) => s.id === id)) || (E.spellCls(id) && E.spellCls(id) !== cls ? E.memDef(id) : undefined);
+  E.MEM_SLOTS = (c) => ((c.ren || 0) >= 10 ? 3 : (c.ren || 0) >= 5 ? 2 : (c.ren || 0) >= 1 ? 1 : 0); // sorts d'autres classes équipables en même temps
+  E.memSpells = (c) => (c.mem || []).map(E.memDef).filter((s) => s && s.lvl <= c.lvl);
+  E.memCount = (c, list) => (list || c.spells || []).filter((x) => { const d = E.spellDef(c.cls, x.id); return d && d.mem; }).length;
   E.spellGrade = (sp, lvl) => { let g = sp.grades[0]; for (const x of sp.grades) if (x.lvl <= lvl) g = x; return g; };
-  E.knownSpells = (c) => CLASSES[c.cls].spells.filter((s) => s.lvl <= c.lvl);
+  E.memFit = (c, list) => { let m = 0; const mc = E.MEM_SLOTS(c); return list.filter((x) => { const d = E.spellDef(c.cls, x.id); if (!d || d.lvl > c.lvl) return false; if (!d.mem) return true; return (c.mem || []).includes(x.id) && ++m <= mc; }); }; // sorts appris et dans la limite de la renaissance
+  E.knownSpells = (c) => CLASSES[c.cls].spells.filter((s) => s.lvl <= c.lvl).concat(E.memSpells(c));
   /* résumé d'un sort pour l'IA et l'interface */
   E.spellKind = (g) => {
     const k = g.fx.map((f) => f.k);
@@ -257,6 +282,7 @@
     const kinds = { summon: 0, heal: 0, prot: 0 }; const cap = { summon: 1, heal: 1, prot: 1 };
     const cands = Object.values(byPair).map((sp) => { const k = E.spellKind(E.spellGrade(sp, c.lvl)); const g = E.spellGrade(sp, c.lvl); const weak = g.fx.every((f) => f.fb) || (k === "heal" && !g.fx.some((f) => f.k === "healpct") && E.spellPower(g) < 8 + c.lvl * 0.15);
       return { sp, k, cat: weak ? "fill" : k === "summon" ? "summon" : k === "heal" ? "heal" : k === "shield" || k === "buff" ? "prot" : "atk", sc: spellScore(c, sp, st) }; });
+    { let m = 0; const mc = E.MEM_SLOTS(c); cands.filter((x) => x.sp.mem).sort((a, b) => b.sc - a.sc).forEach((x) => { if (++m > mc) cands.splice(cands.indexOf(x), 1); }); } // 1.0.35 : sorts d'autres classes, au plus E.MEM_SLOTS
     const atk = cands.filter((x) => x.cat === "atk").sort((a, b) => b.sc - a.sc);
     const util = cands.filter((x) => x.cat !== "atk" && x.cat !== "fill").sort((a, b) => b.sc - a.sc);
     const pickd = [];
@@ -273,17 +299,20 @@
   /* sorts : sélection automatique tant que le joueur n'a rien modifié à la main */
   E.refreshSpells = (c, st) => {
     const known = E.knownSpells(c); const slots = E.spellSlots(c);
-    c.spells = (c.spells || []).filter((x) => { const d = E.spellDef(c.cls, x.id); return d && d.lvl <= c.lvl; });
+    c.spells = E.memFit(c, c.spells || []);
     if (!c.spellsManual) { c.spells = E.autoLoadout(c, st); c.knownSeen = known.map((s) => s.id); return; }
     const usedPairs = new Set(c.spells.map((x) => E.spellDef(c.cls, x.id).pair));
     const fresh = known.filter((sp) => !(c.knownSeen || []).includes(sp.id) && !usedPairs.has(sp.pair)).sort((a, b) => spellScore(c, b, st) - spellScore(c, a, st));
-    for (const sp of fresh) { if (c.spells.length >= slots) break; if (usedPairs.has(sp.pair)) continue; c.spells.push({ id: sp.id, cond: defaultCond(sp, c), tgt: "low" }); usedPairs.add(sp.pair); }
+    let memN = E.memCount(c);
+    for (const sp of fresh) { if (c.spells.length >= slots) break; if (usedPairs.has(sp.pair)) continue; if (sp.mem && memN >= E.MEM_SLOTS(c)) continue; if (sp.mem) memN++; c.spells.push({ id: sp.id, cond: defaultCond(sp, c), tgt: "low" }); usedPairs.add(sp.pair); }
     c.knownSeen = known.map((s) => s.id);
   };
   /* équiper un sort : remplace la variante de la même paire si elle est équipée */
   E.equipSpell = (S, c, id) => {
-    const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl) return "Sort non disponible."; c.spellsManual = true;
+    const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl || (sp.mem && !(c.mem || []).includes(id))) return "Sort non disponible.";
     const i = c.spells.findIndex((x) => E.spellDef(c.cls, x.id).pair === sp.pair);
+    if (sp.mem && i < 0 && E.memCount(c) >= E.MEM_SLOTS(c)) return E.MEM_SLOTS(c) > 1 ? `${E.MEM_SLOTS(c)} sorts d'autres classes au plus à cette renaissance.` : "Un seul sort d'une autre classe à cette renaissance (2 dès la Renaissance V, 3 à la X).";
+    c.spellsManual = true;
     if (i >= 0) { c.spells[i] = { id, cond: defaultCond(sp, c), tgt: c.spells[i].tgt || "low" }; return null; }
     if (c.spells.length >= E.spellSlots(c)) return `${E.spellSlots(c)} sorts maximum à ce niveau.`;
     c.spells.push({ id, cond: defaultCond(sp, c), tgt: "low" }); return null;
@@ -495,6 +524,14 @@
     if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein : fais de la place d'abord.";
     const o = S.over.splice(i, 1)[0]; delete o.at; S.items[o.uid] = o; return null;
   };
+  /* 1.0.34.2 : « Tout prendre » : remet dans le sac autant d'objets du trop-plein que la place le permet (les plus récents d'abord). */
+  E.overTakeAll = (S) => {
+    if (!Array.isArray(S.over)) S.over = [];
+    let n = 0; let room = E.itemCap(S) - E.itemCount(S);
+    while (room > 0 && S.over.length) { const o = S.over.pop(); delete o.at; S.items[o.uid] = o; room--; n++; }
+    if (!S.over.length) S.overNew = 0;
+    return { n, left: S.over.length };
+  };
   E.overBreak = (S, uid) => { const i = overIdx(S, uid); if (i < 0) return "Objet introuvable."; return overBreakOne(S, S.over.splice(i, 1)[0]); };
   E.overBreakAll = (S) => { const got = {}; let n = 0; (S.over || []).splice(0).forEach((o) => { const r = overBreakOne(S, o); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } }); return { n, got }; };
   /* « Briser les doublons » : garde le meilleur jet de chaque objet (Rayonnant d'abord) et brise les autres.
@@ -661,7 +698,7 @@
   };
   E.applyPreset = (S, cid, idx) => {
     const c = S.chars.find((x) => x.id === cid); const p = c && c.presets[idx]; if (!p) return false;
-    c.spells = p.spells.filter((x) => { const d = E.spellDef(c.cls, x.id); return d && d.lvl <= c.lvl; }).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" })); c.spellsManual = true;
+    c.spells = E.memFit(c, p.spells).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" })); c.spellsManual = true;
     c.activePreset = idx; return true;
   };
   E.deletePreset = (S, cid, idx) => {
@@ -743,7 +780,7 @@
   E.applyBuild = (S, cid, b) => {
     const c = S.chars.find((x) => x.id === cid); if (!c || !b) return "Héros introuvable.";
     if (c.cls !== b.cls) return `Ce build est pour un ${CLASSES[b.cls].name}.`;
-    c.spells = b.sp.filter((x) => E.spellDef(c.cls, x.id).lvl <= c.lvl).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+    c.spells = E.memFit(c, b.sp).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
     c.spellsManual = true; c.activePreset = null;
     c.autoStat = b.as || null; c.autoCap = b.ac; c.autoThen = b.at;
     c.autoPlan = b.as && b.ap && b.ap.length ? b.ap : b.as ? [{ k: b.as, to: b.as === "vit" || b.as === "sa" ? 9999 : b.ac }] : c.autoPlan; c.autoRest = b.ar || b.at;
@@ -2419,8 +2456,8 @@
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;
     c.xp += g; let up = false; const from = c.lvl;
-    while (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) {
-      c.xp -= E.xpNeed(c.lvl); c.lvl++; c.pts += 5; up = true;
+    while (c.lvl < E.MAX_LVL && c.xp >= E.heroXpNeed(c)) {
+      c.xp -= E.heroXpNeed(c); c.lvl++; c.pts += 5; up = true;
     }
     if (up) {
       E.autoAllocate(S, c); E.refreshSpells(c, E.charStats(S, c));
@@ -2617,7 +2654,7 @@
   E.lvlEta = (S, c, target) => {
     const xpH = E.heroXpH(S, c); if (!xpH) return null;
     const t = Math.min(E.MAX_LVL, target || c.lvl + 1); if (t <= c.lvl) return 0;
-    let need = -c.xp; for (let l = c.lvl; l < t; l++) need += E.xpNeed(l);
+    let need = -c.xp; for (let l = c.lvl; l < t; l++) need += E.heroXpNeed(c, l);
     return Math.max(0, need / xpH * 3600);
   };
 
@@ -2636,7 +2673,7 @@
     const i = S.pins.findIndex((x) => E.pinKey(x) === E.pinKey(p));
     if (i >= 0) { S.pins.splice(i, 1); return null; }
     if (E.pins(S).length >= E.MAX_PINS) return `${E.MAX_PINS} objectifs maximum : retirez-en un d'abord.`;
-    if (p.k === "lvl") { const c = S.chars.find((x) => x.id === p.cid); if (!c) return "Héros introuvable."; p = Object.assign({ from: c.lvl + c.xp / E.xpNeed(c.lvl) }, p); }
+    if (p.k === "lvl") { const c = S.chars.find((x) => x.id === p.cid); if (!c) return "Héros introuvable."; p = Object.assign({ from: c.lvl + c.xp / E.heroXpNeed(c) }, p); }
     S.pins.push(p); return null;
   };
   /* progression numérique des succès qui en ont une */
@@ -2667,7 +2704,7 @@
       case "align": { const q = S.alignQuest; if (!q) return null; return { k: "align", label: q.title, a: q.prog, b: q.n, txt: `${q.prog}/${q.n}`, done: q.prog >= q.n, go: { tab: "quests", qt: "align" } }; }
       case "shop": { const e = (S.shop || []).find((x) => x.k === p.sk && x.id === p.id); if (!e) return null; const ing = E.shopIng ? E.shopIng(S, e) : []; const ok = ing.filter(([r, q]) => (S.res[r] || 0) >= q).length;
         const eta = ing.length ? E.needEta(S, ing) : { sec: null }; return { k: "shop", label: E.shopName ? E.shopName(S, e) : String(e.id), a: ok, b: ing.length, txt: ok >= ing.length && ing.length ? "prêt" : eta.sec !== null && eta.sec !== undefined ? E.etaTxt(eta.sec) : `${ok}/${ing.length}`, done: !!ing.length && ok >= ing.length, go: { tab: "home" } }; }
-      case "lvl": { const c = S.chars.find((x) => x.id === p.cid); if (!c || !p.n) return null; const cur = c.lvl + (c.lvl < E.MAX_LVL ? c.xp / E.xpNeed(c.lvl) : 0); const from = p.from !== undefined ? p.from : c.lvl; const eta = E.lvlEta(S, c, p.n);
+      case "lvl": { const c = S.chars.find((x) => x.id === p.cid); if (!c || !p.n) return null; const cur = c.lvl + (c.lvl < E.MAX_LVL ? c.xp / E.heroXpNeed(c) : 0); const from = p.from !== undefined ? p.from : c.lvl; const eta = E.lvlEta(S, c, p.n);
         return { k: "lvl", label: `${c.name} niv. ${p.n}`, a: Math.max(0, cur - from), b: Math.max(0.01, p.n - from), txt: c.lvl >= p.n ? "atteint" : eta !== null && eta !== undefined ? E.etaTxt(eta) : `niv. ${c.lvl}`, done: c.lvl >= p.n, go: { tab: "heroes", cid: c.id } }; }
       case "ach": { const a = (E.ACH || []).find((x) => x.id === p.id); if (!a) return null; const pr = E.achProgress(S, p.id); const done = !!(S.ach || {})[p.id];
         return { k: "ach", label: a.name, a: pr ? Math.min(pr[0], pr[1]) : done ? 1 : 0, b: pr ? pr[1] : 1, txt: pr ? `${Math.min(pr[0], pr[1]).toLocaleString("fr-FR")}/${pr[1].toLocaleString("fr-FR")}` : done ? "obtenu" : "en cours", done, go: { tab: "quests", qt: "ach" } }; }
@@ -3579,8 +3616,12 @@
       report.push(`0.1.8.2 : l'Emblème du Solitaire disparaît (il ne servait qu'en solo). ${got.length ? "Runes rendues : " + got.join(", ") + "." : "Aucune rune n'y avait été investie."} Les runes nourrissent maintenant le métier de Forgemage (onglet Forgemagie).`);
     }
     if (S.v < 9) { // 0.1.12 : nouvelle courbe d'XP au-delà du niveau 100 ; les héros qui ont déjà l'XP du niveau suivant montent tout de suite
-      const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) E.giveXp(S, c, 0); }); E.events.length = ev;
+      const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.heroXpNeed(c)) E.giveXp(S, c, 0); }); E.events.length = ev;
       report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Héros › Renaissance).");
+    }
+    if (S.v < 10 && S.chars.some((c) => c.ren > 0)) { // 1.0.35 « Mémoire des vies » : un sort à apprendre par renaissance déjà faite (choix de Mathis 3A)
+      S.chars.forEach((c) => { if (c.ren > 0) { c.mem = c.mem || []; c.memPend = Math.max(c.memPend || 0, Math.min(E.REN_MAX, c.ren) - c.mem.length); } });
+      report.push("1.0.35 : les renaissances ne donnent plus d'XP en plus, chaque vie demande +50 % d'XP par niveau. En échange, chaque renaissance apprend un sort d'une autre classe : tes héros déjà renés ont un choix à faire par renaissance (Héros › Renaissance).");
     }
     if (S.craftObj === undefined) E.craftObjConvert(S, report); // avant de compléter avec la partie neuve (qui a déjà craftObj)
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
