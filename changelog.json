@@ -1,6 +1,19 @@
 {
-  "version": "1.0.32.8",
+  "version": "1.0.33",
   "versions": [
+    {
+      "v": "1.0.33",
+      "name": "Le menu des Dofus",
+      "items": [
+        "Nouveau menu Héros › Dofus : tout ce qui touche aux Dofus au même endroit",
+        "En haut, la vitrine : les 31 œufs sur une étagère, ceux que tu as brillent dans la couleur de leur passif. Touche un œuf pour sa fiche",
+        "« À faire maintenant » : les 3 quêtes de Dofus les plus avancées avec « Y aller », et les Dofus libres dans le sac",
+        "Collection rangée par famille de passif, avec la fiche du Dofus choisi : passif, exemplaires, porteur, Potentiel, étape de quête, « Y aller » et « Suivre »",
+        "Par héros : une carte par héros avec ses 6 emplacements, les 6 primordiaux de l'Éveil des Dragons et les Dofus libres qui lui iraient",
+        "Dofus animés : ils flottent, brillent et un reflet passe sur la coquille ; aura dorée pour un Dofus Sublimé. L'option « animations réduites » les arrête",
+        "Quêtes et butin, et Potentiel ont leur onglet ici (l'ancien onglet Quêtes › Dofus mène au menu). Les chances d'obtenir un Dofus ne changent pas"
+      ]
+    },
     {
       "v": "1.0.32.8",
       "name": "Sauvegarde à l'abri",
