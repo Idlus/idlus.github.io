@@ -41,7 +41,7 @@
     if (!prev.has(t)) return null; const p = []; let x = t; while (!got.has(x)) { p.push(x); x = prev.get(x); } return p.reverse(); };
   const connectedWithout = (rm) => { const N = T().N, s0 = T().start; const seen = new Set([s0]); const q = [s0]; while (q.length) { const x = q.pop(); for (const y of N[x].adj) if (got.has(y) && y !== rm && !seen.has(y)) { seen.add(y); q.push(y); } } return seen.size === got.size - 1; };
   const save = () => { if (st.view) return; const M = E.mt(hero()); M.t[M.lo] = [...got].filter((x) => x !== T().start); for (const id in M.j) if (!got.has(+id)) delete M.j[id]; }; // 2.0.3 : une étoile rendue rend son joyau
-  const domCol = (n) => (n.t === "start" || n.t === "cls" || n.t === "cks" ? CLASSES[treeCls()].color : DOM[n.d].c);
+  const domCol = (n) => (n.t === "start" || n.t === "cls" || n.t === "cks" ? CLASSES[treeCls()].color : n.col || DOM[n.d].c);
 
   /* ---------- dessin ---------- */
   let cv = null, g = null, W = 0, H = 0, dpr = 1;
@@ -71,7 +71,7 @@
     }
     /* domaines */
     if (st.z > 0.1) { g.save(); g.font = `400 ${Math.max(14, 30 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center";
-      DOM.forEach((D0, d) => { const R = 1680; const x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); g.restore(); }
+      DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; const x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); Tr.N.forEach((n) => { if (!n.end) return; const R = n.r + 90; const x = W / 2 + (Math.sin(n.th) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(n.th) * R + st.oy) * st.z; g.font = `400 ${Math.max(12, 22 * st.z)}px Kavoon, Georgia, serif`; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(n.br, x, y); g.fillStyle = n.col; g.fillText(n.br, x, y); }); g.restore(); }
     /* étoiles */
     const M = st.view ? { j: {} } : E.mt(hero());
     for (const n of N) {
@@ -154,7 +154,7 @@
     if (n.t === "joy" && got.has(n.id) && !st.view) { const M = E.mt(hero()); const cur = M.j[n.id]; const J = cur && (S().joy || []).find((z) => z.uid === cur);
       const free = (S().joy || []).filter((z) => !E.joyOwner(S(), z.uid)); // 2.0.3 : un joyau serti chez un autre héros n'est pas libre
       joy = `<div class="mt-joyset">${J ? `<span class="mt-jw" style="--jc:${JOY[J.k].c}">◆ ${h(JOY[J.k].n)} · +${JOY[J.k].b[1]} ${h(JOY[J.k].b[0])}</span><button class="btn xs" data-act="mt-unsock">Retirer</button>` : free.length ? `<span class="xs muted">Sertir :</span>${free.slice(0, 6).map((z) => `<button class="btn xs mt-jw" style="--jc:${JOY[z.k].c}" data-act="mt-sock" data-v="${z.uid}">◆ ${h(JOY[z.k].n)}</button>`).join("")}` : `<span class="xs muted">Aucun joyau libre : ils tombent sur les boss en stasis 10 et plus.</span>`}</div>`; }
-    return `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}${["start", "cls", "cks"].includes(n.t) ? " · " + h(CLASSES[treeCls()].name) : n.neb ? " · Nébuleuse" : " · " + DOM[n.d].n}</span><b>${h(n.n)}</b><span class="small">${h(n.txt)}</span><span class="muted xs">${h(who)}</span>${joy}`;
+    return `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}${["start", "cls", "cks"].includes(n.t) ? " · " + h(CLASSES[treeCls()].name) : n.neb ? " · Nébuleuse" : " · " + (n.br || DOM[n.d].n)}</span><b>${h(n.n)}</b><span class="small">${h(n.txt)}</span><span class="muted xs">${h(who)}</span>${joy}`;
   }
   function totHtml(set) {
     const c = hero(); const R = st.view ? (() => { const t = {}; const ks = []; set.forEach((id) => { const n = T().N[id]; if (n.t === "ks" || n.t === "cks") ks.push(n); (n.b || []).forEach(([s, v]) => (t[s] = (t[s] || 0) + v)); }); return { t, ks, sym: false }; })() : E.mtStats(S(), c, set);

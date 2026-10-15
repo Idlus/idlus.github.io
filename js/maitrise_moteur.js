@@ -78,11 +78,36 @@
     "% dégâts Air": ["fx", "a"], "% dégâts": ["fx", "d"], "% PV": ["fx", "hp"], "Résistance": ["fx", "res"], "Résistances": ["fx", "res"], "% soins": ["fx", "h"], "% dégâts critiques": ["fx", "cx"], "% dégâts au premier tour": ["fx", "t1"], "% dégâts sous la moitié des PV": ["fx", "low"], "Bouclier (% PV)": ["fx", "sh"] };
   const FXK = ["d", "t", "f", "e", "a", "hp", "res", "cri", "cx", "h", "t1", "low", "pa", "pm", "sh", "rev", "pass"];
   const FXT = { d: " % de dégâts", t: " % de dégâts Terre", f: " % de dégâts Feu", e: " % de dégâts Eau", a: " % de dégâts Air", hp: " % de PV", res: " % de résistances", cri: " % de coups critiques",
-    cx: " % de dégâts critiques", h: " % de soins et de boucliers", t1: " % de dégâts au premier tour", low: " % de dégâts sous la moitié de ses PV", pa: " PA", pm: " PM", pp: " Prospection", ini: " Initiative", pass: " % d'effet du passif de classe" };
+    cx: " % de dégâts critiques", h: " % de soins et de boucliers", t1: " % de dégâts au premier tour", low: " % de dégâts sous la moitié de ses PV", pa: " PA", pm: " PM", pp: " Prospection", ini: " Initiative", pass: " % d'effet du passif de classe", vv: " % de vol de vie", rv: " % des dégâts subis renvoyés", boss: " % de dégâts aux boss", exe: " % de dégâts aux ennemis sous 30 % PV", cre: " % de dégâts par tour écoulé (10 tours max)", inv: " % de dégâts des invocations", esq: " % de chances d'esquiver un coup", reg: " % des PV rendus chaque tour", sha: " % des PV en bouclier pour chaque allié", pa1: " PA au premier tour", loot: " % de butin", kam: " % de kamas", xp: " % d'XP", xpj: " % d'XP de métier", champ: " % de chances de Champion" };
   const nf = (v) => String(Math.round(v * 10) / 10).replace(".", ","); E.mtNf = nf;
   const sg = (v) => (v > 0 ? `+${v}` : `−${-v}`);
   E.mtFxTxt = (fx) => { const t = mtFxTxt0(fx); return t.charAt(0).toUpperCase() + t.slice(1); };
   const mtFxTxt0 = (fx) => Object.keys(fx).sort((x, y) => (fx[y] > 0) - (fx[x] > 0)).map((k) => k === "sh" ? `bouclier de ${fx[k]} % des PV au début du combat` : k === "rev" ? `se relève une fois par combat à ${fx[k]} % des PV` : `${sg(fx[k])}${FXT[k]}`).join(" ; ") + ".";
+  /* MAQUETTE : thèmes des Constellations lointaines */
+  E.MT_BRTH = {
+    combat: [
+      { n: "La Sangsue", c: "#e2455f", sm: [["% vol de vie", 0.3, "vit"], ["% dégâts", 0.3, "pui"]], nt: [["Morsure", [["% vol de vie", 1.5], ["% dégâts", 1]]], ["Sang neuf", [["% vol de vie", 2], ["% PV", 1]]]], ks: ["Soif de sang", { vv: 10, h: -25 }], big: ["Festin", [["% vol de vie", 5]]] },
+      { n: "Le Miroir", c: "#9fe7ff", sm: [["% dégâts renvoyés", 0.5, "re"], ["Résistances", 0.3, "re"]], nt: [["Éclat", [["% dégâts renvoyés", 3]]], ["Reflet", [["% dégâts renvoyés", 2], ["Résistances", 1]]]], ks: ["Reflet parfait", { rv: 15, d: -8 }], big: ["Palais des glaces", [["% dégâts renvoyés", 8]]] },
+      { n: "Le Chasseur de géants", c: "#f2c14e", sm: [["% dégâts aux boss", 0.6, "pui"], ["Critique", 0.3, "cri"]], nt: [["Tueur de Dragons", [["% dégâts aux boss", 3]]], ["Trophée", [["% dégâts aux boss", 2], ["% dégâts critiques", 2]]]], ks: ["Tueur de titans", { boss: 20, d: -8 }], big: ["Légende", [["% dégâts aux boss", 8]]] },
+      { n: "Le Bourreau", c: "#b06cff", sm: [["% dégâts aux ennemis sous 30 % PV", 1.2, "pui"], ["% dégâts", 0.3, "pui"]], nt: [["Exécution", [["% dégâts aux ennemis sous 30 % PV", 6]]], ["Hache du bourreau", [["% dégâts aux ennemis sous 30 % PV", 4], ["Critique", 1]]]], ks: ["Coup de grâce", { exe: 40, t1: -20 }], big: ["Sans pitié", [["% dégâts aux ennemis sous 30 % PV", 15]]] },
+      { n: "Le Crescendo", c: "#ff9a3c", sm: [["% dégâts par tour (10 tours max)", 0.06, "pui"], ["Initiative", 10, "ini"]], nt: [["Montée", [["% dégâts par tour (10 tours max)", 0.3]]], ["Apogée", [["% dégâts par tour (10 tours max)", 0.2], ["% PV", 1]]]], ks: ["Montée en puissance", { cre: 1.5, t1: -30 }], big: ["Finale", [["% dégâts par tour (10 tours max)", 0.8]]] },
+      { n: "L'Invocateur", c: "#6be0a0", sm: [["% dégâts des invocations", 1, "pui"], ["% PV des invocations", 1, "vit"]], nt: [["Meute", [["% dégâts des invocations", 5]]], ["Lien d'âme", [["% PV des invocations", 5], ["% dégâts des invocations", 2]]]], ks: ["Maître des invocations", { inv: 30, d: -10 }], big: ["Légion", [["% dégâts des invocations", 12]]] },
+      { n: "L'Ombre", c: "#8d93b8", sm: [["% d'esquive", 0.3, "age"], ["Agilité", 2, "age"]], nt: [["Pas de côté", [["% d'esquive", 1.5]]], ["Silhouette", [["% d'esquive", 1], ["% dégâts au premier tour", 3]]]], ks: ["Insaisissable", { esq: 12, hp: -15 }], big: ["Fantôme", [["% d'esquive", 4]]] },
+      { n: "Le Troll", c: "#7fbf5a", sm: [["% PV rendus chaque tour", 0.1, "vit"], ["Vitalité", 8, "vit"]], nt: [["Peau de troll", [["% PV rendus chaque tour", 0.5]]], ["Repousse", [["% PV rendus chaque tour", 0.3], ["% PV", 1.5]]]], ks: ["Régénération éternelle", { reg: 3, res: -8 }], big: ["Increvable", [["% PV rendus chaque tour", 1.5]]] },
+      { n: "L'Égide", c: "#c8d8ff", sm: [["Bouclier des alliés (% PV)", 0.2, "re"], ["Résistances", 0.3, "re"]], nt: [["Rempart commun", [["Bouclier des alliés (% PV)", 1]]], ["Serment", [["Bouclier des alliés (% PV)", 0.6], ["% soins", 2]]]], ks: ["Égide", { sha: 6, d: -12 }], big: ["Forteresse", [["Bouclier des alliés (% PV)", 3]]] },
+      { n: "La Fulgurance", c: "#ffe066", sm: [["% dégâts au premier tour", 1, "pui"], ["Initiative", 15, "ini"]], nt: [["Éclair", [["% dégâts au premier tour", 5]]], ["Premier sang", [["% dégâts au premier tour", 3], ["Critique", 1]]]], ks: ["Fulgurance", { pa1: 2, d: -6 }], big: ["Foudre", [["% dégâts au premier tour", 15]]] },
+    ],
+    farm: [
+      { n: "Le Pilleur", c: "#f2c14e", sm: [["% butin", 0.4, "pp"], ["Prospection", 2, "pp"]], nt: [["Sac sans fond", [["% butin", 2]]], ["Flair", [["% butin", 1.5], ["Prospection", 10]]]], ks: ["Pilleur de tombes", { loot: 15, d: -10 }], big: ["Trésor", [["% butin", 6]]] },
+      { n: "Le Banquier", c: "#e8c547", sm: [["% kamas gagnés", 0.6, "pp"], ["Chance", 2, "cha"]], nt: [["Bourse pleine", [["% kamas gagnés", 3]]], ["Intérêts", [["% kamas gagnés", 2], ["% butin", 1]]]], ks: ["Coffre d'or", { kam: 25, hp: -10 }], big: ["Fortune", [["% kamas gagnés", 10]]] },
+      { n: "L'Érudit", c: "#c49bff", sm: [["% XP", 0.5, "sa"], ["Sagesse", 2, "sa"]], nt: [["Leçon", [["% XP", 2.5]]], ["Bibliothèque", [["% XP", 2], ["Sagesse", 10]]]], ks: ["Éternel étudiant", { xp: 20, d: -10 }], big: ["Savoir", [["% XP", 8]]] },
+      { n: "L'Artisan", c: "#d39a5c", sm: [["% XP de métier", 0.8, "fo"], ["% récolte", 0.4, "fo"]], nt: [["Établi", [["% XP de métier", 4]]], ["Main sûre", [["% récolte", 2], ["% XP de métier", 2]]]], ks: ["Maître artisan", { xpj: 30, d: -10 }], big: ["Chef-d'œuvre", [["% XP de métier", 12]]] },
+      { n: "Le Traqueur", c: "#ff7a4a", sm: [["% chance de Champion", 0.3, "cri"], ["% dégâts aux Champions", 0.5, "pui"]], nt: [["Piste", [["% chance de Champion", 1.5]]], ["Trophée de chasse", [["% dégâts aux Champions", 3], ["% chance de Champion", 1]]]], ks: ["Grand veneur", { champ: 15, res: -8 }], big: ["Légende de la chasse", [["% chance de Champion", 5]]] },
+    ],
+  };
+  E.MT_BRTH.mix = [E.MT_BRTH.combat[0], E.MT_BRTH.combat[2], E.MT_BRTH.farm[0], E.MT_BRTH.combat[3], E.MT_BRTH.farm[2], E.MT_BRTH.combat[5], E.MT_BRTH.farm[1], E.MT_BRTH.combat[4], E.MT_BRTH.farm[4], E.MT_BRTH.combat[1]];
+  E.MT_BRTH.farm = E.MT_BRTH.farm.concat(E.MT_BRTH.combat.slice(0, 5));
+  if (!DOM[6]) DOM[6] = { n: "Constellation lointaine", c: "#9fe7ff", st: [["% dégâts", 0.5, "pui"]], nt: ["Porte"], ks: [] };
   /* ---------- un ciel par classe ---------- */
   const TREES = {};
   const CLS_IDX = () => D.CLASS_ORDER || Object.keys(CLASSES);
@@ -148,6 +173,28 @@
     }
     /* 2.0.9 : les 3 clés de voûte d'un domaine sont reliées entre elles par le dernier cercle, dans tous les ciels (Mathis : « côté Feu c'est tout relié… mais pas dans la voie Terre »). Étoiles ajoutées à la fin : les numéros des autres ne changent pas */
     SP.forEach((S0, si) => { const T2 = SP[(si + 1) % SP.length]; if (T2.d !== S0.d || S0.c4) return; const a = S0.lv[4][2], b = T2.lv[4][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, 4 + si), mt, N[a].r)); link(a, m1); link(m1, b); });
+    /* MAQUETTE (pas publié) : Constellations lointaines, des branches en plus avec des bonus inédits */
+    if (typeof window !== "undefined" && window.__MTBR) { const CF = window.__MTBR; const TH = E.MT_BRTH[CF.kind || "combat"];
+      const bounds = CF.n === 3 ? [0, 2, 4] : [0, 1, 2, 4, 5];
+      const nearSp = (th) => { let bi = 0, bd = 9; SP.forEach((x, i) => { const dd = Math.abs(((x.th - th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; bi = i; } }); return bi; };
+      let ti = 0;
+      bounds.forEach((kb) => { const tb = TAU * kb / 6; const si = nearSp(tb - 0.2236); const A = SP[si], B = SP[(si + 1) % SP.length];
+        const porte = add(P({ t: "s", d: 6, n: "Porte des étoiles", b: [["% dégâts", 0.5]], txt: "+0,5 % dégâts. Ouvre une Constellation lointaine.", ic: "pui" }, tb, 1430)); link(A.lv[4][2], porte); link(B.lv[4][6], porte);
+        const fan = CF.n === 10 ? [-0.075, 0.075] : [0];
+        fan.forEach((o) => { const Tm = TH[ti++ % TH.length]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c });
+          const sm = (i) => { const s = Tm.sm[i % Tm.sm.length]; return tag({ t: "s", n: s[0], b: [[s[0], s[1]]], txt: `+${nf(s[1])} ${s[0]}`, ic: s[2] || "pui" }); };
+          const ntb = (j) => { const q = Tm.nt[j]; return tag({ t: "nt", n: q[0], b: q[1], txt: q[1].map(([s, v]) => `+${nf(v)} ${s}`).join(" · "), ic: (Tm.sm[0][2]) || "pui" }); };
+          let prev = porte, r = 1480;
+          for (let cc = 0; cc < 2; cc++) {
+            for (let i = 0; i < 4; i++) { const id = add(P(sm(i + cc), th, r)); link(prev, id); prev = id; r += 34; }
+            r += 40; const ctr = add(P(ntb(cc), th, r)); const ring = [];
+            for (let j = 0; j < 6; j++) { const a = TAU * j / 6 + Math.PI; ring.push(add(P(sm(j + 1), th, r, Math.cos(a) * 44, -Math.sin(a) * 44))); }
+            ring.forEach((id, j) => link(id, ring[(j + 1) % 6])); link(prev, ring[0]); link(ctr, ring[1]); link(ctr, ring[4]); prev = ring[3]; r += 84;
+          }
+          if (CF.end === "nt") { link(prev, add(P(tag({ t: "nt", end: 1, n: Tm.big[0], b: Tm.big[1], txt: Tm.big[1].map(([s, v]) => `+${nf(v)} ${s}`).join(" · "), ic: Tm.sm[0][2] || "pui" }), th, r + 10))); }
+          else link(prev, add(P(tag({ t: "ks", end: 1, n: Tm.ks[0], fx: Tm.ks[1], txt: E.mtFxTxt(Tm.ks[1]), b: [], ic: null }), th, r + 10)));
+        }); });
+    }
     for (const n of N) { const X0 = Math.sin(n.th) * n.r, Y0 = -Math.cos(n.th) * n.r, psi = n.th - Math.PI / 2; n.X = X0 + Math.cos(psi) * n.lr - Math.sin(psi) * n.lt; n.Y = Y0 + Math.sin(psi) * n.lr + Math.cos(psi) * n.lt; }
     const coreIds = N.filter((n) => n.t === "cls" && n.r <= 150).map((n) => n.id);
     return (TREES[cls] = { cls, N, ED, SP, cks, start, domTh, coreIds, order, pas });
