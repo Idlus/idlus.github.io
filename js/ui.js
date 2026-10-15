@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.2";
+const GAME_VERSION = "1.1.2.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.3", name: "Sceaux mieux expliqués", items: [
+    "Héros › Chasse : un encadré sous « Sceaux » explique comment les monter. Chaque Champion vaincu en chasse (un combat sur 50, bandeau doré) fait monter le Sceau de son pouvoir, tout seul",
+    "Il explique aussi les Éclats de champion : 10 par Champion légendaire vaincu, et chacun compte comme un Champion vaincu pour le Sceau de ton choix (bouton +1 ◆)" ] },
   { v: "1.1.2.2", name: "Bouton bug à l'écran", items: [
     "Le bouton « Signaler un bug » (la coccinelle) est maintenant toujours visible en haut de l'écran, à côté de la recherche, sur PC comme sur téléphone" ] },
   { v: "1.1.2.1", name: "Dofus dans les codes cadeaux", items: [

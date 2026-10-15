@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.3 « Sceaux mieux expliqués »
+
+Héros › Chasse : un encadré explique comment monter un Sceau (chaque Champion vaincu en chasse fait monter le Sceau de son pouvoir) et à quoi servent les Éclats de champion (10 par Champion légendaire, un Éclat = un Champion vaincu pour le Sceau de son choix).
+
 ## 1.1.2.2 « Bouton bug à l'écran »
 
 Demande de Mathis (15/10/2026) : « Mettre le bouton sur l'écran du joueur ». Bouton coccinelle `ic-bug` dans la barre du haut (`renderStatus` de `js/ui.js`), juste avant la recherche ; il ouvre la fenêtre de `js/bugs.js`.

@@ -1,6 +1,14 @@
 {
-  "version": "1.1.2.2",
+  "version": "1.1.2.3",
   "versions": [
+    {
+      "v": "1.1.2.3",
+      "name": "Sceaux mieux expliqués",
+      "items": [
+        "Héros › Chasse : un encadré sous « Sceaux » explique comment les monter. Chaque Champion vaincu en chasse (un combat sur 50, bandeau doré) fait monter le Sceau de son pouvoir, tout seul",
+        "Il explique aussi les Éclats de champion : 10 par Champion légendaire vaincu, et chacun compte comme un Champion vaincu pour le Sceau de ton choix (bouton +1 ◆)"
+      ]
+    },
     {
       "v": "1.1.2.2",
       "name": "Bouton bug à l'écran",
