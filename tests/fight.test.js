@@ -171,7 +171,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.strictEqual(E.equipMount(S9, c.id, M.uid), null, "monter la dragodinde"); const v0 = E.charStats(S9, c).vit;
   M.lvl = 50; assert.strictEqual(E.charStats(S9, c).vit - v0 + E.mountStatsAt(Object.assign({}, M, { lvl: 1 })).vit, 150, "+150 Vitalité au niveau 50");
   M.lvl = 1; M.xp = 0; const kept = 10000 - E.mountXpShare(S9, c, 10000); assert.strictEqual(kept, 6000, "part de 40 % par défaut"); assert.ok(M.xp === 4000 || M.lvl > 1, "la monture reçoit l'XP");
-  c.lvl = E.MAX_LVL; assert.strictEqual(E.mountShare(S9, c), 100, "héros 200 : toute l'XP"); c.lvl = 70;
+  c.lvl = E.MAX_LVL; assert.strictEqual(E.mountShare(S9, c), E.MT_MOUNT_DEF, "héros 200 : la part réglée pour la Maîtrise (2.0)"); c.lvl = 70;
   E.giveMountXp(S9, M, 1e9); assert.strictEqual(M.lvl, 100, "niveau 100"); assert.strictEqual(c.mountShare, 0, "part remise à 0 au niveau 100"); assert.strictEqual(E.charStats(S9, c).vit - v0 + E.mountStatsAt(Object.assign({}, M, { lvl: 1 })).vit, 300, "+300 Vitalité au niveau 100");
   // montilier : la place de la monture est prise
   E.givePet(S9, "siroko"); assert.strictEqual(E.mountStats(S9, c), null, "le montilier bloque la monture"); E.equipPet(S9, c.id, null);

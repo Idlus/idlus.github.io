@@ -146,7 +146,7 @@
 
   add({ id: "niveaux", f: "Héros", n: "Niveaux et expérience", ic: "trophee", page: "team", k: "xp experience niveau sagesse malus",
     ou: "Héros › Équipe et héros", de: "dès le début",
-    voir: ["renaissance", "caracs"],
+    voir: ["maitrise", "caracs"],
     b: () => [
       ["p", "Chaque victoire donne de l'XP, partagée entre les héros de l'équipe. Plus l'équipe est grande, plus la part de chacun est petite, mais le total grandit."],
       ["kv", [
@@ -187,7 +187,7 @@
 
   add({ id: "sorts", f: "Héros", n: "Sorts et stratégies", ic: "idee", page: "team", pages: ["spells"], k: "sort variante barre condition cible preset strategie identite mecanique poutch apercu",
     ou: "Héros › Équipe et héros › fiche du héros › Sorts & stratégies", de: "les sorts arrivent avec les niveaux",
-    voir: ["combat", "renaissance"],
+    voir: ["combat", "maitrise"],
     b: () => [
       ["p", "Chaque classe a 22 paires de sorts : un sort de base et sa variante. Une seule des deux peut être sur la barre. Les sorts de base arrivent jusqu'au niveau 90 environ, les variantes ensuite jusqu'au niveau 200 ; un sort gagne en puissance avec ses grades."],
       ["kv", [["Cases sur la barre", "6, +1 au niveau 50, +1 au niveau 100"], ["Lancers d'un même sort par tour", "3 au plus"], ["Stratégies enregistrées", N(() => E.MAX_PRESETS)], ["Conditions possibles", N(() => Object.keys(D.CONDITIONS).length)], ["Cibles possibles", N(() => Object.keys(D.TARGETS).length)]]],
@@ -374,17 +374,21 @@
       ]],
     ] });
 
-  add({ id: "renaissance", f: "Héros", n: "Renaissance", ic: "phenix", page: "ren", k: "renaissance eveil memoire des vies aura metiers",
-    ou: "Héros › Renaissance", de: `un héros niveau ${N(() => E.MAX_LVL)}`,
+  add({ id: "maitrise", f: "Héros", n: "La Maîtrise", ic: "cristal", page: "maitrise", k: "maitrise arbre constellation cle de voute joyau nebuleuse bestiaire famille renaissance eveil",
+    ou: "Héros › Maîtrise", de: `un héros niveau ${N(() => E.MAX_LVL)}`,
     voir: ["niveaux", "sorts", "metiers"],
     b: () => [
-      ["p", `Un héros niveau ${N(() => E.MAX_LVL)} peut renaître, ${N(() => E.REN_MAX)} fois au plus. C'est gratuit. Il repart niveau 1 ; son équipement retourne au sac. Il garde ses Dofus, familier, monture, titres, Éveils et sorts appris.`],
-      ["kv", [["Renaissances au plus", N(() => E.REN_MAX)], ["XP demandée par renaissance", "+" + N(() => E.REN_NEED * 100) + " %"], ["XP demandée à la X", "×" + N(() => 1 + E.REN_NEED * E.REN_MAX)], ["Rangs par Éveil", N(() => E.EVEIL_MAX)]]],
+      ["p", `Au niveau ${N(() => E.MAX_LVL)}, l'XP d'un héros remplit des **niveaux de Maîtrise**, sans fin. Chaque niveau coûte l'XP du niveau ${N(() => E.MAX_LVL - 1)} → ${N(() => E.MAX_LVL)} et donne 1 point à placer dans le ciel de sa classe. Les points sont propres à chaque héros et n'agissent qu'au niveau ${N(() => E.MAX_LVL)}.`],
+      ["kv", [["XP par niveau de Maîtrise", N(() => E.mtNeed())], ["Tout rendre gratuit jusqu'à", N(() => E.MT_FREE) + " points"], ["Ensuite, par point rendu", N(() => E.MT_RESPEC) + " kamas"], ["Nébuleuse cachée", N(() => E.MT_OPEN) + " points"], ["Part de la monture au niveau 200", "0 à 50 %"]]],
       ["ul", [
-        "À chaque renaissance, un **Éveil** à choisir (Fureur, Robustesse, Écorce, Lame, Main, Premier sang, Œil, Meneur) ; les renaissances V et X donnent l'Éveil propre à la classe.",
-        "**Mémoire des vies** : un sort d'une autre classe à choisir parmi 3 à chaque renaissance ; 1 case dès la I, 2 dès la V, 3 à la X.",
-        "Auras de renaissance (Braise, Flamme, Brasier, Phénix) et titres aux renaissances I, V et X.",
+        "Un **ciel par classe** d'environ 1 500 étoiles : le cœur renforce le passif de la classe (son symbole s'allume quand les 26 étoiles du cœur sont prises), 6 domaines (les deux éléments forts de la classe en haut) et des **clés de voûte** qui changent le style de jeu avec une contrepartie.",
+        "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche, chemin planifié et code de partage.",
+        "**Joyaux** : ils tombent sur les boss en stasis 10 et plus et se sertissent dans les emplacements ◆.",
+        "**Maîtrise du compte** : +1 % d'XP pour tout le compte par tranche de 100 points, tous héros confondus.",
+        "**Maîtrise du Bestiaire** : 20 paliers par famille de monstres, +0,5 % de dégâts contre la famille par palier ; ornement au palier 5, +2 % de butin au 10, titre « Fléau » au 15, aura au 20. La famille du jour compte double.",
       ]],
+      ["h", "Et la Renaissance ?"],
+      ["p", `Depuis la 2.0, on ne renaît plus. Les vies passées sont devenues de la Maîtrise : ${N(() => E.REN_TO_MT * 100)} % de leur XP en niveaux de Maîtrise, 2 points par Éveil et 2 par sort appris ; un héros en cours de vie est revenu au niveau ${N(() => E.MAX_LVL)}. Le nombre de vies reste affiché, avec ses titres, son aura et son ornement.`],
       ["h", "Renaissance des métiers"],
       ["p", `Un métier niveau 200 peut renaître ${N(() => E.JOB_REN_MAX)} fois (${N(() => E.JOB_REN_COST)} kamas × le numéro de la renaissance) : +${N(() => E.JOB_REN_XP * (E.JOB_REN_XP < 1 ? 100 : 1))} % d'XP du métier à chaque fois, des jets d'artisanat plus hauts (jets parfaits à la X), et pour les forgemages plus de succès critiques et moins d'échecs.`],
     ] });
@@ -392,7 +396,7 @@
   /* ======================= Artisanat ======================= */
   add({ id: "metiers", f: "Économie", n: "Métiers : récolte et artisanat", ic: "metiers", page: "metiers", pages: ["recolte", "craft"], k: "recolte artisanat paysan bucheron mineur alchimiste pecheur tailleur bijoutier cordonnier forgeron sculpteur faconneur bricoleur filon outil recette",
     ou: "Économie › Métiers (Récolte, Artisanat)", de: "dès le début",
-    voir: ["forgemagie", "renaissance", "quetes"],
+    voir: ["forgemagie", "maitrise", "quetes"],
     b: () => [
       ["p", "5 métiers de récolte (Paysan, Bûcheron, Mineur, Alchimiste, Pêcheur) et 7 d'artisanat (Tailleur, Bijoutier, Cordonnier, Forgeron, Sculpteur, Façonneur, Bricoleur), niveaux 1 à 200, partagés par tout le compte."],
       ["h", "Récolte"],
@@ -853,8 +857,8 @@
     L.push(dq ? { t: `${dq} quête${dq > 1 ? "s" : ""} de Dofus terminée${dq > 1 ? "s" : ""}.`, ok: 1 } : { t: "Avance une quête de Dofus : elle donne le Dofus à la dernière étape.", ic: "dofus", nav: "dofus", ch: "dofus" });
     const mx = V(() => E.MAX_LVL, 200);
     L.push(lv >= mx ? { t: `Un héros niveau ${mx}.`, ok: 1 } : { t: `Monte un héros niveau ${mx} (meilleur : niveau ${lv}).`, ic: "trophee", nav: "team", ch: "niveaux" });
-    const rn = s.chars.some((c) => c.ren);
-    L.push(rn ? { t: "Première Renaissance faite.", ok: 1 } : lv < mx ? { t: `Niveau ${mx} : la Renaissance.`, ic: "cle", ch: "renaissance" } : { t: "Fais renaître un héros niveau 200 : Éveil et sorts d'autres classes.", ic: "phenix", nav: "ren", ch: "strat-ren" });
+    const rn = s.chars.some((c) => c.mt && c.mt.t && c.mt.t.some((x) => x && x.length)); // 2.0 : la Maîtrise remplace la Renaissance
+    L.push(rn ? { t: "Premiers points de Maîtrise placés.", ok: 1 } : lv < mx ? { t: `Niveau ${mx} : la Maîtrise.`, ic: "cle", ch: "maitrise" } : { t: "Place les points de Maîtrise d'un héros niveau 200 dans le ciel de sa classe.", ic: "cristal", nav: "maitrise", ch: "maitrise" });
     L.push(sk >= 10 ? { t: "Stasis 10 réussie.", ok: 1 } : { t: "Vise la stasis 10 : la meilleure chance de Dofus.", ic: "coffre", ch: "strat-stasis" });
     return L;
   }
@@ -920,19 +924,18 @@
       ]],
       ["p", "Passifs qui augmentent le butin ou les kamas : " + V(() => D.CLASS_ORDER.filter((k) => /kamas|butin/i.test((D.CLASSES[k].passive || {}).desc || "")).map((k) => `**${D.CLASSES[k].name}**`).join(", "), "?") + " (détails dans leur fiche, famille Classes)."],
     ] });
-  add({ id: "strat-ren", f: "Stratégie", n: "Préparer une Renaissance", ic: "phenix", page: "ren", k: "renaissance preparer eveil conseil quand renaitre",
-    voir: ["renaissance", "niveaux"],
+  add({ id: "strat-ren", f: "Stratégie", n: "Placer sa Maîtrise", ic: "cristal", page: "maitrise", k: "maitrise arbre conseil cle de voute placer points",
+    voir: ["maitrise", "niveaux"],
     b: () => { const s = sv(); const c200 = s.chars.filter((c) => c.lvl >= V(() => E.MAX_LVL, 200));
       return [
-        ["p", `Une Renaissance est gratuite et se fait à partir du niveau ${N(() => E.MAX_LVL)}. Le héros repart niveau 1 mais garde Dofus, familier, monture, titres, Éveils et sorts appris.`],
+        ["p", `La Maîtrise s'ouvre au niveau ${N(() => E.MAX_LVL)} : chaque niveau de Maîtrise donne 1 point à placer dans le ciel de la classe du héros.`],
         ["ul", [
-          "**Une à la fois** : fais renaître un héros pendant que les autres portent l'équipe, sinon toute l'équipe redescend.",
-          "**Garde un équipement bas niveau** : l'équipement du héros retourne au sac ; un petit set prêt le fait remonter bien plus vite.",
-          `**Prévois l'XP** : chaque Renaissance demande +${N(() => E.REN_NEED * 100)} % d'XP par niveau. La Sagesse et les bonus d'XP n'en sont que plus utiles.`,
-          "**Choisis l'Éveil selon le rôle** : Robustesse ou Écorce devant, Fureur ou Lame derrière. Les Renaissances V et X donnent l'Éveil propre à la classe.",
-          "**Mémoire des vies** : prends un sort qui comble un manque de la classe (un soin, une protection, une attaque de zone).",
+          "**Le cœur d'abord** pour un héros qui vit de son passif (Iop, Sram, Xélor…) : les 26 étoiles allument le symbole de la classe.",
+          "**Un domaine qui suit l'élément** de l'équipement : les deux éléments forts de la classe sont en haut du ciel.",
+          "**Une clé de voûte à la fois** : chacune a une contrepartie ; compare avant de changer d'arbre enregistré.",
+          `**Tout rendre** est gratuit jusqu'à ${N(() => E.MT_FREE)} points placés : essaie, puis garde ce qui marche.`,
         ]],
-        ["p", c200.length ? `Prêts à renaître : ${c200.map((c) => `**${c.name}**${c.ren ? ` (Renaissance ${c.ren})` : ""}`).join(", ")}.` : `Aucun héros niveau ${N(() => E.MAX_LVL)} pour l'instant (meilleur : niveau ${best()}).`],
+        ["p", c200.length ? `Héros qui ont une Maîtrise : ${c200.map((c) => `**${c.name}** (${fr(V(() => E.mtPts(c), 0))} points)`).join(", ")}.` : `Aucun héros niveau ${N(() => E.MAX_LVL)} pour l'instant (meilleur : niveau ${best()}).`],
       ]; } });
 
   /* ======================= Fiches de classe (idée 10A) ======================= */
@@ -1077,7 +1080,7 @@
     hdv: "Taxe de 2 % à la mise en vente, comme dans DOFUS. La vente directe au jeu (Cours des ressources) est propre à Idlus.",
     montures: "Pas de jauges d'endurance ou de maturité à remplir : la monture prend une part de l'XP de son héros et lui donne ses caractéristiques.",
     alignement: "Bonta et Brâkmar comme dans DOFUS, avec leurs ordres ; le niveau monte avec les missions et quêtes de cité, sans agression entre joueurs.",
-    renaissance: "Il n'y a pas de Renaissance dans DOFUS : c'est un ajout d'Idlus pour aller plus loin que le niveau 200.",
+    maitrise: "Il n'y a pas de Maîtrise dans DOFUS : c'est un ajout d'Idlus pour aller plus loin que le niveau 200 (elle remplace l'ancienne Renaissance).",
     metiers: "Le niveau de métier demandé est celui de l'objet, comme dans DOFUS. Les métiers sont partagés par tout le compte.",
   };
   /* ---------- « Où tu en es » (6A) et « Prochain objectif » (7A) : lus dans la partie à l'ouverture du chapitre ---------- */
@@ -1092,8 +1095,8 @@
       return [`${fr(s.cnt.dofus || 0)} Dofus obtenu${(s.cnt.dofus || 0) > 1 ? "s" : ""} sur ${N(() => E.DOFUS_ORDER.length)}, ${done} quête${done > 1 ? "s" : ""} de Dofus terminée${done > 1 ? "s" : ""} sur ${dq.length}.`, done < dq.length ? "Avancer la prochaine quête de Dofus (Héros › Dofus › Quêtes et butin)." : null]; },
     familiers: () => { const n = cnt(sv().pets), req = V(() => E.PET_LVL, 10); return [`${n} familier${n > 1 ? "s" : ""}.`, best() < req ? `Monter un héros niveau ${req}.` : !n ? "Obtenir un premier familier." : null]; },
     montures: () => { const n = cnt(sv().mounts), req = V(() => E.MOUNT_LVL, 60); return [`${n} monture${n > 1 ? "s" : ""}.`, best() < req ? `Monter un héros niveau ${req}.` : !n ? "Capturer une première monture." : null]; },
-    renaissance: () => { const s = sv(); const R = s.chars.filter((c) => c.ren); const top = Math.max(0, ...s.chars.map((c) => c.ren || 0)); const near = s.chars.filter((c) => !c.ren).sort((a, b) => b.lvl - a.lvl)[0];
-      return [R.length ? `${R.length} héros renés, au plus Renaissance ${top}.` : "Aucune Renaissance pour l'instant.", near ? (near.lvl >= V(() => E.MAX_LVL, 200) ? `${near.name} peut renaître.` : `${near.name} est le plus proche du niveau ${N(() => E.MAX_LVL)} (niveau ${near.lvl}).`) : null]; },
+    maitrise: () => { const s = sv(); const M = s.chars.filter((c) => V(() => E.mtPts(c), 0) > 0).sort((a, b) => E.mtPts(b) - E.mtPts(a)); const top = M[0];
+      return [top ? `${M.length} héros avec de la Maîtrise, au plus ${fr(E.mtPts(top))} points (${top.name}).` : "Aucune Maîtrise pour l'instant.", top ? `Placer les points de ${top.name} (Héros › Maîtrise).` : `Monter un héros niveau ${N(() => E.MAX_LVL)}.`]; },
     metiers: () => { const J = sv().jobs || {}; const ks = Object.keys(J); if (!ks.length) return null; const lo = lowJob();
       return [`${ks.length} métiers de récolte, meilleur niveau ${Math.max(...ks.map((k) => J[k].lvl || 1))}.`, lo ? `Monter le métier le plus bas (${lo[0]}, niveau ${lo[1]}).` : null]; },
     sablier: () => { const s = sv(); if (!V(() => E.sabUnlocked(s), false)) return ["Pas encore débloqué.", `Atteindre l'étape ${N(() => E.SAB_UNLOCK_STEP)} de la quête principale.`]; const r = (s.sablier || {}).r || 0; return [`Réserve : ${dur(r)} sur ${dur(V(() => E.SAB_MAX, 0))}.`, null]; },
@@ -1336,7 +1339,7 @@
 
   /* bulles de découverte (idée 9A) : le chapitre qui en dit plus */
   const TIP = { combat: "combat", equip: "equipement", stats: "caracs", harvest: "metiers", protector: "metiers", keys: "donjons#la-stasis", offline: "absence", loss: "combat#defaite",
-    guide: "parcours", havre: "home", almanax: "quetes", pets: "familiers", stars: "world", align: "alignement", fm: "forgemagie", mounts: "montures", archis: "archis", idols: "idoles", account: "options", ren: "renaissance", navnews: "recherche" };
+    guide: "parcours", havre: "home", almanax: "quetes", pets: "familiers", stars: "world", align: "alignement", fm: "forgemagie", mounts: "montures", archis: "archis", idols: "idoles", account: "options", ren: "maitrise", maitrise: "maitrise", navnews: "recherche" };
   const forTip = (id) => TIP[id] || null;
 
   if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "guide")) E.SEARCH_PAGES.push(["guide", "Guide", "Journal › Guide : le détail de chaque fonctionnalité, avec les chiffres"]);

@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 10;
+  E.VERSION = 11; // 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise)
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -103,7 +103,8 @@
   E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
   /* 1.0.35 : chaque renaissance demande +50 % d'XP pour remonter (×6 à la X) : renaître devient un objectif de fin de jeu */
-  E.REN_NEED = 0.5;
+  E.REN_TO_MT = 0.02; // 2.0 : part de l'XP des vies passées qui devient de la Maîtrise (choix de Mathis)
+  E.REN_NEED = 0; // 2.0 « La Maîtrise » : plus de renaissance, plus d'XP en plus par vie (avant : +50 % par renaissance)
   E.renNeedMult = (c) => 1 + E.REN_NEED * Math.min(E.REN_MAX, (c && c.ren) || 0);
   E.heroXpNeed = (c, l) => Math.floor(E.xpNeed(l === undefined ? c.lvl : l) * E.renNeedMult(c));
   E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
@@ -231,7 +232,7 @@
   E.spellCls = (id) => { if (!SPELL_IDX.ready) { for (const k in CLASSES) CLASSES[k].spells.forEach((s) => (SPELL_IDX[s.id] = k)); SPELL_IDX.ready = 1; } return SPELL_IDX[id]; };
   E.memDef = (id) => { if (MEM_DEF[id]) return MEM_DEF[id]; const k = E.spellCls(id); const s = k && CLASSES[k].spells.find((x) => x.id === id); return s ? (MEM_DEF[id] = Object.assign({}, s, { pair: "m:" + id, mem: k })) : null; };
   E.spellDef = (cls, id) => (CLASSES[cls] && CLASSES[cls].spells.find((s) => s.id === id)) || (E.spellCls(id) && E.spellCls(id) !== cls ? E.memDef(id) : undefined);
-  E.MEM_SLOTS = (c) => ((c.ren || 0) >= 10 ? 3 : (c.ren || 0) >= 5 ? 2 : (c.ren || 0) >= 1 ? 1 : 0); // sorts d'autres classes équipables en même temps
+  E.MEM_SLOTS = () => 0; // 2.0 « La Maîtrise » : les sorts des vies passées sont devenus des points de Maîtrise (avant : 1, 2 puis 3 selon la renaissance) // sorts d'autres classes équipables en même temps
   E.memSpells = (c) => (c.mem || []).map(E.memDef).filter((s) => s && s.lvl <= c.lvl);
   E.memCount = (c, list) => (list || c.spells || []).filter((x) => { const d = E.spellDef(c.cls, x.id); return d && d.mem; }).length;
   E.spellGrade = (sp, lvl) => { let g = sp.grades[0]; for (const x of sp.grades) if (x.lvl <= lvl) g = x; return g; };
@@ -344,7 +345,9 @@
     const dpt = E.dofPotStats ? E.dofPotStats(S, c) : null; if (dpt) addStats(st, dpt); // 1.0.30 : Potentiel des Dofus (dofusp.js)
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, E.setCountFx ? E.setCountFx(S, s, counts[s]) : counts[s]); if (b) addStats(st, b); } // 1.0.30 : Couture fine (collections.js)
-    st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")));
+    const mf = E.mtFx ? E.mtFx(S, c) : null; // 2.0 « La Maîtrise » (js/maitrise_moteur.js), active au niveau 200
+    if (mf) { addStats(st, mf.st); st.cri += mf.cri; st.pa += mf.pa; st.pm += mf.pm; if (mf.res) ["rt", "rf", "re", "ra", "rn"].forEach((k) => (st[k] = (st[k] || 0) + mf.res)); }
+    st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")) * (1 + (mf ? mf.hp : 0) / 100));
     if (c.eveils) { // 0.1.12 : Éveils de la Renaissance
       const ec = E.eveil(c, "ecorce"); if (ec) ["rt", "rf", "re", "ra", "rn"].forEach((k) => (st[k] = (st[k] || 0) + 3 * ec));
       st.cri += 3 * E.eveil(c, "lame"); st.pp += 15 * E.eveil(c, "pros");
@@ -926,7 +929,8 @@
     return {
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
-      evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
+      evc: E.eveil(c, "classe") + E.mtPass(S, c), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance) ; 2.0 : le passif renforcé par la Maîtrise
+      mt: E.mtFx ? E.mtFx(S, c) : null, bt: E.btFx ? E.btFx(S) : null, // 2.0 : Maîtrise (clés de voûte, % de dégâts) et Maîtrise du Bestiaire
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
       dp: E.dofpOf ? E.dofpOf(S, c) : null, dpBoost: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus, Éveil des Dragons
       wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
@@ -1336,6 +1340,7 @@
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     if (E.legFight) E.legFight(S, F); // 0.1.48 : passifs des objets légendaires
+    E.mtFight(F); // 2.0 : boucliers de la Maîtrise
     if (E.dofpFight) E.dofpFight(S, F); // 1.0.16 : passifs des Dofus
     if (E.sealFight) E.sealFight(S, F); // Sceaux de champion (js/champions.js)
     if (E.petFight) E.petFight(S, F); // 1.1 : aptitudes des familiers (écaille, aura)
@@ -1438,6 +1443,7 @@
       if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
     }
     if (tgt.hp <= 0 && F && tgt.lgS && E.legSave) E.legSave(F, src, tgt, v); // 0.1.48 : Trompe-la-Mort, Boucle du Réveil
+    if (tgt.hp <= 0 && F && tgt.mt && tgt.mt.rev && !tgt.mtRev) { tgt.mtRev = 1; tgt.hp = Math.max(1, Math.round(tgt.hpMax * tgt.mt.rev / 100)); flog(F, `${tgt.name} se relève (Maîtrise) !`, "buff"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); } // 2.0
     if (tgt.hp <= 0 && F && tgt.side === "c" && !tgt.summon && F.expRevive > 0) { F.expRevive--; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} se relève (Sang de Bouftou) !`, "buff"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.mech && tgt.mech.includes("immortel") && !tgt.revived) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} refuse de mourir et se relève !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
@@ -1493,6 +1499,8 @@
     v *= mult;
     // 0.1.12 : Éveils de la Renaissance (Fureur, Premier sang)
     if (e.ev) { v *= 1 + 0.04 * (e.ev.fureur || 0); if (F && F.round === 1) v *= 1 + 0.08 * (e.ev.premier || 0); }
+    if (e.mt) { const M = e.mt; v *= (1 + (M.d + (M[el] || 0)) / 100) * (F && F.round === 1 ? 1 + M.t1 / 100 : 1) * (e.hp < e.hpMax / 2 ? 1 + M.low / 100 : 1) * (crit ? 1 + M.cx / 100 : 1); } // 2.0 : Maîtrise
+    if (e.bt && tgt && tgt.race !== undefined && e.bt[tgt.race]) v *= 1 + e.bt[tgt.race] / 100; // 2.0 : Maîtrise du Bestiaire
     // passifs et mécaniques de classe (evc : rang de l'Éveil de classe, 0 à 2, qui renforce le passif)
     const evc = e.evc || 0;
     if (tgt && tgt.boss && e.cls === "iop") v *= 1.1;
@@ -1512,7 +1520,7 @@
   };
   const healAmount = (e, f) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
+    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
   };
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
@@ -2154,7 +2162,8 @@
      st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
-    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null,
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") + E.mtPass(S, c), lg: E.legOf ? E.legOf(S, c) : null,
+    mt: E.mtFx ? E.mtFx(S, c) : null, bt: E.btFx ? E.btFx(S) : null, // 2.0 : Maîtrise
     dp: E.dofpOf ? E.dofpOf(S, c) : null, dpB: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus
     wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
   /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
@@ -2165,7 +2174,7 @@
       chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), alloc: {}, equip: {}, eveils: h.ev || {} });
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
-        buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {},
+        buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {}, mt: h.mt || null, bt: h.bt || null,
         row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null, dp: h.dp || null, dpBoost: !!h.dpB,
         wsp: h.wp && ITEMS[h.wp.t] ? E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) : null });
     }));
@@ -2179,6 +2188,7 @@
     const F = S2.fight = { id: 1, label: opts.label || "Kolizéum", ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: false, seq: 0, fx: [], sub: null, dungeonId: null, deaths: [],
       pvp: true, me: opts.me || 0, deco: "dg_sable", glyphs: [null, null], ero: 0, chals: [], cs: { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} }, dmgInit: true };
     if (E.legFight) E.legFight(S2, F); // 0.1.48 : passifs des légendaires au Kolizéum
+    E.mtFight(F); // 2.0 : boucliers de la Maîtrise
     newRound(F);
     return S2;
   };
@@ -2345,7 +2355,7 @@
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1) * E.almMult(S, "xp", m); // 1.0.33 : chromatique (js/chroma.js) // 0.1.39 : Almanax (famille, donjon ou fête)
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
-      S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
+      S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1; if (E.btKill) E.btKill(S, m); // 2.0 : Maîtrise du Bestiaire
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); if (E.champKill) out.champ.ch = E.champKill(S, m, opts); }
     });
@@ -2357,7 +2367,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp")); // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") * (E.mtAcctMult ? E.mtAcctMult(S) : 1)); // 2.0 : Maîtrise du compte // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
       if (E.montiXpShare) g -= E.montiXpShare(S, c, g); // 1.1 : le montilier grandit avec l'XP du héros
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
@@ -2373,7 +2383,7 @@
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.btLoot ? E.btLoot(S, mons) : 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts);
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -2390,6 +2400,7 @@
         if (n) { addRes(S, r, q * n); out.res[r] = (out.res[r] || 0) + q * n; seen(m.key, r); } });
       if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
       E.tkLoot(S, m, nRoll, out); // 1.0.7 : Tickets de Koli en combat
+      if (m.boss && opts.dungeon && (opts.stasis || 0) >= 10 && E.joyDrop) E.joyDrop(S, opts.stasis, out); // 2.0 : joyaux de Maîtrise
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       /* 1.0.15 (Mathis 4A, 5A, 7C) : une chance par héros ; le boss d'un donjon a plus de chances avec la stasis (×1 à la 1, ×3,25 à la 10) ;
          un équipement jamais obtenu est annoncé en grand */
@@ -2473,8 +2484,20 @@
   E.ITEM_DROP_SCALE = 1; // 1.0.15 : les taux de js/drops.js sont déjà les vraies chances par héros (avant : taux DofusDB × 0,04)
   E.bossDropMult = (k) => 1 + 0.25 * (Math.min(10, Math.max(1, k)) - 1); // 1.1 : plafonné à la stasis 10
 
+  /* 2.0 « La Maîtrise » : au niveau 200, l'XP remplit des niveaux de Maîtrise sans fin, 1 point chacun, au coût du niveau 199 → 200
+     (arbres, combat et Bestiaire : js/maitrise_moteur.js ; page Héros › Maîtrise : js/maitrise.js). bn : points venus des vies passées */
+  E.mt = (c) => { if (!c.mt) c.mt = { lvl: 0, xp: 0, bn: 0, t: [[], [], []], lo: 0, j: {} }; return c.mt; };
+  E.mtNeed = () => E.xpNeed(E.MAX_LVL - 1);
+  E.mtPts = (c) => (c && c.mt ? c.mt.lvl + (c.mt.bn || 0) : 0);
+  E.mtPass = (S, c) => { const f = E.mtFx ? E.mtFx(S, c) : null; return f ? f.pass / 50 : 0; }; // le passif de classe : 50 % = un rang de l'ancien Éveil de classe
+  E.mtFight = (F) => F.ents.forEach((e) => { if (e.mt && e.mt.sh && !e.summon) e.shield = (e.shield || 0) + Math.round(e.hpMax * e.mt.sh / 100); });
   E.giveXp = (S, c, g) => {
-    if (c.lvl >= E.MAX_LVL) return false;
+    if (c.lvl >= E.MAX_LVL) {
+      if (!(g > 0)) return false; const M = E.mt(c); M.xp += g; const need = E.mtNeed(); let up = 0;
+      while (M.xp >= need) { M.xp -= need; M.lvl++; up++; }
+      if (up) { note(S, `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : un point de plus à placer dans son arbre.`, "up"); E.emit(S, "mtlvl", { cid: c.id, lvl: M.lvl }); }
+      return false;
+    }
     c.xp += g; let up = false; const from = c.lvl;
     while (c.lvl < E.MAX_LVL && c.xp >= E.heroXpNeed(c)) {
       c.xp -= E.heroXpNeed(c); c.lvl++; c.pts += 5; up = true;
@@ -3649,11 +3672,26 @@
     }
     if (S.v < 9) { // 0.1.12 : nouvelle courbe d'XP au-delà du niveau 100 ; les héros qui ont déjà l'XP du niveau suivant montent tout de suite
       const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.heroXpNeed(c)) E.giveXp(S, c, 0); }); E.events.length = ev;
-      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Héros › Renaissance).");
+      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (devenue la Maîtrise en 2.0 : Héros › Maîtrise).");
     }
     if (S.v < 10 && S.chars.some((c) => c.ren > 0)) { // 1.0.35 « Mémoire des vies » : un sort à apprendre par renaissance déjà faite (choix de Mathis 3A)
       S.chars.forEach((c) => { if (c.ren > 0) { c.mem = c.mem || []; c.memPend = Math.max(c.memPend || 0, Math.min(E.REN_MAX, c.ren) - c.mem.length); } });
-      report.push("1.0.35 : les renaissances ne donnent plus d'XP en plus, chaque vie demande +50 % d'XP par niveau. En échange, chaque renaissance apprend un sort d'une autre classe : tes héros déjà renés ont un choix à faire par renaissance (Héros › Renaissance).");
+      report.push("1.0.35 : les renaissances ne donnent plus d'XP en plus, chaque vie demande +50 % d'XP par niveau. En échange, chaque renaissance apprend un sort d'une autre classe : tes héros déjà renés ont un choix à faire par renaissance (devenue la Maîtrise en 2.0 : Héros › Maîtrise).");
+    }
+    if (S.v < 11 && S.chars.some((c) => c.ren > 0)) { // 2.0 « La Maîtrise » : la Renaissance disparaît (choix de Mathis : 2 % de l'XP des vies passées, 2 points par Éveil et par sort appris, retour au niveau 200)
+      const ev = E.events.length; let lines = [];
+      S.chars.forEach((c) => {
+        const n = Math.min(E.REN_MAX, c.ren || 0); if (!n) return;
+        let xp = 0; for (let k = 0; k < n; k++) for (let l = 1; l < E.MAX_LVL; l++) xp += Math.floor(E.xpNeed(l) * (1 + 0.5 * k)); // chaque vie demandait +50 % d'XP par renaissance
+        const M = E.mt(c); const lv = Math.floor(xp * E.REN_TO_MT / E.mtNeed());
+        const evs = Object.values(c.eveils || {}).reduce((a, b) => a + (+b || 0), 0), sp = Math.max((c.mem || []).length, n); const bn = 2 * evs + 2 * sp;
+        M.lvl += lv; M.bn = (M.bn || 0) + bn; c.renMt = { n, lv, bn, from: c.lvl };
+        if (c.lvl < E.MAX_LVL) { S.recLv = (S.recLv || 0) + (E.MAX_LVL - c.lvl); while (c.lvl < E.MAX_LVL) { c.lvl++; c.pts += 5; } c.xp = 0; E.autoAllocate(S, c); } // en cours de vie : retour au niveau 200 (le serveur ne prend pas ces niveaux pour de la triche)
+        c.eveils = {}; c.mem = []; c.memPend = 0; c.memOffer = null; E.refreshSpells(c, E.charStats(S, c));
+        lines.push(`${c.name} : ${lv + bn} points (${lv} niveaux venus de ${n} vie${n > 1 ? "s" : ""}, ${bn} des Éveils et des sorts)`);
+      });
+      E.events.length = ev;
+      report.push(`2.0 « La Maîtrise » : la Renaissance laisse place à la Maîtrise. Les vies passées de tes héros deviennent des points de Maîtrise (2 % de leur XP, 2 points par Éveil et par sort appris) : ${lines.join(" ; ")}. Place-les dans Héros › Maîtrise.`);
     }
     if (S.craftObj === undefined) E.craftObjConvert(S, report); // avant de compléter avec la partie neuve (qui a déjà craftObj)
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
@@ -3683,6 +3721,7 @@
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
     S.v = E.VERSION;
+    if (E.btOrnSync) E.btOrnSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
     return S;
   };
 

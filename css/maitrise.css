@@ -78,3 +78,7 @@
 @keyframes mtAura{from{opacity:.6}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.ent.hero .mt-aura{animation:none}}
 @media (max-width:640px){.mt-head{display:grid;grid-template-columns:34px 1fr;gap:4px 10px;padding:6px 14px}.mt-head>img{width:34px;height:34px}.mt-head h2{font-size:19px}.mt-other{grid-column:1/-1}.mt-cv{height:62vh}}
+.mt-rk.me{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 30%,transparent)}
+.mt-page>.mt-card{margin:0 14px 10px}
+.mt-page>.mt-card .mt-row button[aria-pressed="true"]{border-color:var(--gold)}
+.orn.btorn{object-fit:contain;filter:drop-shadow(0 0 6px rgba(242,193,78,.7))}

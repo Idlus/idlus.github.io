@@ -318,7 +318,7 @@
   /* les repas automatiques n'existent plus (1.1) : rien n'est mangé tout seul dans le sac */
   E.petTick = () => 0;
   /* montilier : une part de l'XP du héros, comme une monture (retourne ce que le héros ne garde pas) */
-  E.montiShare = (S, c) => { const P = E.petOf(S, c); if (!P || !isMonti(P.id) || P.g >= 100 || c.lvl < E.MONTI_LVL) return 0; return c.lvl >= E.MAX_LVL ? 100 : E.MONTI_SHARE; };
+  E.montiShare = (S, c) => { const P = E.petOf(S, c); if (!P || !isMonti(P.id) || P.g >= 100 || c.lvl < E.MONTI_LVL) return 0; return c.lvl >= E.MAX_LVL ? (E.mtShareOf ? E.mtShareOf(c) : 100) : E.MONTI_SHARE; }; // 2.0 : au niveau 200, la part réglée pour la Maîtrise
   E.montiXpShare = (S, c, g) => {
     const sh = E.montiShare(S, c); if (!sh || g <= 0) return 0; const P = E.petOf(S, c);
     const mg = Math.round(g * sh / 100); const need = E.xpNeed(Math.min(c.lvl, E.MAX_LVL - 1)) * E.MONTI_LVL_FRAC;

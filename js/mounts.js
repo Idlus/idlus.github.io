@@ -80,7 +80,11 @@
     c.mount = uid; if (c.mountShare == null) c.mountShare = M.lvl >= E.MOUNT_MAX ? 0 : E.MOUNT_SHARE_DEF;
     E.emit(S, "equip", {}); return null;
   };
-  E.mountShare = (S, c) => { const M = E.mountOf(S, c); if (!M || M.lvl >= E.MOUNT_MAX) return 0; return c.lvl >= E.MAX_LVL ? 100 : (c.mountShare == null ? E.MOUNT_SHARE_DEF : c.mountShare); };
+  E.mountShare = (S, c) => { const M = E.mountOf(S, c); if (!M || M.lvl >= E.MOUNT_MAX) return 0; return c.lvl >= E.MAX_LVL ? E.mtShareOf(c) : (c.mountShare == null ? E.MOUNT_SHARE_DEF : c.mountShare); };
+  /* 2.0 « La Maîtrise » : au niveau 200, l'XP va à la Maîtrise ; la monture (ou le montilier) en garde une part réglable de 0 à 50 % (choix de Mathis) */
+  E.MT_MOUNT_SHARES = [0, 10, 25, 40, 50]; E.MT_MOUNT_DEF = 25;
+  E.mtShareOf = (c) => (c.mtShare == null ? E.MT_MOUNT_DEF : c.mtShare);
+  E.setMtShare = (S, cid, v) => { const c = S.chars.find((x) => x.id === cid); if (c && E.MT_MOUNT_SHARES.includes(+v)) c.mtShare = +v; };
   E.setMountShare = (S, cid, v) => { const c = S.chars.find((x) => x.id === cid); if (c && E.MOUNT_SHARES.includes(+v)) c.mountShare = +v; };
   E.seeColour = (S, sp, c) => { (S.mountSeen[sp] = S.mountSeen[sp] || {})[c] = 1; };
   E.giveMount = (S, sp, c, why, opts = {}) => {

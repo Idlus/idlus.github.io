@@ -1331,6 +1331,8 @@
             give: (S, id) => E.relSeen(S, id), txt: (id) => `relique « ${E.relById(id).n} » au Reliquaire` },
     part: { name: "Partition", list: () => Object.keys(tracks()).map((k) => [k, `Partition « ${tracks()[k]} »`]), ok: (id) => !!tracks()[id],
             give: (S, id) => { S.partitions = S.partitions || {}; if (!S.partitions[id]) S.partitions[id] = Date.now(); }, txt: (id) => `partition « ${tracks()[id] || id} »` },
+    joy:  { name: "Joyau de Maîtrise", qty: true, max: 10, list: () => Object.keys(E.JOY || {}).map((k) => [k, E.JOY[k].n]), ok: (id) => !!(E.JOY && E.JOY[id]), // 2.0 : joyaux de la Maîtrise
+            give: (S, id, q) => { S.joy = S.joy || []; for (let i = 0; i < q; i++) { S.joyUid = (S.joyUid || 0) + 1; S.joy.push({ uid: S.joyUid, k: id }); } }, txt: (id, q) => `${q > 1 ? `${q} × ` : ""}${E.JOY[id].n}` },
   };
   /* une ligne valable : type connu, choix connu (sinon elle est ignorée, par exemple sur une partie trop ancienne) */
   const gxOk = (row) => Array.isArray(row) && E.GIFT_X[row[0]] && (() => { try { return E.GIFT_X[row[0]].ok(row[1]); } catch (e) { return false; } })();

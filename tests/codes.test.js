@@ -1,7 +1,7 @@
 /* 1.1.1.4 : codes cadeaux : tout ce qui se gagne dans le jeu peut être offert (récompense « x ») */
 const assert = require("assert");
 const E = require("../js/engine.js");
-["systems", "pets", "mounts", "elevage", "idols", "renaissance", "archis", "chroma", "koli", "alliance", "legendaires", "champions", "songe", "expeditions", "suivi", "comptoirs", "ascension", "reliques"].forEach((f) => require(`../js/${f}.js`));
+["systems", "pets", "mounts", "elevage", "idols", "renaissance", "maitrise_moteur", "archis", "chroma", "koli", "alliance", "legendaires", "champions", "songe", "expeditions", "suivi", "comptoirs", "ascension", "reliques"].forEach((f) => require(`../js/${f}.js`));
 
 const S = E.newState("Test", "iop");
 let n = 0;

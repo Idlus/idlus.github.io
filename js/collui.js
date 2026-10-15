@@ -108,7 +108,7 @@
     lines.push(`<div class="co-apt ${aptOn ? "on" : ""}"><b>🐾 ${h(E.petAptName(P))}</b><span class="xs">${h(E.petAptTxt(id))}${aptOn ? "" : " · au niveau 100"}</span></div>`);
     if (E.petHasAura(P)) lines.push(`<div class="xs co-gold">Aura : +${E.PET_AURA} % de dégâts pour toute l'équipe en combat (${E.PET_AURA_MAX} % au plus).</div>`);
     const btns = [];
-    if (P.g < 100 && mon) lines.push(`<div class="xs muted">Il grandit avec l'XP de son héros : ${E.MONTI_SHARE} % de l'XP gagnée lui revient jusqu'au niveau 100 (toute l'XP si le héros est niveau ${E.MAX_LVL}).</div>`);
+    if (P.g < 100 && mon) lines.push(`<div class="xs muted">Il grandit avec l'XP de son héros : ${E.MONTI_SHARE} % de l'XP gagnée lui revient jusqu'au niveau 100 (au niveau ${E.MAX_LVL}, la part réglée dans Familiers et montures, de 0 à 50 %, le reste va à la Maîtrise).</div>`);
     if (P.g < 100 && !mon) {
       lines.push(`<div class="xs muted">1 âme par monstre vaincu par l'équipe, ${E.PET_PREY} pour ses proies${prey.length ? ` (${h(prey.slice(0, 4).join(", "))}${prey.length > 4 ? "…" : ""})` : ""}. Encore ${fmt(E.petSoulsLeft(P))} âmes avant le niveau 100.</div>`);
       if (p.food) { const have = s.res[p.food] || 0; const left = E.petTreatsLeft(s, P.uid); const ok = have >= E.PET_TREAT_N && left > 0;

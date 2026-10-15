@@ -70,9 +70,9 @@
     { id: "account", name: "Le compte en ligne", hint: "après une heure de jeu sans compte", anchor: '[data-act="options"]',
       cond: (S, ctx) => !!(ctx && ctx.online && !ctx.user) && (S.stats.playtime || 0) >= 3600,
       txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Il te fait aussi entrer dans les classements et écrire dans le chat. Ta partie actuelle te suit. Options › Compte, connexion avec Discord." },
-    { id: "ren", name: "La Renaissance", hint: "premier héros niveau 200", anchor: '#nav [data-nk="ren"], #nav [data-nk="menu"]',
+    { id: "ren", name: "La Maîtrise", hint: "premier héros niveau 200", anchor: '#nav [data-nk="maitrise"], #nav [data-nk="menu"]',
       cond: (S) => maxLvl(S) >= (E.MAX_LVL || 200),
-      txt: "Un héros au niveau 200 peut renaître : il repart du niveau 1 avec un Éveil et apprend un sort d'une autre classe (chaque vie demande +50 % d'XP par niveau). Il garde son apparence, ses titres et ses Dofus (Héros › Renaissance)." },
+      txt: "Au niveau 200, l'XP d'un héros remplit sa Maîtrise : chaque niveau donne un point à placer dans le ciel de sa classe, avec des clés de voûte qui changent son style de jeu (Héros › Maîtrise)." },
   ];
   E.TIP_GAP_MS = 2 * 60 * 1000;      // au plus une bulle toutes les 2 minutes
   E.TIP_LATER_MS = 10 * 60 * 1000;   // « Plus tard » : elle revient après 10 minutes
@@ -124,7 +124,7 @@
     ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Journal › Succès"], ["ladder", "Classements", "Communauté › Classements"], ["defi", "Défi du jour", "Défis › Défi du jour"], ["dungeons", "Donjons", "clés, stasis et coffres"], ["enc", "Encyclopédie", "monstres, objets, panoplies"], ["exp", "Songe infini", "Aventure › Songe infini"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
     ["team", "Équipe et héros", "composition et placement"], ["heroes", "Héros", "équipement du héros"], ["hstats", "Caractéristiques", "Héros › Caractéristiques"], ["spells", "Sorts", "Héros › Sorts"],
     ["pet", "Familier et monture", "Héros › Familier"], ["inv", "Inventaire", "objets"], ["invres", "Ressources", "Héros › Inventaire › Ressources"], ["invcons", "Consommables", "Héros › Inventaire › Consommables"],
-    ["sets", "Carnet de panoplies", "Héros › Inventaire › Panoplies"], ["ren", "Renaissance", "Héros › Renaissance"], ["recolte", "Récolte", "Économie › Métiers › Récolte"], ["craft", "Artisanat", "Économie › Métiers › Artisanat"],
+    ["sets", "Carnet de panoplies", "Héros › Inventaire › Panoplies"], ["ren", "Maîtrise", "Héros › Maîtrise"], ["recolte", "Récolte", "Économie › Métiers › Récolte"], ["craft", "Artisanat", "Économie › Métiers › Artisanat"],
     ["forge", "Forgemagie", "runes et puits"], ["options", "Options", "thème, affichage, sauvegarde"], ["account", "Compte en ligne", "Options › Compte"], ["archis", "Album des archimonstres", "âmes capturées"],
     ["idols", "Idoles", "difficulté et bonus"], ["koli", "Kolizéum", "Défis › Kolizéum : combats contre d'autres équipes"], ["wb", "Boss des mondes", "Défis › Boss des mondes"], ["metiers", "Métiers", "Économie › Métiers : récolte et artisanat"], ["sugg", "Suggestions", "Communauté › Suggestions"], ["hdv", "Hôtel de vente", "Économie › Hôtel de vente"], ["guild", "Guilde", "Communauté › Guilde"], ["tips", "Carnet des découvertes", "relire les bulles d'aide"], ["changelog", "Nouveautés", "notes de mise à jour"],
   ];

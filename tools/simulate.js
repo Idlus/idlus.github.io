@@ -15,6 +15,7 @@ require("../js/systems.js");
 require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/identite.js"); // identité des sorts (NO_ID=1 : sans)
 require("../js/identmon.js"); // identité des sorts des monstres (NO_MID=1 : sans)
 require("../js/identboss.js"); // sorts uniques des boss
+require("../js/maitrise_moteur.js"); // 2.0 : la Maîtrise (--maitrise N : N points placés par héros niveau 200)
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -103,6 +104,21 @@ const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._ro
 
 /* --renaissance N : chaque héros a N renaissances (0.1.12) avec un jeu d'Éveils typique (dégâts, PV, critiques, résistances, Éveil de classe à V et X) */
 const REN = Math.min(E.REN_MAX, +arg("renaissance", 0));
+/* 2.0 --maitrise N : chaque héros niveau 200 place N points comme un joueur : la clé de voûte de son élément fort, puis les meilleures étoiles autour */
+const MTN = +arg("maitrise", 0);
+const giveMt = (S) => { if (!MTN) return; S.chars.forEach((c) => { if (c.lvl < E.MAX_LVL) return; const T = E.mtTree(c.cls); const got = new Set([T.start]); const main = D.CLASSES[c.cls].main;
+  const EL = { fo: "t", ine: "f", cha: "e", age: "a" }[main] || "t";
+  const val = (n) => { if (n.neb && MTN < E.MT_OPEN) return -1; if (n.t === "start") return -1; let v = 0;
+    (n.b || []).forEach(([lb, x]) => { v += lb.startsWith("Passif") ? x * 2 : lb === ({ t: "Force", f: "Intelligence", e: "Chance", a: "Agilité" })[EL] ? x : lb === "Puissance" ? x : lb === `% dégâts ${({ t: "Terre", f: "Feu", e: "Eau", a: "Air" })[EL]}` || lb === "% dégâts" ? x * 12 : lb === "% PV" ? x * 5 : lb === "Vitalité" ? x * 0.2 : lb === "Résistances" || lb === "Résistance" ? x * 4 : lb === "Critique" ? x * 3 : x * 0.1; });
+    if (n.fx) v += (n.fx.d || 0) * 12 + (n.fx[EL] || 0) * 12 + (n.fx.hp || 0) * 5 + (n.fx.res || 0) * 4 + (n.fx.t1 || 0) * 3 + (n.fx.cx || 0) * 2 + (n.fx.pass || 0) * 2 + (n.fx.sh || 0) * 3 - (n.fx.pm || 0 ? 30 : 0) - (n.fx.pa ? 80 : 0);
+    return v; };
+  let left = MTN;
+  while (left > 0) { // le meilleur gain par point parmi les chemins de 1 à 8 étoiles
+    const prev = new Map(); const dist = new Map(); const q = [...got]; q.forEach((x) => { prev.set(x, -1); dist.set(x, 0); }); let hd = 0;
+    while (hd < q.length) { const x = q[hd++]; if (dist.get(x) >= Math.min(8, left)) continue; for (const y of T.N[x].adj) { if (prev.has(y) || val(T.N[y]) < 0) continue; prev.set(y, x); dist.set(y, dist.get(x) + 1); q.push(y); } }
+    let best = null, bv = -1; prev.forEach((p, id) => { if (got.has(id)) return; let v = 0, k = id; while (!got.has(k)) { v += val(T.N[k]); k = prev.get(k); } const r = v / dist.get(id); if (r > bv) { bv = r; best = id; } });
+    if (best == null) break; let k = best; while (!got.has(k)) { got.add(k); left--; k = prev.get(k); } }
+  const M = E.mt(c); M.lvl = MTN; M.t[0] = [...got].filter((x) => x !== T.start); E.refreshSpells(c, E.charStats(S, c)); }); };
 const REN_PLAN = ["fureur", "robu", "lame", "fureur", "classe", "ecorce", "fureur", "robu", "lame", "classe"];
 const giveRen = (S) => { if (!REN) return; S.chars.forEach((c) => { c.ren = REN; c.eveils = {}; REN_PLAN.slice(0, REN).forEach((id) => (c.eveils[id] = (c.eveils[id] || 0) + 1)); E.refreshSpells(c, E.charStats(S, c)); }); };
 
@@ -111,7 +127,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });
@@ -134,7 +150,7 @@ if (arg("chasse", "")) {
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
       const S = E.newState("Sim", "iop"); S.chars = [];
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
-      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); tagRows(S);
+      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
       E.startHunt(S, sid); let last = null; const k0 = S.kamas;
       for (let t = 0; t < 3600 * 1000; t += 1000) { E.tick(S, 1000); const F = S.fight; if (F && F.over && F !== last) { last = F; F.result === "win" || F.result === true ? win++ : lose++; } }
       kam += S.kamas - k0;
@@ -167,7 +183,7 @@ if (flag("songe")) {
         for (let ii = 0; ii < E.SG_INT.length; ii++) {
           const S = E.newState("Sim", "iop"); S.chars = [];
           teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
-          S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); tagRows(S);
+          S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
           E.songe(S).unl = 7; const err = E.expStart(S, ii); if (err) throw new Error(err);
           const r = E.expAutoPlay(S, 600); if (!r.valid) break; top = ii;
         }

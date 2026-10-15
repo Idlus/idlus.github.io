@@ -1,5 +1,7 @@
 /* ============================================================================
-   RENAISSANCE (0.1.12) — Idlus
+   RENAISSANCE (0.1.12) — Idlus. 2.0 « La Maîtrise » : on ne renaît plus (E.canRenaissance refuse toujours) ; les vies passées
+   sont devenues des points de Maîtrise (migration E.VERSION 11, js/engine.js). Le nombre de vies (c.ren) reste comme souvenir
+   (médaillon, aura, titres, classement), les Éveils et les sorts appris sont convertis.
    Un héros niveau 200 peut renaître à la Statue du Phénix : il repart au niveau 1 en gardant
    son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier,
    sa monture et ses parchemins. Son équipement est rangé dans le sac. Chaque renaissance demande
@@ -56,7 +58,8 @@
   /* Peut-il renaître ? null si oui, sinon la raison */
   E.canRenaissance = (S, c) => {
     if (!c) return "Héros introuvable.";
-    if (c.lvl < E.MAX_LVL) return `Niveau ${E.MAX_LVL} requis.`;
+    return "La Renaissance a laissé place à la Maîtrise : au niveau 200, l'XP remplit l'arbre de Maîtrise du héros (Héros › Maîtrise)."; // 2.0
+    if (c.lvl < E.MAX_LVL) return `Niveau ${E.MAX_LVL} requis.`; // eslint-disable-line no-unreachable
     if ((c.ren || 0) >= E.REN_MAX) return "Ce héros a atteint sa dixième renaissance.";
     if (c.job) return "Rappelez d'abord ce héros de sa récolte.";
     const inTeam = E.team(S).some((x) => x.id === c.id);
