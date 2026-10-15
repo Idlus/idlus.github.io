@@ -62,10 +62,15 @@
     forgelave: ["Fonte des armures", (v) => `Chaque coup du porteur fait fondre la cible : −2 % de résistances pour toute l'équipe, jusqu'à −${pc(v)} %.`, 10, "Contrôle", "hit", "all"],
     abyssal:   ["Appel des abysses", (v) => `+1 % de dégâts par tranche de 4 % de PV perdus par le porteur (jusqu'à +${pc(v)} %).`, 25, "Attaque", "always", "front"],
     dompin:    ["Pluie de pommes de pin", (v) => `Au début de son tour, le porteur lance une pomme de pin sur un ennemi au hasard : ${pc(v)} % de ses PV (moitié sur les boss).`, 3, "Attaque", "turn", "all"],
+    /* 1.1 : les 4 Dofus de la 1.1 (simulés en stasis 8 : chacun dans la moyenne des 31 autres) */
+    alliances: ["Bannière levée", (v) => `Tant que le porteur est debout, toute l'équipe fait +${pc(v)} % de dégâts et de soins (une seule bannière par équipe).`, 3, "Attaque", "always", "all"],
+    trool:     ["Roue du Trool", (v) => `Au début de chaque combat, la roue tire un bonus au hasard pour le porteur : +${pc(v)} % de dégâts, +${pc(v)} % de soins, un bouclier de ${pc(v)} % de ses PV ou +1 PM au premier tour.`, 12, "Attaque", "first", "all"],
+    onirique:  ["Berceuse", (v) => `Tous les 4 tours, l'ennemi le plus dangereux s'assoupit : il joue en dernier au tour suivant et fait ${pc(v)} % de dégâts en moins jusque-là (une berceuse par équipe).`, 20, "Contrôle", "every", "all"],
+    idlus:     ["Temps suspendu", (v) => `Pendant que tu es hors ligne, +${pc(v)} % d'XP, de kamas et de butin pour l'équipe (dans le plafond, une seule fois par équipe).`, 10, "Gains", "gain", "all"],
   };
   const FIXED = ["vulbis", "argente", "ocre"]; // effets « tout ou rien » : ni renforcés, ni réduits au Kolizéum
   /* passifs qui agissent à chaque coup ou en continu : comptés, mais sans ligne dans le journal (il reste lisible) */
-  const QUIET = ["ebene", "cauchemar", "forgelave", "veilleurs", "nebuleux", "kaliptus", "dotruche", "verdoyant", "tachete", "dokoko"];
+  const QUIET = ["alliances", "ebene", "cauchemar", "forgelave", "veilleurs", "nebuleux", "kaliptus", "dotruche", "verdoyant", "tachete", "dokoko"];
   /* r : rang de Potentiel du Dofus (1.0.30, 0 à X) : +5 % par rang ; l'Ivoire (un plafond) descend de 2,5 % par rang */
   E.dofpVal = (id, boost, pvp, r) => { const P = E.DOFP_LIST[id]; if (!P) return 0; let v = P[2]; if (FIXED.includes(id)) return v;
     const m = r > 0 ? Math.min(r, E.DPOT_MAX) * E.DPOT_PCT / 100 : 0;
@@ -91,9 +96,12 @@
   E.dofpReso = (S, c) => { const w = E.dofpOf(S, c); return E.DOFP_PRIM.every((id) => w.includes(id)); };
   /* gains hors combat : XP du porteur (Jyfus), kamas et butin pour l'équipe, une seule fois (Argenté, Dokille) */
   const wears = (S, c, id) => E.dofpOf(S, c).includes(id);
+  /* 1.1 : Temps suspendu (Dofus d'Idlus) : +XP, kamas et butin pendant le rattrapage hors ligne, une fois par équipe */
+  const idlusOff = (S) => (E.dpOffline && E.team(S).some((c) => wears(S, c, "idlus")) ? E.dofpVal("idlus", false, false, E.dpotRank(S, "idlus")) : 0);
   E.dofpTeamBonus = (S, kind) => { if (!S || !S.chars || !E.team) return 0; const id = kind === "kamas" ? "argent" : kind === "drop" ? "dokille" : null;
-    return id && E.team(S).some((c) => wears(S, c, id)) ? E.dofpVal(id, false, false, E.dpotRank(S, id)) : 0; };
-  E.dofpXpBonus = (S, c) => { const b = E.bonusRaw(S, "xp") + (c && wears(S, c, "jyfus") ? E.dofpVal("jyfus", false, false, E.dpotRank(S, "jyfus")) : 0); return Math.min(b, E.capOf(S, "xp")); };
+    return (id && E.team(S).some((c) => wears(S, c, id)) ? E.dofpVal(id, false, false, E.dpotRank(S, id)) : 0) + (id ? idlusOff(S) : 0); };
+  E.dofpXpBonus = (S, c) => { const b = E.bonusRaw(S, "xp") + (c && wears(S, c, "jyfus") ? E.dofpVal("jyfus", false, false, E.dpotRank(S, "jyfus")) : 0) + (S && S.chars && E.team ? idlusOff(S) : 0); return Math.min(b, E.capOf(S, "xp")); };
+  { const cu = E.catchUp; if (cu) E.catchUp = (S, seconds) => { E.dpOffline = true; try { return cu(S, seconds); } finally { E.dpOffline = false; } }; }
 
   const has = (e, id) => !!(e && e.dp && e.dp.includes(id));
   const V = (F, id, e) => E.dofpVal(id, !!(e && e.dpBoost), !!(F && F.pvp), e && e.dpP ? e.dpP[id] || 0 : 0);
@@ -106,6 +114,9 @@
     A().flog(F, `✦ ${E.dofpName(id)} · ${e.name}${what ? " : " + what : ""}`, "buff dofpl");
   };
 
+  /* 1.1 : Bannière levée : un porteur debout dans l'équipe (une seule bannière compte) */
+  const banner = (F, e) => { if (!F || !F.ents || !e || e.side === "m") return 1;
+    const w = F.ents.find((m) => m.alive && m.side === e.side && !m.summon && has(m, "alliances")); return w ? 1 + V(F, "alliances", w) / 100 : 1; };
   E.dofpFight = (S, F) => {
     F.dpN = {}; F.dpSeen = {};
     F.ents.forEach((e) => { if (!e.dp || e.summon) return; e.dpS = {};
@@ -113,12 +124,17 @@
       if (has(e, "emeraude")) { e.shield = (e.shield || 0) + Math.round(e.hpMax * V(F, "emeraude", e) / 100); proc(F, e, "emeraude", "bouclier"); }
       if (has(e, "vulbis")) e.paBonus = (e.paBonus || 0) + 1;
       if (has(e, "argente")) e.dpS.save = 1;
-      if (has(e, "cawotte")) e.dpS.burrow = 1; });
+      if (has(e, "cawotte")) e.dpS.burrow = 1;
+      if (has(e, "trool")) { const r = Math.floor(rnd() * 4); e.dpS.troll = r; const v = V(F, "trool", e); // 1.1 : Roue du Trool
+        if (r === 2) e.shield = (e.shield || 0) + Math.round(e.hpMax * v / 100); if (r === 3) { e.st.pm = (e.st.pm || 0) + 1; e.dpS.trPm = 1; }
+        proc(F, e, "trool", ["+" + pc(v) + " % de dégâts", "+" + pc(v) + " % de soins", "bouclier", "+1 PM"][r]); } });
   };
   E.dofpDmg = (F, e, tgt, crit, v) => {
     const S0 = e.dpS || (e.dpS = {}); S0.crit = crit;
     if (e.dpBloom) { v *= 1 + e.dpBloom / 100; e.dpBloom = 0; }
+    v *= banner(F, e); // 1.1 : Bannière levée, pour toute l'équipe du porteur
     if (!e.dp.length) return v;
+    if (has(e, "trool") && S0.troll === 0) v *= 1 + V(F, "trool", e) / 100;
     if (has(e, "dofawa") && F && F.round === 1) v *= 1 + V(F, "dofawa", e) / 100;
     if (has(e, "dofoozbz") && S0.rage) v *= 1 + S0.rage * V(F, "dofoozbz", e) / 100;
     if (has(e, "abyssal") && e.hp < e.hpMax) v *= 1 + Math.min(V(F, "abyssal", e), Math.floor((1 - e.hp / e.hpMax) * 25)) / 100;
@@ -181,7 +197,7 @@
   };
   /* soins : reçus (Kaliptus), lancés (Dofawa au premier tour), et leurs effets (Dotruche, Verdoyant) */
   E.dofpHealIn = (F, t) => (has(t, "kaliptus") ? 1 + V(F, "kaliptus", t) * (t.hp < t.hpMax * 0.3 ? 2 : 1) / 100 : 1);
-  E.dofpHealOut = (F, a) => (a && has(a, "dofawa") && F && F.round === 1 ? 1 + V(F, "dofawa", a) / 100 : 1);
+  E.dofpHealOut = (F, a) => (a && has(a, "dofawa") && F && F.round === 1 ? 1 + V(F, "dofawa", a) / 100 : 1) * banner(F, a) * (a && has(a, "trool") && a.dpS && a.dpS.troll === 1 ? 1 + V(F, "trool", a) / 100 : 1);
   E.dofpHealed = (F, a, t, g) => {
     if (!a || g <= 0 || a.summon) return;
     if (has(a, "dotruche")) { t.shield = Math.min(Math.round(t.hpMax * 0.3), (t.shield || 0) + Math.round(g * V(F, "dotruche", a) / 100)); proc(F, a, "dotruche"); }
@@ -191,6 +207,10 @@
   /* début du tour du porteur (remplace l'ancien soin du Dokoko d'archis.js, devenu son passif) */
   E.dofpTurn = (S, F, e) => {
     if (!e.dp || !e.dp.length || !e.alive || e.summon) return; const S0 = e.dpS || (e.dpS = {});
+    if (S0.trPm && F.round > 1) { S0.trPm = 0; e.st.pm = Math.max(0, (e.st.pm || 0) - 1); } // 1.1 : le PM de la Roue du Trool ne vaut qu'au premier tour
+    if (has(e, "onirique") && F.round % 4 === 0) { const B = F.dpOni || (F.dpOni = {}); // 1.1 : Berceuse, une par équipe et par tour
+      if (B[e.side] !== F.round) { const o = F.ents.filter((m) => m.alive && m.side !== e.side && !m.fake && !m.summon).sort((a, b) => (b.boss ? 1e9 : 0) + b.hpMax - (a.boss ? 1e9 : 0) - a.hpMax)[0];
+        if (o) { B[e.side] = F.round; o.slowR = F.round + 1; o.dpWeak = { v: V(F, "onirique", e), r: F.round + 1 }; proc(F, e, "onirique", `${o.name} s'assoupit`); } } }
     if (has(e, "dokoko") && e.hp < e.hpMax) { A().doHeal(e, e.hpMax * V(F, "dokoko", e) / 100, F); proc(F, e, "dokoko"); }
     if (has(e, "sylvestre")) { const low = F.ents.filter((m) => m.alive && m.side === e.side && !m.summon && m.hp < m.hpMax).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (low) { A().doHeal(low, low.hpMax * V(F, "sylvestre", e) / 100, F); proc(F, e, "sylvestre", low.name); } }
     if (has(e, "emeraude") && F.round > 1 && (F.round - 1) % 4 === 0 && S0.emR !== F.round) { S0.emR = F.round; e.shield = (e.shield || 0) + Math.round(e.hpMax * V(F, "emeraude", e) / 100); proc(F, e, "emeraude", "bouclier"); }

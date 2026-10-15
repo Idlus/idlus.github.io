@@ -131,7 +131,14 @@
     ["forgelave", "Dofus Forgelave", 180, 23024, { do: 15 }, "fers_tyrannie", [dg("fers_tyrannie", 5), { t: "chal", chal: "rapide", n: 50 }, dg("fers_tyrannie", 8)]],
     ["abyssal", "Dofus Abyssal", 180, 23023, { dsort: 6 }, "palais_dantinea", [dg("palais_dantinea", 5), dg("temple_koutoulou", 6), dg("palais_dantinea", 8)]],
     ["dompin", "Dom de Pin", 180, 23035, { po: 1 }, "arbre_mort", [dg("arbre_mort", 5), { t: "harvest", res: "Bois de Chêne", n: 500 }, dg("arbre_mort", 8)]],
+    /* 1.1 : les 4 premiers Dofus propres à Idlus (choix de Mathis : les 4, puis 2B 3B 4A 5A 6A 7A 8A, œufs 1B 2B 3B 4C ; dessins originaux assets/i/9901x).
+       drop : où il tombe quand ce n'est pas le boss d'un donjon (lvl/k/x : tous les boss de niveau ≥ lvl dès la stasis k, chances × x ; songe : à chaque songe validé) */
+    ["alliances", "Dofus des Alliances", 180, 99011, { vit: 150, pui: 40 }, null, [{ t: "bosses", lvl: 180, k: 6, n: 3 }, { t: "gdep", n: 20 }, { t: "koli", n: 25 }, { t: "gboss", n: 3 }, { t: "bossk", lvl: 190, k: 8, n: 1 }], { lvl: 180, k: 6, x: 5 }],
+    ["trool", "Dofus du Trool", 140, 99012, { pp: 20, cri: 5 }, "fabrique_foux", [dg("fabrique_foux", 4), { t: "foire", n: 30 }, { t: "chal", chal: "rapide", n: 50 }, dg("fabrique_foux", 7)]],
+    ["onirique", "Dofus Onirique", 180, 99013, { sa: 40, ini: 300 }, null, [{ t: "songe", ii: 0, n: 1 }, { t: "sgarchi", n: 3 }, { t: "songe", ii: 3, n: 1 }, { t: "songe", ii: 5, n: 1 }], { songe: 1 }],
+    ["idlus", "Dofus d'Idlus", 170, 99014, { vit: 100, sa: 25 }, "horologium_xlii", [dg("horologium_xlii", 4), { t: "offline", n: 24 }, { t: "almanax", n: 7 }, dg("horologium_xlii", 8)]],
   ];
+  E.DOFUS_11 = ["alliances", "trool", "onirique", "idlus"];
   E.DOFUS = {}; E.DOFUS_ORDER = [];
   E.DOKOKO_PCT = 3; // Dokoko : % des PV max rendus à chaque début de tour
   /* 1.0.10 « Dofus dès la stasis 1 » (Mathis : 1B 2 3B 4A 5 6A) : à chaque victoire, CHAQUE HÉROS de l'équipe a sa chance,
@@ -144,9 +151,9 @@
   E.ocreMult = (lvl) => Math.min(1, Math.max(0, lvl) / 200);
   const nice = (n) => { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(n)) - 1)); return Math.round(n / p) * p; }; // 2 chiffres utiles
   E.ocreOdds = (k, lvl = 200) => { const m = E.ocreMult(lvl); const i = Math.min(k, 10) - 1; return m && E.OCRE_ODDS[i] ? nice(E.OCRE_ODDS[i] / m) : 0; };
-  L.forEach(([id, name, lvl, icon, stats, dgid, steps]) => {
+  L.forEach(([id, name, lvl, icon, stats, dgid, steps, drop]) => {
     const tpl = "dofus_" + id;
-    E.DOFUS[id] = { id, name, lvl, icon, stats, dg: dgid, steps, tpl };
+    E.DOFUS[id] = { id, name, lvl, icon, stats, dg: dgid, steps, tpl, drop: drop || null };
     E.DOFUS_ORDER.push(id);
     const st = {}; for (const k in stats) st[k] = [stats[k], stats[k]];
     ITEMS[tpl] = { name, slot: "dofus", lvl, stats: st, icon, dofus: id, rarity: "legendaire", desc: id === "dokoko" ? `Chaque début de tour, le porteur récupère ${E.DOKOKO_PCT} % de ses PV.` : null };
@@ -169,16 +176,31 @@
     return it;
   };
   /* butin du boss (fin de donjon) : le Dofus de ce donjon, ou l'Ocre sur les grands boss */
+  /* 1 chance sur … par héros qu'un boss de donjon lâche ce Dofus (0 : jamais). Aussi lu par le serveur (fonction record, annonce GIGA). */
+  E.dofusDropOdds = (id, did, k) => { const Df = E.DOFUS[id]; const dg = DUNGEONS[did];
+    if (!Df || !dg || (Df.steps[0] && Df.steps[0].t === "gift")) return 0;
+    if (Df.drop) return Df.drop.lvl && dg.lvl >= Df.drop.lvl && k >= Df.drop.k ? E.dofusOdds(k) * Df.drop.x : 0; // 1.1 : Alliances (boss ≥ 180) ; Onirique : Songe seulement
+    return Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, dg.lvl); };
+  /* 1.1 (5A) : le Dofus Onirique tombe à chaque songe validé, avec les chances d'un Dofus de donjon selon l'intensité (Rêve = stasis 5 … Cauchemar 3 = stasis 10) */
+  E.songeDofusK = (ii) => Math.min(10, 5 + Math.round(Math.max(0, ii) * 5 / 7));
+  E.dofusSongeDrop = (S, ii, out) => {
+    const n = Math.max(1, E.team(S).length);
+    E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id]; if (!Df.drop || !Df.drop.songe) return; const odds = E.dofusOdds(E.songeDofusK(ii));
+      for (let i = 0; i < n; i++) if (rnd() < 1 / odds) { E.giveDofus(S, id, "Fin du rêve"); if (out) out.push(Df.name); } });
+  };
   E.dofusDrop = (S, did, k, out) => {
     const n = Math.max(1, E.team(S).length); // une chance par héros de l'équipe
     E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id];
-      const odds = Df.steps[0] && Df.steps[0].t === "gift" ? 0 : Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, DUNGEONS[did].lvl);
+      const odds = E.dofusDropOdds(id, did, k);
       if (!odds) return;
       for (let i = 0; i < n; i++) if (rnd() < 1 / odds) { E.giveDofus(S, id, "butin du boss"); if (out) out.push(Df.name); } });
   };
   E.dofusOfDungeon = (did) => E.DOFUS_ORDER.find((id) => E.DOFUS[id].dg === did) || null;
   /* 1.0.6.2 : d'où tombe un Dofus, pour l'afficher partout pareil (fiche du Dofus, fiche d'objet, donjon) */
   E.dofusDropInfo = (id) => { const Df = E.DOFUS[id]; if (!Df || (Df.steps[0] && Df.steps[0].t === "gift")) return null;
+    if (Df.drop && Df.drop.songe) { const lad = E.SG_INT ? E.SG_INT.map((x, ii) => E.dofusOdds(E.songeDofusK(ii))) : []; return { songe: 1, odds: lad[0], lad }; }
+    if (Df.drop) { const lad = []; for (let k = 1; k <= 10; k++) lad.push(k >= Df.drop.k ? E.dofusOdds(k) * Df.drop.x : 0);
+      return { minLvl: Df.drop.lvl, k: Df.drop.k, odds: lad[Df.drop.k - 1], lad, dgs: Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].lvl >= Df.drop.lvl) }; }
     const lad = []; for (let k = 1; k <= 10; k++) lad.push(Df.dg ? E.dofusOdds(k) : E.ocreOdds(k));
     if (Df.dg) return { dg: Df.dg, boss: DUNGEONS[Df.dg].boss, odds: lad[0], k: 1, lad };
     return { minLvl: 1, odds: lad[0], k: 1, lad }; }; // Ocre : chances d'un boss de niveau 200
@@ -210,6 +232,8 @@
       case "ocre": return [E.ocreTier(S), E.OCRE_TIERS.length];
       case "gift": return [E.dofusOwned(S, id) ? 1 : 0, 1];
       case "almanax": return [Math.min((S.cnt && S.cnt.almanax) || 0, st.n), st.n]; // 1.0.29.4 : toutes les offrandes faites depuis le début comptent
+      case "bosses": return [Math.min(st.n, Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].lvl >= st.lvl && dgDone(S, d, st.k)).length), st.n]; // 1.1 : déjà faits, ça compte
+      case "offline": return [cur ? Math.min(Math.floor(Q.prog), st.n) : 0, st.n]; // 1.1 : heures hors ligne pendant l'étape
       default: return [cur ? Math.min(Q.prog, st.n) : 0, st.n]; // kill, harvest, chal : comptés pendant l'étape
     }
   };
@@ -226,6 +250,16 @@
       case "perfect": return `Posséder ${st.n > 1 ? st.n + " objets Parfaits" : "un objet Parfait"} (toutes les caractéristiques au jet maximum)`;
       case "ocre": return "Éternelle moisson : capturer l'âme de tous les archimonstres, palier par palier";
       case "gift": return "Cadeau de lancement de la 1.0 : se connecter pendant la première semaine (jusqu'au 20 octobre)";
+      /* 1.1 */
+      case "bosses": return `Vaincre ${st.n} boss différents de niveau ${st.lvl} ou plus en stasis ${st.k}`;
+      case "bossk": return `Vaincre un boss de niveau ${st.lvl} ou plus en stasis ${st.k}`;
+      case "gdep": return `Faire ${st.n} dépôts d'au moins 10 000 kamas au coffre de ta guilde (compte et guilde obligatoires)`;
+      case "gboss": return `Frapper ${st.n} fois le boss de guilde`;
+      case "koli": return `Gagner ${st.n} combats au Kolizéum`;
+      case "foire": return `Ouvrir ${st.n} caisses à la Foire du Trool`;
+      case "songe": return st.ii >= 5 ? `Tenir ${E.SG_INT ? E.SG_INT[st.ii].waves : 5} vagues à la Fin du rêve en ${E.SG_INT ? E.SG_INT[st.ii].name : "Cauchemar"} (valider le songe)` : `Valider un Songe infini en intensité ${E.SG_INT ? E.SG_INT[st.ii].name : "Rêve"}${st.ii > 0 ? " ou plus" : ""}`;
+      case "sgarchi": return `Vaincre ${st.n} archimonstres dans le Songe infini`;
+      case "offline": return `Laisser l'équipe jouer ${st.n} heures hors ligne (au total)`;
     }
     return "";
   };
@@ -243,23 +277,42 @@
     });
   };
   const onEvent = (S, type, data) => {
-    if (type === "win" || type === "harvest" || type === "almanax" || type === "dungeon") E.DOFUS_ORDER.forEach((id) => {
+    if (type === "win" || type === "harvest" || type === "almanax" || type === "dungeon" || type === "koli" || type === "foire" || type === "guild" || type === "songe" || type === "offline") E.DOFUS_ORDER.forEach((id) => {
       const Q = dq(S, id); const st = E.dofusStep(S, id); if (!st) return;
       if (type === "win" && st.t === "kill" && zoneOf(data.sub) === st.zone) Q.prog += data.mons.length;
       if (type === "win" && st.t === "chal" && (data.chals || []).includes(st.chal)) Q.prog++;
       if (type === "harvest" && st.t === "harvest" && data.res === st.res) Q.prog += data.n || 1;
       if (type === "dungeon" && st.t === "dg" && (st.chal || st.nodown || Q.step > 0) && data.id === st.dg && data.stasis >= st.k && (!st.chal || (data.chals || []).includes(st.chal)) && (!st.nodown || !data.down)) Q.prog++;
+      /* 1.1 : étapes des 4 Dofus de la 1.1 (comptées pendant l'étape) */
+      if (type === "dungeon" && st.t === "bossk" && DUNGEONS[data.id] && DUNGEONS[data.id].lvl >= st.lvl && data.stasis >= st.k) Q.prog++;
+      if (type === "koli" && st.t === "koli" && data.win) Q.prog++;
+      if (type === "foire" && st.t === "foire") Q.prog += data.n || 1;
+      if (type === "guild" && st.t === "gdep" && data.k === "dep" && data.kamas >= 10000) Q.prog++;
+      if (type === "guild" && st.t === "gboss" && data.k === "boss") Q.prog++;
+      if (type === "songe" && st.t === "songe" && data.k === "valid" && data.ii >= st.ii) Q.prog++;
+      if (type === "songe" && st.t === "sgarchi" && data.k === "archi") Q.prog++;
+      if (type === "offline" && st.t === "offline") Q.prog += (data.s || 0) / 3600;
     });
     if (type === "soul") checkOcre(S);
+    if (type === "dofus") E.gardienCheck(S);
     advance(S);
   };
+  E.dofusQuestEvent = onEvent; // 1.1 : Kolizéum, Foire, guilde et Songe préviennent les quêtes des Dofus sans passer par E.emit (ni succès ni carnet)
   const prevEmit = E.emit; let depth = 0;
   E.emit = (S, type, data) => {
     if (prevEmit) prevEmit(S, type, data);
     if (!S || !S.cnt || depth > 2) return;
     depth++; try { onEvent(S, type, data); } finally { depth--; }
   };
-  E.refreshArchis = (S) => { if (!S.cnt) return; checkOcre(S); advance(S); };
+  /* 1.1 : heures hors ligne (étape du Dofus d'Idlus) : la durée prise en compte par le rattrapage */
+  { const cu = E.catchUp; if (cu) E.catchUp = (S, seconds) => { const r = cu(S, seconds);
+    if (r) onEvent(S, "offline", { s: Math.min(seconds, E.OFFLINE_MAX_S + (E.bonus ? E.bonus(S, "offtime") : 0) * 3600) }); return r; }; }
+  /* 1.1 (7A) : titre « Gardien de la 1.1 » pour le compte qui possède les 4 Dofus de la 1.1 (les 10 premiers comptes : ornement, gravé par le serveur) */
+  E.GARDIEN_TITLE = "Gardien de la 1.1";
+  E.gardienCheck = (S) => { if (!S || !S.titlesExtra || !E.DOFUS_11.every((id) => E.dofusOwned(S, id))) return false;
+    if (S.titlesExtra.includes(E.GARDIEN_TITLE)) return false;
+    S.titlesExtra.push(E.GARDIEN_TITLE); E.note(S, `Les 4 Dofus de la 1.1 réunis : titre « ${E.GARDIEN_TITLE} » !`, "rare"); return true; };
+  E.refreshArchis = (S) => { if (!S.cnt) return; checkOcre(S); advance(S); E.gardienCheck(S); };
   /* 1.0.32.11 « Dofus retrouvé » : sac plein, le Dofus d'une quête finie (l'objet le plus récent) partait au trop-plein,
      invisible dans le sac, puis pouvait y être brisé en runes. Au chargement : les Dofus du trop-plein reviennent dans le sac,
      et une quête terminée sans son Dofus nulle part le rend (un exemplaire garanti par compte ; un Dofus ne se vend pas à l'HdV). */

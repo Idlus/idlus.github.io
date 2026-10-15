@@ -344,6 +344,16 @@ begin
         on conflict do nothing;
     end if;
   end if;
+  -- 1.1 : les 10 premiers comptes à réunir les 4 Dofus de la 1.1 (Alliances, Trool, Onirique, Idlus) gagnent l'ornement « Gardien de la 1.1 »
+  if not bad and jsonb_typeof(m->'dofus') = 'array' and (m->'dofus') ?& array['alliances', 'trool', 'onirique', 'idlus']
+     and not exists (select 1 from public.firsts where kind = 'gardien11' and user_id = new.user_id) then
+    select count(*) into rk from public.firsts where kind = 'gardien11';
+    if rk < 10 then
+      insert into public.firsts (kind, key, label, user_id, pseudo)
+        select 'gardien11', (rk + 1)::text, format('Gardiens de la 1.1 : n° %s sur 10 à réunir les 4 Dofus', rk + 1), new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
+        on conflict do nothing;
+    end if;
+  end if;
   return new;
 end $$;
 drop trigger if exists saves_ladder on public.saves;

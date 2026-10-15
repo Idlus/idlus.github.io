@@ -182,6 +182,7 @@
     if (!srv) { Q.log.unshift({ t: E.now(), name: o.name, ghost: !!o.ghost, win: r.win, d: delta, seed, cote: o.cote, gs: o.seed, gl: o.lvl, gz: o.size, rounds: r.rounds });
       if (Q.log.length > K.logMax) Q.log.length = K.logMax; }
     S.cnt = S.cnt || {}; S.cnt.koliFights = (S.cnt.koliFights || 0) + 1; if (r.win) S.cnt.koliWins = (S.cnt.koliWins || 0) + 1;
+    if (E.dofusQuestEvent) E.dofusQuestEvent(S, "koli", { win: !!r.win }); // 1.1 : étape du Dofus des Alliances
     return { delta, cote: Q.cote, kamas: kam, dust: r.win ? K.dust : 0, kz, grade: E.koliGrade(Q.cote, Q.top) };
   };
   /* hors ligne : un ticket, un combat contre un Fantôme de la liste */

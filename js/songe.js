@@ -475,6 +475,7 @@
       if (mk) X.minor[c.minor] = (X.minor[c.minor] || 0) + mk[0] * k;
       if (F.rewards) { F.rewards.sgPts = pts; if (mk) F.rewards.sgMinor = `+${mk[0] * k} % ${mk[1]}`; }
       if (n.t === "archi" || n.t === "hard") { const r = freeRelics(X, n.t === "archi" ? "r" : rnd() < 0.5 ? "r" : "c"); if (r.length) takeRelic(S, X, pick(r)); }
+      if (n.t === "archi" && E.dofusQuestEvent) E.dofusQuestEvent(S, "songe", { k: "archi" }); // 1.1 : étape du Dofus Onirique
       arrive(S, X); return;
     }
     /* Fin du rêve : une vague de plus */
@@ -511,9 +512,11 @@
     if (cof && D.CONSUMABLES[cof]) { E.addCons(S, cof); got.push(D.CONSUMABLES[cof].name); }
     const leg = E.legRoll ? E.legRoll(S, X.ii, Math.max(...E.team(S).map((c) => c.lvl)), `Fin du rêve, ${INT.name}`) : null;
     if (leg) { got.push(ITEMS[leg.tpl].name); X.leg = leg.tpl; }
+    if (E.dofusSongeDrop) E.dofusSongeDrop(S, X.ii, got); // 1.1 (5A) : le Dofus Onirique peut tomber à la Fin du rêve
     X.chest = { kamas, xp, dust, got };
     const first = X.ii >= G.unl; if (first && X.ii < E.SG_INT.length - 1) G.unl = X.ii + 1;
     S.cnt = S.cnt || {}; S.cnt.sgValid = (S.cnt.sgValid || 0) + 1; if (X.ii > (S.cnt.sgBestIi === undefined ? -1 : S.cnt.sgBestIi)) S.cnt.sgBestIi = X.ii;
+    if (E.dofusQuestEvent) E.dofusQuestEvent(S, "songe", { k: "valid", ii: X.ii }); // 1.1 : étapes du Dofus Onirique
     note(S, `Songe validé (${INT.name}) : +${X.vBribes} Bribes de rêve, ${kamas.toLocaleString("fr-FR")} kamas, ${xp.toLocaleString("fr-FR")} XP par héros${got.length ? ", " + got.join(", ") : ""}.${first && X.ii < E.SG_INT.length - 1 ? ` ${E.SG_INT[X.ii + 1].name} débloqué !` : ""}`, "rare");
     E.EXP_TITLES.forEach(([ii, t]) => { if (X.ii >= ii) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(t)) { S.titlesExtra.push(t); note(S, `${E.SG_INT[ii].name} validé : titre « ${t} » !`, "rare"); E.celebrate({ t: "exp", int: E.SG_INT[ii].name, title: t }); } } });
     if (X.ii >= 7) { S.unlocks = S.unlocks || {}; if (!S.unlocks.elu) { S.unlocks.elu = 1; note(S, "Ornement débloqué : Auréole des Douze !", "rare"); } }

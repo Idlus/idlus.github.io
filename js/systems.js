@@ -1219,6 +1219,7 @@
     phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
     enclume:   { name: () => "Enclume du Phénix", req: "Dix renaissances sur un même métier", ok: (S) => !!(S.unlocks && S.unlocks.enclume) }, // 1.0.25
     classes19: { name: () => "Blason des 19 classes", req: "Monter un héros de chaque classe au niveau 200", ok: (S) => E.classesN(S) >= 19 }, // 1.0.34
+    gardien:   { name: () => "Gardien de la 1.1", req: "Être l'un des 10 premiers comptes à réunir les 4 Dofus de la 1.1 (récompense unique)", ok: (S) => !!(S.unlocks && S.unlocks.gardien) }, // 1.1
   };
   /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
   E.PIONEER_TITLE = "Pionnier d'Idlus";
@@ -1248,6 +1249,8 @@
     S.unlocks.legende = rank || 1; if (!S.titlesExtra.includes(E.LEGEND_TITLE)) S.titlesExtra.push(E.LEGEND_TITLE);
     return true;
   };
+  /* 1.1 : les 10 premiers comptes à réunir les 4 Dofus de la 1.1 (le serveur les grave dans « Premiers », kind gardien11) */
+  E.grantGardien = (S, rank) => { if (S.unlocks.gardien) return false; S.unlocks.gardien = rank || 1; return true; };
   E.ORN = ORN;
   E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
   E.setOrn = (S, cid, id) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; if (id && !E.ornUnlocked(S, id)) return "Ornement verrouillé."; c.orn = id || null; return null; };

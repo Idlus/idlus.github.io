@@ -199,7 +199,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
 /* 0.1.13 : archimonstres et Dofus */
 {
   const S = E.newState("Archis", "iop"); const c = S.chars[0]; c.lvl = 100; E.refreshSpells(c, E.charStats(S, c)); E.refreshSystems(S);
-  assert.strictEqual(E.ARCHI_TOTAL, 304, "304 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 15, "15 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 31, "31 Dofus");
+  assert.strictEqual(E.ARCHI_TOTAL, 304, "304 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 15, "15 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 35, "35 Dofus (1.1 : Alliances, Trool, Onirique, Idlus)");
   assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 304, "les six paliers couvrent tous les archimonstres");
   assert.ok(D.SPECIAL_CRAFTS["Pierre d'âme"].cons === "pierre_ame" && D.CONSUMABLES.pierre_ame.auto && D.CONSUMABLES.parfum_piste.boost === "piste", "recettes et consommables");
   for (const [n, R] of Object.entries(D.SPECIAL_CRAFTS)) if (/^Copie : /.test(n) || n === "Pierre d'âme" || n === "Parfum de pistage") for (const [r] of R.ing) assert.ok(D.RES[r], `${n} : ressource inconnue ${r}`);
