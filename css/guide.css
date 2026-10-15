@@ -1,0 +1,65 @@
+/* Guide en jeu (js/guide.js), Journal › Guide */
+.gd{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.gd-side{position:sticky;top:calc(var(--sth,64px) + 8px);display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px);overflow:auto;padding-right:2px}
+.gd-q{display:flex;align-items:center;gap:8px;background:var(--panel);border:2px solid var(--frame);border-radius:12px;padding:6px 10px}
+.gd-q input{flex:1;min-width:0;border:0;background:transparent;outline:none;font-size:14px}
+.gd-fam{display:flex;flex-direction:column;gap:2px}
+.gd-fn{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:6px 8px 2px}
+.gd-it{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:5px 8px;text-align:left;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.gd-it:hover{background:var(--panel2)}
+.gd-it[aria-pressed="true"]{background:var(--frame);color:#fff7e3}
+:root[data-theme="dark"] .gd-it[aria-pressed="true"]{background:var(--gold);color:#1a1510}
+.gd-sel{display:none}
+.gd-ht{display:flex;align-items:center;gap:10px}.gd-ht .uico{width:34px;height:34px}
+.gd-body{display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55;padding:14px 16px}
+.gd-body p{margin:0}.gd-body ul,.gd-body ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.gd-body h3{margin-top:6px}
+.gd-meta{display:flex;flex-direction:column;gap:3px;padding:8px 12px;border-radius:12px;background:var(--panel2);font-size:13.5px}
+.gd-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.gd-kv div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13.5px}
+.gd-kv b{text-align:right}
+.gd-tip{display:flex;gap:8px;align-items:flex-start;padding:8px 12px;border-radius:12px;border:1px dashed var(--gold);font-size:13.5px}
+.gd-rel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:6px;border-top:1px solid var(--line)}
+nav.subnav .sn-strip .sn-guide{margin-left:auto;min-width:28px;height:28px;padding:0;justify-content:center;border-radius:50%;font-family:var(--font-title);font-size:16px;line-height:1;color:var(--title)}
+nav.subnav .sn-strip .sn-guide + .sn-star{margin-left:4px}
+.sn-gq{display:inline-flex;align-items:center;justify-content:center;width:1.35em;height:1.35em;border-radius:50%;border:2px solid currentColor;font-family:var(--font-title);font-size:.9em;line-height:1;flex:none}
+@media (max-width:899px){
+  .gd{grid-template-columns:1fr}
+  .gd-side{position:static;max-height:none;overflow:visible}
+  .gd-list{display:none}.gd.srch .gd-list{display:flex;flex-direction:column;gap:6px}.gd-sel{display:flex;flex-direction:column;gap:3px}.gd-sel select{width:100%;padding:8px;border-radius:10px;border:2px solid var(--frame);background:var(--panel)}
+  .gd-body{padding:12px;font-size:14px}.gd-kv{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  nav.subnav .sn-strip .sn-guide{position:sticky;right:34px;z-index:1;background:var(--panel2);box-shadow:-12px 0 10px var(--panel2)}
+  nav.subnav .sn-strip .sn-star{position:sticky;right:0;z-index:1;background:var(--panel2)}
+}
+/* glossaire, calculateurs, étapes, tableaux repliés, « Je connais DOFUS », où tu en es */
+abbr.gd-g{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
+.gd-calc{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;border:2px solid var(--frame);background:var(--panel)}
+.gd-calc .uico{width:20px;height:20px;vertical-align:-4px}
+.gd-cin{display:flex;flex-wrap:wrap;gap:8px 14px}.gd-cin label{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700}
+.gd-cin select{padding:4px 8px;border-radius:8px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink)}
+.gd-todo{display:flex;flex-direction:column;gap:6px}
+.gd-td{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:13.5px}
+.gd-td.ok{opacity:.75}
+.gd-tdi{flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;color:var(--good,#3a8a3a)}.gd-tdi .uico{width:24px;height:24px}
+.gd-more{border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.gd-more summary{cursor:pointer;font-weight:700;font-size:13.5px;padding:8px 0}
+.gd-more[open]{padding-bottom:10px}
+.gd-dof{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:var(--panel2);border-left:4px solid var(--gold);font-size:13.5px}
+.gd-dof b{text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.gd-prog{display:flex;flex-direction:column;gap:3px;padding:8px 12px;border-radius:12px;border:2px solid var(--gold);font-size:13.5px}
+.gd-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.gd-act .uico{width:15px;height:15px}
+.gd-lu{margin-left:auto;font-size:11px;color:var(--muted)}
+.gd-it .uico,.gd-it img{width:22px;height:22px;flex:none}
+.gd-qb{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;margin-left:4px;border-radius:50%;border:2px solid currentColor;background:transparent;color:var(--muted);font-family:var(--font-title);font-size:12px;line-height:1;cursor:pointer;vertical-align:middle;opacity:.8}
+.gd-qb:hover{opacity:1;color:var(--title)}
+/* taille du texte, favoris, astuce du jour, icônes des titres */
+.gd-zb{display:inline-flex;gap:4px;margin-left:auto}
+.gd-z0 .gd-body{font-size:13px}.gd-z2 .gd-body{font-size:16.5px}.gd-z3 .gd-body{font-size:18.5px}
+.gd-z2 .gd-kv div,.gd-z2 .gd-td,.gd-z2 .gd-tip{font-size:15px}.gd-z3 .gd-kv div,.gd-z3 .gd-td,.gd-z3 .gd-tip{font-size:16.5px}
+.gd-star.on{color:var(--gold)}.gd-star.on svg{fill:currentColor}
+.gd-body h3 .uico{width:22px;height:22px;vertical-align:-5px}.gd-kv span .uico{width:18px;height:18px;vertical-align:-4px}
+.gd-day{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 14px;border-radius:14px;background:var(--panel);border:2px solid var(--frame)}
+.gd-day .uico{width:26px;height:26px;flex:none}
+@media (max-width:640px){.gd-day{flex-wrap:wrap}.gd-day .grow{flex:1 1 calc(100% - 40px)}.gd-day .btn{margin-left:auto}}

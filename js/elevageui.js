@@ -78,14 +78,14 @@
   }
   const fmtPct = (v) => `${String(Math.round(v * 10) / 10).replace(".", ",")} %`;
   function enclosPanel(s) {
-    if (!s.enclos.built) return `<section class="panel"><div class="phead"><h2>Enclos</h2></div><div class="pad stack"><p class="note" style="margin:0">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute ${E.STABLE_ENCLOS} places à l'écurie et accueille ${E.PAIRS_BASE} couples.</p><div><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button></div></div></section>`;
+    if (!s.enclos.built) return `<section class="panel"><div class="phead"><h2>Enclos ${window.GUIDE ? GUIDE.q("elevage") : ""}</h2></div><div class="pad stack"><p class="note" style="margin:0">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute ${E.STABLE_ENCLOS} places à l'écurie et accueille ${E.PAIRS_BASE} couples.</p><div><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button></div></div></section>`;
     const cap = E.pairCap(s); const rows = [];
     for (let i = 0; i < cap; i++) {
       const idx = s.enclos.pairs.findIndex((p) => p.s === i);
       rows.push(idx >= 0 ? coupleHtml(s, s.enclos.pairs[idx], idx) : `<div class="el-couple free"><div class="grow"><b>Couple ${i + 1} libre</b><div class="xs muted">${s.elev.auto.on ? "L'éleveur automatique le remplira." : "Choisissez deux montures de la même espèce."}</div>${slotItems(s, i)}</div><button class="btn sm primary" data-act="breedpick" data-reset="1">Croiser</button></div>`);
     }
     const c4 = !(s.elev.c4 || E.grandEleveur(s));
-    return `<section class="panel"><div class="phead"><h2>Enclos</h2><span class="xs muted">${s.enclos.pairs.length} couple${s.enclos.pairs.length > 1 ? "s" : ""} sur ${cap}</span></div><div class="pad stack" style="gap:8px">
+    return `<section class="panel"><div class="phead"><h2>Enclos ${window.GUIDE ? GUIDE.q("elevage") : ""}</h2><span class="xs muted">${s.enclos.pairs.length} couple${s.enclos.pairs.length > 1 ? "s" : ""} sur ${cap}</span></div><div class="pad stack" style="gap:8px">
       ${rows.join("")}
       <div class="row"><button class="btn sm" data-act="breedpick" data-reset="1">Croiser deux montures au choix</button><button class="btn sm" data-act="mtree">Voir l'arbre</button>${c4 ? `<button class="btn sm" data-act="el-pair4" ${s.kamas >= E.PAIR4_COST ? "" : "disabled"} data-tip="Offert avec les trois carnets complets (Grand Éleveur)">4e couple · ${fmt(E.PAIR4_COST)} k</button>` : ""}</div></div></section>`;
   }

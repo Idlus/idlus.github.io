@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.4 « Le Guide »
+
+Guide en jeu (`js/guide.js`, `css/guide.css`) : page Journal › Guide et bouton « ? » en haut de chaque page, 73 chapitres dont les chiffres sont lus dans ENGINE et DATA à l'ouverture (rien dans la boucle de 3 s). Parcours calculé sur la partie, calculateurs, glossaire, stratégie, fiches de classe, FAQ, favoris et chapitres lus (`S.guideLu`, `S.guideFav`, succès « Érudit d'Idlus »), lien `?guide=<chapitre>`, astuce du jour au Havre-Sac, boutons `GUIDE.q()` dans les pages.
+
 ## 1.2.3.1 « Cadeaux rendus »
 
 Bugs signalés par les joueurs : le Jyfus revient aux comptes fondateurs qui l'avaient perdu, et l'XP de guilde au-dessus du plafond du serveur attend l'envoi suivant au lieu d'être perdue.

@@ -124,7 +124,7 @@
   }
   function albumHtml(s) {
     const n = E.petAlbum(s), all = E.petAlbumAll();
-    return `<section class="panel co-album"><div class="phead"><h2>Album de la ménagerie</h2><span class="small"><b class="num">${n}</b> / ${all} · Essence <b class="num">${fmt(E.petEss(s))}</b></span></div>
+    return `<section class="panel co-album"><div class="phead"><h2>Album de la ménagerie ${window.GUIDE ? GUIDE.q("familiers#album-de-la-menagerie") : ""}</h2><span class="small"><b class="num">${n}</b> / ${all} · Essence <b class="num">${fmt(E.petEss(s))}</b></span></div>
       <div class="pad"><div class="co-mil">${E.PET_TIERS.map((T) => { const ok = n >= T.n; return `<div class="${ok ? "ok" : ""}"><b class="n">${T.n}</b><span><b>${h(T.name)}</b>${ok ? " ✓" : ""} · ${h(T.txt)}</span></div>`; }).join("")}</div></div></section>`;
   }
   function petFiche(s, e) {
@@ -193,7 +193,7 @@
   }
   function collPanel(s) {
     const C = E.collState(s); const tot = E.collTotal(); const nx = E.collNext(s);
-    return `<section class="panel co-coll"><div class="phead"><h2>Collection de panoplies</h2><b class="num">${C.n} / ${tot}</b></div><div class="pad stack">
+    return `<section class="panel co-coll"><div class="phead"><h2>Collection de panoplies ${window.GUIDE ? GUIDE.q("enc#collection-de-panoplies") : ""}</h2><b class="num">${C.n} / ${tot}</b></div><div class="pad stack">
       <div class="co-gbar"><i style="width:${Math.max(1, Math.round(C.n / tot * 100))}%"></i><b>${C.n} panoplie${C.n > 1 ? "s" : ""} complète${C.n > 1 ? "s" : ""}${nx ? ` · prochain palier : ${nx.n}` : " · tous les paliers"}</b></div>
       ${tiersHtml(s, C.n)}
       <b class="small">Régions complètes <span class="xs muted">· bonus unique dans la région</span></b>

@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.3.1";
+const GAME_VERSION = "1.2.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.4", name: "Le Guide", guide: "parcours", items: [
+    "Nouveau : le Guide (Journal › Guide, ou le bouton ? en haut de chaque page) détaille toutes les fonctionnalités, avec les chiffres lus dans le jeu",
+    "« Par où commencer ? » te dit quoi faire ensuite selon ta partie ; chaque chapitre montre où tu en es et ton prochain objectif",
+    "Calculateurs (chance de Dofus, recrutement, Sablier, XP, fiche d'un donjon, ce qu'un jet change sur tes dégâts), glossaire, questions fréquentes",
+    "Chapitres de stratégie, une fiche par classe, encadrés « Je connais DOFUS », tableaux complets repliés",
+    "Favoris, chapitres lus et succès « Érudit d'Idlus », taille du texte, lien à partager (?guide=chapitre), astuce du jour dans le Havre-Sac",
+    "Petits boutons ? sur les blocs les plus complexes (Sceaux, Enclos, stasis, trophées de zone…) et « En savoir plus » dans les bulles de découverte",
+  ] },
   { v: "1.2.3.1", name: "Cadeaux rendus", items: [
     "Fondateurs : si ton Jyfus (cadeau de lancement) avait disparu, il revient dans ton sac au chargement.",
     "Guilde : l’XP donnée au-delà du plafond du serveur n’est plus perdue, elle part avec les envois suivants." ] },
@@ -2101,13 +2109,13 @@ const NAV = [
   { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
   { id: "co", n: "Communauté", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) },
-  { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
+  { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", admin: "Le panneau de Xener" };
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
-const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
+const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
 const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
@@ -2290,7 +2298,7 @@ function renderNav() {
   const famNew = (F) => (navFamPages(F).some((p) => navIsNew(p[0])) ? '<span class="sn-newdot" title="Nouveauté"></span>' : "");
   const item = (key, n, ic, desc) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}</button>`;
   const fightBtn = `<button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${k === "combat" ? 'aria-current="page"' : ""} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>`;
-  const foot = `<div class="sn-foot"><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
+  const foot = `<div class="sn-foot"><button class="sn-fb" data-act="gd-open" title="Guide de cette page"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Guide</span></button><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
   let side;
   if (mini) {
     const fly = ui.navFly && NAV.find((F) => F.id === ui.navFly);
@@ -2322,7 +2330,7 @@ function renderNav() {
   let strip = "";
   if (curFam && !fight && k !== "home") {
     const pinned = pins.includes(kk);
-    strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
+    strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button><button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
     const tabs = NAV_MERGE[kk];
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
@@ -2348,7 +2356,7 @@ function navMenuSheet() {
   openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
       : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => `<h3>${h(F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}`}
-    <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+    <div class="ns-foot"><button class="btn" data-act="gd-open"><b class="sn-gq" aria-hidden="true">?</b> Guide</button><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveTxt() {
@@ -2657,7 +2665,7 @@ function homeHtml() {
     </div>
     ${reco}
   </section>
-  <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>
+  <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>${window.GUIDE ? GUIDE.tipDay() : ""}
   ${houseHtml()}
   <section class="grid2 ac-grid" style="margin-top:14px">
     ${homeEvents()}
@@ -2806,7 +2814,7 @@ function havreHtml() {
     return `<article class="room ${open ? "open" : ""} ${R.soon || (R.post === "atelier" && !S.atelier.built) ? "locked" : ""} ${R.soon ? "soon" : ""}" style="--rc:${R.color}" data-room="${R.id}">
       <header data-act="hvroom" data-v="${R.id}"><span class="rico">${IC(R.icon)}</span><div class="grow"><h3>${h(R.name)}</h3><div class="xs muted">${h(R.desc)}</div><div class="xs plus msum">${h(roomSum(R))}</div></div>${R.soon ? `<span class="tag soft">Bientôt</span>` : ""}<span class="chev">▾</span></header>
       ${roomBody(R)}</article>`; };
-  return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac</h2><span class="small row" style="gap:10px"><span><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span><button class="btn sm" data-act="nav" data-v="home">‹ Accueil</button></span></div>
+  return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac ${window.GUIDE ? GUIDE.q("home#ameliorations") : ""}</h2><span class="small row" style="gap:10px"><span><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span><button class="btn sm" data-act="nav" data-v="home">‹ Accueil</button></span></div>
     <div class="pad stack">${bonusBox()}<div class="hvsum two">
       <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
     <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
@@ -3283,7 +3291,7 @@ function dungeonSheet(did) {
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       ${dgDofusBox(did, SI, k)}
       ${window.DGRANK ? window.DGRANK.box(did) : ""}
-      <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
+      <div><b>Stasis</b> ${window.GUIDE ? GUIDE.q("donjons#la-stasis") : ""} <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""} ${n > 10 ? "hi" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
@@ -3363,7 +3371,7 @@ function encTroHtml() {
   const regions = ZONES.map((z) => { const a = z.subs.filter((s) => S.trophies && S.trophies[s.id]).length; const L = q && !txtHas(z.name, q) ? z.subs.filter((s) => txtHas(s.name, q)) : z.subs; if (!L.length) return "";
     return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${a}/${z.subs.length}</span>${a ? ` <span class="tag good">+${regPct(z.id)} % dans la région</span>` : ""}</h3><div class="trogrid">${L.map(card).join("")}</div>`; }).join("") || encNoHit(ui.enc.q);
   return `<section class="panel encpanel"><div class="pad">
-    <div class="trohead"><div><h2>${IC("trophee")} Trophées de zone</h2><div class="small muted">Tuez 250 fois chaque monstre d'une sous-zone (palier Traqueur) pour gagner son trophée. Il ne s'équipe pas : son bonus agit tout seul, pour toujours.</div></div>
+    <div class="trohead"><div><h2>${IC("trophee")} Trophées de zone ${window.GUIDE ? GUIDE.q("world#trophees-de-zone") : ""}</h2><div class="small muted">Tuez 250 fois chaque monstre d'une sous-zone (palier Traqueur) pour gagner son trophée. Il ne s'équipe pas : son bonus agit tout seul, pour toujours.</div></div>
       <b class="num trocount">${n} <small class="muted">/ ${tot}</small></b></div>
     <div class="trosum">${IC("combat")}<span class="grow"><b>+${zp} % d'XP, de butin et de kamas dans une région, par trophée de cette région</b><br><span class="xs muted">Exemple : 7 trophées d'Incarnam = +21 % partout dans Incarnam. Le bonus agit quand vous chassez dans la région, en plus des autres bonus (hors plafond).</span></span></div>
     <div class="trosum">${IC("trophee")}<span class="grow"><b>Vitrine : <span class="plus">${vitrineTxt()}</span> pour chacun de vos héros</b><br><span class="xs muted">Vos ${E.VITRINE_N} meilleurs trophées donnent leurs bonus à tous les héros, sans rien équiper. Ils changent tout seuls quand vous en gagnez un meilleur.</span></span></div>
@@ -7202,7 +7210,7 @@ function renderRenaissance() {
     <p class="small" style="margin:0">Au <b>niveau ${E.MAX_LVL}</b>, un héros peut renaître à la Statue du Phénix : il repart au niveau 1 en gardant son apparence, ses titres, ses Dofus, son familier et sa monture (l'équipement est rangé dans le sac). Chaque renaissance lui donne un <b>Éveil</b> au choix (aux renaissances V et X, l'Éveil de classe renforce son passif) et la <b>Mémoire des vies</b> : il apprend pour toujours un sort d'une autre classe, au choix parmi 3, et peut en équiper 1 (2 dès la Renaissance V, 3 à la X). En échange, chaque vie est plus longue : <b>+${Math.round(E.REN_NEED * 100)} % d'XP par niveau</b> à chaque renaissance. ${E.REN_MAX} renaissances au plus : impossible de tout prendre, chaque héros se forge son caractère.</p>
     <p class="xs muted" style="margin:0">Récompenses : médaillon et aura (Braise dès la 1ʳᵉ, Flamme à la 4ᵉ, Brasier à la 7ᵉ, Phénix à la 10ᵉ), titres « Né des cendres » (I), « Flamme éternelle » (V) et « Phénix d'Idlus » (X), ornement « Ailes du Phénix » (X).</p></div></div></section>
   <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="pad stack">${rows}</div></section>
-  <section class="panel" style="margin-top:12px"><div class="phead"><h2>Les Éveils</h2><span class="xs muted">3 rangs chacun</span></div><div class="pad achgrid">${E.EVEIL_ORDER.map((id) => `<div class="ach ok"><span class="ic">${G("sparkle")}</span><span><b>${h(E.EVEILS[id].name)}</b><br><span class="xs muted">${h([1, 2, 3].map((r) => E.EVEILS[id].desc(r).replace(/^\+/, "+")).join(" · "))}</span></span></div>`).join("")}<div class="ach ok cls"><span class="ic">${IC("phenix")}</span><span><b>Éveil de classe</b><br><span class="xs muted">Renaissances V et X : renforce le passif de la classe, différent pour chacune des 19 classes</span></span></div></div></section>`;
+  <section class="panel" style="margin-top:12px"><div class="phead"><h2>Les Éveils ${window.GUIDE ? GUIDE.q("renaissance") : ""}</h2><span class="xs muted">3 rangs chacun</span></div><div class="pad achgrid">${E.EVEIL_ORDER.map((id) => `<div class="ach ok"><span class="ic">${G("sparkle")}</span><span><b>${h(E.EVEILS[id].name)}</b><br><span class="xs muted">${h([1, 2, 3].map((r) => E.EVEILS[id].desc(r).replace(/^\+/, "+")).join(" · "))}</span></span></div>`).join("")}<div class="ach ok cls"><span class="ic">${IC("phenix")}</span><span><b>Éveil de classe</b><br><span class="xs muted">Renaissances V et X : renforce le passif de la classe, différent pour chacune des 19 classes</span></span></div></div></section>`;
 }
 /* 0.1.35 : congédier un héros, confirmé en écrivant son nom */
 /* 1.0.8.6 : durée d'un coup de récolte (« 30 s », « 1 min 10 s ») */
@@ -7430,7 +7438,7 @@ function launchSheet() {
   </div>`);
 }
 function changelogSheet() {
-  openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
+  openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul>${c.guide && window.GUIDE ? `<button class="btn sm" data-act="gd-open" data-v="${h(c.guide)}">${G("sparkle")} Lire dans le guide</button>` : ""}</div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
 }
 /* nouvelle version en ligne pendant que le jeu est ouvert */
 function checkNewVersion() {
@@ -7718,7 +7726,7 @@ function showTipBubble(t, again) {
   const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
   const d = document.createElement("div"); d.id = "wtip"; d.className = "wtip"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Découverte");
   d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${hOpt(t.txt)}</div>
-    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
+    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${window.GUIDE && GUIDE.forTip(t.id) ? `<button class="btn sm ghost" data-act="tipguide" data-v="${h(GUIDE.forTip(t.id))}">En savoir plus</button>` : ""}${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
   document.body.appendChild(d);
   const a = t.anchor ? tipEls(t.anchor).find(tipVis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
   if (a) { a.classList.add("wl-target"); place(a.getBoundingClientRect()); }
@@ -8954,6 +8962,7 @@ document.addEventListener("click", (ev) => {
     case "tipsknow": E.tipState(S).know = d.v === "1"; dirty = true; tipsSheet(); return;
     case "tipok": tipOk(); return;
     case "tiplater": tipLater(); return;
+    case "tipguide": tipOk(); if (window.GUIDE) GUIDE.open(d.v); return; // 1.2.x : « En savoir plus » ouvre le chapitre du guide
     case "startknow": { const n = $("#startName"); if (n) ui.startName = n.value; ui.startKnow = d.v === "1"; renderStart(); return; }
     case "search": closeSheet(); searchOpen(); return;
     case "searchclose": if (t.id === "wsearch" && ev.target !== t) return; searchClose(); return;

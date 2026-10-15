@@ -133,7 +133,7 @@
     const L = H.last;
     const last = L && L.did && D.DUNGEONS[L.did] ? `<div class="xs dgh-last">Dernière absence (${hrs(L.sec)}) : ${L.runs ? `${L.runs} ${pl(L.runs, "course")}, ${L.wins} ${pl(L.wins, "victoire")}, ${L.keys} ${pl(L.keys, "clé")}, ${L.items} ${pl(L.items, "objet")}, ${L.dofus} Dofus` : "aucune course"}${L.why && E.DGH_WHY[L.why] ? ` (${h(E.DGH_WHY[L.why])})` : ""} · ${h(D.DUNGEONS[L.did].name)}.</div>` : "";
     return `<section class="panel dgh-pan"><div class="phead"><h2>Donjon pendant ton absence</h2><span class="tag good">nouveau</span></div><div class="pad stack" style="gap:10px">
-      <div class="dgh-bank"><span class="dgh-hg" aria-hidden="true">⏳</span><div class="stack grow" style="gap:4px;min-width:200px"><b>Heures de donjon : ${hrs(H.b)} sur ${hrs(E.DGH.max)}</b><div class="gbar dgh-g"><i style="width:${Math.round(H.b / E.DGH.max * 100)}%"></i></div><span class="xs muted dgh-bs">+2 h chaque jour à minuit, gardées jusqu'à 8 h</span></div></div>
+      <div class="dgh-bank"><span class="dgh-hg" aria-hidden="true">⏳</span><div class="stack grow" style="gap:4px;min-width:200px"><b>Heures de donjon : ${hrs(H.b)} sur ${hrs(E.DGH.max)} ${window.GUIDE ? GUIDE.q("expeditions#heures-de-donjon") : ""}</b><div class="gbar dgh-g"><i style="width:${Math.round(H.b / E.DGH.max * 100)}%"></i></div><span class="xs muted dgh-bs">+2 h chaque jour à minuit, gardées jusqu'à 8 h</span></div></div>
       <div class="dgh-ch">${sel}${ksel}</div>
       ${box}
       <div class="small">Quand tu quittes le jeu, l'équipe continue ce donjon au rendement hors ligne (<b>${Math.round(rate * 100)} %</b> chez toi) tant qu'il reste des heures et des clés, puis elle repart chasser. Seules les stasis déjà réussies continuent.</div>

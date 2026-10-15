@@ -1,6 +1,19 @@
 {
-  "version": "1.2.3.1",
+  "version": "1.2.4",
   "versions": [
+    {
+      "v": "1.2.4",
+      "name": "Le Guide",
+      "guide": "parcours",
+      "items": [
+        "Nouveau : le Guide (Journal › Guide, ou le bouton ? en haut de chaque page) détaille toutes les fonctionnalités, avec les chiffres lus dans le jeu",
+        "« Par où commencer ? » te dit quoi faire ensuite selon ta partie ; chaque chapitre montre où tu en es et ton prochain objectif",
+        "Calculateurs (chance de Dofus, recrutement, Sablier, XP, fiche d'un donjon, ce qu'un jet change sur tes dégâts), glossaire, questions fréquentes",
+        "Chapitres de stratégie, une fiche par classe, encadrés « Je connais DOFUS », tableaux complets repliés",
+        "Favoris, chapitres lus et succès « Érudit d'Idlus », taille du texte, lien à partager (?guide=chapitre), astuce du jour dans le Havre-Sac",
+        "Petits boutons ? sur les blocs les plus complexes (Sceaux, Enclos, stasis, trophées de zone…) et « En savoir plus » dans les bulles de découverte"
+      ]
+    },
     {
       "v": "1.2.3.1",
       "name": "Cadeaux rendus",
