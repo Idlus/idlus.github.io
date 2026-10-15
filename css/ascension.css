@@ -170,3 +170,5 @@
 @keyframes asMote{0%{transform:translate(0,0);opacity:0}12%{opacity:.9}60%{opacity:.6}100%{transform:translate(calc(18px - var(--i) * 4px),-460px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.as-bg,.as-veil,.as-motes i{animation:none}}
 .as-credit{position:absolute;right:8px;bottom:6px;z-index:40;font-size:10.5px;color:#f6efdc;opacity:.75;text-shadow:0 1px 2px #000;pointer-events:none}
+.arena .as-credit{top:6px;bottom:auto}
+.arena .as-bg{z-index:1}.arena .as-veil{z-index:1}.arena .as-motes{z-index:1}

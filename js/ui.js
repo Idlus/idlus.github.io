@@ -3533,7 +3533,7 @@ function buildArena(F) {
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "form" ? window.FORMUI.html(F, ui.arena) : view === "compact"
     ? `<div class="cmp"><div class="col c">${list("c")}</div><div class="col m">${list("m")}</div></div><div class="result" id="fresult"></div>`
-    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="fxg"></div><div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
+    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + (window.DECORS ? window.DECORS.html(F) : "") + `<div class="fxg"></div><div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
   ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view === "scene") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
