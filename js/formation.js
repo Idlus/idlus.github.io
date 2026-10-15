@@ -176,7 +176,7 @@
   }
   function tokHtml(F, e, i) {
     const mon = monEnt(e);
-    const cls = `ent tk ${e.side === "c" ? "hero" : "m"}${e.summon || e.minion ? " summon" : ""}${e.boss ? " boss" : ""}${e.archi ? " archi" : ""}${e.champ ? " champ" : ""}${e.alive ? "" : " dead"}${window.COLL && window.COLL.auraCls ? window.COLL.auraCls(e) : ""}`; // 1.0.30 : aura du Dofus Sublimé et de Grand Couturier (js/collui.js)
+    const cls = `ent tk ${e.side === "c" ? "hero" : "m"}${e.summon || e.minion ? " summon" : ""}${e.boss ? " boss" : ""}${e.archi ? " archi" : ""}${e.champ ? " champ" : ""}${e.seal && e.seal.cri ? " sealaura" : ""}${e.criOn ? " sealcri" : ""}${e.alive ? "" : " dead"}${window.COLL && window.COLL.auraCls ? window.COLL.auraCls(e) : ""}`; // 1.0.30 : aura du Dofus Sublimé et de Grand Couturier (js/collui.js)
     return `<div class="${cls}" data-i="${i}" data-act="mtarget" ${mon ? `data-tipmon="${i}"` : `data-tip="${h(plainTip(F, e, i))}"`}>${avatar(e)}<span class="tx"><span class="who">${e.champ ? G("crown") : ""}${h(e.name)}</span><span class="hpb"><i></i><b></b><em class="fhp"></em></span><span class="fics"></span></span></div>`;
   }
   const byRow = (F, side, r) => F.ents.map((e, i) => [e, i]).filter(([e, i]) => (e.side === "c") === (side === "c") && rowOf(F, e, i) === r)
@@ -224,6 +224,7 @@
       const k = L.map((c) => c[0] + c[1]).join("|");
       if (fc && fc.dataset.k !== k) { fc.dataset.k = k; fc.innerHTML = chipsHtml(L); if (!monEnt(e)) n.dataset.tip = plainTip(F, e, i, L); }
       n.classList.toggle("low", e.alive && e.side === "c" && !e.summon && e.hp < e.hpMax * 0.25);
+      n.classList.toggle("sealcri", !!(e.criOn && e.alive)); // Cri du Champion (js/champions.js)
       if (e.side === "c" && !e.summon) { // Terreur, Tapis roulant : le héros change de colonne
         const r = rowOf(F, e, i), line = n.closest(".fm-line");
         if (line && line.dataset.r !== r) { const box = A.el.querySelector(`.fm-side.c .fm-line.${r} .fm-col`); if (box) { box.appendChild(n); n.dataset.tip = plainTip(F, e, i, L); } }
