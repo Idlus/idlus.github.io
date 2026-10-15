@@ -40,6 +40,13 @@ alter table public.ladder add column if not exists jobs_prev jsonb not null defa
 alter table public.ladder add column if not exists jobs_pw int not null default 0;
 -- 1.0.19 « Métiers comme dans DOFUS » : 1 quand la partie envoyée a ses métiers d'objets au niveau des objets (niveaux convertis)
 alter table public.ladder add column if not exists jobs_cobj int not null default 0;
+-- 1.0.32.11 « Vérifié par Mathis » : un joueur que Mathis remet dans les classements n'est plus remis « en vérification »
+-- automatiquement (avant, une partie qui avait servi au panel de test y retombait à chaque envoi) ; seul Mathis peut l'y remettre
+alter table public.ladder add column if not exists verified boolean not null default false;
+-- 1.0.32.13 « Mathis décide » : la vérification automatique ne retire plus personne des classements ; elle signale seulement le
+-- compte à Mathis (suspect + flag_reason, onglet « En vérification » du panel Xener). Seul Mathis retire un joueur (flagged).
+-- Exception : sa propre partie retouchée par le panel de test (mode « Comme un joueur ») reste hors des classements.
+alter table public.ladder add column if not exists suspect boolean not null default false;
 -- 1.0.19 : pour les classements, un compte pas encore revenu depuis la mise à jour montre ses métiers d'objets au niveau converti
 -- (3 × niveau + 2, au plus 200, même part de la barre d'XP, comme la conversion du jeu) ; rien n'est modifié en base, le jeu
 -- convertit la partie au prochain chargement. L'XP totale suit la courbe du jeu (30 × niveau^1,55 par niveau), le gain de la semaine reste.
@@ -189,7 +196,7 @@ grant select on public.lb_jobs_week to anon, authenticated;
 -- ---------- mise à jour du classement à chaque envoi de partie ----------
 -- La partie envoie un résumé (meta) : niveau de l'équipe, album, succès, héros.
 -- Un progrès impossible depuis l'envoi précédent met le joueur « en vérification » :
--- il disparaît des classements mais joue normalement ; Mathis décide (panneau de test).
+-- 1.0.32.13 : il reste classé et joue normalement, le compte est seulement signalé à Mathis, qui décide (panel Xener).
 create or replace function public.ladder_from_save()
 returns trigger
 language plpgsql
@@ -199,7 +206,7 @@ as $$
 declare
   m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
   jb jsonb := '{}'::jsonb; jn text; jl int; jr int; jx bigint; jtt bigint; jg text; jsum jsonb := '{}'::jsonb; wnow int; jbase jsonb; jprev jsonb := '{}'::jsonb; jpw int := 0; bt bigint; jgain bigint; jv jsonb; hadrow boolean;
-  cobj int; conv boolean := false; stale boolean := false;
+  cobj int; conv boolean := false; stale boolean := false; hide boolean := false;
   jnames constant jsonb := '{"tailleur":"Tailleur","bijoutier":"Bijoutier","cordonnier":"Cordonnier","forgeron":"Forgeron","sculpteur":"Sculpteur","faconneur":"Façonneur","bricoleur":"Bricoleur"}';
   -- 1.0.9 : tous les métiers classés et leur groupe (le total du groupe : tous, tous_recolte, tous_fm)
   jgroup constant jsonb := '{"tailleur":"tous","bijoutier":"tous","cordonnier":"tous","forgeron":"tous","sculpteur":"tous","faconneur":"tous","bricoleur":"tous",
@@ -282,8 +289,10 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw, jobs_cobj)
-    values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
+  if hadrow and o.verified then reason := null; end if; -- 1.0.32.11 : vérifié par Mathis, il reste dans les classements
+  hide := reason is not null and coalesce((m->>'panel')::boolean, false) and exists (select 1 from public.admins a where a.user_id = new.user_id); -- 1.0.32.13
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, suspect, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw, jobs_cobj)
+    values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), hide, reason is not null and not hide, reason, now(),
       coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb,
       case when jb = '{}'::jsonb then 0 else wnow end, case when jb = '{}'::jsonb then '{}'::jsonb else jbase end, jprev, jpw, cobj)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
@@ -295,8 +304,8 @@ begin
       jobs_pw = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_pw else excluded.jobs_pw end,
       jobs_cobj = greatest(public.ladder.jobs_cobj, excluded.jobs_cobj),
       qstep = excluded.qstep, qstep_at = case when excluded.qstep > public.ladder.qstep or public.ladder.qstep_at is null then now() else public.ladder.qstep_at end,
-      flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
-  select flagged into bad from public.ladder where user_id = new.user_id;
+      flagged = public.ladder.flagged or excluded.flagged, suspect = public.ladder.suspect or excluded.suspect, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
+  select flagged or suspect into bad from public.ladder where user_id = new.user_id; -- 1.0.32.13 : pas de « Premier » tant que Mathis n'a pas regardé
   delete from public.ladder_class where user_id = new.user_id;
   insert into public.ladder_class (user_id, cls, score)
     select new.user_id, x->>'cls', max(coalesce((x->>'lvl')::int, 0) + 200 * coalesce((x->>'ren')::int, 0))
@@ -348,15 +357,15 @@ create or replace function public.admin_flagged()
 returns table (user_id uuid, pseudo text, reason text, level int, updated_at timestamptz)
 language sql security definer set search_path = public
 as $$ select l.user_id, p.pseudo, l.flag_reason, l.level, l.updated_at from public.ladder l join public.profiles p on p.id = l.user_id
-      where l.flagged and public.is_admin() order by l.updated_at desc $$;
+      where (l.flagged or l.suspect) and public.is_admin() order by l.updated_at desc $$;
 create or replace function public.admin_unflag(p_user uuid)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  update public.ladder set flagged = false, flag_reason = null where user_id = p_user; end $$;
+  update public.ladder set flagged = false, suspect = false, flag_reason = null, verified = true where user_id = p_user; end $$;
 create or replace function public.admin_flag(p_user uuid, p_reason text)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  update public.ladder set flagged = true, flag_reason = coalesce(p_reason, 'décision de Mathis') where user_id = p_user; end $$;
+  update public.ladder set flagged = true, suspect = false, flag_reason = coalesce(p_reason, 'décision de Mathis'), verified = false where user_id = p_user; end $$;
 revoke all on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) from public, anon;
 grant execute on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) to authenticated;
 

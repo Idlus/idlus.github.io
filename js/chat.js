@@ -240,7 +240,7 @@
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
     if (m.kind === "ann" && m.data && m.data.kind === "race10") return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
-    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
+    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}${m.data && m.data.t === "chroma" ? " ann-chroma" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
@@ -265,6 +265,7 @@
       case "jack": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} remporte le Jackpot du Trool : ${b(`${(+d.k || 0).toLocaleString("fr-FR")} kamas`)} !`); // 1.0.30.6
       case "giga": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`); // 1.0.30
       case "dsub": return t(`${p} sublime son ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} : Potentiel X !`); // 1.0.30 : Potentiel des Dofus (supabase/collections.sql)
+      case "chroma": { const M = (window.DATA && window.DATA.MONSTERS) || {}; return t(`${p} trouve un ${b((M[d.k] && M[d.k].name) || "monstre")} ${d.p ? "prismatique" : "chromatique"} !`); } // 1.0.33 : chromatiques (supabase/chromatiques.sql)
       case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
       case "admin": return t(`${plain ? "Annonce" : "<b>Annonce</b>"} : ${h(m.body || "")}`);
       case "wb": return t(d.ev === "dead" ? `${b(d.name || "Le boss")} est tombé ! Dernier coup : ${p}.` : d.ev === "ph" ? `${b(d.name || "Le boss")} passe en phase ${d.ph} !` : `Boss des mondes : ${b(d.name || "un boss")} arrive !`); // 0.1.49
@@ -399,7 +400,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel Xener" : "Modération"}" aria-label="${C.role === "admin" ? "Panel Xener" : "Modération"}">${X().G("shield")}</button>` : ""; } // 1.0.30 : Panel Xener (js/panel.js)
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -450,12 +451,13 @@
     if (A.tab === "fiches" && window.FICHES) return window.FICHES.adminHtml();
     if (A.tab === "vue") {
       const st = o.settings || {};
-      return `<div class="kpis"><div class="kpi"><b>${o.accounts}</b><span>comptes créés</span></div><div class="kpi"><b>${C.count || 1}</b><span>joueurs en ligne maintenant</span></div><div class="kpi"><b>${o.active}</b><span>parties envoyées ces 24 h</span></div><div class="kpi${o.reports + o.flagged ? " warn" : ""}"><b>${o.reports + (isAdmin() ? o.flagged : 0)}</b><span>choses à regarder</span></div></div>
+      return `<div class="kpis"><div class="kpi"><b>${o.accounts}</b><span>comptes créés</span></div><div class="kpi"><b>${C.count || 1}</b><span>joueurs en ligne maintenant</span></div><div class="kpi"><b>${o.active}</b><span>parties envoyées ces 24 h</span></div><div class="kpi${o.reports + o.flagged + (o.suspect || 0) ? " warn" : ""}"><b>${o.reports + (isAdmin() ? o.flagged + (o.suspect || 0) : 0)}</b><span>choses à regarder</span></div></div>
       <div class="two"><div class="box"><h2>À regarder</h2>
         ${o.reports ? `<div class="ln"><span class="st m">${o.reports} signalé${o.reports > 1 ? "s" : ""}</span>joueurs signalés dans le chat<button class="btn sm" style="margin-left:auto" data-act="adm-tab" data-v="sig">Voir</button></div>` : ""}
         ${o.flagged && isAdmin() ? `<div class="ln"><span class="st v">En vérification</span>${o.flagged} joueur${o.flagged > 1 ? "s" : ""} retiré${o.flagged > 1 ? "s" : ""} des classements<button class="btn sm" style="margin-left:auto" data-act="adm-tab" data-v="verif">Voir</button></div>` : ""}
+        ${o.suspect && isAdmin() ? `<div class="ln"><span class="st v">À vérifier</span>${o.suspect} joueur${o.suspect > 1 ? "s" : ""} signalé${o.suspect > 1 ? "s" : ""} par la vérification, toujours classé${o.suspect > 1 ? "s" : ""} : à toi de décider<button class="btn sm" style="margin-left:auto" data-act="adm-tab" data-v="verif">Voir</button></div>` : ""}
         ${o.muted ? `<div class="ln"><span class="st m">Sanctions</span>${o.muted} joueur${o.muted > 1 ? "s" : ""} muet${o.muted > 1 ? "s" : ""} ou banni${o.muted > 1 ? "s" : ""} du chat</div>` : ""}
-        ${o.reports + o.flagged + o.muted ? "" : `<div class="ln muted">Rien à signaler.</div>`}</div>
+        ${o.reports + o.flagged + (o.suspect || 0) + o.muted ? "" : `<div class="ln muted">Rien à signaler.</div>`}</div>
       <div class="box"><h2>Dernières inscriptions</h2>${(o.signups || []).map((x) => `<button class="ln lnb" data-act="adm-find" data-q="${h(x.pseudo)}">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="t">${when(x.at)}</span></button>`).join("") || `<div class="ln muted">Aucune.</div>`}</div></div>
       ${isAdmin() ? `<div class="box"><h2>Réglages du chat</h2><div class="row small"><label class="row">Niveau minimum pour écrire <select id="admMin">${[0, 10, 20, 30, 50].map((v) => `<option value="${v}" ${+st.min_level === v ? "selected" : ""}>${v ? `héros niveau ${v}` : "aucun"}</option>`).join("")}</select></label>
         <label class="row">Entre deux messages <select id="admSlow">${[0, 4, 10, 30].map((v) => `<option value="${v}" ${+st.slow_s === v ? "selected" : ""}>${v ? `${v} s` : "aucun délai"}</option>`).join("")}</select></label><button class="btn sm primary" data-act="adm-settings">Enregistrer</button></div></div>` : ""}
@@ -476,7 +478,7 @@
     }
     if (A.tab === "verif") {
       const F = A.flag || [];
-      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0">Remettre</button><button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button></div>`).join("")}</div>`
+      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span>${x.flagged ? `<span class="st m">Retiré</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il revient dans les classements et y reste, même après ses prochains envois">Remettre</button>` : `<span class="st v">Toujours classé</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il reste dans les classements, la vérification ne le signale plus">C'est bon</button><button class="btn sm danger" data-act="adm-flag" data-u="${x.id}" data-v="1" title="Il triche : retiré des classements jusqu'à ce que tu le remettes">Retirer</button>`}<button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button></div>`).join("")}</div>`
         : `<div class="box"><div class="empty">Personne n'est en vérification.</div></div>`;
     }
     if (A.tab === "ann") {
@@ -498,7 +500,7 @@
   }
   function stTags(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now();
-    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">En vérification</span>` : ""}`;
+    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">Retiré des classements</span>` : x.suspect ? `<span class="st v">À vérifier</span>` : x.verified ? `<span class="st mod">Vérifié</span>` : ""}`;
   }
   function ficheHtml(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now(); const H = x.heroes || [];
@@ -509,7 +511,7 @@
       ${self ? `<p class="small muted">C'est ton compte.</p>` : `<div class="acts"><button class="btn sm" data-act="ch-prof" data-u="${x.id}">Voir son profil</button>${isAdmin() && window.FICHES ? `<button class="btn sm" data-act="adm-fiche" data-u="${x.id}">Fiche détaillée</button>` : ""}
         ${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>
         ${isAdmin() ? `<button class="btn sm${x.banned ? "" : " danger"}" data-act="adm-ban" data-u="${x.id}" data-v="${x.banned ? 0 : 1}">${x.banned ? "Lever le bannissement" : "Bannir du chat"}</button>
-        <button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="${x.flagged ? 0 : 1}">${x.flagged ? "Remettre dans les classements" : "Mettre en vérification"}</button>
+        <button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="${x.flagged ? 0 : 1}">${x.flagged ? "Remettre dans les classements" : "Retirer des classements"}</button>${x.suspect && !x.flagged ? `<button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0">C'est bon</button>` : ""}
         <button class="btn sm" data-act="adm-rename" data-u="${x.id}">Changer son pseudo</button>${window.PANEL ? `<button class="btn sm" data-act="adm-pxcopy" data-u="${x.id}" data-p="${h(x.pseudo)}">Copier dans ma partie de test</button>` : ""}
         <button class="btn sm${x.suspended_at ? "" : " danger"}" data-act="adm-suspend" data-u="${x.id}" data-v="${x.suspended_at ? 0 : 1}">${x.suspended_at ? "Rétablir le compte" : "Suspendre le compte"}</button>` : ""}</div>`}
       ${A.ren === x.id ? `<div class="srch"><input id="admRen" value="${h(x.pseudo)}" maxlength="16" autocomplete="off"><button class="btn primary" data-act="adm-renamego" data-u="${x.id}">Renommer</button></div>` : ""}
@@ -579,7 +581,7 @@
       case "adm-mute": if (await admDo("adm_mute", { p_user: d.u, p_min: +d.v }, +d.v ? "Joueur rendu muet." : "Le joueur peut de nouveau écrire.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-ban": if (await admDo("adm_ban", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur banni du chat." : "Bannissement levé.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-close": admDo("adm_report_close", { p_user: d.u }, "Signalements classés."); return;
-      case "adm-flag": admDo("adm_flag", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur mis en vérification." : "Joueur remis dans les classements."); return;
+      case "adm-flag": admDo("adm_flag", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur retiré des classements." : "Joueur vérifié : il reste dans les classements."); return;
       case "adm-rename": A.ren = A.ren === d.u ? null : d.u; repaintAdm(); return;
       case "adm-renamego": if (await admDo("adm_rename", { p_user: d.u, p_pseudo: ($("#admRen").value || "").trim() }, "Pseudo changé.")) A.ren = null; repaintAdm(); return;
       case "adm-suspend": if (d.v === "0") admDo("adm_suspend", { p_user: d.u, p_on: false }, "Compte rétabli."); else { A.sus = d.u; repaintAdm(); } return;

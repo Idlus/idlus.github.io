@@ -258,4 +258,23 @@
     depth++; try { onEvent(S, type, data); } finally { depth--; }
   };
   E.refreshArchis = (S) => { if (!S.cnt) return; checkOcre(S); advance(S); };
+  /* 1.0.32.11 « Dofus retrouvé » : sac plein, le Dofus d'une quête finie (l'objet le plus récent) partait au trop-plein,
+     invisible dans le sac, puis pouvait y être brisé en runes. Au chargement : les Dofus du trop-plein reviennent dans le sac,
+     et une quête terminée sans son Dofus nulle part le rend (un exemplaire garanti par compte ; un Dofus ne se vend pas à l'HdV). */
+  E.dofusRepair = (S) => {
+    if (!S || !S.items || !S.dofusQ || !E.DOFUS) return [];
+    const back = [], given = [];
+    if (Array.isArray(S.over)) S.over = S.over.filter((o) => { const T = o && ITEMS[o.tpl]; if (!T || T.slot !== "dofus") return true; delete o.at; S.items[o.uid] = o; back.push(T.name); return false; });
+    E.DOFUS_ORDER.forEach((id) => { const Q = S.dofusQ[id]; const Df = E.DOFUS[id];
+      if (!Q || !Q.done || E.dofusOwned(S, id) || (Df.steps[0] && Df.steps[0].t === "gift")) return;
+      E.rollItem(S, Df.tpl, { radiant: false }); given.push(Df.name); });
+    if (back.length || given.length) {
+      S.cnt = S.cnt || {}; S.cnt.dofus = E.dofusCount(S);
+      const pl = back.length + given.length > 1;
+      const msg = `${[...back, ...given].join(", ")} : ${pl ? "tes Dofus de quête sont" : "ton Dofus de quête est"} dans le sac (${pl ? "ils étaient restés au trop-plein ou n'avaient" : "il était resté au trop-plein ou n'avait"} pas été remis).`;
+      E.note(S, msg, "rare"); (S.migration = S.migration || []).push(msg);
+    }
+    return [...back, ...given];
+  };
+  { const d0 = E.deserialize; E.deserialize = (txt) => { const S = d0(txt); try { E.dofusRepair(S); } catch (e) {} return S; }; }
 })(typeof window !== "undefined" ? window : global);

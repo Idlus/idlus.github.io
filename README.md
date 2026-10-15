@@ -9,6 +9,31 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.33.1 « Sac de 3 000 places »
+
+Demande de Mathis (15/10/2026) : « Enlever la limite de stockage dans les sacs ou propose moi d'autres idées », réponse « 1B 2A 3A » sur la maquette. `E.ITEM_CAP` 1 000 → 3 000, Grenier `per` 50 → 100 (max 5 000). Rangement compact dans le navigateur seulement (`E.packSave` / `E.unpackSave`, appelés par `js/save.js` quand le support est `SV.local`) : `items` devient `zItems` (uid, n° de modèle, valeurs, autres champs) avec la liste `zk` « modèle:caractéristiques » écrite dans la sauvegarde ; `SV.read()` (envoyé en ligne) et `E.serialize` gardent le format normal, `E.deserialize` lit les deux. Jauge `SV.usage()` dans Options › Sauvegarde. Règle automatique « Bas niveau » (`S.settings.auto.low`, `E.lowItem`). Tests : `tests/sac.test.js`.
+
+## 1.0.33 « Chromatiques »
+- Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique.
+- La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone.
+- Prismatiques : 1 chromatique sur 50 est arc-en-ciel (5 Éclats, titre « Prisme vivant » pour le premier).
+- Album chromatique (Encyclopédie › Chromatiques) : paliers 5, 10, 25, 50 et 100 (titres, ornement, teinture, Charme ×1,5, cadre), trophée chromatique d'une sous-zone complète (+3 % de butin et d'XP), vitrine de 3, compteur de chasse, espèce recherchée ×2 (1 changement par jour).
+- Atelier du prisme : teinture chromatique d'un héros, ornement et cadre « Prisme », aura chromatique en combat, payés en Éclats.
+- Fiche de rencontre, célébration à la première trouvaille de chaque espèce, chromatiques trouvés pendant l'absence, onglet « Chromatiques » dans les Classements et annonce dans les Hauts faits.
+- Les Dofus ne changent jamais.
+
+## 1.0.32.13 « Mathis décide »
+
+Demande de Mathis (15/10/2026) : « C'est à moi de décider si oui ou non il triche ». La vérification automatique (ladder_from_save) ne met plus `flagged` : elle met `suspect` + `flag_reason`, le joueur reste classé et apparaît dans l'onglet « En vérification » du panel Xener avec « C'est bon » (verified) ou « Retirer » (flagged). Pas de « Premier » tant qu'il est signalé. Exception : la partie de Mathis retouchée par le panel de test reste hors classement.
+
+## 1.0.32.12 « Vérifié, il reste classé »
+
+Un joueur vérifié et remis dans les classements par Mathis y reste : il n'est plus remis « en vérification » automatiquement (colonne `ladder.verified`, supabase/classements.sql et chat.sql). Badge « Vérifié » dans le panel Xener.
+
+## 1.0.32.11 « Dofus retrouvé »
+
+Retour de joueurs relayé par Mathis le 15/10/2026 : quêtes du Dofus Verdoyant et du Dofus du Cauchemar « Quête terminée » sans Dofus. Cause : E.bagFlush (js/engine.js) range au trop-plein les objets les plus récents quand le sac dépasse sa taille, donc le Dofus tout juste donné par la quête ; E.dofusOwned ne regarde que le sac, et le trop-plein plein brise le plus ancien en runes. Correction : bagFlush ne range jamais un Dofus, le trop-plein ne brise jamais un Dofus, E.breakItem refuse un Dofus ; E.dofusRepair (js/archis.js, à chaque E.deserialize) remet au sac les Dofus du trop-plein et redonne le Dofus d'une quête terminée qui n'est nulle part (un Dofus ne se vend pas à l'HdV), avec un message de migration. Test : tests/dofusp.test.js.
+
 ## 1.0.32.10 « Équiper en Sagesse »
 
 Demande de Mathis le 15/10/2026 : « qu'on peut focus une stat en particulier avec l'auto équipement ? Pour les renaissances […] les stuffs sagesse ». js/ui.js : réglage par héros c.gearFocus (GEAR_FOCUS : sa, pp, vit, pui, do, cri, so, ini, res, pa, pm, tac, fui), choisi dans le menu « Privilégier » de l'onglet Équipement ; itemScore compte la caractéristique choisie 10 fois (GEAR_FOCUS_X = 9 en plus), donc gearPlan, la pastille verte, « Équiper au mieux » et « Tout équiper au mieux » la suivent ; planKey inclut c.gearFocus. Sans choix, rien ne change.

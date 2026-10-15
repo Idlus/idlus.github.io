@@ -255,6 +255,7 @@ as $$ begin
     'active', (select count(*) from saves where updated_at > now() - interval '24 hours'),
     'reports', (select count(distinct target) from reports where open),
     'flagged', (select count(*) from ladder where flagged),
+    'suspect', (select count(*) from ladder where suspect and not flagged), -- 1.0.32.13 : signalés par la vérification, toujours classés
     'muted', (select count(*) from chat_sanctions where banned or mute_until > now()),
     'signups', (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select p.id, p.pseudo, l.main cls, p.created_at at from profiles p left join ladder l on l.user_id = p.id order by p.created_at desc limit 6) x),
     'log', (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select a.at, a.txt, public.pseudo_of(a.by_user) who from admin_log a order by a.id desc limit 12) x),
@@ -266,7 +267,7 @@ create or replace function public.adm_players(p_q text) returns jsonb language p
 as $$ begin
   perform public.adm_need_chat();
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (
-    select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, l.flag_reason,
+    select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, coalesce(l.suspect, false) suspect, l.flag_reason, coalesce(l.verified, false) verified,
       s.updated_at last_save, cs.mute_until, coalesce(cs.banned, false) banned,
       (select count(distinct r.reporter) from reports r where r.target = p.id) reports,
       exists (select 1 from mods m where m.user_id = p.id) is_mod, exists (select 1 from admins a where a.user_id = p.id) is_admin
@@ -301,7 +302,7 @@ end $$;
 create or replace function public.adm_flag(p_user uuid, p_on boolean) returns void language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need(true);
-  update ladder set flagged = p_on, flag_reason = case when p_on then 'décision de Mathis' end where user_id = p_user;
+  update ladder set flagged = p_on, suspect = false, flag_reason = case when p_on then 'décision de Mathis' end, verified = not p_on where user_id = p_user; -- 1.0.32.11 : remis = vérifié, il y reste ; 1.0.32.13 : « C'est bon » d'un signalé aussi
   perform public.alog(format(case when p_on then '%s mis en vérification' else '%s remis dans les classements' end, public.pseudo_of(p_user)));
 end $$;
 
@@ -342,7 +343,7 @@ end $$;
 create or replace function public.adm_flagged() returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need(true);
-  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select l.user_id id, p.pseudo, l.main cls, l.flag_reason reason, l.level, l.updated_at from ladder l join profiles p on p.id = l.user_id where l.flagged order by l.updated_at desc) x);
+  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select l.user_id id, p.pseudo, l.main cls, l.flag_reason reason, l.level, l.updated_at, l.flagged from ladder l join profiles p on p.id = l.user_id where l.flagged or l.suspect order by l.flagged, l.updated_at desc) x);
 end $$;
 
 create or replace function public.adm_settings(p_min_level int, p_slow int) returns void language plpgsql security definer set search_path = public

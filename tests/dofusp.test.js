@@ -136,4 +136,22 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
   assert.ok(Q.done && E.dofusOwned(S, "dokille"), "Dokille en battant le boss"); }
 console.log("ok - Dokille seulement après le boss");
 
+// 1.0.32.11 « Dofus retrouvé » : sac plein à la fin d'une quête, le Dofus reste dans le sac (avant : parti au trop-plein) ;
+// au chargement, un Dofus du trop-plein revient et une quête terminée sans Dofus le rend ; un Dofus ne se brise pas.
+{ const S = team(200); E.ITEM_CAP0 = E.ITEM_CAP; E.ITEM_CAP = 5;
+  for (let i = 0; i < 6; i++) E.rollItem(S, Object.keys(ITEMS).find((t) => ITEMS[t].slot === "coiffe"), { radiant: false });
+  const Q = E.dofusQuest(S, "dokille"); Q.step = E.DOFUS.dokille.steps.length; E.refreshArchis(S); E.bagFlush(S);
+  assert.ok(Q.done && E.dofusOwned(S, "dokille"), "Dofus dans le sac même sac plein");
+  assert.ok(!(S.over || []).some((o) => o.tpl === "dofus_dokille"), "pas au trop-plein");
+  const uid = Object.values(S.items).find((it) => it.tpl === "dofus_dokille").uid;
+  assert.strictEqual(typeof E.breakItem(S, uid, null), "string", "un Dofus ne se brise pas");
+  // ancienne partie : le Dofus au trop-plein, un autre Dofus de quête jamais remis
+  delete S.items[uid]; S.over.push({ uid, tpl: "dofus_dokille", stats: {}, at: now });
+  const Q2 = E.dofusQuest(S, "dokoko"); Q2.done = now; S.migration = null;
+  const N = E.deserialize(E.serialize(S)); E.ITEM_CAP = E.ITEM_CAP0;
+  assert.ok(E.dofusOwned(N, "dokille") && E.dofusOwned(N, "dokoko"), "Dofus rendus au chargement");
+  assert.ok(N.migration && N.migration.some((m) => /Dofus/.test(m)), "message au joueur");
+  assert.strictEqual(E.dofusRepair(N).length, 0, "rien de plus au chargement suivant"); }
+console.log("ok - Dofus de quête jamais perdu (sac plein, trop-plein, brisage)");
+
 console.log("dofusp.test.js : tout est bon");

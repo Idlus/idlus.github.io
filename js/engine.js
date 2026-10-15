@@ -473,10 +473,10 @@
     if (!Array.isArray(S.over)) S.over = [];
     let n = 0; const cap = E.itemCap(S);
     let count = Object.keys(S.items).length; if (count <= cap) return 0;
-    const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u); });
+    const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u) && !(ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus"); }); // 1.0.32.11 : un Dofus reste toujours dans le sac (avant : le Dofus d'une quête finie, le plus récent, partait au trop-plein)
     const now = E.now(); const broken = [];
     for (const u of free) { if (count <= cap) break; const it = S.items[u]; delete S.items[u]; S.over.push(Object.assign({}, it, { at: now })); count--; n++; }
-    while (S.over.length > E.overCap(S)) { const o = S.over.shift(); overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
+    while (S.over.length > E.overCap(S)) { const o = S.over.shift(); if (ITEMS[o.tpl] && ITEMS[o.tpl].slot === "dofus") { delete o.at; S.items[o.uid] = o; continue; } overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
     if (n) { S.overNew = (S.overNew || 0) + n; S.cnt = S.cnt || {}; note(S, `Sac plein : ${n > 1 ? `${n} objets rangés` : `${ITEMS[S.over[S.over.length - 1].tpl].name} rangé`} dans le trop-plein.`, "warn"); }
     if (broken.length) note(S, `Trop-plein plein : ${broken.length > 1 ? `${broken.length} objets les plus anciens brisés` : `${broken[0]} brisé`} en runes.`, "warn");
     return n;
@@ -509,7 +509,7 @@
   };
   E.qualityTier = (q) => (q >= 0.999 ? "parfait" : q >= 0.8 ? "excellent" : q >= 0.5 ? "bon" : "commun");
   E.itemCount = (S) => Object.keys(S.items).length;
-  E.ITEM_CAP = 1000; // 0.1.37 : 300 → 1 000 places
+  E.ITEM_CAP = 3000; // 0.1.37 : 300 → 1 000 places ; 1.0.33.1 : 3 000 places
   E.itemCap = (S) => E.ITEM_CAP + Math.round(E.bonus(S, "bag"));
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
@@ -2266,7 +2266,7 @@
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
-      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * E.almMult(S, "xp", m); // 0.1.39 : Almanax (famille, donjon ou fête)
+      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1) * E.almMult(S, "xp", m); // 1.0.33 : chromatique (js/chroma.js) // 0.1.39 : Almanax (famille, donjon ou fête)
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
@@ -2303,7 +2303,7 @@
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
     const nRoll = E.lootRolls(S);
     mons.forEach((m) => {
-      const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1);
+      const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1);
       const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp * (m.champ ? 2 : 1);
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
       // 1.0.3 : un tirage par héros, la chance est partagée entre eux (même moyenne, le bonus au-delà de 100 % n'est plus perdu)
@@ -2319,7 +2319,7 @@
       const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk); let n = 0;
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1)); let n = 0;
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
         for (let ii = 0; ii < n; ii++) {
           seen(m.key, tpl);
@@ -2369,6 +2369,14 @@
   /* 0.1.34 : malus adouci (avant : dès 5 niveaux d'écart, −10 % par niveau jusqu'à −95 %) ; une zone plus basse reste un repli correct */
   E.XP_PEN = { free: 6, step: 0.05, min: 0.3 };
   E.xpPenalty = (diff) => (diff > E.XP_PEN.free ? Math.max(E.XP_PEN.min, 1 - (diff - E.XP_PEN.free) * E.XP_PEN.step) : 1);
+  /* 1.0.33.1 : règle « Bas niveau » : un objet trop bas pour l'équipe (A.low niveaux sous son héros le plus faible) est
+     brisé. Jamais : panoplies, Rayonnants, exo, parfaits, verrouillés, trophées, Dofus et légendaires. */
+  E.lowItem = (S, it, gap) => {
+    const T = ITEMS[it && it.tpl]; if (!T || !(gap > 0) || T.slot === "dofus" || T.trophy || T.leg || T.set) return false;
+    if (it.radiant || it.exo || it.locked || (E.isPerfect && E.isPerfect(it))) return false;
+    const team = E.team(S); if (!team.length) return false;
+    return T.lvl < Math.min(...team.map((c) => c.lvl)) - gap;
+  };
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
     const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
@@ -2377,6 +2385,7 @@
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
       if (better) { E.breakItem(S, it.uid, null); return "recycle"; }
     }
+    if (A.low > 0 && E.lowItem(S, it, A.low)) { E.breakItem(S, it.uid, null); return "low"; }
     if (A.action === "none") return null;
     const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
     if (E.itemQuality(it) * 100 >= A.q) return null;
@@ -2425,6 +2434,7 @@
       const xm = F.exp ? F.exp.mult : { xp: 1, drop: 1, kamas: 1 }; // 0.1.24 : +4 % par étage d'expédition, reliques de butin
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, stasis: F.stasis || 1, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
+      if (F.cr && E.chromaWin) { const ch = E.chromaWin(S, mons, {}); if (ch.length) F.rewards.chroma = ch; } // 1.0.33 : chromatiques (js/chroma.js), seulement les vrais combats
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
       E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon || F.exp ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
@@ -2887,7 +2897,7 @@
       if (!S.fight || S.fight.over) {
         if (!S.dungeon && !S.hunting && !(E.expBusy && E.expBusy(S))) { S.acc = 0; break; }
         S.pause = (S.pause || 0) + E.STEP_MS;
-        if (S.pause >= E.PAUSE_MS) { S.pause = 0; E.startFight(S); }
+        if (S.pause >= E.PAUSE_MS) { S.pause = 0; const F0 = E.startFight(S); if (F0 && !F0.exp && E.chromaRoll) { E.chromaRoll(S, F0.ents); F0.cr = 1; } } // 1.0.33 : chromatiques
         continue;
       }
       S.fight.dur += E.STEP_MS / 1000;
@@ -3196,6 +3206,7 @@
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
     if (it.locked) return "Objet protégé par le cadenas.";
     if (E.inGear(S, uid)) return `Objet rangé dans une tenue de ${E.inGear(S, uid).name}.`;
+    if (ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus") return "Un Dofus ne se brise pas : une copie se fond dans son Potentiel (menu Dofus)."; // 1.0.32.11
     const p = E.breakPreview(S, uid, focus);
     const got = {}; const exoMult = it.exo ? E.EXO_BREAK_MULT : 1; // 0.1.9.1 : un objet exo rend ses runes ×2 (l'exo est perdu)
     for (const k in p.weights) {
@@ -3399,6 +3410,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
+      if (E.chromaOffline) E.chromaOffline(S, g); // 1.0.33 : chromatiques pendant l'absence (le butin ×3 suit dans giveRewards)
       const pr = E.powRew(g, "hunt", E.huntMon(teamSize)); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
@@ -3451,8 +3463,54 @@
     const o = {}; for (const k in S) if (!TRANSIENT.includes(k)) o[k] = S[k];
     return JSON.stringify(o);
   };
+  /* 1.0.33.1 « Sac de 3 000 places » : rangement compact des objets dans le stockage du navigateur (environ 3 fois plus
+     léger). Seule la copie écrite dans le navigateur est compacte : E.serialize, la sauvegarde en ligne, l'export et le
+     serveur gardent le format normal. Un objet devient [uid, n° de modèle, valeurs…, {autres champs}] ; la liste des modèles
+     avec leurs caractéristiques (zk) est écrite dans la sauvegarde, donc un changement des données du jeu ne la fausse pas. */
+  const ZBASE = { uid: 1, tpl: 1, stats: 1 };
+  E.packSave = (txt) => {
+    if (typeof txt !== "string" || txt.indexOf('"zItems"') >= 0) return txt;
+    let o; try { o = JSON.parse(txt); } catch (e) { return txt; }
+    if (!o || typeof o !== "object" || !o.items || typeof o.items !== "object") return txt;
+    const zk = [], zi = {};
+    const one = (it) => {
+      if (!it || typeof it !== "object" || Array.isArray(it) || typeof it.tpl !== "string" || typeof it.uid !== "number" || !it.stats || typeof it.stats !== "object") return it;
+      const ks = Object.keys(it.stats); if (ks.some((k) => typeof it.stats[k] !== "number")) return it;
+      if (it.tpl.indexOf(":") >= 0) return it;
+      const sig = it.tpl + ":" + ks.join(","); let n = zi[sig]; if (n === undefined) { n = zi[sig] = zk.length; zk.push(sig); }
+      const a = [it.uid, n]; ks.forEach((k) => a.push(it.stats[k]));
+      const ex = {}; let m = 0; for (const k in it) if (!ZBASE[k]) { ex[k] = it[k]; m++; } if (m) a.push(ex);
+      return a;
+    };
+    const out = {}; for (const k in o) {
+      if (k === "items") { out.zItems = Object.keys(o.items).map((u) => (+u === o.items[u].uid ? one(o.items[u]) : o.items[u])); continue; }
+      if (k === "over" && Array.isArray(o.over)) { out.zOver = o.over.map(one); continue; }
+      out[k] = o[k];
+    }
+    out.zk = zk;
+    return JSON.stringify(out);
+  };
+  E.unpackSave = (txt) => {
+    if (typeof txt !== "string" || txt.indexOf('"zItems"') < 0) return txt;
+    const o = JSON.parse(txt); if (!o || !Array.isArray(o.zItems)) return txt;
+    const zk = (Array.isArray(o.zk) ? o.zk : []).map((s) => { const i = String(s).indexOf(":"); const ks = String(s).slice(i + 1); return { tpl: String(s).slice(0, i), ks: ks ? ks.split(",") : [] }; });
+    const one = (a) => {
+      if (!Array.isArray(a)) return a;
+      const z = zk[a[1]] || { tpl: "", ks: [] }; const it = { uid: a[0], tpl: z.tpl, stats: {} };
+      z.ks.forEach((k, i) => { it.stats[k] = a[2 + i]; });
+      const ex = a[2 + z.ks.length]; if (ex && typeof ex === "object") Object.assign(it, ex);
+      return it;
+    };
+    const out = {}; for (const k in o) {
+      if (k === "zItems") { out.items = {}; o.zItems.forEach((a) => { const it = one(a); if (it && it.uid !== undefined) out.items[it.uid] = it; }); continue; }
+      if (k === "zOver") { out.over = o.zOver.map(one); continue; }
+      if (k === "zk") continue;
+      out[k] = o[k];
+    }
+    return JSON.stringify(out);
+  };
   E.deserialize = (txt) => {
-    const S = JSON.parse(txt);
+    const S = JSON.parse(E.unpackSave(txt));
     if (!S || !Array.isArray(S.chars) || !S.chars.length) throw new Error("Sauvegarde invalide");
     const fresh = E.newState("x", "iop");
     const report = [];

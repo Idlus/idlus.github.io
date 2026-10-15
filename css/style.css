@@ -2657,6 +2657,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .optbody{display:flex;flex-direction:column;gap:10px}
 .optsec{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .optsec.danger{border-color:var(--bad,#c0392b)}
+.savebar{height:8px;border-radius:6px;background:var(--panel3);overflow:hidden}.savebar i{display:block;height:100%;background:var(--gold);border-radius:6px} /* 1.0.33.1 : poids de la sauvegarde */
 .optsec-h{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
 .optsec-h>b{font-size:14.5px;display:flex;align-items:center;gap:6px}
 .optline{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--frame) 45%,transparent)}

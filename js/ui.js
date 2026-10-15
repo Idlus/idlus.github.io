@@ -21,9 +21,37 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.10";
+const GAME_VERSION = "1.0.33.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.33.1", name: "Sac de 3 000 places", items: [
+    "Le sac d'équipements passe de 1 000 à 3 000 places, et chaque niveau de Grenier en ajoute 100 au lieu de 50 (jusqu'à 5 000 places)",
+    "Sauvegarde plus légère : dans le navigateur, les objets sont rangés en compact. La partie en ligne et l'export ne changent pas",
+    "Options › Sauvegarde : une jauge montre le poids de ta partie et la place utilisée dans le navigateur",
+    "Règles automatiques (Inventaire) : nouvelle règle « Bas niveau », qui brise les objets 20, 30 ou 50 niveaux sous ton héros le plus faible. Panoplies, Rayonnants, exo, parfaits et objets sous cadenas sont gardés. Éteinte au départ",
+  ] },
+  { v: "1.0.33", name: "Chromatiques", items: [
+    "Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique",
+    "La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone",
+    "Prismatiques : 1 chromatique sur 50 est arc-en-ciel (5 Éclats, titre « Prisme vivant » pour le premier)",
+    "Album chromatique (Encyclopédie › Chromatiques) : paliers 5, 10, 25, 50 et 100 (titres, ornement, teinture, Charme ×1,5, cadre), trophée chromatique d'une sous-zone complète (+3 % de butin et d'XP), vitrine de 3, compteur de chasse, espèce recherchée ×2 (1 changement par jour)",
+    "Atelier du prisme : teinture chromatique d'un héros, ornement et cadre « Prisme », aura chromatique en combat, payés en Éclats",
+    "Fiche de rencontre, célébration à la première trouvaille de chaque espèce, chromatiques trouvés pendant l'absence, onglet « Chromatiques » dans les Classements et annonce dans les Hauts faits",
+    "Les Dofus ne changent jamais",
+  ] },
+  { v: "1.0.32.13", name: "Mathis décide", items: [
+    "La vérification automatique ne retire plus personne des classements : un progrès étonnant signale seulement le compte à Mathis, et le joueur reste classé",
+    "C'est Mathis qui décide : « C'est bon » (il reste classé pour de bon) ou « Retirer » (il sort des classements jusqu'à ce que Mathis le remette)",
+  ] },
+  { v: "1.0.32.12", name: "Vérifié, il reste classé", items: [
+    "Un joueur que Mathis a vérifié et remis dans les classements y reste : il n'est plus remis « en vérification » automatiquement à ses envois suivants (avant, une partie passée par le panel de test y retombait à chaque sauvegarde)",
+    "Seul Mathis peut encore le remettre en vérification. Panel Xener : badge « Vérifié » sur la fiche du joueur",
+  ] },
+  { v: "1.0.32.11", name: "Dofus retrouvé", items: [
+    "Quête de Dofus terminée mais Dofus absent : quand le sac était plein, le Dofus partait au trop-plein (et pouvait même y être brisé en runes). Il reste maintenant toujours dans le sac",
+    "Au chargement, les Dofus restés au trop-plein reviennent dans le sac, et une quête de Dofus terminée sans son Dofus le rend. Un message te le dit",
+    "Un Dofus ne se brise plus (ni à l'unité, ni avec « Tout briser ») : une copie se fond dans son Potentiel",
+  ] },
   { v: "1.0.32.10", name: "Équiper en Sagesse", items: [
     "Nouveau choix « Privilégier » à côté d'« Équiper au mieux » (fiche du héros, onglet Équipement) : Sagesse, Prospection, Vitalité, Puissance, Dommages, Critique, Soins, Initiative, Résistances, PA, PM, Tacle ou Fuite",
     "« Équiper au mieux » et « Tout équiper au mieux » choisissent alors d'abord les objets qui donnent cette caractéristique. Pratique pour monter une Renaissance avec un équipement Sagesse, puis revenir à « Rien (équilibré) »",
@@ -1720,6 +1748,7 @@ function dbLook(cls, sx, items) {
   return { src: lookLocal(cls, sx, 0), key };
 }
 const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0);
+  if (c.chroma && c.chromaDye) cls += " chlook"; // 1.0.33 : teinture chromatique (js/chromaui.js)
   if (typeof u === "object") return `<img class="${cls}" src="${u.src}" data-fk="${u.key}" alt="" loading="lazy">`; // Forgelance recomposé (image locale en attendant)
   return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
 function lookSheet(c) {
@@ -1730,6 +1759,7 @@ function lookSheet(c) {
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
     ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.filter((p) => !p.lock || S.unlocks[p.lock]).map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${window.CHROMA ? window.CHROMA.dyeHtml(c) : ""}
     ${frameHtml(c)}
     ${wardrobeHtml(c)}
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
@@ -1738,7 +1768,7 @@ const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" data-fr="${c.frPre
 /* 1.0.15 : cadre de guilde aux couleurs de la guilde */
 const guildCol = () => (S.guild && S.guild.col ? `;--gcol:${/^#[0-9a-f]{3,8}$/i.test(S.guild.col) ? S.guild.col : "#c9962e"}` : "");
 const frameName = (c) => { const f = E.heroFrame(S, c); return E.SFRAMES[f] ? E.SFRAMES[f].name(S) : `cadre ${E.FRAMES[E.frameIdx(c.lvl)]}`; };
-const FR_EMB = { pionnier: "❦", stasis: "✦", ames: "✧", dofus: "◆", align: "⚜", koli: "⚔", songe: "☽", guilde: "♜", halouine: "🎃" };
+const FR_EMB = { pionnier: "❦", stasis: "✦", ames: "✧", dofus: "◆", align: "⚜", koli: "⚔", songe: "☽", guilde: "♜", halouine: "🎃", chroma: "✦", prisme: "◈" };
 /* choix du cadre (feuille Apparence) */
 function frameHtml(c) {
   const cur = c.frame && E.sframeOk(S, c.frame) ? c.frame : "";
@@ -1781,6 +1811,8 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "fondateur" || orn === "legende" || orn === "souverain") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement ; 1.1 : Prisme des Douze (alliances)
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
+  else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
+  else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
   else if (orn === "koli_ecu") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/kolizeton.svg" alt="">`; // 1.0.24 : boutique du Kolizéum
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
@@ -3076,7 +3108,7 @@ function troPopup(sid) {
 }
 /* 1.0.22.1 « Recherche dans l'Encyclopédie » : un seul champ en haut, sous les onglets, qui filtre l'onglet ouvert
    (monstres et butins, familles, boss et donjons, équipements, trophées), sans accents ni majuscules */
-const ENC_Q_PH = { best: "Chercher un monstre ou un butin…", fam: "Chercher une famille ou un monstre…", boss: "Chercher un boss ou un donjon…", eq: "Chercher un équipement…", tro: "Chercher une zone ou une région…" };
+const ENC_Q_PH = { chroma: "Chercher un monstre de l'album…", best: "Chercher un monstre ou un butin…", fam: "Chercher une famille ou un monstre…", boss: "Chercher un boss ou un donjon…", eq: "Chercher un équipement…", tro: "Chercher une zone ou une région…" };
 const encNoHit = (q) => `<div class="empty">Rien ne correspond à « ${h(q)} » dans cet onglet. Vérifiez l'orthographe, ou cherchez dans un autre onglet.</div>`;
 function encyclopediaHtml() {
   const enc = ui.enc || (ui.enc = { tab: "best", f: "all", q: "", fam: "zone", boss: "all" });
@@ -3087,11 +3119,11 @@ function encyclopediaHtml() {
   const EQ = encEqAll(); const dex = E.itemDex(S); const eqHave = EQ.filter((t) => dex[t]).length;
   const kpis = [["best", "Monstres rencontrés", met, all.length], ["eq", "Équipements obtenus", eqHave, EQ.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length], ["tro", "Trophées de zone", troN(), Object.keys(E.SUBS).length]];
   const souls = E.soulCount(S), st = E.stones(S);
-  const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>`;
-  const head = `<div class="enckpis k6 k7">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
-    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"]].concat(window.COLL ? [["sets", "Panoplies"]] : [], [["tro", "Trophées"]]).map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}${window.COLL ? "" : `<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button>`}</nav>` // 1.0.30 : onglet Panoplies (Collection de panoplies, js/collui.js)
+  const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>` + (window.CHROMA ? window.CHROMA.kpi() : ""); // 1.0.33 : album chromatique (js/chromaui.js)
+  const head = `<div class="enckpis k6 k7${window.CHROMA ? " k8" : ""}">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
+    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"]].concat(window.COLL ? [["sets", "Panoplies"]] : [], [["tro", "Trophées"]], window.CHROMA ? [["chroma", "✦ Chromatiques"]] : []).map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}${window.COLL ? "" : `<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button>`}</nav>` // 1.0.30 : onglet Panoplies (Collection de panoplies, js/collui.js)
     + (enc.tab === "sets" && window.COLL ? "" : `<div class="encsrch">${G("search")}<input class="encq" id="encQ" type="search" data-act="encsearch" placeholder="${ENC_Q_PH[enc.tab] || ENC_Q_PH.best}" value="${h(enc.q || "")}" autocomplete="off" spellcheck="false" enterkeyhint="search">${enc.q ? `<button class="encqx" data-act="encqclear" aria-label="Effacer la recherche" data-tip="Effacer la recherche">✕</button>` : ""}</div>`);
-  return head + (enc.tab === "sets" && window.COLL ? window.COLL.setsHtml() : enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
+  return head + (enc.tab === "chroma" && window.CHROMA ? window.CHROMA.html(enc) : enc.tab === "sets" && window.COLL ? window.COLL.setsHtml() : enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
 }
 function encBestHtml(enc) {
   if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
@@ -3352,7 +3384,7 @@ function buildArena(F) {
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
       return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
-    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
+    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "form" ? window.FORMUI.html(F, ui.arena) : view === "compact"
@@ -3504,7 +3536,7 @@ function chalBarHtml(F) {
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   const idol = F.idol ? `<span class="pill good idolpill" data-tip="${h(F.idol.ids.map((id) => E.IDOLS[id].name + " : " + E.IDOLS[id].desc).join(" · "))}">${F.idol.ids.map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("")} Idoles ${F.idolScore} · +${pctTxt(F.idolBonus)} %</span>` : "";
-  return `${st}${idol}${archiPill(F)}${mech}<span style="margin-left:auto"></span>${tog}`;
+  return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
@@ -4538,6 +4570,7 @@ function lootHtml(F) {
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
     ${r.idol ? `<div class="chalres idolres"><div class="h">${idolIco()} Idoles · score ${r.idol.score}</div><div class="row xs" style="gap:4px;flex-wrap:wrap">${r.idol.ids.map((id) => E.IDOLS[id] ? `<span class="pill">${im(idolImg(id), "iico", E.IDOLS[id].name)} ${h(E.IDOLS[id].name)} <b class="num">${E.IDOLS[id].score}</b></span>` : "").join("")}</div><div class="r tot"><span>Bonus XP et butin</span><span>+${pctTxt(r.idol.pct)} %</span></div></div>` : ""}
     ${r.champ ? `<div class="champwin"><div class="ttl">${G("crown")} Champion vaincu : ${h(r.champ.name)} (${h(E.CHAMP_POWERS[r.champ.power].name)})</div><div class="row xs"><span class="pill gold">XP ×3</span><span class="pill gold">Butin ×2</span>${r.champ.res ? `<span class="pill good">Ressource garantie : ${h(r.champ.res[0])} ×${r.champ.res[1]}</span>` : ""}<span class="pill gold">Chance de Rayonnant ×2</span></div><div class="xs muted">Champions vaincus : ${fmt(S.champs || 0)}${(() => { const n = [10, 100, 500, 1000].find((x) => x > (S.champs || 0)); return n ? ` · prochain succès à ${fmt(n)}` : ""; })()}</div></div>` : ""}
+    ${r.chroma && window.CHROMA ? window.CHROMA.winHtml(r.chroma) : ""}
     ${r.stasis ? `<p class="small" style="color:var(--gold2);font-weight:700">⏳ Stasis ${r.stasis.k} : ${h(r.stasis.out.join(", "))}</p>` : ""}
     ${r.pen && Object.keys(r.pen).length ? `<p class="note xs">Malus de niveau (−… %) : un héros qui a plus de ${E.XP_PEN.free} niveaux de plus que le plus fort monstre gagne moins d'XP (−${Math.round(E.XP_PEN.step * 100)} % par niveau en trop, −${Math.round((1 - E.XP_PEN.min) * 100)} % au plus).</p>` : ""}
     ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
@@ -5905,12 +5938,13 @@ function resDetail(n) {
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
-  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}</summary>
     <div class="pad stack" style="padding-top:0;gap:8px">
       <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
       <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
         <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
+      <label class="row small">Bas niveau <select data-act="autolow"><option value="" ${!(A.low > 0) ? "selected" : ""}>garder</option>${[20, 30, 50].map((v) => `<option value="${v}" ${A.low === v ? "selected" : ""}>briser à ${v} niveaux sous mon héros le plus faible</option>`).join("")}</select> <span class="tag soft">panoplies, Rayonnants et exo gardés</span></label>
       <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
@@ -6775,6 +6809,15 @@ function showNotif(title, body) {
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification(`idlus · ${title}`, opts)).catch(() => { try { new Notification(`idlus · ${title}`, opts); } catch (e) {} }); else new Notification(`idlus · ${title}`, opts); } catch (e) {}
 }
 /* 0.1.25 : les Options rangées en onglets ; une carte par thème, chaque réglage sur une ligne (nom et explication à gauche, choix à droite) */
+/* 1.0.33.1 : poids de la sauvegarde dans le navigateur (environ 5 millions de caractères par site, copies de secours comprises) */
+function saveWeightHtml() {
+  const u = SV.usage && SV.usage(); if (!u) return "";
+  const ko = (n) => fmt(Math.max(1, Math.round(n / 1024))), pct = Math.min(100, Math.round(u.total / u.max * 100));
+  return optSec("Poids de la sauvegarde", "le navigateur garde environ 5 Mo par site, copies de secours comprises", `<div class="stack small" style="gap:6px">
+    <div class="row between"><span>Ta partie : <b class="num">${ko(u.game)} Ko</b> <span class="xs muted">(${fmt(E.itemCount(S))} objets, rangés en compact) · copies de secours : ${ko(u.copies)} Ko</span></span><span class="tag ${pct >= 80 ? "warn" : pct >= 50 ? "soft" : "good"}">${pct} % utilisés</span></div>
+    <div class="savebar"><i style="width:${Math.max(1, pct)}%"></i></div>
+    ${pct >= 80 ? `<span class="xs minus">Presque plein : brise ou vends des objets, ou supprime une partie de test.</span>` : ""}</div>`);
+}
 const OPT_TABS = [["affichage", "Affichage"], ["sons", "Sons"], ["jeu", "Jeu"], ["sauvegarde", "Sauvegarde"], ["aide", "Aide"]];
 const optSec = (t, hint, body, id) => `<section class="optsec"${id ? ` id="${id}"` : ""}><div class="optsec-h"><b>${t}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</div>${body}</section>`;
 const optName = (n, hint, tip) => `<span class="optname"${tip ? ` data-tip="${h(tip)}"` : ""}><b>${n}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</span>`;
@@ -6794,6 +6837,7 @@ function optionsSheet() {
   else if (tab === "sauvegarde") body = (menuOn() ? optSec(`Partie ${SLOT}`, SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">3 parties : la 1 pour les classements, la 2 et la 3 en solo</span></div>`) : "")
     + (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile && ON.slotOnline() ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
+    + saveWeightHtml()
     + optSec("Copies de secours", "une toutes les 10 min de jeu, et une avant chaque mise à jour", `<div class="stack small" style="gap:6px">${copiesHtml()}</div>`)
     + optSec("Changer d'appareil", "copie la sauvegarde ici, puis colle-la sur l'autre appareil", `<div class="stack" style="gap:6px"><b class="small">Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><div><button class="btn sm" data-act="copyexp">Copier</button></div>
       <b class="small">Importer</b> <span class="xs muted">remplace la partie actuelle ; les sauvegardes v1 sont converties</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><div><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div></div>`)
@@ -6828,6 +6872,7 @@ function offlineSheet(r) {
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
     ${r.souls && r.souls.length ? `<p class="small" style="color:var(--archi)">💜 Âmes capturées : ${r.souls.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")} · ${r.stones} Pierre${r.stones > 1 ? "s" : ""} d'âme restante${r.stones > 1 ? "s" : ""}</p>` : r.archis && r.archis.length && !r.stones ? `<p class="small muted">Aucune Pierre d'âme en sac : les âmes se sont échappées.</p>` : ""}
+    ${r.chroma && r.chroma.length ? `<p class="small cxoff">✦ <b>Chromatiques pendant l'absence</b> : ${r.chroma.map((x) => `${h(MONSTERS[x.k] ? MONSTERS[x.k].name : x.k)}${x.n > 1 ? ` ×${x.n}` : ""}${x.p ? " (prismatique !)" : ""}${x.neu ? " ✨ nouveau" : ""}`).join(", ")}. <button class="btn sm" data-act="cx-open">Voir l'album</button></p>` : ""}
     ${r.over ? `<p class="small">Sac plein : <b>${fmt(r.over)}</b> objet${r.over > 1 ? "s" : ""} rangé${r.over > 1 ? "s" : ""} dans le trop-plein. <button class="btn sm" data-act="overgo">Voir</button></p>` : ""}
     ${(r.newItems || []).filter((u) => S.items[u]).length ? `<h3 class="sec">Objets obtenus</h3><div class="list small" style="max-height:220px;overflow:auto">${r.newItems.filter((u) => S.items[u]).map((u) => { const it = S.items[u]; const T = ITEMS[it.tpl];
         const best = E.team(S).filter((c) => T.lvl <= c.lvl).map((c) => { const sl = T.slot === "anneau" ? (c.equip.anneau1 ? "anneau2" : "anneau1") : T.slot === "dofus" ? null : T.slot; const cur = sl ? S.items[c.equip[sl]] : null; return { c, gain: itemScore(c, it) - itemScore(c, cur) }; }).sort((a, b) => b.gain - a.gain)[0];
@@ -7240,7 +7285,7 @@ function pageGo(id) {
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
     case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "builds": case "hdv": case "guild": case "pets": go(id); break; // 1.0.30 : pets = Familiers et montures
     case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("quests", "qt", "tresor"); break; case "region": go("quests", "qt", "region"); break; case "hebdo": go("quests", "qt", "hebdo"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
-    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "dpot": if (window.COLL) window.COLL.pickDofus(null); go("quests", "qt", "dofus"); break; /* 1.0.30 : Potentiel des Dofus */ case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
+    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "dpot": if (window.COLL) window.COLL.pickDofus(null); go("quests", "qt", "dofus"); break; case "chroma": (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "chroma"; go("world", "world", "enc"); break; /* 1.0.33 : album chromatique */ /* 1.0.30 : Potentiel des Dofus */ case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
@@ -8110,6 +8155,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 1.0.30 : Expéditions et donjon pendant l'absence (js/expeditionsui.js)
   if (a && a.startsWith("co-")) { if (S && window.COLL) window.COLL.act(a, t); return; } // 1.0.30 : collections (js/collui.js)
+  if (a && a.startsWith("cx-")) { if (S && window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : chromatiques (js/chromaui.js)
   if (a && a.startsWith("al-")) { if (S && window.ALIGNUI) window.ALIGNUI.act(a, t); return; } // 1.0.30 : alignement (js/alignui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
@@ -8529,7 +8575,7 @@ document.addEventListener("click", (ev) => {
     case "break": { ui.confirm = null; const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); if (brisageOnly(true)) return; break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; if (brisageOnly()) return; break;
-    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
+    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid) && typeof E.breakItem(S, it.uid, ui.focus || null) === "object") n++; }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
     case "fuse": { const r = E.fuseRunes(S, d.k, d.dir); if (r) toast(r); break; }
     case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }
     case "savenow": saveNow(true); return;
@@ -8552,6 +8598,7 @@ document.addEventListener("change", (ev) => {
   if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
   if (a === "kzkey") { if (window.KOLIUI) window.KOLIUI.act("kz-key", t); return; } // 1.0.24 : donjon du Trousseau de clés
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
+  if (a === "cx-zonesel") { if (window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : album chromatique
   if (a === "enceqslotsel") { ui.encEq.slot = t.value; ui.encEqMore = 0; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
@@ -8589,6 +8636,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
+  else if (a === "autolow") { S.settings.auto.low = +t.value || 0; ui.autoOpen = true; }
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;
@@ -9033,7 +9081,7 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, cache: {} };
 const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
-const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]];
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -9103,6 +9151,13 @@ async function lbFetch() {
     const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
     if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+  } else if (t === "chr") { // 1.0.33 : chromatiques de l'album ; tant que le serveur n'a pas la vue, le classement reste vide
+    const fmtv = (v) => `${fmt(v)} chromatique${v > 1 ? "s" : ""}`;
+    const { data, error } = await db.from("lb_chroma").select("user_id,pseudo,main,main_lvl,n").order("n", { ascending: false }).limit(50);
+    if (!error) {
+      out.rows = (data || []).filter((r) => r.n > 0).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r.n), fl: r.main_lvl }));
+      const v = mine && mine.chroma; if (me && v) out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_chroma").select("user_id", { count: "exact", head: true }).gt("n", v)) };
+    }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
     if (window.DGRANK) await window.DGRANK.cols(db); // 1.0.30 : équipe des records (colonne team), si le serveur l'a
@@ -9273,7 +9328,7 @@ function lbListHtml(d) {
   }
   const me = ON.user && ON.user.id;
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
-  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
+  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "chr" ? "Personne n'a encore de chromatique au classement. Ils comptent dès le prochain envoi de ta partie." : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
@@ -9357,6 +9412,7 @@ function renderLadder() {
     : LB.tab === "race" ? ""
     : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
+    : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? (SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
@@ -9381,9 +9437,10 @@ async function lbProfile(u) {
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
-      <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}
+      <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+    if (window.CHROMA) window.CHROMA.profile(u); // 1.0.33 : sa vitrine de chromatiques
   } catch (e) { openSheet(`<h2>Profil</h2><div class="empty">Pas de connexion au serveur.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 }
 function lbGearHtml(x) {
@@ -9656,6 +9713,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { questGoBtn, cmdGoBtn, chestImg, jobImg, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { lookSheet }); // 1.0.33 : teinture chromatique (js/chromaui.js)
 Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
 Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "forge" && ui.fg === "brisage" && !brisageOnly() && !isEditing() && !$("#sheet").innerHTML) render(); } }); // 1.0.30 : prix de l'HdV reçus (js/forgeui.js)
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });

@@ -1,6 +1,54 @@
 {
-  "version": "1.0.32.10",
+  "version": "1.0.33.1",
   "versions": [
+    {
+      "v": "1.0.33.1",
+      "name": "Sac de 3 000 places",
+      "items": [
+        "Le sac d'équipements passe de 1 000 à 3 000 places, et chaque niveau de Grenier en ajoute 100 au lieu de 50 (jusqu'à 5 000 places)",
+        "Sauvegarde plus légère : dans le navigateur, les objets sont rangés en compact. La partie en ligne et l'export ne changent pas",
+        "Options › Sauvegarde : une jauge montre le poids de ta partie et la place utilisée dans le navigateur",
+        "Règles automatiques (Inventaire) : nouvelle règle « Bas niveau », qui brise les objets 20, 30 ou 50 niveaux sous ton héros le plus faible. Panoplies, Rayonnants, exo, parfaits et objets sous cadenas sont gardés. Éteinte au départ"
+      ]
+    },
+    {
+      "v": "1.0.33",
+      "name": "Chromatiques",
+      "items": [
+        "Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique",
+        "La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone",
+        "Prismatiques : 1 chromatique sur 50 est arc-en-ciel (5 Éclats, titre « Prisme vivant » pour le premier)",
+        "Album chromatique (Encyclopédie › Chromatiques) : paliers 5, 10, 25, 50 et 100 (titres, ornement, teinture, Charme ×1,5, cadre), trophée chromatique d'une sous-zone complète (+3 % de butin et d'XP), vitrine de 3, compteur de chasse, espèce recherchée ×2 (1 changement par jour)",
+        "Atelier du prisme : teinture chromatique d'un héros, ornement et cadre « Prisme », aura chromatique en combat, payés en Éclats",
+        "Fiche de rencontre, célébration à la première trouvaille de chaque espèce, chromatiques trouvés pendant l'absence, onglet « Chromatiques » dans les Classements et annonce dans les Hauts faits",
+        "Les Dofus ne changent jamais"
+      ]
+    },
+    {
+      "v": "1.0.32.13",
+      "name": "Mathis décide",
+      "items": [
+        "La vérification automatique ne retire plus personne des classements : un progrès étonnant signale seulement le compte à Mathis, et le joueur reste classé",
+        "C'est Mathis qui décide : « C'est bon » (il reste classé pour de bon) ou « Retirer » (il sort des classements jusqu'à ce que Mathis le remette)"
+      ]
+    },
+    {
+      "v": "1.0.32.12",
+      "name": "Vérifié, il reste classé",
+      "items": [
+        "Un joueur que Mathis a vérifié et remis dans les classements y reste : il n'est plus remis « en vérification » automatiquement à ses envois suivants (avant, une partie passée par le panel de test y retombait à chaque sauvegarde)",
+        "Seul Mathis peut encore le remettre en vérification. Panel Xener : badge « Vérifié » sur la fiche du joueur"
+      ]
+    },
+    {
+      "v": "1.0.32.11",
+      "name": "Dofus retrouvé",
+      "items": [
+        "Quête de Dofus terminée mais Dofus absent : quand le sac était plein, le Dofus partait au trop-plein (et pouvait même y être brisé en runes). Il reste maintenant toujours dans le sac",
+        "Au chargement, les Dofus restés au trop-plein reviennent dans le sac, et une quête de Dofus terminée sans son Dofus le rend. Un message te le dit",
+        "Un Dofus ne se brise plus (ni à l'unité, ni avec « Tout briser ») : une copie se fond dans son Potentiel"
+      ]
+    },
     {
       "v": "1.0.32.10",
       "name": "Équiper en Sagesse",
