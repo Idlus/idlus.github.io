@@ -1,6 +1,14 @@
 {
-  "version": "1.0.32.9",
+  "version": "1.0.32.10",
   "versions": [
+    {
+      "v": "1.0.32.10",
+      "name": "Équiper en Sagesse",
+      "items": [
+        "Nouveau choix « Privilégier » à côté d'« Équiper au mieux » (fiche du héros, onglet Équipement) : Sagesse, Prospection, Vitalité, Puissance, Dommages, Critique, Soins, Initiative, Résistances, PA, PM, Tacle ou Fuite",
+        "« Équiper au mieux » et « Tout équiper au mieux » choisissent alors d'abord les objets qui donnent cette caractéristique. Pratique pour monter une Renaissance avec un équipement Sagesse, puis revenir à « Rien (équilibré) »"
+      ]
+    },
     {
       "v": "1.0.32.9",
       "name": "Boss sur l'accueil de la guilde",

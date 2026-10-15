@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.9";
+const GAME_VERSION = "1.0.32.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.10", name: "Équiper en Sagesse", items: [
+    "Nouveau choix « Privilégier » à côté d'« Équiper au mieux » (fiche du héros, onglet Équipement) : Sagesse, Prospection, Vitalité, Puissance, Dommages, Critique, Soins, Initiative, Résistances, PA, PM, Tacle ou Fuite",
+    "« Équiper au mieux » et « Tout équiper au mieux » choisissent alors d'abord les objets qui donnent cette caractéristique. Pratique pour monter une Renaissance avec un équipement Sagesse, puis revenir à « Rien (équilibré) »",
+  ] },
   { v: "1.0.32.9", name: "Boss sur l'accueil de la guilde", items: [
     "Le boss de la semaine est en haut de l'accueil de la guilde : sa vie en 5 phases, tes essais en réserve et le bouton « Affronter le boss », sans changer d'onglet",
     "L'onglet Boss garde le classement entre guildes, les récompenses des phases et les trophées",
@@ -4898,6 +4902,12 @@ function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k ===
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
 const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2,
   pm: 25, tac: 0.8, fui: 0.8, pou: 1.5 }; // 1.0.30 : nouvelles lignes des équipements
+/* stat à privilégier pour « Équiper au mieux » (par exemple la Sagesse pour monter une Renaissance) : elle compte 10 fois plus */
+const GEAR_FOCUS = [["sa", "Sagesse (XP)"], ["pp", "Prospection (butin)"], ["vit", "Vitalité"], ["pui", "Puissance"], ["do", "Dommages"], ["cri", "Critique"],
+  ["so", "Soins"], ["ini", "Initiative"], ["res", "Résistances"], ["pa", "PA"], ["pm", "PM"], ["tac", "Tacle"], ["fui", "Fuite"]];
+const GEAR_FOCUS_K = Object.fromEntries(GEAR_FOCUS.map(([k]) => [k, k === "res" ? ["rt", "rf", "re", "ra", "rn", "xt", "xf", "xe", "xa", "xn"] : [k]]));
+const GEAR_FOCUS_X = 9;
+const focusSel = (c) => `<label class="row xs gfocus" data-tip="Équiper au mieux et Tout équiper au mieux choisissent d'abord les objets qui donnent cette caractéristique"><span class="muted">Privilégier</span><select data-act="gearfocus" data-id="${c.id}"><option value="">Rien (équilibré)</option>${GEAR_FOCUS.map(([k, n]) => `<option value="${k}" ${c.gearFocus === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>`;
 /* élément du héros : stat de la répartition auto, sinon la stat élémentaire la plus investie à la main, sinon celle de la classe */
 const buildMain = (c) => { if (["fo", "ine", "cha", "age"].includes(c.autoStat)) return c.autoStat; const a = c.alloc || {}; const k = ["fo", "ine", "cha", "age"].sort((x, y) => (a[y] || 0) - (a[x] || 0))[0]; return (a[k] || 0) > 0 ? k : CLASSES[c.cls].main; };
 /* Héros multi-élément. Chaque élément qui a au moins 20 % des points élémentaires répartis compte, au prorata de sa part
@@ -4924,6 +4934,7 @@ function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dm
   const st = itemStats(it);
   for (const k in st) sc += st[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
   if (c.autoStat === "vit" || (c.autoStat && c.autoPreset === "tank")) sc += (st.vit || 0) * 0.5; // héros Tank (profil Tank du menu des caractéristiques)
+  const fk = GEAR_FOCUS_K[c.gearFocus]; if (fk) for (const k of fk) if (st[k]) sc += st[k] * (SCORE_W[k] || 1) * GEAR_FOCUS_X; // stat à privilégier
   if (it.tpl && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "arme") { const sp = E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); // 0.1.53 : le coup d'arme compte
     if (sp) { const g = sp.grades[0]; const elStat = { t: "fo", n: "fo", f: "ine", e: "cha", a: "age" };
       sc += 2 * g.fx.reduce((v, f) => v + (f.k === "dmg" || f.k === "drain" ? (f.min + f.max) / 2 * (f.el === "best" ? 1 : 0.1 + 0.9 * (els[elStat[f.el]] || 0)) : 0), 0) / Math.max(1, g.pa); } }
@@ -4946,7 +4957,7 @@ function equipBlocked(c, eq, s, it) {
   if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
   return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
 }
-const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
+const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + (c.gearFocus || "") + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
 const planFresh = (c) => { const hit = planMemo.get(c.id); return !!hit && hit.key === planKey(c); };
 function gearPlan(c) {
   const key = planKey(c); const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
@@ -5360,7 +5371,7 @@ function charEquipView(c, st) {
   const upN = EQ_SLOTS.filter((s) => slotUpgrade(c, s)).length; // 0.1.47.2 : « Équiper au mieux » pour ce héros seul
   return `<div class="stack">
     <div class="panel"><div class="pad">
-      <div class="dtop"><span class="xs muted">${upN ? `${upN} emplacement${upN > 1 ? "s" : ""} avec mieux dans le sac` : "Rien de mieux dans le sac"}</span><button class="btn sm ${upN ? "primary" : ""}" data-act="teamfix" data-v="gear" data-id="${c.id}" ${upN ? "" : "disabled"}>Équiper au mieux${upN ? ` (${upN})` : ""}</button></div>
+      <div class="dtop"><span class="xs muted">${upN ? `${upN} emplacement${upN > 1 ? "s" : ""} avec mieux dans le sac` : "Rien de mieux dans le sac"}</span><span class="row" style="gap:8px;flex-wrap:wrap">${focusSel(c)}<button class="btn sm ${upN ? "primary" : ""}" data-act="teamfix" data-v="gear" data-id="${c.id}" ${upN ? "" : "disabled"}>Équiper au mieux${upN ? ` (${upN})` : ""}</button></span></div>
       <div class="doll">
         <div class="dcol">${DOLL_L.map((s) => dollSlot(c, s)).join("")}</div>
         <div class="dcenter" style="--cc:${CLASSES[c.cls].color}"><div class="dfig">${lookImg(c, "dlook")}<span class="dlv">Niveau ${c.lvl}</span></div>
@@ -8547,6 +8558,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }
+  else if (a === "gearfocus") { const x = char(+t.dataset.id); if (t.value) x.gearFocus = t.value; else delete x.gearFocus; gearPlan(x); const it = GEAR_FOCUS.find(([k]) => k === t.value); toast(it ? `${x.name} : « Équiper au mieux » privilégie maintenant ${it[1].replace(/ \(.*/, "")}.` : `${x.name} : « Équiper au mieux » revient à l'équilibre.`); }
   else if (a === "chaloff") c.chalOff = t.checked;
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }

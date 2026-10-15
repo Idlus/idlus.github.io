@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.10 « Équiper en Sagesse »
+
+Demande de Mathis le 15/10/2026 : « qu'on peut focus une stat en particulier avec l'auto équipement ? Pour les renaissances […] les stuffs sagesse ». js/ui.js : réglage par héros c.gearFocus (GEAR_FOCUS : sa, pp, vit, pui, do, cri, so, ini, res, pa, pm, tac, fui), choisi dans le menu « Privilégier » de l'onglet Équipement ; itemScore compte la caractéristique choisie 10 fois (GEAR_FOCUS_X = 9 en plus), donc gearPlan, la pastille verte, « Équiper au mieux » et « Tout équiper au mieux » la suivent ; planKey inclut c.gearFocus. Sans choix, rien ne change.
+
 ## 1.0.32.9 « Boss sur l'accueil de la guilde »
 
 Demande de Mathis le 15/10/2026. js/guilds.js : la carte du boss (vie en 5 phases, essais en réserve, bouton « Affronter le boss ») devient bossCard(), affichée en haut de l'accueil de la guilde (version courte, bouton « Classement et récompenses ») et dans l'onglet Boss. La ligne du boss des « Activités de guilde » est retirée. Test tests/online.test.js.
