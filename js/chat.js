@@ -17,7 +17,8 @@
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
   const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
-  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, pin: null, busy: false };
+  const LP0 = () => ({ id: null, body: "", every: 60, banner: true, chat: true, show: 10, ends: "" }); // 1.1.2.4 : formulaire « Annonces en boucle »
+  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, lp: LP0(), loops: null, pin: null, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
   const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -398,9 +399,18 @@
   /* ---------- bandeau d'annonce ---------- */
   async function banner() {
     const el = $("#annbar"); if (!el) return;
+    await annTick();
     const list = await ON.announces(); const seen = pref.annSeen || 0;
     const a = list.find((x) => x.id > seen) || null; if (!a || !C.ann || a.id !== C.ann.id) C.annMore = false;
     C.ann = a; annPaint();
+  }
+  /* 1.1.2.4 : annonces en boucle. Pas de tâche planifiée sur le serveur : le jeu demande au serveur de publier celles qui sont dues
+     (le premier joueur qui arrive le fait pour tout le monde), puis attend l'heure de la prochaine (au plus 15 minutes). */
+  async function annTick() {
+    if (Date.now() < (C.tickAt || 0) || !ON.rpc) return;
+    C.tickAt = Date.now() + 15 * 60e3;
+    const r = await ON.rpc("ann_tick"); const n = r && r.data ? Date.parse(r.data) : NaN;
+    if (isFinite(n)) C.tickAt = Math.min(C.tickAt, Math.max(Date.now() + 30e3, n));
   }
   /* 1.0.12.8 : au téléphone, une annonce longue tient sur 2 lignes ; « Lire la suite » l'ouvre en entier */
   function annPaint() {
@@ -422,7 +432,7 @@
     if (A.tab === "sig") A.reps = await r("adm_reports");
     if (A.tab === "verif") A.flag = await r("adm_flagged");
     if (A.tab === "equipe") A.mods = await r("adm_mods");
-    if (A.tab === "ann") A.anns = await ON.announces();
+    if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); } // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
     if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
@@ -505,6 +515,7 @@
         <div class="box"><h2>Nouvelle annonce</h2><textarea id="admAnn" maxlength="300" placeholder="Ex. : maintenance ce soir à 22 h, le chat sera coupé 10 minutes.">${h(a.body)}</textarea>
         <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admAnnB" ${a.banner ? "checked" : ""}> Bandeau en haut du jeu</label><label class="row"><input type="checkbox" id="admAnnC" ${a.chat ? "checked" : ""}> Message dans le chat</label></div>
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
+        ${loopBox()}
         <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
     }
     if (A.tab === "equipe") {
@@ -514,6 +525,24 @@
     }
     return "";
   }
+  /* 1.1.2.4 : annonces en boucle (ex. toutes les heures), publiées par le serveur au rythme choisi */
+  const EVERY = [[30, "30 min"], [60, "1 h"], [120, "2 h"], [180, "3 h"], [360, "6 h"], [720, "12 h"], [1440, "24 h"]];
+  const evName = (m) => (EVERY.find((x) => x[0] === m) || [0, m % 60 ? `${m} min` : `${m / 60} h`])[1];
+  const hm = (t) => new Date(t).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  function loopBox() {
+    const f = A.lp, L = A.loops || [];
+    const shows = [[5, "5 min"], [10, "10 min"], [30, "30 min"], [0, "jusqu'à la suivante"]];
+    return `<div class="box"><h2>Annonces en boucle</h2><p class="small muted">Le même message revient tout seul, par exemple toutes les heures, dans le bandeau et/ou le chat Général. Si une annonce ponctuelle occupe déjà le bandeau, la boucle passe seulement dans le chat cette fois-là. 200 caractères au plus.</p>
+      <textarea id="admLoop" maxlength="200" placeholder="Ex. : Rejoignez le Discord d'Idlus pour les nouveautés et les événements !">${h(f.body)}</textarea>
+      <div class="row small"><span class="muted">Toutes les :</span><select id="admLoopE">${EVERY.map(([v, n]) => `<option value="${v}" ${f.every === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <label class="row"><input type="checkbox" id="admLoopB" ${f.banner ? "checked" : ""}> Bandeau</label><label class="row"><input type="checkbox" id="admLoopC" ${f.chat ? "checked" : ""}> Chat Général</label><span class="muted" id="admLoopN" style="margin-left:auto">${f.body.length}/200</span></div>
+      <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admLoopS">${shows.map(([v, n]) => `<option value="${v}" ${f.show === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <span class="muted">Jusqu'au :</span><input type="date" id="admLoopF" value="${h(f.ends)}" title="Vide = sans fin"></div>
+      <div class="row small">${f.id ? `<button class="btn sm" data-act="adm-loopcancel">Annuler</button>` : ""}<button class="btn primary" style="margin-left:auto" data-act="adm-loop">${f.id ? "Enregistrer" : "Lancer la boucle"}</button></div>
+      ${L.map((x) => `<div class="modrow${x.active ? "" : " muted"}"><div>${h(x.body)}</div><div class="xs muted">toutes les ${evName(x.every_min)} · ${[x.banner && "bandeau", x.chat && "chat"].filter(Boolean).join(" + ")} · ${x.active ? `prochaine ${hm(x.next_at)}` : "en pause"}${x.ends ? ` · jusqu'au ${new Date(x.ends).toLocaleDateString("fr-FR")}` : ""} · ${x.sent ? `envoyée ${x.sent} fois` : "pas encore envoyée"}</div>
+        <div class="acts"><button class="btn sm" data-act="adm-loopon" data-id="${x.id}" data-v="${x.active ? 0 : 1}">${x.active ? "Pause" : "Reprendre"}</button><button class="btn sm" data-act="adm-loopedit" data-id="${x.id}">Modifier</button><button class="btn sm danger" data-act="adm-loopdel" data-id="${x.id}">Supprimer</button></div></div>`).join("")}</div>`;
+  }
+  const loopRead = () => ({ id: A.lp.id, body: $("#admLoop").value, every: +$("#admLoopE").value, banner: $("#admLoopB").checked, chat: $("#admLoopC").checked, show: +$("#admLoopS").value, ends: $("#admLoopF").value });
   function stTags(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now();
     return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">Retiré des classements</span>` : x.suspect ? `<span class="st v">À vérifier</span>` : x.verified ? `<span class="st mod">Vérifié</span>` : ""}`;
@@ -619,6 +648,18 @@
         if (await admDo("adm_pin", { p_body: b, p_chs: chs }, b ? "Message épinglé enregistré." : "Message épinglé retiré.")) { A.pin = null; await loadPin(); }
         return;
       }
+      case "adm-loop": {
+        const f = (A.lp = loopRead()); const b = f.body.trim();
+        if (!b) return X().toast("L'annonce est vide.");
+        if (!f.banner && !f.chat) return X().toast("Choisis au moins le bandeau ou le chat.");
+        const ends = f.ends ? new Date(f.ends + "T23:59:59").toISOString() : null; // fin de la journée choisie, heure du PC de Mathis
+        if (await admDo("adm_loop_save", { p_id: f.id, p_body: b, p_every: f.every, p_banner: f.banner, p_chat: f.chat, p_show: f.show || f.every, p_ends: ends, p_now: !f.id }, f.id ? "Annonce en boucle modifiée." : "Annonce en boucle lancée : la première part tout de suite.")) { A.lp = LP0(); C.tickAt = 0; repaintAdm(); banner(); }
+        return;
+      }
+      case "adm-loopedit": { const x = (A.loops || []).find((l) => l.id === +d.id); if (!x) return; A.lp = { id: x.id, body: x.body, every: x.every_min, banner: x.banner, chat: x.chat, show: x.show_min === x.every_min ? 0 : x.show_min, ends: x.ends ? new Date(x.ends).toLocaleDateString("sv-SE") : "" }; repaintAdm(); return; }
+      case "adm-loopcancel": A.lp = LP0(); repaintAdm(); return;
+      case "adm-loopon": if (await admDo("adm_loop_on", { p_id: +d.id, p_on: d.v === "1" }, d.v === "1" ? "Annonce en boucle reprise." : "Annonce en boucle en pause.")) { C.tickAt = 0; banner(); } return;
+      case "adm-loopdel": if (A.lp.id === +d.id) A.lp = LP0(); if (await admDo("adm_loop_del", { p_id: +d.id }, "Annonce en boucle supprimée.")) banner(); return;
       case "adm-annend": if (await admDo("adm_announce_end", { p_id: +d.id }, "Bandeau retiré.")) banner(); return;
       case "adm-mod": { const p = d.p || ($("#admMod") ? $("#admMod").value.trim() : ""); if (!p) return; admDo("adm_set_mod", { p_pseudo: p, p_on: d.v === "1" }, d.v === "1" ? `${p} est modérateur.` : `${p} n'est plus modérateur.`); return; }
     }
@@ -636,10 +677,11 @@
   /* 1.0.12.8 : ce qui est tapé dans le panel (annonce, message épinglé, recherche d'un pseudo) est gardé en changeant d'onglet */
   function admKeep(id) {
     if (/^admAnn/.test(id)) A.ann = { body: $("#admAnn").value, banner: $("#admAnnB").checked, chat: $("#admAnnC").checked, hours: +$("#admAnnH").value };
+    else if (/^admLoop/.test(id)) A.lp = loopRead();
     else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: ["g", "c", "v"].filter((k) => $("#admPin" + k).checked).join(",") };
     else if (id === "admQ") A.q = $("#admQ").value.trim();
   }
-  document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Loop|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admLoop") { const n = $("#admLoopN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; },
     adm: { get A() { return A; }, body: () => admBody(), load: () => admLoad(), tabs: () => ATABS(), repaint: () => repaintAdm(), keepFocus, isAdmin } }; // 1.0.30 : pour le Panel Xener (js/panel.js)

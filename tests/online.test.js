@@ -283,6 +283,12 @@ const MOCK = () => {
       if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
       if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
       if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
+      // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql) : la première part tout de suite (bandeau + chat)
+      if (name === "ann_tick") { const L = (d.loops || []).filter((x) => x.active && Date.parse(x.next_at) <= Date.now()); L.forEach((x) => { d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 100 + x.id * 10 + x.sent, body: x.body, banner: true, until: new Date(Date.now() + 6e5).toISOString() }); x.sent++; x.last_at = new Date().toISOString(); x.next_at = new Date(Date.now() + x.every_min * 6e4).toISOString(); }); put(d); return { data: (d.loops || []).filter((x) => x.active).map((x) => x.next_at).sort()[0] || null, error: null }; }
+      if (name === "adm_loops") return { data: d.loops || [], error: null };
+      if (name === "adm_loop_save") { log(); d.loops = d.loops || []; const x = a.p_id ? d.loops.find((l) => l.id === a.p_id) : { id: d.loops.length + 1, sent: 0, active: true }; Object.assign(x, { body: a.p_body, every_min: a.p_every, banner: a.p_banner, chat: a.p_chat, show_min: a.p_show, ends: a.p_ends, next_at: a.p_now ? new Date().toISOString() : new Date(Date.now() + a.p_every * 6e4).toISOString() }); if (!a.p_id) d.loops.push(x); put(d); return { data: null, error: null }; }
+      if (name === "adm_loop_on") { log(); const x = (d.loops || []).find((l) => l.id === a.p_id); if (x) x.active = a.p_on; put(d); return { data: null, error: null }; }
+      if (name === "adm_loop_del") { log(); d.loops = (d.loops || []).filter((l) => l.id !== a.p_id); put(d); return { data: null, error: null }; }
       if (name === "adm_announce") { log(); d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 7, body: a.p_body, banner: true, until: null }); put(d); return { data: null, error: null }; }
       // 0.1.20 : hôtel de vente (une seule annonce, achetée une fois)
       const tpl = Object.keys(window.DATA.ITEMS).find((k) => window.DATA.ITEMS[k].lvl === 60 && window.DATA.ITEMS[k].slot === "coiffe"); const T = window.DATA.ITEMS[tpl];
@@ -685,6 +691,14 @@ const MOCK = () => {
     m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_pin" && x[1].p_chs === "g,c")) fail("panel admin : message épinglé non envoyé");
     await page.evaluate(() => { window.CHAT.state.tab = "c"; window.CHAT.repaint(); });
     if (!(await page.$("#chat .ch-pin")) || !/Nouveau texte épinglé/.test(await page.textContent("#chat .ch-pin"))) fail("chat : nouveau message épinglé absent après le changement");
+    // 1.1.2.4 : annonce en boucle : lancée depuis l'onglet Annonces, elle part tout de suite dans le bandeau et se met en pause
+    await page.fill("#admLoop", "Rejoignez le Discord d'Idlus !"); await page.selectOption("#admLoopE", "60"); await page.click('[data-act="adm-loop"]'); await page.waitForTimeout(800);
+    m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_loop_save" && x[1].p_every === 60 && x[1].p_now && x[1].p_body === "Rejoignez le Discord d'Idlus !")) fail("annonces en boucle : boucle non envoyée");
+    if (!/Rejoignez le Discord/.test(await page.textContent("#annbar"))) fail("annonces en boucle : bandeau absent après le lancement");
+    if (!/toutes les 1 h/.test(await page.textContent(".adm"))) fail("annonces en boucle : boucle absente de la liste");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/annonces-boucle.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/annonces-boucle-mob.png", fullPage: true }); await page.setViewportSize(vp); }
+    await page.click('[data-act="adm-loopon"][data-v="0"]'); await page.waitForTimeout(500);
+    if (!/en pause/.test(await page.textContent(".adm"))) fail("annonces en boucle : pause non prise");
     // 1.0.5.2 : codes cadeaux, la liste de choix reste ouverte quand le panel se redessine
     await page.click('.adm [data-act="adm-tab"][data-v="codes"]'); await page.waitForSelector("#gcCode", { timeout: 5000 });
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.30 : le menu a deux pages de plus, la bulle « Équiper un objet » descend sur le bouton

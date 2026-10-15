@@ -1,6 +1,14 @@
 {
-  "version": "1.1.2.3",
+  "version": "1.1.2.4",
   "versions": [
+    {
+      "v": "1.1.2.4",
+      "name": "Annonces en boucle",
+      "items": [
+        "Panel Xener › Annonces : nouvelle boîte « Annonces en boucle ». Un message revient tout seul au rythme choisi (30 min, 1 h, 2 h… 24 h), dans le bandeau et/ou le chat Général, avec pause, modification et date de fin",
+        "Un seul bandeau à la fois : quand une annonce ponctuelle est affichée, la boucle passe seulement dans le chat"
+      ]
+    },
     {
       "v": "1.1.2.3",
       "name": "Sceaux mieux expliqués",
