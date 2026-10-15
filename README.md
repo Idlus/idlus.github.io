@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.5.5 « Plusieurs familles ouvertes »
+
+Menu principal et sommaire du guide : plusieurs familles ouvertes à la fois, état gardé sur l'appareil (`idlus-menu-familles`, `idlus-guide-familles` dans localStorage) ; la famille de la page affichée s'ouvre, rien ne se referme tout seul.
+
 ## 1.2.5.4 « Volonté et reliques dans les codes cadeaux »
 
 Le panel Xener peut mettre de la Volonté de L'Ascension dans un code cadeau (type Monnaie › « Volonté (L'Ascension) », au-delà du maximum de 30) et des reliques pour le Reliquaire (type « Relique (Reliquaire) »). Les Fioles de Volonté restaient déjà possibles (type Consommable).

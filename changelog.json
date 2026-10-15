@@ -1,6 +1,14 @@
 {
-  "version": "1.2.5.4",
+  "version": "1.2.5.5",
   "versions": [
+    {
+      "v": "1.2.5.5",
+      "name": "Plusieurs familles ouvertes",
+      "items": [
+        "Menu principal : plusieurs familles peuvent être ouvertes en même temps ; chacune s'ouvre et se ferme seule et reste comme tu l'as laissée (gardé sur l'appareil)",
+        "Guide : pareil pour le sommaire, les familles ouvertes restent ouvertes quand tu changes de chapitre"
+      ]
+    },
     {
       "v": "1.2.5.4",
       "name": "Volonté et reliques dans les codes cadeaux",

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.5.4";
+const GAME_VERSION = "1.2.5.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.5.5", name: "Plusieurs familles ouvertes", items: [
+    "Menu principal : plusieurs familles peuvent être ouvertes en même temps ; chacune s'ouvre et se ferme seule et reste comme tu l'as laissée (gardé sur l'appareil)",
+    "Guide : pareil pour le sommaire, les familles ouvertes restent ouvertes quand tu changes de chapitre",
+  ] },
   { v: "1.2.5.4", name: "Volonté et reliques dans les codes cadeaux", items: [
     "Les codes cadeaux peuvent offrir de la Volonté pour L'Ascension (même au-delà du maximum de 30, comme une Fiole de Volonté) et des reliques pour le Reliquaire",
   ] },
@@ -2158,8 +2162,13 @@ function navKey() {
   if (t === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quests";
   return t;
 }
+/* 1.2.5.5 (demande de Mathis) : plusieurs familles du menu ouvertes à la fois, gardées sur l'appareil ; la famille de la page affichée s'ouvre, rien ne se referme tout seul */
+const NAV_FAM_KEY = "idlus-menu-familles";
+const navFams = (() => { try { const o = JSON.parse(localStorage.getItem(NAV_FAM_KEY) || "{}"); return o && typeof o === "object" ? o : {}; } catch (e) { return {}; } })();
+const navFamSave = () => { try { localStorage.setItem(NAV_FAM_KEY, JSON.stringify(navFams)); } catch (e) {} };
 function navGo(k) {
-  ui.slot = null; ui.confirm = null; ui.newResDone = false; ui.navOpen = undefined; ui.navFly = null; ui.navQ = ""; // 1.2 : le menu rouvre la famille de la page
+  ui.slot = null; ui.confirm = null; ui.newResDone = false; ui.navFly = null; ui.navQ = "";
+  { const F = navFam(k); if (F && !navFams[F.id]) { navFams[F.id] = true; navFamSave(); } } // la famille de la page s'ouvre
   if (k === "home" || k === "havre") { ui.tab = "home"; ui.home = k === "havre" ? "havre" : "apercu"; }
   else if (k === "world") { ui.tab = "world"; ui.zoneView = null; if (ui.world === "dungeons" || ui.world === "enc") ui.world = "map"; }
   else if (k === "dungeons" || k === "enc") { ui.tab = "world"; ui.zoneView = null; ui.world = k; }
@@ -2332,13 +2341,13 @@ function renderNav() {
       ${NAV.map((F) => `<button class="sn-fh${curFam && curFam.id === F.id ? " cur" : ""}${fly && fly.id === F.id ? " fly" : ""}" data-act="navfly" data-v="${F.id}" data-fam="${F.id}" title="${h(F.n)}" aria-expanded="${!!(fly && fly.id === F.id)}">${icon(F.ic)}${famNew(F)}${famBadge(F)}</button>`).join("")}
       <span class="sn-grow"></span>${foot}</div>${fly ? `<div class="sn-fly"><h4>${h(fly.n)}</h4>${navFamPages(fly).map((p) => item(p[0], p[1], p[2], true)).join("")}</div>` : ""}`;
   } else {
-    const openId = ui.navOpen === undefined ? (curFam && curFam.id) : ui.navOpen; // une seule famille ouverte : celle de la page, sauf si le joueur en a ouvert une autre
+    const isOpen = (F) => (F.id in navFams ? !!navFams[F.id] : !!(curFam && curFam.id === F.id)); // 1.2.5.5 : plusieurs familles ouvertes
     side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="Réduire le menu aux icônes" aria-label="Réduire le menu">«</button></div>
       <label class="sn-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Aller à une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
       ${fightBtn}${item("home", "Havre-Sac", "logo")}
       ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}${badge(key)}</button>`; }).join("")}</div></div>` : ""}
       ${q ? `<div class="sn-hits"><span>${hits.length ? `${hits.length} page${hits.length > 1 ? "s" : ""}` : "Aucune page"} pour « ${h(q)} »</span>${hits.map((p) => item(p[0], p[1], p[2], true)).join("")}</div>`
-        : NAV.map((F) => { const op = F.id === openId; return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
+        : NAV.map((F) => { const op = isOpen(F); return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
       <span class="sn-grow"></span>${foot}</div>`;
   }
   ui.navJust = null;
@@ -9220,7 +9229,7 @@ document.addEventListener("click", (ev) => {
       closeSheet(); window.scrollTo(0, 0); break; }
     case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
-    case "navfam": { const cf = navFam(navKey()); const open = ui.navOpen === undefined ? (cf && cf.id) : ui.navOpen; ui.navOpen = open === d.v ? null : d.v; ui.navJust = ui.navOpen; renderNav(); return; } // 1A : une famille ouverte à la fois
+    case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navpin": { const P = navPins(); const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (P.length >= NAV_PINS_MAX) { toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); S.settings.pins = P; dirty = true; renderNav(); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;

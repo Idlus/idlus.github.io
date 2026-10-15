@@ -1003,6 +1003,9 @@
 
   /* ---------- calculateurs (idée 5A) ---------- */
   const st = { id: null, q: "", at: null, calc: {}, fam: {}, sum: false };
+  const FK = "idlus-guide-familles"; // familles ouvertes, gardées sur l'appareil
+  try { const o = JSON.parse(localStorage.getItem(FK) || "{}"); if (o && typeof o === "object") st.fam = o; } catch (e) {}
+  const famSave = () => { try { localStorage.setItem(FK, JSON.stringify(st.fam)); } catch (e) {} };
   const sel = (k, opts, v) => `<select data-act="gd-calc" data-k="${k}" aria-label="${h(k)}">${opts.map(([a, b]) => `<option value="${h(a)}" ${String(a) === String(v) ? "selected" : ""}>${h(b)}</option>`).join("")}</select>`;
   const dur = (sec) => { sec = Math.max(0, Math.round(sec)); const hh = Math.floor(sec / 3600), mm = Math.round((sec % 3600) / 60); return hh ? `${hh} h ${String(mm).padStart(2, "0")}` : `${mm} min`; };
   const runsFor = (q, goal) => (q > 0 ? Math.ceil(Math.log(1 - goal) / Math.log(1 - q)) : Infinity);
@@ -1234,7 +1237,9 @@
     const by = FAM.map((f) => [f, L.filter((c) => c.f === f)]).filter(([, x]) => x.length);
     const curF = (CH.find((c) => c.id === cur) || {}).f;
     /* menu déroulant (demande de Mathis, 1.2.4.x) : une famille repliée par défaut, celle du chapitre affiché ouverte ; tout ouvert pendant une recherche */
-    return fav + by.map(([f, x]) => { const op = srch || (f in st.fam ? st.fam[f] : f === curF); const lu = x.filter((c) => R[c.id]).length;
+    /* plusieurs familles ouvertes à la fois (demande de Mathis) : la famille du chapitre lu s'ouvre et reste ouverte, rien ne se referme tout seul */
+    if (curF && !(curF in st.fam)) { st.fam[curF] = true; famSave(); }
+    return fav + by.map(([f, x]) => { const op = srch || !!st.fam[f]; const lu = x.filter((c) => R[c.id]).length;
       return `<div class="gd-fam ${op ? "open" : ""}"><button class="gd-fh" data-act="gd-fam" data-v="${h(f)}" aria-expanded="${op}"><span class="gd-fn">${h(f)}</span><span class="gd-fc">${lu ? `${lu}/` : ""}${x.length}</span><span class="gd-chev" aria-hidden="true">›</span></button>${op ? `<div class="gd-fl">${x.map(item).join("")}</div>` : ""}</div>`; }).join("");
   }
   function html() {
@@ -1283,7 +1288,7 @@
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t || !S()) return; const a = t.dataset.act;
     if (a === "gd-open") { ev.preventDefault(); ev.stopPropagation(); open(t.dataset.v || null); return; }
     if (a === "gd-link") { copyLink(t.dataset.v); return; }
-    if (a === "gd-fam") { const f = t.dataset.v; const cur = (CH.find((c) => c.id === st.id) || {}).f; const now = f in st.fam ? st.fam[f] : f === cur; st.fam[f] = !now; paint(); return; }
+    if (a === "gd-fam") { const f = t.dataset.v; st.fam[f] = !st.fam[f]; famSave(); paint(); return; }
     if (a === "gd-sum") { st.sum = !st.sum; paint(); return; }
     if (a === "gd-fav") { const s = S(); const L = favs().slice(); const i = L.indexOf(t.dataset.v); if (i >= 0) L.splice(i, 1); else L.unshift(t.dataset.v); s.guideFav = L; X().markDirty(); paint(); return; }
     if (a === "gd-z") { zoom = Math.max(0, Math.min(3, zoom + (+t.dataset.v || 0))); try { localStorage.setItem(ZK, String(zoom)); } catch (e) {} paint(); return; }
