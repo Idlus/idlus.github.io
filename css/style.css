@@ -5211,11 +5211,10 @@ span.fch{cursor:default;padding-left:8px}
  .schud .hc{grid-template-columns:1fr;justify-items:center;padding:3px 2px;gap:2px}.schud .hb{width:100%}.schud .hb b,.schud .hpv{display:none}
  .schud .hp{width:26px;height:26px}.schud .hss{justify-content:center}.schud .hc.boss{grid-column:span 2}.schud .hsum{width:15px;height:15px}}
 
-/* maquette « Nouvelles animations » */
-.arena.v2.an-idle-A .ent.hero:not(.act):not(.hit):not([data-pv]) .look,.arena.v2.an-idle-B .ent.hero:not(.act):not(.hit):not([data-pv]) .look{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
-.arena.v2.an-idle-A .ent:not(.act):not(.hit) img.sprite{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
-.arena.v2.an-idle-A .ent.anfly:not(.act):not(.hit) img.sprite{animation:anfly var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
-.arena.v2.an-idle-B .ent:not(.act):not(.hit) img.sprite{animation:bob var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
+/* 1.0.33 « Nouvelles animations » : chacun respire à son rythme (héros compris), les volants flottent */
+.arena.v2.anlive .ent.hero:not(.act):not(.hit):not([data-pv]) .look{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
+.arena.v2.anlive .ent:not(.act):not(.hit) img.sprite{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
+.arena.v2.anlive .ent.anfly:not(.act):not(.hit) img.sprite{animation:anfly var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
 @keyframes anbr{0%,100%{transform:none}50%{transform:scale(.975,1.04)}}
 @keyframes anfly{0%,100%{transform:translateY(-8px) rotate(1.5deg)}50%{transform:translateY(-18px) rotate(-2deg)}}
-.arena.v2.iso .ent.anglow::after{background:rgba(255,240,170,.75)}
+@media (prefers-reduced-motion:reduce){.arena.v2.anlive .ent .look,.arena.v2.anlive .ent img.sprite{animation:none}}
