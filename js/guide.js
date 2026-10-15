@@ -498,6 +498,12 @@
       ["p", `Chaque donjon a sa difficulté de 1 à ${N(() => E.STASIS_MAX)}. Réussir une stasis ouvre la suivante pour ce donjon. Plus elle est haute, plus les monstres sont forts et les récompenses grandes.`],
       ["kv", [1, 5, 10, 15].map((k) => [`Stasis ${k}`, V(() => { const m = E.stasisMult(k); return `vie ×${fr(Math.round(m.hp * 100) / 100)} · dégâts ×${fr(Math.round(m.dmg * 100) / 100)} · gains ×${fr(Math.round(m.rew * 100) / 100)}`; })])],
       ["ul", V(() => (Array.isArray(E.STASIS_STEPS) ? E.STASIS_STEPS : Object.values(E.STASIS_STEPS)).map((x, i) => (typeof x === "string" ? x : x.t || x.txt || x.desc ? `**Stasis ${x.k || i + 1}** : ${x.t || x.txt || x.desc}` : "")).filter(Boolean), [])],
+      ["h", "Sorts des monstres et des boss"],
+      ["ul", [
+        "Chaque sort de monstre a sa **mécanique** (saignement, venin, gel, zone, charge, carapace…), affichée sur les cartes de monstres des zones.",
+        "Un tour sur trois, le boss **prépare sa signature** (⚠ au-dessus de lui) puis la lâche sur toute l'équipe : un bouclier ou des soins prêts à ce moment-là font la différence.",
+        "Chaque boss a aussi un **sort unique** (✦) qu'aucun autre ne possède. Il se découvre au premier combat et s'explique ensuite dans « Sorts du boss », sur la fiche du donjon.",
+      ]],
       ["h", "Récompenses"],
       ["ul", [
         "À la fin : butin des salles et du boss, Poussière de stasis, un objet garanti du boss.",

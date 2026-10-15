@@ -5755,3 +5755,12 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .launch10 .shine.l10-logo{width:110px;height:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
 .launch10 .shine.l10-logo img{width:100%;height:auto}
 .shine.nom{--m:url(../assets/ui/logo-nom.svg)}.shine.emb{--m:url(../assets/ui/logo-embleme.svg)}
+/* identité des sorts des monstres */
+.bsorts{margin-top:8px}.bsorts .dglist li{margin:3px 0}.bsorts li.uniq{padding:4px 6px;border-radius:8px;background:color-mix(in srgb,#d4a017 10%,transparent)}
+.midrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.midc{font-size:11.5px;font-weight:700;line-height:1.2;padding:2px 7px;border-radius:7px;background:var(--panel2);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
+.midc.sig{border-color:#e74c3c;background:color-mix(in srgb,#e74c3c 16%,var(--panel2))}
+.midc.uniq{border-color:#d4a017;background:linear-gradient(100deg,color-mix(in srgb,#d4a017 22%,var(--panel2)),color-mix(in srgb,#e74c3c 14%,var(--panel2)));box-shadow:0 0 0 1px color-mix(in srgb,#d4a017 35%,transparent) inset}
+.midwarn{position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%);font-size:18px;line-height:1;padding:3px 6px;border-radius:999px;background:rgba(40,6,6,.9);border:2px solid #ff3b2f;color:#ffd84d;z-index:8;pointer-events:none;animation:midwarn 1s ease-in-out infinite}
+@keyframes midwarn{0%,100%{transform:translate(-50%,-100%) scale(1)}50%{transform:translate(-50%,-112%) scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.midwarn{animation:none}}

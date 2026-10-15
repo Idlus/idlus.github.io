@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.7.2";
+const GAME_VERSION = "1.2.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.8", name: "Les sorts des monstres et des boss", guide: "donjons", items: [
+    "Chaque sort de monstre a maintenant sa mécanique, tirée de son nom ou de ses effets : saignement, venin, brûlure, gel, zone, charge, entrave, carapace, rage… Deux sorts d’un même monstre ne se ressemblent jamais.",
+    "Un tour sur trois, le boss prépare son attaque signature : un ⚠ apparaît au-dessus de lui, puis il la lâche sur toute l’équipe au tour suivant.",
+    "Chacun des 131 boss a un sort unique (✦) qu’il est le seul à posséder : la laine du Bouftou Royal, le coffre qui se referme, l’horloge du Comte Harebourg, le pile ou face de Chalœil…",
+    "Fiche du donjon : nouveau bloc « Sorts du boss » ; le sort unique se dévoile après le premier combat. Les cartes de monstres des zones montrent leurs mécaniques.",
+    "Les combats deviennent un peu plus exigeants (environ une demi-stasis en bon équipement), vérifié par simulation." ] },
   { v: "1.2.7.2", name: "Chasse aux bugs du soir", items: [
     "L'Ascension : l'auto ne remplace plus une relique par une moins rare, et passe le palier si rien n'est mieux que ce que tu portes.",
     "L'Ascension : l'Anneau du Collectionneur et l'Amulette du Destin, les Bottes du Coureur et la Cape du Lève-tôt marchent dans n'importe quel ordre.",
@@ -3174,6 +3180,7 @@ function renderZoneView(sid) {
     </div>
   </section>`;
 }
+const MID_ICO = { saigne: "🩸", poison: "🧪", brulure: "🔥", gel: "❄️", zone: "💥", charge: "🐗", entrave: "🕸️", vampire: "🦇", peur: "😱", armure: "🛡️", rage: "😡", eclair: "⚡", choc: "💫", marque: "🎯", soin: "🌿" }; // identité des sorts des monstres
 function monCard(k, opts = {}) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0;
   const archiKey = m.archi; const archiMet = archiKey && S.archis[archiKey];
@@ -3182,6 +3189,7 @@ function monCard(k, opts = {}) {
     <div class="l">niv. <span class="num">${m.lvl[0]}${m.lvl[1] !== m.lvl[0] ? "–" + m.lvl[1] : ""}</span> ${eld(m.el)} ${kills ? `· <span class="num">${fmt(kills)}</span> tués` : ""}</div>
     <div class="res" style="margin-top:3px">${resChips(m.res)}</div>
     ${(() => { const r = !opts.unknown && E.monRole(k, m.lvl[1]); return r ? `<div class="xs" style="margin-top:3px" data-tip="${h(E.MON_ROLES[r].desc)}"><span class="mrole inl">${h(E.MON_ROLES[r].name)}</span> ${h(E.MON_ROLES[r].desc)}</div>` : ""; })()}
+    ${!opts.unknown && E.midText ? (() => { const L = E.midText(k); return L.length ? `<div class="midrow">${L.map((x) => `<span class="midc ${x.sig ? "sig" : ""} ${x.uniq ? "uniq" : ""}" data-tip="${h(`${x.sp} · ${x.n}${x.uniq ? " · sort unique de ce boss" : ""}${x.sig ? " · attaque signature, préparée un tour à l'avance" : ""} : ${x.d}`)}">${x.uniq ? "✦" : MID_ICO[x.k] || "◆"} ${h(x.n)}${x.sig ? " ⚠" : ""}</span>`).join("")}</div>` : ""; })() : ""}
     ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}${E.hasSoul(S, archiKey) ? " · 💜 âme" : ""}</div>` : ""}</div></div>`;
 }
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
@@ -3367,6 +3375,7 @@ function dungeonSheet(did) {
       ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
         <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
+        ${E.midText ? (() => { const L = E.midText(dg.boss); return L.length ? `<div class="bsorts"><b>Sorts du boss</b><ul class="dglist">${L.map((x) => (seen || !x.uniq) ? `<li class="${x.uniq ? "uniq" : ""}"><span class="midc ${x.uniq ? "uniq" : ""} ${x.sig ? "sig" : ""}">${x.uniq ? "✦" : MID_ICO[x.k] || "◆"} ${h(x.n)}</span> <b>${h(x.sp)}</b>${x.sig ? ` <span class="xs muted">· signature ⚠</span>` : ""} : ${h(x.d)}</li>` : `<li><span class="midc uniq">✦ ???</span> <b>${h(x.sp)}</b> : <span class="muted">sort unique, à découvrir en affrontant le boss</span></li>`).join("")}</ul></div>` : ""; })() : ""}
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       ${dgDofusBox(did, SI, k)}
       ${window.DGRANK ? window.DGRANK.box(did) : ""}
@@ -4976,6 +4985,7 @@ function updateCombat(force) {
       n.querySelector(".hpb i").style.width = pct(e.hp, e.hpMax) + "%";
       n.querySelector(".hpb b").style.transform = `scaleX(${Math.min(1, (e.shield || 0) / e.hpMax)})`;
       axUpdateEnt(F, A, e, i, n);
+      if (e.side === "m") { const pr = !!(e.midPrep && e.alive), w = n.querySelector(":scope > .midwarn"); if (pr && !w) n.insertAdjacentHTML("beforeend", `<span class="midwarn" aria-hidden="true">⚠</span>`); else if (!pr && w) w.remove(); } // signature de boss en préparation
       const hn = n.querySelector(".hpn"); if (hn) hn.textContent = `${fmt(Math.max(0, Math.round(e.hp)))} / ${fmt(e.hpMax)}`;
       if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });

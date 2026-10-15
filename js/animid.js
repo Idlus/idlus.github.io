@@ -90,6 +90,22 @@
     echo: (A, n) => { const p = axPt(A, n, 0.45); for (let i = 0; i < 2; i++) setTimeout(() => { const r = mk(A, "idimp", p.x, p.y, "", 10, 10); r.style.setProperty("--c", "#e0e0ff"); axLater(r, 520); }, i * 160); },
     contagion: (A, n) => sparks(A, n, "#9bf06a", 10),
     sacrifice: (A, n) => { sparks(A, n, "#e74c3c", 8, false); body(n, [{ filter: "none" }, { filter: "drop-shadow(0 0 8px #e74c3c) saturate(1.6)" , offset: 0.4 }, { filter: "none" }], { duration: 600 }); },
-  };
-  window.anIdTrig = (F, A, f, n) => { const fn = FX[f.idx]; if (!fn || !n || !n.isConnected || !(A.view === "scene")) return; try { fn(A, n, F); } catch (e) { /* le nœud a pu disparaître */ } };
+    /* identité des sorts des monstres */
+    m_saigne: (A, n) => FX.erosion(A, n),
+    m_poison: (A, n) => { sparks(A, n, "#8ee04a", 8); pop(A, n, MO.eau("#7cc242"), 16, 22, -0.3, 800); },
+    m_brulure: (A, n) => { pop(A, n, MO.f("#ff7a3c"), 20, 26, -0.25, 800); sparks(A, n, "#ffb347", 6); },
+    m_gel: (A, n) => { sparks(A, n, "#bfe9ff", 8, false); body(n, [{ filter: "none" }, { filter: "hue-rotate(160deg) brightness(1.4)", offset: 0.3 }, { filter: "none" }], { duration: 700 }); },
+    m_entrave: (A, n) => pop(A, n, MO.ronce("#7a5a32"), 44, 16, 0.25, 1000),
+    m_vampire: (A, n) => { sparks(A, n, "#e74c3c", 8); },
+    m_peur: (A, n) => { body(n, [{ translate: "0 0" }, { translate: "-3px 0", offset: 0.2 }, { translate: "3px 0", offset: 0.4 }, { translate: "-3px 0", offset: 0.6 }, { translate: "0 0" }], { duration: 500 }); pop(A, n, MO.masque("#6b4a8a"), 22, 22, -0.35, 800); },
+    m_choc: (A, n) => { const p = axPt(A, n, 0.15); for (let i = 0; i < 3; i++) { const d = mk(A, "idspk", p.x, p.y, "", 7, 7); d.style.background = "#ffd84d"; d.animate([{ transform: `translate(-50%,-50%) rotate(${i * 120}deg) translateX(14px)` }, { transform: `translate(-50%,-50%) rotate(${i * 120 + 360}deg) translateX(14px)`, opacity: 0.2 }], { duration: 800, fill: "forwards" }); axLater(d, 850); } },
+    m_marque: (A, n) => pop(A, n, SVG(40, 40, '<circle cx="20" cy="20" r="15" fill="none" stroke="#e74c3c" stroke-width="3"/><circle cx="20" cy="20" r="6" fill="none" stroke="#e74c3c" stroke-width="3"/><path d="M20 1v9M20 30v9M1 20h9M30 20h9" stroke="#e74c3c" stroke-width="3"/>'), 30, 30, -0.05, 1000),
+    m_zone: (A, n) => { const p = axPt(A, n, 0.45); const r = mk(A, "idimp", p.x, p.y, "", 10, 10); r.style.setProperty("--c", "#ffb347"); axLater(r, 520); },
+    m_eclair: (A, n) => { pop(A, n, SVG(24, 40, '<path d="M14 1L3 22h8l-4 17 14-23h-8z" fill="#ffe14d" stroke="#fff" stroke-width="1"/>'), 18, 30, -0.2, 600); },
+    m_rage: (A, n) => { body(n, [{ filter: "none" }, { filter: "drop-shadow(0 0 8px #ff3b2f) saturate(1.5)", offset: 0.4 }, { filter: "none" }], { duration: 700 }); },
+    m_armure: (A, n) => ground(A, n, "#9fb6c8", 1000),
+    m_soin: (A, n) => sparks(A, n, "#7ee06a", 8),
+    m_prep: (A, n) => { ground(A, n, "#ff3b2f", 1400); sparks(A, n, "#ff3b2f", 10); },
+    m_sig: (A, n, F) => { body(n, [{ transform: "none" }, { transform: "scale(1.12)", offset: 0.3 }, { transform: "none" }], { duration: 600 }); F.ents.forEach((e, i) => { if (e.alive && e.side === "c" && A.nodes[i]) { const p = axPt(A, A.nodes[i], 0.5); const r = mk(A, "idboom", p.x, p.y, "", 20, 20); axLater(r, 700); } }); },
+  };  window.anIdTrig = (F, A, f, n) => { const fn = FX[f.idx]; if (!fn || !n || !n.isConnected || !(A.view === "scene")) return; try { fn(A, n, F); } catch (e) { /* le nœud a pu disparaître */ } };
 })();

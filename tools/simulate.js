@@ -13,6 +13,8 @@
 const E = require("../js/engine.js");
 require("../js/systems.js");
 require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/identite.js"); // identité des sorts (NO_ID=1 : sans)
+require("../js/identmon.js"); // identité des sorts des monstres (NO_MID=1 : sans)
+require("../js/identboss.js"); // sorts uniques des boss
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };

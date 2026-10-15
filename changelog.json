@@ -1,6 +1,18 @@
 {
-  "version": "1.2.7.2",
+  "version": "1.2.8",
   "versions": [
+    {
+      "v": "1.2.8",
+      "name": "Les sorts des monstres et des boss",
+      "guide": "donjons",
+      "items": [
+        "Chaque sort de monstre a maintenant sa mécanique, tirée de son nom ou de ses effets : saignement, venin, brûlure, gel, zone, charge, entrave, carapace, rage… Deux sorts d’un même monstre ne se ressemblent jamais.",
+        "Un tour sur trois, le boss prépare son attaque signature : un ⚠ apparaît au-dessus de lui, puis il la lâche sur toute l’équipe au tour suivant.",
+        "Chacun des 131 boss a un sort unique (✦) qu’il est le seul à posséder : la laine du Bouftou Royal, le coffre qui se referme, l’horloge du Comte Harebourg, le pile ou face de Chalœil…",
+        "Fiche du donjon : nouveau bloc « Sorts du boss » ; le sort unique se dévoile après le premier combat. Les cartes de monstres des zones montrent leurs mécaniques.",
+        "Les combats deviennent un peu plus exigeants (environ une demi-stasis en bon équipement), vérifié par simulation."
+      ]
+    },
     {
       "v": "1.2.7.2",
       "name": "Chasse aux bugs du soir",

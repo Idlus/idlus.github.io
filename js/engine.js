@@ -1407,6 +1407,7 @@
       if (tgt.mech && tgt.mech.includes("totems") && alive(F, "m").some((m) => m.totem)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; }
       if (tgt.role === "coriace" && tgt.hp > tgt.hpMax * 0.5) v *= 0.7;
       if (tgt.weakOpen) v *= 1.5;
+      if (E.midUDef && tgt.boss && E.MID_U && E.MID_U[tgt.key]) v = E.midUDef(F, src, tgt, v, el); // sorts uniques des boss
       if (tgt.mech) {
         if (tgt.mech.includes("glyphes")) v *= F.round % 2 === 0 ? 1.4 : 0.7;
         if (tgt.skinEl && el === tgt.skinEl) v *= tgt.mech.includes("humeurs") ? 0.25 : 0.5;
@@ -1464,7 +1465,7 @@
     if (F && src && src.pet && v > 0 && E.petHit && !F.pushHit) E.petHit(F, src, tgt, v, el); // 1.1 : familiers (souffle, soin, griffe)
     return v;
   };
-  E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a) };
+  E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a), rowOf: (t) => rowOf(t), resists: (...a) => resists(...a), spawnMon: (...a) => spawnMon(...a), mobKey: (...a) => mobKey(...a) };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
@@ -1907,6 +1908,7 @@
   const resists = (h, k) => { const p = E.tact(h.st, k); if (p > 0 && rnd() * 100 < p) { tlog(k); return true; } return false; };
   const monCrit = (e, v) => (e.crit && rnd() * 100 < e.crit ? v * 1.25 + (e.dcri || 0) : v); // idoles Hadibel et Tigel
   const monsterTurn = (S, F, e) => {
+    if (E.midTurn) E.midTurn(F, e); // identité des sorts des monstres : signature de boss
     const skip = e.mech ? bossMech(S, F, e) : false;
     if (e.role) roleTurn(S, F, e);
     if (skip || !e.alive || !alive(F, "c").length) return;
@@ -1926,6 +1928,7 @@
         const ok = e.sp.filter((s) => !(e.cds[s.n] > 0) && (!s.fx.some((f) => f.k === "heal" || f.k === "healpct") || allyHurt));
         if (ok.length) sp = pick(ok);
       }
+      if (E.midPick && e.midGo) sp = E.midPick(F, e, sp);
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), ...(sp ? { msp: sp.n } : {}) });
       if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t, e)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, monCrit(e, e.dmg * mdmg * lowPa * rf(0.85, 1.15)), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
@@ -1934,11 +1937,14 @@
         if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
           if (didDmg) continue; didDmg = true; // une seule ligne de dégâts par sort (les autres sont des variantes)
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
-          const ts = (f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)]).filter((t) => !dodged(F, t, e));
+          let ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)];
+          if (E.midTargets) ts = E.midTargets(F, e, sp, f, ts, targets);
+          ts = ts.filter((t) => !dodged(F, t, e));
           const base = monCrit(e, e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15));
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
-          ts.forEach((t) => { if (f.k === "dot") t.dots.push({ v: base * 0.5, turns: f.t || 2, el, src: e.name }); else { const d = dealDamage(F, e, t, base, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
+          ts.forEach((t) => { if (f.k === "dot") t.dots.push({ v: base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1), turns: f.t || 2, el, src: e.name }); else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
+          F.midB = base; F.midEl = el; F.midTs = ts;
           parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
         } else if (f.k === "heal" || f.k === "healpct") {
           const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? hpR(t) * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
@@ -1948,6 +1954,7 @@
         } else if (f.k === "weaken") { const t = pick(targets); t.debuffs.push({ weak: 15, turns: 1 }); parts.push(`affaiblit ${t.name}`);
         } else if (f.k === "vuln") { const t = pick(targets); t.debuffs.push({ vuln: 10, turns: 2 }); parts.push(`rend ${t.name} vulnérable`); }
       }
+      if (E.midPost) { E.midPost(F, e, sp, didDmg ? F.midB : 0, F.midEl, didDmg ? F.midTs : []); F.midB = 0; }
       flog(F, `${e.name} · ${sp.n}${parts.length ? " → " + parts.join(", ") : ""}`, "m");
       alive(F, "c").length; F.ents.filter((t) => t.side === "c" && !t.alive && !t.koLogged).forEach((t) => { t.koLogged = true; flog(F, `${t.name} est à terre.`, "ko"); });
     }
