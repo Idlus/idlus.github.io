@@ -38,6 +38,7 @@ const MOCK = () => {
       eq: (k, v) => { f.push((r) => r[k] === v); return b; }, in: (k, v) => { f.push((r) => v.includes(r[k])); return b; }, delete: () => { del = true; return b; }, gt: (k, v) => { f.push((r) => r[k] > v); return b; }, lte: (k, v) => { f.push((r) => r[k] <= v); return b; },
       or: () => { f.push(() => false); return b; },
       ilike: (k, v) => { v = v.replace(/\\/g, ""); f.push((r) => String(r[k]).toLowerCase() === v.toLowerCase()); return b; },
+      like: (k, v) => { const p = String(v).replace(/%$/, ""); f.push((r) => String(r[k]).startsWith(p)); return b; }, neq: (k, v) => { f.push((r) => r[k] !== v); return b; }, // Premiers depuis les sorts des boss
       insert: (o) => { ins = o; return b; },
       maybeSingle: () => Promise.resolve({ data: run()[0] || null, error: null }),
       then: (ok, ko) => {
@@ -508,10 +509,21 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
     if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
     await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 }); await page.click('[data-act="closesheet"].btn');
-    await page.evaluate(() => { const S = window.DX.S; const did = Object.keys(window.DATA.DUNGEONS)[0]; S.stasis = S.stasis || {}; S.stasis[did] = { max: 3, sel: 3, firsts: {}, best: { 3: 80 } }; window.DX.saveNow(); });
+    await page.evaluate(() => { const S = window.DX.S; const did = Object.keys(window.DATA.DUNGEONS)[0]; S.stasis = S.stasis || {}; S.stasis[did] = { max: 3, sel: 3, firsts: {}, best: { 3: 80 }, sz: window.ENGINE.STASIS_SAISON, sk: 3, st: 80 }; window.DX.saveNow(); });
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const did = Object.keys(window.DATA.DUNGEONS)[0];
+      d.views.firsts = (d.views.firsts || []).concat([{ kind: "sb", key: did + ":1", pseudo: "Kralamour", user_id: "u9", at: new Date().toISOString() }]);
+      d.views.lb_first_sb = [{ did, k: 1, pseudo: "Kralamour", user_id: "u9", at: new Date().toISOString() }]; localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.click("#onPill"); await page.waitForSelector(".bigrec", { timeout: 8000 });
     if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
     await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
+    // Premiers depuis les sorts des boss : grille des 15 stasis du donjon, puis l'onglet Premiers › Sorts des boss
+    await page.click('[data-act="lb-tab"][data-v="first"]'); await page.waitForTimeout(300); await page.click('[data-act="lb-tab"][data-v="dj"]'); await page.click('[data-act="lb-dmode"][data-v="all"]'); await page.waitForSelector("#lbList .sbgrid", { timeout: 5000 });
+    if ((await page.$$("#lbList .sbgrid .sbk")).length !== 15 || (await page.$$("#lbList .sbgrid .sbk.on")).length !== 1) fail("Premiers des sorts des boss : grille du donjon incorrecte");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-sb.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.screenshot({ path: process.env.SHOTS + "/lb-sb-mob.png" }); await page.setViewportSize(vp); await page.waitForTimeout(300); }
+    await page.click('[data-act="lb-tab"][data-v="first"]'); await page.waitForTimeout(300);
+    if (!/Kralamour/.test(await page.textContent("#lbList")) || !/stasis 1/.test(await page.textContent("#lbList"))) fail("Premiers › Sorts des boss : ligne absente");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-first-sb.png", fullPage: true });
+    await page.click('[data-act="lb-fview"][data-v="all"]'); await page.waitForTimeout(300);
     m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
     // 1.0.30 : classement du donjon dans sa fiche : top 5 et ma place, équipe de chaque record, Records / Cette semaine, « Classement complet »
     const dgW = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const V = window.VERIFY; const W = V.weekIdx(Date.now()); const did = V.weeklyDungeons(window.DATA.DUNGEONS, W)[0].did;
@@ -543,6 +555,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     m = await mock();
     if (gq.q.length !== 1 || !(m.dofusSent || []).length || m.dofusSent[0].uid !== gq.q[0].uid || m.dofusSent[0].k !== 7 || gq.left) fail(`GIGA annonce : Dofus tombé non demandé au serveur (${JSON.stringify([gq, m.dofusSent])})`);
     // 7c. chat : lecture, envoi, refus d'un lien, objet montré, menu d'un joueur, signalement, ignorer, privé
+    await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true, nv13: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // la bulle « Jouer en musique ? » ne cache pas les onglets du chat
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const t = new Date().toISOString();
       d.views.chat_msgs = [{ id: 1, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, title: "Maître de la semaine", body: "Salut !", kind: "msg", created_at: t },
         { id: 2, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, kind: "ann", data: { t: "first", label: "Premier héros au niveau 200" }, created_at: t }];

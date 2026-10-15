@@ -1153,6 +1153,13 @@
   E.STASIS_MAX = 15; // 1.1 : stasis 11 à 15 (Mathis 3A)
   E.STASIS_UP = 1.12; // 1.1 : au-delà de la stasis 10, monstres +12 % de PV et +12 % de dégâts par palier (environ +25 % de difficulté, simulé)
   E.STASIS15_TITLE = "Maître du temps";
+  /* Nouveau départ des classements de stasis (demande de Mathis, 15/10/2026, avec les sorts uniques des boss) : la saison 2
+     ne compte que les stasis terminées depuis cette mise à jour. SI.sz = saison, SI.sk = stasis la plus haute terminée
+     pendant la saison, SI.st = son meilleur temps. Les stasis débloquées (SI.max) ne changent pas : on peut tout de suite
+     relancer sa meilleure stasis. La fonction serveur « record » lit E.stasisSaison pour les records et les Premiers. */
+  E.STASIS_SAISON = 2;
+  E.STASIS_SAISON_NOM = "sorts des boss";
+  E.stasisSaison = (S, did) => { const SI = ((S && S.stasis) || {})[did]; return SI && SI.sz === E.STASIS_SAISON && SI.sk > 0 ? { k: SI.sk, t: SI.st || 0 } : { k: 0, t: 0 }; };
   E.STASIS_TL = { room: 15, boss: 24 };
   E.STASIS_MODS = {
     enrages:   { name: "Enragés",     desc: "Les monstres infligent +25 % de dégâts sous 50 % de PV." },
@@ -2926,6 +2933,8 @@
     if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
+    if (SI.sz !== E.STASIS_SAISON) { SI.sz = E.STASIS_SAISON; SI.sk = 0; SI.st = 0; } // saison des sorts des boss
+    if (k > (SI.sk || 0)) { SI.sk = k; SI.st = t; } else if (k === SI.sk && t > 0 && (!SI.st || t < SI.st)) SI.st = t;
     if (k >= 10) S.unlocks.stasis10 = true;
     if (k >= 15) { S.unlocks.stasis15 = true; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.STASIS15_TITLE)) { S.titlesExtra.push(E.STASIS15_TITLE); note(S, `Stasis 15 : titre « ${E.STASIS15_TITLE} » !`, "rare"); } }
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");

@@ -5764,3 +5764,12 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .midwarn{position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%);font-size:18px;line-height:1;padding:3px 6px;border-radius:999px;background:rgba(40,6,6,.9);border:2px solid #ff3b2f;color:#ffd84d;z-index:8;pointer-events:none;animation:midwarn 1s ease-in-out infinite}
 @keyframes midwarn{0%,100%{transform:translate(-50%,-100%) scale(1)}50%{transform:translate(-50%,-112%) scale(1.15)}}
 @media (prefers-reduced-motion:reduce){.midwarn{animation:none}}
+/* Premiers depuis les sorts des boss (Classements › Donjons) : qui a fini chaque stasis en premier depuis la mise à jour */
+.sbfirst{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:2px solid var(--frame);border-radius:12px;background:var(--panel2);margin-bottom:8px}
+.sbgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.sbk{display:flex;flex-direction:column;align-items:center;padding:4px 2px;border-radius:8px;border:1px dashed var(--frame);opacity:.6;min-width:0}
+.sbk small{font-size:10px;color:var(--muted)}
+.sbk b{font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbk.on{opacity:1;border-style:solid;border-color:var(--gold,#e2b04a)}
+.sbk.mine{background:color-mix(in srgb,var(--gold,#e2b04a) 18%,transparent)}
+.dgrank .dgr-sb{display:block}

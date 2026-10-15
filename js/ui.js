@@ -10091,8 +10091,8 @@ async function onBoot() {
    Niveau (avec filtre par classe), Donjons (de la semaine ou depuis toujours), Album, Succès, Premiers.
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
-const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, cache: {} };
-const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
+const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, fview: "sb", cache: {} };
+const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho, LB.fview].join("|");
 const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
@@ -10185,8 +10185,10 @@ async function lbFetch() {
       out.rows = (data || []).map(rec);
       if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
     } else {
-      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const [{ data }, sb] = await Promise.all([db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50),
+        db.from("firsts").select("key,pseudo,user_id,at").eq("kind", "sb").like("key", did + ":%").then((r) => r, () => ({}))]);
       out.rows = (data || []).map(rec);
+      out.sb = {}; ((sb && sb.data) || []).forEach((r) => { const k = +String(r.key).split(":")[1]; if (k) out.sb[k] = r; }); // Premiers depuis les sorts des boss
       if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).eq("user_id", me).limit(1);
         if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
     }
@@ -10196,8 +10198,11 @@ async function lbFetch() {
     await raceFetch(out);
   } else if (t === "job") {
     await jobLbFetch(out);
+  } else if (t === "first" && LB.fview === "sb") { // Premiers depuis les sorts des boss : la stasis la plus haute prise dans chaque donjon
+    const { data } = await db.from("lb_first_sb").select("did,k,pseudo,user_id,at").order("k", { ascending: false }).order("at", { ascending: true }).limit(200);
+    out.sbRows = (data || []).filter((r) => DUNGEONS[r.did]);
   } else if (t === "first") {
-    const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").order("at", { ascending: true }).limit(300);
+    const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").neq("kind", "sb").order("at", { ascending: true }).limit(300);
     out.rows = data || [];
   }
   LB.cache[key] = out; return out;
@@ -10336,17 +10341,29 @@ function jobFirstCheck() {
 function lbRowHtml(r, i, me) {
   return `<button class="lbr${me ? " me" : !me && ON.user && r.u === ON.user.id ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}${r.sub ? `<small class="lbsub">${r.sub}</small>` : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span>${r.goal ? `<span class="jlb-goalrow">${r.goal}</span>` : ""}</button>`;
 }
+/* Premiers depuis les sorts des boss d'un donjon : qui a fini chaque stasis en premier depuis la mise à jour */
+function sbGrid(sb) {
+  const me = ON.user && ON.user.id, ks = Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1), next = ks.find((k) => !sb[k]);
+  return `<div class="sbfirst"><b>${IC("couronne")} Premiers depuis les sorts des boss</b><div class="sbgrid">${ks.map((k) => { const r = sb[k];
+    return `<span class="sbk${r ? " on" : ""}${r && me && r.user_id === me ? " mine" : ""}"${r ? ` data-tip="${h(`${r.pseudo || "compte supprimé"}, ${raceDate(r.at)}`)}"` : ""}><small>S${k}</small><b>${r ? h(r.pseudo || "?") : "libre"}</b></span>`; }).join("")}</div>
+    <span class="xs muted">${next ? `Stasis ${next} : personne encore. Le premier à la finir y grave son nom pour toujours.` : "Toutes les stasis de ce donjon ont leur premier."}</span></div>`;
+}
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
   if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
   if (LB.tab === "defi" && d.guilds) return (d.guilds.length ? defiGuildList(d.guilds) : `<div class="empty">${DF_EMPTY.g}</div>`) + defiViewNote("g", d);
   if (LB.tab === "defi" && LB.dview && LB.dview !== "d" && !d.rows.length) return `<div class="empty">${DF_EMPTY[LB.dview] || DF_EMPTY.d}</div>${defiViewNote(LB.dview, d)}`;
+  if (LB.tab === "first" && d.sbRows) {
+    if (!d.sbRows.length) return `<div class="empty">Personne n'a encore terminé de stasis depuis les sorts des boss. Le premier à finir chaque stasis de chaque donjon sera gravé ici pour toujours : à toi de jouer !</div>`;
+    return `<div class="lbt">${d.sbRows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.k >= 10 ? "couronne" : "trophee")}<span class="nm">${h(DUNGEONS[r.did].name)} · stasis ${r.k}<small>${h(r.pseudo || "compte supprimé")} · ${raceDate(r.at)}</small></span></button>`).join("")}</div>`;
+  }
   if (LB.tab === "first") {
     if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10 puis en stasis 15, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
     return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "gardien11" ? "dofus" : r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
-  const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
+  let yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
+  if (LB.tab === "dj" && d.sb) yest = sbGrid(d.sb) + yest; // Premiers depuis les sorts des boss, au-dessus des records
   if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "chr" ? "Personne n'a encore de chromatique au classement. Ils comptent dès le prochain envoi de ta partie." : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
@@ -10463,15 +10480,17 @@ function renderLadder() {
   const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
   const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes héros ; chaque renaissance compte ${VF.REB_LVL} niveaux.</span>
       <select data-act="lb-cls" aria-label="Classe"><option value="">Toutes les classes</option>${CLASS_ORDER.map((c) => `<option value="${c}" ${LB.cls === c ? "selected" : ""}>Meilleur ${h(CLASSES[c].name)}</option>`).join("")}</select></div>`
-    : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Depuis toujours"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
+    : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Records"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
       ${LB.dmode === "all" ? `<select data-act="lb-did" aria-label="Donjon">${dids.map((d) => `<option value="${d}" ${LB.did === d ? "selected" : ""}>${h(DUNGEONS[d].name)} (niv. ${DUNGEONS[d].lvl})</option>`).join("")}</select>` : ""}</div>
+      ${LB.dmode === "all" ? `<span class="small muted">Nouveau départ avec les sorts des boss : seules les stasis terminées depuis cette mise à jour comptent. Tes stasis débloquées restent : relance ta meilleure stasis pour revenir au classement.</span>` : ""}
       ${LB.dmode === "week" ? `<div class="panel"><div class="pad stack"><div class="row between"><b>${IC("cle")} Donjons de la semaine</b><span class="tag good">fin dans ${wEnd >= 86400000 ? `${Math.floor(wEnd / 86400000)} j ${Math.floor((wEnd % 86400000) / 3600000)} h` : dur(wEnd / 1000)}</span></div>
         <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
     : LB.tab === "race" ? ""
     : LB.tab === "job" ? jobLbHead()
-    : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
+    : LB.tab === "first" ? `<div class="row"><span class="seg">${[["sb", "Sorts des boss"], ["all", "Pour toujours"]].map(([v, n]) => `<button data-act="lb-fview" data-v="${v}" aria-pressed="${LB.fview === v}">${n}</button>`).join("")}</span></div>
+      <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé. Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Communauté › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
     : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
@@ -10509,36 +10528,40 @@ function lbGearHtml(x) {
   const g = (x.gear || []).filter((t) => ITEMS[t]);
   return `<div class="stack" style="gap:6px"><span class="small"><b>Équipement de ${h(x.name || CLASSES[x.cls].name)}</b></span>${g.length ? `<div class="gearrow">${g.map((t) => `<span class="icobox ${rarCls(t)}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})">${im(itemImg(t), "", ITEMS[t].name)}</span>`).join("")}</div>` : `<span class="small muted">Aucun objet équipé.</span>`}</div>`;
 }
-/* Envoi des records au serveur : après chaque envoi de partie réussi, un donjon à la fois. */
+/* Envoi des records au serveur : après chaque envoi de partie réussi, un donjon à la fois.
+   Nouveau départ des stasis (sorts des boss, 15/10/2026) : seules les stasis terminées depuis la mise à jour comptent
+   (E.stasisSaison) ; les envois déjà faits sont notés à part (rec2), pour que chacun renvoie ses nouvelles stasis. */
 let recBusy = false, recBoot = null;
-const recSnap = () => { const o = {}; for (const did in (S && S.stasis) || {}) { const SI = S.stasis[did]; o[did] = { k: SI.max || 0, ct: (SI.best && SI.best[SI.max]) || 0 }; } return o; };
+const recOf = (did) => E.stasisSaison(S, did);
+const recSnap = () => { const o = {}; for (const did in (S && S.stasis) || {}) { const r = recOf(did); o[did] = { k: r.k, ct: r.t }; } return o; };
 function recQueue() {
-  const sent = ON.link().rec || {}, out = [];
+  const sent = ON.link().rec2 || {}, out = [];
   for (const did in S.stasis || {}) {
-    const SI = S.stasis[did], k = SI.max || 0; if (!k || !DUNGEONS[did]) continue;
-    const s = sent[did], ct = (SI.best && SI.best[k]) || 0;
+    const { k, t: ct } = recOf(did); if (!k || !DUNGEONS[did]) continue;
+    const s = sent[did];
     if (!s || k > s.k || (k === s.k && ct && s.ct && ct < s.ct * 0.95)) out.push(did);
   }
-  const fresh = (did) => { const b = (recBoot || {})[did]; const SI = S.stasis[did]; return !b || SI.max > b.k || ((SI.best || {})[SI.max] || 0) < b.ct; };
+  const fresh = (did) => { const b = (recBoot || {})[did], r = recOf(did); return !b || r.k > b.k || r.t < b.ct; };
   return out.sort((a, b) => fresh(b) - fresh(a));
 }
 async function recSubmit() {
   if (!ranked() || recBusy || S.panelUsed) return; const q = recQueue(); if (!q.length) return;
-  const did = q[0], b = (recBoot || {})[did], SI = S.stasis[did], isFresh = !b || SI.max > b.k || ((SI.best || {})[SI.max] || 0) < b.ct;
+  const did = q[0], b = (recBoot || {})[did], cur = recOf(did), isFresh = !b || cur.k > b.k || cur.t < b.ct;
   recBusy = true; const r = await ON.submitRecord(did); recBusy = false;
   if (!r || r.net || r.err === "trop tôt") return;
-  const l = ON.link(); const rec = l.rec || {}; rec[did] = { k: SI.max, ct: (SI.best || {})[SI.max] || 0 }; ON.setLink({ rec });
+  const l = ON.link(); const rec = l.rec2 || {}; rec[did] = { k: cur.k, ct: cur.t }; ON.setLink({ rec2: rec });
   if (recBoot) recBoot[did] = rec[did];
   Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
   if (window.DGRANK) window.DGRANK.reset(did); // 1.0.30 : classement dans la fiche du donjon (js/dgrank.js)
-  if (r.ok && (r.improved || r.weekImproved) && isFresh) recordSheet(r);
+  if (r.ok && (r.improved || r.weekImproved || r.firstSb) && isFresh) recordSheet(r);
 }
 function recordSheet(r) {
   if ($("#sheet").innerHTML) { toast(`Record vérifié : ${r.dname}, stasis ${r.k} en ${recTime(r.t)} (${r.rank}e).`, "rare"); return; }
-  openSheet(`<h2>${r.first ? "Premier au monde !" : "Nouveau record !"}</h2><div class="bigrec">Stasis ${r.k} · ${recTime(r.t)}</div><span class="small muted" style="text-align:center">${h(r.dname)}${r.week ? ", donjon de la semaine" : ""}</span>
+  openSheet(`<h2>${r.first || r.firstSb ? "Premier au monde !" : "Nouveau record !"}</h2><div class="bigrec">Stasis ${r.k} · ${recTime(r.t)}</div><span class="small muted" style="text-align:center">${h(r.dname)}${r.week ? ", donjon de la semaine" : ""}</span>
     <div class="chk"><div><span class="okc">✓</span><span>Partie envoyée au serveur</span></div><div><span class="okc">✓</span><span>Le serveur a rejoué la stasis avec ton équipe et l'a terminée en ${recTime(r.t)} (temps officiel)</span></div>
     <div><span class="okc">✓</span><span><b>Record vérifié</b> : ${r.rank}${r.rank === 1 ? "er" : "e"} sur ce donjon${r.week ? ` · ${r.weekRank}${r.weekRank === 1 ? "er" : "e"} cette semaine` : ""}</span></div>
-    ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis ${r.k} : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}</div>
+    ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis ${r.k} : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}
+    ${r.firstSb ? `<div><span class="okc">★</span><span><b>Premier depuis les sorts des boss</b> : personne n'avait encore fini ce donjon en stasis ${r.firstSb} depuis la mise à jour. Ton nom est gravé dans Communauté › Classements › Premiers.</span></div>` : ""}</div>
     <div class="row"><button class="btn primary" data-act="lb-goto" data-v="${h(r.did)}" data-w="${r.week ? 1 : 0}">Voir le classement</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* Titre « Maître de la semaine » : porté la semaine qui suit un podium. */
@@ -10570,6 +10593,7 @@ function lbAct(a, t) {
     case "lb-jwho": LB.jwho = d.v; break;
     case "lb-jobgo": LB.tab = "job"; LB.jgrp = d.g || "craft"; LB.job = d.v; LB.jwho = "p"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat (1.0.9 : et Récolte)
     case "lb-dmode": LB.dmode = d.v; break;
+    case "lb-fview": LB.fview = d.v === "all" ? "all" : "sb"; break;
     case "lb-dtier": LB.dtier = d.v; break;
     case "lb-dweek": LB.dview = d.v; break;
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
