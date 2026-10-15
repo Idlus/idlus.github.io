@@ -4,6 +4,8 @@
    les choix en attente (3 sorts de départ, palier, âme, glyphe, événement, marchand, autel), la tour autour de
    l'étage en cours, le combat joué sous les yeux (rayures = PV retirés aux essais précédents), la montée (sorts,
    Sursis, recrues, échos), puis Progression (Fragments), Boutique des Écus, Bestiaire, Classements, Historique.
+   1.2.x : les reliques (js/reliques.js) : la carte du palier (3 reliques, animées selon la rareté), les 6 emplacements de la montée,
+   les reliques du marchand et l'onglet Reliquaire (la collection et ses récompenses).
    Quand la page est ouverte, c'est elle qui joue les combats (E.ASC_LIVE) ; sinon la montée avance dans E.tick.
    ========================================================================== */
 (function () {
@@ -38,6 +40,11 @@
   const echoTxt = (cls) => (E.ASC_ECHO[cls] ? E.ASC_ECHO[cls].d : "");
   const card = (title, body, extra = "") => `<section class="panel ${extra}"><div class="phead"><h2>${title}</h2></div><div class="pad stack">${body}</div></section>`;
   const fiolesN = () => E.ascFioles(S());
+  /* 1.2.x : les reliques */
+  const relIco = (x) => `<img class="as-rel" src="assets/i/${x.ic}.png" alt="" loading="lazy">`;
+  const relTip = (x) => `${x.n} (${E.REL_SLOT_NAME[x.slot]}, ${E.REL_RAR[x.r].name})${x.st ? " : " + E.relStatTxt(x) : ""}${x.d ? ". ★ " + x.d : ""}`;
+  const relCard = (x, extra, act) => `<${act ? "button" : "div"} class="as-opt rel rel-${x.r} ${RAR_CLS[x.r]}" ${act || ""} data-tip="${h(relTip(x))}">${relIco(x)}<span class="grow"><b>${h(x.n)}</b><span class="xs muted">${E.REL_SLOT_NAME[x.slot]} · ${E.REL_RAR[x.r].name}</span>${x.st ? `<span class="xs">${h(E.relStatTxt(x))}</span>` : ""}${x.d ? `<span class="xs as-relfx">★ ${h(x.d)}</span>` : ""}${extra || ""}</span></${act ? "button" : "div"}>`;
+  const relSlot = (x, sl) => (x ? `<div class="as-sl as-rsl rel-${x.r} ${RAR_CLS[x.r]}" data-tip="${h(relTip(x))}">${relIco(x)}<small>${h(x.n)}</small></div>` : `<div class="as-sl as-rsl empty"><span class="as-rq">?</span><small>${E.REL_SLOT_NAME[sl]}</small></div>`);
 
   /* ---------- Volonté ---------- */
   function volHtml(s) {
@@ -99,13 +106,21 @@
       const G = E.ASC_GLYPHS[P.g];
       return card(`Glyphe ${h(G.name)}`, `<p class="note">${h(G.d)}. À poser sur un sort (2 glyphes au plus par sort), perdu à la fin de la montée.</p>${slotsPick(R, "as-glyph")}<div class="row between">${auto}<button class="btn sm" data-act="as-pass">Garder pour rien</button></div>`, "as-choice");
     }
+    if (P.t === "relic") { // 1.2.x
+      const cards = P.opts.map((id, i) => { const x = E.relById(id); if (!x) return ""; const old = E.relSlotOf(R, x.slot);
+        return relCard(x, old ? `<span class="xs muted">Remplace : ${h(old.n)}</span>` : "", `data-act="as-relic" data-i="${i}"`); }).join("");
+      return card(P.start ? `L'Au-delà : relique de départ ${E.relWorn(R).length + 1} / ${A.relStart}` : `Palier de l'étage ${R.f - 1} : une relique`, `<p class="note">${P.start ? "Tu entres dans l'Au-delà équipé : " : ""}Choisis 1 relique parmi ${P.opts.length} : elle s'équipe pour cette montée et disparaît à la fin, comme les sorts. Une par emplacement (Arme, Coiffe, Cape, Anneau, Amulette, Bottes) : une nouvelle Arme remplace l'Arme portée. La rareté monte avec l'étage.</p><div class="as-g3">${cards}</div>
+        <div class="row between"><span class="tag">Reliques : ${E.relWorn(R).length} / ${A.relMax}</span>${auto}<span class="row">${P.rr ? `<button class="btn sm" data-act="as-rr">⟳ Relancer (Anneau du Destin)</button>` : ""}<button class="btn sm" data-act="as-pass">Passer</button></span></div>`, "as-choice");
+    }
     if (P.t === "event") {
       const T = { prisoner: ["Un prisonnier", `${monName(P.mon)} est enchaîné ici. Libéré, il se bat à tes côtés.`, "Le libérer"], merc: ["Un mercenaire", `${monName(P.mon)} se bat pour toi contre ${P.price} Fragments de cette montée.`, `L'engager (${P.price} Fragments)`], tame: ["Un monstre à apprivoiser", `${monName(P.mon)} te suit si tu le nourris.`, "L'apprivoiser"] }[P.ev] || ["Événement", "", "Accepter"];
       return card(`Événement : ${T[0]}`, `<div class="row"><img class="as-soulbig" src="${monImg(P.mon)}" alt=""><span class="grow stack" style="gap:4px"><b>${h(monName(P.mon))}</b><span class="small">${h(T[1])} Une recrue se bat comme une invocation et garde ses PV d'un étage à l'autre. ${A.recruitsMax} recrues au plus, elles peuvent mourir.</span></span></div>
         <div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-ev" data-v="1">Passer</button><button class="btn primary sm" data-act="as-ev" data-v="0" ${R.recruits.length >= A.recruitsMax || (P.ev === "merc" && R.frag < P.price) ? "disabled" : ""}>${h(T[2])}</button></span></div>`, "as-choice");
     }
     if (P.t === "shop") {
-      return card("Marchand", `<p class="note">Paie avec les Fragments gagnés pendant cette montée (<b>${fmt(R.frag)}</b>).</p><div class="as-g2">${E.ASC_SHOP.map((o, i) => `<div class="as-offer"><b>${h(o.name)}</b><span class="xs muted grow">${h(o.d)}</span><button class="btn sm" data-act="as-shop" data-i="${i}" ${R.frag >= o.price && !(o.id === "sursis" && R.boughtSursis) ? "" : "disabled"}>${o.price} Fragments</button></div>`).join("")}</div>
+      const rel = (P.rel || []).map((id, i) => { const x = E.relById(id); if (!x) return ""; const price = E.relPrice(R, E.REL_RAR[x.r].price); // 1.2.x : les reliques du marchand
+        return `<div class="as-offer rel rel-${x.r} ${RAR_CLS[x.r]}" data-tip="${h(relTip(x))}"><div class="row">${relIco(x)}<span class="grow stack" style="gap:0"><b>${h(x.n)}</b><span class="xs muted">${E.REL_SLOT_NAME[x.slot]} · ${E.REL_RAR[x.r].name}</span></span></div><span class="xs grow">${x.st ? h(E.relStatTxt(x)) : ""}${x.d ? `${x.st ? "<br>" : ""}<span class="as-relfx">★ ${h(x.d)}</span>` : ""}</span><button class="btn sm" data-act="as-shop" data-i="${100 + i}" ${R.frag >= price ? "" : "disabled"}>${price} Fragments</button></div>`; }).join("");
+      return card("Marchand", `<p class="note">Paie avec les Fragments gagnés pendant cette montée (<b>${fmt(R.frag)}</b>).${rel ? " Le marchand propose aussi des reliques, de la rareté de l'étage." : ""}</p><div class="as-g2">${E.ASC_SHOP.map((o, i) => { const price = E.ascShopPrice(R, o); return `<div class="as-offer"><b>${h(o.name)}</b><span class="xs muted grow">${h(o.d)}</span><button class="btn sm" data-act="as-shop" data-i="${i}" ${R.frag >= price && !(o.id === "sursis" && R.boughtSursis) ? "" : "disabled"}>${price} Fragments</button></div>`; }).join("")}${rel}</div>
         <div class="row between">${auto}<button class="btn primary sm" data-act="as-pass">Continuer la montée</button></div>`, "as-choice");
     }
     if (P.t === "altar") {
@@ -122,7 +137,7 @@
     const wk = Q.wounds[E.ascWoundKey(R.mode, f)];
     const what = fl.t === "boss" ? `<b>Boss : ${h(monName(fl.boss))}</b><span class="tag boss">Boss</span>${!Q.bestiary[fl.boss] ? `<span class="tag soft">Âme à capturer</span>` : ""}`
       : fl.t === "event" ? `<span class="tag soft">❓ Événement</span>` : fl.t === "shop" ? `<span class="tag soft">🛒 Marchand</span>` : fl.t === "altar" ? `<span class="tag soft">🕯 Autel maudit</span>`
-      : `${fl.mobs.slice(0, 3).map((k) => `<img class="as-mini" src="${monImg(k)}" alt="" data-tip="${h(monName(k))}">`).join("")}${fl.rule ? ruleTag(fl.rule) : f % 5 === 0 ? `<span class="tag">Palier : nouveau sort</span>` : ""}`;
+      : `${fl.mobs.slice(0, 3).map((k) => `<img class="as-mini" src="${monImg(k)}" alt="" data-tip="${h(monName(k))}">`).join("")}${fl.rule ? ruleTag(fl.rule) : f % 5 === 0 ? `<span class="tag">Palier : sort et relique</span>` : ""}`;
     const wound = wk && !done ? `<span class="as-hp" data-tip="PV des ennemis gardés des essais précédents"><i style="width:${Math.round((wk.hp.reduce((a, b) => a + b, 0) / Math.max(1, wk.hp.length)) * 100)}%"></i></span>` : "";
     const cost = !done && ["fight", "boss"].includes(fl.t) ? (E.ascCost(s, R.mode, f) ? "1 ✦" : "gratuit") : done ? "✓" : "";
     return `<div class="as-fl ${cur ? "cur" : ""} ${done ? "done" : ""} ${fl.t === "boss" ? "boss" : ""}"><span class="as-n">${f}</span><span class="as-mid">${what}${wound}</span><span class="xs muted">${cost}</span></div>`;
@@ -151,7 +166,7 @@
   }
   function arenaHtml(s) {
     const W = st.live; if (!W) return "";
-    const F = W.F; const brume = W.rule === "brouillard"; const aw = E.ascAwait(W); const P = spots(F);
+    const F = W.F; const brume = W.rule === "brouillard" && !W.seeHp; const aw = E.ascAwait(W); const P = spots(F);
     const cur = aw ? aw.ei : F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; const tg = aw ? tgtOf(W) : -1;
     const ent = (e, i) => { const pc = e.hpMax ? Math.max(0, e.hp / e.hpMax) : 0; const st0 = W.start ? W.start[i] : 1; const p = P[i] || { x: 50, y: 30, z: 1, s: 1 };
       const who = e.side === "c" ? (e.summon ? (e.recruit !== undefined ? h(e.name || "Recrue") : "Âme invoquée") : "Toi") : h(e.name);
@@ -217,9 +232,12 @@
       const x = E.ascSpell(sp.k); return `<div class="as-sl" data-tip="${h(spTip(x))}">${spIco(x)}${(sp.lv || 1) > 1 ? `<span class="as-lv">${sp.lv}</span>` : ""}<small>${h(x ? x.name : "?")}</small>${(sp.gl || []).length ? `<span class="as-gl">${sp.gl.map((g) => `<i>${h(E.ASC_GLYPHS[g].name)}</i>`).join("")}</span>` : ""}</div>`; }).join("");
     const ech = E.ascEchoes(R).map((c) => `<span class="tag soft" data-tip="${h(echoTxt(c))}">Écho ${h(CL()[c].name)}</span>`).concat(E.ascCombos(R).map((x) => `<span class="tag good">Combo : ${h(x.name)}</span>`)).join("");
     const rec = R.recruits.length ? R.recruits.map((x) => `${h(monName(x.key))} (${Math.round(x.hp * 100)} %)`).join(", ") : "aucune";
+    const rel = E.REL_SLOTS.map((sl) => relSlot(E.relSlotOf(R, sl), sl)).join(""); // 1.2.x
     return `<section class="panel"><div class="phead"><h2>Ta montée</h2><span class="tag">${E.ASC_MODES[R.mode]}</span></div><div class="pad stack" style="gap:10px">
       <div class="row">${sym(R.cls)}<span class="grow"><b>${h(C.name)} niveau ${E.ascLvl(R.f)}</b><br><span class="xs muted">Étage ${R.f}${R.mode !== "x" ? " / 100" : ""} · record ${Q.best[R.mode] > (R.mode === "x" ? 100 : 0) ? Q.best[R.mode] : "—"}</span></span></div>
       <div class="as-slots">${slots}</div>${ech ? `<div class="row">${ech}</div>` : ""}
+      <div class="as-stat"><span class="muted">Reliques</span><b>${E.relWorn(R).length} / ${A.relMax} · perdues à la fin de la montée</b></div>
+      <div class="as-slots">${rel}</div>
       <div class="as-stat"><span class="muted">Sursis</span><b>${R.sursis} ♥</b></div>
       <div class="as-stat"><span class="muted">Recrues</span><b>${rec}</b></div>
       <div class="as-stat"><span class="muted">Fragments gagnés</span><b>${fmt(R.frag)}</b></div>
@@ -240,6 +258,16 @@
     return `<p class="note">Les Écus se gagnent sur les boss et dans les coffres du mois. Ils n'achètent que des titres : rien qui rende plus fort. Tu en as <b>${fmt(Q.ecus)}</b>.</p>
       <div class="as-g2">${E.ASC_ECU_SHOP.map((o) => `<div class="as-offer"><b>Titre « ${h(o.v)} »</b><span class="grow"></span><button class="btn sm" data-act="as-buy" data-v="${o.id}" ${own.includes(o.v) || Q.ecus < o.price ? "disabled" : ""}>${own.includes(o.v) ? "Obtenu" : `${o.price} Écus`}</button></div>`).join("")}</div>
       <p class="note">Coffres du mois aux étages 25, 50, 75 et 100 (Normal et Difficile) : kamas, Poussière, Sablier, Cristal de Forgemagie. Un titre tous les 10 étages.</p>`;
+  }
+  /* 1.2.x : le Reliquaire, la collection des reliques trouvées et ses récompenses */
+  function relHtml(s) {
+    const Q = E.ascState(s); const got = Q.reliquaire || {}; const n = E.relCount(s); const all = E.ASC_RELICS; const sl = st.relSlot || "arme";
+    const tiles = all.filter((x) => x.slot === sl).map((x) => (got[x.id] ? `<div class="as-sl as-rsl rel-${x.r} ${RAR_CLS[x.r]}" data-tip="${h(relTip(x))} · trouvée ${got[x.id]} fois">${relIco(x)}<small>${h(x.n)}</small></div>`
+      : `<div class="as-sl as-rsl empty" data-tip="${h(`${E.REL_RAR[x.r].name} : pas encore trouvée`)}"><span class="as-rq">?</span><small>${E.REL_RAR[x.r].name}</small></div>`)).join("");
+    const rw = E.REL_REWARDS.map((r) => `<div class="as-stat"><span class="muted">${r.n} reliques</span><b>${h(r.name)}${n >= r.n ? " ✓" : ""}</b></div>`).join("");
+    return `<p class="note">Les reliques trouvées restent inscrites ici, montée après montée. Tu en as trouvé <b>${n} / ${all.length}</b>. Touche une relique pour lire son effet.</p>
+      <div class="subtabs">${E.REL_SLOTS.map((k) => `<button data-act="as-rslot" data-v="${k}" aria-pressed="${sl === k}">${E.REL_SLOT_NAME[k]} ${all.filter((x) => x.slot === k && got[x.id]).length}/${all.filter((x) => x.slot === k).length}</button>`).join("")}</div>
+      <div class="as-slots as-reliq">${tiles}</div><div class="stack" style="gap:4px">${rw}</div>`;
   }
   function bestHtml(s) {
     const Q = E.ascState(s); const B = Object.keys(Q.bestiary); const U = E.ascUnlocks(s).filter((u) => u.kind === "soul");
@@ -268,11 +296,11 @@
     return `<div class="list">${Q.hist.map((x) => `<div class="li small">${sym(x.cls)}<span class="grow"><b>${E.ASC_MODES[x.mode]} · étage ${x.top}</b><br><span class="xs muted">${h(CL()[x.cls] ? CL()[x.cls].name : x.cls)}, ${WHY[x.why] || x.why}${x.auto ? `, ${x.auto} étage${x.auto > 1 ? "s" : ""} en auto` : ""}</span></span><span class="num">+${fmt(x.frag)} Fragments</span></div>`).join("")}</div>`;
   }
   function rulesHtml() {
-    return `<p class="note">Chaque étage de combat a sa règle (sauf les paliers et les boss). Elles changent chaque mois.</p><div class="as-g2">${Object.entries(E.ASC_RULES).filter(([, r]) => !r.hal || (E.halWin && E.halWin(E.now()))).map(([, r]) => `<div class="as-offer"><b>${r.ic} ${h(r.name)}</b><span class="xs muted">${h(r.d)}</span></div>`).join("")}</div>`;
+    return `<p class="note">Chaque étage de combat a sa règle (sauf les paliers et les boss). Elles changent chaque mois. Tous les 5 étages, le palier offre un sort puis une relique (3 proposées, 1 gardée, 6 portées au plus, une par emplacement) : dans la tour, la Vitalité donne des PV, la Puissance de la puissance, l'Esquive et les PM de l'esquive, la Sagesse des Fragments.</p><div class="as-g2">${Object.entries(E.ASC_RULES).filter(([, r]) => !r.hal || (E.halWin && E.halWin(E.now()))).map(([, r]) => `<div class="as-offer"><b>${r.ic} ${h(r.name)}</b><span class="xs muted">${h(r.d)}</span></div>`).join("")}</div>`;
   }
-  const TABS = [["prog", "Progression"], ["shop", "Écus"], ["best", "Bestiaire"], ["rank", "Classements"], ["hist", "Historique"], ["rules", "Règles"]];
+  const TABS = [["prog", "Progression"], ["shop", "Écus"], ["rel", "Reliquaire"], ["best", "Bestiaire"], ["rank", "Classements"], ["hist", "Historique"], ["rules", "Règles"]];
   function tabsHtml(s) {
-    const body = st.tab === "shop" ? shopHtml(s) : st.tab === "best" ? bestHtml(s) : st.tab === "rank" ? rankHtml(s) : st.tab === "hist" ? histHtml(s) : st.tab === "rules" ? rulesHtml() : progHtml(s);
+    const body = st.tab === "shop" ? shopHtml(s) : st.tab === "rel" ? relHtml(s) : st.tab === "best" ? bestHtml(s) : st.tab === "rank" ? rankHtml(s) : st.tab === "hist" ? histHtml(s) : st.tab === "rules" ? rulesHtml() : progHtml(s);
     return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.map(([k, n]) => `<button data-act="as-tab" data-v="${k}" aria-pressed="${st.tab === k}">${n}</button>`).join("")}</div></div><div class="pad stack">${body}</div></section>`;
   }
 
@@ -300,7 +328,7 @@
     main.innerHTML = `${head}<div class="stack">${volHtml(s)}${body}${tabsHtml(s)}</div>`;
     st.key = keyOf(s);
   }
-  const keyOf = (s) => { const Q = s.asc; const R = Q && Q.run; return R ? `${R.f}|${R.pend ? R.pend.t + R.pend.at : ""}|${R.spells.length}|${R.sursis}|${R.recruits.length}|${!!st.live}|${Q.auto}` : `none|${Q && Q.hist.length}|${Q && Q.roll.n}|${Q && Q.runs}`; };
+  const keyOf = (s) => { const Q = s.asc; const R = Q && Q.run; return R ? `${R.f}|${R.pend ? R.pend.t + R.pend.at + (R.pend.rr || 0) : ""}|${R.spells.length}|${(R.relics || []).length}|${R.sursis}|${R.recruits.length}|${!!st.live}|${Q.auto}` : `none|${Q && Q.hist.length}|${Q && Q.roll.n}|${Q && Q.runs}`; };
   window.DX.pages.asc = (main) => { page(main); if (st.tab === "rank") rkLoad(false); };
   const paint = () => { const main = $("#main"); if (!main || UI().tab !== "asc" || !S()) return; const y = window.scrollY; page(main); if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };
   const done = (r) => { if (r) { X().toast(r); return false; } X().markDirty(); paint(); return true; };
@@ -393,6 +421,9 @@
       case "as-soul": { const r = E.act(s, "ascChoose", 0, st.rep); if (!r) st.rep = -1; done(r); return; }
       case "as-glyph": done(E.act(s, "ascChoose", +d.i)); return;
       case "as-pass": st.rep = -1; done(E.act(s, "ascChoose", -1)); return;
+      case "as-relic": done(E.act(s, "ascChoose", +d.i)); return; // 1.2.x
+      case "as-rr": done(E.act(s, "ascChoose", -2)); return;
+      case "as-rslot": st.relSlot = d.v; paint(); return;
       case "as-ev": done(E.act(s, "ascChoose", +d.v)); return;
       case "as-shop": done(E.act(s, "ascChoose", +d.i)); return;
       case "as-altar": done(E.act(s, "ascChoose", +d.v)); return;

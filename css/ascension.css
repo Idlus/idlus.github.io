@@ -172,3 +172,23 @@
 .arena .as-bg{z-index:1}.arena .as-veil{z-index:1}.arena .as-motes{z-index:1}
 /* 1.1.2.8 : l'encadré entre deux étages (manuel : le joueur lance le combat) */
 .as-ready .as-ready-what{align-items:center;gap:6px;min-height:40px}.as-ready .as-mini{width:40px;height:40px;object-fit:contain}
+/* 1.2.x : les reliques (js/reliques.js) : cartes du palier, emplacements de la montée, marchand, Reliquaire. Animées selon la rareté :
+   commune immobile, rare qui respire en bleu, légendaire dorée qui scintille. Seulement transform et opacity (jamais de filtre animé,
+   la 1.2.1 a payé pour le savoir) ; rien avec « Animations réduites ». */
+.as-rel{width:44px;height:44px;object-fit:contain;flex:none;border-radius:50%}
+.as-relfx{color:var(--gold2)}
+.as-rsl{min-height:74px;justify-content:center}.as-rsl.empty{opacity:.55;border-style:dashed}.as-rq{font-size:22px;line-height:38px;color:var(--muted)}
+.as-offer.rel .as-rel{width:40px;height:40px}.as-offer.rel .stack{min-width:0}
+.as-offer.rar-r,.as-rsl.rar-r{border-color:#2f86d6}.as-offer.rar-l,.as-rsl.rar-l{border-color:#e4a11b;background:linear-gradient(135deg,rgba(228,161,27,.14),var(--panel2))}
+.rel-r .as-rel{background:radial-gradient(circle,rgba(80,170,255,.55),rgba(47,134,214,.18) 55%,transparent 72%);animation:relBreath 2.2s ease-in-out infinite alternate}
+.rel-l{position:relative;overflow:hidden}
+.rel-l .as-rel{background:radial-gradient(circle,rgba(255,214,90,.9),rgba(228,161,27,.35) 55%,transparent 72%);animation:relGold 1.6s ease-in-out infinite alternate}
+.rel-l::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,235,170,.28) 50%,transparent 65%);transform:translateX(-120%);animation:relShine 3.4s ease-in-out infinite}
+.rel-l::after{content:"✦";position:absolute;top:3px;right:7px;color:#ffd866;font-size:12px;line-height:1;pointer-events:none;animation:relSpark 1.8s ease-in-out infinite}
+@keyframes relBreath{from{transform:scale(1)}to{transform:scale(1.08)}}
+@keyframes relGold{from{transform:scale(1) rotate(-3deg)}to{transform:scale(1.1) rotate(3deg)}}
+@keyframes relShine{0%,55%{transform:translateX(-120%)}85%,100%{transform:translateX(120%)}}
+@keyframes relSpark{0%,100%{opacity:0;transform:scale(.5) rotate(0)}50%{opacity:1;transform:scale(1.2) rotate(45deg)}}
+.as-reliq{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
+@media (prefers-reduced-motion:reduce){.rel-r .as-rel,.rel-l .as-rel,.rel-l::before,.rel-l::after{animation:none}}
+.reduced .rel-r .as-rel,.reduced .rel-l .as-rel,.reduced .rel-l::before,.reduced .rel-l::after{animation:none}

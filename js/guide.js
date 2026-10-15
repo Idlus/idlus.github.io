@@ -525,7 +525,7 @@
       ]],
     ] });
 
-  add({ id: "asc", f: "Défis", n: "L'Ascension", ic: "ailes", page: "asc", k: "ascension tour etage volonte fiole fragments ecus au-dela roguelike",
+  add({ id: "asc", f: "Défis", n: "L'Ascension", ic: "ailes", page: "asc", k: "ascension tour etage volonte fiole fragments ecus au-dela roguelike relique reliquaire",
     ou: "Défis › L'Ascension", de: "dès le début ; l'Au-delà après l'étage 100 en Normal",
     voir: ["sorts"],
     b: () => [
@@ -538,6 +538,7 @@
         "Une tentative coûte 1 Volonté seulement sur un étage pas encore réussi ce mois-ci.",
         "Un boss tous les 10 étages, un tirage tous les 5, un événement, une boutique ou un autel par dizaine ; une règle sur les autres combats.",
         "Mode **manuel** : tu lances chaque étage et choisis les sorts ; mode auto : moins de Fragments.",
+        `**Reliques** : tous les ${N(() => E.ASC.relEvery)} étages, après le sort du palier, ${N(() => E.ASC.relMax)} emplacements (Arme, Coiffe, Cape, Anneau, Amulette, Bottes), 3 proposées, 1 gardée. Caractéristiques + effet unique, perdues en fin de montée ; le marchand en vend 2. L'onglet **Reliquaire** garde celles trouvées (titres, cadre, ornement). L'Au-delà démarre avec ${N(() => E.ASC.relStart)} reliques.`,
         "**Fragments** et **Écus** paient les améliorations de la tour (classes, sorts de départ…).",
         "La tour repart le 1er du mois ; l'Au-delà chaque lundi. En ligne, le top 10 reçoit un titre, des Fioles et des kamas.",
       ]],

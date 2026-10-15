@@ -6,7 +6,7 @@ const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
 require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/songe.js");
-require("../js/ascension.js");
+require("../js/ascension.js"); require("../js/reliques.js");
 const D = require("../js/data.js");
 const V = require("../js/verify.js");
 
@@ -129,6 +129,7 @@ const A = E.ASC;
   assert.strictEqual(E.act(S, "ascStart", "x", E.ascClassChoices(S)[0]), null); assert.strictEqual(Q.run.f, 101);
   let picks = 0; while (Q.run.pend) { E.ascAutoPick(S); picks++; if (picks > 20) break; }
   assert.ok(picks >= 8 && Q.run.spells.length >= 4, "tirages de l'Au-delà : " + picks);
+  assert.strictEqual(Q.run.relics.length, 6, "6 reliques de départ dans l'Au-delà"); assert.ok(!Q.run.pend);
   E.ascSetAuto(S, true); const o = E.ascStepFloor(S, true); if (o && o.win) assert.strictEqual(o.frag, Math.round(E.ASC_FRAG(101, false) * A.autoFrag));
   console.log("ok - ascension : auto et Au-delà");
 }
@@ -145,5 +146,43 @@ const A = E.ASC;
   assert.ok(W.F.over && casts > 0 && waits > 0, `sorts lancés à la main : ${casts}, attentes : ${waits}`);
   const W2 = E.ascNewFight(S); E.ascManual(W2, true); const r = E.ascSim(S, W2); assert.ok(W2.F.over && r, "quitter la page finit le combat en auto");
   console.log("ok - ascension : mode manuel,", casts, "sorts choisis");
+}
+// 10. Les reliques (1.2.x) : une relique tous les 5 étages après le sort, 3 emplacements différents, une par emplacement, le marchand,
+//     l'auto, les effets en combat (PA, esquive, Fragments), le Reliquaire et son titre, la sauvegarde.
+{
+  const S = E.newState("Rel", "iop"); const Q = E.ascState(S); Q.vol = 1e6;
+  assert.strictEqual(E.ASC_RELICS.length, 240, "240 reliques"); E.REL_SLOTS.forEach((sl) => assert.strictEqual(E.ASC_RELICS.filter((x) => x.slot === sl).length, 40, "40 par emplacement"));
+  assert.ok(E.ASC_RELICS.every((x) => x.id && x.n && x.ic && E.REL_RAR[x.r]), "chaque relique a un id, un nom, une icône et une rareté");
+  E.act(S, "ascStart", "n", E.ascClassChoices(S)[0]); E.act(S, "ascChoose", [0, 1, 2]); const R = Q.run;
+  R.f = 5; const W = E.ascNewFight(S); const res = E.ascSim(S, W); res.win = true; E.ascApply(S, W, res, false);
+  assert.strictEqual(R.pend.t, "pick", "le sort du palier d'abord"); E.act(S, "ascChoose", -1);
+  assert.strictEqual(R.pend.t, "relic", "puis la relique"); const P = R.pend; assert.strictEqual(P.opts.length, 3);
+  assert.strictEqual(new Set(P.opts.map((id) => E.relById(id).slot)).size, 3, "3 emplacements différents");
+  assert.ok(P.opts.every((id) => E.relById(id).r !== "l"), "pas de légendaire avant l'étage 25");
+  assert.strictEqual(E.act(S, "ascChoose", 0), null); assert.strictEqual(R.relics.length, 1); assert.ok(!R.pend, "plus rien à choisir");
+  const first = E.relById(R.relics[0]); const same = E.ASC_RELICS.find((x) => x.slot === first.slot && x.id !== first.id);
+  E.relEquip(S, R, same.id); assert.deepStrictEqual(R.relics, [same.id], "une relique par emplacement : la nouvelle remplace l'ancienne");
+  assert.strictEqual(E.relCount(S), 2, "le Reliquaire garde les deux");
+  // effets en combat : +1 PA (Épée du Grimpeur), esquive (Bottes du Funambule), Fragments (Chapeau de Fête), PV (Vitalité)
+  R.relics = ["epee-du-grimpeur"]; R.f = 12; const W1 = E.ascNewFight(S); R.relics = []; const W0 = E.ascNewFight(S);
+  assert.strictEqual(W1.F.ents[W1.hero].st.pa, W0.F.ents[W0.hero].st.pa + 1, "+1 PA");
+  R.relics = ["casque-royal"]; const W2 = E.ascNewFight(S); assert.ok(W2.F.ents[W2.hero].hpMax > W0.F.ents[W0.hero].hpMax * 1.3, "+220 Vitalité = beaucoup de PV à l'étage 12");
+  R.relics = ["bottes-du-funambule"]; let dodged = 0, hits = 0; for (let i = 0; i < 12; i++) { const Wd = E.ascNewFight(S); E.ascSim(S, Wd); Wd.F.fx.forEach((x) => { if (x.t === Wd.hero && x.k === "buff" && x.txt === "Esquive") dodged++; if (x.t === Wd.hero && x.k === "hit") hits++; }); }
+  assert.ok(dodged > 0 && hits > 0, `esquives : ${dodged}, coups reçus : ${hits}`);
+  R.relics = ["chapeau-de-fete"]; const W3 = E.ascNewFight(S); const r3 = E.ascSim(S, W3); r3.win = true; const f0 = R.frag; const o3 = E.ascApply(S, W3, r3, false); assert.strictEqual(o3.frag, Math.round(E.ASC_FRAG(12, false) * 1.2), "+20 % de Fragments"); assert.strictEqual(R.frag, f0 + o3.frag);
+  // le marchand : 2 reliques, prix selon la rareté, remise de la Cape du Marchand
+  R.pend = null; R.relics = ["cape-du-marchand"]; R.f = 20; R.pend = { t: "shop", at: E.now() }; E.relShopEnter(S, R); assert.strictEqual(R.pend.rel.length, 2, "2 reliques chez le marchand");
+  const x = E.relById(R.pend.rel[0]); R.frag = 1000; const before = R.frag; assert.strictEqual(E.act(S, "ascChoose", 100), null); assert.strictEqual(before - R.frag, Math.round(E.REL_RAR[x.r].price * 0.75), "prix remisé"); assert.ok(R.relics.includes(x.id));
+  assert.strictEqual(E.ascShopPrice(R, E.ASC_SHOP[0]), Math.round(E.ASC_SHOP[0].price * 0.75), "les offres classiques aussi");
+  // l'auto prend la meilleure rareté ; la sauvegarde garde reliques et Reliquaire
+  R.pend = { t: "relic", opts: ["anneau-de-cuivre", "anneau-d-argent", "cape-de-toile"], at: E.now() }; E.ascAutoPick(S); assert.ok(R.relics.includes("anneau-d-argent"), "l'auto prend la rare");
+  const S2 = E.deserialize(E.serialize(S)); assert.deepStrictEqual(S2.asc.run.relics, R.relics); assert.strictEqual(E.relCount(S2), E.relCount(S));
+  // le Reliquaire : titre à 15, cadre à 50
+  E.ASC_RELICS.slice(0, 15).forEach((r) => E.relSeen(S, r.id)); assert.ok(S.titlesExtra.includes("Reliquaire"), "titre « Reliquaire »"); assert.ok(!E.sframeOk(S, "tour"));
+  E.ASC_RELICS.slice(15, 50).forEach((r) => E.relSeen(S, r.id)); assert.ok(E.sframeOk(S, "tour"), "Cadre de la Tour à 50"); assert.ok(!E.ornUnlocked(S, "reliquaire"));
+  // chaque relique seule, un combat : aucune erreur
+  R.pend = null; let ok = 0; E.ASC_RELICS.forEach((r) => { R.relics = [r.id]; R.f = 40; const Wr = E.ascNewFight(S); E.ascSim(S, Wr); if (Wr.F.over) ok++; });
+  assert.strictEqual(ok, 240, "les 240 reliques jouent un combat sans erreur");
+  console.log("ok - ascension : reliques (esquives " + dodged + "/" + (dodged + hits) + ")");
 }
 console.log("ascension : tout est bon");

@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.4.1";
+const GAME_VERSION = "1.2.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.5", name: "Les reliques", items: [
+    "L'Ascension : 240 reliques propres à la tour, avec de vrais visuels d'objets DOFUS. Tous les 5 étages, après le sort du palier, la tour en propose 3 (de 3 emplacements différents), vous en gardez 1. Chaque relique donne des caractéristiques et un effet unique (« tuer un monstre rend 2 PA », « 20 % de chance d'esquiver le premier coup de chaque tour », « le marchand te rend 20 % de ce que tu dépenses »…)",
+    "Six emplacements : Arme, Coiffe, Cape, Anneau, Amulette, Bottes. Une relique par emplacement, la nouvelle remplace l'ancienne. Les reliques sont perdues à la fin de la montée, comme les sorts et les glyphes ; la rareté (commune, rare, légendaire) monte avec l'étage, et l'Au-delà en offre toujours",
+    "Le marchand vend aussi 2 reliques (40, 80 ou 160 Fragments selon la rareté). En auto, la tour prend la meilleure rareté, un emplacement vide d'abord",
+    "Chaque relique est animée selon sa rareté : les rares respirent en bleu, les légendaires brillent d'or et scintillent (rien avec « Animations réduites »)",
+    "Nouvel onglet Reliquaire sur la page L'Ascension : toutes les reliques trouvées y restent inscrites, montée après montée. Titre « Reliquaire » à 15, cadre « Cadre de la Tour » à 50, ornement « Sceau du Reliquaire » à 100, titre « Maître du Reliquaire » et aura chromatique à 240. Rien qui rende plus fort hors de la tour",
+    "L'Au-delà (étage 101 et plus) : après tes 8 sorts de départ, tu choisis 6 reliques de départ (une par emplacement, à la rareté de l'Au-delà), puis une tous les 5 étages comme dans la tour",
+    "Dans la tour, la Vitalité donne des PV, la Puissance de la puissance, l'Esquive et les PM de l'esquive (le grimpeur ne se déplace pas), la Sagesse des Fragments. Les monstres sont un peu moins solides aux étages hauts, les reliques font le reste : à la simulation, la première montée finit vers l'étage 32 et la tour se termine en 5 montées environ (14 avant)" ] },
   { v: "1.2.4.1", name: "Une idée ?", items: [
     "La fenêtre « Signaler un bug » a un onglet « Idée » : propose une idée sans quitter la page, elle part dans le forum Idées du Discord comme depuis la Boîte à idées." ] },
   { v: "1.2.4", name: "Le Guide", guide: "parcours", items: [

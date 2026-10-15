@@ -2,7 +2,7 @@
    Lancer : node tools/ascension_sim.js [joueurs=40] [mode=n] [montées=30] */
 "use strict";
 const E = require("../js/engine.js");
-["systems", "pets", "mounts", "idols", "renaissance", "archis", "welcome", "defi", "legendaires", "songe", "ascension"].forEach((f) => require("../js/" + f + ".js"));
+["systems", "pets", "mounts", "idols", "renaissance", "archis", "welcome", "defi", "legendaires", "songe", "ascension", "reliques"].forEach((f) => require("../js/" + f + ".js"));
 const N = +(process.argv[2] || 40), MODE = process.argv[3] || "n", RUNS = +(process.argv[4] || 30);
 (process.env.ASC || "").split(",").filter(Boolean).forEach((kv) => { const [k, v] = kv.split("="); if (k.startsWith("d.")) E.ASC_DIFF.d[k.slice(2)] = E.ASC_DIFF.x[k.slice(2)] = +v; else E.ASC[k] = +v; });
 let seed = 99; E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });

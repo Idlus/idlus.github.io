@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.5 « Les reliques »
+
+Mathis (15/10/2026) : « ça serait possible de drop des équipements uniques au mode de jeu ? », réponses 1A 2 (tous les 5 étages) 3B 4A 5A 6A puis « rajoute un pool de reliques encore et des effets inédits, et chaque item est animé selon la rareté ». `js/reliques.js` : les 240 reliques (`E.ASC_RELICS`, 40 par emplacement, 18 communes / 14 rares / 8 légendaires), le tirage (`E.relChoices`, rareté selon l'étage, pitié, Anneau du Destin), l'équipement (`E.relEquip`, une par emplacement), le marchand (`E.relShopOffers`, remises, cashback), le Reliquaire (`S.asc.reliquaire`, `E.REL_REWARDS`) et les effets en combat : `E.relSetup` (stats, invocations, âmes), `E.relRound` (PA du tour, soins, boucliers), le hook `E.legPre` du moteur (dégâts donnés et subis, esquive, renvoi, survie), `E.relDie` (tués), `E.relFrag` / `E.relWin` / `E.relLose` (fin d'étage). `js/ascension.js` branche tout cela (`R.relics`, `R.relDue`, `P.t === "relic"`, offres `i >= 100` du marchand, `E.ASC_RUN` pour `ascDef`). Équilibrage `tools/ascension_sim.js` (monHpLv 0,012, monDmgLv 0,006, relVit 40, relPui 80). Animations de rareté en `css/ascension.css` (transform et opacity seulement). Au-delà (Mathis « et pour la tour infinie ? ») : `R.relExtra` = `A.relStart` (6) reliques de départ après les 8 sorts, `P.start` sur le choix.
+
 ## 1.2.4.1 « Une idée ? »
 
 La fenêtre « Signaler un bug » a maintenant deux onglets, Bug et Idée. Une idée envoyée depuis là part dans la Boîte à idées (forum Idées du Discord, votes 👍), jamais en ticket de bug.

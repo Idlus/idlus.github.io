@@ -15,6 +15,7 @@
    - Fragments (permanents) : pioche de sorts, classes de départ, bonus de départ, boss du bestiaire.
      Écus de l'Ascension : boutique d'apparences et de titres. Rien ne donne de puissance dans le jeu principal.
    Les combats se jouent sur une partie de travail à part (comme le Kolizéum) : aucun effet sur l'équipe du joueur.
+   - 1.2.x : les reliques (js/reliques.js) : tous les 5 étages, 3 reliques de 3 emplacements, on en garde 1 ; 6 portées ; perdues à la fin.
    Pas de DOM ici : l'interface est dans js/ascensionui.js. Chargé aussi par les tests et le simulateur.
    ========================================================================== */
 (function (root) {
@@ -32,7 +33,7 @@
     floors: 100, volMax: 30, volMs: 20 * 60000, fiole: 5, fioleId: "fiole_volonte",
     spellMax: 6, spellLvMax: 3, every: 5, start: 6, keep: 3, recruitsMax: 2, sursis: 1,
     autoFrag: 0.7,                 // en auto : −30 % de Fragments
-    heroHp: 2, heroPui: 20, heroPuiLv: 2, bossHp: 2.5, bossDmg: 0.7, resCap: 25, monHpLv: 0.014, monDmgLv: 0.007, // le grimpeur est seul : bénédiction de la Tour (réglée par tools/ascension_sim.js)
+    heroHp: 2, heroPui: 20, heroPuiLv: 2, bossHp: 2.5, bossDmg: 0.7, resCap: 25, monHpLv: 0.012, monDmgLv: 0.006, // le grimpeur est seul : bénédiction de la Tour (réglée par tools/ascension_sim.js ; 1.2.2 : un peu moins forte, les reliques compensent)
     stepMs: 260,                   // un pas de combat affiché (l'interface)
     fightPauseMs: 1500,            // pause entre deux étages
     autoPickMs: 30000,             // l'auto choisit après ce délai si personne ne le fait
@@ -102,18 +103,21 @@
   E.ascDef = (x) => {
     const [cls, id] = x.k.split(":"); const base = CLASSES[cls] && CLASSES[cls].spells.find((s) => s.id === id); if (!base) return null;
     const gl = x.gl || []; const lv = x.lv || 1; const m = (lv >= 3 ? 1.4 : lv >= 2 ? 1.2 : 1) * (gl.includes("fendoir") ? 1.15 : 1);
+    const RR = E.ASC_RUN; const cdm = RR && E.relSum ? E.relSum(RR, "cd") : 0; const dots = RR && E.relAll ? E.relAll(RR, "dotEl") : []; // 1.2.x : reliques (relance, brûlure)
     const grades = base.grades.map((g) => Object.assign({}, g, {
       pa: Math.max(1, g.pa - (gl.includes("rapide") ? 1 : 0) - (lv >= 3 ? 1 : 0)),
       casts: g.casts ? g.casts + (gl.includes("echo") ? 1 : 0) : g.casts,
+      cd: g.cd && cdm ? Math.max(1, g.cd + cdm) : g.cd,
       fx: g.fx.map((f) => {
         const o = Object.assign({}, f);
         if (o.min !== undefined && ["dmg", "drain", "dot", "heal"].includes(o.k)) { o.min = Math.round(o.min * m); o.max = Math.round(o.max * m); }
         if (gl.includes("vampire") && o.k === "dmg") o.k = "drain";
         if (gl.includes("ancre") && o.t) o.t += 1;
+        dots.forEach((d) => { if (o.k === "dot" && o.t && base.el === d.el) o.t += d.v; });
         return o;
       }),
     }));
-    return Object.assign({}, base, { id: x.k, grades, ascLv: lv, ascGl: gl.slice() });
+    return Object.assign({}, base, { id: x.k, grades, ascLv: lv, ascGl: gl.slice(), ascSig: !!x.sig });
   };
   /* le moteur cherche les sorts par classe ; ceux de l'Ascension ont un id « a~<n> » (n = place dans la barre du combat en cours) */
   E.ASC_DEFS = [];
@@ -153,6 +157,7 @@
     if (pool.length < 6) pool = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].boss && MONSTERS[k].img && MONSTERS[k].lvl).sort((x, y) => Math.abs(MONSTERS[x].lvl[0] - b) - Math.abs(MONSTERS[y].lvl[0] - b)).slice(0, 30);
     return (monPools[b] = pool);
   };
+  E.ascMonPool = monPool; // 1.2.x : recrue d'un combat (Amulette de l'Appel)
   const bossList = () => Object.keys(DUNGEONS).filter((d) => MONSTERS[DUNGEONS[d].boss]).map((d) => ({ d, boss: DUNGEONS[d].boss, lvl: DUNGEONS[d].lvl })).sort((a, b) => a.lvl - b.lvl);
   E.ascBossFor = (L, r) => { const B = bossList(); const near = B.filter((x) => Math.abs(x.lvl - L) <= 15); const P = near.length ? near : B.slice().sort((a, b) => Math.abs(a.lvl - L) - Math.abs(b.lvl - L)).slice(0, 3); return P[Math.floor(r() * P.length)]; };
   const towerCache = {};
@@ -229,7 +234,7 @@
     if (!E.ascClassChoices(S).includes(cls)) return "Choisis une des 3 classes proposées.";
     const sig = E.ascSignature(cls);
     Q.runs++; Q.run = { mode, cls, f: mode === "x" ? 101 : 1, t0: E.now(), spells: sig ? [{ k: sig, lv: 1, gl: [], sig: 1 }] : [], sursis: A.sursis + ((Q.unl.bonus || {}).sursis ? 1 : 0),
-      recruits: [], soul: null, frag: 0, ecus: 0, auto: 0, fights: 0, used: {}, top: mode === "x" ? 100 : 0, extra: mode === "x" ? 8 : 0, dette: 0, curse: 0, log: [], pend: null, at: E.now(), pause: 0 };
+      recruits: [], soul: null, frag: 0, ecus: 0, auto: 0, fights: 0, used: {}, top: mode === "x" ? 100 : 0, extra: mode === "x" ? 8 : 0, relExtra: mode === "x" ? (A.relStart || 0) : 0, dette: 0, curse: 0, log: [], pend: null, at: E.now(), pause: 0, relics: [] };
     if (Q.unl.bonus && Q.unl.bonus.glyph) Q.run.glyphs = [pickOf(Object.keys(E.ASC_GLYPHS), seeded(Q.runs * 977))];
     Q.run.pend = { t: "start", opts: E.ascStartChoices(S), at: E.now() };
     return null;
@@ -240,12 +245,13 @@
     return shuffle(pool, seeded(hash(`start|${Q.runs}|${E.ascDay()}`))).slice(0, A.start).map((x) => x.k); };
   /* tirage d'un palier : 3 sorts, raretés pondérées, sorts du niveau du héros au plus ; un sort possédé peut revenir (il monte de niveau) */
   E.ascPickChoices = (S) => {
-    const Q = E.ascState(S); const R = Q.run; const L = E.ascLvl(R.f); const r = seeded(hash(`pick|${Q.runs}|${R.f}|${R.fights}`));
+    const Q = E.ascState(S); const R = Q.run; const L = E.ascLvl(R.f); const r = seeded(hash(`pick|${Q.runs}|${R.f}|${R.fights}|${R.spells.length}`)); // spells.length : les 8 tirages de départ de l'Au-delà diffèrent (avant, les mêmes 3 sorts 8 fois)
     const allowed = new Set(E.ascSpellCls(Q).concat([R.cls]));
     const souls = (Q.souls || []).map((b) => "soul:" + b);
     const pool = E.ascSpells().filter((x) => x.lvl <= L && allowed.has(x.cls) && x.kind !== "summon");
     const out = []; const W = E.ASC_RAR;
-    for (let g = 0; out.length < 3 && g < 200; g++) {
+    const nP = E.relPickN ? E.relPickN(R) : 3; // 1.2.x : Anneau du Collectionneur
+    for (let g = 0; out.length < nP && g < 200; g++) {
       let roll = r() * 100, rar = "c"; for (const k of ["l", "e", "r", "c"]) { if (roll < W[k].w) { rar = k; break; } roll -= W[k].w; }
       const P = pool.filter((x) => E.ascRarity(x, L) === rar && !out.includes(x.k)); if (!P.length) continue;
       const own = R.spells.filter((s) => !s.soul && (s.lv || 1) < A.spellLvMax).map((s) => s.k);
@@ -258,7 +264,9 @@
 
   /* ---------- choix en attente ---------- */
   const fin = (S, R) => { R.pend = null; R.at = E.now(); // l'Au-delà commence à l'étage 101 : 3 tirages de sorts de plus avant le premier combat
-    if (R.extra > 0) { R.extra--; R.pend = { t: "pick", opts: E.ascPickChoices(S), at: E.now() }; } };
+    if (R.extra > 0) { R.extra--; R.pend = { t: "pick", opts: E.ascPickChoices(S), at: E.now() }; }
+    else if (R.relExtra > 0 && E.relPend && (R.relExtra--, E.relPend(S))) R.pend.start = 1; // l'Au-delà : 6 reliques de départ (Mathis « et pour la tour infinie ? »)
+    else if (E.relNext) E.relNext(S, R); }; // 1.2.x : la relique due, puis le marchand du Colporteur
   E.ascChoose = (S, i, j) => {
     const Q = E.ascState(S); const R = Q.run; if (!R || !R.pend) return "Rien à choisir.";
     const P = R.pend;
@@ -284,9 +292,13 @@
     if (P.t === "glyph") {
       if (i === -1) { fin(S, R); return null; }
       const s = R.spells[i]; if (!s || s.soul) return "Choisis un sort.";
-      if ((s.gl || []).length >= 2) return "2 glyphes au plus par sort.";
+      const gm = E.relGlyphMax ? E.relGlyphMax(R) : 2; if ((s.gl || []).length >= gm) return `${gm} glyphes au plus par sort.`;
       if (s.gl.includes(P.g)) return "Ce sort a déjà ce glyphe.";
       s.gl.push(P.g); fin(S, R); return null;
+    }
+    if (P.t === "relic") { // 1.2.x : une relique parmi 3 (une par emplacement : la nouvelle remplace l'ancienne) ; −2 = relance (Anneau du Destin)
+      if (i === -1) { fin(S, R); return null; } if (i === -2) return E.relReroll(S);
+      const id = P.opts[i]; if (!id) return "Choix inconnu."; const e = E.relEquip(S, R, id); if (e) return e; fin(S, R); return null;
     }
     if (P.t === "event") return E.ascEvent(S, i);
     if (P.t === "shop") return E.ascShop(S, i, j);
@@ -312,12 +324,14 @@
     { id: "pick", name: "Nouveau tirage de sorts", d: "1 sort parmi 3, tout de suite.", price: 50 },
     { id: "sursis", name: "Sursis", d: "Un Sursis de plus pour cette montée (1 fois).", price: 90 },
   ];
+  E.ascShopPrice = (R, o) => (E.relPrice ? E.relPrice(R, o.price, o.id) : o.price); // 1.2.x : remises des reliques
   E.ascShop = (S, i) => {
     const Q = E.ascState(S); const R = Q.run; if (i === -1) { fin(S, R); return null; }
-    const o = E.ASC_SHOP[i]; if (!o) return "Offre inconnue.";
-    if (R.frag < o.price) return `Il faut ${o.price} Fragments gagnés pendant cette montée.`;
+    if (i >= 100 && E.relShopBuy) return E.relShopBuy(S, R, i - 100); // 1.2.x : les reliques du marchand
+    const o = E.ASC_SHOP[i]; if (!o) return "Offre inconnue."; const price = E.ascShopPrice(R, o);
+    if (R.frag < price) return `Il faut ${price} Fragments gagnés pendant cette montée.`;
     if (o.id === "sursis" && R.boughtSursis) return "Un seul Sursis par montée chez le marchand.";
-    R.frag -= o.price;
+    R.frag -= price; if (E.relCashback) E.relCashback(R, price);
     if (o.id === "heal") R.recruits.forEach((x) => (x.hp = 1));
     if (o.id === "sursis") { R.sursis++; R.boughtSursis = 1; }
     if (o.id === "glyph") { R.pend = { t: "glyph", g: pickOf(Object.keys(E.ASC_GLYPHS), seeded(hash(`gl|${Q.runs}|${R.f}`))), at: E.now() }; return null; }
@@ -343,7 +357,7 @@
       const rule = fl.rule; const bar = R.spells.filter((s) => !s.soul);
       let list = bar.map((s) => s);
       if (rule === "silence" && list.length > 1) { const top = list.slice().sort((a, b) => (R.used[b.k] || 0) - (R.used[a.k] || 0))[0]; list = list.filter((s) => s !== top); }
-      E.ASC_DEFS = list.map((s) => E.ascDef(s));
+      E.ASC_RUN = R; E.ASC_DEFS = list.map((s) => E.ascDef(s)); E.ASC_RUN = null;
       if (rule === "element") { const el = (E.ASC_DEFS.find((d) => d && d.el && d.el !== "best") || {}).el; /* premier sort élémentaire (une bombe n'a pas d'élément) */ const keep = E.ASC_DEFS.map((d, i) => (d && (d.el === el || !d.el || d.el === "best") ? i : -1)).filter((i) => i >= 0); list = keep.map((i) => list[i]); E.ASC_DEFS = keep.map((i) => E.ASC_DEFS[i]); }
       c.lvl = L; c.autoStat = domStat(E.ASC_DEFS); E.resetPoints(S2, c.id);
       c.spells = E.ASC_DEFS.map((d, i) => ({ id: "a~" + i, cond: d ? E.defaultCond(d, c) : "always", tgt: "low" }));
@@ -367,7 +381,7 @@
       const wk = E.ascWoundKey(R.mode, R.f); const wd = Q.wounds[wk];
       if (wd) F.ents.filter((e) => e.side === "m").forEach((m, i) => { const p = wd.hp[i]; if (p !== undefined) { m.hp = Math.max(1, Math.round(m.hpMax * p)); if (p <= 0) { m.hp = 0; m.alive = false; } } });
       /* échos de classe et combos */
-      const fx = {}; E.ascEchoes(R).forEach((k) => Object.entries(E.ASC_ECHO[k].fx).forEach(([a, v]) => (fx[a] = (fx[a] || 0) + v)));
+      const fx = {}; const em = E.relEchoMult ? E.relEchoMult(R) : 1; E.ascEchoes(R).forEach((k) => Object.entries(E.ASC_ECHO[k].fx).forEach(([a, v]) => (fx[a] = (fx[a] || 0) + v * em)));
       E.ascCombos(R).forEach((x) => Object.entries(x.fx).forEach(([a, v]) => (fx[a] = (fx[a] || 0) + v)));
       if (rule === "pacte") fx.pui = (fx.pui || 0) + 40; if (rule === "greve") fx.pui = (fx.pui || 0) + 25;
       hero.st = Object.assign({}, hero.st); hero.hpMax = hero.hp = Math.round(hero.hpMax * A.heroHp); fx.pui = (fx.pui || 0) + A.heroPui + A.heroPuiLv * L;
@@ -383,7 +397,8 @@
         const hp = Math.round(hero.hpMax * 0.45); const s = { side: "c", tm: 0, summon: true, recruit: n, owner: hi, name: m.name, img: m.img, cls: hero.cls, lvl: L, hpMax: hp, hp: Math.max(1, Math.round(hp * x.hp)), ini: hero.ini - 1,
           dmg: (6 + L * 1.25) * 1.1, el: m.el || "t", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
         F.ents.push(s); F.order.push(F.ents.indexOf(s)); });
-      const W = { S2, F, fl, rule, hero: hi, seed, soulCd: 0, soulOn: -1, round: 1, dead: {}, swapped: false, rng, mode: R.mode, f: R.f };
+      const W = { S2, F, fl, rule, hero: hi, seed, soulCd: 0, soulOn: -1, round: 1, dead: {}, swapped: false, rng, mode: R.mode, f: R.f, R };
+      if (E.relSetup) E.relSetup(S, W, R, L); // 1.2.x : les reliques portées
       E.setRng(rng0); return W;
     } finally { E.setRng(rng0); E.events.length = evLen; }
   };
@@ -392,7 +407,7 @@
     const F = W.F; if (F.over) return "end";
     const rng0 = E.getRng(), evLen = E.events.length; E.setRng(W.rng);
     const Q = E.ascState(S); const R = Q.run;
-    E.ASC_DEFS = W.defs || E.ASC_DEFS;
+    E.ASC_DEFS = W.defs || E.ASC_DEFS; E.REL_W = W;
     try {
       if (F.round !== W.round) { W.round = F.round; roundFx(S, W, R); }
       E.step(W.S2);
@@ -402,7 +417,8 @@
     } finally { E.setRng(rng0); E.events.length = evLen; }
   };
   const roundFx = (S, W, R) => {
-    const F = W.F; const hero = F.ents[W.hero]; const rule = W.rule;
+    const F = W.F; const hero = F.ents[W.hero]; const rule = W.rule; const SO = W.souls || A.souls;
+    if (E.relRound) E.relRound(S, W, R); // 1.2.x : les reliques (PA du tour, soins, boucliers…)
     if (rule === "pacte" && hero.alive) { hero.hp = Math.max(1, hero.hp - Math.round(hero.hpMax * 0.04)); }
     if (rule === "maree") F.ents.forEach((m) => { if (m.side === "m") { m.dmg0 = m.dmg0 || m.dmg; m.dmg = m.dmg0 * (1 + 0.05 * (F.round - 1)); } });
     if (rule === "echange" && F.round === 3 && !W.swapped && hero.alive) { const t = F.ents.filter((m) => m.side === "m" && m.alive).sort((a, b) => b.hp - a.hp)[0];
@@ -411,21 +427,21 @@
     const soul = R && R.spells.find((s) => s.soul);
     if (soul && hero.alive) {
       const cur = W.soulOn >= 0 ? F.ents[W.soulOn] : null;
-      if (cur && cur.alive && F.round - W.soulT >= A.souls.turns) { cur.alive = false; cur.hp = 0; W.soulOn = -1; W.soulCd = F.round + A.souls.cd; F.log.push({ txt: `${cur.name} retourne dans son âme.`, cls: "dim" }); }
+      if (cur && cur.alive && F.round - W.soulT >= SO.turns) { cur.alive = false; cur.hp = 0; W.soulOn = -1; W.soulCd = F.round + SO.cd; F.log.push({ txt: `${cur.name} retourne dans son âme.`, cls: "dim" }); }
       else if (W.soulOn < 0 && F.round >= W.soulCd) {
         const key = soul.k.slice(5); const m = MONSTERS[key]; if (m) {
           const b = E.monsterEntity(key, hero.lvl); const hp = Math.round(hero.hpMax * 0.8);
           const s = { side: "c", tm: 0, summon: true, soul: 1, owner: W.hero, name: m.name, img: m.img, cls: hero.cls, lvl: hero.lvl, hpMax: hp, hp, ini: hero.ini - 1,
-            dmg: (8 + hero.lvl * 1.6) * A.souls.pow * 2.2, el: m.el || "t", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
+            dmg: (8 + hero.lvl * 1.6) * SO.pow * 2.2, el: m.el || "t", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
           F.ents.push(s); F.order.push(F.ents.indexOf(s)); W.soulOn = F.ents.indexOf(s); W.soulT = F.round; F.fx.push({ seq: F.seq, k: "summon", t: W.soulOn });
-          F.log.push({ txt: `Tu invoques l'âme de ${m.name} : elle se bat ${A.souls.turns} tours.`, cls: "c" });
+          F.log.push({ txt: `Tu invoques l'âme de ${m.name} : elle se bat ${SO.turns} tours.`, cls: "c" });
           R.used[soul.k] = (R.used[soul.k] || 0) + 1;
         }
       }
     }
   };
   const dieFx = (W, m) => {
-    const F = W.F;
+    const F = W.F; if (E.relDie) E.relDie(null, W, m, W.R); // 1.2.x : les reliques (PA, soins, chaîne, explosion)
     if (W.rule === "halouine" && !m.risen) { m.risen = true; m.alive = true; m.hp = Math.round(m.hpMax * 0.3); F.log.push({ txt: `${m.name} revient d'entre les morts !`, cls: "ko" }); delete W.dead[F.ents.indexOf(m)]; return; }
     if (W.rule === "eclats") { const d = Math.round(m.hpMax * 0.15); F.ents.forEach((x) => { if (x !== m && x.alive) { x.hp -= Math.round(d * (x.side === "m" ? 1 : 0.5)); if (x.hp <= 0) { x.hp = 0; x.alive = false; } } }); F.log.push({ txt: `${m.name} explose (−${d}) !`, cls: "ko" }); }
   };
@@ -435,7 +451,7 @@
      (E.manualCast). Le combat attend son choix ; « Ce tour en auto » ou « Ce combat en auto » le rendent à l'IA. */
   E.ascManual = (W, on) => { W.S2.settings.manual = !!on; W.S2.manualLive = !!on; };
   E.ascAwait = (W) => { const F = W.F; const A = F && !F.over && F.await; return A && W.S2.manualLive ? A : null; };
-  const inFight = (S, W, fn) => { const F = W.F; const rng0 = E.getRng(), evLen = E.events.length; E.setRng(W.rng); E.ASC_DEFS = W.defs || E.ASC_DEFS;
+  const inFight = (S, W, fn) => { const F = W.F; const rng0 = E.getRng(), evLen = E.events.length; E.setRng(W.rng); E.ASC_DEFS = W.defs || E.ASC_DEFS; E.REL_W = W;
     try { const r = fn(); F.ents.forEach((m, i) => { if (m.side !== "m" || m.alive || W.dead[i]) return; W.dead[i] = 1; dieFx(W, m); }); return r; } finally { E.setRng(rng0); E.events.length = evLen; } };
   E.ascCanCast = (W, i) => { const A = E.ascAwait(W); const d = W.defs && W.defs[i]; if (!A || !d) return false; E.ASC_DEFS = W.defs; return E.manualCanCast(W.S2, d); };
   E.ascManualCast = (S, W, i, tgt) => { if (!E.ascAwait(W)) return "Ce n'est pas ton tour."; return inFight(S, W, () => E.manualCast(W.S2, "a~" + i, tgt)); };
@@ -454,22 +470,25 @@
     const Q = E.ascState(S); const R = Q.run; const fl = W.fl; const out = { win: res.win, f: R.f };
     R.fights++; R.used = R.used || {}; if (R.mode === "d" && R.f > 90) R.r91 = (R.r91 || 0) + res.rounds;
     (W.F.fx || []).forEach((x) => { if (x.k === "cast" && x.sp && String(x.sp).startsWith("a~")) { const d = W.defs[+x.sp.slice(2)]; if (d) R.used[d.id] = (R.used[d.id] || 0) + 1; } });
-    res.recruits.forEach((x) => { if (R.recruits[x.n]) R.recruits[x.n].hp = x.hp; }); R.recruits = R.recruits.filter((x) => x.hp > 0);
+    res.recruits.forEach((x) => { if (R.recruits[x.n]) R.recruits[x.n].hp = x.hp; }); if (E.relRecruits) E.relRecruits(S, R); R.recruits = R.recruits.filter((x) => x.hp > 0);
     const wk = E.ascWoundKey(R.mode, R.f);
     if (res.win) {
       delete Q.wounds[wk];
       let fr = E.ASC_FRAG(R.f, fl.t === "boss"); if (auto) { fr = Math.round(fr * A.autoFrag); R.auto++; }
+      if (E.relFrag) fr = E.relFrag(S, R, fr, fl); // 1.2.x : reliques (Fragments, Écus, trésor)
       R.frag += fr; out.frag = fr;
       if (fl.rule === "dette") R.dette = R.f + 1;
       if (fl.t === "boss") { // capture d'âme : toujours proposée au premier boss d'une montée, puis 1 fois sur 2
         const first = !Q.bestiary[fl.boss]; Q.bestiary[fl.boss] = (Q.bestiary[fl.boss] || 0) + 1; out.boss = fl.boss; if (first) { out.newSoul = 1; E.note(S, `Ascension : âme de ${MONSTERS[fl.boss].name} inscrite au bestiaire.`, "rare"); }
         R.ecus += 2 + Math.floor(R.f / 20);
       }
+      if (E.relWin) E.relWin(S, R, W, fl);
       E.ascAdvance(S, out, auto);
     } else {
       Q.wounds[wk] = { hp: res.monHp };
       if (R.sursis > 0) { R.sursis--; R.usedSursis = 1; out.sursis = 1; }
-      else { out.dead = 1; E.ascEnd(S, "dead"); }
+      if (E.relLose) E.relLose(S, R, W, out); // 1.2.x : reliques (Rancune, Talisman du Sursis)
+      if (!out.sursis) { out.dead = 1; E.ascEnd(S, "dead"); }
     }
     return out;
   };
@@ -489,8 +508,10 @@
     if (done > (Q.best[R.mode] || 0)) { Q.best[R.mode] = done; if (R.mode === "n" && done >= 100) Q.best0 = Math.max(Q.best0 || 0, 100); E.ascMilestone(S, R.mode, done); }
     R.top = Math.max(R.top, done); R.f = done + 1; E.ascRkNote(S, R, done, auto || (out && out.auto));
     if (R.mode !== "x" && R.f > A.floors) { E.ascEnd(S, "top"); out.top = 1; return; }
-    if (fl.t === "boss" && out && out.boss && (out.newSoul || hash(`soul|${Q.runs}|${done}`) % 2 === 0)) R.pend = { t: "soul", boss: out.boss, at: E.now() };
-    else if (done % A.every === 0) R.pend = { t: "pick", opts: E.ascPickChoices(S), at: E.now() };
+    if (E.relDue) E.relDue(R, done); // 1.2.x : une relique tous les 5 étages, après le sort (ou l'âme)
+    if (fl.t === "boss" && out && out.boss && (out.newSoul || (E.relHas && E.relHas(R, "soulAlways")) || hash(`soul|${Q.runs}|${done}`) % 2 === 0)) R.pend = { t: "soul", boss: out.boss, at: E.now() };
+    else if (done % (E.relEvery ? E.relEvery(R) : A.every) === 0) R.pend = { t: "pick", opts: E.ascPickChoices(S), at: E.now() };
+    else if (E.relNext) E.relNext(S, R);
     E.ascEnter(S);
   };
   /* arrivée sur un étage sans combat */
@@ -498,8 +519,8 @@
     const Q = E.ascState(S); const R = Q.run; if (!R || R.pend) return;
     const fl = E.ascFloor(S, R.mode, R.f); const r = seeded(hash(`ev|${Q.runs}|${R.f}`)); R.seen = R.f;
     if (fl.t === "event") { const P = monPool(fl.lvl); const mon = P[Math.floor(r() * P.length)];
-      R.pend = { t: "event", ev: fl.ev, mon, price: fl.ev === "merc" ? 20 + R.f : 0, at: E.now() }; }
-    else if (fl.t === "shop") R.pend = { t: "shop", at: E.now() };
+      R.pend = { t: "event", ev: fl.ev, mon, price: fl.ev === "merc" ? (E.relMerc ? E.relMerc(R, 20 + R.f) : 20 + R.f) : 0, at: E.now() }; }
+    else if (fl.t === "shop") { R.pend = { t: "shop", at: E.now() }; if (E.relShopEnter) E.relShopEnter(S, R); }
     else if (fl.t === "altar") { const L = fl.lvl; const P = E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon" && E.ascRarity(x, L) === "l"); const Q2 = P.length ? P : E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon").sort((a, b) => b.lvl - a.lvl).slice(0, 12);
       R.pend = { t: "altar", leg: Q2.length ? Q2[Math.floor(r() * Q2.length)].k : null, at: E.now() }; }
   };
@@ -511,6 +532,7 @@
     const Q = E.ascState(S); const R = Q.run; if (!R) return null;
     Q.frag += R.frag; Q.ecus += R.ecus;
     const sum = { why, mode: R.mode, cls: R.cls, top: R.top, frag: R.frag, ecus: R.ecus, t: E.now(), spells: R.spells.map((s) => s.k), sursis: R.sursis, auto: R.auto };
+    if (E.relEnd) E.relEnd(S, R, sum); // 1.2.x : Cape du Prophète, reliques de la montée dans l'historique
     Q.last = sum; Q.hist.unshift(sum); if (Q.hist.length > 10) Q.hist.length = 10;
     S.cnt = S.cnt || {}; S.cnt.ascRuns = (S.cnt.ascRuns || 0) + 1; S.cnt.ascBest = Math.max(S.cnt.ascBest || 0, R.top);
     Q.run = null; E.note(S, `Ascension : montée finie à l'étage ${sum.top} (${sum.frag} Fragments).`, "info");
@@ -573,6 +595,7 @@
     if (P.t === "pick") { let bi = 0; P.opts.forEach((k, i) => { if (score(k) > score(P.opts[bi])) bi = i; }); return E.ascChoose(S, bi, worst()); }
     if (P.t === "soul") return E.ascChoose(S, 0, worst());
     if (P.t === "glyph") { const i = R.spells.findIndex((s) => !s.soul && (s.gl || []).length < 2 && !s.gl.includes(P.g)); return E.ascChoose(S, i >= 0 ? i : -1); }
+    if (P.t === "relic") return E.ascChoose(S, E.relAuto ? E.relAuto(S) : -1); // 1.2.x : la meilleure rareté, un emplacement vide d'abord
     if (P.t === "event") return E.ascChoose(S, P.ev === "prisoner" ? 1 : P.ev === "merc" && R.frag >= P.price + 40 && R.recruits.length < A.recruitsMax ? 0 : 1); // 1.1.0.1 : pas de mercenaire de plus quand l'équipe a déjà ses recrues (la montée restait bloquée) // l'auto ne libère pas de prisonnier (événement risqué)
     if (P.t === "shop") return E.ascChoose(S, -1);
     if (P.t === "altar") return E.ascChoose(S, 0); // l'auto refuse toujours l'autel
