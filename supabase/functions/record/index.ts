@@ -107,36 +107,45 @@ Deno.serve(async (req) => {
   return json(out);
 });
 
-// ---------- défi du jour (lot « Se montrer ») ----------
+// ---------- défi du jour (lot « Se montrer », refonte 1.1) ----------
 // Le défi est tiré de la date (heure de Paris) : le serveur le rejoue avec la partie en ligne du joueur.
-// Le score officiel est celui du serveur : moins de tours, puis plus de PV.
+// Le score officiel est celui du serveur : points (victoire, règles tenues, tours, PV). Le joueur le valide lui-même,
+// au plus E.DEFI_MAX_SENDS fois par palier et par jour : le serveur ne rejoue que sur demande.
 // deno-lint-ignore no-explicit-any
 async function defi(db: any, uid: string, tier: string) {
   const now = Date.now();
   if (!E.defiTier(tier)) return json({ ok: false, err: "palier inconnu" }, 400);
   if (now - (lastTry.get(uid + ":defi") || 0) < WAIT_S * 1000) return json({ ok: false, err: "trop tôt", retry: WAIT_S }, 429);
   lastTry.set(uid + ":defi", now);
-  const [{ data: save }, { data: lad }] = await Promise.all([
+  const day = E.defiDay(now);
+  const [{ data: save }, { data: lad }, { data: old }] = await Promise.all([
     db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
     db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
+    db.from("defi").select("turns,hp,score,sends").eq("user_id", uid).eq("day", day).eq("tier", tier).maybeSingle(),
   ]);
   if (!save) return json({ ok: false, err: "aucune partie en ligne" }, 404);
   if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
+  const sends = (old && old.sends) || 0;
+  if (sends >= E.DEFI_MAX_SENDS) return json({ ok: false, err: `${E.DEFI_MAX_SENDS} validations déjà faites aujourd'hui dans ce palier`, sends });
   let S;
   try { S = E.deserialize(save.data); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
   E.events.length = 0;
   if (!E.defiTierOk(S, tier)) return json({ ok: false, err: "palier interdit pour cette équipe" });
-  const day = E.defiDay(now), def = E.defi(tier, day);
+  /* 1.1 : le dimanche, la règle votée par les joueurs (supabase/defi.sql, defi_vote_count) */
+  if (E.defiSunday(day)) { const { data: vc } = await db.from("defi_vote_count").select("rule,n").eq("week", E.defiWeek(day)); const c: Record<string, number> = {}; (vc || []).forEach((x: { rule: string; n: number }) => { c[x.rule] = x.n; }); E.DEFI_VOTE[E.defiWeek(day)] = c; }
+  const def = E.defi(tier, day);
+  const te = E.defiTeamErr(S, def); if (te) return json({ ok: false, err: te });
   const r = E.defiSim(S, def, now);
   if (!r.win) return json({ ok: false, tier, day, err: "l'équipe ne termine pas le défi" });
-  const team = E.team(S).map((c: { cls: string }) => c.cls);
-  const { data: old } = await db.from("defi").select("turns,hp").eq("user_id", uid).eq("day", day).eq("tier", tier).maybeSingle();
-  const out: Record<string, unknown> = { ok: true, defi: true, tier, day, did: def.did, dname: D.DUNGEONS[def.did].name, turns: r.turns, hp: r.hp };
-  if (!old || r.turns < old.turns || (r.turns === old.turns && r.hp > old.hp)) {
-    await db.from("defi").upsert({ user_id: uid, day, tier, did: def.did, turns: r.turns, hp: r.hp, team, at: new Date(now).toISOString() });
+  const team = E.defiTeam(S, def).map((c: { cls: string }) => c.cls); // 1.1 : l'équipe du défi (« Adapter mon équipe ») si le joueur en a gardé une
+  const out: Record<string, unknown> = { ok: true, defi: true, tier, day, did: def.did, dname: D.DUNGEONS[def.did].name, turns: r.turns, hp: r.hp, score: r.score, sends: sends + 1 };
+  const better = !old || r.score > (old.score || 0) || (r.score === (old.score || 0) && (r.turns < old.turns || (r.turns === old.turns && r.hp > old.hp)));
+  if (better) {
+    await db.from("defi").upsert({ user_id: uid, day, tier, did: def.did, turns: r.turns, hp: r.hp, score: r.score, rules: r.rules, sends: sends + 1, team, at: new Date(now).toISOString() });
     out.improved = true;
-  }
-  const { count: ahead } = await db.from("lb_defi").select("user_id", { count: "exact", head: true }).eq("day", day).eq("tier", tier).or(`turns.lt.${r.turns},and(turns.eq.${r.turns},hp.gt.${r.hp})`);
+  } else await db.from("defi").update({ sends: sends + 1 }).eq("user_id", uid).eq("day", day).eq("tier", tier);
+  const best = better ? r.score : old.score || 0;
+  const { count: ahead } = await db.from("lb_defi").select("user_id", { count: "exact", head: true }).eq("day", day).eq("tier", tier).gt("score", best);
   out.rank = (ahead || 0) + 1;
   return json(out);
 }

@@ -1818,6 +1818,9 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
   else if (orn === "enclume") ornHtml = `<span class="orn seal">⚒️</span>`; // 1.0.25 : dix renaissances d'un métier
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
+  else if (orn === "cadreDefi") ornHtml = `<span class="orn seal">🎯</span>`; // 1.1 : cent jours de défis
+  else if (orn === "couronneDefi") ornHtml = `<span class="orn crown">🏆</span>`; // 1.1 : top 3 d'une saison du défi
+  else if (orn === "moisDore") ornHtml = `<span class="orn seal">🌟</span>`; // 1.1 : 20 bourses en or dans un mois
   else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
   else if (orn === "fondateur" || orn === "legende" || orn === "gardien" || orn === "souverain") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement ; 1.1 : Prisme des Douze (alliances)
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
@@ -2116,7 +2119,7 @@ function recruitBtn() {
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
-  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
@@ -2344,8 +2347,10 @@ function homeTiles() {
   const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defi(tid);
   if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
     const near = Math.max(...E.team(S).map((c) => c.lvl)) >= dg.lvl - 10; // 1.0.10.3 : pas allumée pour une équipe loin du niveau du donjon (perdu d'avance)
-    out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: "Défi du jour", s: `${h(dg.name)} · stasis ${def.k}${best ? ` · record ${best.turns} tours` : near ? "" : ` · conseillé dès le niveau ${Math.max(1, dg.lvl - 10)}`}`, done: !!st.chest, hot: near,
-      act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
+    const tErr = E.defiTeamErr(S, def); // 1.1 : règle d'équipe du jour pas respectée, la tuile mène à la page du défi
+    const dz = E.defiDanger(S); // 1.1 (série 4, 2A) : série en danger
+    out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: def.sun ? "Grand défi du dimanche" : "Défi du jour", s: `${dz ? `<b class="df-dz">Série en danger : ${dur(dz / 1000).replace(/ \d+ s$/, "")}</b> · ` : ""}${h(dg.name)} · stasis ${def.k}${best ? ` · ${fmt(best.score || 0)} points` : near ? ` · ${h(E.DEFI_TEAM[def.team].name.toLowerCase())}` : ` · conseillé dès le niveau ${Math.max(1, dg.lvl - 10)}`}`, done: !!st.chest, hot: near,
+      act: st.chest || tErr ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">${tErr ? "Voir" : "Lancer"}</span>` })); }
   /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
   { const xt = window.EXPUI && window.EXPUI.tile(); if (xt) out.push(tile(xt)); } // 1.0.30 : Expéditions (js/expeditionsui.js)
@@ -3418,7 +3423,7 @@ function chalOverlayHtml(F) {
   if (!F || !(F.chals || []).length) return "";
   return F.chals.map((c) => { const C = E.CHALLENGES[c.id]; const state = !c.ok ? "ko" : F.over && F.result === "win" ? "ok" : "run";
     const sub = c.id === "rapide" ? `<div class="prog"><i style="width:${Math.min(100, (F.round / c.turns) * 100)}%"></i></div>` : `<div class="d">${h(c.id === "elitiste" && F.ents[c.target] ? "Cible : " + F.ents[c.target].name : C.desc)}</div>`;
-    return `<div class="chx ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON(c.id)}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">+${c.bonus} %</div></div>`; }).join("");
+    return `<div class="chx ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON(c.id)}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">${F.defiRules ? `+${(F.defiHero || []).includes(c.id) ? E.DEFI_PTS.hero : E.DEFI_PTS.rule} pts` : `+${c.bonus} %`}</div></div>`; }).join(""); // 1.1 : règles du Défi du jour, en points
 }
 /* ===================== 0.1.10 : idoles ===================== */
 const idolImg = (id) => `assets/id/${E.IDOLS[id].fam}.webp`;
@@ -3567,7 +3572,7 @@ function chalBarHtml(F) {
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   const idol = F.idol ? `<span class="pill good idolpill" data-tip="${h(F.idol.ids.map((id) => E.IDOLS[id].name + " : " + E.IDOLS[id].desc).join(" · "))}">${F.idol.ids.map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("")} Idoles ${F.idolScore} · +${pctTxt(F.idolBonus)} %</span>` : "";
-  return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${tog}`;
+  return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${F.defiRules ? `<span class="xs muted">${G("target")} Les héros suivent les règles du jour</span>` : tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
@@ -7441,65 +7446,186 @@ function hotSheet() {
 /* ===================== 0.1.19 : lot Se montrer (logique dans js/defi.js) =====================
    Défi du jour (page Défi du jour, résultat, classement), carte d'équipe à partager, garde-robe. */
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-const defiTierCur = () => (ui.defiTier && E.defiTierOk(S, ui.defiTier) ? ui.defiTier : E.defiTierDefault(S));
+const defiTierCur = () => (defiVoteSync(), ui.defiTier && E.defiTierOk(S, ui.defiTier) ? ui.defiTier : E.defiTierDefault(S)); // 1.1 : la règle votée du dimanche (gardée dans la partie) avant de tirer le défi
 const modChip = (m) => `<span class="fl-mod" data-tip="${h(E.STASIS_MODS[m].desc)}">${h(E.STASIS_MODS[m].name)}</span>`;
+/* 1.1 : refonte du Défi du jour (choix de Mathis 1A-6A) : règles du jour, score en points, bourses bronze / argent / or,
+   palier Élite, joker de série, Grand défi du dimanche, validation du score à la demande (3 par palier et par jour). */
+const DF_TIPS = { survivant: "Mise sur les PV et les protections.", versatile: "Plus de sorts différents dans la barre aident.", econome: "Alterne deux sorts d'attaque au moins.", focus: "Les héros finissent leur cible avant d'en changer.",
+  elitiste: "Le monstre le plus fort (souvent le boss) tombe en premier.", incurable: "Tes soigneurs ne soigneront pas : prévois des PV.", elementaire: "Chaque héros garde un seul élément.", barbare: "Ni bouclier ni bonus : les dégâts comptent.", rapide: "Il faut finir chaque salle vite." };
+const medTag = (lvl) => (lvl ? `<span class="df-med ${E.DEFI_MEDALS[lvl - 1].id}">${h(E.DEFI_MEDALS[lvl - 1].name)}</span>` : "");
+const medOf = (score) => { const M = E.defiMedal(score || 0); return M ? E.DEFI_MEDALS.indexOf(M) + 1 : 0; };
+const ruleName = (id) => (E.CHALLENGES[id] ? E.CHALLENGES[id].name : id);
 function defiDots() {
-  const day = E.defiDay(); const won = new Set((S.defiStreak && S.defiStreak.days) || []);
-  return `<span class="df-dots">${[6, 5, 4, 3, 2, 1, 0].map((i) => { const d = day - i; const w = won.has(d); const lab = new Date(d * 86400000 + 43200000).toLocaleDateString("fr-FR", { weekday: "short", timeZone: "UTC" }).replace(".", "");
-    return `<i class="${w ? "on" : ""}${i === 0 ? " today" : ""}" data-tip="${h(lab)} : ${w ? "défi réussi" : i === 0 ? "pas encore réussi" : "pas de défi réussi"}">${w ? "✓" : i === 0 ? "?" : "·"}</i>`; }).join("")}</span>`;
+  const day = E.defiDay(); const ss = S.defiStreak || {}; const won = new Set(ss.days || []); const jok = new Set(ss.jdays || []);
+  return `<span class="df-dots">${[6, 5, 4, 3, 2, 1, 0].map((i) => { const d = day - i; const w = won.has(d); const j = !w && jok.has(d); const lab = new Date(d * 86400000 + 43200000).toLocaleDateString("fr-FR", { weekday: "short", timeZone: "UTC" }).replace(".", "");
+    return `<i class="${w ? "on" : ""}${j ? " jok" : ""}${i === 0 ? " today" : ""}" data-tip="${h(lab)} : ${w ? "défi réussi" : j ? "joker utilisé" : i === 0 ? "pas encore réussi" : "pas de défi réussi"}">${w ? "✓" : j ? "J" : i === 0 ? "?" : "·"}</i>`; }).join("")}</span>`;
+}
+/* 1.1 (série 3, 1A) : le calendrier du mois, chaque jour à la couleur de sa meilleure bourse (S.defiHist), J pour un joker */
+function defiCal() {
+  const day = E.defiDay(); const ss = S.defiStreak || {}; const won = new Set(ss.days || []); const jok = new Set(ss.jdays || []); const H = S.defiHist || {};
+  const d0 = new Date(day * 86400000 + 43200000); const first = day - d0.getUTCDate() + 1; const last = E.defiMonthEnd(day); const off = (first + 3) % 7;
+  const cls = { 1: "br", 2: "ar", 3: "or" }; let ors = 0;
+  const cells = [];
+  for (let i = 0; i < off; i++) cells.push(`<i class="nil"></i>`);
+  for (let d = first; d <= last; d++) {
+    const n = d - first + 1; const m = H[d]; if (m === 3) ors++;
+    const k = d > day ? "fut" : m ? cls[m] : won.has(d) ? "on" : jok.has(d) ? "jk" : "";
+    const tip = d > day ? "" : m ? `bourse ${E.DEFI_MEDALS[m - 1].name.toLowerCase()}` : won.has(d) ? "défi réussi" : jok.has(d) ? "joker utilisé" : d === day ? "pas encore réussi" : "pas de défi réussi";
+    cells.push(`<i class="${k}${d === day ? " today" : ""}"${tip ? ` data-tip="${h(E.defiDate(d))} : ${tip}"` : ""}>${k === "jk" ? "J" : n}</i>`);
+  }
+  const mn = E.defiMonthName(E.defiMonth(day));
+  return `<div class="df-cal-w"><div class="row between"><b class="small">${h(mn[0].toUpperCase() + mn.slice(1))}</b><span class="xs muted">${ors} or ce mois</span></div>
+    <div class="df-cal">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map((x) => `<b>${x}</b>`).join("")}${cells.join("")}</div>
+    <div class="df-leg">${medTag(1)}${medTag(2)}${medTag(3)}<span>J = joker</span></div></div>`;
+}
+/* 1.1 (série 4, 5A) : « Mois doré », 20 bourses en or dans le mois */
+function defiGoldGoal() {
+  const n = E.defiGoldCount(S); const N = E.DEFI_GOLD_MONTH; const ok = (S.defiGold || []).includes(E.defiMonth()); const tot = (S.defiGold || []).length;
+  return `<div class="df-goal gold ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>Mois doré</b> · ${N} bourses en or dans le mois : ornement doré « Mois doré »${tot ? ` (${tot} mois réussi${tot > 1 ? "s" : ""})` : ""}</span><span class="xs num">${ok ? "✓ obtenu ce mois" : `${Math.min(n, N)}/${N}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(n, N), N)}%"></i></div></div>`;
+}
+/* 1.1 (série 4, 4A) : vote de la règle du Grand défi (du lundi au samedi, un vote par compte, modifiable) */
+function defiVoteSync() { const R = S && S.defiVoteRes; if (R && R.w != null && !E.DEFI_VOTE[R.w]) E.DEFI_VOTE[R.w] = R.c || {}; }
+let dfVoteAt = 0;
+async function defiVoteFetch(force) {
+  if (!ON || !ON.db || !ON.db() || (!force && Date.now() - dfVoteAt < 60000)) return; dfVoteAt = Date.now();
+  const wk = E.defiWeek(); const before = E.defiVoteWin(wk);
+  try {
+    const { data } = await ON.db().from("defi_vote_count").select("rule,n").eq("week", wk);
+    const c = {}; (data || []).forEach((x) => { c[x.rule] = x.n; }); E.DEFI_VOTE[wk] = c; ui.dfVoteC = { w: wk, c };
+    if (E.defiSunday(E.defiDay())) { S.defiVoteRes = { w: wk, c }; dirty = true; }
+    if (ui.tab === "defi" && !$("#sheet").innerHTML && !isEditing() && (force || before !== E.defiVoteWin(wk) || !$("#dfVote .df-vopt"))) render();
+  } catch (e) {}
+}
+function defiVoteHtml() {
+  defiVoteSync(); const day = E.defiDay(); const wk = E.defiWeek(day); const opts = E.defiVoteOpts(wk); const C = (ui.dfVoteC && ui.dfVoteC.w === wk ? ui.dfVoteC.c : E.DEFI_VOTE[wk]) || {};
+  const tot = opts.reduce((a, r) => a + (C[r] || 0), 0); const mine = S.defiVote && S.defiVote.w === wk ? S.defiVote.rule : null; const open = E.defiVoteOpen(day); const win = E.defiVoteWin(wk);
+  return `<div class="panel" id="dfVote"><div class="phead"><h2>${IC("couronne")} Vote du Grand défi</h2><span class="xs muted">${open ? "fin du vote samedi minuit" : "vote fermé"}</span></div><div class="pad stack" style="gap:8px">
+    <span class="small">${open ? `Choisis la règle en plus de dimanche. Un vote par compte, change d'avis quand tu veux.` : `Règle votée pour aujourd'hui : <b>${h(ruleName(win))}</b>. Le prochain vote ouvre lundi.`}</span>
+    ${opts.map((r) => { const n = C[r] || 0; const pc = tot ? Math.round((n / tot) * 100) : 0; const me = mine === r; const C0 = E.CHALLENGES[r];
+      return `<button class="df-vopt${me ? " me" : ""}${!open && r === win ? " win" : ""}" ${open ? `data-act="sm-dvote" data-v="${r}"` : "disabled"}><span><b>${h(C0.name)}</b>${me ? ` <small class="muted">ton vote</small>` : ""}${!open && r === win ? ` <small class="muted">gagnante</small>` : ""}<br><span class="xs muted">${h(r === "rapide" ? "Finir chaque salle en peu de tours." : C0.desc)}</span></span><b class="num">${pc} %</b><span class="bar"><i style="width:${pc}%"></i></span></button>`; }).join("")}
+    <span class="xs muted">${tot} vote${tot > 1 ? "s" : ""}. ${ranked() ? "La règle gagnante s'ajoute aux règles tirées du dimanche (même règle pour tous)." : onLive() ? "Partie solo : le vote se fait avec ta partie 1." : "Connecte-toi pour voter."}</span></div></div>`;
+}
+async function defiVote(rule) {
+  if (!ON || !ranked()) { toast("Connecte-toi (partie 1) pour voter.", "warn"); return; }
+  try {
+    const { data, error } = await ON.db().rpc("defi_vote", { p_week: E.defiWeek(), p_rule: rule });
+    if (error) { toast("Serveur injoignable : réessaie dans un moment.", "warn"); return; }
+    if (data) { toast(data, "warn"); return; }
+    S.defiVote = { w: E.defiWeek(), rule }; dirty = true; toast(`Vote enregistré : ${ruleName(rule)}.`);
+    await defiVoteFetch(true);
+  } catch (e) { toast("Serveur injoignable : réessaie dans un moment.", "warn"); }
+}
+/* 1.1 (série 4, 3A) : carnet du défi, les 30 derniers jours (S.defiLog), avec la place au classement lue au serveur */
+let dfRanksAt = 0;
+async function defiLogRanks() {
+  if (!ON || !ranked() || !ON.db || !ON.db() || Date.now() - dfRanksAt < 300000) return; dfRanksAt = Date.now();
+  try {
+    const { data } = await ON.db().from("lb_defi").select("day,tier,r").eq("user_id", ON.user.id).gt("day", E.defiDay() - 31).limit(120);
+    const R = {}; (data || []).forEach((x) => { R[x.day + ":" + x.tier] = x.r; }); ui.dfRanks = R;
+    if (ui.tab === "defi" && !$("#sheet").innerHTML && !isEditing()) render();
+  } catch (e) {}
+}
+function defiLogHtml() {
+  const L = (S.defiLog || []).filter((x) => x.day > E.defiDay() - 30); const R = ui.dfRanks || {}; const best = L.reduce((m, x) => Math.max(m, x.score || 0), 0);
+  const rows = L.map((x) => { const k = x.day + ":" + x.tier; const dg = DUNGEONS[x.did]; const open = ui.dfLogOpen === k; const held = Object.keys(x.rules || {}).filter((r) => x.rules[r]);
+    return `<button class="df-log${open ? " open" : ""}" data-act="sm-dlog" data-v="${k}"><span class="d">${h(E.defiDate(x.day).replace(/^\S+ /, ""))}</span><span class="grow"><b>${h(dg ? dg.name : "?")}</b><br><span class="xs muted">${h(E.defiTier(x.tier) ? E.defiTier(x.tier).name : x.tier)} · stasis ${x.k}</span></span><span class="num">${fmt(x.score || 0)} pts</span><span>${medTag(medOf(x.score))}${R[k] ? ` <span class="xs muted">${R[k]}${R[k] === 1 ? "er" : "e"}</span>` : ""}</span>
+      ${open ? `<span class="df-logx">${dfTeamIcons(x.team)} <span class="xs">${(x.names || []).map(h).join(", ")}</span><br><span class="xs muted">Règles tenues : ${held.length ? held.map((r) => h(ruleName(r))).join(", ") : "aucune"}</span></span>` : ""}</button>`; }).join("");
+  return `<div class="panel"><div class="phead"><h2>${IC("parchemin_or")} Carnet du défi</h2><span class="xs muted">30 derniers jours${best ? ` · meilleur : ${fmt(best)} pts` : ""}</span></div><div class="pad">${rows || `<p class="note">Tes défis réussis s'afficheront ici, jour après jour.</p>`}${rows ? `<p class="xs muted" style="margin-top:6px">Ton meilleur score de chaque jour et palier, sa bourse${ON ? " et ta place au classement (scores validés)" : ""}. Touche une ligne pour revoir la composition utilisée.</p>` : ""}</div></div>`;
+}
+/* 1.1 (série 4, 1A) : mode héroïque, jusqu'à 2 règles en plus au choix (+150 pts chacune si elle est tenue) */
+function defiHeroHtml(def, best) {
+  const on = E.defiHeroRules(S, def);
+  return `<span class="df-sub">Mode héroïque : jusqu'à ${E.DEFI_HERO_MAX} règles en plus, au choix (+${E.DEFI_PTS.hero} pts chacune si elle est tenue)</span><div class="df-hero">${(def.extra || []).map((id) => { const C = E.CHALLENGES[id]; const p = on.includes(id); const st = best && best.hero && best.hero.includes(id) && best.rules ? best.rules[id] : undefined;
+    return `<button class="df-hchip${p ? " on" : ""}" data-act="sm-dhero" data-v="${def.tier}" data-r="${id}" aria-pressed="${p}" ${!p && on.length >= E.DEFI_HERO_MAX ? "disabled" : ""}><span class="ck">${p ? "✓" : "+"}</span><span><b>${h(C.name)}</b> <small>+${E.DEFI_PTS.hero} pts</small><br><small>${h(id === "rapide" ? "Finir chaque salle en peu de tours." : C.desc)}</small>${st === true ? `<br><small class="df-good">✓ tenue à ton meilleur essai</small>` : st === false ? `<br><small class="df-bad">✗ pas tenue à ton meilleur essai</small>` : ""}</span></button>`; }).join("")}</div>`;
+}
+/* 1.1 (série 4, 2A) : rappel quand la série casse ce soir */
+const defiDangerNote = (ms) => `<div class="df-dzn"><b>Ta série de ${E.defiStreakNow(S)} jour${E.defiStreakNow(S) > 1 ? "s" : ""} se termine dans ${dur(ms / 1000).replace(/ \d+ s$/, "")}</b> : ${S.defiStreak && S.defiStreak.last === E.defiDay() - 2 ? "le joker la tient déjà depuis hier" : "le joker est déjà utilisé cette semaine"}. Réussis le défi pour la garder.</div>`;
+function defiRuleCard(id, best) {
+  const C = E.CHALLENGES[id]; const st = best && best.rules ? best.rules[id] : undefined;
+  return `<div class="df-rule${st === true ? " ok" : st === false ? " ko" : ""}"><b>${h(C.name)}<span class="pts">+${E.DEFI_PTS.rule} pts</span></b><span class="muted">${h(id === "rapide" ? "Finir chaque salle en peu de tours (la limite dépend de la salle)." : C.desc)}</span>
+    ${st === true ? `<span class="st">✓ tenu à ton meilleur essai</span>` : st === false ? `<span class="st">✗ pas tenu à ton meilleur essai</span>` : `<span class="xs muted">${h(DF_TIPS[id] || "")}</span>`}</div>`;
+}
+function defiTeamCard(def) {
+  const R = E.DEFI_TEAM[def.team]; const err = E.defiTeamErr(S, def);
+  /* 1.1 (série 3, 5A) : « Adapter mon équipe » garde les héros les plus forts qui respectent la règle, pour le défi du jour seulement */
+  if (err) { const sug = E.defiSuggest(S, def);
+    return `<div class="df-rule team ko"><b>${h(R.name)}<span class="pts">équipe</span></b><span class="muted">${h(R.desc)}</span><span class="st">✗ ${h(R.fix(E.team(S)))}</span>
+      ${sug.length ? `<span class="xs">Proposé : ${sug.map((c) => h(c.name)).join(", ")} (les plus forts), pour le défi seulement.</span>` : ""}<span class="row" style="gap:6px">${sug.length ? `<button class="btn sm primary" data-act="sm-dpick" data-v="${def.tier}">Adapter mon équipe</button>` : ""}<button class="btn sm" data-tab="team">Choisir moi-même</button></span></div>`; }
+  if (E.defiPicked(S, def)) return `<div class="df-rule team ok"><b>${h(R.name)}<span class="pts">équipe</span></b><span class="muted">${h(R.desc)}</span><span class="st">✓ équipe du défi : ${E.defiTeam(S, def).map((c) => h(c.name)).join(", ")}</span><span class="xs muted">Ton équipe de farm ne change pas.</span><button class="btn sm" data-act="sm-dunpick">Revenir à mon équipe</button></div>`;
+  return `<div class="df-rule team ok"><b>${h(R.name)}<span class="pts">équipe</span></b><span class="muted">${h(R.desc)}</span><span class="st">✓ ton équipe la respecte</span></div>`;
 }
 function defiBanner() {
   if (!E.team(S).length) return "";
   const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
   const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S);
-  const tiers = E.DEFI_TIERS.map((T) => { const ok = E.defiTierOk(S, T.id); return `<button data-act="sm-dtier" data-v="${T.id}" aria-pressed="${tid === T.id}" ${ok ? "" : `disabled data-tip="Ton héros le plus fort dépasse le niveau ${T.hi}"`}>${h(T.name)} <small>${T.lo}-${T.hi}</small></button>`; }).join("");
-  const tries = st.tries.filter((x) => x.tier === tid).length;
-  return `<div class="defi"><div class="df-head"><span class="wk">${G("target")} Défi du jour</span><span class="xs muted">${h(E.defiDate(def.day))} · nouveau défi dans <b>${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</b></span></div>
+  const tiers = E.DEFI_TIERS.map((T) => { const ok = E.defiTierOk(S, T.id); return `<button data-act="sm-dtier" data-v="${T.id}" aria-pressed="${tid === T.id}" ${ok ? "" : `disabled data-tip="${T.min ? `S'ouvre avec un héros niveau ${T.min}` : `Ton héros le plus fort dépasse le niveau ${T.hi}`}"`}>${h(T.name)} <small>${T.min ? `niv. ${T.min} · stasis ${T.k[0]}-${T.k[1]}` : `${T.lo}-${T.hi}`}</small></button>`; }).join("");
+  const tries = st.tries.filter((x) => x.tier === tid).length; const teamErr = E.defiTeamErr(S, def);
+  return `<div class="defi${def.sun ? " df-sun" : ""}"><div class="df-head"><span class="wk">${G("target")} ${def.sun ? "Grand défi du dimanche" : "Défi du jour"}</span><span class="xs muted">${h(E.defiDate(def.day))} · nouveau défi dans <b>${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</b></span></div>
     <span class="seg df-tiers">${tiers}</span>
-    <div class="df-main">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<div class="grow"><span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span><span class="xs muted">niv. ${dg.lvl}</span></span>
-      <div class="row df-mods">${def.mods.map(modChip).join("")}<span class="xs muted">${G("lock")} même hasard pour tous</span></div>
-      <div class="xs muted">Équipe : ${E.team(S).map((c) => h(c.name)).join(", ")} · combat automatique · essais illimités</div></div>
-      <div class="df-best">${best ? `<b class="num">${best.turns}</b><span>tours, ton record du jour</span>` : `<b class="num">–</b><span>${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div></div>
-    <div class="df-foot">${defiDots()}<span class="xs"><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b>${streak < 7 ? ` · titre à 7` : streak < 30 ? ` · ornement à 30` : ""}</span>
-      <span class="xs">${st.chest ? `✓ Bourse du défi reçue` : `${chestImg("bourse_defi")} Bourse du défi à gagner`}</span><span class="grow"></span>
-      ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}<button class="btn sm" data-act="sm-watch" data-v="${tid}" data-tip="Le combat joué sous tes yeux, avec ton équipe actuelle (ne compte pas comme un essai)">Regarder</button>${ON ? `<button class="btn sm" data-act="sm-dboard" data-v="${tid}">Classement</button>` : ""}<button class="btn primary" data-act="sm-dplay" data-v="${tid}">Lancer le défi</button></div></div>`;
+    <div class="df-main">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<div class="grow"><span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span><span class="xs muted">niv. ${dg.lvl}</span>${def.sun ? `<span class="df-med or">récompenses ×${def.mult}</span>` : ""}</span>
+      <div class="row df-mods">${def.mods.map(modChip).join("")}<span class="xs muted">${G("lock")} même hasard pour tous</span></div></div>
+      <div class="df-best">${best ? `<b class="num">${fmt(best.score)}</b><span>points · ${medTag(medOf(best.score))}</span>` : `<b class="num">–</b><span>${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div></div>
+    ${E.defiDanger(S) ? defiDangerNote(E.defiDanger(S)) : ""}
+    <span class="df-sub">Règles du jour${def.sun ? " (la dernière a été votée par les joueurs)" : ""}</span><div class="df-rules">${def.rules.map((id) => defiRuleCard(id, best)).join("")}${defiTeamCard(def)}</div>
+    ${defiHeroHtml(def, best)}
+    <div class="df-foot">${defiDots()}<span class="xs"><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b> · ${E.defiJokerFree(S) ? "joker disponible" : "joker utilisé cette semaine"}</span><span class="grow"></span>
+      ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}<button class="btn sm" data-act="sm-watch" data-v="${tid}" ${teamErr ? "disabled" : ""} data-tip="Le combat joué sous tes yeux, avec ton équipe actuelle (ne compte pas comme un essai)">Regarder</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}" ${teamErr ? `disabled data-tip="${h(teamErr)}"` : ""}>Lancer le défi</button></div></div>`;
 }
 let defiLast = null;
 function defiPlay(tid) {
   const r = E.act(S, "defiPlay", tid);
   if (typeof r === "string") { toast(r, "warn"); return; }
   dirty = true; defiLast = r; render(); defiSheet(r);
+  if (r.joker) toast("Joker de série utilisé : ta série continue.", "rare");
   if (r.chest && r.streak === 7) toast(`7 jours de suite : titre « ${E.DEFI_TITLE} » (Équipe et héros) !`, "rare");
   if (r.orn) toast("30 jours de suite : ornement « Sablier du défi » débloqué !", "rare");
-  if (r.win && r.improved) defiSubmit(r);
+  if (r.gold) toast(`${E.DEFI_GOLD_MONTH} bourses en or ce mois : ornement « Mois doré » débloqué !`, "rare");
+  if (r.orn100) toast(`100 jours de suite : titre « ${E.DEFI_TITLE100} » et ornement « Cadre du défi » !`, "rare");
+}
+/* le détail du score, ligne par ligne */
+function defiPtsHtml(r) {
+  const p = r.pts || E.defiScore(r); if (!r.win) return "";
+  const hero = r.hero || []; const held = Object.keys(r.rules || {}).filter((k) => r.rules[k] && !hero.includes(k)), miss = Object.keys(r.rules || {}).filter((k) => !r.rules[k]); const heldH = hero.filter((k) => r.rules && r.rules[k]);
+  return `<div class="df-brk"><span>Victoire</span><span>${fmt(p.win)}</span>
+    <span>Règles tenues${held.length ? ` : ${held.map((k) => h(ruleName(k))).join(", ")}` : ""}</span><span>+ ${fmt(p.rules)}</span>
+    ${hero.length ? `<span>Règles héroïques tenues${heldH.length ? ` : ${heldH.map((k) => h(ruleName(k))).join(", ")}` : ""}</span><span>+ ${fmt(p.hero || 0)}</span>` : ""}
+    ${miss.length ? `<span class="muted">Pas tenue${miss.length > 1 ? "s" : ""} : ${miss.map((k) => h(ruleName(k))).join(", ")}</span><span class="muted">0</span>` : ""}
+    <span>Tours : ${r.turns} (${E.DEFI_PTS.turn} pts par tour sous ${p.par})</span><span>+ ${fmt(p.turns)}</span>
+    <span>PV restants : ${r.hp} % (${E.DEFI_PTS.hp} pts par %)</span><span>+ ${fmt(p.hp)}</span>
+    <span class="tot">Score</span><span class="tot">${fmt(r.score)}</span></div>`;
 }
 function defiSheet(r) {
   if (!r) return;
-  const dg = DUNGEONS[r.did]; const T = E.defiTier(r.tier); const st = E.defiState(S);
-  const gain = r.prev && r.prev.win ? r.prev.turns - r.turns : 0;
-  const rooms = r.rooms.map((x, i) => `<li>${x.boss ? "Salle du boss" : `Salle ${i + 1}`} : ${x.turns} tour${x.turns > 1 ? "s" : ""} ${x.win ? "✓" : "✗"}</li>`).join("");
+  const dg = DUNGEONS[r.did]; const T = E.defiTier(r.tier); const st = E.defiState(S); const def = r.def || E.defi(r.tier);
+  const gain = r.prev && r.prev.win ? (r.score || 0) - (r.prev.score || 0) : 0; const ml = medOf(r.score);
+  const next = E.DEFI_MEDALS.find((M) => M.pts > (r.score || 0));
+  /* salle par salle : tours et règles tenues ou ratées, avec la raison */
+  const rooms = r.rooms.map((x, i) => { const bad = (x.ch || []).filter((c) => !c.ok);
+    return `<li>${x.boss ? "Salle du boss" : `Salle ${i + 1}`} : ${x.turns} tour${x.turns > 1 ? "s" : ""} ${x.win ? "✓" : "✗"}${bad.length ? ` · <span class="df-bad">${bad.map((c) => `${h(ruleName(c.id))} ratée${c.why ? ` (${h(c.why)})` : ""}`).join(", ")}</span>` : x.ch && x.ch.length && x.win ? ` · <span class="df-good">règles tenues</span>` : ""}</li>`; }).join("");
   const tries = st.tries.filter((x) => x.tier === r.tier).slice(0, 5);
+  const ch = r.chest; const chTxt = ch ? [ch.kamas ? `<b>${fmt(ch.kamas)} kamas</b>` : "", ch.dust ? `<b>${ch.dust} ${h(E.POUSSIERE)}</b>` : "", ...ch.cons.map((k) => `<b>${def.mult > 1 ? `${def.mult} × ` : ""}${h(CONSUMABLES[k].name)}</b>`)].filter(Boolean).join(", ") : "";
   openSheet(`<h2>${r.win ? "Défi réussi !" : "Défi perdu"}</h2>
-    <div class="bigrec ${r.win ? "" : "lose"}">${r.win ? `${r.turns} tours` : "Défaite"}</div>
-    <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)} · ${r.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ")}</span>
-    ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${gain} tour${gain > 1 ? "s" : ""} de mieux` : "<b>Premier record du jour</b> dans ce palier") : `Ton record du jour reste <b>${r.prev.turns} tours</b>`}</span></div>
-      <div><span class="okc">♥</span><span>PV restants de l'équipe : ${r.hp} %</span></div>
-      ${r.chest ? `<div><span class="okc">${chestImg("bourse_defi")}</span><span>Bourse du défi : <b>${fmt(r.chest.kamas)} kamas</b> et <b>${r.chest.dust} ${h(E.POUSSIERE)}</b> · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}${r.bonus ? ` · <b>${h(CONSUMABLES[r.bonus].name)}</b> offert !` : ""}</span></div>` : st.chest ? `<div><span class="okc">✓</span><span>Bourse du défi déjà reçue : les autres essais servent au classement.</span></div>` : ""}</div>`
+    <div class="bigrec ${r.win ? "" : "lose"}">${r.win ? `${fmt(r.score)} points` : "Défaite"}</div>
+    <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)}${r.win ? ` · ${r.turns} tours · ${medTag(ml)}` : ""}</span>
+    ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${fmt(gain)} points de mieux` : "<b>Premier score du jour</b> dans ce palier") : `Ton record du jour reste <b>${fmt(r.prev.score || 0)} points</b>`}</span></div>
+      ${ch ? `<div><span class="okc">${chestImg("bourse_defi")}</span><span>Bourse ${h(E.DEFI_MEDALS[ch.medal - 1].name.toLowerCase())} : ${chTxt}${r.streak ? ` · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}` : ""}${r.bonus ? ` · <b>${h(CONSUMABLES[r.bonus].name)}</b> offert !` : ""}</span></div>` : ""}
+      ${next ? `<div><span class="okc">${IC("coffre")}</span><span>Bourse ${h(next.name.toLowerCase())} à ${fmt(next.pts)} points : il t'en manque <b>${fmt(next.pts - (st.best[r.tier] ? st.best[r.tier].score : r.score))}</b>.</span></div>` : `<div><span class="okc">✓</span><span>Les trois bourses du jour sont à toi.</span></div>`}</div>
+      ${defiPtsHtml(r)}`
       : `<p class="small">Le hasard du défi est le même à chaque essai : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts, d'idoles ou de composition, puis relance.</p>`}
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
-    ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
-    ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (ranked() ? "Envoi au serveur pour le classement…" : onLive() ? "Partie solo : le classement du défi se joue avec ta partie 1." : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
-    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+    ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${fmt(x.score || 0)} pts` : "défaite"}</b></div>`).join("")}</div>` : ""}
+    ${ON && r.win && r.improved ? `<div class="small muted" id="dfSrv">${ranked() ? `Ton score n'est pas encore au classement : valide-le quand tu as fini de chercher (${E.defiSendsLeft(S, r.tier)} validation${E.defiSendsLeft(S, r.tier) > 1 ? "s" : ""} restante${E.defiSendsLeft(S, r.tier) > 1 ? "s" : ""} aujourd'hui).` : onLive() ? "Partie solo : le classement du défi se joue avec ta partie 1." : "Connecte-toi pour entrer au classement du défi."}</div>` : ""}
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${ON && ranked() && r.win && E.defiSendPending(S, r.tier) && E.defiSendsLeft(S, r.tier) ? `<button class="btn" data-act="sm-dsend" data-v="${r.tier}">Valider mon score</button>` : ""}${r.win ? defiShareBtn(r.tier).replace("btn sm", "btn") : ""}${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* ---------- 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
 const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
-/* récompense du coffre : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
+/* bourse de bronze : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
 function defiReward(tid) {
-  const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
-  const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
-  if ((!ui.dfEst || ui.dfEst.key !== key) && (!dfJob || dfJob.key !== key)) defiEstimate(key, def);
+  const def = E.defi(tid);
+  const key = [def.day, tid, E.defiTeam(S, def).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
+  if (!E.defiTeamErr(S, def) && (!ui.dfEst || ui.dfEst.key !== key) && (!dfJob || dfJob.key !== key)) defiEstimate(key, def);
   const est = ui.dfEst && ui.dfEst.key === key ? ui.dfEst : null;
-  return `${est && est.kamas ? `≈ ${fmt(est.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
+  return est && est.kamas ? est.kamas : E.DEFI_PURSE_K * Math.max(0, ...E.defiTeam(S, def).map((c) => c.lvl)) * def.mult;
 }
 /* 1.0.25.8 : l'estimation de la bourse (le défi joué en entier, en coulisses) se fait au repos, par petits morceaux, au lieu de figer
    l'affichage (≈ 0,5 s avec une équipe de haut niveau, relancée à chaque niveau gagné) ; même combat, même estimation */
@@ -7507,7 +7633,7 @@ let dfJob = null;
 function defiEstimate(key, def) {
   let W; try { W = E.defiWatch(S, def); } catch (e) { ui.dfEst = { key, kamas: 0 }; return; }
   const job = (dfJob = { key });
-  const done = () => { let k = 0; try { const r = W.err ? { win: false } : E.defiResult(W); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.team(S).map((c) => c.lvl))) : 0; } catch (e) {}
+  const done = () => { let k = 0; try { const r = W.err ? { win: false } : E.defiResult(W); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.defiTeam(S, def).map((c) => c.lvl))) * def.mult : 0; } catch (e) {}
     ui.dfEst = { key, kamas: k }; dfJob = null; if (S && ui.tab === "defi" && !$("#sheet").innerHTML && !isEditing()) render(); };
   if (W.err) return done();
   let g = 0;
@@ -7520,69 +7646,162 @@ const onIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { t
 function defiLine() {
   if (!E.team(S).length) return "";
   const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
-  const st = E.defiState(S); const dg = DUNGEONS[def.did];
-  return `<button class="dfline" data-tab="defi"><span class="wk">${G("target")} Défi du jour</span><span class="grow"><b>${h(dg.name)}</b> · stasis ${def.k}</span>${st.chest ? `<span class="tag good">✓ réussi</span>` : `<span class="tag">à faire</span>`}<span class="chev">›</span></button>`;
+  const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
+  const dz = E.defiDanger(S); // 1.1 (série 4, 2A) : série en danger
+  return `<button class="dfline${dz ? " danger" : ""}" data-tab="defi"><span class="wk">${G("target")} ${def.sun ? "Grand défi" : "Défi du jour"}</span><span class="grow"><b>${h(dg.name)}</b> · stasis ${def.k} · ${def.rules.map((id) => h(ruleName(id))).join(", ")}</span>${dz ? `<span class="tag bad">série en danger</span>` : best ? `<span class="tag good">${fmt(best.score)} pts</span>` : st.chest ? `<span class="tag good">✓ réussi</span>` : `<span class="tag">à faire</span>`}<span class="chev">›</span></button>${dz ? defiDangerNote(dz) : ""}`;
+}
+function defiBourses(tid) {
+  const def = E.defi(tid); const st = E.defiState(S); const best = st.best[tid]; const base = defiReward(tid); const dust = E.defiDust(def); const sc = best ? best.score : 0; const x = def.mult > 1 ? `${def.mult} × ` : "";
+  const card = (i, ico, body) => { const M = E.DEFI_MEDALS[i]; const got = st.medal > i; const cur = medOf(sc) === i + 1;
+    return `<div class="df-bourse${got ? " got" : ""}${cur ? " cur" : ""}">${ico}${medTag(i + 1)}<span>${body}</span><span class="need">${got ? `✓ ${i ? `${fmt(M.pts)} pts` : "victoire"}` : i ? `${fmt(M.pts)} pts${sc ? ` · il t'en manque ${fmt(M.pts - sc)}` : ""}` : "à la victoire"}</span></div>`; };
+  return `<div class="df-bourses">${card(0, chestImg("bourse_defi"), `≈ ${fmt(base)} kamas<br>${dust} ${h(E.POUSSIERE)}`)}${card(1, chestImg("bois"), `Bronze<br>+ ${x}Coffre en bois`)}${card(2, chestImg("argent"), `+ ${fmt(Math.round(base / 2))} kamas<br>+ ${x}Coffre en argent`)}</div>
+    <div class="xs muted">Chaque bourse se gagne une fois par jour, tous paliers confondus ; la plus haute atteinte complète les autres.${def.sun ? ` <b>Dimanche : tout est multiplié par ${def.mult}.</b>` : ""}</div>`;
 }
 function renderDefi() {
   if (!E.team(S).length) { $("#main").innerHTML = `<section class="panel"><div class="empty">Il faut au moins un héros dans l'équipe pour relever le défi du jour.</div></section>`; return; }
-  const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S);
-  const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
+  const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S); const best = st.best[tid];
+  const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${fmt(x.score || 0)} pts` : "défaite"}</b></div>`).join("");
   const goal = (n, lab, ok) => `<div class="df-goal ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>${n} jours de suite</b> · ${lab}</span><span class="xs num">${ok ? "✓ obtenu" : `${Math.min(streak, n)}/${n}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(streak, n), n)}%"></i></div></div>`;
   const rules = `<div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
-      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
-      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
-      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
-      <li>La première victoire du jour donne la Bourse du défi et fait avancer ta série.</li></ul></div></div>`;
+      <li>Chaque jour à minuit (heure de Paris) : un donjon, une stasis, des modificateurs, trois règles et une règle d'équipe par palier. Le dimanche, le Grand défi en ajoute une de chaque et triple les bourses.</li>
+      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Tes héros suivent les règles d'eux-mêmes.</li>
+      <li>Score : ${fmt(E.DEFI_PTS.win)} points pour la victoire, ${E.DEFI_PTS.rule} par règle tenue dans toutes les salles, ${E.DEFI_PTS.turn} par tour sous le temps de référence (${E.DEFI_PTS.par} tours par salle) et ${E.DEFI_PTS.hp} par % de PV restants. Essais illimités.</li>
+      <li>Bourse de bronze à la victoire, d'argent à ${fmt(E.DEFI_MEDALS[1].pts)} points, d'or à ${fmt(E.DEFI_MEDALS[2].pts)}. La première victoire du jour fait avancer ta série ; un jour manqué par semaine est couvert par le joker.</li>
+      ${ON ? `<li>Ton score entre au classement quand tu le valides : le serveur rejoue ton combat (${E.DEFI_MAX_SENDS} validations par palier et par jour). Le premier de la semaine porte le titre « ${h(E.DEFI_CHAMP)} » la semaine suivante.</li>` : ""}</ul></div></div>`;
+  const pend = ON && ranked() && E.defiSendPending(S, tid); const left = E.defiSendsLeft(S, tid);
+  const val = !ON ? "" : !ranked() ? `<p class="note">${onLive() ? "Partie solo : le classement du défi se joue avec ta partie 1." : "Connecte-toi pour entrer au classement du défi."}</p>`
+    : pend ? `<div class="df-val"><span class="grow">Ton meilleur essai : <b>${fmt(best.score)} points</b>, pas encore validé. Le serveur rejoue ton combat pour le vérifier.</span><button class="btn sm primary" data-act="sm-dsend" data-v="${tid}" ${left ? "" : "disabled"}>Valider mon score</button><span class="xs muted">${left} validation${left > 1 ? "s" : ""} restante${left > 1 ? "s" : ""} aujourd'hui</span></div>`
+    : best ? `<div class="df-val"><span class="grow">✓ Ton meilleur score (${fmt(best.score)} points) est validé.</span>${defiShareBtn(tid)}</div>` : "";
+  const brk = best ? defiPtsHtml(Object.assign({ win: true }, best)) : `<p class="note">Lance le défi : le détail de ton score s'affichera ici.</p>`;
   $("#main").innerHTML = `${defiBanner()}
   <section class="grid2" style="margin-top:14px">
-    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
-      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
-        <div class="small">${st.chest ? "✓ Bourse du défi reçue. Reviens demain pour continuer la série." : `${chestImg("bourse_defi")} Bourse du défi à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
-        ${goal(7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi » et Coffre des Douze", (ss.best || 0) >= 30)}
-        <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
-    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
+    <div class="stack" style="gap:14px">
+      <div class="panel"><div class="phead"><h2>${IC("coffre")} Bourses du jour</h2></div><div class="pad stack" style="gap:8px">${defiBourses(tid)}</div></div>
+      <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
+        <div class="pad stack" style="gap:10px"><div class="row between"><span class="small"><b class="num">Série : ${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>${defiCal()}
+          <div class="df-val"><span><b>Joker de série</b> : un jour manqué par semaine ne casse pas la série. ${E.defiJokerFree(S) ? "Disponible cette semaine." : "Déjà utilisé cette semaine, il revient lundi."}</span></div>
+          ${goal(7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi » et Coffre des Douze", (ss.best || 0) >= 30)}${goal(100, `titre « ${h(E.DEFI_TITLE100)} » et ornement « Cadre du défi »`, (ss.best || 0) >= 100)}${defiGoldGoal()}</div></div>
+      ${ON ? defiVoteHtml() : ""}
+    </div>
+    <div class="stack" style="gap:14px">
+      ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad"><span class="seg df-lbtabs">${dfViews().map(([v, n]) => `<button data-act="sm-dlbw" data-v="${v}" aria-pressed="${dfView() === v}">${n}</button>`).join("")}</span><div id="dfLb"><p class="note">Chargement…</p></div>${val}</div></div>` : ""}
+      <div class="panel"><div class="phead"><h2>${IC("quetes")} Ton score, point par point</h2></div><div class="pad stack" style="gap:8px">${brk}<b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
+    </div>
   </section>
-  ${ON ? `<section style="margin-top:14px">${rules}</section>` : ""}`;
-  if (ON) defiLbFill(tid);
+  <section style="margin-top:14px">${defiLogHtml()}</section>
+  <section style="margin-top:14px">${rules}</section>`;
+  if (ON) { defiLbFill(tid); defiVoteFetch(); defiLogRanks(); }
 }
+/* les classes de l'équipe, en petites icônes (la composition des meilleurs, à copier) */
+const dfTeamIcons = (team) => (Array.isArray(team) && team.length ? `<span class="df-team">${team.slice(0, 8).map((c) => (CLASSES[c] ? `<img src="${symImg(c)}" alt="${h(CLASSES[c].name)}" title="${h(CLASSES[c].name)}">` : "")).join("")}</span>` : "");
 async function defiLbFill(tid) {
   const box = () => $("#dfLb");
   try {
     if (!ON.db || !ON.db()) { const b = box(); if (b) b.innerHTML = `<p class="note">Connecte-toi pour voir le classement.</p>`; return; }
-    const keep = LB.dtier; LB.dtier = tid; const out = { rows: [], me: null };
-    await lbDefiFetch(out); LB.dtier = keep;
+    const v = dfView(); const keep = [LB.dtier, LB.dview]; LB.dtier = tid; LB.dview = v; const out = { rows: [], me: null };
+    await lbDefiFetch(out); [LB.dtier, LB.dview] = keep;
     const b = box(); if (!b || ui.tab !== "defi") return;
-    const yest = out.yest && out.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${out.yest.map(h).join(" · ")}</div>` : "";
-    b.innerHTML = yest + (out.rows.length ? `<div class="lbt">${out.rows.slice(0, 5).map((r, i) => lbRowHtml(r, i)).join("")}${out.me && out.me.rank > 5 ? lbRowHtml(out.me, 0, true) : ""}</div>` : `<p class="note">Personne n'a encore réussi ce palier aujourd'hui. À toi de jouer !</p>`);
+    const yest = v === "d" && out.yest && out.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${out.yest.map(h).join(" · ")}${out.myYest ? ` · toi : <b>${out.myYest.r}${out.myYest.r === 1 ? "er" : "e"}</b> (${fmt(out.myYest.score || 0)} pts)` : ""}</div>` : "";
+    const list = out.guilds ? defiGuildList(out.guilds.slice(0, 5)) : out.rows.length ? `<div class="lbt">${out.rows.slice(0, 5).map((r, i) => lbRowHtml(r, i)).join("")}${out.me && out.me.rank > 5 ? lbRowHtml(out.me, 0, true) : ""}</div>` : `<p class="note">${DF_EMPTY[v]}</p>`;
+    b.innerHTML = yest + list + defiViewNote(v, out);
   } catch (e) { const b = box(); if (b) b.innerHTML = `<p class="note">Classement indisponible pour l'instant.</p>`; }
 }
-/* le serveur rejoue le défi avec la partie en ligne : on l'envoie d'abord */
-async function defiSubmit(r) {
-  if (!ON || !ranked()) return;
-  const el = () => $("#dfSrv");
-  await onPush();
-  let res = await ON.submitDefi(r.tier);
-  if (res && res.err === "trop tôt") { await new Promise((ok) => setTimeout(ok, 11000)); res = await ON.submitDefi(r.tier); }
-  Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
-  const e = el(); if (!e) { if (res && res.ok) toast(`Défi vérifié par le serveur : ${res.turns} tours, ${res.rank}${res.rank === 1 ? "er" : "e"} du palier.`, "rare"); return; }
-  e.innerHTML = !res || res.net ? "Serveur injoignable : ton score sera envoyé au prochain essai." : res.ok ? `✓ <b>Vérifié par le serveur</b> : ${res.turns} tours, <b>${res.rank}${res.rank === 1 ? "er" : "e"}</b> du palier aujourd'hui.` : `Le serveur n'a pas validé ce score (${h(res.err || "refusé")}).`;
+/* 1.1 (série 3, 3A) : « Montrer dans le chat » : le serveur poste le score validé du jour dans le Général (une fois par jour et par palier) */
+const defiShareBtn = (tid) => { const st = E.defiState(S); return ON && ranked() && st.best[tid] && !E.defiSendPending(S, tid) && (st.sends[tid] || 0) > 0 && !(st.shared && st.shared[tid]) ? `<button class="btn sm" data-act="sm-dshare" data-v="${tid}">${G("chat")} Montrer dans le chat</button>` : ""; };
+async function defiShare(tid) {
+  if (!ON || !ON.db || !ON.db()) return;
+  try {
+    const { data, error } = await ON.db().rpc("defi_share", { p_tier: tid });
+    if (error) { toast("Serveur injoignable : réessaie dans un moment.", "warn"); return; }
+    const st = E.defiState(S); st.shared = st.shared || {};
+    if (data && !/déjà/.test(data)) { toast(data, "warn"); return; }
+    st.shared[tid] = 1; dirty = true; toast(data || "Ton score est dans le chat Général !", data ? "warn" : "rare");
+  } catch (e) { toast("Serveur injoignable : réessaie dans un moment.", "warn"); }
+  finally { if ($("#sheet").innerHTML && defiLast) defiSheet(defiLast); else if (ui.tab === "defi") render(); }
+}
+/* 1.1 : le score part au serveur seulement quand le joueur le valide (le serveur rejoue le défi avec la partie en ligne) */
+let dfSending = false;
+async function defiSubmit(tid) {
+  if (!ON || !ranked() || dfSending) return;
+  if (!E.defiSendsLeft(S, tid)) { toast(`${E.DEFI_MAX_SENDS} validations déjà faites aujourd'hui dans ce palier.`, "warn"); return; }
+  dfSending = true; toast("Envoi au serveur : il rejoue ton combat…");
+  try {
+    await onPush(true);
+    let res = await ON.submitDefi(tid);
+    if (res && res.err === "trop tôt") { await new Promise((ok) => setTimeout(ok, 11000)); res = await ON.submitDefi(tid); }
+    Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
+    if (!res || res.net) toast("Serveur injoignable : réessaie dans un moment (aucune validation comptée).", "warn");
+    else if (res.ok) { E.defiSent(S, tid); if (res.sends) E.defiState(S).sends[tid] = res.sends; dirty = true; toast(`Score validé par le serveur : ${fmt(res.score)} points, ${res.rank}${res.rank === 1 ? "er" : "e"} du palier aujourd'hui.`, "rare"); }
+    else { if (res.sends) E.defiState(S).sends[tid] = res.sends; toast(`Le serveur n'a pas validé ce score (${res.err || "refusé"}).`, "warn"); }
+  } finally { dfSending = false; if (ui.tab === "defi") render(); }
 }
 
+/* 1.1 (série 3) : onglets du classement du défi. Aujourd'hui, la semaine, la saison du mois (4A), ma guilde et les guildes (2A). */
+const myGid = () => (S && S.guild && S.guild.id) || null;
+const dfViews = () => [["d", "Aujourd'hui"], ["w", "La semaine"], ["s", "Saison"]].concat(myGid() ? [["mg", "Ma guilde"]] : [], [["g", "Guildes"]]);
+const dfView = () => { const v = ui.dfView || "d"; return dfViews().some((x) => x[0] === v) ? v : "d"; };
+const DF_EMPTY = { d: "Personne n'a encore validé de score dans ce palier aujourd'hui. À toi de jouer !", w: "Pas encore de score validé cette semaine dans ce palier.", s: "Pas encore de score validé ce mois-ci dans ce palier.", mg: "Personne de ta guilde n'a encore validé de score cette semaine dans ce palier.", g: "Aucune guilde n'a encore de score cette semaine dans ce palier." };
+function defiViewNote(v, out) {
+  const m = E.defiMonth(); const left = E.defiMonthEnd() - E.defiDay();
+  const t = { w: `La somme des meilleurs scores de chaque jour, du lundi au dimanche. Le 1er porte le titre « ${h(E.DEFI_CHAMP)} » toute la semaine suivante.`,
+    s: `<b>Saison ${h(E.defiDeMois(m))}</b> : tous les scores validés du mois. Les ${E.DEFI_SEASON_ORN} premiers de chaque palier gagnent l'ornement « Couronne ${h(E.defiDeMois(m))} », les ${E.DEFI_SEASON_TITLE} premiers le titre « Défieur ${h(E.defiDeMois(m))} ». ${left ? `Fin dans ${left} jour${left > 1 ? "s" : ""}.` : "Dernier jour !"}`,
+    mg: `Les scores de la semaine des membres de ta guilde. Les ${E.DEFI_GUILD_TOP} meilleurs comptent pour la guilde.`,
+    g: `La somme des ${E.DEFI_GUILD_TOP} meilleurs scores de la semaine de chaque guilde. La 1re de chaque palier gagne ${fmt(E.DEFI_GUILD_XP)} XP de guilde le lundi.${out && out.lastWin ? ` Semaine passée : <b>${h(out.lastWin)}</b>.` : ""}` }[v];
+  return t ? `<div class="xs muted df-note">${IC(v === "g" || v === "mg" ? "bourse" : "couronne")}<span>${t}</span></div>` : "";
+}
+const defiGuildList = (gs) => `<div class="lbt">${gs.map((g) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${g.r}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:30px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
+/* titres et ornements lus au classement : « Champion du défi » (1er de la semaine passée), saison du mois passé (4A) */
+async function defiTitlesChk(db, me, day) {
+  if (!me || !S) return;
+  if (S.defiChampChk !== E.defiWeek(day)) { S.defiChampChk = E.defiWeek(day);
+    const { data: c } = await db.from("lb_defi_week").select("tier").eq("week", E.defiWeek(day) - 1).eq("user_id", me).eq("r", 1).limit(1);
+    if (c && c[0]) { S.defiChamp = { w: E.defiWeek(day), tier: c[0].tier }; dirty = true; toast(`Tu étais 1er du défi la semaine passée : titre « ${E.DEFI_CHAMP} » pour toute la semaine !`, "rare"); } }
+  const m = E.defiMonth(day);
+  if (S.defiSeasonChk !== m) { S.defiSeasonChk = m; dirty = true;
+    const { data: z } = await db.from("lb_defi_month").select("tier,r").eq("month", m - 1).eq("user_id", me).lte("r", E.DEFI_SEASON_TITLE);
+    const got = z && z.length ? E.defiSeasonGrant(S, m - 1, z) : [];
+    if (got.length) toast(`Saison ${E.defiDeMois(m - 1)} du défi : ${got.join(" et ")} !`, "rare"); }
+}
 /* ---------- classement du défi (onglet Classements) ---------- */
 async function lbDefiFetch(out) {
-  const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur();
-  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team, fl: r.main_lvl });
-  const ml = LB.ml ? ",main_lvl" : "";
-  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
+  const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur(), v = LB.dview || "d", wk = E.defiWeek(day);
+  try { await defiTitlesChk(db, me, day); } catch (e) {}
+  const recw = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${fmt(r.score)} pts · ${r.days} j`, ok: true, fl: r.main_lvl });
+  if (v === "w" || v === "s") { /* 1.1 : la semaine (somme des scores du jour) ; la saison du mois */
+    const [view, col, val] = v === "w" ? ["lb_defi_week", "week", wk] : ["lb_defi_month", "month", E.defiMonth(day)];
+    const { data } = await db.from(view).select("user_id,pseudo,main,main_lvl,score,days,r").eq(col, val).eq("tier", tier).order("score", { ascending: false }).limit(50);
+    out.rows = (data || []).map(recw);
+    if (me) { const { data: m } = await db.from(view).select("user_id,pseudo,main,main_lvl,score,days,r").eq(col, val).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(recw(m[0]), { rank: m[0].r }); }
+    return;
+  }
+  if (v === "mg") { /* ma guilde : ses membres, cette semaine */
+    const g = myGid(); if (!g) return;
+    const { data } = await db.from("lb_defi_week_g").select("user_id,pseudo,main,main_lvl,score,days").eq("guild_id", g).eq("week", wk).eq("tier", tier).order("score", { ascending: false }).limit(50);
+    out.rows = (data || []).map(recw); const i = out.rows.findIndex((r) => r.u === me); if (i >= 0) out.me = Object.assign({}, out.rows[i], { rank: i + 1 });
+    return;
+  }
+  if (v === "g") { /* les guildes : la récompense de la semaine passée se distribue à la première lecture du lundi */
+    if (me && S && S.defiGPChk !== wk) { try { await db.rpc("defi_guild_prize"); S.defiGPChk = wk; } catch (e) {} }
+    const cols = "guild_id,name,ic,col,lvl,score,members,r";
+    const [{ data }, { data: lw }] = await Promise.all([db.from("lb_defi_guild_week").select(cols).eq("week", wk).eq("tier", tier).order("r", { ascending: true }).limit(30),
+      db.from("lb_defi_guild_week").select("name").eq("week", wk - 1).eq("tier", tier).eq("r", 1).limit(1)]);
+    const gs = (data || []).map((g) => ({ r: g.r, n: g.name, ic: g.ic, col: g.col, mine: g.guild_id === myGid(), sub: `${g.members} membre${g.members > 1 ? "s ont" : " a"} joué cette semaine · niv. ${g.lvl}`, sc: `${fmt(g.score)} pts` }));
+    const mine = gs.findIndex((g) => g.mine); out.guilds = mine >= 5 ? gs.slice(0, 4).concat([gs[mine]]) : gs; out.rows = []; out.lastWin = lw && lw[0] ? lw[0].name : "";
+    return;
+  }
+  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: r.score ? `${fmt(r.score)} pts` : `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team, fl: r.main_lvl, sub: dfTeamIcons(r.team) });
+  const cols = "user_id,pseudo,main,turns,hp,team,r,score" + (LB.ml ? ",main_lvl" : "");
+  const { data } = await db.from("lb_defi").select(cols).eq("day", day).eq("tier", tier).order("score", { ascending: false }).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
   out.rows = (data || []).map(rec);
-  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+  if (me) { const { data: m } = await db.from("lb_defi").select(cols).eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
   const { data: y } = await db.from("lb_defi").select("pseudo,r").eq("day", day - 1).eq("tier", tier).lte("r", 3).order("r", { ascending: true }).limit(3);
   out.yest = (y || []).map((x) => x.pseudo);
+  if (me) { const { data: my } = await db.from("lb_defi").select("r,score").eq("day", day - 1).eq("tier", tier).eq("user_id", me).limit(1); if (my && my[0]) out.myYest = my[0]; }
 }
 function lbDefiHead() {
   const tier = LB.dtier || defiTierCur(); const def = E.defi(tier); const dg = DUNGEONS[def.did];
-  return `<div class="row"><span class="seg">${E.DEFI_TIERS.map((T) => `<button data-act="lb-dtier" data-v="${T.id}" aria-pressed="${tier === T.id}">${h(T.name)}</button>`).join("")}</span></div>
-    <span class="small muted">Aujourd'hui : <b>${h(dg.name)}</b>, stasis ${def.k}, ${def.mods.map((m) => h(E.STASIS_MODS[m].name)).join(" et ")}. Le moins de tours gagne, puis le plus de PV restants ; chaque score est rejoué par le serveur. <button class="linkbtn" data-act="lb-dgo">Jouer le défi</button></span>`;
+  return `<div class="row"><span class="seg">${E.DEFI_TIERS.map((T) => `<button data-act="lb-dtier" data-v="${T.id}" aria-pressed="${tier === T.id}">${h(T.name)}</button>`).join("")}</span><span class="seg">${dfViews().map(([v, n]) => `<button data-act="lb-dweek" data-v="${v}" aria-pressed="${(LB.dview || "d") === v}">${n}</button>`).join("")}</span></div>
+    <span class="small muted">${def.sun ? "Grand défi du dimanche" : "Aujourd'hui"} : <b>${h(dg.name)}</b>, stasis ${def.k}, ${def.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ")} · règles : ${def.rules.map((r) => h(ruleName(r))).join(", ")}, ${h(E.DEFI_TEAM[def.team].name.toLowerCase())}. Le plus de points gagne ; chaque score est rejoué par le serveur. <button class="linkbtn" data-act="lb-dgo">Jouer le défi</button></span>`;
 }
 
 /* ---------- garde-robe (fiche Apparence) ---------- */
@@ -7713,12 +7932,12 @@ function watchHead() {
 }
 function watchEnd() {
   const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; if (w.ext) { el.innerHTML = w.ext.end(w); return; } if (w.koli) { if (window.KOLIUI) el.innerHTML = window.KOLIUI.watchEnd(w); return; } const R = E.defiResult(w.W);
-  el.innerHTML = `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${R.win ? `Défi réussi en ${R.turns} tours` : `Défaite en salle ${R.rooms.length}`}</b><br><span class="small muted">${R.win ? `PV restants : ${R.hp} %. ` : ""}C'est exactement le combat que compte le score.</span></span>
+  el.innerHTML = `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${R.win ? `Défi réussi : ${fmt(R.score)} points` : `Défaite en salle ${R.rooms.length}`}</b><br><span class="small muted">${R.win ? `${R.turns} tours, PV restants : ${R.hp} %${Object.keys(R.rules || {}).length ? `, règles tenues : ${Object.values(R.rules).filter(Boolean).length}/${Object.keys(R.rules).length}` : ""}. ` : ""}C'est exactement le combat que compte le score.</span></span>
     <span class="row" style="gap:6px"><button class="btn sm" data-act="sm-watch" data-v="${w.tid}">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au défi</button></span></div>`;
 }
 function renderWatch() {
   const w = ui.watch; const W = w.W; if (w.ext) { $("#main").innerHTML = w.ext.html(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
-  $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} Défi du jour · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
+  $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} ${W.def.sun ? "Grand défi du dimanche" : "Défi du jour"} · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Stasis ${W.def.k}</span>${W.def.mods.map(modChip).join("")}
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
   <section class="panel combatpanel watchpanel">
@@ -8190,7 +8409,15 @@ function smAct(a, t) {
     case "sm-wquit": { if (ui.watch && ui.watch.ext) { const back = ui.watch.ext.back; watchStop(); ui.tab = back; render(); window.scrollTo(0, 0); return; } if (ui.watch && ui.watch.koli) { watchStop(); ui.tab = "koli"; render(); window.scrollTo(0, 0); return; } const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
     case "sm-dtier": ui.defiTier = d.v; render(); return;
     case "sm-dplay": defiPlay(d.v); return;
-    case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${x.turns} tours` : "défaite"}.`); } return;
+    case "sm-dsend": closeSheet(); defiSubmit(d.v); return;
+    case "sm-dlbw": ui.dfView = d.v; render(); return;
+    case "sm-dpick": { const def = E.defi(d.v); const ids = E.defiSuggest(S, def).map((c) => c.id); const r = E.act(S, "defiSetPick", d.v, ids); if (r) toast(r, "warn"); else { dirty = true; toast("Équipe du défi adaptée pour aujourd'hui. Ton équipe de farm ne change pas."); } render(); return; }
+    case "sm-dunpick": E.act(S, "defiSetPick", null, null); dirty = true; render(); return;
+    case "sm-dshare": defiShare(d.v); return;
+    case "sm-dhero": { const r = E.act(S, "defiToggleHero", d.v, d.r); if (r) toast(r, "warn"); else dirty = true; render(); return; }
+    case "sm-dvote": defiVote(d.v); return;
+    case "sm-dlog": ui.dfLogOpen = ui.dfLogOpen === d.v ? null : d.v; render(); return;
+    case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${fmt(x.score || 0)} points` : "défaite"}.`); } return;
     case "sm-dboard": closeSheet(); LB.tab = "defi"; LB.dtier = d.v; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return;
     case "sm-wslot": ui.wSlot = ui.wSlot === d.v ? null : d.v; lookSheet(char(ui.lookCid)); return;
     case "sm-wmiss": ui.wMissing = d.v === "1"; lookSheet(char(ui.lookCid)); return;
@@ -9171,7 +9398,7 @@ async function onBoot() {
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
 const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, cache: {} };
-const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
+const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
 const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
@@ -9413,6 +9640,8 @@ function lbRowHtml(r, i, me) {
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
   if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
+  if (LB.tab === "defi" && d.guilds) return (d.guilds.length ? defiGuildList(d.guilds) : `<div class="empty">${DF_EMPTY.g}</div>`) + defiViewNote("g", d);
+  if (LB.tab === "defi" && LB.dview && LB.dview !== "d" && !d.rows.length) return `<div class="empty">${DF_EMPTY[LB.dview] || DF_EMPTY.d}</div>${defiViewNote(LB.dview, d)}`;
   if (LB.tab === "first") {
     if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10 puis en stasis 15, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
     return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "gardien11" ? "dofus" : r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
@@ -9601,6 +9830,7 @@ function lbAct(a, t) {
     case "lb-jobgo": LB.tab = "job"; LB.jgrp = d.g || "craft"; LB.job = d.v; LB.jwho = "p"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat (1.0.9 : et Récolte)
     case "lb-dmode": LB.dmode = d.v; break;
     case "lb-dtier": LB.dtier = d.v; break;
+    case "lb-dweek": LB.dview = d.v; break;
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
     case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;

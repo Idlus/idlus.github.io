@@ -584,6 +584,8 @@ nav.main button{position:relative}
 .hcard.o-heros{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c9962e,0 0 24px rgba(255,215,100,.7)}
 .hcard.o-avis{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 4px #8a6038,0 0 0 7px #3a2a18}
 .hcard.o-almanax{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 22px rgba(120,200,255,.7)}
+.hcard.o-cadreDefi{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #b9e769,0 0 0 6px #2a3f14,0 0 20px rgba(185,231,105,.6)}
+.hcard.o-couronneDefi{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e8c050,0 0 0 6px #c9d2db,0 0 26px rgba(232,192,80,.8)}
 .hcard.o-pionnier{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #9bd84a,0 0 0 6px #1f3a12,0 0 26px rgba(155,216,74,.75)}
 .hcard .orn.sprout{filter:drop-shadow(0 0 8px #9bd84a);animation:sprout 2.4s ease-in-out infinite}@keyframes sprout{50%{transform:translateX(-50%) translateY(-3px) rotate(-6deg)}}
 
@@ -2705,8 +2707,73 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .dfline{display:flex;gap:10px;align-items:center;width:100%;padding:9px 12px;border-radius:12px;background:var(--panel2);border:1.5px solid rgba(var(--glw),.5);color:inherit;font:inherit;text-align:left;cursor:pointer}
 .dfline:hover{border-color:rgba(var(--glw),.9)}
 .dfline .chev{font-size:18px;color:var(--muted)}
+@media (max-width:600px){.dfline{flex-wrap:wrap;row-gap:4px}.dfline .wk{flex:1 0 100%}.dfline .grow{flex:1 1 0;min-width:0}} /* 1.1 : la ligne du défi tenait sur une colonne étroite au téléphone */
 .df-goal .bar{margin-top:4px}
 .df-goal.ok b{color:var(--gold2)}
+/* 1.1 : refonte du Défi du jour (règles du jour, score en points, bourses, Grand défi du dimanche) */
+.df-sub{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.df-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.df-rule{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.14);border:1px solid var(--line);font-size:12px;min-width:0}
+.df-rule b{font-size:13px;display:flex;gap:6px;align-items:center;justify-content:space-between}
+.df-rule .pts{font-size:11px;font-weight:900;color:var(--gold2);white-space:nowrap}
+.df-rule.team{border-style:dashed;border-color:rgba(var(--glw),.6)}
+.df-rule.ok{border-color:rgba(126,224,106,.55)}.df-rule.ko .st{color:var(--danger)}.df-rule.ok .st{color:var(--good)}
+.df-rule .st{font-size:11px;font-weight:800}.df-rule .btn{align-self:flex-start;margin-top:4px}
+.df-rule.team.ko{border-color:var(--danger);opacity:1}
+.df-med{display:inline-flex;align-items:center;font-weight:900;font-size:11px;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.df-med.br{background:#a8683a;color:#fff3e6}.df-med.ar{background:#c9d2db;color:#1d242b}.df-med.or{background:#e8c050;color:#2a1e00}
+.df-bourses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.df-bourse{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:10px 6px;border-radius:12px;background:rgba(0,0,0,.14);border:1.5px solid var(--line);font-size:12px;min-width:0}
+.df-bourse.cur{border-color:rgba(var(--glw),.9);background:rgba(var(--glw),.10)}.df-bourse .uico{width:34px;height:34px}
+.df-bourse .need{font-size:11px;color:var(--muted)}.df-bourse.got .need{color:var(--good)}
+.df-brk{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}.df-brk span:nth-child(even){text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.df-brk .tot{border-top:1px solid var(--line);padding-top:4px;font-weight:900}
+.df-val{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:rgba(var(--glw),.08);border:1px solid rgba(var(--glw),.4);font-size:12px;margin-top:8px}
+.df-val .grow{flex:1 1 220px}
+.df-dots i.jok{background:rgba(120,170,255,.25);color:#bcd4ff;border-color:rgba(120,170,255,.6)}
+.defi.df-sun{background:linear-gradient(100deg,rgba(232,192,80,.28),rgba(232,192,80,.04) 60%),var(--panel2);border-color:#e8c050}
+.defi.df-sun .wk{color:#f4d77a}
+.df-lbtabs{margin-bottom:8px}
+.df-team{display:inline-flex;gap:2px;margin-top:2px}.df-team img{width:16px;height:16px;object-fit:contain}
+/* 1.1 (série 3) : calendrier du mois, notes du classement, carte du défi dans le chat */
+.df-cal-w{display:flex;flex-direction:column;gap:6px}
+.df-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.df-cal b{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase}
+.df-cal i{aspect-ratio:1;max-height:38px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;background:rgba(0,0,0,.14);border:1px solid var(--line);color:var(--muted)}
+.df-cal i.nil{visibility:hidden}
+.df-cal i.on{background:var(--action);color:var(--action-ink);border-color:transparent}
+.df-cal i.br{background:#a8683a;color:#fff3e6;border-color:transparent}
+.df-cal i.ar{background:#c9d2db;color:#1d242b;border-color:transparent}
+.df-cal i.or{background:#e8c050;color:#2a1e00;border-color:transparent}
+.df-cal i.jk{background:rgba(120,170,255,.25);color:#bcd4ff;border-color:rgba(120,170,255,.6)}
+.df-cal i.today{outline:2px solid var(--gold2);outline-offset:1px}
+.df-cal i.fut{opacity:.35}
+.df-leg{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
+.df-note{display:flex;gap:8px;align-items:flex-start;margin-top:8px}.df-note .uico{width:18px;height:18px;flex:none}
+.df-lbtabs{flex-wrap:wrap}
+.chat .ann.ann-defi{align-items:flex-start}.chat .ann-defi .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chat .ann-defi small{font-weight:600;color:var(--muted)}
+/* 1.1 (série 4) : mode héroïque, série en danger, vote du dimanche, carnet, mois doré */
+.df-hero{display:flex;gap:8px;flex-wrap:wrap}
+.df-hchip{display:flex;gap:8px;align-items:flex-start;text-align:left;border:1.5px dashed var(--line);border-radius:12px;padding:8px 10px;font:inherit;font-size:13px;color:inherit;background:rgba(0,0,0,.12);cursor:pointer;flex:1 1 200px;min-width:0}
+.df-hchip.on{border-style:solid;border-color:var(--action);background:rgba(185,231,105,.12)}
+.df-hchip:disabled{opacity:.5;cursor:default}
+.df-hchip .ck{font-weight:900;color:var(--action)}.df-hchip small{color:var(--muted)}
+.df-dzn{font-size:13px;padding:8px 12px;border-radius:12px;background:rgba(255,138,122,.12);border:1px solid rgba(255,138,122,.5)}.df-dzn b,.df-dz{color:#ff8a7a}
+.dfline.danger{border-color:#ff8a7a;background:linear-gradient(90deg,rgba(255,138,122,.18),rgba(255,138,122,.04)),var(--panel2)}
+.dfline .tag.bad{background:#ff8a7a;color:#2a0b06}
+.df-vopt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;text-align:left;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;font:inherit;font-size:13px;color:inherit;background:rgba(0,0,0,.1);cursor:pointer}
+.df-vopt.me,.df-vopt.win{border-color:var(--action)}.df-vopt:disabled{cursor:default}
+.df-vopt .bar{grid-column:1/-1;height:6px;border-radius:999px;background:rgba(0,0,0,.25);overflow:hidden}.df-vopt .bar i{display:block;height:100%;background:var(--action)}
+.df-log{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 10px;align-items:center;width:100%;text-align:left;padding:7px 8px;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.df-log:hover{background:rgba(255,255,255,.03)}.df-log .d{color:var(--muted);font-size:12px;width:66px}
+.df-logx{grid-column:2/-1;padding:4px 0 2px}
+@media (max-width:600px){.df-log{grid-template-columns:auto 1fr auto}.df-log>span:nth-child(4){grid-column:2/-1}}
+.df-goal.gold .bar i{background:linear-gradient(90deg,#e8c050,#ffe08a)}
+.hcard.o-moisDore{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e8c050,0 0 30px rgba(255,214,90,.85);animation:dore 1.8s ease-in-out infinite alternate}
+@keyframes dore{from{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e8c050,0 0 18px rgba(255,214,90,.55)}to{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #ffe08a,0 0 34px rgba(255,214,90,.95)}}
+.df-bad{color:var(--danger)}.df-good{color:var(--good)}
+@media (max-width:700px){.df-rules{grid-template-columns:repeat(2,minmax(0,1fr))}.df-bourses{gap:6px}}
 /* ---------- 0.1.26 : cadres « Métal orné » ----------
    Un métal par tranche de 40 niveaux (Bois, Bronze, Argent, Or, Émeraude), en deux rangs (I et II, tous les 20 niveaux),
    puis Krosmoz au niveau 200. Biseau, rivets aux coins, coins forgés qui grandissent, ruban sous la carte avec joyaux dès l'Or.
