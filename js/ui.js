@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.8";
+const GAME_VERSION = "1.2.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.9", name: "Pluie de kamas", guide: "aide", items: [
+    "Pluie de kamas : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes. Une carte apparaît sur l'accueil (et une pastille sur les autres pages) : clique « Je participe » !",
+    "À la fin du compte à rebours, la pluie est partagée à parts égales entre tous les participants. Les kamas arrivent dans ta partie quelques secondes après, et le chat Général annonce la part de chacun.",
+    "Il faut être connecté à un compte avec sa partie en ligne. Rien n'est créé : ce sont vraiment les kamas de Xener qui circulent.",
+  ] },
   { v: "1.2.8", name: "Les sorts des monstres et des boss", guide: "donjons", items: [
     "Chaque sort de monstre a maintenant sa mécanique, tirée de son nom ou de ses effets : saignement, venin, brûlure, gel, zone, charge, entrave, carapace, rage… Deux sorts d’un même monstre ne se ressemblent jamais.",
     "Un tour sur trois, le boss prépare son attaque signature : un ⚠ apparaît au-dessus de lui, puis il la lâche sur toute l’équipe au tour suivant.",

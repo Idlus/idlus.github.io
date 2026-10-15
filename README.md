@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.9 « Pluie de kamas »
+
+Xener lance depuis Panel › Annonces une pluie de kamas pris sur son propre compte (2 à 30 min, bandeau + chat Général). Les joueurs connectés à un compte cliquent « Je participe » (carte sur l'accueil, pastille ailleurs) ; à la fin, le serveur partage à parts égales et envoie les kamas par les opérations de l'hôtel de vente. Reste de la division, pluie sans participant ou annulée : retour à Xener (supabase/pluie.sql, js/pluie.js).
+
 ## 1.2.8 « Les sorts des monstres et des boss »
 
 Chaque sort de monstre a sa mécanique (saignement, venin, gel, zone, charge, carapace, rage…), visible sur les cartes de monstres. Les boss préparent une attaque signature un tour sur trois (⚠) puis frappent toute l'équipe. Chacun des 131 boss a un sort unique (✦), expliqué dans « Sorts du boss » sur la fiche du donjon après le premier combat (js/identmon.js, js/identboss.js). Simulation : bon équipement 6,50 → 5,88 de stasis, équipe optimisée 7,75 → 6,96 (réglage plus dur choisi par Mathis).

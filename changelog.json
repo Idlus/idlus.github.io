@@ -1,6 +1,16 @@
 {
-  "version": "1.2.8",
+  "version": "1.2.9",
   "versions": [
+    {
+      "v": "1.2.9",
+      "name": "Pluie de kamas",
+      "guide": "aide",
+      "items": [
+        "Pluie de kamas : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes. Une carte apparaît sur l'accueil (et une pastille sur les autres pages) : clique « Je participe » !",
+        "À la fin du compte à rebours, la pluie est partagée à parts égales entre tous les participants. Les kamas arrivent dans ta partie quelques secondes après, et le chat Général annonce la part de chacun.",
+        "Il faut être connecté à un compte avec sa partie en ligne. Rien n'est créé : ce sont vraiment les kamas de Xener qui circulent."
+      ]
+    },
     {
       "v": "1.2.8",
       "name": "Les sorts des monstres et des boss",
