@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.15 « La Maîtrise lente »
+
+Maîtrise lente : chaque point coûte plus que le précédent, et reset des Maîtrises pour tout le monde (joyaux rendus, titre « Pionnier des étoiles »).
+
 ## 2.1.14 « Bouclier du serveur »
 
 Le serveur calcule lui-même le résumé des classements à partir de la partie (`VERIFY.fullSummary`) et la vérifie avant de la garder comme dernière partie validée (`saves_ok`), dont partent les classements, l'hôtel de vente et les combats rejoués. Panel Xener › En vérification › Détails. Codes à nombre limité réservés aux comptes. Tests : `tests/bouclier.test.js`, `tests/bouclier_serveur.test.js`.

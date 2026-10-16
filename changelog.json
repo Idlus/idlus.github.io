@@ -1,6 +1,19 @@
 {
-  "version": "2.1.14",
+  "version": "2.1.15",
   "versions": [
+    {
+      "v": "2.1.15",
+      "name": "La Maîtrise lente",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise lente : chaque point de Maîtrise coûte un peu plus que le précédent. Le 1er point coûte 20 fois l'XP du niveau 199 → 200, le 100e 40 fois, le 400e 100 fois. Compte environ 8 jours de jeu pour 100 points, 2 mois pour 400",
+        "Reset des Maîtrises : toutes les Maîtrises repartent de 0 pour tout le monde, sur décision de Mathis (niveaux, XP, points des vies passées, étoiles des 3 arbres, objectif, titres des branches complètes)",
+        "Les joyaux sertis reviennent dans le sac, rien n'est perdu ; les niveaux 1 à 200, l'équipement, la Maîtrise du Bestiaire et les Sceaux ne changent pas",
+        "Titre « Pionnier des étoiles » en souvenir pour les comptes dont un héros avait au moins 100 points de Maîtrise",
+        "Le x2 de la Semaine de la Maîtrise compte toujours pour les niveaux 1 à 200 et le butin, plus pour la Maîtrise",
+        "Classements : la Maîtrise est retirée des classements de tous les joueurs"
+      ]
+    },
     {
       "v": "2.1.14",
       "name": "Bouclier du serveur",

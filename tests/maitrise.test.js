@@ -8,10 +8,11 @@ const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/renaissance.js"); require("../js/maitrise_moteur.js");
 let seed = 7; E.setRng(() => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; });
 
+E.MT_RESET = false; // conversions des vieilles parties (avant le reset des Maîtrises de la Maîtrise lente)
 // 1. XP au niveau 200 → Maîtrise
 const S = E.newState("Mt", "iop"); const c = S.chars[0]; c.lvl = 200; c.xp = 0;
-const need = E.mtNeed(); assert.strictEqual(need, E.xpNeed(199));
-E.giveXp(S, c, need * 2 + 5); assert.strictEqual(c.mt.lvl, 2); assert.strictEqual(c.mt.xp, 5); assert.strictEqual(c.lvl, 200);
+const need = E.mtNeed(); assert.strictEqual(need, Math.round(E.xpNeed(199) * 20.2), "Maîtrise lente : le 1er point coûte 20,2 fois le niveau 199"); assert.strictEqual(E.mtNeed(399), Math.round(E.xpNeed(199) * 100));
+E.giveXp(S, c, need + E.mtNeed(1) + 5); assert.strictEqual(c.mt.lvl, 2); assert.strictEqual(c.mt.xp, 5); assert.strictEqual(c.lvl, 200);
 assert.ok(E.canRenaissance(S, c), "on ne renaît plus");
 assert.strictEqual(E.MEM_SLOTS(c), 0);
 
@@ -62,7 +63,7 @@ assert.strictEqual(E.btFx(S)[r], 0.5);
 }
 
 // 2.0.3 : l'XP en trop au passage du niveau 200 va dans la Maîtrise ; arbre nettoyé ; un joyau pour un seul héros ; renaissance refaite sur un vieux client
-{ const S4 = E.newState("Ov", "iop"); const a = S4.chars[0]; a.lvl = 199; a.xp = 0; E.giveXp(S4, a, E.heroXpNeed(a) + E.mtNeed() * 2);
+{ const S4 = E.newState("Ov", "iop"); const a = S4.chars[0]; a.lvl = 199; a.xp = 0; E.giveXp(S4, a, E.heroXpNeed(a) + E.mtNeed(0) + E.mtNeed(1));
   assert.strictEqual(a.lvl, 200); assert.strictEqual(a.mt.lvl, 2, "deux niveaux de Maîtrise après 200"); assert.strictEqual(a.xp, 0);
   const T = E.mtTree(a.cls); const M = E.mt(a); M.lvl = 60; const ks = T.N.filter((n) => n.t === "ks").map((n) => n.id);
   M.t[0] = [...ks, 99999, -1, "x"]; assert.strictEqual(E.mtGot(a).size, 1, "étoiles non reliées ou inconnues ignorées"); { const f = E.mtFx(S4, a); assert.ok(!f || (f.n === 0 && !f.t1 && !f.rev), "aucune clé de voûte en combat"); }
@@ -109,3 +110,22 @@ console.log("ok - clés de voûte reliées dans chaque domaine");
   E.stasisInfo(S2, "rituel_kabahal").max = 12; assert.ok(E.mtFx(S2, h2).vv > 0, "Porte de Kabahal ouverte"); assert.deepStrictEqual(E.mtGatesOpen(S2), ["Kabahal"]);
   assert.ok(E.mtTeam(S2, [h2], "loot") >= 1); }
 console.log("ok - 2.1 : branches lointaines et Portes des étoiles");
+
+// Maîtrise lente (Mathis 1D 2A) : coût croissant ; le x2 des événements ne compte pas au niveau 200 (engine.js giveRewards)
+{ assert.ok(E.mtNeed(999) > E.mtNeed(0) * 10, "le 1000e point coûte bien plus que le 1er");
+  assert.ok(Math.abs(E.mtXpTot(400) / E.mtBase() - (8000 + 400 * 401 / 10)) < 1, "400 points = 24 040 fois le niveau 199");
+  const H = E.newState("Lt", "iop"), h = H.chars[0]; h.lvl = 200; assert.strictEqual(E.mtNeed(h), E.mtNeed(0));
+  E.MT_LENT = false; assert.strictEqual(E.mtNeed(500), E.xpNeed(199), "sans la règle : l'ancien coût"); E.MT_LENT = true;
+  console.log("ok - Maîtrise lente : coût croissant"); }
+
+E.MT_RESET = true;
+// Reset des Maîtrises (E.VERSION 13, choix de Mathis 3A 4A 6A) : tout repart de 0, joyaux gardés dans le sac, titre en souvenir
+{ const o = E.newState("Rz", "iop"); const c = o.chars[0]; c.lvl = 200; const M = E.mt(c); M.lvl = 350; M.bn = 12; M.xp = 5; M.j = { 3: 1 }; o.joy = [{ uid: 1, k: Object.keys(E.JOY || { a: 1 })[0] }];
+  const bt = Object.values(E.MT_BR_TITLE)[0]; o.titlesExtra = [bt, "Autre titre"]; c.title = bt;
+  const raw = JSON.parse(JSON.stringify(o)); raw.v = 12; const D = E.deserialize(JSON.stringify(raw)); const S = D.S || D.state || D; const r = S.chars[0];
+  assert.strictEqual(E.mtPts(r), 0, "Maîtrise remise à 0"); assert.strictEqual(E.mtGot(r).size <= 1, true, "aucune étoile");
+  assert.strictEqual(S.joy.length, 1, "joyau gardé"); assert.ok(S.titlesExtra.includes(E.MT_PIONNIER) && S.titlesExtra.includes("Autre titre") && !S.titlesExtra.includes(bt), "titres");
+  assert.ok(!r.title, "titre de branche retiré du héros"); assert.ok((S.migration || []).some((t) => /Maîtrise lente/.test(t)));
+  const raw2 = JSON.parse(JSON.stringify(S)); E.mt(raw2.chars[0]).lvl = 5; const S3 = E.deserialize(JSON.stringify(raw2)); assert.strictEqual(E.mtPts((S3.S || S3.state || S3).chars[0]), 5, "une seule fois");
+  const n = E.newState("Pt", "cra"); n.chars[0].lvl = 200; E.mt(n.chars[0]).lvl = 40; const rn = JSON.parse(JSON.stringify(n)); rn.v = 12; const Sn = E.deserialize(JSON.stringify(rn)); assert.ok(!((Sn.S || Sn.state || Sn).titlesExtra || []).includes(E.MT_PIONNIER), "pas de titre sous 100 points");
+  console.log("ok - reset des Maîtrises (E.VERSION 13)"); }

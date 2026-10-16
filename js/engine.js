@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 12; // 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
+  E.VERSION = 13; // 13 : reset des Maîtrises (Maîtrise lente, choix de Mathis 16/10) ; 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -2461,7 +2461,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") * (E.mtAcctMult ? E.mtAcctMult(S) : 1) * (E.mtOwn ? E.mtOwn(S, c, "xp") : 1)); // 2.0 : Maîtrise du compte ; 2.1 : Érudit // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") / (c.lvl >= E.MAX_LVL && E.eventOn() ? E.EVENT.xp || 1 : 1) * (E.mtAcctMult ? E.mtAcctMult(S) : 1) * (E.mtOwn ? E.mtOwn(S, c, "xp") : 1)); // 2.0 : Maîtrise du compte ; 2.1 : Érudit ; Maîtrise lente (2A) : le x2 de l'événement ne compte plus au niveau 200 (bonus d'alliance et de boss des mondes gardés) // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
       if (E.montiXpShare) g -= E.montiXpShare(S, c, g); // 1.1 : le montilier grandit avec l'XP du héros
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
@@ -2582,14 +2582,21 @@
   /* 2.0 « La Maîtrise » : au niveau 200, l'XP remplit des niveaux de Maîtrise sans fin, 1 point chacun, au coût du niveau 199 → 200
      (arbres, combat et Bestiaire : js/maitrise_moteur.js ; page Héros › Maîtrise : js/maitrise.js). bn : points venus des vies passées */
   E.mt = (c) => { if (!c.mt) c.mt = { lvl: 0, xp: 0, bn: 0, t: [[], [], []], lo: 0, j: {} }; return c.mt; };
-  E.mtNeed = () => E.xpNeed(E.MAX_LVL - 1);
+  /* Maîtrise lente (choix de Mathis 1D, 16/10) : le point n coûte (20 + n/5) fois l'XP du niveau 199 → 200 (avant : 1 fois, pour tous).
+     Mesuré sur le classement public : ~30 points/h par héros pendant le x2 ; maintenant 100 points ≈ 8 jours, 400 ≈ 2 mois, 1 000 ≈ 11 mois de jeu.
+     E.MT_LENT = false rend l'ancien coût (serveur où la règle ne s'applique pas). */
+  E.MT_LENT = true; E.MT_PIONNIER = "Pionnier des étoiles"; E.MT_RESET = true; // titre du reset des Maîtrises (6A) ; MT_RESET = false : tests des anciennes conversions
+  E.mtBase = () => E.xpNeed(E.MAX_LVL - 1);
+  E.mtCost = (n) => (E.MT_LENT ? 20 + n / 5 : 1); // n = numéro du point gagné (1 = le premier)
+  E.mtNeed = (x = 0) => { const lvl = x && typeof x === "object" ? (x.mt ? x.mt.lvl || 0 : 0) : x || 0; return Math.round(E.mtBase() * E.mtCost(lvl + 1)); }; // XP pour passer de la Maîtrise lvl à lvl + 1 (un héros ou un niveau)
+  E.mtXpTot = (lvl) => { const n = lvl || 0; return Math.round(E.mtBase() * (E.MT_LENT ? 20 * n + n * (n + 1) / 10 : n)); }; // XP de toute la Maîtrise jusqu'au niveau lvl
   E.mtPts = (c) => (c && c.mt ? c.mt.lvl + (c.mt.bn || 0) : 0);
   E.mtPass = (S, c) => { const f = E.mtFx ? E.mtFx(S, c) : null; return f ? f.pass / 50 : 0; }; // le passif de classe : 50 % = un rang de l'ancien Éveil de classe
   E.mtFight = (F) => F.ents.forEach((e) => { if (e.mt && e.mt.sh && !e.summon) e.shield = (e.shield || 0) + Math.round(e.hpMax * e.mt.sh / 100); });
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) {
-      if (!(g > 0)) return false; const M = E.mt(c); M.xp += g; const need = E.mtNeed(); let up = 0;
-      while (M.xp >= need) { M.xp -= need; M.lvl++; up++; }
+      if (!(g > 0)) return false; const M = E.mt(c); M.xp += g; let up = 0;
+      for (let need = E.mtNeed(M.lvl); M.xp >= need; need = E.mtNeed(M.lvl)) { M.xp -= need; M.lvl++; up++; }
       if (up) { const ob = M.obj != null && E.mtObjStep ? E.mtObjStep(S, c) : 0; note(S, ob ? `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : ${ob > 1 ? `${ob} points placés` : "un point placé"} vers son objectif.` : `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : un point de plus à placer dans son arbre.`, "up"); E.emit(S, "mtlvl", { cid: c.id, lvl: M.lvl }); if (E.mtBrSync) E.mtBrSync(S); } // 2.1 : objectif épinglé (12A), titres des branches complètes (9A)
       return false;
     }
@@ -3784,7 +3791,7 @@
         const n = Math.min(E.REN_MAX, c.ren || 0); if (!n) return;
         if (c.renMt) { if (c.lvl < E.MAX_LVL) { S.recLv = (S.recLv || 0) + (E.MAX_LVL - c.lvl); while (c.lvl < E.MAX_LVL) { c.lvl++; c.pts += 5; } c.xp = 0; E.autoAllocate(S, c); } c.eveils = {}; c.mem = []; c.memPend = 0; c.memOffer = null; c.ren = 0; E.refreshSpells(c, E.charStats(S, c)); return; } // 2.0.3 : déjà converti (renaissance refaite sur une ancienne version du jeu restée en cache) : retour au niveau 200 sans nouveaux points
         let xp = 0; for (let k = 0; k < n; k++) for (let l = 1; l < E.MAX_LVL; l++) xp += Math.floor(E.xpNeed(l) * (1 + 0.5 * k)); // chaque vie demandait +50 % d'XP par renaissance
-        const M = E.mt(c); const lv = Math.floor(xp * E.REN_TO_MT / E.mtNeed());
+        const M = E.mt(c); const lv = Math.floor(xp * E.REN_TO_MT / E.mtBase());
         const evs = Object.values(c.eveils || {}).reduce((a, b) => a + (+b || 0), 0), sp = Math.max((c.mem || []).length, n); const bn = 2 * evs + 2 * sp;
         M.lvl += lv; M.bn = (M.bn || 0) + bn; c.renMt = { n, lv, bn, from: c.lvl };
         if (c.lvl < E.MAX_LVL) { S.recLv = (S.recLv || 0) + (E.MAX_LVL - c.lvl); while (c.lvl < E.MAX_LVL) { c.lvl++; c.pts += 5; } c.xp = 0; E.autoAllocate(S, c); } // en cours de vie : retour au niveau 200 (le serveur ne prend pas ces niveaux pour de la triche)
@@ -3831,6 +3838,14 @@
     if (!S.coefT0) S.coefT0 = E.now(); // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (une seule fois)
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
+    if (S.v < 13 && E.MT_RESET && S.chars.some((c) => c.mt)) { /* reset des Maîtrises avec la Maîtrise lente (Mathis 16/10 : 1D 2A 3A 4A 5A 6A) : niveaux, XP, points des vies passées (3A),
+         étoiles des 3 arbres, objectif et titres des branches remis à 0 ; joyaux rendus dans le sac (4A) ; titre « Pionnier des étoiles » si un héros avait 100 points (6A) */
+      const brT = Object.values(E.MT_BR_TITLE || {}); let best = 0, n = 0;
+      S.chars.forEach((c) => { if (!c.mt) return; const p = E.mtPts(c); best = Math.max(best, p); if (p > 0) n++; delete c.mt; if (brT.includes(c.title)) c.title = null; });
+      S.titlesExtra = (S.titlesExtra || []).filter((t) => !brT.includes(t));
+      if (best >= 100 && !S.titlesExtra.includes(E.MT_PIONNIER)) S.titlesExtra.push(E.MT_PIONNIER);
+      if (n) report.push(`Maîtrise lente : les Maîtrises repartent de 0 pour tout le monde${best >= 100 ? ` (titre « ${E.MT_PIONNIER} » en souvenir)` : ""}. Les joyaux sertis sont rendus dans ton sac. Chaque point coûte maintenant un peu plus que le précédent.`); S.migration = report;
+    }
     S.v = E.VERSION;
     if (E.mtGateSync) { S.mtGates = E.mtGatesOpen(S); E.mtGateSync(S); } // 2.1 : Portes des étoiles déjà méritées, sans message
     if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); if (E.mtBrSync) E.mtBrSync(S); // 2.0 : ornements du Bestiaire déjà gagnés

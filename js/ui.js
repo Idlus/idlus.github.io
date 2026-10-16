@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.14";
+const GAME_VERSION = "2.1.15";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.15", name: "La Maîtrise lente", guide: "maitrise", items: [
+    "Maîtrise lente : chaque point de Maîtrise coûte un peu plus que le précédent. Le 1er point coûte 20 fois l'XP du niveau 199 → 200, le 100e 40 fois, le 400e 100 fois. Compte environ 8 jours de jeu pour 100 points, 2 mois pour 400",
+    "Reset des Maîtrises : toutes les Maîtrises repartent de 0 pour tout le monde, sur décision de Mathis (niveaux, XP, points des vies passées, étoiles des 3 arbres, objectif, titres des branches complètes)",
+    "Les joyaux sertis reviennent dans le sac, rien n'est perdu ; les niveaux 1 à 200, l'équipement, la Maîtrise du Bestiaire et les Sceaux ne changent pas",
+    "Titre « Pionnier des étoiles » en souvenir pour les comptes dont un héros avait au moins 100 points de Maîtrise",
+    "Le x2 de la Semaine de la Maîtrise compte toujours pour les niveaux 1 à 200 et le butin, plus pour la Maîtrise",
+    "Classements : la Maîtrise est retirée des classements de tous les joueurs"
+  ] },
   { v: "2.1.14", name: "Bouclier du serveur", items: [
     "Le serveur vérifie davantage les parties envoyées : les classements et l'hôtel de vente partent maintenant d'une partie qu'il a validée",
     "Codes cadeaux à nombre limité : réservés aux joueurs connectés à un compte",
@@ -11131,7 +11139,7 @@ if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, to
 /* 2.0.6 (demande de Mathis) : sur la fiche du héros, sa Maîtrise et le total de ses bonus, qui grandit à chaque étoile placée */
 function mtSheetHtml(c) {
   if (!c || c.lvl < E.MAX_LVL || !E.mtStats || !E.mtNeed) return "";
-  const M = E.mt(c), tot = E.mtPts(c), placed = Math.max(0, E.mtGot(c).size - 1), need = E.mtNeed();
+  const M = E.mt(c), tot = E.mtPts(c), placed = Math.max(0, E.mtGot(c).size - 1), need = E.mtNeed(M.lvl);
   const R = E.mtStats(S, c); const rows = Object.entries(R.t).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
   const chips = R.ks.map((k) => `<span class="mts-k ${k.t === "cks" ? "cl" : ""}" title="${h(k.txt || "")}">✦ ${h(k.n)}</span>`).join("") + (R.sym ? `<span class="mts-k cl">✦ Symbole allumé · +5 %</span>` : "")
     + rows.map(([k, v]) => `<span class="mts-b"><b class="num">+${E.mtNf(v)}</b> ${h(k)}</span>`).join("");

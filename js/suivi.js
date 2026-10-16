@@ -118,7 +118,7 @@
     C.kLast = S.kamas; C.tag = 0; C.hop = (S.hdv && S.hdv.op) || 0;
     return r;
   };
-  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); if (c.mt && E.mtNeed) x += (c.mt.lvl || 0) * E.mtNeed() + (c.mt.xp || 0); return s + x; }, 0); /* 2.0.3 : l'XP de Maîtrise compte dans l'XP/h */
+  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); if (c.mt && E.mtNeed) x += (E.mtXpTot ? E.mtXpTot(c.mt.lvl) : (c.mt.lvl || 0) * E.mtNeed()) + (c.mt.xp || 0); return s + x; }, 0); /* 2.0.3 : l'XP de Maîtrise compte dans l'XP/h */
   const catch0 = E.catchUp;
   E.catchUp = (S, seconds) => {
     if (!live(S)) return catch0(S, seconds);
