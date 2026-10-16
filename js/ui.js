@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.8";
+const GAME_VERSION = "2.1.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.9", name: "Équipement verrouillé", guide: "equipement", items: [
+    "Héros › Équipement : cliquez un emplacement puis « Verrouiller » (cadenas) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus",
+    "Un petit cadenas doré marque les emplacements verrouillés ; retirer l'objet enlève le verrou"
+  ] },
   { v: "2.1.8", name: "Copier le setup", guide: "equipe", items: [
     "Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques (ou leur mode auto), sorts, conditions et stratégies, arbre de Maîtrise et équipement",
     "Sorts et Maîtrise se copient entre héros de la même classe ; les caractéristiques et l'équipement, entre toutes les classes",
@@ -5710,7 +5714,9 @@ function equipBlocked(c, eq, s, it) {
   if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
   return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
 }
-const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + (c.gearFocus || "") + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
+/* 2.1.9 : emplacements verrouillés par le joueur (c.eqLock) : l'objet porté n'en bouge plus avec « Équiper au mieux » ni « Tout équiper au mieux » */
+const eqLocked = (c, s) => !!(c.eqLock && c.eqLock[s] && c.equip[s] && S.items[c.equip[s]]);
+const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + (c.gearFocus || "") + "|" + JSON.stringify(c.equip) + "|" + JSON.stringify(c.eqLock || {}) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
 const planFresh = (c) => { const hit = planMemo.get(c.id); return !!hit && hit.key === planKey(c); };
 function gearPlan(c) {
   const key = planKey(c); const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
@@ -5732,6 +5738,8 @@ function* planSteps(c, key) {
   /* 1.0.24.3 : des exemplaires identiques (même objet, mêmes jets) donnent le même résultat : au-delà de 2 (deux anneaux), les suivants ne
      changent rien au plan et ne sont plus essayés. Les objets portés par le héros sont toujours gardés */
   const mine = new Set(Object.values(c.equip));
+  const lockS = new Set(EQ_SLOTS.filter((s) => eqLocked(c, s))); const lockU = new Set([...lockS].map((s) => c.equip[s]));
+  for (const k in pool) pool[k] = pool[k].filter((it) => !lockU.has(it.uid)); // l'objet d'un emplacement verrouillé n'est jamais déplacé ailleurs
   for (const k in pool) { const seen = new Map(); pool[k] = pool[k].filter((it) => { if (mine.has(it.uid)) return true;
     const sig = it.tpl + "|" + (it.exo || "") + "|" + (it.wel || "") + "|" + (it.welh || "") + "|" + JSON.stringify(it.stats); const n = seen.get(sig) || 0; seen.set(sig, n + 1); return n < 2; }); }
   const okIn = (eq, s, it) => { if (equipBlocked(c, eq, s, it)) return false; const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
@@ -5740,7 +5748,7 @@ function* planSteps(c, key) {
   const one = E.EXO_ONE || ["pa"]; const cand = {};
   for (const k in pool) cand[k] = pool[k].map((it) => { const T = ITEMS[it.tpl]; return { it, uid: it.uid, tpl: it.tpl, sc: sco(it), z: T.set || null, chk: !!(T.leg || (it.exo && one.includes(it.exo))) }; });
   const fill = (eq, lock) => { for (let pass = 0; pass < 3; pass++) { let moved = false;
-    for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; let best = 0, uid = null;
+    for (const s of EQ_SLOTS) { if ((lock && lock.has(s)) || lockS.has(s)) continue; let best = 0, uid = null;
       // gain d'un essai = gearScore(équipement essayé) − gearScore(équipement), calculé par différence (objet remplacé, paliers des panoplies touchées)
       const n = {}, worn = new Set(), others = []; for (const k in eq) { const u = eq[k], x = S.items[u]; if (!x) continue; worn.add(u); if (k !== s) others.push([u, x.tpl]); const z = ITEMS[x.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
       const old = S.items[eq[s]], so = sco(old); const zo = old ? ITEMS[old.tpl].set || null : null; const kind = slotKind(s), dup = kind === "anneau" || kind === "dofus";
@@ -5761,7 +5769,7 @@ function* planSteps(c, key) {
     const eq = Object.assign({}, c.equip); const lock = new Set();
     for (const kind in pool) { const L = ((bySet[z] || {})[kind] || []).slice().sort((x, y) => itemScore_(y) - itemScore_(x)); if (!L.length) continue;
       const slots = EQ_SLOTS.filter((s) => slotKind(s) === kind);
-      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore_(S.items[eq[x]]) - itemScore_(S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
+      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && !lockS.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore_(S.items[eq[x]]) - itemScore_(S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
     if (!lock.size) continue; // aucune pièce posée : même départ que le premier plan, même résultat
     fill(eq); const sc = gearScore(c, eq); if (sc > planSc + 0.5) { plan = eq; planSc = sc; }
   }
@@ -5811,13 +5819,13 @@ function planWork(dl) {
   if (planJobs.size) planKick(wait > 0 && !planHot.size && [...planJobs.values()].every((j) => !j) ? wait : 0);
 }
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
-  for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
+  for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !eqLocked(c, s) && !E.equip(S, c.id, plan[s], s)) n++;
   return n; }
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
   return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
-    ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+    ${it && eqLocked(c, s) ? `<span class="eqlk" title="Verrouillé : Équiper au mieux n'y touche pas">${G("lock")}</span>` : ""}${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
@@ -6107,7 +6115,7 @@ function charEquipView(c, st) {
       return row(gr.rep, mode, i, gr.items.length, tog) + (open ? `<div class="psubs">${gr.vars.map((v) => row(v.rep, mode, -1, v.items.length, "", true)).join("")}</div>` : ""); };
     const freeG = grpItems(free, true), highG = grpItems(high, true);
     const pmore = (k, t, n, inner) => !n ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${n})</button>${(ui.pmore || {})[k] ? `<div class="list">${inner()}</div>` : ""}</div>`;
-    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
+    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm ${eqLocked(c, ui.slot) ? "primary" : ""}" data-act="eqlock" data-slot="${ui.slot}" aria-pressed="${eqLocked(c, ui.slot)}" data-tip="${h(eqLocked(c, ui.slot) ? "Verrouillé : « Équiper au mieux » et « Tout équiper au mieux » laissent cet objet en place. Cliquez pour déverrouiller." : "Verrouiller : « Équiper au mieux » et « Tout équiper au mieux » laisseront cet objet en place")}">${G("lock")} ${eqLocked(c, ui.slot) ? "Verrouillé" : "Verrouiller"}</button><button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
       ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}</span></div>`; })() : ""}
       <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
       <div class="list">${freeG.slice(0, 40).map((gr, i) => grow(gr, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Rien de libre ici. Les trophées viennent des paliers de chasse des sous-zones." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
@@ -9670,7 +9678,9 @@ document.addEventListener("click", (ev) => {
     case "dpfam": ui.dpFam = d.v; break; // 1.0.16 : choix du Dofus, filtre par famille
     case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; if (ficheOnly()) return; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
-    case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
+    case "unequip": E.unequip(S, c.id, d.slot); if (c.eqLock) delete c.eqLock[d.slot]; ui.slot = null; break;
+    case "eqlock": { const k = d.slot; if (!k || !c.equip[k]) return; c.eqLock = c.eqLock || {}; if (c.eqLock[k]) delete c.eqLock[k]; else c.eqLock[k] = 1; if (!Object.keys(c.eqLock).length) delete c.eqLock;
+      toast(c.eqLock && c.eqLock[k] ? `${SLOTS[k]} verrouillé : « Équiper au mieux » n'y touchera plus.` : `${SLOTS[k]} déverrouillé.`); if (ficheOnly()) return; break; }
     case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }
     case "sprem": ui.spUndo = null; c.spells.splice(+d.i, 1); ui.spSel = Math.max(0, Math.min(+d.i, c.spells.length - 1)); c.activePreset = null; c.spellsManual = true; break;
     case "spsel": ui.spSel = +d.i; break;

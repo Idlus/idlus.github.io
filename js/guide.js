@@ -202,7 +202,7 @@
       ]],
     ] });
 
-  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux panoplie arme coup d'arme tenue exo legendaire",
+  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux verrouiller cadenas panoplie arme coup d'arme tenue exo legendaire",
     ou: "Héros › Équipe et héros › fiche du héros › Équipement", de: "dès le début",
     voir: ["inventaire", "forgemagie", "dofus"],
     b: () => [
@@ -212,6 +212,7 @@
         "Pas deux fois le même anneau, ni le même Dofus ou trophée.",
         "Un seul exo PA, un seul exo PM et un seul exo PO par héros ; un seul objet légendaire.",
         "**Équiper au mieux** choisit les meilleures pièces selon la vraie répartition de caractéristiques du héros, en testant les panoplies entières ; « Privilégier » fait compter une caractéristique beaucoup plus.",
+        "**Verrouiller** (bouton du cadenas quand on clique un emplacement) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus.",
         `**Tenues** : ${N(() => E.MAX_GEAR)} équipements complets enregistrés par héros (un de plus avec la Collection de panoplies).`,
       ]],
       ["h", "Panoplies"],

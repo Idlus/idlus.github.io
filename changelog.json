@@ -1,6 +1,15 @@
 {
-  "version": "2.1.8",
+  "version": "2.1.9",
   "versions": [
+    {
+      "v": "2.1.9",
+      "name": "Équipement verrouillé",
+      "guide": "equipement",
+      "items": [
+        "Héros › Équipement : cliquez un emplacement puis « Verrouiller » (cadenas) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus",
+        "Un petit cadenas doré marque les emplacements verrouillés ; retirer l'objet enlève le verrou"
+      ]
+    },
     {
       "v": "2.1.8",
       "name": "Copier le setup",

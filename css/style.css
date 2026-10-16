@@ -5801,3 +5801,6 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .setupck.off{opacity:.55;cursor:default}
 .setupit{width:30px;height:30px;border-radius:6px;background:var(--panel3)}
 .setupit.miss{filter:grayscale(1);opacity:.45;outline:2px dashed var(--bad,#c55);outline-offset:-2px}
+/* 2.1.9 : emplacement verrouillé (Équiper au mieux n'y touche pas) */
+.dslot .eqlk{position:absolute;left:-6px;top:-7px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#1b1b1b;display:grid;place-items:center;z-index:2;box-shadow:0 0 0 2px var(--panel)}
+.dslot .eqlk svg{width:11px;height:11px}
