@@ -46,5 +46,15 @@ A=gat(false);B=gat(true);setBr("L'Artisan");ok("récolte + XP de métier (Artisa
 noBr("Le Traqueur");const r0=E.charStats(S,c).rf;setBr("Le Traqueur");const r1=E.charStats(S,c).rf;ok("résistances −8 (Grand veneur)",r1===r0-8+ (0),r0+" → "+r1);}
 {const sh=(h)=>{const r=fight(null,{h},1);return r.F.fx.filter(x=>x.k==="buff"&&/Bouclier/.test(x.txt||""))[0].txt;};const a=sh(0),b=sh(-25);ok("boucliers −25 % (Soif de sang)",a!==b,a+" → "+b);}
 
+// 2.1 : améliorations de la Maîtrise
+{const nts=T.N.filter(n=>n.br&&n.t==="nt"),joys=T.N.filter(n=>n.br&&n.t==="joy");ok("un joyau ◆ à côté de chaque notable de branche (17A)",nts.length>0&&joys.length===nts.length&&joys.every(j=>j.adj.some(y=>T.N[y].t==="nt"&&T.N[y].br===j.br)),nts.length+" notables, "+joys.length+" joyaux");}
+{const all=T.N.filter(n=>n.br==="La Sangsue").map(n=>n.id);const need=new Set();all.forEach(id=>path(id,T.start).forEach(x=>need.add(x)));E.mt(c).t[E.mt(c).lo]=[...need];S.titlesExtra=[];E.mtBrSync(S);
+ ok("branche complète : titre (9A)",E.mtBrDone(c).some(B=>B.n==="La Sangsue")&&S.titlesExtra.includes("Buveur d'étoiles"),S.titlesExtra.join(","));
+ E.mt(c).t[E.mt(c).lo]=[...need].filter(i=>i!==all[all.length-1]);S.titlesExtra=[];ok("branche incomplète : pas de titre",!E.mtBrDone(c).some(B=>B.n==="La Sangsue"),"");}
+{E.mt(c).t[E.mt(c).lo]=[];const ks=T.N.find(n=>n.t==="ks"&&!n.neb&&n.gated==null);const L=path(ks.id,T.start).length;const lv=E.mt(c).lvl;E.mt(c).lvl=5;E.mt(c).obj=ks.id;
+ const n1=E.mtObjStep(S,c);ok("objectif : place les points libres sur le chemin (12A)",n1===Math.min(L,E.mtPts(c))&&E.mtGot(c).size-1===n1,n1+" posés sur "+L);
+ E.mt(c).lvl=lv;E.mtObjStep(S,c);ok("objectif atteint puis retiré",E.mtGot(c).has(ks.id)&&E.mt(c).obj==null,"");E.mt(c).t[E.mt(c).lo]=[];}
+{noBr("L'Artisan");const a=E.mtOwn(S,c,"rec");const art=T.N.filter(n=>n.br==="L'Artisan").map(n=>n.id);const need=new Set();art.forEach(id=>path(id,T.start).forEach(x=>need.add(x)));E.mt(c).t[E.mt(c).lo]=[...need];const b=E.mtOwn(S,c,"rec");ok("Artisan : ~+20 % de récolte (8A)",b/a>1.17&&b/a<1.26,"×"+(b/a).toFixed(3));E.mt(c).t[E.mt(c).lo]=[];}
+
 const ko=res.filter(r=>r[0]==="KO ");if(ko.length){console.log(ko.map(r=>r.join(" ")).join("\n"));process.exit(1);}
 console.log(`ok - branches lointaines : ${res.length} effets vérifiés`);

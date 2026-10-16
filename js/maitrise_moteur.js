@@ -96,7 +96,7 @@
     { n: "Le Bourreau", c: "#b06cff", sm: [["% dégâts aux ennemis sous 30 % PV", 0.6, "pui"], ["% dégâts", 0.2, "pui"]], nt: [["Exécution", [["% dégâts aux ennemis sous 30 % PV", 3]]], ["Hache du bourreau", [["% dégâts aux ennemis sous 30 % PV", 2], ["Critique", 1]]]], ks: ["Coup de grâce", { exe: 25, t1: -20 }] },
     { n: "Le Banquier", c: "#e8c547", sm: [["% kamas gagnés", 0.6, "pp"], ["Chance", 2, "cha"]], nt: [["Bourse pleine", [["% kamas gagnés", 3]]], ["Intérêts", [["% kamas gagnés", 2], ["% butin", 1]]]], ks: ["Coffre d'or", { kam: 25, hp: -10 }] },
     { n: "Le Crescendo", c: "#ff9a3c", sm: [["% dégâts par tour (10 tours max)", 0.03, "pui"], ["Initiative", 10, "ini"]], nt: [["Montée", [["% dégâts par tour (10 tours max)", 0.15]]], ["Apogée", [["% dégâts par tour (10 tours max)", 0.1], ["% PV", 1]]]], ks: ["Montée en puissance", { cre: 1, t1: -30 }] },
-    { n: "L'Artisan", c: "#d39a5c", sm: [["% XP de métier", 0.8, "fo"], ["% récolte", 0.4, "fo"]], nt: [["Établi", [["% XP de métier", 4]]], ["Main sûre", [["% récolte", 2], ["% XP de métier", 2]]]], ks: ["Maître artisan", { xpj: 30, d: -10 }] },
+    { n: "L'Artisan", c: "#d39a5c", sm: [["% XP de métier", 0.8, "fo"], ["% récolte", 1.2, "fo"]], nt: [["Établi", [["% XP de métier", 4]]], ["Main sûre", [["% récolte", 8], ["% XP de métier", 2]]]], ks: ["Maître artisan", { xpj: 30, d: -10 }] },
     { n: "Le Miroir", c: "#9fe7ff", sm: [["% dégâts renvoyés", 0.3, "re"], ["Résistances", 0.2, "re"]], nt: [["Éclat", [["% dégâts renvoyés", 2]]], ["Reflet", [["% dégâts renvoyés", 1.5], ["Résistances", 1]]]], ks: ["Reflet parfait", { rv: 10, d: -8 }] },
     { n: "Le Traqueur", c: "#ff7a4a", sm: [["% chance de Champion", 0.3, "cri"], ["% dégâts aux Champions", 0.5, "pui"]], nt: [["Piste", [["% chance de Champion", 1.5]]], ["Trophée de chasse", [["% dégâts aux Champions", 3], ["% chance de Champion", 1]]]], ks: ["Grand veneur", { champ: 15, res: -8 }] },
   ];
@@ -183,6 +183,8 @@
           }
           link(prev, add(P(tag({ t: "ks", end: 1, n: Tm.ks[0], fx: Tm.ks[1], txt: E.mtFxTxt(Tm.ks[1]), b: [], ic: null }), th, r + 10)));
         }); });
+      /* 2.1 (choix 17A) : un emplacement de joyau à côté de chaque notable des branches lointaines, ajouté après les branches */
+      N.filter((n) => n.br && n.t === "nt").forEach((n) => link(n.id, add(P({ t: "joy", d: 6, br: n.br, col: n.col, gated: n.gated, n: "Emplacement de joyau", txt: "Sertis un joyau trouvé sur les boss en stasis 10+.", b: [], ic: null }, n.th, n.r, 0, 74))));
     }
     for (const n of N) { const X0 = Math.sin(n.th) * n.r, Y0 = -Math.cos(n.th) * n.r, psi = n.th - Math.PI / 2; n.X = X0 + Math.cos(psi) * n.lr - Math.sin(psi) * n.lt; n.Y = Y0 + Math.sin(psi) * n.lr + Math.cos(psi) * n.lt; }
     const coreIds = N.filter((n) => n.t === "cls" && n.r <= 150).map((n) => n.id);
@@ -202,6 +204,18 @@
   E.mtTeam = (S, team, k) => { const T = (team || []).filter((c) => c && E.mtOn(c)); if (!team || !team.length) return 1; let t = 0; T.forEach((c) => { const f = E.mtFx(S, c); if (f) t += f[k] || 0; }); return Math.max(0.1, 1 + t / team.length / 100); };
   E.mtOwn = (S, c, k) => { const f = c && E.mtFx ? E.mtFx(S, c) : null; return f ? Math.max(0.1, 1 + (f[k] || 0) / 100) : 1; };
   E.mtGot = (c, lo) => { const M = E.mt(c); const T = build(c.cls); return new Set([T.start, ...E.mtClean(c, M.t[lo === undefined ? M.lo : lo])]); };
+  /* 2.1 (choix 9A) : une branche lointaine complète (toutes ses étoiles, joyaux compris) donne une aura à sa couleur en combat et un titre */
+  E.MT_BR_TITLE = {"La Sangsue": "Buveur d'étoiles", "Le Pilleur": "Pilleur d'astres", "Le Chasseur de géants": "Tueur de colosses", "L'Érudit": "Érudit céleste", "Le Bourreau": "Bourreau des étoiles", "Le Banquier": "Banquier céleste", "Le Crescendo": "Maître du crescendo", "L'Artisan": "Artisan des astres", "Le Miroir": "Miroir vivant", "Le Traqueur": "Grand traqueur"};
+  E.mtBrDone = (c) => { if (!E.mtOn(c) || !c.mt) return []; const T = build(c.cls); const g = E.mtGot(c); const out = []; E.MT_BRTH.forEach((B) => { const ns = T.N.filter((n) => n.br === B.n); if (ns.length && ns.every((n) => g.has(n.id))) out.push(B); }); return out; };
+  E.mtBrSync = (S) => { (S.chars || []).forEach((c) => E.mtBrDone(c).forEach((B) => { const t = E.MT_BR_TITLE[B.n]; if (!t) return; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t); })); };
+  /* 2.1 (choix 12A) : objectif épinglé, les points gagnés vont tout seuls vers la clé de voûte choisie (c.mt.obj) */
+  E.mtObjPath = (S, c) => { const M = E.mt(c); if (M.obj == null || !E.mtOn(c)) return null; const T = build(c.cls); const tg = T.N[M.obj]; if (!tg) { M.obj = null; return null; } const g = E.mtGot(c); if (g.has(M.obj)) return [];
+    const neb = E.mtPts(c) >= E.MT_OPEN; const open = new Set(E.mtGatesOpen(S)); const ok = (n) => n.t !== "start" && (neb || !n.neb) && (n.gated == null || open.has(T.N[n.gated].gate.b));
+    if (!ok(tg)) return null; const prev = new Map(); const q = [...g]; q.forEach((x) => prev.set(x, -1)); let hd = 0;
+    while (hd < q.length) { const x = q[hd++]; if (x === M.obj) break; for (const y of T.N[x].adj) { if (prev.has(y) || !ok(T.N[y])) continue; prev.set(y, x); q.push(y); } }
+    if (!prev.has(M.obj)) return null; const p = []; let x = M.obj; while (!g.has(x)) { p.push(x); x = prev.get(x); } return p.reverse(); };
+  E.mtObjStep = (S, c) => { const M = E.mt(c); const p = E.mtObjPath(S, c); if (!p) return 0; const g = E.mtGot(c); const free = Math.max(0, E.mtPts(c) - (g.size - 1)); const take = p.slice(0, free); if (!take.length) { if (!p.length) M.obj = null; return 0; }
+    M.t[M.lo] = [...g].filter((x) => x !== build(c.cls).start).concat(take); if (take.length === p.length) M.obj = null; return take.length; };
   /* 2.0.3 : un joyau ne sert qu'à un héros (le premier de l'équipe qui l'a serti) */
   E.joyOwner = (S, uid) => { for (const h of S.chars || []) if (h.mt && h.mt.j && Object.values(h.mt.j).includes(uid)) return h; return null; };
   E.mtStats = (S, c, set) => { if (S && S.chars && c.mt) c.mt.g = E.mtGatesOpen(S); const T = build(c.cls); const got = set || E.mtGot(c); const t = {}; const ks = [];

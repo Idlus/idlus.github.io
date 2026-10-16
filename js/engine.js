@@ -2509,7 +2509,7 @@
     if (c.lvl >= E.MAX_LVL) {
       if (!(g > 0)) return false; const M = E.mt(c); M.xp += g; const need = E.mtNeed(); let up = 0;
       while (M.xp >= need) { M.xp -= need; M.lvl++; up++; }
-      if (up) { note(S, `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : un point de plus à placer dans son arbre.`, "up"); E.emit(S, "mtlvl", { cid: c.id, lvl: M.lvl }); }
+      if (up) { const ob = M.obj != null && E.mtObjStep ? E.mtObjStep(S, c) : 0; note(S, ob ? `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : ${ob > 1 ? `${ob} points placés` : "un point placé"} vers son objectif.` : `${c.name} gagne ${up > 1 ? `${up} niveaux` : "un niveau"} de Maîtrise (${M.lvl}) : un point de plus à placer dans son arbre.`, "up"); E.emit(S, "mtlvl", { cid: c.id, lvl: M.lvl }); if (E.mtBrSync) E.mtBrSync(S); } // 2.1 : objectif épinglé (12A), titres des branches complètes (9A)
       return false;
     }
     c.xp += g; let up = false; const from = c.lvl;
@@ -3752,7 +3752,7 @@
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
     S.v = E.VERSION;
     if (E.mtGateSync) { S.mtGates = E.mtGatesOpen(S); E.mtGateSync(S); } // 2.1 : Portes des étoiles déjà méritées, sans message
-    if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
+    if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); if (E.mtBrSync) E.mtBrSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
     return S;
   };
 

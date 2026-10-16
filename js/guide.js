@@ -373,7 +373,7 @@
       ]],
     ] });
 
-  add({ id: "maitrise", f: "Héros", n: "La Maîtrise", ic: "cristal", page: "maitrise", k: "maitrise arbre constellation cle de voute joyau nebuleuse bestiaire famille renaissance eveil",
+  add({ id: "maitrise", f: "Héros", n: "La Maîtrise", ic: "cristal", page: "maitrise", k: "maitrise arbre constellation cle de voute joyau nebuleuse bestiaire famille renaissance eveil brouillon objectif image branche porte",
     ou: "Héros › Maîtrise", de: `un héros niveau ${N(() => E.MAX_LVL)}`,
     voir: ["niveaux", "sorts", "metiers"],
     b: () => [
@@ -385,7 +385,13 @@
         "**Notables** : chaque grande étoile au bout d'une branche a son nom et son bonus à elle (126 par ciel, aucune en double), dont des effets rares : dégâts critiques, dégâts au premier tour, dégâts sous la moitié des PV, bouclier de départ.",
         "**Branches lointaines** : 5 Portes des étoiles entre les domaines, chacune ouvre une branche combat et une branche farm (vol de vie, dégâts aux boss, butin, kamas, XP…). Une Porte s'ouvre pour tout le compte en terminant le donjon de son boss : Kabahal (stasis 12), Roi Imagami (13), L'Éternel Conflit (13), Belladone (14), Déchireuse (15).",
         "**Fiche du héros** : le bloc Maîtrise montre son niveau, ses points, la barre d'XP du prochain niveau, ses clés de voûte et le total de ses bonus.",
-        "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche, chemin vers une étoile lointaine et code de partage.",
+        "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche (« Y aller » mène à l'étoile trouvée la plus proche), chemin vers une étoile lointaine, code de partage et **image de l'arbre** (bouton « Image »).",
+        "**Brouillon** (bouton ✎ sur l'arbre) : pose des étoiles en pointillés, vois le coût et les bonus, puis « Valider ». Les profils Dégâts, Tank, Farm et Boss remplissent le brouillon avec des règles simples ; un arbre fait main reste meilleur.",
+        "**Objectif** : sur une clé de voûte, « En faire mon objectif » trace le chemin ; les points libres et ceux des prochains niveaux s'y posent tout seuls.",
+        "**Rendre une étoile** prise rend aussi celles qui en dépendent (entourées en rouge, prix affiché avant). Un clic sur une étoile prise la rend.",
+        "**Branche complète** : prendre toutes les étoiles d'une branche lointaine donne son aura en combat et un titre (Buveur d'étoiles, Pilleur d'astres…). Chaque notable de branche a un emplacement de joyau ◆ à côté.",
+        "**Classement** : « Voir l'arbre » ouvre le ciel d'un joueur en lecture seule, avec « Copier cet arbre ». La bulle d'une clé de voûte dit quelle part des joueurs de la classe l'a prise.",
+        "Le menu Maîtrise affiche le nombre de points à placer, et l'icône ✦ sur un héros en combat montre ses clés de voûte au survol.",
         "**Joyaux** : ils tombent sur les boss en stasis 10 et plus et se sertissent dans les emplacements ◆.",
         "**Maîtrise du compte** : +1 % d'XP pour tout le compte par tranche de 100 points, tous héros confondus.",
         "**Maîtrise du Bestiaire** : 20 paliers par famille de monstres, +0,5 % de dégâts contre la famille par palier ; ornement au palier 5, +2 % de butin au 10, titre « Fléau » au 15, aura au 20. La famille du jour compte double.",

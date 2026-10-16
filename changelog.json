@@ -1,6 +1,21 @@
 {
-  "version": "2.1",
+  "version": "2.1.1",
   "versions": [
+    {
+      "v": "2.1.1",
+      "name": "L'arbre qui aide",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : mode Brouillon (bouton ✎) pour poser des étoiles en pointillés puis valider, et profils Dégâts, Tank, Farm, Boss qui remplissent le brouillon",
+        "Objectif : épingle une clé de voûte, les points libres et ceux des prochains niveaux s'y posent tout seuls",
+        "Rendre une étoile prise rend aussi celles qui en dépendent, entourées en rouge avec le prix",
+        "Recherche : « Y aller » mène à l'étoile trouvée la plus proche ; mini-carte du ciel, cliquable",
+        "Image de l'arbre (format Discord) ; « Voir l'arbre » des joueurs du classement, avec « Copier cet arbre »",
+        "Branche lointaine complète : aura à sa couleur en combat et un titre ; un emplacement de joyau près de chaque notable de branche",
+        "L'Artisan donne ~+20 % de récolte (avant +6 %) ; chemins pris à la couleur de leur voie ; note qui monte à chaque étoile prise (sons de l'interface)",
+        "Lumière dans les branches quand une Porte s'ouvre ; part des joueurs qui ont pris une clé de voûte ; points à placer sur le menu ; icône ✦ des clés de voûte en combat ; total des bonus en phrases"
+      ]
+    },
     {
       "v": "2.1",
       "name": "Branches lointaines",

@@ -17,7 +17,7 @@
   V.summary = (E, S) => {
     const gear = (c) => Object.values(c.equip || {}).map((uid) => S.items[uid] && S.items[uid].tpl).filter(Boolean);
     const heroes = S.chars.map((c) => ({ cls: c.cls, lvl: c.lvl || 1, ren: c.ren || 0, name: String(c.name || "").slice(0, 20), gear: gear(c),
-      ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [] } : {}) })); // 2.0 : Maîtrise (classement)
+      ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [], ...(E.mtCode && c.lvl >= 200 && c.mt ? { mc: E.mtCode(c) } : {}) } : {}) })); // 2.0 : Maîtrise (classement) ; 2.1 : code de l'arbre (« Voir l'arbre »)
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
     const level = heroes.map((h) => h.lvl + h.ren * V.REB_LVL).sort((x, y) => y - x).slice(0, 8).reduce((a, n) => a + n, 0);
