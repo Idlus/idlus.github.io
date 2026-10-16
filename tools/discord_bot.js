@@ -7,7 +7,7 @@
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
    node tools/discord_bot.js podium                                   → publie dans #annonces le podium des donjons de la semaine passée (classements de la version de test)
-   node tools/discord_bot.js captures <dossier>                       → publie les images du dossier (png, jpg, webp, gif ; 10 par message) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
+   node tools/discord_bot.js captures <dossier>                       → publie les images et vidéos du dossier (png, jpg, webp, gif, mp4, webm ; 10 par message, 10 Mo par fichier) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js suggestions <idees.json>                 → publie dans le forum #idées les idées envoyées depuis le jeu (un fil par idée, avec son tag) ; écrit dans DISCORD_SORTIE la liste [{ id, url }] des idées publiées
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
    node tools/discord_bot.js notes <fichier.md>                       → publie dans le salon DISCORD_SALON (#note-de-mise-a-jour par défaut) un long patch note découpé en messages
@@ -193,7 +193,7 @@ async function main() {
     }
     console.log(`Sondages publiés : ${n} (sur ${polls.length}) dans #${ch.name}`);
   } else if (cmd === "captures") {
-    const dir = file || "."; const imgs = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f)).sort();
+    const dir = file || "."; const imgs = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp|gif|mp4|webm)$/i.test(f)).sort();
     if (!imgs.length) { console.log("Aucune image dans", dir); process.exit(1); }
     const text = (process.env.DISCORD_TEXTE || "").trim(); if (text.length > 1900) { console.log("Texte trop long :", text.length, "caractères (1 900 au plus)."); process.exit(1); }
     const salon = (process.env.DISCORD_SALON || "captures").trim();
