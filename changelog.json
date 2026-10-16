@@ -1,6 +1,14 @@
 {
-  "version": "2.1.13",
+  "version": "2.1.14",
   "versions": [
+    {
+      "v": "2.1.14",
+      "name": "Bouclier du serveur",
+      "items": [
+        "Le serveur vérifie davantage les parties envoyées : les classements et l'hôtel de vente partent maintenant d'une partie qu'il a validée",
+        "Codes cadeaux à nombre limité : réservés aux joueurs connectés à un compte"
+      ]
+    },
     {
       "v": "2.1.13",
       "name": "Challenges au choix",
