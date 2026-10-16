@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.11";
+const GAME_VERSION = "2.1.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.12", name: "La Maîtrise au classement", guide: "classement", items: [
+    "Classement des niveaux : chaque point de Maîtrise compte un niveau (un héros 200 avec 150 de Maîtrise compte 350)",
+    "Classement par classe : le niveau et la Maîtrise du meilleur héros (« niv. 200 · Maîtrise 150 ») ; la fiche d'un joueur montre la Maîtrise de chaque héros"
+  ] },
   { v: "2.1.11", name: "Économie de batterie", guide: "options", items: [
     "Options › Affichage : nouvelle case « Économie de batterie ». Elle coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et l'écran se met à jour 4 fois par seconde au lieu de 8. Le jeu avance exactement pareil",
     "Mesuré : en combat, l'appareil travaille environ 5 fois moins (PC 41 % → 7 %, téléphone 32 % → 5 %) ; au Havre-Sac, 4 fois moins",
@@ -10391,9 +10395,10 @@ async function staffLoad() {
   if (window.CHAT) window.CHAT.repaint();
   if (S && ui.tab !== "combat") render();
 }
-const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
+// 2.1.12 : le score d'une classe = niveau + points de Maîtrise (les renaissances n'existent plus depuis la 2.0)
+const lbLvl = (score) => Math.min(E.MAX_LVL, score);
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
-const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
+const lvlTxt = (score) => `niv. ${lbLvl(score)}${score > E.MAX_LVL ? ` · Maîtrise ${fmt(score - E.MAX_LVL)}` : ""}`;
 const weekNow = () => VF.weekIdx(E.now());
 const weekList = () => VF.weeklyDungeons(DUNGEONS, weekNow());
 function lbDefaultDid() {
@@ -10430,7 +10435,7 @@ async function lbFetch() {
   if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
-    const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
+    const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL + (x.mt || 0)));
     if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : LB.pts ? "pts" : "succes";
@@ -10753,7 +10758,7 @@ function renderLadder() {
   const wl = weekList(), dids = Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || DUNGEONS[a].name.localeCompare(DUNGEONS[b].name));
   if (!LB.did) LB.did = lbDefaultDid();
   const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
-  const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes héros ; chaque renaissance compte ${VF.REB_LVL} niveaux.</span>
+  const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes 8 meilleurs héros ; chaque point de Maîtrise compte un niveau.</span>
       <select data-act="lb-cls" aria-label="Classe"><option value="">Toutes les classes</option>${CLASS_ORDER.map((c) => `<option value="${c}" ${LB.cls === c ? "selected" : ""}>Meilleur ${h(CLASSES[c].name)}</option>`).join("")}</select></div>`
     : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Records"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
       ${LB.dmode === "all" ? `<select data-act="lb-did" aria-label="Donjon">${dids.map((d) => `<option value="${d}" ${LB.did === d ? "selected" : ""}>${h(DUNGEONS[d].name)} (niv. ${DUNGEONS[d].lvl})</option>`).join("")}</select>` : ""}</div>
@@ -10785,13 +10790,13 @@ async function lbProfile(u) {
     const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
       db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
-    const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
+    const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 + (b.mt || 0) - (a.lvl + a.ren * 200 + (a.mt || 0)));
     ui.lbProf = { u, heroes };
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
-      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);

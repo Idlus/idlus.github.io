@@ -20,7 +20,9 @@
       ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [], ...(E.mtCode && c.lvl >= 200 && c.mt ? { mc: E.mtCode(c) } : {}) } : {}) })); // 2.0 : Maîtrise (classement) ; 2.1 : code de l'arbre (« Voir l'arbre »)
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
-    const level = heroes.map((h) => h.lvl + h.ren * V.REB_LVL).sort((x, y) => y - x).slice(0, 8).reduce((a, n) => a + n, 0);
+    // 2.1.12 : chaque point de Maîtrise compte un niveau ; mtl = Maîtrise comptée dans level (le serveur ne la prend pas pour une montée suspecte au premier envoi)
+    const best = heroes.map((h) => ({ t: h.lvl + h.ren * V.REB_LVL + (h.mt || 0), mt: h.mt || 0 })).sort((x, y) => y.t - x.t).slice(0, 8);
+    const level = best.reduce((a, x) => a + x.t, 0), mtl = best.reduce((a, x) => a + x.mt, 0);
     const album = E.soulCount ? E.soulCount(S) : Object.keys(S.souls || {}).length;
     const succes = E.achCount ? E.achCount(S) : Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
     const lvl200 = heroes.some((h) => h.lvl >= 200 || h.ren > 0);
@@ -36,7 +38,7 @@
     for (const k in S.jobs || {}) put(k, S.jobs[k], E.jobXpNeed);
     if (S.fmJobs && E.FM_JOBS && E.fmNeed) for (const k in E.FM_JOBS) if (S.fmJobs[k] && (!E.fmLearned || E.fmLearned(S, k))) put(k, S.fmJobs[k], E.fmNeed);
     // 1.0.19 : cobj = métiers d'objets au niveau des objets (le serveur ne compte pas la conversion dans la semaine ni pour les « Premiers »)
-    return { cobj: S.craftObj ? 1 : 0, rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, ascd100: !!(S.asc && S.asc.d100), asc: S.asc && (S.asc.rk || S.asc.rkx) ? { m: S.asc.rk ? S.asc.rk.m : -1, cls: (S.asc.rk && S.asc.rk.cls) || {}, nos: (S.asc.rk && S.asc.rk.nos) || 0, pur: (S.asc.rk && S.asc.rk.pur) || 0, spd: (S.asc.rk && S.asc.rk.spd) || 0, w: S.asc.rkx ? S.asc.rkx.w : -1, x: (S.asc.rkx && S.asc.rkx.x) || 0 } : null, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0, ...(E.chromaMeta && S.chroma ? E.chromaMeta(S) : {}) }; // 1.0.33 : chromatiques (classement, vitrine, Hauts faits)
+    return { cobj: S.craftObj ? 1 : 0, rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, mtl, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, ascd100: !!(S.asc && S.asc.d100), asc: S.asc && (S.asc.rk || S.asc.rkx) ? { m: S.asc.rk ? S.asc.rk.m : -1, cls: (S.asc.rk && S.asc.rk.cls) || {}, nos: (S.asc.rk && S.asc.rk.nos) || 0, pur: (S.asc.rk && S.asc.rk.pur) || 0, spd: (S.asc.rk && S.asc.rk.spd) || 0, w: S.asc.rkx ? S.asc.rkx.w : -1, x: (S.asc.rkx && S.asc.rkx.x) || 0 } : null, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0, ...(E.chromaMeta && S.chroma ? E.chromaMeta(S) : {}) }; // 1.0.33 : chromatiques (classement, vitrine, Hauts faits)
   };
 
   /* Donjons de la semaine : un par tranche de niveau, les mêmes pour tous les joueurs

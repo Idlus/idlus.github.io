@@ -483,6 +483,11 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb.png" });
+    // 2.1.12 : classement par classe : niveau + points de Maîtrise (score 320 = niv. 200 et 120 de Maîtrise)
+    await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(500);
+    { const t = await page.textContent("#lbList"); if (!/Maîtrise 120/.test(t) || /renaissance/.test(t)) fail("classement par classe : la Maîtrise n'apparaît pas : " + t.slice(0, 200)); }
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-classe.png" });
+    await page.selectOption('[data-act="lb-cls"]', ""); await page.waitForTimeout(300);
     // 1.0.8 : classement des métiers (tuiles, « Tous les métiers », un métier, ma ligne, Premiers)
     await page.click('[data-act="lb-tab"][data-v="job"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
     if ((await page.$$(".jlb-tiles button")).length !== 8) fail("métiers : il faut 8 tuiles (tous + 7 métiers)");

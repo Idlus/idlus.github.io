@@ -816,7 +816,7 @@
   add({ id: "classement", f: "Communauté", n: "Classements, Builds et chat", ic: "trophee", page: "ladder", pages: ["builds"], k: "classement ladder builds code partager chat canal",
     ou: "Communauté › Classements · Communauté › Builds", de: "en ligne",
     b: () => [
-      ["p", "**Classements** : course, niveau, Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
+      ["p", "**Classements** : course, niveau (la somme des 8 meilleurs héros, chaque point de Maîtrise compte un niveau), Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
       ["p", "**Builds** : partage les sorts et caractéristiques d'un héros avec un code « IDLUS1-… ». Appliquer un build copie seulement les sorts et les points. Publier demande une connexion Discord."],
       ["p", "**Chat** : canaux Général, Commerce, PvP, Guilde, Alliance, Privé et Hauts faits. Messages de 200 caractères au plus."],
     ] });

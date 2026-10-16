@@ -1,6 +1,15 @@
 {
-  "version": "2.1.11",
+  "version": "2.1.12",
   "versions": [
+    {
+      "v": "2.1.12",
+      "name": "La Maîtrise au classement",
+      "guide": "classement",
+      "items": [
+        "Classement des niveaux : chaque point de Maîtrise compte un niveau (un héros 200 avec 150 de Maîtrise compte 350)",
+        "Classement par classe : le niveau et la Maîtrise du meilleur héros (« niv. 200 · Maîtrise 150 ») ; la fiche d'un joueur montre la Maîtrise de chaque héros"
+      ]
+    },
     {
       "v": "2.1.11",
       "name": "Économie de batterie",
