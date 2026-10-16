@@ -1,6 +1,17 @@
 {
-  "version": "2.0.10",
+  "version": "2.1",
   "versions": [
+    {
+      "v": "2.1",
+      "name": "Branches lointaines",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : 10 branches lointaines dans chaque ciel (vol de vie, dégâts aux boss, butin, kamas, XP, achèvement, crescendo, métiers, renvoi, Champions), chacune avec sa clé de voûte",
+        "5 Portes des étoiles : termine le donjon de Kabahal (stasis 12), Roi Imagami (13), L'Éternel Conflit (13), Belladone (14) ou Déchireuse (15) pour ouvrir deux branches à tout le compte",
+        "Les bonus de soins de la Maîtrise renforcent aussi les boucliers et les soins en % des PV (avant, seulement les sorts de soin)",
+        "Arbre plus lisible : un seul nom par branche, chemins fermés en retrait, aide qui s'efface dès le premier point"
+      ]
+    },
     {
       "v": "2.0.10",
       "name": "Derniers bugs de la Maîtrise",

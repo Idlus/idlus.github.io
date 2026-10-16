@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.10";
+const GAME_VERSION = "2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1", name: "Branches lointaines", guide: "maitrise", items: [
+    "Maîtrise : 10 branches lointaines dans chaque ciel (vol de vie, dégâts aux boss, butin, kamas, XP, achèvement, crescendo, métiers, renvoi, Champions), chacune avec sa clé de voûte",
+    "5 Portes des étoiles : termine le donjon de Kabahal (stasis 12), Roi Imagami (13), L'Éternel Conflit (13), Belladone (14) ou Déchireuse (15) pour ouvrir deux branches à tout le compte",
+    "Les bonus de soins de la Maîtrise renforcent aussi les boucliers et les soins en % des PV (avant, seulement les sorts de soin)",
+    "Arbre plus lisible : un seul nom par branche, chemins fermés en retrait, aide qui s'efface dès le premier point"
+  ] },
   { v: "2.0.10", name: "Derniers bugs de la Maîtrise", guide: "maitrise", items: [
     "Kolizéum : les anciennes équipes de défense envoyées avant la 2.0 ne gardent plus les bonus des Éveils, qui n'existent plus",
     "Arbre de Maîtrise : la page ne s'alourdit plus à chaque affichage, et elle relit bien l'arbre après un changement de partie ou une restauration de sauvegarde",
