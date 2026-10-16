@@ -1,6 +1,15 @@
 {
-  "version": "2.1.5",
+  "version": "2.1.6",
   "versions": [
+    {
+      "v": "2.1.6",
+      "name": "Tous les points d'un coup",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : nouveau bouton « Placer les N points » sous les points à placer. Il pose d'un coup tous les points libres du héros sur les meilleurs bonus, sans jamais prendre de clé de voûte (elles restent ton choix)",
+        "« Annuler » rend tous les points placés par le bouton en une fois"
+      ]
+    },
     {
       "v": "2.1.5",
       "name": "Donjons finis masqués",

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.5";
+const GAME_VERSION = "2.1.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.6", name: "Tous les points d'un coup", guide: "maitrise", items: [
+    "Maîtrise : nouveau bouton « Placer les N points » sous les points à placer. Il pose d'un coup tous les points libres du héros sur les meilleurs bonus, sans jamais prendre de clé de voûte (elles restent ton choix)",
+    "« Annuler » rend tous les points placés par le bouton en une fois"
+  ] },
   { v: "2.1.5", name: "Donjons finis masqués", guide: "donjons", items: [
     "Donjons : nouveau filtre « Masquer stasis 15 » qui cache les donjons déjà terminés en stasis 15 ; le choix reste gardé et le nombre de donjons masqués est indiqué",
     "En-tête des donjons : nombre de donjons faits en stasis 15"

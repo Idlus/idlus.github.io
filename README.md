@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.6 « Tous les points d'un coup »
+
+Maîtrise : un bouton place tous les points libres sur les meilleurs bonus, sans prendre de clé de voûte.
+
 ## 2.1.5 « Donjons finis masqués »
 
 Donjons : filtre « Masquer stasis 15 » qui cache les donjons déjà finis en stasis 15 (choix gardé, nombre masqué indiqué).
