@@ -743,6 +743,7 @@
         "Plus de chances : Ecaflip dans l'équipe ×1,5, Parfum de pistage ×2, Pierre d'âme dorée ×3, Autel des âmes ×1,4.",
         "Pierres d'âme : premier passage des stasis, Bricoleur, Bureau des primes.",
         "L'« Éternelle moisson » récompense les régions complétées, jusqu'au Dofus Ocre (+1 PA).",
+        "☆ Épingler (en haut de l'album) le met dans tes épinglés du menu ; ouvert, il se met à jour tout seul après chaque combat.",
       ]],
       ["kv", [["Ta chance actuelle", V(() => "1 / " + fr(Math.round(1 / E.archiOdds(S()))))]]],
     ] });

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.3";
+const GAME_VERSION = "2.1.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.4", name: "L'album épinglé", guide: "archis", items: [
+    "Album des archimonstres : bouton « ☆ Épingler » en haut de l'album, il rejoint tes épinglés du menu (et se trouve dans « Aller à une page »)",
+    "L'album et la fiche d'un monstre (Encyclopédie) se mettent à jour tout seuls après chaque combat : plus besoin de les fermer et de les rouvrir"
+  ] },
   { v: "2.1.3", name: "Tout ouvrir", guide: "inventaire", items: [
     "Coffres : bouton « Tout ouvrir » (Inventaire › Consommables et tuile de l'accueil) qui ouvre tous les coffres d'un coup, les plus précieux d'abord, avec un seul écran de butin",
     "Mode Auto : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal (Inventaire › Consommables, ligne Coffres)"
@@ -2317,18 +2321,21 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", admin: "Le panneau de Xener" };
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
+/* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
+const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
+const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
 const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
-const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
+const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
 const navFamPages = (F) => F.pages.filter((p) => navParent(p[0]) === p[0]);
 const navIsNew = (k) => E.now() < NAV_NEW.until && NAV_NEW.pages.includes(k);
 const navPins = () => { if (!S.settings.pins) S.settings.pins = NAV_PINS_DEF.slice(); return S.settings.pins.filter((k) => navPage(k)); };
 const navNorm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
+function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); Object.values(NAV_SHEETS).forEach(([p]) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); }); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -2352,7 +2359,7 @@ function navGo(k) {
   else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
   else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
-const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
+const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0][1] : k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
@@ -3737,7 +3744,7 @@ function encMonSheet(k) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const reveal = E.huntTier(S, k) >= 0;
   const els = Object.entries(m.res || {}).filter(([, v]) => v).map(([e, v]) => `<span class="tag soft" style="color:${elVar(e)}">${h(D.ELEMENTS[e] ? D.ELEMENTS[e].name : e)} ${v > 0 ? "+" : ""}${v} %</span>`).join(" ") || `<span class="muted xs">aucune</span>`;
   const drops = m.drops.map(([n, p]) => seen[n] || reveal ? `<button class="li dropli" data-act="reswhere" data-n="${h(n)}">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><b class="num">${reveal ? p + " %" : "?"}</b></button>` : `<div class="li dropli muted"><span class="icobox dq">?</span><span class="grow">Butin inconnu</span></div>`).join("");
-  return `<div class="encsheet"><div class="es-h">${im(imgM(k), "es-img", m.name)}<div class="grow"><h2>${kills ? h(m.name) : "???"}</h2><div class="small muted">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : m.lvl[0] + "–" + m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? " · " + h(D.RACES[m.race]) : ""}${m.boss ? " · boss" : ""} · ${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>${tierBadge(k)}</div></div>
+  return `<div class="encsheet" data-mk="${h(k)}"><div class="es-h">${im(imgM(k), "es-img", m.name)}<div class="grow"><h2>${kills ? h(m.name) : "???"}</h2><div class="small muted">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : m.lvl[0] + "–" + m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? " · " + h(D.RACES[m.race]) : ""}${m.boss ? " · boss" : ""} · ${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>${tierBadge(k)}</div></div>
     <h3 class="sec">Où le trouver</h3><div class="enccard es-where">${encWhereHtml(k) || `<span class="muted xs">Nulle part pour l'instant</span>`}</div>
     ${kills ? `<h3 class="sec">Résistances</h3><div class="row wrap">${els}</div>
     <h3 class="sec">Sorts</h3><div class="row wrap">${(m.sp || []).map((x) => `<span class="tag soft">${h(x.n)}</span>`).join(" ") || `<span class="muted xs">frappe simple</span>`}</div>` : `<p class="note">Rencontre-le une fois pour voir ses résistances et ses sorts.</p>`}
@@ -4054,7 +4061,7 @@ function archiPill(F) {
   const odds = Math.round(1 / E.archiOdds(S));
   return `<span class="pill archipill ${here ? "good" : ""}" data-act="archis" data-tip="Chance d'archimonstre : 1 sur ${odds} par monstre${left ? ` (Parfum de pistage encore ${dur(left)})` : ""}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme pour capturer les âmes.` : "Sans Pierre d'âme, l'âme d'un archimonstre vaincu s'échappe."}">${here ? "Archimonstre ! " : ""}🔮 ${st} pierre${st > 1 ? "s" : ""}${left ? ` · 🧴 ${dur(left)}` : ""}</span>`;
 }
-function archiSheet() {
+function archiSheetHtml() {
   const zones = E.ARCHI_ZONES; if (!ui.az || !zones.includes(ui.az)) ui.az = zones.find((z) => E.soulCount(S, z) < E.archisOf(z).length) || zones[0];
   const f = ui.azf || "all"; const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > E.now() ? Math.round((b.until - E.now()) / 1000) : 0;
   const tot = E.soulCount(S); const tier = E.ocreTier(S); const odds = Math.round(1 / E.archiOdds(S));
@@ -4065,7 +4072,8 @@ function archiSheet() {
     return `<div class="acard ${stt}">${im(imgM(a.k), "apic", a.name)}<div class="t"><b>${h(a.name)}</b><span class="w">niv. ${a.lvl[0]}–${a.lvl[1]} · ${h(E.SUBS[a.sub].name)}</span><span class="w">archimonstre de ${h(a.base)}</span><div class="st">${soul ? `<span class="s">💜 Âme capturée</span>` : n ? `<span class="k">vaincu ×${n}</span><span>pas de pierre</span>` : "<span>Jamais croisé</span>"}${soul && n > 1 ? `<span class="k">vaincu ×${n}</span>` : ""}</div></div></div>`; }).join("") || `<div class="empty">Rien à afficher avec ce filtre.</div>`;
   const ocre = E.OCRE_TIERS.map((T, i) => { const [d, all] = E.ocreProgress(S, i); const cls = i < tier ? "ok" : d ? "cur" : "";
     return `<div class="otier ${cls}"><b>Palier ${i + 1} · ${h(T.name)}</b><span class="bar"><i style="width:${pct(d, all)}%"></i></span><span class="num xs">${d} / ${all}</span><span class="r xs">${i < tier ? "✓ " : ""}${h(T.txt)}</span></div>`; }).join("");
-  openSheet(`<div class="row between"><h2>${IC("dofus")} Album des archimonstres</h2><button class="btn sm ghost" data-act="closesheet">Fermer</button></div>
+  const pinned = navPins().includes("archis");
+  return `<div class="archisheet"><div class="row between"><h2>${IC("dofus")} Album des archimonstres</h2><span class="row" style="gap:6px"><button class="btn sm ghost sh-star${pinned ? " on" : ""}" data-act="navpin" data-v="archis" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler l'album en haut du menu"}">${pinned ? "★ Épinglé" : "☆ Épingler"}</button><button class="btn sm ghost" data-act="closesheet">Fermer</button></span></div>
     <p class="small">Un archimonstre vaincu laisse son âme dans l'album si vous avez une <b>Pierre d'âme</b> en sac (automatique, une pierre par archimonstre). Les pierres se fabriquent chez le Bricoleur (niveau 25, 5 par recette), tombent au premier passage de chaque stasis, se vendent au Bureau des primes et récompensent les paliers d'<b>Éternelle moisson</b>.</p>
     <div class="row small" style="gap:8px;flex-wrap:wrap"><span class="pill">🔮 ${st} Pierre${st > 1 ? "s" : ""} d'âme</span><span class="pill">💜 ${tot} / ${E.ARCHI_TOTAL} âmes</span><span class="pill" data-tip="Chances de base 1 sur ${Math.round(1 / E.ARCHI_CHANCE)} par monstre. Ecaflip ×1,5, Bonbon Traqueur ×1,5, Parfum de pistage ×2 (Bricoleur 40, 2 h), meuble « Autel des âmes » ×1,4, palier Fléau ×2 sur le monstre.">🎯 1 chance sur ${odds}${left ? ` · 🧴 parfum ${dur(left)}` : ""}</span></div>
     <div class="ztabs">${tabs}</div>
@@ -4073,8 +4081,9 @@ function archiSheet() {
     <div class="agrid">${cards}</div>
     <h3 class="sec" style="margin-top:12px">Éternelle moisson · quête du Dofus Ocre</h3>
     <p class="xs muted">Capturez l'âme de tous les archimonstres, palier par palier. Chaque palier accompli donne sa récompense aussitôt ; le dernier offre le Dofus Ocre (+1 PA).</p>
-    <div class="stack" style="gap:6px">${ocre}</div>`);
+    <div class="stack" style="gap:6px">${ocre}</div></div>`;
 }
+function archiSheet() { openSheet(archiSheetHtml()); sheetLiveSig = sheetSig(); }
 function dofusHtml() {
   const own = E.dofusCount(S); const tier = E.ocreTier(S);
   const cards = E.DOFUS_ORDER.slice().sort((a, b) => E.DOFUS[a].lvl - E.DOFUS[b].lvl || (E.DOFUS[a].name < E.DOFUS[b].name ? -1 : 1)).map((id) => {
@@ -7424,6 +7433,15 @@ function renderQuests(soft) {
 }
 /* ---------- feuilles ---------- */
 function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+/* 2.1.4 (Mathis) : l'album des archimonstres et la fiche d'un monstre se mettent à jour toutes seules après chaque combat (mise à jour ciblée, la position de lecture reste) */
+const SHEET_LIVE = [[".archisheet", () => archiSheetHtml()], [".encsheet[data-mk]", (el) => (MONSTERS[el.dataset.mk] ? encMonSheet(el.dataset.mk) : "")]];
+let sheetLiveSig = "";
+const sheetSig = () => (S ? `${S.history && S.history[0] ? S.history[0].t : 0}|${E.soulCount(S)}|${E.stones(S)}` : "");
+function sheetLive(force) {
+  const box = $("#sheet .sheet"); if (!box || !S) return;
+  const sig = sheetSig(); if (!force && sig === sheetLiveSig) return; sheetLiveSig = sig;
+  for (const [sel, fn] of SHEET_LIVE) { const el = box.querySelector(sel); if (el && el.parentNode === box) { const html = fn(el); if (html) morphTo(box, html); return; } }
+}
 function closeSheet() { if ($("#sheet").innerHTML.trim()) uiSnd("fermer"); if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null; $("#sheet").innerHTML = ""; ui.giveTo = null; } // 1.0.12.8 : fermer la fiche d'inventaire (téléphone) la désélectionne
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
@@ -8166,7 +8184,7 @@ document.addEventListener("keydown", (ev) => {
 const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "maitrise"],
   ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"], ["a", "asc"], ["p", "pets"], ["y", "dofus"]];
 const hotPages = () => { const out = ["home", "combat"]; NAV.forEach((F) => F.pages.forEach((p) => { if (p[0] !== "bug" && p[0] !== "admin") out.push(p[0]); })); return out; }; // 1.2.7.2 : les flèches ne butent plus sur Signaler un bug
-function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
+function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(k)) return; navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
 function hotkey(ev) {
   const k = ev.key; if (!S || (S.settings && S.settings.keysOff) || isEditing() || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
   if (window.matchMedia && !window.matchMedia("(min-width: 900px)").matches) return false; // PC seulement
@@ -9512,7 +9530,7 @@ document.addEventListener("click", (ev) => {
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
     case "nav": if (d.v === "maitrise" && d.mtc && window.MAITUI) { const mc = S.chars.find((x) => String(x.id) === d.mtc); if (mc) { MAITUI.st.cid = mc.id; MAITUI.st.view = null; MAITUI.st.z = 0; } } // 2.0.6 : ouvre l'arbre du héros de la fiche
-      if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
+      if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(d.v)) return; if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
       else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }
@@ -9525,7 +9543,7 @@ document.addEventListener("click", (ev) => {
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
- toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); return; }
+ toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */
@@ -10847,7 +10865,7 @@ function loop() {
       if (S.settings.autoChest && E.chestIds(S).length) { E.openAllChests(S, true); dirty = true; } // 2.1.3 : ouverture automatique des coffres
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
-      checkPins(); if (!$("#sheet").innerHTML) renderObjs();
+      checkPins(); if (!$("#sheet").innerHTML) renderObjs(); else if (!isEditing()) sheetLive();
       const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => setTxt(b, dur(E.boostLeft(S, b.dataset.boostleft))));
     }
   }

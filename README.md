@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.4 « L'album épinglé »
+
+L'Album des archimonstres s'épingle dans le menu, et l'album comme la fiche d'un monstre se mettent à jour tout seuls après chaque combat.
+
 ## 2.1.3 « Tout ouvrir »
 
 Coffres : « Tout ouvrir » les ouvre tous d'un coup (un seul écran de butin), et le mode Auto ouvre chaque coffre gagné tout seul.

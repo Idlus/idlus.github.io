@@ -1,6 +1,15 @@
 {
-  "version": "2.1.3",
+  "version": "2.1.4",
   "versions": [
+    {
+      "v": "2.1.4",
+      "name": "L'album épinglé",
+      "guide": "archis",
+      "items": [
+        "Album des archimonstres : bouton « ☆ Épingler » en haut de l'album, il rejoint tes épinglés du menu (et se trouve dans « Aller à une page »)",
+        "L'album et la fiche d'un monstre (Encyclopédie) se mettent à jour tout seuls après chaque combat : plus besoin de les fermer et de les rouvrir"
+      ]
+    },
     {
       "v": "2.1.3",
       "name": "Tout ouvrir",
