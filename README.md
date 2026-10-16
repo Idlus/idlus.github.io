@@ -9,6 +9,42 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.12 « La Maîtrise au classement »
+
+Classement des niveaux : chaque point de Maîtrise compte un niveau, au total de l'équipe comme au classement par classe.
+
+## 2.1.11 « Économie de batterie »
+
+Options › Affichage : case « Économie de batterie » qui coupe animations, fond animé, effets de combat et chiffres de dégâts qui volent (environ 5 fois moins de travail pour l'appareil en combat, mesuré PC et téléphone).
+
+## 2.1.10 « Où trouver l'offrande »
+
+Almanax : « Où la trouver » sous l'offrande montre qui lâche la ressource (zone, chance) et « Y aller » lance la chasse.
+
+## 2.1.9 « Équipement verrouillé »
+
+Un emplacement d'équipement se verrouille (cadenas) : « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus.
+
+## 2.1.8 « Copier le setup »
+
+Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques, sorts et stratégies, Maîtrise (même classe) et équipement pris dans le sac, jamais dupliqué.
+
+## 2.1.7 « Raccourcis de l'Ascension »
+
+L'Ascension sur PC : 1 à 9 lancent les sorts et prennent les choix des paliers, Entrée ou Espace finit le tour ou lance l'étage, Échap passe, ← → changent de cible.
+
+## 2.1.6 « Tous les points d'un coup »
+
+Maîtrise : un bouton place tous les points libres sur les meilleurs bonus, sans prendre de clé de voûte.
+
+## 2.1.5 « Donjons finis masqués »
+
+Donjons : filtre « Masquer stasis 15 » qui cache les donjons déjà finis en stasis 15 (choix gardé, nombre masqué indiqué).
+
+## 2.1.4 « L'album épinglé »
+
+L'Album des archimonstres s'épingle dans le menu, et l'album comme la fiche d'un monstre se mettent à jour tout seuls après chaque combat.
+
 ## 2.1.3 « Tout ouvrir »
 
 Coffres : « Tout ouvrir » les ouvre tous d'un coup (un seul écran de butin), et le mode Auto ouvre chaque coffre gagné tout seul.

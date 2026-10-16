@@ -3097,6 +3097,9 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .alx-bon .v{font-size:17px;font-weight:800;color:var(--ink)}
 .alx-pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(231,196,106,.18);color:var(--kama);border:1px solid rgba(231,196,106,.4);margin-left:6px;vertical-align:2px}
 .alx-off{display:flex;gap:4px 10px;align-items:center;flex-wrap:wrap}
+.alx-src{flex-basis:100%;margin-top:4px}
+.alx-src .list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.alx-src .monli .btn{white-space:nowrap}
 .alx-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .alx-d{border:1px solid var(--frame);border-radius:10px;padding:8px 8px 9px;background:var(--panel2);display:flex;flex-direction:column;gap:3px;min-width:0}
 .alx-d .dt{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -5793,3 +5796,16 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 /* 2.1.3 « Tout ouvrir » : ligne des coffres (Inventaire › Consommables) */
 .li.chestall{flex-wrap:wrap;gap:8px;border:1px solid var(--gold);border-radius:12px}
 .li.chestall .grow{min-width:180px}
+.archisheet .sh-star.on,.archisheet .sh-star:hover{color:var(--gold)}
+/* 2.1.8 « Copier le setup » */
+.setupbar{display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 12px;border:2px dashed var(--gold);border-radius:12px;background:var(--panel2)}
+.setupbar .uico{width:16px;height:16px;vertical-align:-3px}
+.setupck{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:var(--panel2);cursor:pointer}
+.setupck input{margin-top:3px;width:18px;height:18px;flex:none}
+.setupck>span{display:flex;flex-direction:column;gap:2px}
+.setupck.off{opacity:.55;cursor:default}
+.setupit{width:30px;height:30px;border-radius:6px;background:var(--panel3)}
+.setupit.miss{filter:grayscale(1);opacity:.45;outline:2px dashed var(--bad,#c55);outline-offset:-2px}
+/* 2.1.9 : emplacement verrouillé (Équiper au mieux n'y touche pas) */
+.dslot .eqlk{position:absolute;left:-6px;top:-7px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#1b1b1b;display:grid;place-items:center;z-index:2;box-shadow:0 0 0 2px var(--panel)}
+.dslot .eqlk svg{width:11px;height:11px}

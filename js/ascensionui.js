@@ -38,6 +38,9 @@
   const monName = (key) => (D.MONSTERS[key] ? D.MONSTERS[key].name : "?");
   const ruleTag = (r) => { const R = E.ASC_RULES[r]; return R ? `<span class="tag soft as-rule" data-tip="${h(R.d)}">${R.ic} ${h(R.name)}</span>` : ""; };
   const echoTxt = (cls) => (E.ASC_ECHO[cls] ? E.ASC_ECHO[cls].d : "");
+  /* 2.1.4 (Mathis) : raccourcis clavier de l'Ascension, la touche s'affiche en petit sur le bouton (PC seulement) */
+  const K = (n) => `<kbd class="as-k">${n}</kbd>`; const KI = (t) => ` <kbd class="as-k in">${t}</kbd>`;
+  const GO = `data-ak="go"`; const NO = `data-ak="no"`;
   const card = (title, body, extra = "") => `<section class="panel ${extra}"><div class="phead"><h2>${title}</h2></div><div class="pad stack">${body}</div></section>`;
   const fiolesN = () => E.ascFioles(S());
   /* 1.2.x : les reliques */
@@ -77,56 +80,57 @@
   }
 
   /* ---------- les choix en attente ---------- */
-  function slotsPick(R, act) { // 1.1.0.1 : un glyphe se pose aussi sur le sort signature, jamais sur une âme
-    return `<div class="as-slots">${R.spells.map((sp, i) => { if (act === "as-glyph" ? sp.soul : sp.sig) return ""; const x = sp.soul ? null : E.ascSpell(sp.k);
-      return `<button class="as-slot ${st.rep === i ? "on" : ""}" data-act="${act}" data-i="${i}">${sp.soul ? `<img class="as-soulimg" src="${monImg(sp.k.slice(5))}" alt="">` : spIco(x)}<small>${h(sp.soul ? "Âme : " + monName(sp.k.slice(5)) : x ? x.name : "?")}</small></button>`; }).join("")}</div>`;
+  function slotsPick(R, act, keyed) { // 1.1.0.1 : un glyphe se pose aussi sur le sort signature, jamais sur une âme
+    let n = 0;
+    return `<div class="as-slots">${R.spells.map((sp, i) => { if (act === "as-glyph" ? sp.soul : sp.sig) return ""; const x = sp.soul ? null : E.ascSpell(sp.k); const kk = keyed && n < 9 ? ++n : 0;
+      return `<button class="as-slot ${st.rep === i ? "on" : ""}" data-act="${act}" data-i="${i}"${kk ? ` data-ak="${kk}"` : ""}>${kk ? K(kk) : ""}${sp.soul ? `<img class="as-soulimg" src="${monImg(sp.k.slice(5))}" alt="">` : spIco(x)}<small>${h(sp.soul ? "Âme : " + monName(sp.k.slice(5)) : x ? x.name : "?")}</small></button>`; }).join("")}</div>`;
   }
   function pendHtml(s) {
     const Q = E.ascState(s); const R = Q.run; const P = R.pend; if (!P) return "";
     const auto = Q.auto ? `<span class="tag soft">Auto : choix fait dans ${Math.max(0, Math.ceil((P.at + 4000 - E.now()) / 1000))} s</span>` : "";
-    const full = R.spells.length >= A.spellMax;
+    const full = R.spells.length >= A.spellMax; const slotK = full && st.rep < 0; // barre pleine : les chiffres choisissent d'abord le sort à remplacer
     if (P.t === "start") {
       const cards = P.opts.map((k, i) => { const x = E.ascSpell(k); const on = st.sel.includes(i);
-        return `<button class="as-opt ${on ? "on" : ""}" data-act="as-sel" data-i="${i}" data-tip="${h(spTip(x))}">${spIco(x)}<span class="grow"><b>${h(x ? x.name : k)}</b><span class="xs muted">${h((CL()[x && x.cls] || {}).name || "")} · ${h(KIND[x && x.kind] || "")}</span><span class="xs">${h(spLine(x))}</span></span>${on ? "<i class=\"as-ck\">✓</i>" : ""}</button>`; }).join("");
+        return `<button class="as-opt ${on ? "on" : ""}" data-act="as-sel" data-i="${i}" data-ak="${i + 1}" data-tip="${h(spTip(x))}">${K(i + 1)}${spIco(x)}<span class="grow"><b>${h(x ? x.name : k)}</b><span class="xs muted">${h((CL()[x && x.cls] || {}).name || "")} · ${h(KIND[x && x.kind] || "")}</span><span class="xs">${h(spLine(x))}</span></span>${on ? "<i class=\"as-ck\">✓</i>" : ""}</button>`; }).join("");
       return card("Tes 3 sorts de départ", `<p class="note">Garde 3 sorts parmi ces 6, tirés dans les sorts de niveau 1 des classes de ta pioche.</p><div class="as-g3">${cards}</div>
-        <div class="row between"><span class="tag">${st.sel.length} / ${A.keep} choisis</span>${auto}<button class="btn primary" data-act="as-go" ${st.sel.length === A.keep ? "" : "disabled"}>Entrer dans la tour</button></div>`, "as-choice");
+        <div class="row between"><span class="tag">${st.sel.length} / ${A.keep} choisis</span>${auto}<button class="btn primary" data-act="as-go" ${GO} ${st.sel.length === A.keep ? "" : "disabled"}>Entrer dans la tour${KI("Entrée")}</button></div>`, "as-choice");
     }
     if (P.t === "pick") {
-      const cards = P.opts.map((k, i) => { if (k.startsWith("soul:")) { const b = k.slice(5); return `<button class="as-opt soul" data-act="as-pick" data-i="${i}"><img class="as-soulimg" src="${monImg(b)}" alt=""><span class="grow"><b>Âme : ${h(monName(b))}</b><span class="xs muted">Invocation 3 tours, 50 % de puissance, relance ${A.souls.cd}</span></span></button>`; }
+      const cards = P.opts.map((k, i) => { if (k.startsWith("soul:")) { const b = k.slice(5); return `<button class="as-opt soul" data-act="as-pick" data-i="${i}"${slotK ? "" : ` data-ak="${i + 1}"`}>${slotK ? "" : K(i + 1)}<img class="as-soulimg" src="${monImg(b)}" alt=""><span class="grow"><b>Âme : ${h(monName(b))}</b><span class="xs muted">Invocation 3 tours, 50 % de puissance, relance ${A.souls.cd}</span></span></button>`; }
         const x = E.ascSpell(k); const own = R.spells.find((y) => y.k === k); const rar = x ? E.ascRarity(x, E.ascLvl(R.f)) : "c";
-        return `<button class="as-opt ${RAR_CLS[rar]}" data-act="as-pick" data-i="${i}" data-tip="${h(spTip(x))}">${spIco(x)}<span class="grow"><b>${h(x ? x.name : k)}</b><span class="xs muted">${h((CL()[x && x.cls] || {}).name || "")} · ${E.ASC_RAR[rar].name}</span><span class="xs">${own ? `Déjà dans ta barre : il passe niveau ${Math.min(A.spellLvMax, (own.lv || 1) + 1)}` : h(spLine(x))}</span></span></button>`; }).join("");
+        return `<button class="as-opt ${RAR_CLS[rar]}" data-act="as-pick" data-i="${i}"${slotK ? "" : ` data-ak="${i + 1}"`} data-tip="${h(spTip(x))}">${slotK ? "" : K(i + 1)}${spIco(x)}<span class="grow"><b>${h(x ? x.name : k)}</b><span class="xs muted">${h((CL()[x && x.cls] || {}).name || "")} · ${E.ASC_RAR[rar].name}</span><span class="xs">${own ? `Déjà dans ta barre : il passe niveau ${Math.min(A.spellLvMax, (own.lv || 1) + 1)}` : h(spLine(x))}</span></span></button>`; }).join("");
       return card(P.leg ? "Autel maudit : ton sort légendaire" : `Palier de l'étage ${R.f - 1} : un nouveau sort`, `<p class="note">Choisis 1 sort parmi ${P.opts.length}. Un sort que tu as déjà monte de niveau (3 au plus).${full ? " Ta barre est pleine : choisis d'abord le sort à remplacer." : ""}</p>
-        ${full ? slotsPick(R, "as-rep") : ""}<div class="as-g3">${cards}</div><div class="row between">${auto}<button class="btn sm" data-act="as-pass">Passer</button></div>`, "as-choice");
+        ${full ? slotsPick(R, "as-rep", slotK) : ""}<div class="as-g3">${cards}</div><div class="row between">${auto}<button class="btn sm" data-act="as-pass" ${NO}>Passer${KI("Échap")}</button></div>`, "as-choice");
     }
     if (P.t === "soul") {
       return card("Capture d'âme", `<div class="row"><img class="as-soulbig" src="${monImg(P.boss)}" alt=""><span class="grow stack" style="gap:4px"><b>Âme : ${h(monName(P.boss))}</b><span class="small">Un sort d'invocation : le boss se bat ${A.souls.turns} tours à ${Math.round(A.souls.pow * 100)} % de sa puissance, relance ${A.souls.cd}. Une âme à la fois, perdue à la fin de la montée. Le bestiaire, lui, la garde.</span></span></div>
-        ${full ? `<p class="note">Ta barre est pleine : choisis le sort à remplacer.</p>${slotsPick(R, "as-rep")}` : ""}<div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-pass">Laisser l'âme</button><button class="btn primary sm" data-act="as-soul">Capturer</button></span></div>`, "as-choice");
+        ${full ? `<p class="note">Ta barre est pleine : choisis le sort à remplacer.</p>${slotsPick(R, "as-rep", slotK)}` : ""}<div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-pass" ${NO}>Laisser l'âme${KI("Échap")}</button><button class="btn primary sm" data-act="as-soul" ${GO}>Capturer${KI("Entrée")}</button></span></div>`, "as-choice");
     }
     if (P.t === "glyph") {
       const G = E.ASC_GLYPHS[P.g];
-      return card(`Glyphe ${h(G.name)}`, `<p class="note">${h(G.d)}. À poser sur un sort (${E.relGlyphMax ? E.relGlyphMax(R) : 2} glyphes au plus par sort), perdu à la fin de la montée.</p>${slotsPick(R, "as-glyph")}<div class="row between">${auto}<button class="btn sm" data-act="as-pass">Garder pour rien</button></div>`, "as-choice");
+      return card(`Glyphe ${h(G.name)}`, `<p class="note">${h(G.d)}. À poser sur un sort (${E.relGlyphMax ? E.relGlyphMax(R) : 2} glyphes au plus par sort), perdu à la fin de la montée.</p>${slotsPick(R, "as-glyph", true)}<div class="row between">${auto}<button class="btn sm" data-act="as-pass" ${NO}>Garder pour rien${KI("Échap")}</button></div>`, "as-choice");
     }
     if (P.t === "relic") { // 1.2.x
       const cards = P.opts.map((id, i) => { const x = E.relById(id); if (!x) return ""; const old = E.relSlotOf(R, x.slot);
-        return relCard(x, old ? `<span class="xs muted">Remplace : ${h(old.n)}</span>` : "", `data-act="as-relic" data-i="${i}"`); }).join("");
+        return relCard(x, old ? `<span class="xs muted">Remplace : ${h(old.n)}</span>` : "", `data-act="as-relic" data-i="${i}" data-ak="${i + 1}"`).replace(">", `>${K(i + 1)}`); }).join("");
       return card(P.start ? `L'Au-delà : relique de départ ${Math.max(1, A.relStart - (R.relExtra || 0))} / ${A.relStart}` : `Palier de l'étage ${R.f - 1} : une relique`, `<p class="note">${P.start ? "Tu entres dans l'Au-delà équipé : " : ""}Choisis 1 relique parmi ${P.opts.length} : elle s'équipe pour cette montée et disparaît à la fin, comme les sorts. Une par emplacement (Arme, Coiffe, Cape, Anneau, Amulette, Bottes) : une nouvelle Arme remplace l'Arme portée. La rareté monte avec l'étage.</p><div class="as-g3">${cards}</div>
-        <div class="row between"><span class="tag">Reliques : ${E.relWorn(R).length} / ${A.relMax}</span>${auto}<span class="row">${P.rr ? `<button class="btn sm" data-act="as-rr">⟳ Relancer (Anneau du Destin)</button>` : ""}<button class="btn sm" data-act="as-pass">Passer</button></span></div>`, "as-choice");
+        <div class="row between"><span class="tag">Reliques : ${E.relWorn(R).length} / ${A.relMax}</span>${auto}<span class="row">${P.rr ? `<button class="btn sm" data-act="as-rr">⟳ Relancer (Anneau du Destin)</button>` : ""}<button class="btn sm" data-act="as-pass" ${NO}>Passer${KI("Échap")}</button></span></div>`, "as-choice");
     }
     if (P.t === "event") {
       const T = { prisoner: ["Un prisonnier", `${monName(P.mon)} est enchaîné ici. Libéré, il se bat à tes côtés.`, "Le libérer"], merc: ["Un mercenaire", `${monName(P.mon)} se bat pour toi contre ${P.price} Fragments de cette montée.`, `L'engager (${P.price} Fragments)`], tame: ["Un monstre à apprivoiser", `${monName(P.mon)} te suit si tu le nourris.`, "L'apprivoiser"] }[P.ev] || ["Événement", "", "Accepter"];
       return card(`Événement : ${T[0]}`, `<div class="row"><img class="as-soulbig" src="${monImg(P.mon)}" alt=""><span class="grow stack" style="gap:4px"><b>${h(monName(P.mon))}</b><span class="small">${h(T[1])} Une recrue se bat comme une invocation et garde ses PV d'un étage à l'autre. ${A.recruitsMax} recrues au plus, elles peuvent mourir.</span></span></div>
-        <div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-ev" data-v="1">Passer</button><button class="btn primary sm" data-act="as-ev" data-v="0" ${R.recruits.length >= A.recruitsMax || (P.ev === "merc" && R.frag < P.price) ? "disabled" : ""}>${h(T[2])}</button></span></div>`, "as-choice");
+        <div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-ev" data-v="1" ${NO}>Passer${KI("Échap")}</button><button class="btn primary sm" data-act="as-ev" data-v="0" ${GO} ${R.recruits.length >= A.recruitsMax || (P.ev === "merc" && R.frag < P.price) ? "disabled" : ""}>${h(T[2])}${KI("Entrée")}</button></span></div>`, "as-choice");
     }
     if (P.t === "shop") {
       const rel = (P.rel || []).map((id, i) => { const x = E.relById(id); if (!x) return ""; const price = E.relPrice(R, E.REL_RAR[x.r].price); // 1.2.x : les reliques du marchand
-        return `<div class="as-offer rel rel-${x.r} ${RAR_CLS[x.r]}" data-tip="${h(relTip(x))}"><div class="row">${relIco(x)}<span class="grow stack" style="gap:0"><b>${h(x.n)}</b><span class="xs muted">${E.REL_SLOT_NAME[x.slot]} · ${E.REL_RAR[x.r].name}</span></span></div><span class="xs grow">${x.st ? h(E.relStatTxt(x)) : ""}${x.d ? `${x.st ? "<br>" : ""}<span class="as-relfx">★ ${h(x.d)}</span>` : ""}</span><button class="btn sm" data-act="as-shop" data-i="${100 + i}" ${R.frag >= price ? "" : "disabled"}>${price} Fragments</button></div>`; }).join("");
-      return card("Marchand", `<p class="note">Paie avec les Fragments gagnés pendant cette montée (<b>${fmt(R.frag)}</b>).${rel ? " Le marchand propose aussi des reliques, de la rareté de l'étage." : ""}</p><div class="as-g2">${E.ASC_SHOP.map((o, i) => { const price = E.ascShopPrice(R, o); return `<div class="as-offer"><b>${h(o.name)}</b><span class="xs muted grow">${h(o.d)}</span><button class="btn sm" data-act="as-shop" data-i="${i}" ${R.frag >= price && !(o.id === "sursis" && R.boughtSursis) ? "" : "disabled"}>${price} Fragments</button></div>`; }).join("")}${rel}</div>
-        <div class="row between">${auto}<button class="btn primary sm" data-act="as-pass">Continuer la montée</button></div>`, "as-choice");
+        return `<div class="as-offer rel rel-${x.r} ${RAR_CLS[x.r]}" data-tip="${h(relTip(x))}"><div class="row">${relIco(x)}<span class="grow stack" style="gap:0"><b>${h(x.n)}</b><span class="xs muted">${E.REL_SLOT_NAME[x.slot]} · ${E.REL_RAR[x.r].name}</span></span></div><span class="xs grow">${x.st ? h(E.relStatTxt(x)) : ""}${x.d ? `${x.st ? "<br>" : ""}<span class="as-relfx">★ ${h(x.d)}</span>` : ""}</span><button class="btn sm" data-act="as-shop" data-i="${100 + i}" data-ak="${E.ASC_SHOP.length + i + 1}" ${R.frag >= price ? "" : "disabled"}>${price} Fragments${E.ASC_SHOP.length + i < 9 ? KI(E.ASC_SHOP.length + i + 1) : ""}</button></div>`; }).join("");
+      return card("Marchand", `<p class="note">Paie avec les Fragments gagnés pendant cette montée (<b>${fmt(R.frag)}</b>).${rel ? " Le marchand propose aussi des reliques, de la rareté de l'étage." : ""}</p><div class="as-g2">${E.ASC_SHOP.map((o, i) => { const price = E.ascShopPrice(R, o); return `<div class="as-offer"><b>${h(o.name)}</b><span class="xs muted grow">${h(o.d)}</span><button class="btn sm" data-act="as-shop" data-i="${i}" data-ak="${i + 1}" ${R.frag >= price && !(o.id === "sursis" && R.boughtSursis) ? "" : "disabled"}>${price} Fragments${i < 9 ? KI(i + 1) : ""}</button></div>`; }).join("")}${rel}</div>
+        <div class="row between">${auto}<button class="btn primary sm" data-act="as-pass" ${GO}>Continuer la montée${KI("Entrée")}</button></div>`, "as-choice");
     }
     if (P.t === "altar") {
       const x = P.leg && E.ascSpell(P.leg);
       return card("Autel maudit", `<p class="note">Un sort légendaire contre une malédiction : les ennemis ont +20 % de PV pendant 10 étages.</p>${x ? `<div class="as-opt rar-l">${spIco(x)}<span class="grow"><b>${h(x.name)}</b><span class="xs muted">${h((CL()[x.cls] || {}).name || "")} · Légendaire</span><span class="xs">${h(spLine(x))}</span></span></div>` : ""}
-        <div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-altar" data-v="0">Refuser</button><button class="btn danger sm" data-act="as-altar" data-v="1">Accepter la malédiction</button></span></div>`, "as-choice");
+        <div class="row between">${auto}<span class="row"><button class="btn sm" data-act="as-altar" data-v="0" ${NO}>Refuser${KI("Échap")}</button><button class="btn danger sm" data-act="as-altar" data-v="1" ${GO}>Accepter la malédiction${KI("Entrée")}</button></span></div>`, "as-choice");
     }
     return "";
   }
@@ -215,13 +219,14 @@
   function barHtml(W, aw) {
     const Q = E.ascState(S()); if (Q.auto) return "";
     if (!aw) return W.S2.manualLive ? `<div class="as-bar wait"><span class="xs muted">Les ennemis jouent…</span><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></div>` : `<div class="as-bar wait"><span class="xs muted">Ce combat se joue en auto.</span><button class="btn sm" data-act="as-fman">Reprendre la main</button></div>`;
-    const sp = W.defs.map((d, i) => { if (!d) return ""; const g = E.spellGrade(d, E.ascLvl(W.f)); const ok = E.ascCanCast(W, i); const x = E.ascSpell(d.id);
+    let nk = 0;
+    const sp = W.defs.map((d, i) => { if (!d) return ""; const kk = nk < 9 ? ++nk : 0; const g = E.spellGrade(d, E.ascLvl(W.f)); const ok = E.ascCanCast(W, i); const x = E.ascSpell(d.id);
       const f = g.fx.find((y) => y.min !== undefined);
-      return `<button class="as-cast" data-act="as-cast" data-i="${i}" ${ok ? "" : "disabled"} data-tip="${h(`${d.name} : ${g.pa} PA${f ? `, ${f.min}-${f.max}` : ""}${g.cd ? `, relance ${g.cd}` : ""}${offensive(d) ? " (sur la cible choisie)" : ""}`)}">${spIco(x || d)}<small>${h(d.name)}</small><span class="as-pa">${g.pa}</span></button>`; }).join("");
+      return `<button class="as-cast" data-act="as-cast" data-i="${i}"${kk ? ` data-ak="${kk}"` : ""} ${ok ? "" : "disabled"} data-tip="${h(`${d.name} : ${g.pa} PA${f ? `, ${f.min}-${f.max}` : ""}${g.cd ? `, relance ${g.cd}` : ""}${offensive(d) ? " (sur la cible choisie)" : ""}${kk ? ` (touche ${kk})` : ""}`)}">${kk ? K(kk) : ""}${spIco(x || d)}<small>${h(d.name)}</small><span class="as-pa">${g.pa}</span></button>`; }).join("");
     const me = W.F.ents[aw.ei]; const pa0 = Math.max(aw.pa, (me && me.st && me.st.pa) || aw.pa);
     const pips = Array.from({ length: Math.min(pa0, 14) }, (_, k) => `<i class="${k < aw.pa ? "" : "off"}"></i>`).join("");
     return `<div class="as-bar"><div class="as-pas" data-tip="Tes points d'action pour ce tour"><span class="as-pips">${pips}</span><b class="num">${aw.pa} PA</b></div><div class="as-casts">${sp}</div>
-      <div class="as-endb"><button class="btn primary as-end" data-act="as-endturn">Finir le tour</button><span class="row"><button class="btn sm" data-act="as-tauto">Ce tour en auto</button><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></span></div></div>`;
+      <div class="as-endb"><button class="btn primary as-end" data-act="as-endturn" ${GO}>Finir le tour${KI("Entrée")}</button><span class="row"><button class="btn sm" data-act="as-tauto">Ce tour en auto</button><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></span></div></div>`;
   }
   const arenaKey = (W) => { const A = E.ascAwait(W); return `${W.F.seq}|${W.F.round}|${A ? A.pa + ":" + A.n : "-"}|${st.tgt}|${W.S2.manualLive}`; };
 
@@ -316,7 +321,7 @@
     const btn = fight ? "⚔️ Lancer le combat" : "Entrer";
     return `<section class="panel as-ready"><div class="pad stack"><div class="row between"><div><b>Étage ${R.f}</b> · ${fl.t === "boss" ? "boss" : fl.t === "fight" ? `${fl.mobs.length} monstre${fl.mobs.length > 1 ? "s" : ""}` : "sans combat"}${cost ? ` · <span class="muted">${cost}</span>` : ""}</div></div>
       <div class="row as-ready-what">${what}</div>
-      <div class="row">${st.msg ? `<span class="small">${h(st.msg)}</span>` : ""}<button class="btn primary" data-act="as-next">${btn}</button></div></div></section>`;
+      <div class="row">${st.msg ? `<span class="small">${h(st.msg)}</span>` : ""}<button class="btn primary" data-act="as-next" ${GO}>${btn}${KI("Entrée")}</button></div></div></section>`;
   }
 
   /* ---------- la page ---------- */
@@ -451,6 +456,24 @@
       case "as-rk": st.rk.cat = d.v; paint(); rkLoad(true); return;
     }
   });
+  /* 2.1.4 (Mathis : « enchaîner rapidement et confortablement les étages ») : 1 à 9 = sorts du tour ou choix du palier
+     (touches du haut, avec ou sans Maj, et pavé numérique), Entrée ou Espace = bouton principal (finir le tour, lancer l'étage, valider),
+     Échap = passer ou refuser, ← → = changer de cible pendant ton tour. Jamais pendant une saisie (chat, recherche) ni fenêtre ouverte. */
+  window.addEventListener("keydown", (ev) => {
+    const s = S(); if (!s || UI().tab !== "asc" || (s.settings && s.settings.keysOff) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const a = document.activeElement; if (a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return;
+    const sh = $("#sheet"); if ((sh && sh.innerHTML) || $("#wsearch")) return;
+    const main = $("#main"); if (!main) return;
+    const kc = ev.key; const m = /^(?:Digit|Numpad)([1-9])$/.exec(ev.code || "");
+    if ((kc === "ArrowLeft" || kc === "ArrowRight") && !ev.shiftKey) {
+      const L = [...main.querySelectorAll('[data-act="as-tgt"]')]; if (L.length < 2) return;
+      const cur = L.findIndex((n) => n.classList.contains("aimed")); const nx = L[(cur + (kc === "ArrowRight" ? 1 : L.length - 1)) % L.length];
+      ev.preventDefault(); ev.stopPropagation(); nx.click(); return;
+    }
+    const k = m ? m[1] : /^[1-9]$/.test(kc) ? kc : kc === "Enter" || kc === " " ? "go" : kc === "Escape" ? "no" : null; if (!k) return;
+    const b = main.querySelector(`[data-ak="${k}"]`); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation(); if (ev.repeat || b.disabled) return; b.click();
+  }, true);
   document.addEventListener("change", (ev) => {
     const t = ev.target; if (!t || !t.dataset || !S()) return; const a = t.dataset.act;
     if (a === "as-prio") done(E.act(S(), "ascSetPrio", t.value));

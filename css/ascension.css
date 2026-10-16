@@ -192,3 +192,7 @@
 .as-reliq{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
 @media (prefers-reduced-motion:reduce){.rel-r .as-rel,.rel-l .as-rel,.rel-l::before,.rel-l::after{animation:none}}
 .reduced .rel-r .as-rel,.reduced .rel-l .as-rel,.reduced .rel-l::before,.reduced .rel-l::after{animation:none}
+/* 2.1.4 : raccourcis clavier de l'Ascension (touche en petit sur le bouton, PC seulement) */
+.as-k{position:absolute;top:-7px;left:4px;z-index:1;font:900 10px/1.35 inherit;font-family:inherit;background:rgba(0,0,0,.62);color:#fff;border:1px solid var(--gold);border-radius:5px;padding:0 5px;pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.as-k.in{position:static;display:inline-block;margin-left:6px;opacity:.7;font-size:9px;vertical-align:1px;box-shadow:none;background:transparent;color:inherit;border-color:currentColor}
+@media (hover:none),(max-width:899px){.as-k{display:none}}

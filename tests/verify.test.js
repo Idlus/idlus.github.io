@@ -29,3 +29,9 @@ console.log("ok - donjons de la semaine (un par tranche, les mêmes pour tous)")
 const sum = V.summary(E, S);
 assert.strictEqual(sum.level, 30); assert.strictEqual(sum.main, "iop"); assert.strictEqual(sum.panel, false);
 console.log("ok - résumé pour les classements");
+
+// 2.1.12 : chaque point de Maîtrise compte un niveau dans le classement (et mtl dit combien)
+const M = E.newState("Maitre", "iop"); M.chars[0].lvl = 200; M.chars[0].mt = { lvl: 140, bn: 10 };
+const sm = V.summary(E, M);
+assert.strictEqual(sm.level, 350); assert.strictEqual(sm.mtl, 150); assert.strictEqual(sm.heroes[0].mt, 150);
+console.log("ok - la Maîtrise compte dans le niveau du classement");

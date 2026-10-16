@@ -1,6 +1,91 @@
 {
-  "version": "2.1.3",
+  "version": "2.1.12",
   "versions": [
+    {
+      "v": "2.1.12",
+      "name": "La Maîtrise au classement",
+      "guide": "classement",
+      "items": [
+        "Classement des niveaux : chaque point de Maîtrise compte un niveau (un héros 200 avec 150 de Maîtrise compte 350)",
+        "Classement par classe : le niveau et la Maîtrise du meilleur héros (« niv. 200 · Maîtrise 150 ») ; la fiche d'un joueur montre la Maîtrise de chaque héros"
+      ]
+    },
+    {
+      "v": "2.1.11",
+      "name": "Économie de batterie",
+      "guide": "options",
+      "items": [
+        "Options › Affichage : nouvelle case « Économie de batterie ». Elle coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et l'écran se met à jour 4 fois par seconde au lieu de 8. Le jeu avance exactement pareil",
+        "Mesuré : en combat, l'appareil travaille environ 5 fois moins (PC 41 % → 7 %, téléphone 32 % → 5 %) ; au Havre-Sac, 4 fois moins",
+        "Tes réglages d'animations, d'ambiance et d'effets de décor sont gardés et reviennent quand tu coupes le mode. Le panneau Statistiques du combat se met alors à jour toutes les 5 secondes",
+        "Pour tout le monde : le numéro du tour et le nom de la stratégie de l'écran de combat ne sont plus réécrits 8 fois par seconde"
+      ]
+    },
+    {
+      "v": "2.1.10",
+      "name": "Où trouver l'offrande",
+      "guide": "quetes",
+      "items": [
+        "Almanax : sous l'offrande, « Où la trouver » montre les monstres qui lâchent la ressource demandée (zone, niveau, chance de butin), la zone ouverte la plus proche du niveau de ton équipe en premier",
+        "Bouton « Y aller » qui lance directement la chasse dans cette zone (ou ouvre le donjon), et « Récolter » si la ressource vient d'un métier"
+      ]
+    },
+    {
+      "v": "2.1.9",
+      "name": "Équipement verrouillé",
+      "guide": "equipement",
+      "items": [
+        "Héros › Équipement : cliquez un emplacement puis « Verrouiller » (cadenas) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus",
+        "Un petit cadenas doré marque les emplacements verrouillés ; retirer l'objet enlève le verrou"
+      ]
+    },
+    {
+      "v": "2.1.8",
+      "name": "Copier le setup",
+      "guide": "equipe",
+      "items": [
+        "Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques (ou leur mode auto), sorts, conditions et stratégies, arbre de Maîtrise et équipement",
+        "Sorts et Maîtrise se copient entre héros de la même classe ; les caractéristiques et l'équipement, entre toutes les classes",
+        "L'équipement n'est jamais dupliqué : le héros prend dans le sac une copie libre du même objet (la meilleure), sans rien retirer aux autres héros ; ce qui manque est grisé"
+      ]
+    },
+    {
+      "v": "2.1.7",
+      "name": "Raccourcis de l'Ascension",
+      "guide": "asc",
+      "items": [
+        "L'Ascension sur PC : les touches 1 à 9 lancent tes sorts pendant ton tour (le numéro s'affiche en petit sur chaque sort) et prennent les choix des paliers (sorts, reliques, marchand)",
+        "Entrée ou Espace finit le tour, lance l'étage suivant ou valide ; Échap passe ou refuse ; ← → changent de cible",
+        "Barre pleine : le premier chiffre choisit le sort à remplacer, le second le nouveau sort. Rien ne se déclenche quand tu écris dans le chat"
+      ]
+    },
+    {
+      "v": "2.1.6",
+      "name": "Tous les points d'un coup",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : nouveau bouton « Placer les N points » sous les points à placer. Il pose d'un coup tous les points libres du héros sur les meilleurs bonus, sans jamais prendre de clé de voûte (elles restent ton choix)",
+        "« Annuler » rend tous les points placés par le bouton en une fois"
+      ]
+    },
+    {
+      "v": "2.1.5",
+      "name": "Donjons finis masqués",
+      "guide": "donjons",
+      "items": [
+        "Donjons : nouveau filtre « Masquer stasis 15 » qui cache les donjons déjà terminés en stasis 15 ; le choix reste gardé et le nombre de donjons masqués est indiqué",
+        "En-tête des donjons : nombre de donjons faits en stasis 15"
+      ]
+    },
+    {
+      "v": "2.1.4",
+      "name": "L'album épinglé",
+      "guide": "archis",
+      "items": [
+        "Album des archimonstres : bouton « ☆ Épingler » en haut de l'album, il rejoint tes épinglés du menu (et se trouve dans « Aller à une page »)",
+        "L'album et la fiche d'un monstre (Encyclopédie) se mettent à jour tout seuls après chaque combat : plus besoin de les fermer et de les rouvrir"
+      ]
+    },
     {
       "v": "2.1.3",
       "name": "Tout ouvrir",

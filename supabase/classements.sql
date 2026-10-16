@@ -38,6 +38,8 @@ alter table public.ladder add column if not exists jobs_w int not null default 0
 alter table public.ladder add column if not exists jobs_base jsonb not null default '{}'::jsonb;
 alter table public.ladder add column if not exists jobs_prev jsonb not null default '{}'::jsonb;
 alter table public.ladder add column if not exists jobs_pw int not null default 0;
+-- 2.1.12 : points de Maîtrise comptés dans level (un point = un niveau) ; au premier envoi qui les compte, ils ne passent pas pour une montée suspecte
+alter table public.ladder add column if not exists mtl int not null default 0;
 -- 1.0.19 « Métiers comme dans DOFUS » : 1 quand la partie envoyée a ses métiers d'objets au niveau des objets (niveaux convertis)
 alter table public.ladder add column if not exists jobs_cobj int not null default 0;
 -- 1.0.32.11 « Vérifié par Mathis » : un joueur que Mathis remet dans les classements n'est plus remis « en vérification »
@@ -206,7 +208,7 @@ as $$
 declare
   m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
   jb jsonb := '{}'::jsonb; jn text; jl int; jr int; jx bigint; jtt bigint; jg text; jsum jsonb := '{}'::jsonb; wnow int; jbase jsonb; jprev jsonb := '{}'::jsonb; jpw int := 0; bt bigint; jgain bigint; jv jsonb; hadrow boolean;
-  cobj int; conv boolean := false; stale boolean := false; hide boolean := false;
+  cobj int; mtv int; conv boolean := false; stale boolean := false; hide boolean := false;
   jnames constant jsonb := '{"tailleur":"Tailleur","bijoutier":"Bijoutier","cordonnier":"Cordonnier","forgeron":"Forgeron","sculpteur":"Sculpteur","faconneur":"Façonneur","bricoleur":"Bricoleur"}';
   -- 1.0.9 : tous les métiers classés et leur groupe (le total du groupe : tous, tous_recolte, tous_fm)
   jgroup constant jsonb := '{"tailleur":"tous","bijoutier":"tous","cordonnier":"tous","forgeron":"tous","sculpteur":"tous","faconneur":"tous","bricoleur":"tous",
@@ -218,6 +220,7 @@ begin
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
   rc := coalesce((m->>'rec')::int, 0); ps := least(greatest(coalesce((m->>'pts')::int, 0), 0), 50000);
   qs := least(greatest(coalesce((m->>'qstep')::int, 0), 0), 500);
+  mtv := least(greatest(coalesce((m->>'mtl')::int, 0), 0), lv);
   select * into o from public.ladder where user_id = new.user_id;
   hadrow := found; -- (found change à chaque requête : on garde ici si le compte était déjà classé)
   -- 1.0.19 « Métiers comme dans DOFUS » : conv = premier envoi d'une partie aux métiers convertis (le saut de niveau ne compte ni dans
@@ -272,7 +275,7 @@ begin
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
     -- 1.0.25.9 « Vérification plus juste » : 120 niveaux + 15 par minute (avant 60 + 1 par minute : des recrues montées au Sablier
     -- pendant une coupure de connexion de 2 min dépassaient la limite ; une partie retouchée saute toujours de centaines de niveaux)
-    if lv - o.level - greatest(0, rc - o.rec) > 120 + secs / 4 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
+    if lv - o.level - greatest(0, rc - o.rec) - case when o.mtl = 0 then mtv else 0 end > 120 + secs / 4 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
@@ -291,12 +294,12 @@ begin
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
   if hadrow and o.verified then reason := null; end if; -- 1.0.32.11 : vérifié par Mathis, il reste dans les classements
   hide := reason is not null and coalesce((m->>'panel')::boolean, false) and exists (select 1 from public.admins a where a.user_id = new.user_id); -- 1.0.32.13
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, suspect, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw, jobs_cobj)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, suspect, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw, jobs_cobj, mtl)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), hide, reason is not null and not hide, reason, now(),
       coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb,
-      case when jb = '{}'::jsonb then 0 else wnow end, case when jb = '{}'::jsonb then '{}'::jsonb else jbase end, jprev, jpw, cobj)
+      case when jb = '{}'::jsonb then 0 else wnow end, case when jb = '{}'::jsonb then '{}'::jsonb else jbase end, jprev, jpw, cobj, mtv)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
-      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts,
+      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts, mtl = excluded.mtl,
       jobs = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs else excluded.jobs end,
       jobs_w = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_w else excluded.jobs_w end,
       jobs_base = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_base else excluded.jobs_base end,
@@ -308,7 +311,7 @@ begin
   select flagged or suspect into bad from public.ladder where user_id = new.user_id; -- 1.0.32.13 : pas de « Premier » tant que Mathis n'a pas regardé
   delete from public.ladder_class where user_id = new.user_id;
   insert into public.ladder_class (user_id, cls, score)
-    select new.user_id, x->>'cls', max(coalesce((x->>'lvl')::int, 0) + 200 * coalesce((x->>'ren')::int, 0))
+    select new.user_id, x->>'cls', max(coalesce((x->>'lvl')::int, 0) + 200 * coalesce((x->>'ren')::int, 0) + least(greatest(coalesce((x->>'mt')::int, 0), 0), 100000)) -- 2.1.12 : + Maîtrise
     from jsonb_array_elements(coalesce(m->'heroes', '[]'::jsonb)) x where x->>'cls' is not null group by x->>'cls';
   if not bad and coalesce((m->>'lvl200')::boolean, false) then
     insert into public.firsts (kind, key, label, user_id, pseudo)

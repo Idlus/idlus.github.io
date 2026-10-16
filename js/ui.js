@@ -21,9 +21,49 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.3";
+const GAME_VERSION = "2.1.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.12", name: "La Maîtrise au classement", guide: "classement", items: [
+    "Classement des niveaux : chaque point de Maîtrise compte un niveau (un héros 200 avec 150 de Maîtrise compte 350)",
+    "Classement par classe : le niveau et la Maîtrise du meilleur héros (« niv. 200 · Maîtrise 150 ») ; la fiche d'un joueur montre la Maîtrise de chaque héros"
+  ] },
+  { v: "2.1.11", name: "Économie de batterie", guide: "options", items: [
+    "Options › Affichage : nouvelle case « Économie de batterie ». Elle coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et l'écran se met à jour 4 fois par seconde au lieu de 8. Le jeu avance exactement pareil",
+    "Mesuré : en combat, l'appareil travaille environ 5 fois moins (PC 41 % → 7 %, téléphone 32 % → 5 %) ; au Havre-Sac, 4 fois moins",
+    "Tes réglages d'animations, d'ambiance et d'effets de décor sont gardés et reviennent quand tu coupes le mode. Le panneau Statistiques du combat se met alors à jour toutes les 5 secondes",
+    "Pour tout le monde : le numéro du tour et le nom de la stratégie de l'écran de combat ne sont plus réécrits 8 fois par seconde"
+  ] },
+  { v: "2.1.10", name: "Où trouver l'offrande", guide: "quetes", items: [
+    "Almanax : sous l'offrande, « Où la trouver » montre les monstres qui lâchent la ressource demandée (zone, niveau, chance de butin), la zone ouverte la plus proche du niveau de ton équipe en premier",
+    "Bouton « Y aller » qui lance directement la chasse dans cette zone (ou ouvre le donjon), et « Récolter » si la ressource vient d'un métier"
+  ] },
+  { v: "2.1.9", name: "Équipement verrouillé", guide: "equipement", items: [
+    "Héros › Équipement : cliquez un emplacement puis « Verrouiller » (cadenas) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus",
+    "Un petit cadenas doré marque les emplacements verrouillés ; retirer l'objet enlève le verrou"
+  ] },
+  { v: "2.1.8", name: "Copier le setup", guide: "equipe", items: [
+    "Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques (ou leur mode auto), sorts, conditions et stratégies, arbre de Maîtrise et équipement",
+    "Sorts et Maîtrise se copient entre héros de la même classe ; les caractéristiques et l'équipement, entre toutes les classes",
+    "L'équipement n'est jamais dupliqué : le héros prend dans le sac une copie libre du même objet (la meilleure), sans rien retirer aux autres héros ; ce qui manque est grisé"
+  ] },
+  { v: "2.1.7", name: "Raccourcis de l'Ascension", guide: "asc", items: [
+    "L'Ascension sur PC : les touches 1 à 9 lancent tes sorts pendant ton tour (le numéro s'affiche en petit sur chaque sort) et prennent les choix des paliers (sorts, reliques, marchand)",
+    "Entrée ou Espace finit le tour, lance l'étage suivant ou valide ; Échap passe ou refuse ; ← → changent de cible",
+    "Barre pleine : le premier chiffre choisit le sort à remplacer, le second le nouveau sort. Rien ne se déclenche quand tu écris dans le chat",
+  ] },
+  { v: "2.1.6", name: "Tous les points d'un coup", guide: "maitrise", items: [
+    "Maîtrise : nouveau bouton « Placer les N points » sous les points à placer. Il pose d'un coup tous les points libres du héros sur les meilleurs bonus, sans jamais prendre de clé de voûte (elles restent ton choix)",
+    "« Annuler » rend tous les points placés par le bouton en une fois"
+  ] },
+  { v: "2.1.5", name: "Donjons finis masqués", guide: "donjons", items: [
+    "Donjons : nouveau filtre « Masquer stasis 15 » qui cache les donjons déjà terminés en stasis 15 ; le choix reste gardé et le nombre de donjons masqués est indiqué",
+    "En-tête des donjons : nombre de donjons faits en stasis 15"
+  ] },
+  { v: "2.1.4", name: "L'album épinglé", guide: "archis", items: [
+    "Album des archimonstres : bouton « ☆ Épingler » en haut de l'album, il rejoint tes épinglés du menu (et se trouve dans « Aller à une page »)",
+    "L'album et la fiche d'un monstre (Encyclopédie) se mettent à jour tout seuls après chaque combat : plus besoin de les fermer et de les rouvrir"
+  ] },
   { v: "2.1.3", name: "Tout ouvrir", guide: "inventaire", items: [
     "Coffres : bouton « Tout ouvrir » (Inventaire › Consommables et tuile de l'accueil) qui ouvre tous les coffres d'un coup, les plus précieux d'abord, avec un seul écran de butin",
     "Mode Auto : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal (Inventaire › Consommables, ligne Coffres)"
@@ -2039,6 +2079,7 @@ const GL = { spk: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.4"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/>',
+  paste: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>', // 2.1.8 : coller un setup
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>', // 1.0.3.3 : copier un message du chat
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>',
@@ -2317,18 +2358,21 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", admin: "Le panneau de Xener" };
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
+/* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
+const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
+const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
 const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
-const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
+const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
 const navFamPages = (F) => F.pages.filter((p) => navParent(p[0]) === p[0]);
 const navIsNew = (k) => E.now() < NAV_NEW.until && NAV_NEW.pages.includes(k);
 const navPins = () => { if (!S.settings.pins) S.settings.pins = NAV_PINS_DEF.slice(); return S.settings.pins.filter((k) => navPage(k)); };
 const navNorm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
+function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); Object.values(NAV_SHEETS).forEach(([p]) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); }); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -2352,7 +2396,7 @@ function navGo(k) {
   else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
   else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
-const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
+const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0][1] : k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
@@ -2411,7 +2455,8 @@ const dgDeco = (did) => DG_DECO[did] || "dungeon";
 /* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
 const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";
   return { forest: "rain", meadow: "flies", wheat: "flies", sky: "flies", beach: "sand", grave: "mist", quarry: "dust", lake: "flies", city: "", cave: "", mine: "", sewer: "", spirit: "" }[sb.deco] || ""; };
-const decoFx = () => S && S.settings.decofx !== false && !S.settings.reduced;
+const ecoOn = () => !!(S && S.settings.eco); // 2.1.11 « Économie de batterie » (Options › Affichage) : coupe animations, ambiance, effets et chiffres qui volent
+const decoFx = () => S && S.settings.decofx !== false && !S.settings.reduced && !ecoOn();
 const seeded = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return () => { x += 0x6D2B79F5; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 let svgId = 0;
 function sceneSVG(deco, H, seed, o = {}) {
@@ -3385,7 +3430,7 @@ function dungeonCard(did) {
         ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
 /* 1.0.8.7 : liste des donjons rangée par zone (groupes repliables), recherche et filtres gardés dans la partie */
-const DGF0 = { q: "", view: "zone", lv: "me", st: "all", sk: "all", key: false, dof: false, fav: false };
+const DGF0 = { q: "", view: "zone", lv: "me", st: "all", sk: "all", key: false, dof: false, fav: false, h15: false }; // 2.1.4 : h15 = masquer les donjons déjà faits en stasis 15
 function dgF() { const st = S.settings; if (!st.dgF || typeof st.dgF !== "object") st.dgF = Object.assign({}, DGF0); for (const k in DGF0) if (!(k in st.dgF)) st.dgF[k] = DGF0[k]; return st.dgF; }
 const DG_LV = [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]];
 const DG_SK = [["all", "Stasis : toutes"], ["none", "Jamais terminé"], ["low", "Stasis 1 à 4"], ["mid", "Stasis 5 à 9"], ["max", "Stasis 10"], ["todo", "Stasis 10 pas encore"]];
@@ -3402,15 +3447,16 @@ function dgMatch(did, F, nq) {
   if (F.sk === "none" && done) return false; if (F.sk === "low" && !(mx >= 1 && mx <= 4)) return false; if (F.sk === "mid" && !(mx >= 5 && mx <= 9)) return false;
   if (F.sk === "max" && mx < 10) return false; if (F.sk === "todo" && mx >= 10) return false;
   if (F.key && !(S.res[dg.key] > 0)) return false; if (F.dof && !dgDofusToWin(did)) return false; if (F.fav && !(S.dgFav || []).includes(did)) return false;
+  if (F.h15 && mx >= E.STASIS_MAX) return false; // 2.1.4 : donjons finis en stasis 15 masqués
   return true;
 }
-function dgFilterBar(F, nShown) {
+function dgFilterBar(F, nShown, nHid) {
   const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="dgf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
   const tog = (k, n, tip) => `<button class="dgtog" data-act="dgtog" data-k="${k}" aria-pressed="${!!F[k]}" data-tip="${h(tip)}">${F[k] ? "✓ " : ""}${n}</button>`;
   const chips = [];
   if (F.lv !== "me" && !F.q) chips.push(["lv", F.lv === "all" ? "Tous les niveaux" : "Niveau " + DG_LV.find((x) => x[0] === F.lv)[1]]);
   if (F.st !== "all") chips.push(["st", F.st === "open" ? "Accessibles" : "Fermés"]); if (F.sk !== "all") chips.push(["sk", DG_SK.find((x) => x[0] === F.sk)[1]]);
-  if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.q) chips.push(["q", `« ${F.q} »`]);
+  if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.h15) chips.push(["h15", `Sans les stasis ${E.STASIS_MAX}`]); if (F.q) chips.push(["q", `« ${F.q} »`]);
   const nf = chips.filter(([k]) => k !== "q").length; const open = !narrow() || (ui.fltOpen && ui.fltOpen.dg);
   return `<div class="dgsearch"><span class="dgq">${G("search")}<input type="search" id="dgq" data-act="dgq" placeholder="Donjon, boss ou zone…" autocomplete="off" spellcheck="false" value="${h(F.q)}"></span>
       ${narrow() ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
@@ -3418,8 +3464,8 @@ function dgFilterBar(F, nShown) {
       <div class="dgtrow"><span class="xs muted dglab">Niveau</span>${seg("lv", DG_LV)}</div>
       <div class="dgtrow"><span class="xs muted dglab">Afficher</span>${seg("st", [["all", "Tous"], ["open", "Accessibles"], ["closed", "Fermés"]])}
         <select class="small" data-act="dgsk">${DG_SK.map(([v, n]) => `<option value="${v}" ${F.sk === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-        ${tog("key", "Clé en stock", "Seulement les donjons dont vous avez déjà la clé")}${tog("dof", "Dofus à gagner", "Le boss peut lâcher un Dofus que vous n'avez pas encore")}${tog("fav", "Favoris", "Les donjons marqués d'une étoile")}</div></div>
-    <div class="row small dgchips" style="gap:6px;flex-wrap:wrap"><span class="muted">${nShown} donjon${nShown > 1 ? "s" : ""} affiché${nShown > 1 ? "s" : ""}${F.q ? " · recherche dans tous les niveaux" : F.lv === "me" ? ` · autour du niveau ${topTeamLvl()}` : ""}</span>
+        ${tog("key", "Clé en stock", "Seulement les donjons dont vous avez déjà la clé")}${tog("dof", "Dofus à gagner", "Le boss peut lâcher un Dofus que vous n'avez pas encore")}${tog("fav", "Favoris", "Les donjons marqués d'une étoile")}${tog("h15", `Masquer stasis ${E.STASIS_MAX}`, `Cache les donjons que vous avez déjà terminés en stasis ${E.STASIS_MAX}`)}</div></div>
+    <div class="row small dgchips" style="gap:6px;flex-wrap:wrap"><span class="muted">${nShown} donjon${nShown > 1 ? "s" : ""} affiché${nShown > 1 ? "s" : ""}${nHid ? ` · ${nHid} en stasis ${E.STASIS_MAX} masqué${nHid > 1 ? "s" : ""}` : ""}${F.q ? " · recherche dans tous les niveaux" : F.lv === "me" ? ` · autour du niveau ${topTeamLvl()}` : ""}</span>
       ${chips.map(([k, t]) => `<button class="pfchip" data-act="dgfclr" data-k="${k}">${h(t)} <b>✕</b></button>`).join("")}${chips.length ? `<button class="btn sm ghost" data-act="dgfclr" data-k="all">Tout effacer</button>` : ""}</div>`;
 }
 function dgGroup(z, ids, open, forced) {
@@ -3435,8 +3481,9 @@ function dungeonsHtml() {
   const all = Object.keys(DUNGEONS); const F = dgF(); const nq = E.searchNorm(F.q).split(" ").filter(Boolean);
   const list = all.filter((id) => dgMatch(id, F, nq)).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || (DUNGEONS[a].name < DUNGEONS[b].name ? -1 : 1));
   const done = all.filter((d) => S.progress.bossKills[d]).length; const s5 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 5).length; const s10 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 10).length;
+  const s15 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= E.STASIS_MAX).length; const nHid = F.h15 ? all.filter((d) => ((S.stasis || {})[d] || {}).max >= E.STASIS_MAX && dgMatch(d, Object.assign({}, F, { h15: false }), nq)).length : 0;
   let body;
-  if (!list.length) body = `<div class="empty">Aucun donjon avec ces filtres.${F.lv !== "all" && !F.q ? ` <button class="btn sm" data-act="dgf" data-k="lv" data-v="all">Voir tous les niveaux</button>` : ""}</div>`;
+  if (!list.length) body = `<div class="empty">Aucun donjon avec ces filtres.${nHid ? ` <button class="btn sm" data-act="dgtog" data-k="h15">Montrer les ${nHid} en stasis ${E.STASIS_MAX}</button>` : ""}${F.lv !== "all" && !F.q ? ` <button class="btn sm" data-act="dgf" data-k="lv" data-v="all">Voir tous les niveaux</button>` : ""}</div>`;
   else if (F.view === "lvl") body = `<div class="dggrid">${list.map(dungeonCard).join("")}</div>`;
   else {
     const groups = ZONES.map((z) => [z, list.filter((d) => dgZone(d) === z.id)]).filter(([, ids]) => ids.length);
@@ -3445,13 +3492,13 @@ function dungeonsHtml() {
     body = `${forced ? "" : `<div class="row dgfoldall" style="gap:6px;justify-content:flex-end"><button class="btn sm ghost" data-act="dgzall" data-v="1">Tout ouvrir</button><button class="btn sm ghost" data-act="dgzall" data-v="0">Tout replier</button></div>`}`
       + groups.map(([z, ids]) => dgGroup(z, ids, forced || (z.id in O ? !!O[z.id] : def(z)), forced)).join("");
   }
-  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10</span></div>
+  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10${s15 ? ` · ${s15} en stasis ${E.STASIS_MAX}` : ""}</span></div>
     <div class="pad stack" style="gap:10px">
       ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
-      ${dgFilterBar(F, list.length)}</div></section>
+      ${dgFilterBar(F, list.length, nHid)}</div></section>
     ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
 }
 function compSuggest(did) {
@@ -3737,7 +3784,7 @@ function encMonSheet(k) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const reveal = E.huntTier(S, k) >= 0;
   const els = Object.entries(m.res || {}).filter(([, v]) => v).map(([e, v]) => `<span class="tag soft" style="color:${elVar(e)}">${h(D.ELEMENTS[e] ? D.ELEMENTS[e].name : e)} ${v > 0 ? "+" : ""}${v} %</span>`).join(" ") || `<span class="muted xs">aucune</span>`;
   const drops = m.drops.map(([n, p]) => seen[n] || reveal ? `<button class="li dropli" data-act="reswhere" data-n="${h(n)}">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><b class="num">${reveal ? p + " %" : "?"}</b></button>` : `<div class="li dropli muted"><span class="icobox dq">?</span><span class="grow">Butin inconnu</span></div>`).join("");
-  return `<div class="encsheet"><div class="es-h">${im(imgM(k), "es-img", m.name)}<div class="grow"><h2>${kills ? h(m.name) : "???"}</h2><div class="small muted">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : m.lvl[0] + "–" + m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? " · " + h(D.RACES[m.race]) : ""}${m.boss ? " · boss" : ""} · ${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>${tierBadge(k)}</div></div>
+  return `<div class="encsheet" data-mk="${h(k)}"><div class="es-h">${im(imgM(k), "es-img", m.name)}<div class="grow"><h2>${kills ? h(m.name) : "???"}</h2><div class="small muted">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : m.lvl[0] + "–" + m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? " · " + h(D.RACES[m.race]) : ""}${m.boss ? " · boss" : ""} · ${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>${tierBadge(k)}</div></div>
     <h3 class="sec">Où le trouver</h3><div class="enccard es-where">${encWhereHtml(k) || `<span class="muted xs">Nulle part pour l'instant</span>`}</div>
     ${kills ? `<h3 class="sec">Résistances</h3><div class="row wrap">${els}</div>
     <h3 class="sec">Sorts</h3><div class="row wrap">${(m.sp || []).map((x) => `<span class="tag soft">${h(x.n)}</span>`).join(" ") || `<span class="muted xs">frappe simple</span>`}</div>` : `<p class="note">Rencontre-le une fois pour voir ses résistances et ses sorts.</p>`}
@@ -4054,7 +4101,7 @@ function archiPill(F) {
   const odds = Math.round(1 / E.archiOdds(S));
   return `<span class="pill archipill ${here ? "good" : ""}" data-act="archis" data-tip="Chance d'archimonstre : 1 sur ${odds} par monstre${left ? ` (Parfum de pistage encore ${dur(left)})` : ""}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme pour capturer les âmes.` : "Sans Pierre d'âme, l'âme d'un archimonstre vaincu s'échappe."}">${here ? "Archimonstre ! " : ""}🔮 ${st} pierre${st > 1 ? "s" : ""}${left ? ` · 🧴 ${dur(left)}` : ""}</span>`;
 }
-function archiSheet() {
+function archiSheetHtml() {
   const zones = E.ARCHI_ZONES; if (!ui.az || !zones.includes(ui.az)) ui.az = zones.find((z) => E.soulCount(S, z) < E.archisOf(z).length) || zones[0];
   const f = ui.azf || "all"; const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > E.now() ? Math.round((b.until - E.now()) / 1000) : 0;
   const tot = E.soulCount(S); const tier = E.ocreTier(S); const odds = Math.round(1 / E.archiOdds(S));
@@ -4065,7 +4112,8 @@ function archiSheet() {
     return `<div class="acard ${stt}">${im(imgM(a.k), "apic", a.name)}<div class="t"><b>${h(a.name)}</b><span class="w">niv. ${a.lvl[0]}–${a.lvl[1]} · ${h(E.SUBS[a.sub].name)}</span><span class="w">archimonstre de ${h(a.base)}</span><div class="st">${soul ? `<span class="s">💜 Âme capturée</span>` : n ? `<span class="k">vaincu ×${n}</span><span>pas de pierre</span>` : "<span>Jamais croisé</span>"}${soul && n > 1 ? `<span class="k">vaincu ×${n}</span>` : ""}</div></div></div>`; }).join("") || `<div class="empty">Rien à afficher avec ce filtre.</div>`;
   const ocre = E.OCRE_TIERS.map((T, i) => { const [d, all] = E.ocreProgress(S, i); const cls = i < tier ? "ok" : d ? "cur" : "";
     return `<div class="otier ${cls}"><b>Palier ${i + 1} · ${h(T.name)}</b><span class="bar"><i style="width:${pct(d, all)}%"></i></span><span class="num xs">${d} / ${all}</span><span class="r xs">${i < tier ? "✓ " : ""}${h(T.txt)}</span></div>`; }).join("");
-  openSheet(`<div class="row between"><h2>${IC("dofus")} Album des archimonstres</h2><button class="btn sm ghost" data-act="closesheet">Fermer</button></div>
+  const pinned = navPins().includes("archis");
+  return `<div class="archisheet"><div class="row between"><h2>${IC("dofus")} Album des archimonstres</h2><span class="row" style="gap:6px"><button class="btn sm ghost sh-star${pinned ? " on" : ""}" data-act="navpin" data-v="archis" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler l'album en haut du menu"}">${pinned ? "★ Épinglé" : "☆ Épingler"}</button><button class="btn sm ghost" data-act="closesheet">Fermer</button></span></div>
     <p class="small">Un archimonstre vaincu laisse son âme dans l'album si vous avez une <b>Pierre d'âme</b> en sac (automatique, une pierre par archimonstre). Les pierres se fabriquent chez le Bricoleur (niveau 25, 5 par recette), tombent au premier passage de chaque stasis, se vendent au Bureau des primes et récompensent les paliers d'<b>Éternelle moisson</b>.</p>
     <div class="row small" style="gap:8px;flex-wrap:wrap"><span class="pill">🔮 ${st} Pierre${st > 1 ? "s" : ""} d'âme</span><span class="pill">💜 ${tot} / ${E.ARCHI_TOTAL} âmes</span><span class="pill" data-tip="Chances de base 1 sur ${Math.round(1 / E.ARCHI_CHANCE)} par monstre. Ecaflip ×1,5, Bonbon Traqueur ×1,5, Parfum de pistage ×2 (Bricoleur 40, 2 h), meuble « Autel des âmes » ×1,4, palier Fléau ×2 sur le monstre.">🎯 1 chance sur ${odds}${left ? ` · 🧴 parfum ${dur(left)}` : ""}</span></div>
     <div class="ztabs">${tabs}</div>
@@ -4073,8 +4121,9 @@ function archiSheet() {
     <div class="agrid">${cards}</div>
     <h3 class="sec" style="margin-top:12px">Éternelle moisson · quête du Dofus Ocre</h3>
     <p class="xs muted">Capturez l'âme de tous les archimonstres, palier par palier. Chaque palier accompli donne sa récompense aussitôt ; le dernier offre le Dofus Ocre (+1 PA).</p>
-    <div class="stack" style="gap:6px">${ocre}</div>`);
+    <div class="stack" style="gap:6px">${ocre}</div></div>`;
 }
+function archiSheet() { openSheet(archiSheetHtml()); sheetLiveSig = sheetSig(); }
 function dofusHtml() {
   const own = E.dofusCount(S); const tier = E.ocreTier(S);
   const cards = E.DOFUS_ORDER.slice().sort((a, b) => E.DOFUS[a].lvl - E.DOFUS[b].lvl || (E.DOFUS[a].name < E.DOFUS[b].name ? -1 : 1)).map((id) => {
@@ -4100,12 +4149,13 @@ function chalBarHtml(F) {
   return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${F.defiRules ? `<span class="xs muted">${G("target")} Les héros suivent les règles du jour</span>` : tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
+  if (ecoOn()) return; // 2.1.11 : économie de batterie, plus de chiffres qui volent (les barres et les PV restent à jour)
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
   if (cls === "crit") s.innerHTML = `${h(txt)}<small>Critique !</small>`; else s.textContent = txt;
   node.appendChild(s); setTimeout(() => s.remove(), 1150);
 }
 function burst(node, el) {
-  if (S.settings.reduced) return;
+  if (S.settings.reduced || ecoOn()) return;
   const b = document.createElement("span"); b.className = "fxb " + el;
   const n = el === "t" ? 9 : 8;
   for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n + Math.random() * 0.6; const r = 26 + Math.random() * 22; const p = document.createElement("i");
@@ -4115,7 +4165,7 @@ function burst(node, el) {
 }
 function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
 /* ===================== Combat animé : sorts qui voyagent, patte de chaque classe, états visibles ===================== */
-const animLvl = () => (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
+const animLvl = () => ecoOn() ? "none" : (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
 const axOn = () => animLvl() !== "none";
 const axFull = () => animLvl() === "full";
 const axSpd = () => Math.min(1, Math.max(0.25, 1 / ((BETA ? testSpeed : 1) * sabNow()))); // 0.1.29 : les animations suivent aussi le Sablier de Xélor
@@ -5110,10 +5160,10 @@ function updateCombat(force) {
     A.nEnts = F.ents.length; placeEnts(F);
   }
   stickyCheck(); // 1.0.10.3 : en vue Compacte, l'arène grandit en cours de combat (invocations) : elle ne reste collée que si elle laisse de la place
-  const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
+  const ct = $("#ctour"); if (ct) setTxt(ct, F ? `Tour ${F.round}` : ""); // 2.1.11 : réécrit seulement quand le tour change
   if (window.CHAMPUI && !ui.watch) { const cb = $("#champban"); if (cb) { const v = window.CHAMPUI.banner(S, F); if (cb.dataset.k !== v) { cb.dataset.k = v; cb.innerHTML = v; } } // refonte du Champion : bandeau doré, panneau de la sous-zone
     const v = window.CHAMPUI.huntPanel(S); ["#champpanm", "#champpand"].forEach((id) => { const el = $(id); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; } }); }
-  const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
+  const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + (ecoOn() ? Math.floor(Date.now() / 5000) : F.seq) + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
   const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.25.1
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
@@ -5188,7 +5238,7 @@ function updateCombat(force) {
     if (F && ent) { const idx = F.ents.indexOf(ent); const casts = F.fx.filter((f) => f.k === "cast" && f.s === idx); const lastSeq = casts.length ? casts[casts.length - 1].seq : -1; casts.filter((f) => f.seq === lastSeq).forEach((f) => { const d = E.spellDef(c.cls, f.sp); if (d) used += E.spellGrade(d, c.lvl).pa; }); }
     const pips = $("#pips"); const ph = Array.from({ length: st.pa }, (_, i) => `<i class="${i < st.pa - used ? "" : "off"}"></i>`).join("");
     if (pips && pips.dataset.k !== ph) { pips.innerHTML = ph; pips.dataset.k = ph; }
-    const sn = $("#stratName"); if (sn) sn.textContent = c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique";
+    const sn = $("#stratName"); if (sn) setTxt(sn, c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique");
   }
 }
 /* ---------- 3.2.2 : « Pourquoi j'ai perdu ? » ---------- */
@@ -5546,6 +5596,8 @@ function heroesHtml() {
   const others = (() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return inT && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })();
   const strip = `<div class="tstrip"><button class="btn sm" data-act="teamlist">← Équipe</button>${S.chars.map((x) => `<button class="ts-h ${x.id === c.id ? "on" : ""} ${x.inTeam && !x.job ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-label="${h(x.name)}">${head(x)}${al.some((a) => a.c === x && a.k === "gear") ? `<i class="ts-g"></i>` : ""}${!x.autoStat && x.pts > 0 ? `<i class="ts-p num">${x.pts}</i>` : ""}</button>`).join("")}${S.chars.length < E.HERO_MAX ? `<button class="ts-h ts-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>`;
   const more = ui.heroMore ? `<div class="hmenu" role="menu">
+      <button data-act="setupcopy" data-id="${c.id}">${G("copy")} Copier le setup ${h(deNom(c.name))}</button>
+      ${ui.setupFrom && ui.setupFrom !== c.id && char(ui.setupFrom) ? `<button data-act="setupsheet" data-id="${c.id}">${G("paste")} Coller le setup ${h(deNom(char(ui.setupFrom).name))}</button>` : ""}
       <button data-act="buildsheet" data-id="${c.id}">${G("share")} ${window.BUILDS && window.ONLINE && window.ONLINE.enabled ? "Partager ou publier le build" : "Partager le build"}</button>
       ${window.BUILDS && window.BUILDS.changed(c) ? `<button data-act="bd-quickupd" data-id="${c.id}">${G("share")} Mettre à jour mon build publié</button>` : ""}
       ${c.lvl < E.MAX_LVL ? `<button data-act="pin" data-p="${h(JSON.stringify({ k: "lvl", cid: c.id, n: lvlGoal(c) }))}">${G("pin")} ${E.pinned(S, { k: "lvl", cid: c.id, n: lvlGoal(c) }) ? "Ne plus suivre" : "Suivre"} le niveau ${lvlGoal(c)}</button>` : ""}
@@ -5564,8 +5616,37 @@ function heroesHtml() {
       </div>
     <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
-  <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  ${setupBar(c)}<nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
+}
+/* 2.1.8 « Copier le setup » : ⋯ Plus › Copier le setup, puis sur un autre héros « Coller » (E.setupPlan / E.copySetup) */
+function setupBar(c) {
+  const a = ui.setupFrom && char(ui.setupFrom); if (!a) return "";
+  if (a.id === c.id) return `<div class="setupbar"><span class="grow small">${G("copy")} Setup ${h(deNom(a.name))} copié. Choisis un autre héros pour le coller.</span><button class="btn sm" data-act="setupclear">✕</button></div>`;
+  return `<div class="setupbar"><span class="grow small">${G("copy")} Setup ${h(deNom(a.name))} copié</span><button class="btn sm primary" data-act="setupsheet" data-id="${c.id}">Coller sur ${h(c.name)}</button><button class="btn sm" data-act="setupclear" aria-label="Oublier le setup copié">✕</button></div>`;
+}
+function setupSheet(cid) {
+  const a = char(ui.setupFrom), c = char(cid); if (!a || !c || a === c) return;
+  const P = E.setupPlan(S, a.id, c.id); if (!P) return; ui.setupTo = c.id;
+  const CA = CLASSES[a.cls].name;
+  const ck = (id, on, dis, title, sub) => `<label class="setupck ${dis ? "off" : ""}"><input type="checkbox" id="${id}" ${on && !dis ? "checked" : ""} ${dis ? "disabled" : ""}><span><b>${title}</b><span class="xs muted">${sub}</span></span></label>`;
+  const stTxt = a.autoStat ? `répartition automatique (${h(STATS[a.autoStat].name)} en priorité), recalculée au niveau ${c.lvl}` : `même répartition ${a.lvl !== c.lvl ? `ramenée au niveau ${c.lvl}` : ""}`;
+  const nP = (a.presets || []).filter(Boolean).length;
+  const spTxt = P.same ? `${a.spells.length} sorts dans la barre, avec leurs conditions et cibles${nP ? ` · ${nP} stratégie${nP > 1 ? "s" : ""} enregistrée${nP > 1 ? "s" : ""}` : ""}` : `seulement entre deux ${h(CA)}`;
+  const M = P.mt; const mtTxt = !P.same ? `seulement entre deux ${h(CA)}` : !M ? "les deux héros doivent être niveau 200" : `${M.n} étoile${M.n > 1 ? "s" : ""}${M.n < M.want ? ` sur ${M.want} (points de Maîtrise insuffisants)` : ""}${M.cost ? ` · coûte ${fmt(M.cost)} kamas (${M.rm} étoiles rendues)` : M.rm ? " · gratuit" : ""}`;
+  const got = P.eq.filter((e) => e.st === "ok" || e.st === "take").length, miss = P.eq.filter((e) => e.st === "miss" || e.st === "lvl");
+  const eqTxt = !P.eq.length ? `${h(a.name)} ne porte rien` : `${got} / ${P.eq.length} objets trouvés dans le sac${miss.length ? `, ${miss.length} manquant${miss.length > 1 ? "s" : ""}` : ""}`;
+  const icons = P.eq.map((e) => `<img src="${itemImg(e.tpl)}" alt="" class="setupit ${e.st === "miss" || e.st === "lvl" ? "miss" : ""}" data-tip="${h(ITEMS[e.tpl].name + (e.st === "miss" ? " : aucune copie libre dans le sac" : e.st === "lvl" ? ` : niveau ${ITEMS[e.tpl].lvl} requis` : e.st === "ok" ? " : déjà porté" : " : pris dans le sac"))}">`).join("");
+  openSheet(`<h2>Coller le setup ${h(deNom(a.name))} sur ${h(c.name)}</h2>
+    <div class="stack small" style="gap:8px">
+      ${ck("cpSt", true, false, "Caractéristiques", stTxt)}
+      ${ck("cpSp", true, !P.same, "Sorts et stratégies", spTxt)}
+      ${ck("cpMt", !!M && !M.cost, !M || M.cost > S.kamas, "Arbre de Maîtrise", mtTxt + (M && M.cost > S.kamas ? ` (tu as ${fmt(S.kamas)} kamas)` : ""))}
+      ${ck("cpEq", true, !P.eq.length, "Équipement", eqTxt)}
+      ${icons ? `<div class="row" style="gap:4px;flex-wrap:wrap">${icons}</div>` : ""}
+      <p class="note xs" style="margin:0">Aucun objet n'est dupliqué ni retiré à un autre héros : ${h(c.name)} prend dans le sac une copie libre du même objet (la meilleure). Les objets grisés manquent ; ses autres emplacements ne bougent pas.</p>
+    </div>
+    <div class="row" style="gap:6px"><button class="btn primary" data-act="setuppaste">Coller sur ${h(c.name)}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 /* flèches ↑ ↓ du clavier : héros précédent ou suivant dans l'ordre de la liste (PC) */
 function heroRailKey(dir) {
@@ -5649,7 +5730,9 @@ function equipBlocked(c, eq, s, it) {
   if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
   return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
 }
-const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + (c.gearFocus || "") + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
+/* 2.1.9 : emplacements verrouillés par le joueur (c.eqLock) : l'objet porté n'en bouge plus avec « Équiper au mieux » ni « Tout équiper au mieux » */
+const eqLocked = (c, s) => !!(c.eqLock && c.eqLock[s] && c.equip[s] && S.items[c.equip[s]]);
+const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + (c.gearFocus || "") + "|" + JSON.stringify(c.equip) + "|" + JSON.stringify(c.eqLock || {}) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
 const planFresh = (c) => { const hit = planMemo.get(c.id); return !!hit && hit.key === planKey(c); };
 function gearPlan(c) {
   const key = planKey(c); const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
@@ -5671,6 +5754,8 @@ function* planSteps(c, key) {
   /* 1.0.24.3 : des exemplaires identiques (même objet, mêmes jets) donnent le même résultat : au-delà de 2 (deux anneaux), les suivants ne
      changent rien au plan et ne sont plus essayés. Les objets portés par le héros sont toujours gardés */
   const mine = new Set(Object.values(c.equip));
+  const lockS = new Set(EQ_SLOTS.filter((s) => eqLocked(c, s))); const lockU = new Set([...lockS].map((s) => c.equip[s]));
+  for (const k in pool) pool[k] = pool[k].filter((it) => !lockU.has(it.uid)); // l'objet d'un emplacement verrouillé n'est jamais déplacé ailleurs
   for (const k in pool) { const seen = new Map(); pool[k] = pool[k].filter((it) => { if (mine.has(it.uid)) return true;
     const sig = it.tpl + "|" + (it.exo || "") + "|" + (it.wel || "") + "|" + (it.welh || "") + "|" + JSON.stringify(it.stats); const n = seen.get(sig) || 0; seen.set(sig, n + 1); return n < 2; }); }
   const okIn = (eq, s, it) => { if (equipBlocked(c, eq, s, it)) return false; const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
@@ -5679,7 +5764,7 @@ function* planSteps(c, key) {
   const one = E.EXO_ONE || ["pa"]; const cand = {};
   for (const k in pool) cand[k] = pool[k].map((it) => { const T = ITEMS[it.tpl]; return { it, uid: it.uid, tpl: it.tpl, sc: sco(it), z: T.set || null, chk: !!(T.leg || (it.exo && one.includes(it.exo))) }; });
   const fill = (eq, lock) => { for (let pass = 0; pass < 3; pass++) { let moved = false;
-    for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; let best = 0, uid = null;
+    for (const s of EQ_SLOTS) { if ((lock && lock.has(s)) || lockS.has(s)) continue; let best = 0, uid = null;
       // gain d'un essai = gearScore(équipement essayé) − gearScore(équipement), calculé par différence (objet remplacé, paliers des panoplies touchées)
       const n = {}, worn = new Set(), others = []; for (const k in eq) { const u = eq[k], x = S.items[u]; if (!x) continue; worn.add(u); if (k !== s) others.push([u, x.tpl]); const z = ITEMS[x.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
       const old = S.items[eq[s]], so = sco(old); const zo = old ? ITEMS[old.tpl].set || null : null; const kind = slotKind(s), dup = kind === "anneau" || kind === "dofus";
@@ -5700,7 +5785,7 @@ function* planSteps(c, key) {
     const eq = Object.assign({}, c.equip); const lock = new Set();
     for (const kind in pool) { const L = ((bySet[z] || {})[kind] || []).slice().sort((x, y) => itemScore_(y) - itemScore_(x)); if (!L.length) continue;
       const slots = EQ_SLOTS.filter((s) => slotKind(s) === kind);
-      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore_(S.items[eq[x]]) - itemScore_(S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
+      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && !lockS.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore_(S.items[eq[x]]) - itemScore_(S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
     if (!lock.size) continue; // aucune pièce posée : même départ que le premier plan, même résultat
     fill(eq); const sc = gearScore(c, eq); if (sc > planSc + 0.5) { plan = eq; planSc = sc; }
   }
@@ -5750,13 +5835,13 @@ function planWork(dl) {
   if (planJobs.size) planKick(wait > 0 && !planHot.size && [...planJobs.values()].every((j) => !j) ? wait : 0);
 }
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
-  for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
+  for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !eqLocked(c, s) && !E.equip(S, c.id, plan[s], s)) n++;
   return n; }
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
   return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
-    ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+    ${it && eqLocked(c, s) ? `<span class="eqlk" title="Verrouillé : Équiper au mieux n'y touche pas">${G("lock")}</span>` : ""}${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
@@ -6046,7 +6131,7 @@ function charEquipView(c, st) {
       return row(gr.rep, mode, i, gr.items.length, tog) + (open ? `<div class="psubs">${gr.vars.map((v) => row(v.rep, mode, -1, v.items.length, "", true)).join("")}</div>` : ""); };
     const freeG = grpItems(free, true), highG = grpItems(high, true);
     const pmore = (k, t, n, inner) => !n ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${n})</button>${(ui.pmore || {})[k] ? `<div class="list">${inner()}</div>` : ""}</div>`;
-    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
+    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm ${eqLocked(c, ui.slot) ? "primary" : ""}" data-act="eqlock" data-slot="${ui.slot}" aria-pressed="${eqLocked(c, ui.slot)}" data-tip="${h(eqLocked(c, ui.slot) ? "Verrouillé : « Équiper au mieux » et « Tout équiper au mieux » laissent cet objet en place. Cliquez pour déverrouiller." : "Verrouiller : « Équiper au mieux » et « Tout équiper au mieux » laisseront cet objet en place")}">${G("lock")} ${eqLocked(c, ui.slot) ? "Verrouillé" : "Verrouiller"}</button><button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
       ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}</span></div>`; })() : ""}
       <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
       <div class="list">${freeG.slice(0, 40).map((gr, i) => grow(gr, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Rien de libre ici. Les trophées viennent des paliers de chasse des sous-zones." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
@@ -7382,6 +7467,22 @@ function alignHtml() {
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
     </div></section>${shopLink("cite")}`;
 }
+/* 2.1.10 : où trouver la ressource de l'offrande : le métier si elle se récolte, sinon les monstres qui la lâchent,
+   la zone ouverte la plus proche du niveau de l'équipe d'abord, avec « Y aller » qui lance la chasse (ou ouvre le donjon) */
+function almSrcHtml(r) {
+  const t = topTeamLvl(); const lv = (w) => parseInt(w.lvl, 10) || 0;
+  const g = (resIndex().src[r] || []).find((x) => x.job);
+  const L0 = dropMons("res", r, 30); const L = (L0.some((x) => !x.w.archi) ? L0.filter((x) => !x.w.archi) : L0).sort((a, b) => !!a.w.archi - !!b.w.archi || b.w.open - a.w.open || (lv(a.w) > t + 5) - (lv(b.w) > t + 5) || b.p - a.p);
+  const zk = (x) => x.w.dg || x.w.sub; const Z = L.filter((x, i) => L.findIndex((y) => zk(y) === zk(x)) === i).slice(0, 3); // une ligne par zone, les autres monstres de la zone en « aussi »
+  if (!g && !L.length) return "";
+  const go = (w, first) => w.dg ? `<button class="btn sm ${first && w.open ? "primary" : ""}" data-act="dgopen" data-id="${w.dg}">${IC("cle")} Donjon</button>`
+    : w.open ? (S.sub === w.sub && S.hunting ? `<span class="tag good">Tu y es</span>` : `<button class="btn sm ${first ? "primary" : ""}" data-act="hunt" data-id="${w.sub}" ${S.dungeon ? "disabled" : ""}>${IC("carte")} Y aller</button>`)
+    : `<button class="btn sm" data-act="zoneview" data-id="${w.sub}" data-gotab="world">${G("lock")} Voir</button>`;
+  const job = g ? `<div class="li monli"><span class="icobox">${IC("pioche")}</span><span class="grow"><b>${h(GATHER_JOBS[g.job].name)}</b><span class="monwhere xs">Se récolte · métier niv. ${g.lvl}</span></span><button class="btn sm primary" data-act="gathersheet" data-job="${g.job}">${IC("pioche")} Récolter</button></div>` : "";
+  const mons = Z.map((x, i) => { const M = MONSTERS[x.mon]; const w = x.w; const aussi = L.filter((y) => y !== x && zk(y) === zk(x)).map((y) => MONSTERS[y.mon].name);
+    return `<div class="li monli ${w.open ? "" : "locked"}"><span class="icobox">${im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${h(M.name)}</b>${w.archi ? ` <span class="tag soft">archimonstre</span>` : ""}<span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span>${aussi.length ? `<span class="monwhere xs">aussi : ${h(aussi.join(", "))}</span>` : ""}</span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span>${go(w, i === 0 && !g)}</div>`; }).join("");
+  return `<div class="alx-src"><div class="alx-h">Où la trouver</div><div class="list">${job}${mons}</div></div>`;
+}
 function almanaxHtml() {
   /* 0.1.39 : le calendrier de DOFUS, un Méryde et un bonus ciblé par jour, les 7 jours suivants */
   const A = E.almanax(S); const d = new Date(E.now()); const have = S.res[A.res] || 0; const sn = S.almStreak.n || 0;
@@ -7400,13 +7501,14 @@ function almanaxHtml() {
           <div class="v">${h(A.bonus.txt)}${["xp", "drop", "kamas", "dg", "fete"].includes(A.kind) ? `<span class="alx-pill" data-tip="S'ajoute par-dessus tes autres bonus, même au plafond">à part du plafond</span>` : ""}</div>${where}</div>${go}</div>
         <div class="alx-off"><span class="row" style="gap:6px">Offrande : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></span>
           <span class="small">→ le bonus jusqu'à minuit, <span class="coin"></span> ${fmt(A.kamas)} kamas et <b class="plus">${fmtK(A.xp)} XP</b> par héros de l'équipe (environ ${E.ALM_XP_MIN} min de chasse)</span></div>
+        ${A.done || have >= A.qty ? "" : almSrcHtml(A.res)}
         <div>${A.done ? `<span class="tag good">Offrande faite aujourd'hui ✓</span>` : `<button class="btn primary" data-act="almanax" ${have >= A.qty ? "" : "disabled"}>Faire l'offrande</button>`}</div></div></div>
     <div><div class="alx-h">Les 7 prochains jours</div><div class="alx-week">${week}</div></div>
     <div><b>Série : ${sn} jour${sn > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
       <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${sn >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
     <details ${ui.almAll ? "open" : ""}><summary class="alx-h" data-act="almall">Tous les bonus de l'Almanax (${Object.keys(K).length})</summary>
       <div class="stack" style="gap:8px;margin-top:6px">${groups.map(([g, l]) => `<div><div class="small alx-g">${g}</div><div class="alx-all">${l.map((k) => `<div><b>${h(K[k].name)}</b> : ${h(K[k].txt(K[k].v, null, null, ""))}</div>`).join("")}</div></div>`).join("")}</div></details>
-    <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, l'encyclopédie dit qui les lâche.</p></div></section>`;
+    <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, « Où la trouver » montre qui les lâche et t'y emmène.</p></div></section>`;
 }
 function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = E.achCount(S);
@@ -7424,6 +7526,15 @@ function renderQuests(soft) {
 }
 /* ---------- feuilles ---------- */
 function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+/* 2.1.4 (Mathis) : l'album des archimonstres et la fiche d'un monstre se mettent à jour toutes seules après chaque combat (mise à jour ciblée, la position de lecture reste) */
+const SHEET_LIVE = [[".archisheet", () => archiSheetHtml()], [".encsheet[data-mk]", (el) => (MONSTERS[el.dataset.mk] ? encMonSheet(el.dataset.mk) : "")]];
+let sheetLiveSig = "";
+const sheetSig = () => (S ? `${S.history && S.history[0] ? S.history[0].t : 0}|${E.soulCount(S)}|${E.stones(S)}` : "");
+function sheetLive(force) {
+  const box = $("#sheet .sheet"); if (!box || !S) return;
+  const sig = sheetSig(); if (!force && sig === sheetLiveSig) return; sheetLiveSig = sig;
+  for (const [sel, fn] of SHEET_LIVE) { const el = box.querySelector(sel); if (el && el.parentNode === box) { const html = fn(el); if (html) morphTo(box, html); return; } }
+}
 function closeSheet() { if ($("#sheet").innerHTML.trim()) uiSnd("fermer"); if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null; $("#sheet").innerHTML = ""; ui.giveTo = null; } // 1.0.12.8 : fermer la fiche d'inventaire (téléphone) la désélectionne
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
@@ -7901,7 +8012,7 @@ function lootUpCheck() {
 const THEMES = [["emerald", "Émeraude", "#0d100b", "lucioles"], ["violet", "Nuit violette", "#0e0b14", "nuit"], ["givre", "Givre de Frigost", "#0a1017", "flocons"], ["ambre", "Ambre d'Amakna", "#120d08", "etincelles"], ["braise", "Braise de Brâkmar", "#100909", "braises"], ["ecume", "Écume de Sufokia", "#071315", "bulles"]];
 const themeId = (t) => (THEMES.some((x) => x[0] === t) ? t : "emerald");
 function applySkin(t) { t = themeId(t); const r = document.documentElement; r.dataset.theme = t === "violet" ? "dark" : "emerald"; if (t === "emerald" || t === "violet") delete r.dataset.skin; else r.dataset.skin = t; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = THEMES.find((x) => x[0] === t)[2]; }
-function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); applyAmbiance(); }
+function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced) || ecoOn()); document.body.classList.toggle("eco", ecoOn()); applyDisplay(); applyHal(); applyAmbiance(); }
 /* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
 const BG_FX = "mix"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse, mix = Aurore + rideau de temps en temps), réglé au choix de Mathis
 function applyAmbiance() {
@@ -7933,7 +8044,7 @@ window.IDLUS_HALOUINE = () => document.documentElement.dataset.hal === "on";
 /* ===================== 0.1.17 : lot Bienvenue (logique dans js/welcome.js) =====================
    Affichage (taille du texte, mouvements, contraste), bulles de découverte, recherche rapide. */
 if (window.matchMedia) { const mqMini = window.matchMedia("(min-width:1280px) and (max-width:1599px)"); if (mqMini.addEventListener) mqMini.addEventListener("change", () => { if (S) renderNav(); }); } // 1.2 : chat ouvert, le menu passe en icônes entre 1280 et 1599 px
-const motionOff = () => { const m = S && S.settings.motion; if (m === "off") return true; if (m === "on") return false; return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
+const motionOff = () => { if (ecoOn()) return true; const m = S && S.settings.motion; if (m === "off") return true; if (m === "on") return false; return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
 const calm = () => !!(S && (S.settings.reduced || motionOff()));
 function applyDisplay() {
   const r = document.documentElement; const z = (S && S.settings.textSize) || 100;
@@ -7949,7 +8060,10 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Écran", "se voit tout de suite",
+  return optSec("Batterie", "",
+      optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
+    + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
+    + optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
     + optLine("Thème", "", seg("settheme", THEMES.map((t) => [t[0], t[1]]), themeId(S.settings.theme)))
     + optLine("Ambiance animée", "fond qui bouge et lucioles, flocons, bulles… selon le thème", seg("setamb", [["soft", "Discrète"], ["strong", "Marquée"], ["off", "Aucune"]], S.settings.ambiance || "soft", "Le fond de page bouge lentement et de petits effets flottent par-dessus, dans l'esprit du thème. Tout s'arrête aussi avec « Animations réduites » et les mouvements désactivés."))
@@ -8166,7 +8280,7 @@ document.addEventListener("keydown", (ev) => {
 const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "maitrise"],
   ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"], ["a", "asc"], ["p", "pets"], ["y", "dofus"]];
 const hotPages = () => { const out = ["home", "combat"]; NAV.forEach((F) => F.pages.forEach((p) => { if (p[0] !== "bug" && p[0] !== "admin") out.push(p[0]); })); return out; }; // 1.2.7.2 : les flèches ne butent plus sur Signaler un bug
-function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
+function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(k)) return; navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
 function hotkey(ev) {
   const k = ev.key; if (!S || (S.settings && S.settings.keysOff) || isEditing() || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
   if (window.matchMedia && !window.matchMedia("(min-width: 900px)").matches) return false; // PC seulement
@@ -8181,7 +8295,7 @@ function hotkey(ev) {
 function hotSheet() {
   const all = hotPages(); const row = (key, txt) => `<div class="hk-row"><kbd>${key}</kbd><span>${h(txt)}</span></div>`;
   openSheet(`<h2>Raccourcis clavier</h2><div class="hk-grid">${HOTKEYS.filter(([, p]) => all.includes(p)).map(([x, p]) => row(x.toUpperCase(), navName(p).replace(/^.* › /, ""))).join("")}
-    ${row("O", "Options")}${row("← →", "Page précédente ou suivante du menu")}${row("↑ ↓", "Héros précédent ou suivant")}${row("Ctrl K ou /", "Rechercher")}${row("Échap", "Fermer une fenêtre")}${row("?", "Cette liste")}</div>
+    ${row("O", "Options")}${row("1 à 9", "L'Ascension : lancer un sort ou prendre un choix")}${row("Entrée", "L'Ascension : finir le tour, lancer l'étage, valider")}${row("Échap", "L'Ascension : passer ou refuser")}${row("← →", "L'Ascension : changer de cible pendant ton tour")}${row("← →", "Page précédente ou suivante du menu")}${row("↑ ↓", "Héros précédent ou suivant")}${row("Ctrl K ou /", "Rechercher")}${row("Échap", "Fermer une fenêtre")}${row("?", "Cette liste")}</div>
     <p class="xs muted">Sur PC seulement. Ils ne s'activent pas quand tu écris dans un champ. Tu peux les couper dans Options › Jeu.</p>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
@@ -9512,7 +9626,7 @@ document.addEventListener("click", (ev) => {
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
     case "nav": if (d.v === "maitrise" && d.mtc && window.MAITUI) { const mc = S.chars.find((x) => String(x.id) === d.mtc); if (mc) { MAITUI.st.cid = mc.id; MAITUI.st.view = null; MAITUI.st.z = 0; } } // 2.0.6 : ouvre l'arbre du héros de la fiche
-      if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
+      if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(d.v)) return; if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
       else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }
@@ -9525,7 +9639,7 @@ document.addEventListener("click", (ev) => {
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
- toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); return; }
+ toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */
@@ -9600,7 +9714,9 @@ document.addEventListener("click", (ev) => {
     case "dpfam": ui.dpFam = d.v; break; // 1.0.16 : choix du Dofus, filtre par famille
     case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; if (ficheOnly()) return; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
-    case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
+    case "unequip": E.unequip(S, c.id, d.slot); if (c.eqLock) delete c.eqLock[d.slot]; ui.slot = null; break;
+    case "eqlock": { const k = d.slot; if (!k || !c.equip[k]) return; c.eqLock = c.eqLock || {}; if (c.eqLock[k]) delete c.eqLock[k]; else c.eqLock[k] = 1; if (!Object.keys(c.eqLock).length) delete c.eqLock;
+      toast(c.eqLock && c.eqLock[k] ? `${SLOTS[k]} verrouillé : « Équiper au mieux » n'y touchera plus.` : `${SLOTS[k]} déverrouillé.`); if (ficheOnly()) return; break; }
     case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }
     case "sprem": ui.spUndo = null; c.spells.splice(+d.i, 1); ui.spSel = Math.max(0, Math.min(+d.i, c.spells.length - 1)); c.activePreset = null; c.spellsManual = true; break;
     case "spsel": ui.spSel = +d.i; break;
@@ -9623,6 +9739,17 @@ document.addEventListener("click", (ev) => {
     case "psave": { const old = c.presets[+d.i]; const name = old ? old.name : (prompt("Nom de la stratégie :", ["Farm", "Boss", "Solo", "Donjon"][+d.i] || "Stratégie") || "").trim(); if (!old && !name) return; E.savePreset(S, c.id, +d.i, name); toast("Stratégie enregistrée."); break; }
     case "pload": E.applyPreset(S, c.id, +d.i); toast(`Stratégie « ${c.presets[+d.i].name} » chargée.`); break;
     case "pdel": E.deletePreset(S, c.id, +d.i); break;
+    case "setupcopy": ui.setupFrom = +d.id; ui.heroMore = false; toast(`Setup ${deNom(char(+d.id).name)} copié : ouvre un autre héros et touche « Coller ».`, "info"); break;
+    case "setupclear": ui.setupFrom = null; break;
+    case "setupsheet": ui.heroMore = false; setupSheet(+d.id); return;
+    case "setuppaste": { const a = char(ui.setupFrom), c = char(ui.setupTo); if (!a || !c) { closeSheet(); return; }
+      const w = (id) => { const x = $("#" + id); return !!(x && x.checked && !x.disabled); };
+      const what = { st: w("cpSt"), sp: w("cpSp"), mt: w("cpMt"), eq: w("cpEq") }; if (!what.st && !what.sp && !what.mt && !what.eq) { toast("Coche au moins une ligne."); return; }
+      const r = E.copySetup(S, a.id, c.id, what); if (r.err) { toast(r.err); return; }
+      if (r.mt && window.MAITUI && window.MAITUI.st) window.MAITUI.st.key = ""; // l'arbre affiché se recharge
+      dirty = true; closeSheet(); ui.cid = c.id;
+      const parts = [r.st && "caractéristiques", r.sp && "sorts", r.mt && "Maîtrise", what.eq && `${r.eq} objet${r.eq > 1 ? "s" : ""}`].filter(Boolean);
+      toast(`Setup collé sur ${c.name} : ${parts.join(", ")}.${r.miss.length ? ` ${r.miss.length} objet${r.miss.length > 1 ? "s" : ""} manquant${r.miss.length > 1 ? "s" : ""} : ${r.miss.slice(0, 4).map((m) => ITEMS[m.tpl].name).join(", ")}${r.miss.length > 4 ? "…" : ""}.` : ""}`, "info", r.miss.length ? 7000 : 0); break; }
     case "buildsheet": ui.buildRead = null; ui.buildIn = ""; buildSheet(+d.id); return;
     case "buildcopy": { const ta = $("#buildOut"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Code du build copié."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
     case "buildread": { ui.buildIn = $("#buildIn").value; const b = E.parseBuild(ui.buildIn); if (!b) { ui.buildRead = null; const m = $("#buildMsg"); if (m) m.textContent = "Ce texte n'est pas un code de build valide."; return; } ui.buildRead = b; buildSheet(ui.buildCid); return; }
@@ -9765,6 +9892,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
+  else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setcontrast") { S.settings.contrast = t.checked; dirty = true; applyDisplay(); return; }
   else if (a === "tipsoff") { E.tipState(S).off = !t.checked; dirty = true; if (!t.checked) tipHide(); return; }
@@ -10267,9 +10395,10 @@ async function staffLoad() {
   if (window.CHAT) window.CHAT.repaint();
   if (S && ui.tab !== "combat") render();
 }
-const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
+// 2.1.12 : le score d'une classe = niveau + points de Maîtrise (les renaissances n'existent plus depuis la 2.0)
+const lbLvl = (score) => Math.min(E.MAX_LVL, score);
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
-const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
+const lvlTxt = (score) => `niv. ${lbLvl(score)}${score > E.MAX_LVL ? ` · Maîtrise ${fmt(score - E.MAX_LVL)}` : ""}`;
 const weekNow = () => VF.weekIdx(E.now());
 const weekList = () => VF.weeklyDungeons(DUNGEONS, weekNow());
 function lbDefaultDid() {
@@ -10306,7 +10435,7 @@ async function lbFetch() {
   if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
-    const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
+    const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL + (x.mt || 0)));
     if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : LB.pts ? "pts" : "succes";
@@ -10629,7 +10758,7 @@ function renderLadder() {
   const wl = weekList(), dids = Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || DUNGEONS[a].name.localeCompare(DUNGEONS[b].name));
   if (!LB.did) LB.did = lbDefaultDid();
   const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
-  const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes héros ; chaque renaissance compte ${VF.REB_LVL} niveaux.</span>
+  const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes 8 meilleurs héros ; chaque point de Maîtrise compte un niveau.</span>
       <select data-act="lb-cls" aria-label="Classe"><option value="">Toutes les classes</option>${CLASS_ORDER.map((c) => `<option value="${c}" ${LB.cls === c ? "selected" : ""}>Meilleur ${h(CLASSES[c].name)}</option>`).join("")}</select></div>`
     : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Records"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
       ${LB.dmode === "all" ? `<select data-act="lb-did" aria-label="Donjon">${dids.map((d) => `<option value="${d}" ${LB.did === d ? "selected" : ""}>${h(DUNGEONS[d].name)} (niv. ${DUNGEONS[d].lvl})</option>`).join("")}</select>` : ""}</div>
@@ -10661,13 +10790,13 @@ async function lbProfile(u) {
     const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
       db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
-    const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
+    const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 + (b.mt || 0) - (a.lvl + a.ren * 200 + (a.mt || 0)));
     ui.lbProf = { u, heroes };
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
-      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -10847,11 +10976,11 @@ function loop() {
       if (S.settings.autoChest && E.chestIds(S).length) { E.openAllChests(S, true); dirty = true; } // 2.1.3 : ouverture automatique des coffres
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
-      checkPins(); if (!$("#sheet").innerHTML) renderObjs();
+      checkPins(); if (!$("#sheet").innerHTML) renderObjs(); else if (!isEditing()) sheetLive();
       const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => setTxt(b, dur(E.boostLeft(S, b.dataset.boostleft))));
     }
   }
-  setTimeout(loop, 120);
+  setTimeout(loop, ecoOn() ? 250 : 120); // 2.1.11 : économie de batterie, l'écran se met à jour 4 fois par seconde au lieu de 8 (le jeu avance pareil)
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }

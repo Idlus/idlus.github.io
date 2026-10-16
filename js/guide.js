@@ -111,7 +111,7 @@
       ]],
     ] });
   /* ======================= Héros et combat ======================= */
-  add({ id: "equipe", f: "Héros", n: "Équipe, recrutement et placement", ic: "combat", page: "team", k: "recruter congedier synergie ligne arriere reserve",
+  add({ id: "equipe", f: "Héros", n: "Équipe, recrutement et placement", ic: "combat", page: "team", k: "recruter congedier synergie ligne arriere reserve copier coller setup",
     ou: "Héros › Équipe et héros", de: "dès le début (1 héros, les autres se recrutent avec des kamas)",
     voir: ["classes", "caracs", "equipement", "combat"],
     b: () => {
@@ -122,6 +122,7 @@
         ["kv", [["Héros au plus", N(() => E.HERO_MAX)], ["Héros dans l'équipe de combat", N(() => E.TEAM_MAX)], ["2e héros", fr(cost[0]) + " kamas"], ["5e héros", fr(cost[3]) + " kamas"], ["10e héros", fr(cost[8]) + " kamas"], ["Dernier héros", fr(cost[cost.length - 1]) + " kamas"]]],
         ["ul", [
           "**Congédier** un héros rend la moitié du prix du dernier recrutement ; son équipement revient dans le sac.",
+          "**Copier le setup** (menu ⋯ Plus de la fiche) puis **Coller** sur un autre héros : caractéristiques, sorts et stratégies, arbre de Maîtrise (même classe) et équipement. Les objets sont pris dans le sac s'il y en a une copie libre, jamais dupliqués ni retirés à un autre héros.",
           "**Synergie** : +2 % de dommages et d'XP par classe différente dans l'équipe (à partir de 2 héros).",
           `**Collection des classes** : chaque classe montée niveau ${N(() => E.MAX_LVL)} donne +${N(() => E.CLASS_BONUS)} % d'XP et de kamas à tout le compte (même si le héros est supprimé ensuite).`,
           "**Petite équipe** : jouer à 1 à 4 héros donne des points de vie en plus et réduit les dommages subis (plus fort en chasse qu'en donjon).",
@@ -201,7 +202,7 @@
       ]],
     ] });
 
-  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux panoplie arme coup d'arme tenue exo legendaire",
+  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux verrouiller cadenas panoplie arme coup d'arme tenue exo legendaire",
     ou: "Héros › Équipe et héros › fiche du héros › Équipement", de: "dès le début",
     voir: ["inventaire", "forgemagie", "dofus"],
     b: () => [
@@ -211,6 +212,7 @@
         "Pas deux fois le même anneau, ni le même Dofus ou trophée.",
         "Un seul exo PA, un seul exo PM et un seul exo PO par héros ; un seul objet légendaire.",
         "**Équiper au mieux** choisit les meilleures pièces selon la vraie répartition de caractéristiques du héros, en testant les panoplies entières ; « Privilégier » fait compter une caractéristique beaucoup plus.",
+        "**Verrouiller** (bouton du cadenas quand on clique un emplacement) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus.",
         `**Tenues** : ${N(() => E.MAX_GEAR)} équipements complets enregistrés par héros (un de plus avec la Collection de panoplies).`,
       ]],
       ["h", "Panoplies"],
@@ -387,7 +389,7 @@
         "**Branches lointaines** : 5 Portes des étoiles entre les domaines, chacune ouvre une branche combat et une branche farm (vol de vie, dégâts aux boss, butin, kamas, XP…). Une Porte s'ouvre pour tout le compte en terminant le donjon de son boss : Kabahal (stasis 12), Roi Imagami (13), L'Éternel Conflit (13), Belladone (14), Déchireuse (15).",
         "**Fiche du héros** : le bloc Maîtrise montre son niveau, ses points, la barre d'XP du prochain niveau, ses clés de voûte et le total de ses bonus.",
         "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche (« Y aller » mène à l'étoile trouvée la plus proche), chemin vers une étoile lointaine, code de partage et **image de l'arbre** (bouton « Image »).",
-        "**Brouillon** (bouton ✎ sur l'arbre) : pose des étoiles en pointillés, vois le coût et les bonus, puis « Valider ». Les profils Dégâts, Tank, Farm et Boss remplissent le brouillon avec des règles simples ; un arbre fait main reste meilleur.",
+        "**Brouillon** (bouton ✎ sur l'arbre) : pose des étoiles en pointillés, vois le coût et les bonus, puis « Valider ». Les profils Dégâts, Tank, Farm et Boss remplissent le brouillon avec des règles simples ; un arbre fait main reste meilleur. Le bouton « Placer les N points » pose d'un coup tous les points libres sur les meilleurs bonus, sans jamais prendre de clé de voûte (« Annuler » les rend).",
         "**Objectif** : sur une clé de voûte, « En faire mon objectif » trace le chemin ; les points libres et ceux des prochains niveaux s'y posent tout seuls.",
         "**Rendre une étoile** prise rend aussi celles qui en dépendent (entourées en rouge, prix affiché avant). Un clic sur une étoile prise la rend.",
         "**Branche complète** : prendre toutes les étoiles d'une branche lointaine donne son aura en combat et un titre (Buveur d'étoiles, Pilleur d'astres…). Chaque notable de branche a un emplacement de joyau ◆ à côté.",
@@ -527,6 +529,8 @@
         "La chance d'objet du boss monte avec la stasis jusqu'à 10.",
         "Dofus : voir le chapitre Dofus.",
       ]],
+      ["h", "Trouver un donjon"],
+      ["p", `Recherche par nom, boss ou zone, et filtres : niveau, accessibles, stasis atteinte, clé en stock, Dofus à gagner, favoris. **Masquer stasis ${N(() => E.STASIS_MAX)}** cache les donjons déjà finis tout en haut (le choix est gardé, le nombre masqué est indiqué).`],
       ["h", "Donjon de l'heure et donjon éclair"],
       ["p", `Chaque heure, un donjon est mis en avant (gains ×${N(() => E.WEEKLY_REW)}, poussière ×${N(() => E.WEEKLY_DUST)}). Des donjons éclair de ${N(() => E.FLASH_MS / 60000)} min donnent ×${N(() => E.FLASH_REW)}.`],
       ["tip", "En ligne, la fiche du donjon montre le top 5 des meilleurs temps, vérifié par le serveur."],
@@ -560,6 +564,7 @@
         "Une tentative coûte 1 Volonté seulement sur un étage pas encore réussi ce mois-ci.",
         "Un boss tous les 10 étages, un tirage tous les 5, un événement, une boutique ou un autel par dizaine ; une règle sur les autres combats.",
         "Mode **manuel** : tu lances chaque étage et choisis les sorts ; mode auto : moins de Fragments.",
+        "Sur PC, **raccourcis** : 1 à 9 lancent tes sorts ou prennent un choix, Entrée finit le tour ou lance l'étage, Échap passe, ← → changent de cible.",
         `**Reliques** : tous les ${N(() => E.ASC.relEvery)} étages, après le sort du palier, ${N(() => E.ASC.relMax)} emplacements (Arme, Coiffe, Cape, Anneau, Amulette, Bottes), 3 proposées, 1 gardée. Caractéristiques + effet unique, perdues en fin de montée ; le marchand en vend 2. L'onglet **Reliquaire** garde celles trouvées (titres, cadre, ornement). L'Au-delà démarre avec ${N(() => E.ASC.relStart)} reliques.`,
         "**Fragments** et **Écus** paient les améliorations de la tour (classes, sorts de départ…).",
         "La tour repart le 1er du mois ; l'Au-delà chaque lundi. En ligne, le top 10 reçoit un titre, des Fioles et des kamas.",
@@ -662,7 +667,7 @@
       ["h", "Semaine"],
       ["p", "Chaque lundi (heure de Paris), 3 quêtes à ton niveau : une chasse, un donjon (ou avis, trésor), et un artisanat (ou récolte, commande, Almanax). Chacune paie kamas et XP ; les trois finies donnent un Coffre en or et 3 parchemins de chasse au trésor."],
       ["h", "Almanax"],
-      ["p", `Chaque jour, une offrande de ressources pour un bonus jusqu'à minuit (récolte, fête, forgemagie…) plus des kamas et de l'XP. Série de jours : ${V(() => E.ALM_TIERS.join(", "))} jours pour des récompenses (lot, coffre, meuble « Calendrier de l'Almanax », titre). Un jour manqué fait redescendre d'un palier.`],
+      ["p", `Chaque jour, une offrande de ressources pour un bonus jusqu'à minuit (récolte, fête, forgemagie…) plus des kamas et de l'XP. Série de jours : ${V(() => E.ALM_TIERS.join(", "))} jours pour des récompenses (lot, coffre, meuble « Calendrier de l'Almanax », titre). Un jour manqué fait redescendre d'un palier. « Où la trouver » sous l'offrande montre le métier ou les monstres qui lâchent la ressource (zone, chance) et « Y aller » lance la chasse.`],
       ["h", "Commandes d'artisans"],
       ["kv", [["Commandes ouvertes", N(() => E.CMD_SLOTS)], ["Commandes par jour", N(() => E.CMD_DAY_MAX)], ["Rangs d'artisan", V(() => E.CMD_RANKS.join(", ") + " livraisons")]]],
       ["ul", ["Livrer des ressources rapporte kamas et XP de métier ; les livraisons partielles comptent.", "Les commandes urgentes paient ×1,5.", "3 livraisons : un coffre ; 10 : un Coffre en or.", "Changer une commande : gratuit la première fois du jour."]],
@@ -743,6 +748,7 @@
         "Plus de chances : Ecaflip dans l'équipe ×1,5, Parfum de pistage ×2, Pierre d'âme dorée ×3, Autel des âmes ×1,4.",
         "Pierres d'âme : premier passage des stasis, Bricoleur, Bureau des primes.",
         "L'« Éternelle moisson » récompense les régions complétées, jusqu'au Dofus Ocre (+1 PA).",
+        "☆ Épingler (en haut de l'album) le met dans tes épinglés du menu ; ouvert, il se met à jour tout seul après chaque combat.",
       ]],
       ["kv", [["Ta chance actuelle", V(() => "1 / " + fr(Math.round(1 / E.archiOdds(S()))))]]],
     ] });
@@ -810,7 +816,7 @@
   add({ id: "classement", f: "Communauté", n: "Classements, Builds et chat", ic: "trophee", page: "ladder", pages: ["builds"], k: "classement ladder builds code partager chat canal",
     ou: "Communauté › Classements · Communauté › Builds", de: "en ligne",
     b: () => [
-      ["p", "**Classements** : course, niveau, Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
+      ["p", "**Classements** : course, niveau (la somme des 8 meilleurs héros, chaque point de Maîtrise compte un niveau), Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
       ["p", "**Builds** : partage les sorts et caractéristiques d'un héros avec un code « IDLUS1-… ». Appliquer un build copie seulement les sorts et les points. Publier demande une connexion Discord."],
       ["p", "**Chat** : canaux Général, Commerce, PvP, Guilde, Alliance, Privé et Hauts faits. Messages de 200 caractères au plus."],
     ] });
@@ -827,11 +833,12 @@
     ] });
 
   /* ======================= Options ======================= */
-  add({ id: "options", f: "Options", n: "Options, sauvegarde et compte", ic: "parchemin_or", page: null, k: "options theme sauvegarde compte export import parties musique sons animations texte",
+  add({ id: "options", f: "Options", n: "Options, sauvegarde et compte", ic: "parchemin_or", page: null, k: "options theme sauvegarde compte export import parties musique sons animations texte batterie economie",
     ou: "Options, en bas du menu", de: "dès le début",
     voir: ["absence"],
     b: () => [
       ["ul", [
+        "**Économie de batterie** (Affichage, tout en haut) : coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et met l'écran à jour moins souvent. Le jeu avance exactement pareil ; à garder sur téléphone ou portable débranché. En combat, l'appareil travaille environ 5 fois moins (mesuré sur PC et téléphone).",
         "**Affichage** : thème (Émeraude, Nuit violette, Givre, Ambre, Braise, Écume ; Halouine du 24 octobre au 3 novembre), ambiance animée, taille du texte, contraste, animations de combat, mouvements réduits.",
         "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées.",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",
