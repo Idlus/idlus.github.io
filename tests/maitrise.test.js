@@ -98,3 +98,14 @@ console.log("maitrise.test.js : OK");
   const dist = (a, b) => { const seen = new Map([[a, 0]]); const q = [a]; while (q.length) { const x = q.shift(); if (x === b) return seen.get(x); for (const y of T.N[x].adj) { if (seen.has(y) || T.N[y].neb || T.N[y].r < 1000) continue; seen.set(y, seen.get(x) + 1); q.push(y); } } return -1; };
   for (let d = 0; d < 6; d++) { const ks = T.SP.filter((s) => s.d === d).map((s) => s.ks); assert.ok(dist(ks[0], ks[1]) > 0 && dist(ks[1], ks[2]) > 0, `${cl} : clés de voûte du domaine ${d} reliées`); } } }
 console.log("ok - clés de voûte reliées dans chaque domaine");
+
+// 2.1 : branches lointaines. 5 Portes des étoiles fermées tant que le donjon de leur boss n'est pas fait à la bonne stasis, puis ouvertes pour tout le compte
+{ const S2 = E.newState("Br", "iop"); const h2 = S2.chars[0]; h2.lvl = 200; E.mt(h2).lvl = 900; const T = E.mtTree("iop");
+  assert.strictEqual(T.N.filter((n) => n.gate).length, 5); assert.strictEqual(T.N.filter((n) => n.end).length, 10);
+  const ks = T.N.find((n) => n.end && n.br === "La Sangsue"); const prev = new Map([[T.start, -1]]); const q = [T.start];
+  while (q.length) { const x = q.shift(); for (const y of T.N[x].adj) if (!prev.has(y) && !T.N[y].neb) { prev.set(y, x); q.push(y); } }
+  const p = []; for (let x = ks.id; x !== T.start; x = prev.get(x)) p.push(x); E.mt(h2).t[E.mt(h2).lo] = p;
+  assert.strictEqual(E.mtFx(S2, h2).vv, 0, "Porte fermée : la branche ne compte pas");
+  E.stasisInfo(S2, "rituel_kabahal").max = 12; assert.ok(E.mtFx(S2, h2).vv > 0, "Porte de Kabahal ouverte"); assert.deepStrictEqual(E.mtGatesOpen(S2), ["Kabahal"]);
+  assert.ok(E.mtTeam(S2, [h2], "loot") >= 1); }
+console.log("ok - 2.1 : branches lointaines et Portes des étoiles");

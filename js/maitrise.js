@@ -34,7 +34,7 @@
   const used = () => got.size - 1;
   const nebOpen = () => pts() >= E.MT_OPEN;
   const T = () => build(treeCls());
-  const gateOpen = (pid) => { const o = (window.__MTBR && window.__MTBR.open) || []; return o.includes(T().N[pid].gate.b); }; // MAQUETTE
+  const gateOpen = (pid) => E.mtGatesOpen(S()).includes(T().N[pid].gate.b); // 2.1 : Portes des étoiles (pour tout le compte)
   const allowed = (id) => { const n = T().N[id]; return n.t !== "start" && !(n.neb && !nebOpen()) && !(n.gated != null && !gateOpen(n.gated)); };
   const pathTo = (t) => { const N = T().N; if (got.has(t)) return []; if (!allowed(t)) return null;
     const prev = new Map(); const q = [...got]; q.forEach((x) => prev.set(x, -1)); let hd = 0;
@@ -113,8 +113,8 @@
     if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; return; }
     const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
     const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
-    const lkN = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null;
-    const foot = lkN ? `🔒 Fermée : bats ${lkN.b} en stasis ${lkN.s} ou plus` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
+    const lkN = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null; // 2.1
+    const foot = lkN ? `🔒 Fermée : termine le donjon de ${lkN.b} en stasis ${lkN.s} ou plus` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
     el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${n.gate ? "Porte des étoiles" : TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
     el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
     let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
@@ -154,7 +154,8 @@
   function infoHtml() {
     if (st.sel == null) return `<span class="mt-ty muted">Étoile</span><b>Touche une étoile</b><span class="muted xs">Son effet s'affiche ici. Un clic sur une étoile lointaine prend le chemin le plus court.</span>`;
     const n = T().N[st.sel]; const p = got.has(n.id) ? null : pathTo(n.id); const left = pts() - used();
-    const who = st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? (respecCost(1) ? `Prise. La rendre coûte ${fmt(respecCost(1))} kamas.` : "Prise.") : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : (left > 0 ? `Chemin de ${p.length} points : un clic prend les ${left} premières étoiles, la suite aux prochains niveaux.` : `Chemin de ${p.length} points : gagne des niveaux de Maîtrise pour le prendre.`)) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
+    const gk = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null; // 2.1
+    const who = gk ? `🔒 Porte fermée : termine le donjon de ${gk.b} en stasis ${gk.s} ou plus.` : st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? (respecCost(1) ? `Prise. La rendre coûte ${fmt(respecCost(1))} kamas.` : "Prise.") : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : (left > 0 ? `Chemin de ${p.length} points : un clic prend les ${left} premières étoiles, la suite aux prochains niveaux.` : `Chemin de ${p.length} points : gagne des niveaux de Maîtrise pour le prendre.`)) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
     let joy = "";
     if (n.t === "joy" && got.has(n.id) && !st.view) { const M = E.mt(hero()); const cur = M.j[n.id]; const J = cur && (S().joy || []).find((z) => z.uid === cur);
       const free = (S().joy || []).filter((z) => !E.joyOwner(S(), z.uid)); // 2.0.3 : un joyau serti chez un autre héros n'est pas libre

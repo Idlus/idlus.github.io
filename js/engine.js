@@ -1041,7 +1041,7 @@
       const fl = E.huntTier(S, id) >= 3 ? 2 : 1;
       g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * E.archiMult(S) * E.almMult(S, "archi") * fl }));
     }
-    if (rnd() < E.CHAMP_CHANCE) { const cand = g.filter((m) => !m.archi); if (cand.length) E.makeChampion(pick(cand)); }
+    if (rnd() < E.CHAMP_CHANCE * (E.mtTeam ? E.mtTeam(S, E.team(S), "champ") : 1)) { const cand = g.filter((m) => !m.archi); if (cand.length) E.makeChampion(pick(cand)); } // 2.1 : Traqueur
     return g;
   };
 
@@ -1446,10 +1446,12 @@
     if (!Number.isFinite(tgt.hp)) tgt.hp = Number.isFinite(tgt.hpMax) ? Math.max(0, tgt.hpMax - v) : 0;
     if (F) trackHit(F, src, tgt, v, el);
     if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
+    if (tgt.mt && tgt.mt.rv > 0 && src && src.alive && src.side !== tgt.side && v > 0 && !F.pvp) { const rv = Math.max(1, Math.round(v * tgt.mt.rv / 100)); src.hp -= rv; if (F) trackHit(F, tgt, src, rv, null); if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } } // 2.1 : Miroir (renvoi)
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (isHero(F, tgt) && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
     if (src && src.side === "c" && tgt.side === "m" && v > 0 && !(F && F.pushHit)) { // 0.1.24 : reliques d'expédition (vol de vie, poison) ; 1.0.30 : pas sur la poussée
       if (src.vamp && src.alive) doHeal(src, v * src.vamp, F);
+      if (src.mt && src.mt.vv > 0 && src.alive) doHeal(src, v * src.mt.vv / 100, F); // 2.1 : Sangsue (vol de vie)
       if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
     }
     if (tgt.hp <= 0 && F && tgt.lgS && E.legSave) E.legSave(F, src, tgt, v); // 0.1.48 : Trompe-la-Mort, Boucle du Réveil
@@ -1509,7 +1511,8 @@
     v *= mult;
     // 0.1.12 : Éveils de la Renaissance (Fureur, Premier sang)
     if (e.ev) { v *= 1 + 0.04 * (e.ev.fureur || 0); if (F && F.round === 1) v *= 1 + 0.08 * (e.ev.premier || 0); }
-    if (e.mt) { const M = e.mt; v *= (1 + (M.d + (M[el] || 0)) / 100) * (F && F.round === 1 ? 1 + M.t1 / 100 : 1) * (e.hp < e.hpMax / 2 ? 1 + M.low / 100 : 1) * (crit ? 1 + M.cx / 100 : 1); } // 2.0 : Maîtrise
+    if (e.mt) { const M = e.mt; v *= (1 + (M.d + (M[el] || 0)) / 100) * (F && F.round === 1 ? 1 + M.t1 / 100 : 1) * (e.hp < e.hpMax / 2 ? 1 + M.low / 100 : 1) * (crit ? 1 + M.cx / 100 : 1);
+      if (M.boss || M.exe || M.cre || M.chd) v *= (tgt && tgt.boss ? 1 + M.boss / 100 : 1) * (tgt && tgt.hp < tgt.hpMax * 0.3 ? 1 + M.exe / 100 : 1) * (1 + M.cre * Math.min(10, Math.max(0, (F ? F.round : 1) - 1)) / 100) * (tgt && tgt.champ ? 1 + M.chd / 100 : 1); } // 2.0 : Maîtrise ; 2.1 : branches lointaines (boss, bourreau, crescendo, Champions)
     if (e.bt && tgt && tgt.race !== undefined && e.bt[tgt.race]) v *= 1 + e.bt[tgt.race] / 100; // 2.0 : Maîtrise du Bestiaire
     // passifs et mécaniques de classe (evc : rang de l'Éveil de classe, 0 à 2, qui renforce le passif)
     const evc = e.evc || 0;
@@ -2377,7 +2380,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") * (E.mtAcctMult ? E.mtAcctMult(S) : 1)); // 2.0 : Maîtrise du compte // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") * (E.mtAcctMult ? E.mtAcctMult(S) : 1) * (E.mtOwn ? E.mtOwn(S, c, "xp") : 1)); // 2.0 : Maîtrise du compte ; 2.1 : Érudit // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
       if (E.montiXpShare) g -= E.montiXpShare(S, c, g); // 1.1 : le montilier grandit avec l'XP du héros
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
@@ -2391,9 +2394,10 @@
       const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
       if (g > 0) { const gr = Math.round(g * E.renXpMult(tr)); out.xp[tr.id] = gr; if (E.giveXp(S, tr, gr - E.mountXpShare(S, tr, gr))) out.ups.push([tr.name, tr.lvl]); } // 1.0.30.2 : le résultat de combat montre l'XP avec la Renaissance
     }
+    if (E.mtTeam) out.kamas = Math.round(out.kamas * E.mtTeam(S, team, "kam")); // 2.1 : Banquier
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.btLoot ? E.btLoot(S, mons) : 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.btLoot ? E.btLoot(S, mons) : 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts) * (E.mtTeam ? E.mtTeam(S, team, "loot") : 1); // 2.1 : Pilleur (jamais les Dofus)
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -2955,6 +2959,7 @@
     E.exoDrop(S, DUNGEONS[did].lvl, k, out); // 0.1.9.1 : runes exotiques
     if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
+    if (E.MT_GATES) E.MT_GATES.forEach((G) => { if (G.did === did && k >= G.s && !(S.mtGates || []).includes(G.b)) { (S.mtGates = S.mtGates || []).push(G.b); E.mtGateSync(S); note(S, `Porte des étoiles ouverte : ${G.b} ! Deux branches lointaines s'ouvrent dans la Maîtrise de tous tes héros.`, "rare"); } }); // 2.1
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (SI.sz !== E.STASIS_SAISON) { SI.sz = E.STASIS_SAISON; SI.sk = 0; SI.st = 0; } // saison des sorts des boss
     if (k > (SI.sk || 0)) { SI.sk = k; SI.st = t; } else if (k === SI.sk && t > 0 && (!SI.st || t < SI.st)) SI.st = t;
@@ -3122,13 +3127,14 @@
     if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
     const fe = k * E.FIND_CHANCE; const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
     let v = (k + 4 * finds) * (1 + J.lvl / 200) * y * E.almMult(S, "gather", W.job); // Almanax « Récolte abondante »
+    if (E.mtOwn) v *= E.mtOwn(S, c, "rec"); // 2.1 : Artisan (récolte)
     if (E.filonOn(S, W.res)) v *= 2;
     v *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
     if (frac >= 1 && !opts.quiet) E.protSpawn(S, c, W, k);
     let q = Math.floor(v); if (rnd() < v - q) q++;
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
     if (q) addRes(S, W.res, q);
-    J.xp += (10 + def[1] * 1.0) * y * k;
+    J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn ? E.mtOwn(S, c, "xpj") : 1); // 2.1 : Artisan (XP de métier)
     while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
     return q;
@@ -3255,7 +3261,7 @@
     return out.n ? out : (out.err || "Fabrication impossible.");
   };
   const craftXp = (S, job, x) => {
-    const J = S.crafts[job]; J.xp += x;
+    const J = S.crafts[job]; J.xp += x * (E.mtOwn ? Math.max(1, ...S.chars.map((c) => E.mtOwn(S, c, "xpj"))) : 1); // 2.1 : Artisan (le meilleur héros du compte)
     while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
   };
 
@@ -3745,6 +3751,7 @@
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
     S.v = E.VERSION;
+    if (E.mtGateSync) { S.mtGates = E.mtGatesOpen(S); E.mtGateSync(S); } // 2.1 : Portes des étoiles déjà méritées, sans message
     if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
     return S;
   };

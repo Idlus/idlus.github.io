@@ -106,13 +106,17 @@ const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._ro
 const REN = Math.min(E.REN_MAX, +arg("renaissance", 0));
 /* 2.0 --maitrise N : chaque héros niveau 200 place N points comme un joueur : la clé de voûte de son élément fort, puis les meilleures étoiles autour */
 const MTN = +arg("maitrise", 0);
-const giveMt = (S) => { if (!MTN) return; S.chars.forEach((c) => { if (c.lvl < E.MAX_LVL) return; const T = E.mtTree(c.cls); const got = new Set([T.start]); const main = D.CLASSES[c.cls].main;
+const PORTES = flag("portes"); // 2.1 --portes : les 5 Portes des étoiles ouvertes (branches lointaines)
+const giveMt = (S) => { if (!MTN) return; if (PORTES) E.MT_GATES.forEach((G) => (E.stasisInfo(S, G.did).max = Math.max(E.stasisInfo(S, G.did).max, G.s))); S.chars.forEach((c) => { if (c.lvl < E.MAX_LVL) return; const T = E.mtTree(c.cls); const got = new Set([T.start]); const main = D.CLASSES[c.cls].main;
   const EL = { fo: "t", ine: "f", cha: "e", age: "a" }[main] || "t";
-  const val = (n) => { if (n.neb && MTN < E.MT_OPEN) return -1; if (n.t === "start") return -1; let v = 0;
+  const val = (n) => { if (n.neb && MTN < E.MT_OPEN) return -1; if (process.env.MTNOBR && n.gated != null) return -1; // MTNOBR=1 : sans les branches lointaines if (n.t === "start") return -1; let v = 0;
     (n.b || []).forEach(([lb, x]) => { v += lb.startsWith("Passif") ? x * 2 : lb === ({ t: "Force", f: "Intelligence", e: "Chance", a: "Agilité" })[EL] ? x : lb === "Puissance" ? x : lb === `% dégâts ${({ t: "Terre", f: "Feu", e: "Eau", a: "Air" })[EL]}` || lb === "% dégâts" ? x * 12 : lb === "% PV" ? x * 5 : lb === "Vitalité" ? x * 0.2 : lb === "Résistances" || lb === "Résistance" ? x * 4 : lb === "Critique" ? x * 3 : x * 0.1; });
+    (n.b || []).forEach(([lb, x]) => { v += lb === "% dégâts aux boss" ? x * 5 : lb === "% dégâts aux ennemis sous 30 % PV" ? x * 3 : lb === "% vol de vie" ? x * 6 : lb === "% dégâts par tour (10 tours max)" ? x * 50 : lb === "% dégâts renvoyés" ? x * 3 : 0; }); // 2.1
+    if (n.fx) v += (n.fx.boss || 0) * 5 + (n.fx.exe || 0) * 3 + (n.fx.vv || 0) * 6 + (n.fx.cre || 0) * 50 + (n.fx.rv || 0) * 3 + (n.fx.h || 0) * 1 - (n.fx.loot || n.fx.kam || n.fx.xp || n.fx.xpj || n.fx.champ ? 1e3 : 0); // 2.1
     if (n.fx) v += (n.fx.d || 0) * 12 + (n.fx[EL] || 0) * 12 + (n.fx.hp || 0) * 5 + (n.fx.res || 0) * 4 + (n.fx.t1 || 0) * 3 + (n.fx.cx || 0) * 2 + (n.fx.pass || 0) * 2 + (n.fx.sh || 0) * 3 - (n.fx.pm || 0 ? 30 : 0) - (n.fx.pa ? 80 : 0);
     return v; };
   let left = MTN;
+  if (process.env.MTFORCE) { // MTFORCE="La Sangsue" : chaque héros prend d'abord cette branche lointaine const k0 = T.N.find((n) => n.end && n.br === process.env.MTFORCE); const pv = new Map([[T.start, -1]]); const q0 = [T.start]; while (q0.length) { const x = q0.shift(); for (const y of T.N[x].adj) if (!pv.has(y) && !T.N[y].neb) { pv.set(y, x); q0.push(y); } } for (let x = k0.id; x !== T.start; x = pv.get(x)) { got.add(x); left--; } }
   while (left > 0) { // le meilleur gain par point parmi les chemins de 1 à 8 étoiles
     const prev = new Map(); const dist = new Map(); const q = [...got]; q.forEach((x) => { prev.set(x, -1); dist.set(x, 0); }); let hd = 0;
     while (hd < q.length) { const x = q[hd++]; if (dist.get(x) >= Math.min(8, left)) continue; for (const y of T.N[x].adj) { if (prev.has(y) || val(T.N[y]) < 0) continue; prev.set(y, x); dist.set(y, dist.get(x) + 1); q.push(y); } }

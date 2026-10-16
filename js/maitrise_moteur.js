@@ -75,39 +75,32 @@
   /* effets en combat : libellé d'étoile → [st (caractéristique ajoutée) | fx (effet de combat), clé] */
   const LBL = { "Force": ["st", "fo"], "Intelligence": ["st", "ine"], "Chance": ["st", "cha"], "Agilité": ["st", "age"], "Vitalité": ["st", "vit"], "Sagesse": ["st", "sa"], "Puissance": ["st", "pui"],
     "Prospection": ["st", "pp"], "Initiative": ["st", "ini"], "Soins": ["st", "so"], "Critique": ["fx", "cri"], "% dégâts Terre": ["fx", "t"], "% dégâts Feu": ["fx", "f"], "% dégâts Eau": ["fx", "e"],
-    "% dégâts Air": ["fx", "a"], "% dégâts": ["fx", "d"], "% PV": ["fx", "hp"], "Résistance": ["fx", "res"], "Résistances": ["fx", "res"], "% soins": ["fx", "h"], "% dégâts critiques": ["fx", "cx"], "% dégâts au premier tour": ["fx", "t1"], "% dégâts sous la moitié des PV": ["fx", "low"], "Bouclier (% PV)": ["fx", "sh"] };
-  const FXK = ["d", "t", "f", "e", "a", "hp", "res", "cri", "cx", "h", "t1", "low", "pa", "pm", "sh", "rev", "pass"];
+    "% dégâts Air": ["fx", "a"], "% dégâts": ["fx", "d"], "% PV": ["fx", "hp"], "Résistance": ["fx", "res"], "Résistances": ["fx", "res"], "% soins": ["fx", "h"], "% dégâts critiques": ["fx", "cx"], "% dégâts au premier tour": ["fx", "t1"], "% dégâts sous la moitié des PV": ["fx", "low"], "Bouclier (% PV)": ["fx", "sh"],
+    "% vol de vie": ["fx", "vv"], "% dégâts renvoyés": ["fx", "rv"], "% dégâts aux boss": ["fx", "boss"], "% dégâts aux ennemis sous 30 % PV": ["fx", "exe"], "% dégâts par tour (10 tours max)": ["fx", "cre"], "% dégâts aux Champions": ["fx", "chd"],
+    "% butin": ["fx", "loot"], "% kamas gagnés": ["fx", "kam"], "% XP": ["fx", "xp"], "% XP de métier": ["fx", "xpj"], "% récolte": ["fx", "rec"], "% chance de Champion": ["fx", "champ"] }; // 2.1 : branches lointaines
+  const FXK = ["d", "t", "f", "e", "a", "hp", "res", "cri", "cx", "h", "t1", "low", "pa", "pm", "sh", "rev", "pass", "vv", "rv", "boss", "exe", "cre", "chd", "loot", "kam", "xp", "xpj", "rec", "champ"];
   const FXT = { d: " % de dégâts", t: " % de dégâts Terre", f: " % de dégâts Feu", e: " % de dégâts Eau", a: " % de dégâts Air", hp: " % de PV", res: " % de résistances", cri: " % de coups critiques",
-    cx: " % de dégâts critiques", h: " % de soins et de boucliers", t1: " % de dégâts au premier tour", low: " % de dégâts sous la moitié de ses PV", pa: " PA", pm: " PM", pp: " Prospection", ini: " Initiative", pass: " % d'effet du passif de classe", vv: " % de vol de vie", rv: " % des dégâts subis renvoyés", boss: " % de dégâts aux boss", exe: " % de dégâts aux ennemis sous 30 % PV", cre: " % de dégâts par tour écoulé (10 tours max)", inv: " % de dégâts des invocations", esq: " % de chances d'esquiver un coup", reg: " % des PV rendus chaque tour", sha: " % des PV en bouclier pour chaque allié", pa1: " PA au premier tour", loot: " % de butin", kam: " % de kamas", xp: " % d'XP", xpj: " % d'XP de métier", champ: " % de chances de Champion" };
+    cx: " % de dégâts critiques", h: " % de soins et de boucliers", t1: " % de dégâts au premier tour", low: " % de dégâts sous la moitié de ses PV", pa: " PA", pm: " PM", pp: " Prospection", ini: " Initiative", pass: " % d'effet du passif de classe", vv: " % de vol de vie", rv: " % des dégâts subis renvoyés", boss: " % de dégâts aux boss", exe: " % de dégâts aux ennemis sous 30 % PV", cre: " % de dégâts par tour écoulé (10 tours max)", chd: " % de dégâts aux Champions", loot: " % de butin", kam: " % de kamas", xp: " % d'XP", xpj: " % d'XP de métier", rec: " % de récolte", champ: " % de chances de Champion" };
   const nf = (v) => String(Math.round(v * 10) / 10).replace(".", ","); E.mtNf = nf;
   const sg = (v) => (v > 0 ? `+${v}` : `−${-v}`);
   E.mtFxTxt = (fx) => { const t = mtFxTxt0(fx); return t.charAt(0).toUpperCase() + t.slice(1); };
   const mtFxTxt0 = (fx) => Object.keys(fx).sort((x, y) => (fx[y] > 0) - (fx[x] > 0)).map((k) => k === "sh" ? `bouclier de ${fx[k]} % des PV au début du combat` : k === "rev" ? `se relève une fois par combat à ${fx[k]} % des PV` : `${sg(fx[k])}${FXT[k]}`).join(" ; ") + ".";
-  /* MAQUETTE : thèmes des Constellations lointaines */
-  E.MT_BRTH = {
-    combat: [
-      { n: "La Sangsue", c: "#e2455f", sm: [["% vol de vie", 0.3, "vit"], ["% dégâts", 0.3, "pui"]], nt: [["Morsure", [["% vol de vie", 1.5], ["% dégâts", 1]]], ["Sang neuf", [["% vol de vie", 2], ["% PV", 1]]]], ks: ["Soif de sang", { vv: 10, h: -25 }], big: ["Festin", [["% vol de vie", 5]]] },
-      { n: "Le Miroir", c: "#9fe7ff", sm: [["% dégâts renvoyés", 0.5, "re"], ["Résistances", 0.3, "re"]], nt: [["Éclat", [["% dégâts renvoyés", 3]]], ["Reflet", [["% dégâts renvoyés", 2], ["Résistances", 1]]]], ks: ["Reflet parfait", { rv: 15, d: -8 }], big: ["Palais des glaces", [["% dégâts renvoyés", 8]]] },
-      { n: "Le Chasseur de géants", c: "#f2c14e", sm: [["% dégâts aux boss", 0.6, "pui"], ["Critique", 0.3, "cri"]], nt: [["Tueur de Dragons", [["% dégâts aux boss", 3]]], ["Trophée", [["% dégâts aux boss", 2], ["% dégâts critiques", 2]]]], ks: ["Tueur de titans", { boss: 20, d: -8 }], big: ["Légende", [["% dégâts aux boss", 8]]] },
-      { n: "Le Bourreau", c: "#b06cff", sm: [["% dégâts aux ennemis sous 30 % PV", 1.2, "pui"], ["% dégâts", 0.3, "pui"]], nt: [["Exécution", [["% dégâts aux ennemis sous 30 % PV", 6]]], ["Hache du bourreau", [["% dégâts aux ennemis sous 30 % PV", 4], ["Critique", 1]]]], ks: ["Coup de grâce", { exe: 40, t1: -20 }], big: ["Sans pitié", [["% dégâts aux ennemis sous 30 % PV", 15]]] },
-      { n: "Le Crescendo", c: "#ff9a3c", sm: [["% dégâts par tour (10 tours max)", 0.06, "pui"], ["Initiative", 10, "ini"]], nt: [["Montée", [["% dégâts par tour (10 tours max)", 0.3]]], ["Apogée", [["% dégâts par tour (10 tours max)", 0.2], ["% PV", 1]]]], ks: ["Montée en puissance", { cre: 1.5, t1: -30 }], big: ["Finale", [["% dégâts par tour (10 tours max)", 0.8]]] },
-      { n: "L'Invocateur", c: "#6be0a0", sm: [["% dégâts des invocations", 1, "pui"], ["% PV des invocations", 1, "vit"]], nt: [["Meute", [["% dégâts des invocations", 5]]], ["Lien d'âme", [["% PV des invocations", 5], ["% dégâts des invocations", 2]]]], ks: ["Maître des invocations", { inv: 30, d: -10 }], big: ["Légion", [["% dégâts des invocations", 12]]] },
-      { n: "L'Ombre", c: "#8d93b8", sm: [["% d'esquive", 0.3, "age"], ["Agilité", 2, "age"]], nt: [["Pas de côté", [["% d'esquive", 1.5]]], ["Silhouette", [["% d'esquive", 1], ["% dégâts au premier tour", 3]]]], ks: ["Insaisissable", { esq: 12, hp: -15 }], big: ["Fantôme", [["% d'esquive", 4]]] },
-      { n: "Le Troll", c: "#7fbf5a", sm: [["% PV rendus chaque tour", 0.1, "vit"], ["Vitalité", 8, "vit"]], nt: [["Peau de troll", [["% PV rendus chaque tour", 0.5]]], ["Repousse", [["% PV rendus chaque tour", 0.3], ["% PV", 1.5]]]], ks: ["Régénération éternelle", { reg: 3, res: -8 }], big: ["Increvable", [["% PV rendus chaque tour", 1.5]]] },
-      { n: "L'Égide", c: "#c8d8ff", sm: [["Bouclier des alliés (% PV)", 0.2, "re"], ["Résistances", 0.3, "re"]], nt: [["Rempart commun", [["Bouclier des alliés (% PV)", 1]]], ["Serment", [["Bouclier des alliés (% PV)", 0.6], ["% soins", 2]]]], ks: ["Égide", { sha: 6, d: -12 }], big: ["Forteresse", [["Bouclier des alliés (% PV)", 3]]] },
-      { n: "La Fulgurance", c: "#ffe066", sm: [["% dégâts au premier tour", 1, "pui"], ["Initiative", 15, "ini"]], nt: [["Éclair", [["% dégâts au premier tour", 5]]], ["Premier sang", [["% dégâts au premier tour", 3], ["Critique", 1]]]], ks: ["Fulgurance", { pa1: 2, d: -6 }], big: ["Foudre", [["% dégâts au premier tour", 15]]] },
-    ],
-    farm: [
-      { n: "Le Pilleur", c: "#f2c14e", sm: [["% butin", 0.4, "pp"], ["Prospection", 2, "pp"]], nt: [["Sac sans fond", [["% butin", 2]]], ["Flair", [["% butin", 1.5], ["Prospection", 10]]]], ks: ["Pilleur de tombes", { loot: 15, d: -10 }], big: ["Trésor", [["% butin", 6]]] },
-      { n: "Le Banquier", c: "#e8c547", sm: [["% kamas gagnés", 0.6, "pp"], ["Chance", 2, "cha"]], nt: [["Bourse pleine", [["% kamas gagnés", 3]]], ["Intérêts", [["% kamas gagnés", 2], ["% butin", 1]]]], ks: ["Coffre d'or", { kam: 25, hp: -10 }], big: ["Fortune", [["% kamas gagnés", 10]]] },
-      { n: "L'Érudit", c: "#c49bff", sm: [["% XP", 0.5, "sa"], ["Sagesse", 2, "sa"]], nt: [["Leçon", [["% XP", 2.5]]], ["Bibliothèque", [["% XP", 2], ["Sagesse", 10]]]], ks: ["Éternel étudiant", { xp: 20, d: -10 }], big: ["Savoir", [["% XP", 8]]] },
-      { n: "L'Artisan", c: "#d39a5c", sm: [["% XP de métier", 0.8, "fo"], ["% récolte", 0.4, "fo"]], nt: [["Établi", [["% XP de métier", 4]]], ["Main sûre", [["% récolte", 2], ["% XP de métier", 2]]]], ks: ["Maître artisan", { xpj: 30, d: -10 }], big: ["Chef-d'œuvre", [["% XP de métier", 12]]] },
-      { n: "Le Traqueur", c: "#ff7a4a", sm: [["% chance de Champion", 0.3, "cri"], ["% dégâts aux Champions", 0.5, "pui"]], nt: [["Piste", [["% chance de Champion", 1.5]]], ["Trophée de chasse", [["% dégâts aux Champions", 3], ["% chance de Champion", 1]]]], ks: ["Grand veneur", { champ: 15, res: -8 }], big: ["Légende de la chasse", [["% chance de Champion", 5]]] },
-    ],
-  };
-  E.MT_BRTH.mix = [E.MT_BRTH.combat[0], E.MT_BRTH.farm[0], E.MT_BRTH.combat[2], E.MT_BRTH.farm[2], E.MT_BRTH.combat[3], E.MT_BRTH.farm[1], E.MT_BRTH.combat[4], E.MT_BRTH.farm[3], E.MT_BRTH.combat[1], E.MT_BRTH.farm[4]];
-  E.MT_BRTH.farm = E.MT_BRTH.farm.concat(E.MT_BRTH.combat.slice(0, 5));
-  if (!DOM[6]) DOM[6] = { n: "Constellation lointaine", c: "#9fe7ff", st: [["% dégâts", 0.5, "pui"]], nt: ["Porte"], ks: [] };
+  /* 2.1 « Branches lointaines » (choix de Mathis 1B 2C 3C 4A 5A) : 5 Portes des étoiles entre les domaines, chacune ouvre une branche combat et une branche farm ;
+     une Porte s'ouvre pour tout le compte en terminant le donjon de son boss à la stasis demandée. Même force par point que le reste de l'arbre. */
+  E.MT_GATES = [{ b: "Kabahal", did: "rituel_kabahal", s: 12 }, { b: "Roi Imagami", did: "memoire_orukam", s: 13 }, { b: "L'Éternel Conflit", did: "aurore_pourpre", s: 13 }, { b: "Belladone", did: "chambre_malefices", s: 14 }, { b: "Déchireuse", did: "autel_dechireuse", s: 15 }];
+  E.MT_BRTH = [
+    { n: "La Sangsue", c: "#e2455f", sm: [["% vol de vie", 0.1, "vit"], ["% dégâts", 0.2, "pui"]], nt: [["Morsure", [["% vol de vie", 0.5], ["% dégâts", 0.5]]], ["Sang neuf", [["% vol de vie", 0.5], ["% PV", 1]]]], ks: ["Soif de sang", { vv: 3, h: -25 }] },
+    { n: "Le Pilleur", c: "#f2c14e", sm: [["% butin", 0.4, "pp"], ["Prospection", 2, "pp"]], nt: [["Sac sans fond", [["% butin", 2]]], ["Flair", [["% butin", 1.5], ["Prospection", 10]]]], ks: ["Pilleur de tombes", { loot: 15, d: -10 }] },
+    { n: "Le Chasseur de géants", c: "#f2c14e", sm: [["% dégâts aux boss", 0.3, "pui"], ["Critique", 0.2, "cri"]], nt: [["Tueur de Dragons", [["% dégâts aux boss", 1.5]]], ["Trophée", [["% dégâts aux boss", 1], ["% dégâts critiques", 2]]]], ks: ["Tueur de titans", { boss: 12, d: -8 }] },
+    { n: "L'Érudit", c: "#c49bff", sm: [["% XP", 0.5, "sa"], ["Sagesse", 2, "sa"]], nt: [["Leçon", [["% XP", 2.5]]], ["Bibliothèque", [["% XP", 2], ["Sagesse", 10]]]], ks: ["Éternel étudiant", { xp: 20, d: -10 }] },
+    { n: "Le Bourreau", c: "#b06cff", sm: [["% dégâts aux ennemis sous 30 % PV", 0.6, "pui"], ["% dégâts", 0.2, "pui"]], nt: [["Exécution", [["% dégâts aux ennemis sous 30 % PV", 3]]], ["Hache du bourreau", [["% dégâts aux ennemis sous 30 % PV", 2], ["Critique", 1]]]], ks: ["Coup de grâce", { exe: 25, t1: -20 }] },
+    { n: "Le Banquier", c: "#e8c547", sm: [["% kamas gagnés", 0.6, "pp"], ["Chance", 2, "cha"]], nt: [["Bourse pleine", [["% kamas gagnés", 3]]], ["Intérêts", [["% kamas gagnés", 2], ["% butin", 1]]]], ks: ["Coffre d'or", { kam: 25, hp: -10 }] },
+    { n: "Le Crescendo", c: "#ff9a3c", sm: [["% dégâts par tour (10 tours max)", 0.03, "pui"], ["Initiative", 10, "ini"]], nt: [["Montée", [["% dégâts par tour (10 tours max)", 0.15]]], ["Apogée", [["% dégâts par tour (10 tours max)", 0.1], ["% PV", 1]]]], ks: ["Montée en puissance", { cre: 1, t1: -30 }] },
+    { n: "L'Artisan", c: "#d39a5c", sm: [["% XP de métier", 0.8, "fo"], ["% récolte", 0.4, "fo"]], nt: [["Établi", [["% XP de métier", 4]]], ["Main sûre", [["% récolte", 2], ["% XP de métier", 2]]]], ks: ["Maître artisan", { xpj: 30, d: -10 }] },
+    { n: "Le Miroir", c: "#9fe7ff", sm: [["% dégâts renvoyés", 0.3, "re"], ["Résistances", 0.2, "re"]], nt: [["Éclat", [["% dégâts renvoyés", 2]]], ["Reflet", [["% dégâts renvoyés", 1.5], ["Résistances", 1]]]], ks: ["Reflet parfait", { rv: 10, d: -8 }] },
+    { n: "Le Traqueur", c: "#ff7a4a", sm: [["% chance de Champion", 0.3, "cri"], ["% dégâts aux Champions", 0.5, "pui"]], nt: [["Piste", [["% chance de Champion", 1.5]]], ["Trophée de chasse", [["% dégâts aux Champions", 3], ["% chance de Champion", 1]]]], ks: ["Grand veneur", { champ: 15, res: -8 }] },
+  ];
+  if (!DOM[6]) DOM[6] = { n: "Branches lointaines", c: "#9fe7ff", st: [["% dégâts", 0.5, "pui"]], nt: ["Porte"], ks: [] }; // domaine des étoiles des Portes (pas de nom de domaine dessiné)
   /* ---------- un ciel par classe ---------- */
   const TREES = {};
   const CLS_IDX = () => D.CLASS_ORDER || Object.keys(CLASSES);
@@ -173,17 +166,14 @@
     }
     /* 2.0.9 : les 3 clés de voûte d'un domaine sont reliées entre elles par le dernier cercle, dans tous les ciels (Mathis : « côté Feu c'est tout relié… mais pas dans la voie Terre »). Étoiles ajoutées à la fin : les numéros des autres ne changent pas */
     SP.forEach((S0, si) => { const T2 = SP[(si + 1) % SP.length]; if (T2.d !== S0.d || S0.c4) return; const a = S0.lv[4][2], b = T2.lv[4][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, 4 + si), mt, N[a].r)); link(a, m1); link(m1, b); });
-    /* MAQUETTE (pas publié) : Constellations lointaines, des branches en plus avec des bonus inédits */
-    if (typeof window !== "undefined" && window.__MTBR) { const CF = window.__MTBR; const TH = E.MT_BRTH[CF.kind || "combat"];
-      const bounds = CF.n === 3 ? [0, 2, 4] : [0, 1, 2, 4, 5];
+    /* 2.1 : branches lointaines, ajoutées à la fin du ciel (les numéros des autres étoiles ne changent pas) */
+    { const bounds = [0, 1, 2, 4, 5]; let ti = 0; // le 6e passage (en bas) est celui de la Nébuleuse
       const nearSp = (th) => { let bi = 0, bd = 9; SP.forEach((x, i) => { const dd = Math.abs(((x.th - th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; bi = i; } }); return bi; };
-      let ti = 0;
-      bounds.forEach((kb) => { const tb = TAU * kb / 6; const si = nearSp(tb - 0.2236); const A = SP[si], B = SP[(si + 1) % SP.length];
-        const GB = [["Kabahal", 12], ["Roi Imagami", 13], ["L'Éternel Conflit", 13], ["Belladone", 14], ["Déchireuse", 15]][bounds.indexOf(kb) % 5]; const porte = add(P({ t: "s", d: 6, n: GB[0], gate: { b: GB[0], s: GB[1] }, b: [["% dégâts", 0.5]], txt: `+0,5 % dégâts. S'ouvre en battant ${GB[0]} en stasis ${GB[1]} ou plus.`, ic: "pui", col: "#9fe7ff" }, tb, 1430)); N[porte].gated = porte; link(A.lv[4][2], porte); link(B.lv[4][6], porte);
-        const fan = CF.n === 10 ? [-0.13, 0.13] : [0];
-        fan.forEach((o) => { const Tm = TH[ti++ % TH.length]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c, gated: porte });
-          const sm = (i) => { const s = Tm.sm[i % Tm.sm.length]; return tag({ t: "s", n: s[0], b: [[s[0], s[1]]], txt: `+${nf(s[1])} ${s[0]}`, ic: s[2] || "pui" }); };
-          const ntb = (j) => { const q = Tm.nt[j]; return tag({ t: "nt", n: q[0], b: q[1], txt: q[1].map(([s, v]) => `+${nf(v)} ${s}`).join(" · "), ic: (Tm.sm[0][2]) || "pui" }); };
+      bounds.forEach((kb, gi) => { const tb = TAU * kb / 6; const si = nearSp(tb - 0.2236); const A = SP[si], B = SP[(si + 1) % SP.length]; const G = E.MT_GATES[gi];
+        const porte = add(P({ t: "s", d: 6, n: G.b, gate: G, b: [["% dégâts", 0.5]], txt: `+0,5 % dégâts. S'ouvre pour tout le compte en terminant le donjon de ${G.b} en stasis ${G.s} ou plus.`, ic: "pui", col: "#9fe7ff" }, tb, 1430)); N[porte].gated = porte; link(A.lv[4][2], porte); // un seul accès : la Porte n'est pas un raccourci entre deux domaines (même force par point, choix 4A)
+        [-0.13, 0.13].forEach((o) => { const Tm = E.MT_BRTH[ti++]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c, gated: porte });
+          const sm = (i) => { const q = Tm.sm[i % Tm.sm.length]; return tag({ t: "s", n: q[0], b: [[q[0], q[1]]], txt: `+${nf(q[1])} ${q[0]}`, ic: q[2] }); };
+          const ntb = (j) => { const q = Tm.nt[j]; return tag({ t: "nt", n: q[0], b: q[1].map((x) => x.slice()), txt: q[1].map(([a, v]) => `+${nf(v)} ${a}`).join(" · "), ic: Tm.sm[0][2] }); };
           let prev = porte, r = 1480;
           for (let cc = 0; cc < 2; cc++) {
             for (let i = 0; i < 4; i++) { const id = add(P(sm(i + cc), th, r)); link(prev, id); prev = id; r += 34; }
@@ -191,8 +181,7 @@
             for (let j = 0; j < 6; j++) { const a = TAU * j / 6 + Math.PI; ring.push(add(P(sm(j + 1), th, r, Math.cos(a) * 44, -Math.sin(a) * 44))); }
             ring.forEach((id, j) => link(id, ring[(j + 1) % 6])); link(prev, ring[0]); link(ctr, ring[1]); link(ctr, ring[4]); prev = ring[3]; r += 84;
           }
-          if (CF.end === "nt") { link(prev, add(P(tag({ t: "nt", end: 1, n: Tm.big[0], b: Tm.big[1], txt: Tm.big[1].map(([s, v]) => `+${nf(v)} ${s}`).join(" · "), ic: Tm.sm[0][2] || "pui" }), th, r + 10))); }
-          else link(prev, add(P(tag({ t: "ks", end: 1, n: Tm.ks[0], fx: Tm.ks[1], txt: E.mtFxTxt(Tm.ks[1]), b: [], ic: null }), th, r + 10)));
+          link(prev, add(P(tag({ t: "ks", end: 1, n: Tm.ks[0], fx: Tm.ks[1], txt: E.mtFxTxt(Tm.ks[1]), b: [], ic: null }), th, r + 10)));
         }); });
     }
     for (const n of N) { const X0 = Math.sin(n.th) * n.r, Y0 = -Math.cos(n.th) * n.r, psi = n.th - Math.PI / 2; n.X = X0 + Math.cos(psi) * n.lr - Math.sin(psi) * n.lt; n.Y = Y0 + Math.sin(psi) * n.lr + Math.cos(psi) * n.lt; }
@@ -202,13 +191,20 @@
   E.mtTree = build;
   const NKS = [["Œil de l'Éternel", { res: 15, d: -5 }], ["Larme d'Eliatrope", { d: 10, hp: 10, pm: -1 }], ["Souffle d'Ogrest", { t1: 100, hp: -15 }]];
   /* 2.0.3 : seules comptent les étoiles qui existent, reliées au départ par des étoiles prises (Nébuleuse fermée sous E.MT_OPEN points) : un code d'arbre ou une sauvegarde abîmée ne donne rien de plus */
-  E.mtClean = (c, ids) => { const T = build(c.cls); const neb = E.mtPts(c) >= E.MT_OPEN; const want = new Set((ids || []).filter((id) => Number.isInteger(id) && T.N[id] && T.N[id].t !== "start" && (neb || !T.N[id].neb)));
+  E.mtClean = (c, ids) => { const T = build(c.cls); const neb = E.mtPts(c) >= E.MT_OPEN; const want = new Set((ids || []).filter((id) => Number.isInteger(id) && T.N[id] && T.N[id].t !== "start" && (neb || !T.N[id].neb) && (T.N[id].gated == null || E.mtGateOk(c, T.N[T.N[id].gated].gate))));
     /* 2.0.8 (choix de Mathis 2A) : pas plus d'étoiles que de points ; on garde les premières trouvées depuis le départ (toujours reliées) */
     const cap = E.mtPts(c); const seen = new Set([T.start]); const q = [T.start]; while (q.length && seen.size <= cap) { const x = q.pop(); for (const y of T.N[x].adj) if (want.has(y) && !seen.has(y) && seen.size <= cap) { seen.add(y); q.push(y); } } seen.delete(T.start); return [...seen]; };
+  /* 2.1 : Portes des étoiles. Ouvertes pour le compte (stasis atteinte dans le donjon du boss) ; recopiées sur chaque héros (c.mt.g) pour que l'arbre se lise sans le compte */
+  E.mtGatesOpen = (S) => E.MT_GATES.filter((G) => ((S && S.stasis && S.stasis[G.did]) || {}).max >= G.s).map((G) => G.b);
+  E.mtGateSync = (S) => { if (!S || !S.chars) return []; const o = E.mtGatesOpen(S); S.chars.forEach((c) => { if (c.mt) c.mt.g = o.slice(); }); return o; };
+  E.mtGateOk = (c, G) => !!(G && c && c.mt && (c.mt.g || []).includes(G.b));
+  /* 2.1 : bonus de farm des branches lointaines. XP et métiers : ceux du héros ; butin, kamas et Champions : moyenne de l'équipe (une équipe entière qui y va prend le bonus entier) */
+  E.mtTeam = (S, team, k) => { const T = (team || []).filter((c) => c && E.mtOn(c)); if (!team || !team.length) return 1; let t = 0; T.forEach((c) => { const f = E.mtFx(S, c); if (f) t += f[k] || 0; }); return Math.max(0.1, 1 + t / team.length / 100); };
+  E.mtOwn = (S, c, k) => { const f = c && E.mtFx ? E.mtFx(S, c) : null; return f ? Math.max(0.1, 1 + (f[k] || 0) / 100) : 1; };
   E.mtGot = (c, lo) => { const M = E.mt(c); const T = build(c.cls); return new Set([T.start, ...E.mtClean(c, M.t[lo === undefined ? M.lo : lo])]); };
   /* 2.0.3 : un joyau ne sert qu'à un héros (le premier de l'équipe qui l'a serti) */
   E.joyOwner = (S, uid) => { for (const h of S.chars || []) if (h.mt && h.mt.j && Object.values(h.mt.j).includes(uid)) return h; return null; };
-  E.mtStats = (S, c, set) => { const T = build(c.cls); const got = set || E.mtGot(c); const t = {}; const ks = [];
+  E.mtStats = (S, c, set) => { if (S && S.chars && c.mt) c.mt.g = E.mtGatesOpen(S); const T = build(c.cls); const got = set || E.mtGot(c); const t = {}; const ks = [];
     got.forEach((id) => { const n = T.N[id]; if (!n) return; if (n.t === "ks" || n.t === "cks") ks.push(n); (n.b || []).forEach(([s, v]) => (t[s] = (t[s] || 0) + v)); });
     const sym = T.coreIds.every((id) => got.has(id)); if (sym) t[`Passif ${T.pas} (%)`] = (t[`Passif ${T.pas} (%)`] || 0) + 5;
     const M = E.mt(c); for (const id in M.j) if (got.has(+id)) { const J = (S.joy || []).find((x) => x.uid === M.j[id]); if (J && JOY[J.k] && E.joyOwner(S, J.uid) === c) { const [s, v] = JOY[J.k].b; t[s] = (t[s] || 0) + v; } }
@@ -260,8 +256,8 @@
   const CACHE = new WeakMap();
   E.mtFx = (S, c) => {
     if (!E.mtOn(c) || !c.mt) return null; const M = c.mt; const ids = M.t[M.lo] || [];
-    if (!ids.length) return null;
-    const key = `${c.cls}|${M.lo}|${ids.join(",")}|${E.mtPts(c)}|${JSON.stringify(M.j || {})}|${Object.values(M.j || {}).map((u) => E.joyOwner(S, u) === c ? 1 : 0).join("")}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
+    if (!ids.length) return null; M.g = E.mtGatesOpen(S);
+    const key = `${(M.g || []).join(",")}|${c.cls}|${M.lo}|${ids.join(",")}|${E.mtPts(c)}|${JSON.stringify(M.j || {})}|${Object.values(M.j || {}).map((u) => E.joyOwner(S, u) === c ? 1 : 0).join("")}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
     const { t, ks } = E.mtStats(S, c); const fx = { st: {} }; FXK.forEach((k) => (fx[k] = 0));
     for (const lb in t) { if (lb.startsWith("Passif ")) { fx.pass += t[lb]; continue; } const m = LBL[lb]; if (!m) continue; if (m[0] === "st") fx.st[m[1]] = (fx.st[m[1]] || 0) + t[lb]; else fx[m[1]] += t[lb]; }
     ks.forEach((n) => { for (const k in n.fx || {}) { if (k === "pp" || k === "ini") fx.st[k] = (fx.st[k] || 0) + n.fx[k]; else if (k === "rev") fx.rev = Math.max(fx.rev, n.fx[k]); else fx[k] += n.fx[k]; } });
