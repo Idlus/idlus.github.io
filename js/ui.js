@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.9";
+const GAME_VERSION = "2.1.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.10", name: "Où trouver l'offrande", guide: "quetes", items: [
+    "Almanax : sous l'offrande, « Où la trouver » montre les monstres qui lâchent la ressource demandée (zone, niveau, chance de butin), la zone ouverte la plus proche du niveau de ton équipe en premier",
+    "Bouton « Y aller » qui lance directement la chasse dans cette zone (ou ouvre le donjon), et « Récolter » si la ressource vient d'un métier"
+  ] },
   { v: "2.1.9", name: "Équipement verrouillé", guide: "equipement", items: [
     "Héros › Équipement : cliquez un emplacement puis « Verrouiller » (cadenas) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus",
     "Un petit cadenas doré marque les emplacements verrouillés ; retirer l'objet enlève le verrou"
@@ -7451,6 +7455,22 @@ function alignHtml() {
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
     </div></section>${shopLink("cite")}`;
 }
+/* 2.1.10 : où trouver la ressource de l'offrande : le métier si elle se récolte, sinon les monstres qui la lâchent,
+   la zone ouverte la plus proche du niveau de l'équipe d'abord, avec « Y aller » qui lance la chasse (ou ouvre le donjon) */
+function almSrcHtml(r) {
+  const t = topTeamLvl(); const lv = (w) => parseInt(w.lvl, 10) || 0;
+  const g = (resIndex().src[r] || []).find((x) => x.job);
+  const L0 = dropMons("res", r, 30); const L = (L0.some((x) => !x.w.archi) ? L0.filter((x) => !x.w.archi) : L0).sort((a, b) => !!a.w.archi - !!b.w.archi || b.w.open - a.w.open || (lv(a.w) > t + 5) - (lv(b.w) > t + 5) || b.p - a.p);
+  const zk = (x) => x.w.dg || x.w.sub; const Z = L.filter((x, i) => L.findIndex((y) => zk(y) === zk(x)) === i).slice(0, 3); // une ligne par zone, les autres monstres de la zone en « aussi »
+  if (!g && !L.length) return "";
+  const go = (w, first) => w.dg ? `<button class="btn sm ${first && w.open ? "primary" : ""}" data-act="dgopen" data-id="${w.dg}">${IC("cle")} Donjon</button>`
+    : w.open ? (S.sub === w.sub && S.hunting ? `<span class="tag good">Tu y es</span>` : `<button class="btn sm ${first ? "primary" : ""}" data-act="hunt" data-id="${w.sub}" ${S.dungeon ? "disabled" : ""}>${IC("carte")} Y aller</button>`)
+    : `<button class="btn sm" data-act="zoneview" data-id="${w.sub}" data-gotab="world">${G("lock")} Voir</button>`;
+  const job = g ? `<div class="li monli"><span class="icobox">${IC("pioche")}</span><span class="grow"><b>${h(GATHER_JOBS[g.job].name)}</b><span class="monwhere xs">Se récolte · métier niv. ${g.lvl}</span></span><button class="btn sm primary" data-act="gathersheet" data-job="${g.job}">${IC("pioche")} Récolter</button></div>` : "";
+  const mons = Z.map((x, i) => { const M = MONSTERS[x.mon]; const w = x.w; const aussi = L.filter((y) => y !== x && zk(y) === zk(x)).map((y) => MONSTERS[y.mon].name);
+    return `<div class="li monli ${w.open ? "" : "locked"}"><span class="icobox">${im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${h(M.name)}</b>${w.archi ? ` <span class="tag soft">archimonstre</span>` : ""}<span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span>${aussi.length ? `<span class="monwhere xs">aussi : ${h(aussi.join(", "))}</span>` : ""}</span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span>${go(w, i === 0 && !g)}</div>`; }).join("");
+  return `<div class="alx-src"><div class="alx-h">Où la trouver</div><div class="list">${job}${mons}</div></div>`;
+}
 function almanaxHtml() {
   /* 0.1.39 : le calendrier de DOFUS, un Méryde et un bonus ciblé par jour, les 7 jours suivants */
   const A = E.almanax(S); const d = new Date(E.now()); const have = S.res[A.res] || 0; const sn = S.almStreak.n || 0;
@@ -7469,13 +7489,14 @@ function almanaxHtml() {
           <div class="v">${h(A.bonus.txt)}${["xp", "drop", "kamas", "dg", "fete"].includes(A.kind) ? `<span class="alx-pill" data-tip="S'ajoute par-dessus tes autres bonus, même au plafond">à part du plafond</span>` : ""}</div>${where}</div>${go}</div>
         <div class="alx-off"><span class="row" style="gap:6px">Offrande : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></span>
           <span class="small">→ le bonus jusqu'à minuit, <span class="coin"></span> ${fmt(A.kamas)} kamas et <b class="plus">${fmtK(A.xp)} XP</b> par héros de l'équipe (environ ${E.ALM_XP_MIN} min de chasse)</span></div>
+        ${A.done || have >= A.qty ? "" : almSrcHtml(A.res)}
         <div>${A.done ? `<span class="tag good">Offrande faite aujourd'hui ✓</span>` : `<button class="btn primary" data-act="almanax" ${have >= A.qty ? "" : "disabled"}>Faire l'offrande</button>`}</div></div></div>
     <div><div class="alx-h">Les 7 prochains jours</div><div class="alx-week">${week}</div></div>
     <div><b>Série : ${sn} jour${sn > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
       <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${sn >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
     <details ${ui.almAll ? "open" : ""}><summary class="alx-h" data-act="almall">Tous les bonus de l'Almanax (${Object.keys(K).length})</summary>
       <div class="stack" style="gap:8px;margin-top:6px">${groups.map(([g, l]) => `<div><div class="small alx-g">${g}</div><div class="alx-all">${l.map((k) => `<div><b>${h(K[k].name)}</b> : ${h(K[k].txt(K[k].v, null, null, ""))}</div>`).join("")}</div></div>`).join("")}</div></details>
-    <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, l'encyclopédie dit qui les lâche.</p></div></section>`;
+    <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, « Où la trouver » montre qui les lâche et t'y emmène.</p></div></section>`;
 }
 function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = E.achCount(S);

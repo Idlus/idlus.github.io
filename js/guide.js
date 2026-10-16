@@ -667,7 +667,7 @@
       ["h", "Semaine"],
       ["p", "Chaque lundi (heure de Paris), 3 quêtes à ton niveau : une chasse, un donjon (ou avis, trésor), et un artisanat (ou récolte, commande, Almanax). Chacune paie kamas et XP ; les trois finies donnent un Coffre en or et 3 parchemins de chasse au trésor."],
       ["h", "Almanax"],
-      ["p", `Chaque jour, une offrande de ressources pour un bonus jusqu'à minuit (récolte, fête, forgemagie…) plus des kamas et de l'XP. Série de jours : ${V(() => E.ALM_TIERS.join(", "))} jours pour des récompenses (lot, coffre, meuble « Calendrier de l'Almanax », titre). Un jour manqué fait redescendre d'un palier.`],
+      ["p", `Chaque jour, une offrande de ressources pour un bonus jusqu'à minuit (récolte, fête, forgemagie…) plus des kamas et de l'XP. Série de jours : ${V(() => E.ALM_TIERS.join(", "))} jours pour des récompenses (lot, coffre, meuble « Calendrier de l'Almanax », titre). Un jour manqué fait redescendre d'un palier. « Où la trouver » sous l'offrande montre le métier ou les monstres qui lâchent la ressource (zone, chance) et « Y aller » lance la chasse.`],
       ["h", "Commandes d'artisans"],
       ["kv", [["Commandes ouvertes", N(() => E.CMD_SLOTS)], ["Commandes par jour", N(() => E.CMD_DAY_MAX)], ["Rangs d'artisan", V(() => E.CMD_RANKS.join(", ") + " livraisons")]]],
       ["ul", ["Livrer des ressources rapporte kamas et XP de métier ; les livraisons partielles comptent.", "Les commandes urgentes paient ×1,5.", "3 livraisons : un coffre ; 10 : un Coffre en or.", "Changer une commande : gratuit la première fois du jour."]],

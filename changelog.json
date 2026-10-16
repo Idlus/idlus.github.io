@@ -1,6 +1,15 @@
 {
-  "version": "2.1.9",
+  "version": "2.1.10",
   "versions": [
+    {
+      "v": "2.1.10",
+      "name": "Où trouver l'offrande",
+      "guide": "quetes",
+      "items": [
+        "Almanax : sous l'offrande, « Où la trouver » montre les monstres qui lâchent la ressource demandée (zone, niveau, chance de butin), la zone ouverte la plus proche du niveau de ton équipe en premier",
+        "Bouton « Y aller » qui lance directement la chasse dans cette zone (ou ouvre le donjon), et « Récolter » si la ressource vient d'un métier"
+      ]
+    },
     {
       "v": "2.1.9",
       "name": "Équipement verrouillé",
