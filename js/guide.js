@@ -833,11 +833,12 @@
     ] });
 
   /* ======================= Options ======================= */
-  add({ id: "options", f: "Options", n: "Options, sauvegarde et compte", ic: "parchemin_or", page: null, k: "options theme sauvegarde compte export import parties musique sons animations texte",
+  add({ id: "options", f: "Options", n: "Options, sauvegarde et compte", ic: "parchemin_or", page: null, k: "options theme sauvegarde compte export import parties musique sons animations texte batterie economie",
     ou: "Options, en bas du menu", de: "dès le début",
     voir: ["absence"],
     b: () => [
       ["ul", [
+        "**Économie de batterie** (Affichage, tout en haut) : coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et met l'écran à jour moins souvent. Le jeu avance exactement pareil ; à garder sur téléphone ou portable débranché. En combat, l'appareil travaille environ 5 fois moins (mesuré sur PC et téléphone).",
         "**Affichage** : thème (Émeraude, Nuit violette, Givre, Ambre, Braise, Écume ; Halouine du 24 octobre au 3 novembre), ambiance animée, taille du texte, contraste, animations de combat, mouvements réduits.",
         "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées.",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",

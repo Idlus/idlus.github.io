@@ -1,6 +1,17 @@
 {
-  "version": "2.1.10",
+  "version": "2.1.11",
   "versions": [
+    {
+      "v": "2.1.11",
+      "name": "Économie de batterie",
+      "guide": "options",
+      "items": [
+        "Options › Affichage : nouvelle case « Économie de batterie ». Elle coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et l'écran se met à jour 4 fois par seconde au lieu de 8. Le jeu avance exactement pareil",
+        "Mesuré : en combat, l'appareil travaille environ 5 fois moins (PC 41 % → 7 %, téléphone 32 % → 5 %) ; au Havre-Sac, 4 fois moins",
+        "Tes réglages d'animations, d'ambiance et d'effets de décor sont gardés et reviennent quand tu coupes le mode. Le panneau Statistiques du combat se met alors à jour toutes les 5 secondes",
+        "Pour tout le monde : le numéro du tour et le nom de la stratégie de l'écran de combat ne sont plus réécrits 8 fois par seconde"
+      ]
+    },
     {
       "v": "2.1.10",
       "name": "Où trouver l'offrande",

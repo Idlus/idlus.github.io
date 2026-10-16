@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.10";
+const GAME_VERSION = "2.1.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.11", name: "Économie de batterie", guide: "options", items: [
+    "Options › Affichage : nouvelle case « Économie de batterie ». Elle coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et l'écran se met à jour 4 fois par seconde au lieu de 8. Le jeu avance exactement pareil",
+    "Mesuré : en combat, l'appareil travaille environ 5 fois moins (PC 41 % → 7 %, téléphone 32 % → 5 %) ; au Havre-Sac, 4 fois moins",
+    "Tes réglages d'animations, d'ambiance et d'effets de décor sont gardés et reviennent quand tu coupes le mode. Le panneau Statistiques du combat se met alors à jour toutes les 5 secondes",
+    "Pour tout le monde : le numéro du tour et le nom de la stratégie de l'écran de combat ne sont plus réécrits 8 fois par seconde"
+  ] },
   { v: "2.1.10", name: "Où trouver l'offrande", guide: "quetes", items: [
     "Almanax : sous l'offrande, « Où la trouver » montre les monstres qui lâchent la ressource demandée (zone, niveau, chance de butin), la zone ouverte la plus proche du niveau de ton équipe en premier",
     "Bouton « Y aller » qui lance directement la chasse dans cette zone (ou ouvre le donjon), et « Récolter » si la ressource vient d'un métier"
@@ -2445,7 +2451,8 @@ const dgDeco = (did) => DG_DECO[did] || "dungeon";
 /* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
 const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";
   return { forest: "rain", meadow: "flies", wheat: "flies", sky: "flies", beach: "sand", grave: "mist", quarry: "dust", lake: "flies", city: "", cave: "", mine: "", sewer: "", spirit: "" }[sb.deco] || ""; };
-const decoFx = () => S && S.settings.decofx !== false && !S.settings.reduced;
+const ecoOn = () => !!(S && S.settings.eco); // 2.1.11 « Économie de batterie » (Options › Affichage) : coupe animations, ambiance, effets et chiffres qui volent
+const decoFx = () => S && S.settings.decofx !== false && !S.settings.reduced && !ecoOn();
 const seeded = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return () => { x += 0x6D2B79F5; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 let svgId = 0;
 function sceneSVG(deco, H, seed, o = {}) {
@@ -4138,12 +4145,13 @@ function chalBarHtml(F) {
   return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${F.defiRules ? `<span class="xs muted">${G("target")} Les héros suivent les règles du jour</span>` : tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
+  if (ecoOn()) return; // 2.1.11 : économie de batterie, plus de chiffres qui volent (les barres et les PV restent à jour)
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
   if (cls === "crit") s.innerHTML = `${h(txt)}<small>Critique !</small>`; else s.textContent = txt;
   node.appendChild(s); setTimeout(() => s.remove(), 1150);
 }
 function burst(node, el) {
-  if (S.settings.reduced) return;
+  if (S.settings.reduced || ecoOn()) return;
   const b = document.createElement("span"); b.className = "fxb " + el;
   const n = el === "t" ? 9 : 8;
   for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n + Math.random() * 0.6; const r = 26 + Math.random() * 22; const p = document.createElement("i");
@@ -4153,7 +4161,7 @@ function burst(node, el) {
 }
 function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
 /* ===================== Combat animé : sorts qui voyagent, patte de chaque classe, états visibles ===================== */
-const animLvl = () => (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
+const animLvl = () => ecoOn() ? "none" : (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
 const axOn = () => animLvl() !== "none";
 const axFull = () => animLvl() === "full";
 const axSpd = () => Math.min(1, Math.max(0.25, 1 / ((BETA ? testSpeed : 1) * sabNow()))); // 0.1.29 : les animations suivent aussi le Sablier de Xélor
@@ -5148,10 +5156,10 @@ function updateCombat(force) {
     A.nEnts = F.ents.length; placeEnts(F);
   }
   stickyCheck(); // 1.0.10.3 : en vue Compacte, l'arène grandit en cours de combat (invocations) : elle ne reste collée que si elle laisse de la place
-  const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
+  const ct = $("#ctour"); if (ct) setTxt(ct, F ? `Tour ${F.round}` : ""); // 2.1.11 : réécrit seulement quand le tour change
   if (window.CHAMPUI && !ui.watch) { const cb = $("#champban"); if (cb) { const v = window.CHAMPUI.banner(S, F); if (cb.dataset.k !== v) { cb.dataset.k = v; cb.innerHTML = v; } } // refonte du Champion : bandeau doré, panneau de la sous-zone
     const v = window.CHAMPUI.huntPanel(S); ["#champpanm", "#champpand"].forEach((id) => { const el = $(id); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; } }); }
-  const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
+  const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + (ecoOn() ? Math.floor(Date.now() / 5000) : F.seq) + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
   const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.25.1
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
@@ -5226,7 +5234,7 @@ function updateCombat(force) {
     if (F && ent) { const idx = F.ents.indexOf(ent); const casts = F.fx.filter((f) => f.k === "cast" && f.s === idx); const lastSeq = casts.length ? casts[casts.length - 1].seq : -1; casts.filter((f) => f.seq === lastSeq).forEach((f) => { const d = E.spellDef(c.cls, f.sp); if (d) used += E.spellGrade(d, c.lvl).pa; }); }
     const pips = $("#pips"); const ph = Array.from({ length: st.pa }, (_, i) => `<i class="${i < st.pa - used ? "" : "off"}"></i>`).join("");
     if (pips && pips.dataset.k !== ph) { pips.innerHTML = ph; pips.dataset.k = ph; }
-    const sn = $("#stratName"); if (sn) sn.textContent = c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique";
+    const sn = $("#stratName"); if (sn) setTxt(sn, c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique");
   }
 }
 /* ---------- 3.2.2 : « Pourquoi j'ai perdu ? » ---------- */
@@ -8000,7 +8008,7 @@ function lootUpCheck() {
 const THEMES = [["emerald", "Émeraude", "#0d100b", "lucioles"], ["violet", "Nuit violette", "#0e0b14", "nuit"], ["givre", "Givre de Frigost", "#0a1017", "flocons"], ["ambre", "Ambre d'Amakna", "#120d08", "etincelles"], ["braise", "Braise de Brâkmar", "#100909", "braises"], ["ecume", "Écume de Sufokia", "#071315", "bulles"]];
 const themeId = (t) => (THEMES.some((x) => x[0] === t) ? t : "emerald");
 function applySkin(t) { t = themeId(t); const r = document.documentElement; r.dataset.theme = t === "violet" ? "dark" : "emerald"; if (t === "emerald" || t === "violet") delete r.dataset.skin; else r.dataset.skin = t; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = THEMES.find((x) => x[0] === t)[2]; }
-function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); applyAmbiance(); }
+function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced) || ecoOn()); document.body.classList.toggle("eco", ecoOn()); applyDisplay(); applyHal(); applyAmbiance(); }
 /* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
 const BG_FX = "mix"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse, mix = Aurore + rideau de temps en temps), réglé au choix de Mathis
 function applyAmbiance() {
@@ -8032,7 +8040,7 @@ window.IDLUS_HALOUINE = () => document.documentElement.dataset.hal === "on";
 /* ===================== 0.1.17 : lot Bienvenue (logique dans js/welcome.js) =====================
    Affichage (taille du texte, mouvements, contraste), bulles de découverte, recherche rapide. */
 if (window.matchMedia) { const mqMini = window.matchMedia("(min-width:1280px) and (max-width:1599px)"); if (mqMini.addEventListener) mqMini.addEventListener("change", () => { if (S) renderNav(); }); } // 1.2 : chat ouvert, le menu passe en icônes entre 1280 et 1599 px
-const motionOff = () => { const m = S && S.settings.motion; if (m === "off") return true; if (m === "on") return false; return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
+const motionOff = () => { if (ecoOn()) return true; const m = S && S.settings.motion; if (m === "off") return true; if (m === "on") return false; return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
 const calm = () => !!(S && (S.settings.reduced || motionOff()));
 function applyDisplay() {
   const r = document.documentElement; const z = (S && S.settings.textSize) || 100;
@@ -8048,7 +8056,10 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Écran", "se voit tout de suite",
+  return optSec("Batterie", "",
+      optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
+    + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
+    + optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
     + optLine("Thème", "", seg("settheme", THEMES.map((t) => [t[0], t[1]]), themeId(S.settings.theme)))
     + optLine("Ambiance animée", "fond qui bouge et lucioles, flocons, bulles… selon le thème", seg("setamb", [["soft", "Discrète"], ["strong", "Marquée"], ["off", "Aucune"]], S.settings.ambiance || "soft", "Le fond de page bouge lentement et de petits effets flottent par-dessus, dans l'esprit du thème. Tout s'arrête aussi avec « Animations réduites » et les mouvements désactivés."))
@@ -9877,6 +9888,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
+  else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setcontrast") { S.settings.contrast = t.checked; dirty = true; applyDisplay(); return; }
   else if (a === "tipsoff") { E.tipState(S).off = !t.checked; dirty = true; if (!t.checked) tipHide(); return; }
@@ -10963,7 +10975,7 @@ function loop() {
       const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => setTxt(b, dur(E.boostLeft(S, b.dataset.boostleft))));
     }
   }
-  setTimeout(loop, 120);
+  setTimeout(loop, ecoOn() ? 250 : 120); // 2.1.11 : économie de batterie, l'écran se met à jour 4 fois par seconde au lieu de 8 (le jeu avance pareil)
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }

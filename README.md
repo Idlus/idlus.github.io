@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.11 « Économie de batterie »
+
+Options › Affichage : case « Économie de batterie » qui coupe animations, fond animé, effets de combat et chiffres de dégâts qui volent (environ 5 fois moins de travail pour l'appareil en combat, mesuré PC et téléphone).
+
 ## 2.1.10 « Où trouver l'offrande »
 
 Almanax : « Où la trouver » sous l'offrande montre qui lâche la ressource (zone, chance) et « Y aller » lance la chasse.
