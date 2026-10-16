@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.4";
+const GAME_VERSION = "2.1.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.5", name: "Donjons finis masqués", guide: "donjons", items: [
+    "Donjons : nouveau filtre « Masquer stasis 15 » qui cache les donjons déjà terminés en stasis 15 ; le choix reste gardé et le nombre de donjons masqués est indiqué",
+    "En-tête des donjons : nombre de donjons faits en stasis 15"
+  ] },
   { v: "2.1.4", name: "L'album épinglé", guide: "archis", items: [
     "Album des archimonstres : bouton « ☆ Épingler » en haut de l'album, il rejoint tes épinglés du menu (et se trouve dans « Aller à une page »)",
     "L'album et la fiche d'un monstre (Encyclopédie) se mettent à jour tout seuls après chaque combat : plus besoin de les fermer et de les rouvrir"
@@ -3392,7 +3396,7 @@ function dungeonCard(did) {
         ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
 /* 1.0.8.7 : liste des donjons rangée par zone (groupes repliables), recherche et filtres gardés dans la partie */
-const DGF0 = { q: "", view: "zone", lv: "me", st: "all", sk: "all", key: false, dof: false, fav: false };
+const DGF0 = { q: "", view: "zone", lv: "me", st: "all", sk: "all", key: false, dof: false, fav: false, h15: false }; // 2.1.4 : h15 = masquer les donjons déjà faits en stasis 15
 function dgF() { const st = S.settings; if (!st.dgF || typeof st.dgF !== "object") st.dgF = Object.assign({}, DGF0); for (const k in DGF0) if (!(k in st.dgF)) st.dgF[k] = DGF0[k]; return st.dgF; }
 const DG_LV = [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]];
 const DG_SK = [["all", "Stasis : toutes"], ["none", "Jamais terminé"], ["low", "Stasis 1 à 4"], ["mid", "Stasis 5 à 9"], ["max", "Stasis 10"], ["todo", "Stasis 10 pas encore"]];
@@ -3409,15 +3413,16 @@ function dgMatch(did, F, nq) {
   if (F.sk === "none" && done) return false; if (F.sk === "low" && !(mx >= 1 && mx <= 4)) return false; if (F.sk === "mid" && !(mx >= 5 && mx <= 9)) return false;
   if (F.sk === "max" && mx < 10) return false; if (F.sk === "todo" && mx >= 10) return false;
   if (F.key && !(S.res[dg.key] > 0)) return false; if (F.dof && !dgDofusToWin(did)) return false; if (F.fav && !(S.dgFav || []).includes(did)) return false;
+  if (F.h15 && mx >= E.STASIS_MAX) return false; // 2.1.4 : donjons finis en stasis 15 masqués
   return true;
 }
-function dgFilterBar(F, nShown) {
+function dgFilterBar(F, nShown, nHid) {
   const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="dgf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
   const tog = (k, n, tip) => `<button class="dgtog" data-act="dgtog" data-k="${k}" aria-pressed="${!!F[k]}" data-tip="${h(tip)}">${F[k] ? "✓ " : ""}${n}</button>`;
   const chips = [];
   if (F.lv !== "me" && !F.q) chips.push(["lv", F.lv === "all" ? "Tous les niveaux" : "Niveau " + DG_LV.find((x) => x[0] === F.lv)[1]]);
   if (F.st !== "all") chips.push(["st", F.st === "open" ? "Accessibles" : "Fermés"]); if (F.sk !== "all") chips.push(["sk", DG_SK.find((x) => x[0] === F.sk)[1]]);
-  if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.q) chips.push(["q", `« ${F.q} »`]);
+  if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.h15) chips.push(["h15", `Sans les stasis ${E.STASIS_MAX}`]); if (F.q) chips.push(["q", `« ${F.q} »`]);
   const nf = chips.filter(([k]) => k !== "q").length; const open = !narrow() || (ui.fltOpen && ui.fltOpen.dg);
   return `<div class="dgsearch"><span class="dgq">${G("search")}<input type="search" id="dgq" data-act="dgq" placeholder="Donjon, boss ou zone…" autocomplete="off" spellcheck="false" value="${h(F.q)}"></span>
       ${narrow() ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
@@ -3425,8 +3430,8 @@ function dgFilterBar(F, nShown) {
       <div class="dgtrow"><span class="xs muted dglab">Niveau</span>${seg("lv", DG_LV)}</div>
       <div class="dgtrow"><span class="xs muted dglab">Afficher</span>${seg("st", [["all", "Tous"], ["open", "Accessibles"], ["closed", "Fermés"]])}
         <select class="small" data-act="dgsk">${DG_SK.map(([v, n]) => `<option value="${v}" ${F.sk === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-        ${tog("key", "Clé en stock", "Seulement les donjons dont vous avez déjà la clé")}${tog("dof", "Dofus à gagner", "Le boss peut lâcher un Dofus que vous n'avez pas encore")}${tog("fav", "Favoris", "Les donjons marqués d'une étoile")}</div></div>
-    <div class="row small dgchips" style="gap:6px;flex-wrap:wrap"><span class="muted">${nShown} donjon${nShown > 1 ? "s" : ""} affiché${nShown > 1 ? "s" : ""}${F.q ? " · recherche dans tous les niveaux" : F.lv === "me" ? ` · autour du niveau ${topTeamLvl()}` : ""}</span>
+        ${tog("key", "Clé en stock", "Seulement les donjons dont vous avez déjà la clé")}${tog("dof", "Dofus à gagner", "Le boss peut lâcher un Dofus que vous n'avez pas encore")}${tog("fav", "Favoris", "Les donjons marqués d'une étoile")}${tog("h15", `Masquer stasis ${E.STASIS_MAX}`, `Cache les donjons que vous avez déjà terminés en stasis ${E.STASIS_MAX}`)}</div></div>
+    <div class="row small dgchips" style="gap:6px;flex-wrap:wrap"><span class="muted">${nShown} donjon${nShown > 1 ? "s" : ""} affiché${nShown > 1 ? "s" : ""}${nHid ? ` · ${nHid} en stasis ${E.STASIS_MAX} masqué${nHid > 1 ? "s" : ""}` : ""}${F.q ? " · recherche dans tous les niveaux" : F.lv === "me" ? ` · autour du niveau ${topTeamLvl()}` : ""}</span>
       ${chips.map(([k, t]) => `<button class="pfchip" data-act="dgfclr" data-k="${k}">${h(t)} <b>✕</b></button>`).join("")}${chips.length ? `<button class="btn sm ghost" data-act="dgfclr" data-k="all">Tout effacer</button>` : ""}</div>`;
 }
 function dgGroup(z, ids, open, forced) {
@@ -3442,8 +3447,9 @@ function dungeonsHtml() {
   const all = Object.keys(DUNGEONS); const F = dgF(); const nq = E.searchNorm(F.q).split(" ").filter(Boolean);
   const list = all.filter((id) => dgMatch(id, F, nq)).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || (DUNGEONS[a].name < DUNGEONS[b].name ? -1 : 1));
   const done = all.filter((d) => S.progress.bossKills[d]).length; const s5 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 5).length; const s10 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 10).length;
+  const s15 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= E.STASIS_MAX).length; const nHid = F.h15 ? all.filter((d) => ((S.stasis || {})[d] || {}).max >= E.STASIS_MAX && dgMatch(d, Object.assign({}, F, { h15: false }), nq)).length : 0;
   let body;
-  if (!list.length) body = `<div class="empty">Aucun donjon avec ces filtres.${F.lv !== "all" && !F.q ? ` <button class="btn sm" data-act="dgf" data-k="lv" data-v="all">Voir tous les niveaux</button>` : ""}</div>`;
+  if (!list.length) body = `<div class="empty">Aucun donjon avec ces filtres.${nHid ? ` <button class="btn sm" data-act="dgtog" data-k="h15">Montrer les ${nHid} en stasis ${E.STASIS_MAX}</button>` : ""}${F.lv !== "all" && !F.q ? ` <button class="btn sm" data-act="dgf" data-k="lv" data-v="all">Voir tous les niveaux</button>` : ""}</div>`;
   else if (F.view === "lvl") body = `<div class="dggrid">${list.map(dungeonCard).join("")}</div>`;
   else {
     const groups = ZONES.map((z) => [z, list.filter((d) => dgZone(d) === z.id)]).filter(([, ids]) => ids.length);
@@ -3452,13 +3458,13 @@ function dungeonsHtml() {
     body = `${forced ? "" : `<div class="row dgfoldall" style="gap:6px;justify-content:flex-end"><button class="btn sm ghost" data-act="dgzall" data-v="1">Tout ouvrir</button><button class="btn sm ghost" data-act="dgzall" data-v="0">Tout replier</button></div>`}`
       + groups.map(([z, ids]) => dgGroup(z, ids, forced || (z.id in O ? !!O[z.id] : def(z)), forced)).join("");
   }
-  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10</span></div>
+  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10${s15 ? ` · ${s15} en stasis ${E.STASIS_MAX}` : ""}</span></div>
     <div class="pad stack" style="gap:10px">
       ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
-      ${dgFilterBar(F, list.length)}</div></section>
+      ${dgFilterBar(F, list.length, nHid)}</div></section>
     ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
 }
 function compSuggest(did) {

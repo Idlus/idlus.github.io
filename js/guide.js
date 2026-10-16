@@ -527,6 +527,8 @@
         "La chance d'objet du boss monte avec la stasis jusqu'à 10.",
         "Dofus : voir le chapitre Dofus.",
       ]],
+      ["h", "Trouver un donjon"],
+      ["p", `Recherche par nom, boss ou zone, et filtres : niveau, accessibles, stasis atteinte, clé en stock, Dofus à gagner, favoris. **Masquer stasis ${N(() => E.STASIS_MAX)}** cache les donjons déjà finis tout en haut (le choix est gardé, le nombre masqué est indiqué).`],
       ["h", "Donjon de l'heure et donjon éclair"],
       ["p", `Chaque heure, un donjon est mis en avant (gains ×${N(() => E.WEEKLY_REW)}, poussière ×${N(() => E.WEEKLY_DUST)}). Des donjons éclair de ${N(() => E.FLASH_MS / 60000)} min donnent ×${N(() => E.FLASH_REW)}.`],
       ["tip", "En ligne, la fiche du donjon montre le top 5 des meilleurs temps, vérifié par le serveur."],

@@ -1,6 +1,15 @@
 {
-  "version": "2.1.4",
+  "version": "2.1.5",
   "versions": [
+    {
+      "v": "2.1.5",
+      "name": "Donjons finis masqués",
+      "guide": "donjons",
+      "items": [
+        "Donjons : nouveau filtre « Masquer stasis 15 » qui cache les donjons déjà terminés en stasis 15 ; le choix reste gardé et le nombre de donjons masqués est indiqué",
+        "En-tête des donjons : nombre de donjons faits en stasis 15"
+      ]
+    },
     {
       "v": "2.1.4",
       "name": "L'album épinglé",
