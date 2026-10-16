@@ -580,7 +580,7 @@
     const fk = (n) => Math.round(+n || 0).toLocaleString("fr-FR");
     const day = (s) => new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "numeric" });
     return `<div class="bq-det">
-      <p class="small">${d.held ? `<span class="st v">Partie retenue</span> Le classement et l'hôtel de vente utilisent sa partie validée du ${when(d.okAt)}.` : `<span class="st mod">À jour</span> Sa dernière partie envoyée est validée.`}</p>
+      <p class="small">${d.held ? `<span class="st v">Partie retenue</span> Le classement et l'hôtel de vente utilisent sa partie validée ${when(d.okAt)}.` : `<span class="st mod">À jour</span> Sa dernière partie envoyée est validée.`}</p>
       ${(d.log || []).length ? `<div class="xs"><b>Ce que le serveur a refusé</b>${d.log.map((l) => `<div class="ln"><span class="grow">${h(l.why)}</span><span class="t">${when(l.at)}</span></div>`).join("")}</div>` : `<p class="xs muted">Rien de refusé par le bouclier : signalé par l'ancienne vérification de vitesse.</p>`}
       <div class="xs"><b>Cette semaine</b> : ${(d.sold || []).length ? `a vendu à ${d.sold.map((x) => `${h(x.to)} (${x.n} vente${x.n > 1 ? "s" : ""}, ${fk(x.k)} k)`).join(", ")}` : "aucune vente à l'hôtel de vente"}${d.trades ? `, ${d.trades} échange${d.trades > 1 ? "s" : ""}` : ""}.</div>
       ${(d.days || []).length ? `<div class="xs"><b>Remettre sa partie au</b><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:4px">${d.days.map((x) => `<button class="btn sm" data-act="adm-brest" data-u="${B.u}" data-v="${h(x.day)}" title="Niveaux ${fk(x.lvl)}, ${fk(x.kamas)} kamas">${day(x.day)}</button>`).join("")}</div></div>` : `<p class="xs muted">Pas encore de copie de sa partie (une par jour, gardée 7 jours).</p>`}
