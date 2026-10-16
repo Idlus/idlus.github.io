@@ -400,3 +400,12 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(A && B && B.team && !A.team, "Poutch seul / avec l'équipe");
   console.log("ok - aperçu des sorts contre le Poutch (8 tours, seul ou en équipe, partie intacte)");
 }
+
+// 2.1.13 « Challenges au choix » : le joueur choisit les challenges suivis, l'IA les lâche quand le combat tourne mal
+{
+  const S = E.newState("Test", "iop"); S.settings.chalAI = true;
+  assert.ok(E.chalWanted(S, "elitiste"), "challenge suivi par défaut");
+  S.settings.chalNo = { elitiste: 1 }; assert.ok(!E.chalWanted(S, "elitiste") && E.chalWanted(S, "focus"), "challenge décoché ignoré");
+  assert.ok(E.CHAL_GIVEUP_TGT > E.CHAL_GIVEUP && E.CHAL_TGT.includes("ordonne"), "Élitiste et Ordonné lâchés plus tôt");
+  console.log("ok - challenges suivis au choix et abandon quand le combat tourne mal");
+}

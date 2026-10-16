@@ -173,7 +173,7 @@
   E.defiWatch = (S, def, now = E.now()) => {
     const S2 = JSON.parse(E.serialize(S));
     S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
-    S2.settings = Object.assign({}, S2.settings, { manual: false });
+    S2.settings = Object.assign({}, S2.settings, { manual: false, chalNo: undefined }); // 2.1.13 : toutes les règles du jour sont suivies, quel que soit le choix des challenges
     S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu; // pas de seconde chance : le même défi pour tous
     if (E.defiPicked(S2, def)) { const keep = new Set(E.defiTeam(S2, def).map((c) => c.id)); S2.chars.forEach((c) => { c.inTeam = keep.has(c.id); }); }
     const dg = DUNGEONS[def.did]; const team = E.team(S2);

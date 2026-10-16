@@ -241,6 +241,12 @@
         "Avec la progression automatique, l'équipe redescend d'une zone après 3 défaites sur les 6 derniers combats, et remonte après 12 victoires d'affilée.",
         "En donjon, une défaite fait perdre la clé (sauf Fiole de résurrection, une fois par donjon).",
       ]],
+      ["h", "Challenges"],
+      ["ul", [
+        "Chaque combat tire un challenge (deux en donjon) : réussi, il donne un bonus d'XP et de butin.",
+        "Avec « Respecter les challenges » (page Combat), l'IA évite ce qui les ferait échouer. Le bouton à côté (11/11) choisit les challenges que l'équipe suit : les autres sont ignorés.",
+        `Si le combat tourne mal, les héros oublient les challenges pour gagner : Élitiste et Ordonné sous ${N(() => Math.round(E.CHAL_GIVEUP_TGT * 100))} % des PV de l'équipe, les autres sous ${N(() => Math.round(E.CHAL_GIVEUP * 100))} %, et tous dès qu'un héros tombe. Pas dans le Défi du jour, où les règles comptent dans le score.`,
+      ]],
       ["h", "Mode manuel"],
       ["p", `Sur la page Combat, le mode manuel te laisse choisir chaque sort. Sans réponse au bout de ${N(() => E.MANUAL_TIMEOUT)} s, le héros joue tout seul.`],
     ] });

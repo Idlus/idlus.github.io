@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.13 « Challenges au choix »
+
+Avec « Respecter les challenges », un bouton choisit les challenges suivis par l'IA. Les héros lâchent les challenges quand le combat tourne mal (Élitiste et Ordonné sous 80 % des PV de l'équipe, les autres sous 50 %, tous dès qu'un héros tombe), sauf dans le Défi du jour. Simulateur : `node tools/chal_sim.js`.
+
 ## 2.1.12 « La Maîtrise au classement »
 
 Classement des niveaux : chaque point de Maîtrise compte un niveau, au total de l'équipe comme au classement par classe.

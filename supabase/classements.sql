@@ -275,7 +275,7 @@ begin
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
     -- 1.0.25.9 « Vérification plus juste » : 120 niveaux + 15 par minute (avant 60 + 1 par minute : des recrues montées au Sablier
     -- pendant une coupure de connexion de 2 min dépassaient la limite ; une partie retouchée saute toujours de centaines de niveaux)
-    if lv - o.level - greatest(0, rc - o.rec) - case when o.mtl = 0 then mtv else 0 end > 120 + secs / 4 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
+    if lv - o.level - greatest(0, rc - o.rec) - (o.mtl = 0)::int * mtv > 120 + secs / 4 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
