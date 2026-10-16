@@ -1,6 +1,15 @@
 {
-  "version": "2.1.2",
+  "version": "2.1.3",
   "versions": [
+    {
+      "v": "2.1.3",
+      "name": "Tout ouvrir",
+      "guide": "inventaire",
+      "items": [
+        "Coffres : bouton « Tout ouvrir » (Inventaire › Consommables et tuile de l'accueil) qui ouvre tous les coffres d'un coup, les plus précieux d'abord, avec un seul écran de butin",
+        "Mode Auto : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal (Inventaire › Consommables, ligne Coffres)"
+      ]
+    },
     {
       "v": "2.1.2",
       "name": "L'arbre fluide",

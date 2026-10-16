@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.2";
+const GAME_VERSION = "2.1.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.3", name: "Tout ouvrir", guide: "inventaire", items: [
+    "Coffres : bouton « Tout ouvrir » (Inventaire › Consommables et tuile de l'accueil) qui ouvre tous les coffres d'un coup, les plus précieux d'abord, avec un seul écran de butin",
+    "Mode Auto : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal (Inventaire › Consommables, ligne Coffres)"
+  ] },
   { v: "2.1.2", name: "L'arbre fluide", guide: "maitrise", items: [
     "Arbre de Maîtrise beaucoup plus fluide : un seul dessin par image au lieu d'un par mouvement de souris, et le ciel n'est plus redessiné en entier au survol d'une étoile",
     "Pendant un déplacement ou un zoom, le ciel s'affiche sans halos et en définition réduite, puis redevient net dès l'arrêt"
@@ -2777,8 +2781,14 @@ function consBar(full) {
   return `<div class="consbar">${act.map((b) => `<span class="cact" data-tip="${h(`${b.name} : ${b.txt}`)}">${emo(b.icon)} ${h(b.txt)} <b class="num" data-boostleft="${b.k}">${dur(b.left)}</b></span>`).join("")}${S.fmShield ? `<span class="cact" data-tip="La prochaine forgemagie ne peut rien faire baisser">${IC("cristal")} Cristal actif</span>` : ""}
     ${items || (full ? `<span class="xs muted">Aucun consommable. Quêtes, avis de recherche, coffres et boss en donnent.</span>` : "")}</div>`;
 }
+/* 2.1.3 « Tout ouvrir » : tous les coffres d'un coup, et l'ouverture automatique (S.settings.autoChest) */
+function chestAllHtml() {
+  const n = E.chestIds(S).reduce((a, k) => a + S.cons[k], 0); const on = !!S.settings.autoChest;
+  return `<div class="li chestall"><span class="icobox candy chestbox t2">${chestImg("or")}</span><span class="grow"><b>${n ? `${fmt(n)} coffre${n > 1 ? "s" : ""} à ouvrir` : "Coffres"}</b><br><span class="xs muted">Ouverture automatique : ${on ? "chaque coffre gagné s'ouvre tout seul, le butin est noté dans le journal" : "désactivée"}</span></span>
+    <span class="seg"><button data-act="chestauto" data-v="1" aria-pressed="${on}">Auto</button><button data-act="chestauto" data-v="0" aria-pressed="${!on}">Manuel</button></span>${n ? `<button class="btn sm primary" data-act="chestall">Tout ouvrir</button>` : ""}</div>`;
+}
 function consHtml() {
-  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : C.kind === "wpot" ? `<button class="btn sm" data-act="wpotgo">Établi</button>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
+  return consBar(true) + `<div class="list" style="margin-top:8px">${chestAllHtml()}${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : C.kind === "wpot" ? `<button class="btn sm" data-act="wpotgo">Établi</button>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
 /* soft = rafraîchissement automatique de la boucle (toutes les 3 s) : mise à jour ciblée (morphTo) au lieu de tout redessiner */
 function renderHome(soft) {
@@ -2813,7 +2823,7 @@ function homeTiles() {
   /* coffres : un clic ouvre le premier coffre (le plus précieux d'abord) */
   const ch = Object.keys(S.cons || {}).filter((k) => S.cons[k] > 0 && CONSUMABLES[k] && CONSUMABLES[k].kind === "chest").sort((a, b) => CONSUMABLES[b].tier - CONSUMABLES[a].tier); const nCh = ch.reduce((a, k) => a + S.cons[k], 0);
   out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
-    act: nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">Ouvrir · ${nCh}</span>` : "" }));
+    act: nCh > 1 ? `data-act="chestall"` : nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">${nCh > 1 ? "Tout ouvrir" : "Ouvrir"} · ${nCh}</span>` : "" })); // 2.1.3 : un clic ouvre tous les coffres
   { const GB = E.gameBuys(S).list.map(gbState); const r = GB.filter((g) => g.st === "ready"); const dn = GB.filter((g) => g.st === "done").length;
     out.push(tile({ ic: IC("bourse"), t: "Commandes du jour", s: r.length ? `${r.length} prête${r.length > 1 ? "s" : ""} à livrer · ${fmt(r.reduce((a, g) => a + g.q * g.price, 0))} k` : dn === GB.length ? "toutes livrées, nouvelles à minuit" : `${GB.length - dn} en attente de ressources`, done: dn === GB.length, hot: r.length > 0,
       act: `data-act="hgo" data-v="gbuy"`, badge: `<span class="pill num">${dn}/${GB.length}</span>` })); }
@@ -7797,17 +7807,21 @@ function celeHtml(ev) {
   if (ev.t === "wk") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("coffre")} Quêtes de la semaine</div><div class="cele-t">Coffre de la semaine !</div><div class="cele-s">Les 3 quêtes sont faites : un Coffre en or et 3 parchemins de chasse. De nouvelles quêtes arrivent lundi.</div>`;
   if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Coffre au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "chest") { const C = CONSUMABLES[ev.id]; // 0.1.30 : butin rangé en vignettes (rares d'abord, puis le reste)
-    const m = new Map(); (ev.loot || []).forEach(([t, id, q, uid]) => { const key = t === "item" ? "item" + (uid || id + m.size) : t + id; const o = m.get(key) || { t, id, q: 0, uid }; o.q += q; m.set(key, o); });
+    const many = ev.n > 1; // 2.1.3 « Tout ouvrir » : plusieurs coffres, objets regroupés par modèle
+    const m = new Map(); (ev.loot || []).forEach(([t, id, q, uid]) => { const key = t === "item" ? "item" + (many ? id : uid || id + m.size) : t + id; const o = m.get(key) || { t, id, q: 0, uid: many ? null : uid }; o.q += q; m.set(key, o); });
     const L = [...m.values()]; const rare = (o) => o.t === "item" || (o.t === "cons" && (CONSUMABLES[o.id].kind === "scroll" || E.CHEST_RARE.includes(o.id)));
     const tile = (o) => { const nm = o.t === "item" ? ITEMS[o.id].name : o.t === "cons" ? CONSUMABLES[o.id].name : o.id;
       const pic = o.t === "item" ? im(itemImg(o.id), "", "") : o.t === "cons" ? `<span class="ctl-emo">${consIco(CONSUMABLES[o.id])}</span>` : o.id === E.POUSSIERE ? IC("poussiere") : im(resImg(o.id), "", "");
       return `<span class="itile ${rare(o) ? "ctl-rare" : ""}" ${o.uid ? `data-tipitem="${o.uid}"` : `data-tip="${h(nm)}"`}>${pic}${o.t === "item" ? `<span class="ilvl ctl-lvl">niv. ${ITEMS[o.id].lvl}</span>` : ""}${o.q > 1 ? `<span class="icount">×${fmt(o.q)}</span>` : ""}</span>`; };
-    const top = L.filter(rare), rest = L.filter((o) => !rare(o));
-    const names = top.map((o) => (o.t === "item" ? ITEMS[o.id].name : CONSUMABLES[o.id].name) + (o.q > 1 ? ` ×${o.q}` : ""));
-    return `<div class="cele-art chestopen t${C.tier}">${chestImg(C.img, "celechest")}</div><div class="cele-k">${G("star")} Coffre ouvert</div><div class="cele-t">${h(C.name)}</div>
+    const top = L.filter(rare).sort((a, b) => b.q - a.q), rest = L.filter((o) => !rare(o)).sort((a, b) => b.q - a.q);
+    const CAP = many ? 12 : 24; const more = (A) => (A.length > CAP ? `<span class="xs muted">+${A.length - CAP} autres</span>` : "");
+    const names = top.slice(0, 8).map((o) => (o.t === "item" ? ITEMS[o.id].name : CONSUMABLES[o.id].name) + (o.q > 1 ? ` ×${o.q}` : ""));
+    const tt = many ? `${fmt(ev.n)} coffres ouverts` : h(C.name);
+    const sub = many ? `<div class="cele-s">${Object.keys(ev.by || {}).map((k) => `${fmt(ev.by[k])} × ${h(CONSUMABLES[k].name)}`).join(" · ")}${ev.left ? ` · encore ${fmt(ev.left)} à ouvrir` : ""}</div>` : "";
+    return `<div class="cele-art chestopen t${C.tier}">${chestImg(C.img, "celechest")}</div><div class="cele-k">${G("star")} ${many ? "Tout ouvrir" : "Coffre ouvert"}</div><div class="cele-t">${tt}</div>${sub}
       <div class="ctl-k">${IC("kamas")} <b class="num">+${fmt(ev.kamas || 0)}</b> kamas</div>
-      ${top.length ? `<div class="ctl-h">À ne pas manquer</div><div class="ctl-grid">${top.map(tile).join("")}</div><div class="ctl-names">${h(names.join(" · "))}</div>` : ""}
-      <div class="ctl-h">Ressources</div><div class="ctl-grid">${rest.map(tile).join("")}</div>`; }
+      ${top.length ? `<div class="ctl-h">À ne pas manquer</div><div class="ctl-grid">${top.slice(0, CAP).map(tile).join("")}${more(top)}</div><div class="ctl-names">${h(names.join(" · "))}${top.length > 8 ? " …" : ""}</div>` : ""}
+      <div class="ctl-h">Ressources</div><div class="ctl-grid">${rest.slice(0, CAP).map(tile).join("")}${more(rest)}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${consIco(C)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k >= 15 ? ` · titre « ${h(E.STASIS15_TITLE)} »` : ""}${ev.k < E.STASIS_MAX ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
@@ -9420,6 +9434,8 @@ document.addEventListener("click", (ev) => {
         openSheet(`<h2>${IC("quetes")} ${h(C.name)}</h2><p class="small muted">${h(C.desc)} Choisissez le héros.</p><div class="list">${S.chars.map((x) => `<div class="li">${head(x)}<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${STATS[C.stat].name} par parchemins : ${(x.scrolls || {})[C.stat] || 0}/${E.SCROLL_MAX}</span></span><button class="btn sm primary" data-act="scrollto" data-id="${x.id}" data-sid="${d.id}" ${E.scrollRoom(x, C.stat) <= 0 ? "disabled" : ""}>Utiliser</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       if (d.id === "potion_savoir") { openSheet(`<h2>${IC("parchemin_or")} Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
+    case "chestall": { if (!E.openAllChests(S)) { toast("Aucun coffre à ouvrir."); return; } break; }
+    case "chestauto": { S.settings.autoChest = d.v === "1"; if (S.settings.autoChest) E.openAllChests(S, true); toast(S.settings.autoChest ? "Ouverture automatique des coffres activée." : "Ouverture automatique désactivée : les coffres attendent dans le sac."); break; }
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
     case "invsel": if (ui.invMulti && d.tpl) { const L = Object.values(S.items).filter((x) => x.tpl === d.tpl && !(invShowEq() ? false : wornMap().has(x.uid))); const on = L.some((x) => ui.invMulti.has(x.uid)); L.forEach((x) => (on ? ui.invMulti.delete(x.uid) : ui.invMulti.add(x.uid))); break; }
@@ -10828,6 +10844,7 @@ function loop() {
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
     if (sinceRes > 2500) { sinceRes = 0; const now = E.now(); updNavLive();
+      if (S.settings.autoChest && E.chestIds(S).length) { E.openAllChests(S, true); dirty = true; } // 2.1.3 : ouverture automatique des coffres
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
       checkPins(); if (!$("#sheet").innerHTML) renderObjs();

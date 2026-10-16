@@ -359,7 +359,7 @@
       ];
     } });
 
-  add({ id: "inventaire", f: "Héros", n: "Inventaire et sac", ic: "sac", page: "inv", pages: ["invres", "invcons"], k: "sac trop plein place ressources consommables runes briser doublons",
+  add({ id: "inventaire", f: "Héros", n: "Inventaire et sac", ic: "sac", page: "inv", pages: ["invres", "invcons"], k: "sac trop plein place ressources consommables runes briser doublons coffre tout ouvrir automatique",
     ou: "Héros › Inventaire", de: "dès le début",
     voir: ["equipement", "forgemagie", "home"],
     b: () => [
@@ -370,6 +370,7 @@
         "Les Dofus ne quittent jamais le sac.",
         "Le Grenier du Havre-Sac et certains meubles agrandissent le sac et le trop-plein.",
         "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup.",
+        "**Coffres** : « Tout ouvrir » (onglet Consommables ou tuile de l'accueil) les ouvre tous d'un coup, les plus précieux d'abord. Mode **Auto** : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal. Les kamas dépendent du niveau de ton meilleur héros au moment de l'ouverture.",
       ]],
     ] });
 

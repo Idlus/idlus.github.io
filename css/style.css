@@ -5788,3 +5788,6 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .sbk.on{opacity:1;border-style:solid;border-color:var(--gold,#e2b04a)}
 .sbk.mine{background:color-mix(in srgb,var(--gold,#e2b04a) 18%,transparent)}
 .dgrank .dgr-sb{display:block}
+/* 2.1.3 « Tout ouvrir » : ligne des coffres (Inventaire › Consommables) */
+.li.chestall{flex-wrap:wrap;gap:8px;border:1px solid var(--gold);border-radius:12px}
+.li.chestall .grow{min-width:180px}

@@ -563,17 +563,20 @@
   E.CHEST_RARE = ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"];
   /* objets de ton niveau : un équipement de niveau proche (pas de Dofus) */
   E.chestItemPool = (lvl) => Object.keys(ITEMS).filter((t) => { const T = ITEMS[t]; return T.slot && T.slot !== "dofus" && !T.hidden && !T.leg && !T.wboss && T.lvl <= lvl + 5 && T.lvl >= Math.max(1, lvl - 15); });
-  E.openChest = (S, id) => {
-    const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
+  /* B (2.1.3 « Tout ouvrir ») : ouverture en série, le butin s'ajoute à B et un seul message est écrit à la fin (E.openAllChests) */
+  E.openChest = (S, id, B) => {
+    const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = B ? B.loot : []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
     const k = T.k * top; S.kamas += k; got.push(`${k.toLocaleString("fr-FR")} kamas`);
     addRes(S, E.POUSSIERE, T.dust); got.push(`${T.dust} ${E.POUSSIERE}`); loot.push(["res", E.POUSSIERE, T.dust]);
     got.push(...resLot(S, T.lots, T.q[0], T.q[1], loot));
     const give = (pool, n) => { for (let i = 0; i < n; i++) { const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); got.push(D.CONSUMABLES[g].name); loot.push(["cons", g, 1]); } };
     give(E.CHEST_COMMON, T.cons); give(E.CHEST_RARE, T.rare);
     if (T.eclats) { addRes(S, E.RARE_COMPONENT, T.eclats); got.push(`${T.eclats} × ${E.RARE_COMPONENT}`); loot.push(["res", E.RARE_COMPONENT, T.eclats]); }
-    if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length; i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
+    if (T.items) { const pool = B ? (B.pool = B.pool || E.chestItemPool(top)) : E.chestItemPool(top); for (let i = 0; i < T.items && pool.length; i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
     if (T.scroll && rnd() < T.scroll[1]) { const st = ["fo", "ine", "cha", "age", "vit", "sa"][Math.floor(rnd() * 6)]; const sid = "parch_" + st + "_" + T.scroll[0]; E.addCons(S, sid); got.push(D.CONSUMABLES[sid].name); loot.push(["cons", sid, 1]); }
-    S.cnt.chests = (S.cnt.chests || 0) + 1; E.emit(S, "chest", { tier: C.tier }); // 1.3 : le son du coffre ouvert
+    S.cnt.chests = (S.cnt.chests || 0) + 1;
+    if (B) { B.n++; B.kamas += k; return got; }
+    E.emit(S, "chest", { tier: C.tier }); // 1.3 : le son du coffre ouvert
     // message court : la fenêtre d'ouverture montre le détail ; sans fenêtre, les récompenses rares regroupées (×2, ×3)
     const nRes = loot.filter((x) => x[0] === "res").length; const cnt = new Map();
     loot.filter((x) => x[0] !== "res").forEach((x) => { const n = x[0] === "item" ? ITEMS[x[1]].name : D.CONSUMABLES[x[1]].name; cnt.set(n, (cnt.get(n) || 0) + 1); });
@@ -583,6 +586,21 @@
       : `${C.name} ouvert : +${k.toLocaleString("fr-FR")} kamas${best.length ? ` et ${best.length} récompense${best.length > 1 ? "s" : ""} rare${best.length > 1 ? "s" : ""}` : ""}.`, "rare");
     E.celebrate({ t: "chest", id, got, kamas: k, loot });
     return got;
+  };
+  /* 2.1.3 « Tout ouvrir » : ouvre tous les coffres du sac d'un coup (les plus précieux d'abord), au plus E.CHEST_BATCH par appel
+     pour ne pas geler le jeu. Mêmes récompenses qu'un par un. auto = ouverture automatique : un simple message dans le journal. */
+  E.CHEST_BATCH = 1000;
+  E.chestIds = (S) => Object.keys(S.cons || {}).filter((k) => S.cons[k] > 0 && D.CONSUMABLES[k] && D.CONSUMABLES[k].kind === "chest").sort((a, b) => D.CONSUMABLES[b].tier - D.CONSUMABLES[a].tier);
+  E.openAllChests = (S, auto) => {
+    const ids = E.chestIds(S); if (!ids.length) return null;
+    const B = { n: 0, kamas: 0, loot: [], by: {} };
+    for (const id of ids) { while (S.cons[id] > 0 && B.n < E.CHEST_BATCH) { S.cons[id]--; E.openChest(S, id, B); B.by[id] = (B.by[id] || 0) + 1; } if (!S.cons[id]) delete S.cons[id]; }
+    const left = E.chestIds(S).reduce((a, k) => a + S.cons[k], 0);
+    const what = ids.filter((k) => B.by[k]).map((k) => `${B.by[k]} ${D.CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, "")}`).join(", ");
+    const nItems = B.loot.filter((x) => x[0] === "item").length, nRare = B.loot.filter((x) => x[0] === "cons").length;
+    note(S, `${B.n} coffre${B.n > 1 ? "s" : ""} ouvert${B.n > 1 ? "s" : ""}${auto ? " automatiquement" : ""} (${what}) : +${B.kamas.toLocaleString("fr-FR")} kamas${nRare ? ` · ${nRare} consommable${nRare > 1 ? "s" : ""}` : ""}${nItems ? ` · ${nItems} objet${nItems > 1 ? "s" : ""}` : ""}${left ? ` · encore ${left} à ouvrir` : ""}.`, auto ? "info" : "rare");
+    if (!auto) { E.emit(S, "chest", { tier: D.CONSUMABLES[ids[0]].tier }); E.celebrate({ t: "chest", id: ids[0], n: B.n, by: B.by, kamas: B.kamas, loot: B.loot, left }); }
+    return B;
   };
   E.useSpecial = (S, id, arg) => {
     const C = D.CONSUMABLES[id];
