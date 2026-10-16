@@ -1215,6 +1215,24 @@
   const chal = (F, id) => (F.chals || []).find((c) => c.id === id && c.ok);
   const failChal = (F, id, why) => { const c = chal(F, id); if (!c) return; c.ok = false; c.why = why; flog(F, `Challenge ${E.CHALLENGES[id].name} échoué${why ? " : " + why : ""}.`, "lose"); };
   E.chalRespect = (S, c) => !!(S.settings && S.settings.chalAI) && !(c && c.chalOff);
+  /* 2.1.13 : le joueur choisit les challenges que l'équipe suit (S.settings.chalNo = challenges ignorés par l'IA) */
+  E.chalWanted = (S, id) => !((S.settings && S.settings.chalNo) || {})[id];
+  /* 2.1.13 : l'IA lâche les challenges quand le combat tourne mal : elle joue alors pour gagner, le challenge peut échouer.
+     Élitiste et Ordonné (tuer une cible précise d'abord, souvent le boss) sont lâchés plus tôt : sous 80 % des PV de l'équipe,
+     les autres sous 50 % ; tous dès qu'un héros tombe. Pas dans le Défi du jour (les règles y sont le score). Simulé : tools/chal_sim.js */
+  E.CHAL_GIVEUP = 0.5; E.CHAL_GIVEUP_TGT = 0.8; E.CHAL_TGT = ["elitiste", "ordonne"];
+  const chalDanger = (F, id) => {
+    if (F.defiRules || !E.CHAL_GIVEUP) return false;
+    const tgt = E.CHAL_TGT.includes(id); if (F.chalGive || (tgt && F.chalGiveT)) return true;
+    const hs = F.ents.filter((e) => e.side === "c" && !e.summon && e.recruit === undefined && !e.soul); if (!hs.length) return false;
+    const hp = hs.reduce((t, e) => t + (e.alive ? Math.max(0, e.hp) : 0), 0), mx = hs.reduce((t, e) => t + e.hpMax, 0);
+    const down = hs.some((e) => !e.alive);
+    if (!F.chalGiveT && (down || hp < mx * E.CHAL_GIVEUP_TGT)) { F.chalGiveT = true; if ((F.chals || []).some((c) => c.ok && E.CHAL_TGT.includes(c.id))) flog(F, "Le combat se corse : les héros ne visent plus la cible du challenge.", "lose"); }
+    if (!F.chalGive && (down || hp < mx * E.CHAL_GIVEUP)) { F.chalGive = true; if ((F.chals || []).some((c) => c.ok && !E.CHAL_TGT.includes(c.id))) flog(F, "Le combat tourne mal : les héros oublient les challenges pour gagner.", "lose"); }
+    return tgt ? !!F.chalGiveT : !!F.chalGive;
+  };
+  /* challenge que l'IA suit en ce moment (actif, voulu par le joueur, combat pas en danger) */
+  const aiChal = (S, F, id) => { const c = chal(F, id); return c && E.chalWanted(S, id) && !chalDanger(F, id) ? c : null; };
 
   /* ---------------- Stasis (3.1) ---------------- */
   E.STASIS_MAX = 15; // 1.1 : stasis 11 à 15 (Mathis 3A)
@@ -1632,15 +1650,16 @@
     const c = S.chars.find((x) => x.id === e.cid);
     let prim = forced && forced.alive && forced.side === "m" ? forced : null;
     if (!prim && e.cid && E.chalRespect(S, c)) {
-      const el = chal(F, "elitiste"); if (el && F.ents[el.target].alive) prim = F.ents[el.target];
-      const od = chal(F, "ordonne"); if (!prim && od) prim = foes.slice().sort((a, b) => b.lvl - a.lvl)[0];
-      const fo = (chal(F, "focus") || chal(F, "chacun")) && F.cs.focus[e.cid] !== undefined ? F.ents[F.cs.focus[e.cid]] : null; if (!prim && fo && fo.alive) prim = fo;
-      if (!prim && chal(F, "chacun")) { // chacun son monstre : prendre de préférence un monstre qu'aucun autre héros n'a déjà pris
+      const el = aiChal(S, F, "elitiste"); if (el && F.ents[el.target].alive) prim = F.ents[el.target];
+      const od = aiChal(S, F, "ordonne"); if (!prim && od) prim = foes.slice().sort((a, b) => b.lvl - a.lvl)[0];
+      const fo = (aiChal(S, F, "focus") || aiChal(S, F, "chacun")) && F.cs.focus[e.cid] !== undefined ? F.ents[F.cs.focus[e.cid]] : null; if (!prim && fo && fo.alive) prim = fo;
+      if (!prim && aiChal(S, F, "chacun")) { // chacun son monstre : prendre de préférence un monstre qu'aucun autre héros n'a déjà pris
         const taken = new Set(Object.entries(F.cs.focus).filter(([k, v]) => +k !== e.cid && F.ents[v].alive).map(([, v]) => v));
         const free = foes.filter((m) => !taken.has(F.ents.indexOf(m))).sort((a, b) => a.hp - b.hp);
         if (free.length) prim = free[0];
       }
     }
+    if (prim && !forced && prim.mech && prim.mech.includes("totems") && foes.some((x) => x.totem)) prim = null; // 2.1.13 : cible du challenge intouchable (totems) : on frappe ailleurs
     const rule = (slot && slot.tgt) || "low";
     if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
       const focus = (S.settings && S.settings.focus) || "auto";
@@ -1806,18 +1825,18 @@
   const chalSkip = (S, F, e, c, sp, g) => {
     if (!E.chalRespect(S, c)) return false;
     const k = E.spellKind(g); const key = e.cid;
-    if (chal(F, "versatile") && (F.cs.turnCasts[key] || {})[sp.id]) return true;
-    if (chal(F, "econome") && F.cs.last[key] === sp.id) return true;
-    if (chal(F, "incurable") && (k === "heal" || k === "drain" || g.fx.some((f) => f.k === "leech"))) return true;
+    if (aiChal(S, F, "versatile") && (F.cs.turnCasts[key] || {})[sp.id]) return true;
+    if (aiChal(S, F, "econome") && F.cs.last[key] === sp.id) return true;
+    if (aiChal(S, F, "incurable") && (k === "heal" || k === "drain" || g.fx.some((f) => f.k === "leech"))) return true;
     const multi = g.fx.some((f) => ["dmg", "drain", "dot"].includes(f.k) && f.n > 1) && alive(F, "m").length > 1;
     // Focus, Chacun son monstre : les sorts de zone restent permis tant qu'ils touchent la cible du héros
-    if (multi && (chal(F, "elitiste") || chal(F, "ordonne"))) { // Élitiste, Ordonné : zone permise sauf si elle risque d'achever un autre monstre avant son tour
-      const el = chal(F, "elitiste"), foes = alive(F, "m"), top = Math.max(...foes.map((m) => m.lvl));
-      const ok = (m) => (el ? F.ents.indexOf(m) === el.target || !F.ents[el.target].alive : true) && (!chal(F, "ordonne") || m.lvl >= top);
+    if (multi && (aiChal(S, F, "elitiste") || aiChal(S, F, "ordonne"))) { // Élitiste, Ordonné : zone permise sauf si elle risque d'achever un autre monstre avant son tour
+      const el = aiChal(S, F, "elitiste"), foes = alive(F, "m"), top = Math.max(...foes.map((m) => m.lvl));
+      const ok = (m) => (el ? F.ents.indexOf(m) === el.target || !F.ents[el.target].alive : true) && (!aiChal(S, F, "ordonne") || m.lvl >= top);
       if (foes.some((m) => !ok(m) && m.hp < m.hpMax * 0.6)) return true;
     }
-    if (chal(F, "barbare") && (k === "shield" || k === "buff")) return true;
-    if (chal(F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== ((F.cs.el || {})[key] || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
+    if (aiChal(S, F, "barbare") && (k === "shield" || k === "buff")) return true;
+    if (aiChal(S, F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== ((F.cs.el || {})[key] || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
     return false;
   };
 

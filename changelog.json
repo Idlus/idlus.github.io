@@ -1,6 +1,17 @@
 {
-  "version": "2.1.12",
+  "version": "2.1.13",
   "versions": [
+    {
+      "v": "2.1.13",
+      "name": "Challenges au choix",
+      "guide": "combat",
+      "items": [
+        "Avec « Respecter les challenges » coché, le bouton à côté (11/11) ouvre la liste des challenges : décoche ceux que ton équipe ne doit pas suivre (Élitiste, Ordonné…). Les challenges décochés sont ignorés par l'IA",
+        "Les héros lâchent les challenges quand le combat tourne mal : Élitiste et Ordonné sous 80 % des PV de l'équipe, les autres sous 50 %, et tous dès qu'un héros tombe. Fini les donjons perdus à cause d'un challenge",
+        "Élitiste ne s'acharne plus sur un boss intouchable tant que ses totems sont debout",
+        "Le Défi du jour ne change pas : ses règles sont toujours suivies"
+      ]
+    },
     {
       "v": "2.1.12",
       "name": "La Maîtrise au classement",

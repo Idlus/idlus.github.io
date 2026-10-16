@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.12";
+const GAME_VERSION = "2.1.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.13", name: "Challenges au choix", guide: "combat", items: [
+    "Avec « Respecter les challenges » coché, le bouton à côté (11/11) ouvre la liste des challenges : décoche ceux que ton équipe ne doit pas suivre (Élitiste, Ordonné…). Les challenges décochés sont ignorés par l'IA",
+    "Les héros lâchent les challenges quand le combat tourne mal : Élitiste et Ordonné sous 80 % des PV de l'équipe, les autres sous 50 %, et tous dès qu'un héros tombe. Fini les donjons perdus à cause d'un challenge",
+    "Élitiste ne s'acharne plus sur un boss intouchable tant que ses totems sont debout",
+    "Le Défi du jour ne change pas : ses règles sont toujours suivies",
+  ] },
   { v: "2.1.12", name: "La Maîtrise au classement", guide: "classement", items: [
     "Classement des niveaux : chaque point de Maîtrise compte un niveau (un héros 200 avec 150 de Maîtrise compte 350)",
     "Classement par classe : le niveau et la Maîtrise du meilleur héros (« niv. 200 · Maîtrise 150 ») ; la fiche d'un joueur montre la Maîtrise de chaque héros"
@@ -3995,7 +4001,8 @@ function chalOverlayHtml(F) {
   if (!F || !(F.chals || []).length) return "";
   return F.chals.map((c) => { const C = E.CHALLENGES[c.id]; const state = !c.ok ? "ko" : F.over && F.result === "win" ? "ok" : "run";
     const sub = c.id === "rapide" ? `<div class="prog"><i style="width:${Math.min(100, (F.round / c.turns) * 100)}%"></i></div>` : `<div class="d">${h(c.id === "elitiste" && F.ents[c.target] ? "Cible : " + F.ents[c.target].name : C.desc)}</div>`;
-    return `<div class="chx ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON(c.id)}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">${F.defiRules ? `+${(F.defiHero || []).includes(c.id) ? E.DEFI_PTS.hero : E.DEFI_PTS.rule} pts` : `+${c.bonus} %`}</div></div>`; }).join(""); // 1.1 : règles du Défi du jour, en points
+    const off = !F.defiRules && S.settings.chalAI && !E.chalWanted(S, c.id) && state === "run";
+    return `<div class="chx ${state}${off ? " off" : ""}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : "") + (off ? " — ignoré par l'IA (Challenges suivis)" : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON(c.id)}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">${F.defiRules ? `+${(F.defiHero || []).includes(c.id) ? E.DEFI_PTS.hero : E.DEFI_PTS.rule} pts` : `+${c.bonus} %`}</div></div>`; }).join(""); // 1.1 : règles du Défi du jour, en points
 }
 /* ===================== 0.1.10 : idoles ===================== */
 const idolImg = (id) => `assets/id/${E.IDOLS[id].fam}.webp`;
@@ -4142,12 +4149,23 @@ function dofusHtml() {
 }
 function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
+  const nOn = Object.keys(E.CHALLENGES).filter((id) => E.chalWanted(S, id)).length, nAll = Object.keys(E.CHALLENGES).length;
+  const pick = `<button class="btn xs chalpickbtn" data-act="chalpick" data-tip="Choisir les challenges que l'équipe suit">${nOn}/${nAll}</button>`;
   if (!F) return "";
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   const idol = F.idol ? `<span class="pill good idolpill" data-tip="${h(F.idol.ids.map((id) => E.IDOLS[id].name + " : " + E.IDOLS[id].desc).join(" · "))}">${F.idol.ids.map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("")} Idoles ${F.idolScore} · +${pctTxt(F.idolBonus)} %</span>` : "";
-  return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${F.defiRules ? `<span class="xs muted">${G("target")} Les héros suivent les règles du jour</span>` : tog}`;
+  return `${st}${idol}${archiPill(F)}${window.CHROMA ? window.CHROMA.pill(F) : ""}${mech}<span style="margin-left:auto"></span>${F.defiRules ? `<span class="xs muted">${G("target")} Les héros suivent les règles du jour</span>` : tog + (S.settings.chalAI ? pick : "")}`;
 }
+/* 2.1.13 : choix des challenges suivis par l'IA quand « Respecter les challenges » est coché */
+function chalPickSheet() {
+  const ids = Object.keys(E.CHALLENGES);
+  openSheet(`<h2>${G("target")} Challenges suivis</h2>
+    <p class="small muted">Avec « Respecter les challenges », l'IA ne suit que les challenges cochés. Les autres sont ignorés : leur bonus reste gagné si l'équipe les réussit sans y penser.<br>Si le combat tourne mal, les héros oublient les challenges pour gagner : Élitiste et Ordonné sous ${Math.round(E.CHAL_GIVEUP_TGT * 100)} % des PV de l'équipe, les autres sous ${Math.round(E.CHAL_GIVEUP * 100)} %, et tous dès qu'un héros tombe.</p>
+    <div class="chalpick">${ids.map((id) => { const C = E.CHALLENGES[id]; return `<label class="chpk"><input type="checkbox" data-act="chalwant" data-id="${id}" ${E.chalWanted(S, id) ? "checked" : ""}><span class="ic">${CHAL_ICON(id)}</span><span class="tx"><b>${h(C.name)}</b> <span class="tag">+${C.diff} %</span><span class="xs muted">${h(C.desc)}</span></span></label>`; }).join("")}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="chalall" data-v="1">Tout cocher</button><button class="btn sm" data-act="chalall" data-v="0">Tout décocher</button><button class="btn" data-act="closesheet" style="margin-left:auto">Fermer</button></div>`);
+}
+function chalPickSet(id, on) { const no = S.settings.chalNo = S.settings.chalNo || {}; if (on) delete no[id]; else no[id] = 1; if (!Object.keys(no).length) delete S.settings.chalNo; }
 function floatAt(node, txt, color, small, cls) {
   if (ecoOn()) return; // 2.1.11 : économie de batterie, plus de chiffres qui volent (les barres et les PV restent à jour)
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
@@ -9538,6 +9556,8 @@ document.addEventListener("click", (ev) => {
     case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
     case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
     case "csetsheet": combatSetSheet(); return;
+    case "chalpick": chalPickSheet(); return;
+    case "chalall": Object.keys(E.CHALLENGES).forEach((id) => chalPickSet(id, d.v === "1")); dirty = true; chalPickSheet(); return;
     case "sabgo": sabGo(d.v); return;
     case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
@@ -9885,6 +9905,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }
   else if (a === "gearfocus") { const x = char(+t.dataset.id); if (t.value) x.gearFocus = t.value; else delete x.gearFocus; gearPlan(x); const it = GEAR_FOCUS.find(([k]) => k === t.value); toast(it ? `${x.name} : « Équiper au mieux » privilégie maintenant ${it[1].replace(/ \(.*/, "")}.` : `${x.name} : « Équiper au mieux » revient à l'équilibre.`); }
   else if (a === "chaloff") c.chalOff = t.checked;
+  else if (a === "chalwant") { chalPickSet(t.dataset.id, t.checked); dirty = true; return; }
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
   else if (a === "compname") { const k = (S.comps || [])[+t.dataset.i]; if (k) k.name = (t.value.trim() || k.name).slice(0, 24); dirty = true; return; }
