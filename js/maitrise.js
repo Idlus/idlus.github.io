@@ -62,24 +62,25 @@
     /* symbole allumé */
     if (Tr.coreIds.every((id) => got.has(id))) { const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const [x, y] = toS(N[Tr.start]); const s = 330 * st.z; g.save(); g.globalAlpha = 0.34; g.shadowColor = cc; g.shadowBlur = 50; g.drawImage(im, x - s / 2, y - s / 2, s, s); g.restore(); } }
     /* liens */
+    const GO = new Set(E.mtGatesOpen(S())); const shut = (n) => n.gated != null && !n.gate && !GO.has(N[n.gated].gate.b); // 2.1 : branches fermées en retrait
     for (const [a, b] of Tr.ED) {
       if ((N[a].neb || N[b].neb) && !nebOpen()) continue;
       const A = toS(N[a]), B = toS(N[b]); if ((A[0] < -60 && B[0] < -60) || (A[0] > W + 60 && B[0] > W + 60) || (A[1] < -60 && B[1] < -60) || (A[1] > H + 60 && B[1] > H + 60)) continue;
       const on = got.has(a) && got.has(b), pp = (ps.has(a) || got.has(a)) && (ps.has(b) || got.has(b)) && (ps.has(a) || ps.has(b));
       const core = ["cls", "start", "cks"].includes(N[a].t) && ["cls", "start", "cks"].includes(N[b].t);
       g.strokeStyle = on ? "rgba(226,245,255,.95)" : pp ? "rgba(240,195,90,.9)" : core ? cc + "88" : "rgba(170,180,255,.16)"; g.lineWidth = Math.max(1, (on ? 2.6 : core ? 2 : 1.4) * st.z);
-      if (on) { g.shadowColor = "#bfe2ff"; g.shadowBlur = 8; } g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); g.shadowBlur = 0;
+      if (on) { g.shadowColor = "#bfe2ff"; g.shadowBlur = 8; } g.globalAlpha = shut(N[a]) || shut(N[b]) ? 0.3 : 1; g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); g.shadowBlur = 0; g.globalAlpha = 1;
     }
     /* domaines */
     if (st.z > 0.1) { g.save(); g.font = `400 ${Math.max(14, 30 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center";
-      DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; const x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); Tr.N.forEach((n) => { if (!n.end || st.z < 0.12) return; const R = n.r + 150; const x = W / 2 + (Math.sin(n.th) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(n.th) * R + st.oy) * st.z; const pg = Tr.N[n.gated]; const qx = W / 2 + (pg.X + st.ox) * st.z; g.textAlign = Math.abs(x - qx) < 8 ? "center" : x < qx ? "right" : "left"; g.font = `400 ${Math.max(12, 20 * Math.min(1, st.z * 1.4))}px Kavoon, Georgia, serif`; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(n.br, x, y); g.fillStyle = n.col; g.fillText(n.br, x, y); }); g.restore(); }
+      DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; let x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; const tw = g.measureText(D0.n).width / 2; if (x > -tw && x < W + tw && y > -20 && y < H + 30) { x = Math.max(tw + 8, Math.min(W - tw - 8, x)); y = Math.max(28, Math.min(H - 10, y)); } g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); g.restore(); }
     /* étoiles */
     const M = st.view ? { j: {} } : E.mt(hero());
     for (const n of N) {
       if (n.neb && !nebOpen()) continue;
       const [x, y] = toS(n); if (x < -50 || x > W + 50 || y < -50 || y > H + 50) continue;
       const r = rad(n), on = got.has(n.id), pp = ps.has(n.id), dc = domCol(n); const lock = n.gated != null && !gateOpen(n.gated); g.globalAlpha = lock && !n.gate ? 0.38 : 1;
-      if (n.gate && st.z > 0.2) { g.save(); g.font = `800 ${Math.max(11, 15 * Math.min(1, st.z * 1.6))}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t0 = lock ? `🔒 ${n.gate.b} · stasis ${n.gate.s}+` : `Porte ouverte · ${n.gate.b}`; const yy = y - r - 9 - 60 * st.z; g.strokeText(t0, x, yy); g.fillStyle = lock ? "#9fe7ff" : "#bdf09b"; g.fillText(t0, x, yy); g.restore(); }
+      if (n.gate && st.z > 0.25) { g.save(); g.font = `800 ${Math.max(11, 15 * Math.min(1, st.z * 1.6))}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t0 = lock ? `🔒 ${n.gate.b} · stasis ${n.gate.s}+` : n.gate.b; const yy = y - r - 9 - 60 * st.z; g.strokeText(t0, x, yy); g.fillStyle = lock ? "#9fe7ff" : "#bdf09b"; g.fillText(t0, x, yy); g.restore(); }
       if (n.t === "start") { g.shadowColor = cc; g.shadowBlur = 26; g.fillStyle = cc; g.strokeStyle = "#e2f5ae"; g.lineWidth = 3.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.stroke(); g.shadowBlur = 0;
         const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 1.7; g.drawImage(im, x - s / 2, y - s / 2, s, s); } continue; }
       if (!on && !pp && n.t === "s" && !HIT.has(n.id) && n.id !== st.sel) { g.fillStyle = "rgba(200,210,255,.75)"; g.beginPath(); g.arc(x, y, r * 0.42, 0, TAU); g.fill(); continue; }
@@ -96,9 +97,11 @@
       else if (n.t === "cls" && r > 6) { const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 1.4; g.globalAlpha = on ? 1 : 0.55; g.drawImage(im, x - s / 2, y - s / 2, s, s); g.globalAlpha = 1; } }
       if (n.gate) { g.globalAlpha = 1; ring(x, y, r + 7, lock ? "#9fe7ff" : "#bdf09b"); ring(x, y, r + 13, lock ? "rgba(159,231,255,.4)" : "rgba(189,240,155,.5)"); }
       if (HIT.has(n.id)) ring(x, y, r + 6); if (n.id === st.sel) ring(x, y, r + 4, "#fff");
+      if (n.end && st.z > 0.12 && st.z <= 0.3) { g.font = `400 ${Math.max(12, 40 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center"; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.75)"; const bw = g.measureText(n.br).width / 2, bx = Math.max(bw + 6, Math.min(W - bw - 6, x)), by = Math.max(22, y - r - 8); const al = g.globalAlpha; g.globalAlpha = Math.max(al, 0.8); g.strokeText(n.br, bx, by); g.fillStyle = n.col; g.fillText(n.br, bx, by); g.globalAlpha = al; } // 2.1 : de loin, le nom de la branche ; de près, celui de sa clé de voûte
       if (((n.t === "ks" || n.t === "cks") && st.z > 0.3) || (n.t === "nt" && st.z > 0.85)) { g.font = `800 ${n.t === "nt" ? 11.5 : 13}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)"; g.strokeText(n.n, x, y - r - 7); g.fillStyle = n.t === "cks" ? "#e2f5ae" : n.t === "ks" ? "#ffd2b0" : "#f6e3b0"; g.fillText(n.n, x, y - r - 7); }
     }
     g.globalAlpha = 1;
+    const hn = cv.parentNode.querySelector(".mt-hint"); if (hn) hn.hidden = !st.view && used() > 0; // l'aide s'efface dès le premier point placé
     tip(fo);
   }
   /* 2.0.1 : l'effet d'une étoile s'affiche sur l'arbre, au survol (souris) ou au premier toucher, avec ce que le chemin rapporte */
@@ -114,15 +117,15 @@
     const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
     const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
     const lkN = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null; // 2.1
-    const foot = lkN ? `🔒 Fermée : termine le donjon de ${lkN.b} en stasis ${lkN.s} ou plus` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
-    el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${n.gate ? "Porte des étoiles" : TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
+    const foot = lkN ? `🔒 Fermée · donjon de ${lkN.b} en stasis ${lkN.s}+` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
+    el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${n.gate ? "Porte des étoiles" : TYP[n.t]}${n.br ? ` · ${h(n.br)}` : ""}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
     el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
     let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
     el.style.left = Math.round(lx) + "px"; el.style.top = Math.round(Math.max(8, Math.min(H - bh - 8, ly))) + "px";
   }
   function ring(x, y, r, col = "#7fffd4") { g.strokeStyle = col; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); }
   const center = () => { st.z = Math.min(W, H) / 760; st.ox = 0; st.oy = 0; draw(); };
-  const fitAll = () => { const N = T().N.filter((n) => !(n.neb && !nebOpen())); let a = 1e9, b = -1e9, c2 = 1e9, d = -1e9; N.forEach((n) => { a = Math.min(a, n.X); b = Math.max(b, n.X); c2 = Math.min(c2, n.Y); d = Math.max(d, n.Y); }); st.z = Math.min(W / (b - a + 160), H / (d - c2 + 160)); st.ox = -(a + b) / 2; st.oy = -(c2 + d) / 2; draw(); };
+  const fitAll = () => { const N = T().N.filter((n) => !(n.neb && !nebOpen())); let a = 1e9, b = -1e9, c2 = 1e9, d = -1e9; N.forEach((n) => { a = Math.min(a, n.X); b = Math.max(b, n.X); c2 = Math.min(c2, n.Y); d = Math.max(d, n.Y); }); st.z = Math.min(W / (b - a + 360), H / (d - c2 + 260)); st.ox = -(a + b) / 2; st.oy = -(c2 + d) / 2; draw(); };
   const pick = (mx, my) => { let best = null, bd = 1e9; for (const n of T().N) { if (n.neb && !nebOpen()) continue; const [x, y] = toS(n); const dd = Math.hypot(x - mx, y - my); if (dd < Math.max(16, rad(n) + 10) && dd < bd) { bd = dd; best = n.id; } } return best; };
   let RO = null;
   function mount() {
@@ -180,7 +183,7 @@
     const lvCard = st.view ? `<div class="mt-card"><h3>Ciel ${h(CLASSES[st.view].name)}</h3><p class="xs muted">Tu regardes l'arbre d'une autre classe, sans y placer de points. Tes héros ${h(CLASSES[st.view].name)} l'ouvriront au niveau 200.</p><button class="btn sm" data-act="mt-view" data-v="">Revenir à ${h(c.name)}</button></div>`
       : `<div class="mt-card"><h3>Maîtrise de ${h(c.name)}</h3>${on ? `<div class="mt-pts"><b class="num">${fmt(lv)}</b><span class="muted">points · <b class="num">${fmt(left)}</b> à placer</span></div><div class="bar xp"><i style="width:${pctf(M.xp, E.mtNeed(c))}%"></i></div><span class="xs muted num">Maîtrise ${fmt(M.lvl)} · ${fmt(M.xp)} / ${fmt(E.mtNeed(c))} XP vers le niveau ${fmt(M.lvl + 1)}</span>${M.bn ? `<span class="xs muted">Dont ${fmt(M.bn)} points venus des Éveils et des sorts de ses vies passées.</span>` : ""}` : `<p class="small">La Maîtrise s'ouvre au <b>niveau 200</b>. ${h(c.name)} est niveau ${c.lvl} : au niveau 200, toute son XP remplit la Maîtrise.</p>`}
         ${on ? `<div class="mt-row"><button class="btn sm" data-act="mt-undo" ${st.hist.length ? "" : "disabled"}>Annuler${st.hist.length ? ` (${st.hist.length})` : ""}</button><button class="btn sm" data-act="mt-reset" ${used() ? "" : "disabled"}>Tout rendre${used() ? respec ? ` · ${fmt(respec)} kamas` : " · gratuit" : ""}</button><button class="btn sm" data-act="mt-share">Partager</button></div>
-        <span class="xs muted">Annuler revient sur les ${E.MT_UNDO} derniers points. Rendre des étoiles (une à une, en changeant d'arbre ou avec un code) est gratuit jusqu'à ${E.MT_FREE} points placés, puis coûte ${fmt(E.MT_RESPEC)} kamas par point rendu.${E.mtFreeWeek && E.mtFreeWeek() ? " <b>Semaine de la Maîtrise : tout est gratuit jusqu'au jeudi 22 octobre à 23 h.</b>" : ""}</span>` : ""}
+        <span class="xs muted">${E.mtFreeWeek && E.mtFreeWeek() ? "<b>Rendre est gratuit jusqu'au jeudi 22 octobre à 23 h.</b>" : `Rendre : gratuit jusqu'à ${E.MT_FREE} points placés, puis ${fmt(E.MT_RESPEC)} kamas par point.`}</span>` : ""}
         ${st.share && on ? `<div class="mt-share"><code>${h(E.mtCode(c))}</code><div class="mt-row"><button class="btn xs" data-act="mt-copy">Copier</button><input id="mtImp" placeholder="Coller le code d'un ami" aria-label="Code d'un arbre"><button class="btn xs" data-act="mt-imp">Charger</button></div></div>` : ""}</div>
       <div class="mt-card"><h3>Arbres enregistrés</h3><div class="seg">${LO.map((n, i) => `<button data-act="mt-lo" data-v="${i}" aria-pressed="${M.lo === i}">${n}</button>`).join("")}</div>${cmpHtml()}</div>`;
     const joys = (S().joy || []); const setJ = new Set(Object.values(M.j));

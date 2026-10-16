@@ -170,7 +170,7 @@
     { const bounds = [0, 1, 2, 4, 5]; let ti = 0; // le 6e passage (en bas) est celui de la Nébuleuse
       const nearSp = (th) => { let bi = 0, bd = 9; SP.forEach((x, i) => { const dd = Math.abs(((x.th - th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; bi = i; } }); return bi; };
       bounds.forEach((kb, gi) => { const tb = TAU * kb / 6; const si = nearSp(tb - 0.2236); const A = SP[si], B = SP[(si + 1) % SP.length]; const G = E.MT_GATES[gi];
-        const porte = add(P({ t: "s", d: 6, n: G.b, gate: G, b: [["% dégâts", 0.5]], txt: `+0,5 % dégâts. S'ouvre pour tout le compte en terminant le donjon de ${G.b} en stasis ${G.s} ou plus.`, ic: "pui", col: "#9fe7ff" }, tb, 1430)); N[porte].gated = porte; link(A.lv[4][2], porte); // un seul accès : la Porte n'est pas un raccourci entre deux domaines (même force par point, choix 4A)
+        const porte = add(P({ t: "s", d: 6, n: G.b, gate: G, b: [["% dégâts", 0.5]], txt: `+0,5 % dégâts. Ouvre deux branches pour tout le compte.`, ic: "pui", col: "#9fe7ff" }, tb, 1430)); N[porte].gated = porte; link(A.lv[4][2], porte); // un seul accès : la Porte n'est pas un raccourci entre deux domaines (même force par point, choix 4A)
         [-0.13, 0.13].forEach((o) => { const Tm = E.MT_BRTH[ti++]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c, gated: porte });
           const sm = (i) => { const q = Tm.sm[i % Tm.sm.length]; return tag({ t: "s", n: q[0], b: [[q[0], q[1]]], txt: `+${nf(q[1])} ${q[0]}`, ic: q[2] }); };
           const ntb = (j) => { const q = Tm.nt[j]; return tag({ t: "nt", n: q[0], b: q[1].map((x) => x.slice()), txt: q[1].map(([a, v]) => `+${nf(v)} ${a}`).join(" · "), ic: Tm.sm[0][2] }); };

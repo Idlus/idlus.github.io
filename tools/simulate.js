@@ -116,7 +116,7 @@ const giveMt = (S) => { if (!MTN) return; if (PORTES) E.MT_GATES.forEach((G) => 
     if (n.fx) v += (n.fx.d || 0) * 12 + (n.fx[EL] || 0) * 12 + (n.fx.hp || 0) * 5 + (n.fx.res || 0) * 4 + (n.fx.t1 || 0) * 3 + (n.fx.cx || 0) * 2 + (n.fx.pass || 0) * 2 + (n.fx.sh || 0) * 3 - (n.fx.pm || 0 ? 30 : 0) - (n.fx.pa ? 80 : 0);
     return v; };
   let left = MTN;
-  if (process.env.MTFORCE) { // MTFORCE="La Sangsue" : chaque héros prend d'abord cette branche lointaine const k0 = T.N.find((n) => n.end && n.br === process.env.MTFORCE); const pv = new Map([[T.start, -1]]); const q0 = [T.start]; while (q0.length) { const x = q0.shift(); for (const y of T.N[x].adj) if (!pv.has(y) && !T.N[y].neb) { pv.set(y, x); q0.push(y); } } for (let x = k0.id; x !== T.start; x = pv.get(x)) { got.add(x); left--; } }
+  if (process.env.MTFORCE) { const k0 = T.N.find((n) => n.end && n.br === process.env.MTFORCE); const pv = new Map([[T.start, -1]]); const q0 = [T.start]; while (q0.length) { const x = q0.shift(); for (const y of T.N[x].adj) if (!pv.has(y) && !T.N[y].neb) { pv.set(y, x); q0.push(y); } } for (let x = k0.id; x !== T.start; x = pv.get(x)) { got.add(x); left--; } } // MTFORCE="La Sangsue" : chaque héros prend d'abord cette branche lointaine
   while (left > 0) { // le meilleur gain par point parmi les chemins de 1 à 8 étoiles
     const prev = new Map(); const dist = new Map(); const q = [...got]; q.forEach((x) => { prev.set(x, -1); dist.set(x, 0); }); let hd = 0;
     while (hd < q.length) { const x = q[hd++]; if (dist.get(x) >= Math.min(8, left)) continue; for (const y of T.N[x].adj) { if (prev.has(y) || val(T.N[y]) < 0) continue; prev.set(y, x); dist.set(y, dist.get(x) + 1); q.push(y); } }
