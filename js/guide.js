@@ -562,6 +562,7 @@
         "Une tentative coûte 1 Volonté seulement sur un étage pas encore réussi ce mois-ci.",
         "Un boss tous les 10 étages, un tirage tous les 5, un événement, une boutique ou un autel par dizaine ; une règle sur les autres combats.",
         "Mode **manuel** : tu lances chaque étage et choisis les sorts ; mode auto : moins de Fragments.",
+        "Sur PC, **raccourcis** : 1 à 9 lancent tes sorts ou prennent un choix, Entrée finit le tour ou lance l'étage, Échap passe, ← → changent de cible.",
         `**Reliques** : tous les ${N(() => E.ASC.relEvery)} étages, après le sort du palier, ${N(() => E.ASC.relMax)} emplacements (Arme, Coiffe, Cape, Anneau, Amulette, Bottes), 3 proposées, 1 gardée. Caractéristiques + effet unique, perdues en fin de montée ; le marchand en vend 2. L'onglet **Reliquaire** garde celles trouvées (titres, cadre, ornement). L'Au-delà démarre avec ${N(() => E.ASC.relStart)} reliques.`,
         "**Fragments** et **Écus** paient les améliorations de la tour (classes, sorts de départ…).",
         "La tour repart le 1er du mois ; l'Au-delà chaque lundi. En ligne, le top 10 reçoit un titre, des Fioles et des kamas.",

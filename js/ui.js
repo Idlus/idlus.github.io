@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.6";
+const GAME_VERSION = "2.1.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.7", name: "Raccourcis de l'Ascension", guide: "asc", items: [
+    "L'Ascension sur PC : les touches 1 à 9 lancent tes sorts pendant ton tour (le numéro s'affiche en petit sur chaque sort) et prennent les choix des paliers (sorts, reliques, marchand)",
+    "Entrée ou Espace finit le tour, lance l'étage suivant ou valide ; Échap passe ou refuse ; ← → changent de cible",
+    "Barre pleine : le premier chiffre choisit le sort à remplacer, le second le nouveau sort. Rien ne se déclenche quand tu écris dans le chat",
+  ] },
   { v: "2.1.6", name: "Tous les points d'un coup", guide: "maitrise", items: [
     "Maîtrise : nouveau bouton « Placer les N points » sous les points à placer. Il pose d'un coup tous les points libres du héros sur les meilleurs bonus, sans jamais prendre de clé de voûte (elles restent ton choix)",
     "« Annuler » rend tous les points placés par le bouton en une fois"
@@ -8209,7 +8214,7 @@ function hotkey(ev) {
 function hotSheet() {
   const all = hotPages(); const row = (key, txt) => `<div class="hk-row"><kbd>${key}</kbd><span>${h(txt)}</span></div>`;
   openSheet(`<h2>Raccourcis clavier</h2><div class="hk-grid">${HOTKEYS.filter(([, p]) => all.includes(p)).map(([x, p]) => row(x.toUpperCase(), navName(p).replace(/^.* › /, ""))).join("")}
-    ${row("O", "Options")}${row("← →", "Page précédente ou suivante du menu")}${row("↑ ↓", "Héros précédent ou suivant")}${row("Ctrl K ou /", "Rechercher")}${row("Échap", "Fermer une fenêtre")}${row("?", "Cette liste")}</div>
+    ${row("O", "Options")}${row("1 à 9", "L'Ascension : lancer un sort ou prendre un choix")}${row("Entrée", "L'Ascension : finir le tour, lancer l'étage, valider")}${row("Échap", "L'Ascension : passer ou refuser")}${row("← →", "L'Ascension : changer de cible pendant ton tour")}${row("← →", "Page précédente ou suivante du menu")}${row("↑ ↓", "Héros précédent ou suivant")}${row("Ctrl K ou /", "Rechercher")}${row("Échap", "Fermer une fenêtre")}${row("?", "Cette liste")}</div>
     <p class="xs muted">Sur PC seulement. Ils ne s'activent pas quand tu écris dans un champ. Tu peux les couper dans Options › Jeu.</p>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }

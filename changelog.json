@@ -1,6 +1,16 @@
 {
-  "version": "2.1.6",
+  "version": "2.1.7",
   "versions": [
+    {
+      "v": "2.1.7",
+      "name": "Raccourcis de l'Ascension",
+      "guide": "asc",
+      "items": [
+        "L'Ascension sur PC : les touches 1 à 9 lancent tes sorts pendant ton tour (le numéro s'affiche en petit sur chaque sort) et prennent les choix des paliers (sorts, reliques, marchand)",
+        "Entrée ou Espace finit le tour, lance l'étage suivant ou valide ; Échap passe ou refuse ; ← → changent de cible",
+        "Barre pleine : le premier chiffre choisit le sort à remplacer, le second le nouveau sort. Rien ne se déclenche quand tu écris dans le chat"
+      ]
+    },
     {
       "v": "2.1.6",
       "name": "Tous les points d'un coup",
