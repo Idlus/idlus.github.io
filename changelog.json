@@ -1,6 +1,15 @@
 {
-  "version": "2.1.1",
+  "version": "2.1.2",
   "versions": [
+    {
+      "v": "2.1.2",
+      "name": "L'arbre fluide",
+      "guide": "maitrise",
+      "items": [
+        "Arbre de Maîtrise beaucoup plus fluide : un seul dessin par image au lieu d'un par mouvement de souris, et le ciel n'est plus redessiné en entier au survol d'une étoile",
+        "Pendant un déplacement ou un zoom, le ciel s'affiche sans halos et en définition réduite, puis redevient net dès l'arrêt"
+      ]
+    },
     {
       "v": "2.1.1",
       "name": "L'arbre qui aide",

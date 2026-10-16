@@ -20,7 +20,7 @@
   const pctf = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
   const sym = (cls) => `assets/h/${cls}_sym.png`;
   const st = { tab: "arbre", cid: null, view: null, z: 0, ox: 0, oy: 0, sel: null, hov: null, q: "", hist: [], cmp: null, share: false, fam: "all", key: "", draft: null, peek: null, anim: null, mm: null };
-  const IMG = {}; const img = (k, src) => { if (!IMG[k]) { const i = new Image(); i.onload = () => draw(); i.src = src; IMG[k] = i; } return IMG[k]; };
+  const IMG = {}; const img = (k, src) => { if (!IMG[k]) { const i = new Image(); i.onload = () => { BK = ""; draw(); }; i.src = src; IMG[k] = i; } return IMG[k]; };
   const hero = () => { const s = S(); let c = s.chars.find((x) => x.id === st.cid); if (!c) { c = s.chars.slice().sort((a, b) => b.lvl - a.lvl || ((b.mt && b.mt.lvl) || 0) - ((a.mt && a.mt.lvl) || 0))[0]; st.cid = c ? c.id : null; } return c; };
   const treeCls = () => st.view || hero().cls;
   const canEdit = () => !st.view && E.mtOn(hero());
@@ -34,7 +34,8 @@
   const used = () => got.size - 1;
   const nebOpen = () => pts() >= E.MT_OPEN;
   const T = () => build(treeCls());
-  const gateOpen = (pid) => E.mtGatesOpen(S()).includes(T().N[pid].gate.b); // 2.1 : Portes des étoiles (pour tout le compte)
+  let GC = null; const gatesSet = () => { const t = performance.now(); if (!GC || t - GC.t > 400) GC = { t, s: new Set(E.mtGatesOpen(S())) }; return GC.s; };
+  const gateOpen = (pid) => gatesSet().has(T().N[pid].gate.b); /* 2.1.2 : lu une fois, pas pour chaque étoile parcourue */ // 2.1 : Portes des étoiles (pour tout le compte)
   const allowed = (id) => { const n = T().N[id]; return n.t !== "start" && !(n.neb && !nebOpen()) && !(n.gated != null && !gateOpen(n.gated)); };
   const pathTo = (t, base) => { const N = T().N; const B = base || got; if (B.has(t)) return []; if (!allowed(t)) return null;
     const prev = new Map(); const q = [...B]; q.forEach((x) => prev.set(x, -1)); let hd = 0;
@@ -54,11 +55,35 @@
   const rad = (n) => BASE[n.t] * (n.big ? 1.5 : 1) * Math.max(0.45, Math.min(1.5, st.z));
   const hits = () => { const q = norm(st.q.trim()); return new Set(q.length < 2 ? [] : T().N.filter((n) => n.t !== "start" && !(n.neb && !nebOpen()) && norm(n.n + " " + n.txt).includes(q)).map((n) => n.id)); };
   const norm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  function draw() {
-    if (!g || !cv || !cv.isConnected) return; const Tr = T(), N = Tr.N, cc = CLASSES[Tr.cls].color, HIT = hits();
+  /* 2.1.2 : un seul dessin par image (la souris envoie bien plus d'événements que l'écran n'affiche d'images) ; sans halos pendant un déplacement */
+  let RAF = 0, FAST = false, FT = 0;
+  function draw() { if (RAF) return; RAF = requestAnimationFrame(() => { RAF = 0; drawNow(); }); }
+  const moving = () => { FAST = true; clearTimeout(FT); FT = setTimeout(() => { FAST = false; draw(); }, 160); };
+  /* 2.1.2 : le ciel est gardé en image tant que la vue et les étoiles prises ne changent pas ; le survol ne redessine que le chemin et la bulle par-dessus */
+  let BK = "", OFF = null;
+  function drawNow() {
+    if (!g || !cv || !cv.isConnected) return; const hv = st.hov; const sumOf = (it) => { let t = 0, n = 0; for (const x of it) { t += x * 7 + 1; n++; } return n + ":" + t; };
+    const key = st.anim ? "" : [treeCls(), W, H, dpr, st.z, st.ox, st.oy, sumOf(got), st.draft ? sumOf(st.draft) : "-", st.sel, st.q, FAST, [...gatesSet()].join(), nebOpen(), st.view ? "v" + (st.peek ? st.peek.ids.length : 0) : E.mt(hero()).obj + JSON.stringify(E.mt(hero()).j), pts(), (S().joy || []).length].join("|");
+    const lo = FAST && dpr > 1; const wd = lo ? Math.ceil(W) : cv.width, ht = lo ? Math.ceil(H) : cv.height; // pendant un déplacement : le ciel en basse définition, net dès l'arrêt
+    if (!key || key !== BK || !OFF || OFF.width !== wd) { if (!OFF || OFF.width !== wd || OFF.height !== ht) { OFF = document.createElement("canvas"); OFF.width = wd; OFF.height = ht; }
+      const g0 = g, d0 = dpr; g = OFF.getContext("2d"); if (lo) dpr = 1; st.hov = null; try { drawBase(); } finally { g = g0; dpr = d0; st.hov = hv; } BK = key; }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(OFF, 0, 0, cv.width, cv.height); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (hv != null && hv !== st.sel) hoverLayer(hv);
+    tip(hv != null ? hv : st.sel);
+  }
+  function hoverLayer(id) {
+    const N = T().N; if (!canEdit() || (N[id].neb && !nebOpen())) return;
+    if (got.has(id)) { if (st.draft) return; const C = new Set(cutSet(id)); g.strokeStyle = "#ff7b7b"; g.lineWidth = Math.max(1, 2.6 * st.z); g.beginPath(); C.forEach((x) => N[x].adj.forEach((y) => { if ((C.has(y) || got.has(y)) && (C.has(y) ? x < y : true)) { const [ax, ay] = toS(N[x]), [bx, by] = toS(N[y]); g.moveTo(ax, ay); g.lineTo(bx, by); } })); g.stroke(); C.forEach((x) => { const [px, py] = toS(N[x]); ring(px, py, rad(N[x]) + 5, "#ff7b7b"); }); return; }
+    const DS = st.draft ? draftSet() : got; if (st.draft && DS.has(id)) return; const p = pathTo(id, DS); if (!p || !p.length) return; const on = new Set(DS);
+    g.setLineDash(st.draft ? [7, 6] : []); g.strokeStyle = "rgba(240,195,90,.9)"; g.lineWidth = Math.max(1, 2 * st.z); g.beginPath();
+    p.forEach((x) => { const y = N[x].adj.find((z) => on.has(z)); if (y != null) { const [ax, ay] = toS(N[x]), [bx, by] = toS(N[y]); g.moveTo(ax, ay); g.lineTo(bx, by); } on.add(x); }); g.stroke(); g.setLineDash([]);
+    p.forEach((x) => { const n = N[x]; const [px, py] = toS(n); const r = n.t === "s" ? rad(n) : rad(n) * 0.8; g.fillStyle = n.t === "ks" || n.t === "cks" ? "rgba(255,159,90,.75)" : "rgba(240,195,90,.7)"; g.beginPath(); g.arc(px, py, r, 0, TAU); g.fill(); });
+  }
+  function drawBase() {
+    const Tr = T(), N = Tr.N, cc = CLASSES[Tr.cls].color, HIT = hits();
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
     const fo = st.hov != null ? st.hov : st.sel; const DS = st.draft ? draftSet() : null; const path = fo != null && !got.has(fo) && canEdit() && !(DS && DS.has(fo)) ? pathTo(fo, DS) || [] : []; const ps = new Set(path);
-    const OB = fo == null && !st.draft && canEdit() ? objPath() : null; if (OB) OB.forEach((i) => ps.add(i)); /* 2.1 (12A) : chemin vers l'objectif épinglé */ if (st.draft) st.draft.forEach((i) => ps.add(i)); const CUT = fo != null && got.has(fo) && canEdit() && !st.draft ? new Set(cutSet(fo)) : null; // 2.1 : brouillon (5A), étoiles rendues avec (13A)
+    const OB = fo == null && !st.draft && canEdit() && E.mt(hero()).obj != null ? (st.objC && st.objC[0] === `${E.mt(hero()).obj}:${got.size}:${treeCls()}` ? st.objC[1] : (st.objC = [`${E.mt(hero()).obj}:${got.size}:${treeCls()}`, objPath()])[1]) : null; if (OB) OB.forEach((i) => ps.add(i)); /* 2.1 (12A) : chemin vers l'objectif épinglé */ if (st.draft) st.draft.forEach((i) => ps.add(i)); const CUT = fo != null && got.has(fo) && canEdit() && !st.draft ? new Set(cutSet(fo)) : null; // 2.1 : brouillon (5A), étoiles rendues avec (13A)
     /* Nébuleuse */
     { const c0 = [W / 2 + st.ox * st.z, H / 2 + (1880 + st.oy) * st.z], R = 420 * st.z; const gr = g.createRadialGradient(c0[0], c0[1], 0, c0[0], c0[1], R);
       gr.addColorStop(0, nebOpen() ? "rgba(196,155,255,.30)" : "rgba(160,150,200,.22)"); gr.addColorStop(1, "rgba(160,150,200,0)"); g.fillStyle = gr; g.beginPath(); g.arc(c0[0], c0[1], R, 0, TAU); g.fill();
@@ -66,31 +91,35 @@
     /* symbole allumé */
     if (Tr.coreIds.every((id) => got.has(id))) { const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const [x, y] = toS(N[Tr.start]); const s = 330 * st.z; g.save(); g.globalAlpha = 0.34; g.shadowColor = cc; g.shadowBlur = 50; g.drawImage(im, x - s / 2, y - s / 2, s, s); g.restore(); } }
     /* liens */
-    const GO = new Set(E.mtGatesOpen(S())); const shut = (n) => n.gated != null && !n.gate && !GO.has(N[n.gated].gate.b); // 2.1 : branches fermées en retrait
+    const GO = gatesSet(); const SH = FAST || got.size > 350 ? 0 : 1; const shut = (n) => n.gated != null && !n.gate && !GO.has(N[n.gated].gate.b); // 2.1 : branches fermées en retrait
+    const EB = new Map();
     for (const [a, b] of Tr.ED) {
       if ((N[a].neb || N[b].neb) && !nebOpen()) continue;
       const A = toS(N[a]), B = toS(N[b]); if ((A[0] < -60 && B[0] < -60) || (A[0] > W + 60 && B[0] > W + 60) || (A[1] < -60 && B[1] < -60) || (A[1] > H + 60 && B[1] > H + 60)) continue;
       const on = got.has(a) && got.has(b), pp = (ps.has(a) || got.has(a)) && (ps.has(b) || got.has(b)) && (ps.has(a) || ps.has(b));
       const core = ["cls", "start", "cks"].includes(N[a].t) && ["cls", "start", "cks"].includes(N[b].t);
-      g.setLineDash((st.draft || OB) && pp && !on ? [7, 6] : []); const oc = on ? domCol(N[N[b].t === "start" ? a : b]) : null; // 2.1 (2A) : le chemin pris prend la couleur de sa voie
-      g.strokeStyle = on ? (CUT && (CUT.has(a) || CUT.has(b)) ? "#ff7b7b" : oc) : pp ? "rgba(240,195,90,.9)" : core ? cc + "88" : "rgba(170,180,255,.16)"; g.lineWidth = Math.max(1, (on ? 2.6 : core ? 2 : 1.4) * st.z);
-      if (on) { g.shadowColor = oc; g.shadowBlur = 8; } g.globalAlpha = shut(N[a]) || shut(N[b]) ? 0.3 : 1; g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); g.shadowBlur = 0; g.globalAlpha = 1;
+      const oc = on ? domCol(N[N[b].t === "start" ? a : b]) : null; // 2.1 (2A) : le chemin pris prend la couleur de sa voie
+      const col = on ? (CUT && (CUT.has(a) || CUT.has(b)) ? "#ff7b7b" : oc) : pp ? "rgba(240,195,90,.9)" : core ? cc + "88" : "rgba(170,180,255,.16)";
+      const key = `${(st.draft || OB) && pp && !on ? 1 : 0}|${col}|${on ? 2.6 : core ? 2 : 1.4}|${shut(N[a]) || shut(N[b]) ? 0.3 : 1}|${on && SH ? 1 : 0}`; let L = EB.get(key); if (!L) EB.set(key, (L = [])); L.push(A[0], A[1], B[0], B[1]);
     }
-    g.setLineDash([]);
+    /* 2.1.2 : un seul tracé par style de lien (avant : un tracé par lien, plus de 2 000 par image) */
+    EB.forEach((L, key) => { const [ds, col, w, al, sh] = key.split("|"); g.setLineDash(ds === "1" ? [7, 6] : []); g.strokeStyle = col; g.lineWidth = Math.max(1, +w * st.z); g.globalAlpha = +al; if (sh === "1") { g.shadowColor = col; g.shadowBlur = 8; }
+      g.beginPath(); for (let i = 0; i < L.length; i += 4) { g.moveTo(L[i], L[i + 1]); g.lineTo(L[i + 2], L[i + 3]); } g.stroke(); g.shadowBlur = 0; });
+    g.globalAlpha = 1; g.setLineDash([]);
     /* domaines */
     if (st.z > 0.1) { g.save(); g.font = `400 ${Math.max(14, 30 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center";
       DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; let x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; const tw = g.measureText(D0.n).width / 2; if (x > -tw && x < W + tw && y > -20 && y < H + 30) { x = Math.max(tw + 8, Math.min(W - tw - 8, x)); y = Math.max(28, Math.min(H - 10, y)); } g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); g.restore(); }
     /* étoiles */
-    const M = st.view ? { j: {} } : E.mt(hero());
+    const M = st.view ? { j: {} } : E.mt(hero()); const SM0 = new Path2D(), SM1 = new Path2D();
     for (const n of N) {
       if (n.neb && !nebOpen()) continue;
       const [x, y] = toS(n); if (x < -50 || x > W + 50 || y < -50 || y > H + 50) continue;
       const r = rad(n), on = got.has(n.id), pp = ps.has(n.id), dc = domCol(n); const lock = n.gated != null && !gateOpen(n.gated); g.globalAlpha = lock && !n.gate ? 0.38 : 1;
       if (n.gate && st.z > 0.25) { g.save(); g.font = `800 ${Math.max(11, 15 * Math.min(1, st.z * 1.6))}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t0 = lock ? `🔒 ${n.gate.b} · stasis ${n.gate.s}+` : n.gate.b; const yy = y - r - 9 - 60 * st.z; g.strokeText(t0, x, yy); g.fillStyle = lock ? "#9fe7ff" : "#bdf09b"; g.fillText(t0, x, yy); g.restore(); }
-      if (n.t === "start") { g.shadowColor = cc; g.shadowBlur = 26; g.fillStyle = cc; g.strokeStyle = "#e2f5ae"; g.lineWidth = 3.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.stroke(); g.shadowBlur = 0;
+      if (n.t === "start") { g.shadowColor = cc; g.shadowBlur = FAST ? 0 : 26; g.fillStyle = cc; g.strokeStyle = "#e2f5ae"; g.lineWidth = 3.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.stroke(); g.shadowBlur = 0;
         const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 1.7; g.drawImage(im, x - s / 2, y - s / 2, s, s); } continue; }
-      if (!on && !pp && n.t === "s" && !HIT.has(n.id) && n.id !== st.sel) { g.fillStyle = "rgba(200,210,255,.75)"; g.beginPath(); g.arc(x, y, r * 0.42, 0, TAU); g.fill(); continue; }
-      if (on) { g.shadowColor = n.t === "ks" ? "#ff9f5a" : n.t === "cks" || n.t === "cls" ? cc : "#cfe8ff"; g.shadowBlur = n.t === "s" ? 8 : 16; }
+      if (!on && !pp && n.t === "s" && !HIT.has(n.id) && n.id !== st.sel) { const P0 = lock ? SM1 : SM0; P0.moveTo(x + r * 0.42, y); P0.arc(x, y, r * 0.42, 0, TAU); continue; } // 2.1.2 : petites étoiles en un seul tracé
+      if (on) { g.shadowColor = n.t === "ks" ? "#ff9f5a" : n.t === "cks" || n.t === "cls" ? cc : "#cfe8ff"; g.shadowBlur = n.t === "s" || n.t === "cls" || n.t === "joy" ? 8 * SH : FAST ? 0 : 16; }
       if (n.t === "ks" || n.t === "cks") { g.beginPath(); for (let q = 0; q < 16; q++) { const a = q * Math.PI / 8 - Math.PI / 2; const rr = q % 2 ? r * 0.62 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath();
         g.fillStyle = on ? (n.t === "cks" ? cc : "#ff9f5a") : pp ? "rgba(255,159,90,.6)" : "#1d1530"; g.fill(); g.lineWidth = 3; g.strokeStyle = n.t === "cks" ? "#e2f5ae" : dc; g.stroke();
         if (n.t === "cks") { const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 0.95; g.drawImage(im, x - s / 2, y - s / 2, s, s); } } }
@@ -106,13 +135,12 @@
       if (n.end && st.z > 0.12 && st.z <= 0.3) { g.font = `400 ${Math.max(12, 40 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center"; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.75)"; const bw = g.measureText(n.br).width / 2, bx = Math.max(bw + 6, Math.min(W - bw - 6, x)), by = Math.max(22, y - r - 8); const al = g.globalAlpha; g.globalAlpha = Math.max(al, 0.8); g.strokeText(n.br, bx, by); g.fillStyle = n.col; g.fillText(n.br, bx, by); g.globalAlpha = al; } // 2.1 : de loin, le nom de la branche ; de près, celui de sa clé de voûte
       if (((n.t === "ks" || n.t === "cks") && st.z > 0.3) || (n.t === "nt" && st.z > 0.85)) { g.font = `800 ${n.t === "nt" ? 11.5 : 13}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)"; g.strokeText(n.n, x, y - r - 7); g.fillStyle = n.t === "cks" ? "#e2f5ae" : n.t === "ks" ? "#ffd2b0" : "#f6e3b0"; g.fillText(n.n, x, y - r - 7); }
     }
-    g.globalAlpha = 1;
+    g.globalAlpha = 1; g.fillStyle = "rgba(200,210,255,.75)"; g.fill(SM0); g.globalAlpha = 0.38; g.fill(SM1); g.globalAlpha = 1;
     if (st.draft) st.draft.forEach((i) => { const [x, y] = toS(N[i]); g.save(); g.setLineDash([4, 4]); g.strokeStyle = "#f0c35a"; g.lineWidth = 2; g.beginPath(); g.arc(x, y, rad(N[i]) + 5, 0, TAU); g.stroke(); g.restore(); });
     if (CUT) CUT.forEach((i) => { if (i === fo) return; const [x, y] = toS(N[i]); ring(x, y, rad(N[i]) + 5, "#ff7b7b"); });
     if (st.anim) animDraw(N);
     miniMap(N); objUi();
     const hn = cv.parentNode.querySelector(".mt-hint"); if (hn) hn.hidden = (!st.view && used() > 0) || !!st.draft || !!st.peek || !!cv.parentNode.querySelector(".mt-obj"); // l'aide s'efface dès le premier point placé
-    tip(fo);
   }
   /* 2.0.1 : l'effet d'une étoile s'affiche sur l'arbre, au survol (souris) ou au premier toucher, avec ce que le chemin rapporte */
   const gainOf = (ids) => { if (!ids.length) return [];
@@ -127,31 +155,40 @@
   /* 2.1 (12A) : objectif épinglé (une clé de voûte) ; les nouveaux niveaux y placent leurs points tout seuls */
   const objPath = () => { const c = hero(); const M = E.mt(c); if (M.obj == null || !E.mtOn(c) || got.has(M.obj)) return null; return pathTo(M.obj); };
   function objUi() {
-    const box = cv && cv.parentNode; if (!box) return; let el = box.querySelector(".mt-obj"); const c = hero(); const M = st.view ? {} : E.mt(c); const p = M.obj != null && !st.view ? objPath() : null;
+    const box = cv && cv.parentNode; if (!box) return; let el = box.querySelector(".mt-obj"); const c = hero(); const M = st.view ? {} : E.mt(c); const p = M.obj != null && !st.view ? (st.objC && st.objC[0] === `${M.obj}:${got.size}:${treeCls()}` ? st.objC[1] : (st.objC = [`${M.obj}:${got.size}:${treeCls()}`, objPath()])[1]) : null;
     if (!p) { if (el) el.remove(); return; } if (!el) { el = document.createElement("div"); el.className = "mt-obj"; box.appendChild(el); }
+    const ok = `${M.obj}:${p.length}:${pts() - used()}`; if (el.dataset.k === ok) return; el.dataset.k = ok;
     const left = Math.max(0, pts() - used()); el.innerHTML = `<span>🎯 <b>${h(T().N[M.obj].n)}</b> · encore ${p.length} point${p.length > 1 ? "s" : ""}${left ? ` (${fmt(left)} à placer : touche-la pour les poser)` : ", posés tout seuls aux prochains niveaux"}</span><button class="btn xs" data-act="mt-pin" data-v="">Retirer</button>`;
   }
+  let TK = "";
   function tip(id) {
     const el = cv && cv.parentNode.querySelector(".mt-tip"); if (!el) return;
-    if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; return; }
+    if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; TK = ""; return; }
+    const tk = `${treeCls()}:${id}:${got.size}:${st.draft ? st.draft.length : -1}:${st.sel}:${RK.at}:${pts()}`; if (tk === TK && !el.hidden) { tipPos(el, T().N[id]); return; } TK = tk; /* 2.1.2 : la bulle ne se recalcule que si elle change */
     const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
     const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
     const lkN = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null; // 2.1
     const cut = on && canEdit() && !st.draft ? cutSet(id) : null; const cc0 = cut && cut.length > 1 ? respecCost(cut.length) : 0;
     const foot = lkN ? `🔒 Fermée · donjon de ${lkN.b} en stasis ${lkN.s}+` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : st.draft ? (on ? "✓ Prise" : (st.draft.includes(id) ? "Dans le brouillon · touche pour l'enlever" : "Touche pour l'ajouter au brouillon")) : cut && cut.length > 1 ? `Rendre cette étoile et les ${cut.length - 1} qui en dépendent · ${cc0 ? fmt(cc0) + " kamas" : "gratuit"}` : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
     el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${n.gate ? "Porte des étoiles" : TYP[n.t]}${n.br ? ` · ${h(n.br)}` : ""}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${popTxt(n)}${foot ? `<em class="${cut && cut.length > 1 ? "mt-cut" : ""}">${foot}</em>` : ""}`;
-    el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
+    el.hidden = false; tipPos(el, n);
+  }
+  function tipPos(el, n) {
+    const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
     let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
     el.style.left = Math.round(lx) + "px"; el.style.top = Math.round(Math.max(8, Math.min(H - bh - 8, ly))) + "px";
   }
   /* 2.1 (3A) : mini-carte en bas à gauche, cadre « tu es ici » ; un clic dessus y emmène */
+  let MM = null;
   function miniMap(N) {
     st.mm = null; let a = 1e9, b = -1e9, c2 = 1e9, d = -1e9; N.forEach((n) => { if (n.neb && !nebOpen()) return; a = Math.min(a, n.X); b = Math.max(b, n.X); c2 = Math.min(c2, n.Y); d = Math.max(d, n.Y); });
     if (st.z < Math.min(W / (b - a + 360), H / (d - c2 + 260)) * 1.6) return; // presque tout le ciel est déjà à l'écran
     const zb = cv.parentNode.querySelector(".mt-zoom"); const zh = zb && zb.offsetLeft < 120 ? zb.offsetHeight + 8 : 0; const mw = W < 600 ? 92 : 140, mh = mw, mx = 10, my = H - mh - 10 - zh; /* au-dessus des boutons quand ils prennent toute la largeur */ const k = Math.min((mw - 12) / (b - a), (mh - 12) / (d - c2)); const cx = (a + b) / 2, cy = (c2 + d) / 2;
     const mp = (X0, Y0) => [mx + mw / 2 + (X0 - cx) * k, my + mh / 2 + (Y0 - cy) * k];
     g.save(); g.fillStyle = "rgba(8,8,18,.82)"; g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 1; g.beginPath(); if (g.roundRect) g.roundRect(mx, my, mw, mh, 10); else g.rect(mx, my, mw, mh); g.fill(); g.stroke();
-    N.forEach((n) => { if (n.neb && !nebOpen()) return; const [x, y] = mp(n.X, n.Y); const on = got.has(n.id); g.fillStyle = on ? "#fff" : domCol(n); g.globalAlpha = on ? 1 : 0.4; const w = on ? 2 : 1.3; g.fillRect(x - w / 2, y - w / 2, w, w); });
+    const mk = `${treeCls()}:${got.size}:${mw}:${nebOpen()}:${dpr}`; if (!MM || MM.k !== mk) { const oc = document.createElement("canvas"); oc.width = mw * dpr; oc.height = mh * dpr; const q = oc.getContext("2d"); q.scale(dpr, dpr); /* 2.1.2 : les points de la mini-carte sont gardés en image */
+      N.forEach((n) => { if (n.neb && !nebOpen()) return; const x = mw / 2 + (n.X - cx) * k, y = mh / 2 + (n.Y - cy) * k; const on = got.has(n.id); q.fillStyle = on ? "#fff" : domCol(n); q.globalAlpha = on ? 1 : 0.4; const w = on ? 2 : 1.3; q.fillRect(x - w / 2, y - w / 2, w, w); }); MM = { k: mk, c: oc }; }
+    g.drawImage(MM.c, mx, my, mw, mh);
     g.globalAlpha = 1; const [vx0, vy0] = mp(-st.ox - W / 2 / st.z, -st.oy - H / 2 / st.z), [vx1, vy1] = mp(-st.ox + W / 2 / st.z, -st.oy + H / 2 / st.z);
     const rx = Math.max(mx, vx0), ry = Math.max(my, vy0); g.strokeStyle = "#bdf09b"; g.lineWidth = 1.5; g.strokeRect(rx, ry, Math.max(4, Math.min(mx + mw, vx1) - rx), Math.max(4, Math.min(my + mh, vy1) - ry)); g.restore();
     st.mm = { mx, my, mw, mh, k, cx, cy };
@@ -163,7 +200,7 @@
     const B = N.filter((n) => n.gated === P.id && !n.gate).sort((x, y) => Math.hypot(x.X - P.X, x.Y - P.Y) - Math.hypot(y.X - P.X, y.Y - P.Y)); const k = Math.floor(B.length * t);
     B.slice(0, k).forEach((n, i) => { const [x, y] = toS(n); g.save(); g.globalAlpha = (0.35 + 0.65 * (i / Math.max(1, k))) * (t < 1 ? 1 : 0.5); g.shadowColor = n.col; g.shadowBlur = 26; g.fillStyle = n.col; g.beginPath(); g.arc(x, y, rad(n) * 0.9, 0, TAU); g.fill(); g.restore(); });
     const [px, py] = toS(P); const R0 = 140 * Math.max(0.6, st.z) * (1 - t * 0.5); g.save(); const gr = g.createRadialGradient(px, py, 0, px, py, R0); gr.addColorStop(0, `rgba(159,231,255,${0.75 * (1 - t * 0.6)})`); gr.addColorStop(1, "rgba(159,231,255,0)"); g.fillStyle = gr; g.beginPath(); g.arc(px, py, R0, 0, TAU); g.fill(); g.restore();
-    if (t < 1) requestAnimationFrame(draw); else setTimeout(() => { st.anim = null; const bn = cv && cv.parentNode.querySelector(".mt-ban"); if (bn) bn.remove(); draw(); }, 1800);
+    if (t < 1) setTimeout(draw, 16); else setTimeout(() => { st.anim = null; const bn = cv && cv.parentNode.querySelector(".mt-ban"); if (bn) bn.remove(); draw(); }, 1800);
   }
   function animCheck() {
     const s = S(); if (st.view || st.anim || !E.mtOn(hero())) return; const open = E.mtGatesOpen(s); s.mtGateSeen = s.mtGateSeen || []; const b = open.find((x) => !s.mtGateSeen.includes(x)); if (!b) return;
@@ -195,13 +232,13 @@
     const ptrs = new Map(); let drag = null, moved = 0, pinch = null;
     box.addEventListener("pointerdown", (e) => { if (e.target.closest(".mt-zoom, .mt-draft, .mt-ban, .mt-peek")) return; box.setPointerCapture(e.pointerId); const q = P(e); ptrs.set(e.pointerId, q); moved = 0; drag = [q[0], q[1], st.ox, st.oy]; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = [Math.hypot(a[0] - b[0], a[1] - b[1]), st.z]; } });
     box.addEventListener("pointermove", (e) => { const q = P(e); if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, q);
-      if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; st.z = Math.max(0.12, Math.min(3, pinch[1] * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch[0])); moved = 99; draw(); return; }
-      if (drag && ptrs.size === 1) { const dx = q[0] - drag[0], dy = q[1] - drag[1]; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); if (moved > 8) { st.ox = drag[2] + dx / st.z; st.oy = drag[3] + dy / st.z; draw(); } return; }
+      if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; st.z = Math.max(0.12, Math.min(3, pinch[1] * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch[0])); moved = 99; moving(); draw(); return; }
+      if (drag && ptrs.size === 1) { const dx = q[0] - drag[0], dy = q[1] - drag[1]; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); if (moved > 8) { st.ox = drag[2] + dx / st.z; st.oy = drag[3] + dy / st.z; moving(); draw(); } return; }
       if (e.pointerType === "mouse") { const hv = pick(q[0], q[1]); if (hv !== st.hov) { st.hov = hv; draw(); } } });
     const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (drag && moved <= 8 && e.type === "pointerup" && !e.target.closest(".mt-zoom, .mt-draft, .mt-ban, .mt-peek")) { if (miniHit(...P(e))) { if (!ptrs.size) drag = null; return; } const id = pick(...P(e)); if (id == null) { if (st.sel != null) { st.sel = null; draw(); } } else if (e.pointerType !== "mouse" && st.sel !== id) { st.sel = id; st.hov = null; side(); draw(); } else clickNode(id); } if (!ptrs.size) drag = null; };
     box.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse" && st.hov != null) { st.hov = null; draw(); } }); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
     draftUi(); if (window.ONLINE && window.ONLINE.enabled) rkLoad(); setTimeout(animCheck, 250); // 2.1
-    box.addEventListener("wheel", (e) => { e.preventDefault(); const nz = Math.max(0.12, Math.min(3, st.z * Math.exp(-e.deltaY * 0.0015))); const [ex, ey] = P(e); const mx = (ex - W / 2) / st.z - st.ox, my = (ey - H / 2) / st.z - st.oy; st.z = nz; st.ox = (ex - W / 2) / st.z - mx; st.oy = (ey - H / 2) / st.z - my; draw(); }, { passive: false });
+    box.addEventListener("wheel", (e) => { e.preventDefault(); const nz = Math.max(0.12, Math.min(3, st.z * Math.exp(-e.deltaY * 0.0015))); const [ex, ey] = P(e); const mx = (ex - W / 2) / st.z - st.ox, my = (ey - H / 2) / st.z - st.oy; st.z = nz; st.ox = (ex - W / 2) / st.z - mx; st.oy = (ey - H / 2) / st.z - my; moving(); draw(); }, { passive: false });
   }
   function clickNode(id) {
     const n = T().N[id]; st.sel = id; if (st.hov != null) st.hov = id;
@@ -402,7 +439,7 @@
   const auraHtml = (c) => { if (!c || !c.id) return ""; const br = btAura(); if (!E.mtOn(c) || !c.mt) return br != null ? `<i class="mt-aura" style="--mt:#f2c14e" title="${h(`Maître des ${D.RACES[br] || "monstres"}`)}"></i>` : ""; const R = ksOf(c); if (R.br.length) { const B = R.br[R.br.length - 1]; return `<i class="mt-aura" style="--mt:${B.c}" title="${h(E.MT_BR_TITLE[B.n] || B.n)}"></i>`; } if (!R.ks.length) return br != null ? `<i class="mt-aura" style="--mt:#f2c14e" title="${h(`Maître des ${D.RACES[br] || "monstres"}`)}"></i>` : ""; const k = R.ks[0]; const col = k.t === "cks" ? CLASSES[c.cls].color : DOM[k.d].c; return `<i class="mt-aura" style="--mt:${col}" title="${h(k.n)}"></i>`; };
   /* 2.1 (4A) : image de l'arbre (format carte Discord, 1200 × 630) avec le nom, la classe, les points et les clés de voûte */
   function shareImg() {
-    if (!cv) return; const c = hero(); const sv = [st.z, st.ox, st.oy, st.sel, st.hov]; st.sel = st.hov = null; fitAll();
+    if (!cv) return; const c = hero(); const sv = [st.z, st.ox, st.oy, st.sel, st.hov]; st.sel = st.hov = null; fitAll(); drawNow();
     const o = document.createElement("canvas"); o.width = 1200; o.height = 630; const q = o.getContext("2d"); const cc = CLASSES[c.cls].color;
     const gr = q.createLinearGradient(0, 0, 1200, 630); gr.addColorStop(0, "#0d0b1d"); gr.addColorStop(1, "#1c1236"); q.fillStyle = gr; q.fillRect(0, 0, 1200, 630);
     const k = Math.min(700 / cv.width, 600 / cv.height); q.drawImage(cv, 0, 0, cv.width, cv.height, 15 + (700 - cv.width * k) / 2, 15 + (600 - cv.height * k) / 2, cv.width * k, cv.height * k);
@@ -411,7 +448,7 @@
     let y = 210; q.font = "800 24px Nunito, system-ui, sans-serif"; R0.ks.slice(0, 5).forEach((x) => { q.fillStyle = x.t === "cks" ? cc : "#ffb27b"; q.fillText("✦ " + x.n, 750, y); y += 38; });
     q.font = "700 21px Nunito, system-ui, sans-serif"; q.fillStyle = "#e8e6f5"; Object.entries(R0.t).filter(([l]) => /^%/.test(l)).sort((a, b) => b[1] - a[1]).slice(0, Math.max(3, 8 - R0.ks.length)).forEach(([l, v]) => { y += 4; q.fillText(`+${E.mtNf(v)} ${l.replace(/^% /, "% ")}`, 750, y); y += 30; });
     q.font = "400 30px Kavoon, Georgia, serif"; q.fillStyle = "#bdf09b"; q.fillText("IDLUS", 1060, 600); q.font = "700 16px Nunito, system-ui, sans-serif"; q.fillStyle = "#9a98b8"; q.fillText("idlus.github.io", 750, 600);
-    [st.z, st.ox, st.oy, st.sel, st.hov] = sv; draw();
+    [st.z, st.ox, st.oy, st.sel, st.hov] = sv; drawNow();
     o.toBlob((b) => { if (!b) return; const f = `idlus-${c.cls}-${String(c.name).replace(/[^\w-]+/g, "_")}.png`;
       try { const file = new File([b], f, { type: "image/png" }); if (navigator.canShare && navigator.canShare({ files: [file] }) && !matchMedia("(hover: hover)").matches) { navigator.share({ files: [file], text: E.mtCode(c) }).catch(() => {}); return; } } catch (e) {}
       const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = f; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); X().toast("Image de l'arbre enregistrée.", "info"); }, "image/png");
@@ -419,5 +456,5 @@
   /* 2.1 (9A, 19A) : aura d'une branche complète et icône ✦ des clés de voûte en combat ; calcul gardé en cache (l'arène se redessine souvent) */
   const KC = new Map(); const ksOf = (c) => { const M = c.mt; const key = `${M.lo}:${(M.t[M.lo] || []).length}:${(S().mtGates || []).length}`; const o = KC.get(c.id); if (o && o.key === key) return o; const v = { key, ks: E.mtStats(S(), c).ks, br: E.mtBrDone(c) }; KC.set(c.id, v); return v; };
   const ksBadge = (c) => { if (!c || !c.id || !E.mtOn(c) || !c.mt) return ""; const K0 = ksOf(c).ks; if (!K0.length) return ""; return `<span class="mt-ksb" data-tip="${h(K0.map((k) => `✦ ${k.n} : ${k.txt}`).join("\n"))}">✦${K0.length > 1 ? K0.length : ""}</span>`; };
-  window.MAITUI = { act, ksBadge, heroLine, auraHtml, ornHtml, st, center, fitAll, clickNode, draw, get got() { return got; }, set got(v) { got = v; }, T, side, save };
+  window.MAITUI = { act, ksBadge, drawNow, heroLine, auraHtml, ornHtml, st, center, fitAll, clickNode, draw, get got() { return got; }, set got(v) { got = v; }, T, side, save };
 })();

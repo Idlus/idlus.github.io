@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.1";
+const GAME_VERSION = "2.1.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.2", name: "L'arbre fluide", guide: "maitrise", items: [
+    "Arbre de Maîtrise beaucoup plus fluide : un seul dessin par image au lieu d'un par mouvement de souris, et le ciel n'est plus redessiné en entier au survol d'une étoile",
+    "Pendant un déplacement ou un zoom, le ciel s'affiche sans halos et en définition réduite, puis redevient net dès l'arrêt"
+  ] },
   { v: "2.1.1", name: "L'arbre qui aide", guide: "maitrise", items: [
     "Maîtrise : mode Brouillon (bouton ✎) pour poser des étoiles en pointillés puis valider, et profils Dégâts, Tank, Farm, Boss qui remplissent le brouillon",
     "Objectif : épingle une clé de voûte, les points libres et ceux des prochains niveaux s'y posent tout seuls",

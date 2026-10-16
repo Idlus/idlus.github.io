@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.2 « L'arbre fluide »
+
+L'arbre de Maîtrise ne rame plus : un seul dessin par image, ciel gardé en image pendant le survol, déplacement allégé.
+
 ## 2.1.1 « L'arbre qui aide »
 
 Brouillon et placement automatique, objectif épinglé, recherche qui guide, image de l'arbre, arbres des meilleurs joueurs, branches complètes (aura et titre), joyaux dans les branches, récolte de l'Artisan relevée, son des étoiles, récap en phrases.
