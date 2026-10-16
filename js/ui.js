@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.7";
+const GAME_VERSION = "2.1.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.8", name: "Copier le setup", guide: "equipe", items: [
+    "Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques (ou leur mode auto), sorts, conditions et stratégies, arbre de Maîtrise et équipement",
+    "Sorts et Maîtrise se copient entre héros de la même classe ; les caractéristiques et l'équipement, entre toutes les classes",
+    "L'équipement n'est jamais dupliqué : le héros prend dans le sac une copie libre du même objet (la meilleure), sans rien retirer aux autres héros ; ce qui manque est grisé"
+  ] },
   { v: "2.1.7", name: "Raccourcis de l'Ascension", guide: "asc", items: [
     "L'Ascension sur PC : les touches 1 à 9 lancent tes sorts pendant ton tour (le numéro s'affiche en petit sur chaque sort) et prennent les choix des paliers (sorts, reliques, marchand)",
     "Entrée ou Espace finit le tour, lance l'étage suivant ou valide ; Échap passe ou refuse ; ← → changent de cible",
@@ -2056,6 +2061,7 @@ const GL = { spk: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.4"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/>',
+  paste: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>', // 2.1.8 : coller un setup
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>', // 1.0.3.3 : copier un message du chat
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>',
@@ -5570,6 +5576,8 @@ function heroesHtml() {
   const others = (() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return inT && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })();
   const strip = `<div class="tstrip"><button class="btn sm" data-act="teamlist">← Équipe</button>${S.chars.map((x) => `<button class="ts-h ${x.id === c.id ? "on" : ""} ${x.inTeam && !x.job ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-label="${h(x.name)}">${head(x)}${al.some((a) => a.c === x && a.k === "gear") ? `<i class="ts-g"></i>` : ""}${!x.autoStat && x.pts > 0 ? `<i class="ts-p num">${x.pts}</i>` : ""}</button>`).join("")}${S.chars.length < E.HERO_MAX ? `<button class="ts-h ts-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>`;
   const more = ui.heroMore ? `<div class="hmenu" role="menu">
+      <button data-act="setupcopy" data-id="${c.id}">${G("copy")} Copier le setup ${h(deNom(c.name))}</button>
+      ${ui.setupFrom && ui.setupFrom !== c.id && char(ui.setupFrom) ? `<button data-act="setupsheet" data-id="${c.id}">${G("paste")} Coller le setup ${h(deNom(char(ui.setupFrom).name))}</button>` : ""}
       <button data-act="buildsheet" data-id="${c.id}">${G("share")} ${window.BUILDS && window.ONLINE && window.ONLINE.enabled ? "Partager ou publier le build" : "Partager le build"}</button>
       ${window.BUILDS && window.BUILDS.changed(c) ? `<button data-act="bd-quickupd" data-id="${c.id}">${G("share")} Mettre à jour mon build publié</button>` : ""}
       ${c.lvl < E.MAX_LVL ? `<button data-act="pin" data-p="${h(JSON.stringify({ k: "lvl", cid: c.id, n: lvlGoal(c) }))}">${G("pin")} ${E.pinned(S, { k: "lvl", cid: c.id, n: lvlGoal(c) }) ? "Ne plus suivre" : "Suivre"} le niveau ${lvlGoal(c)}</button>` : ""}
@@ -5588,8 +5596,37 @@ function heroesHtml() {
       </div>
     <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
-  <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  ${setupBar(c)}<nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
+}
+/* 2.1.8 « Copier le setup » : ⋯ Plus › Copier le setup, puis sur un autre héros « Coller » (E.setupPlan / E.copySetup) */
+function setupBar(c) {
+  const a = ui.setupFrom && char(ui.setupFrom); if (!a) return "";
+  if (a.id === c.id) return `<div class="setupbar"><span class="grow small">${G("copy")} Setup ${h(deNom(a.name))} copié. Choisis un autre héros pour le coller.</span><button class="btn sm" data-act="setupclear">✕</button></div>`;
+  return `<div class="setupbar"><span class="grow small">${G("copy")} Setup ${h(deNom(a.name))} copié</span><button class="btn sm primary" data-act="setupsheet" data-id="${c.id}">Coller sur ${h(c.name)}</button><button class="btn sm" data-act="setupclear" aria-label="Oublier le setup copié">✕</button></div>`;
+}
+function setupSheet(cid) {
+  const a = char(ui.setupFrom), c = char(cid); if (!a || !c || a === c) return;
+  const P = E.setupPlan(S, a.id, c.id); if (!P) return; ui.setupTo = c.id;
+  const CA = CLASSES[a.cls].name;
+  const ck = (id, on, dis, title, sub) => `<label class="setupck ${dis ? "off" : ""}"><input type="checkbox" id="${id}" ${on && !dis ? "checked" : ""} ${dis ? "disabled" : ""}><span><b>${title}</b><span class="xs muted">${sub}</span></span></label>`;
+  const stTxt = a.autoStat ? `répartition automatique (${h(STATS[a.autoStat].name)} en priorité), recalculée au niveau ${c.lvl}` : `même répartition ${a.lvl !== c.lvl ? `ramenée au niveau ${c.lvl}` : ""}`;
+  const nP = (a.presets || []).filter(Boolean).length;
+  const spTxt = P.same ? `${a.spells.length} sorts dans la barre, avec leurs conditions et cibles${nP ? ` · ${nP} stratégie${nP > 1 ? "s" : ""} enregistrée${nP > 1 ? "s" : ""}` : ""}` : `seulement entre deux ${h(CA)}`;
+  const M = P.mt; const mtTxt = !P.same ? `seulement entre deux ${h(CA)}` : !M ? "les deux héros doivent être niveau 200" : `${M.n} étoile${M.n > 1 ? "s" : ""}${M.n < M.want ? ` sur ${M.want} (points de Maîtrise insuffisants)` : ""}${M.cost ? ` · coûte ${fmt(M.cost)} kamas (${M.rm} étoiles rendues)` : M.rm ? " · gratuit" : ""}`;
+  const got = P.eq.filter((e) => e.st === "ok" || e.st === "take").length, miss = P.eq.filter((e) => e.st === "miss" || e.st === "lvl");
+  const eqTxt = !P.eq.length ? `${h(a.name)} ne porte rien` : `${got} / ${P.eq.length} objets trouvés dans le sac${miss.length ? `, ${miss.length} manquant${miss.length > 1 ? "s" : ""}` : ""}`;
+  const icons = P.eq.map((e) => `<img src="${itemImg(e.tpl)}" alt="" class="setupit ${e.st === "miss" || e.st === "lvl" ? "miss" : ""}" data-tip="${h(ITEMS[e.tpl].name + (e.st === "miss" ? " : aucune copie libre dans le sac" : e.st === "lvl" ? ` : niveau ${ITEMS[e.tpl].lvl} requis` : e.st === "ok" ? " : déjà porté" : " : pris dans le sac"))}">`).join("");
+  openSheet(`<h2>Coller le setup ${h(deNom(a.name))} sur ${h(c.name)}</h2>
+    <div class="stack small" style="gap:8px">
+      ${ck("cpSt", true, false, "Caractéristiques", stTxt)}
+      ${ck("cpSp", true, !P.same, "Sorts et stratégies", spTxt)}
+      ${ck("cpMt", !!M && !M.cost, !M || M.cost > S.kamas, "Arbre de Maîtrise", mtTxt + (M && M.cost > S.kamas ? ` (tu as ${fmt(S.kamas)} kamas)` : ""))}
+      ${ck("cpEq", true, !P.eq.length, "Équipement", eqTxt)}
+      ${icons ? `<div class="row" style="gap:4px;flex-wrap:wrap">${icons}</div>` : ""}
+      <p class="note xs" style="margin:0">Aucun objet n'est dupliqué ni retiré à un autre héros : ${h(c.name)} prend dans le sac une copie libre du même objet (la meilleure). Les objets grisés manquent ; ses autres emplacements ne bougent pas.</p>
+    </div>
+    <div class="row" style="gap:6px"><button class="btn primary" data-act="setuppaste">Coller sur ${h(c.name)}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 /* flèches ↑ ↓ du clavier : héros précédent ou suivant dans l'ordre de la liste (PC) */
 function heroRailKey(dir) {
@@ -9656,6 +9693,17 @@ document.addEventListener("click", (ev) => {
     case "psave": { const old = c.presets[+d.i]; const name = old ? old.name : (prompt("Nom de la stratégie :", ["Farm", "Boss", "Solo", "Donjon"][+d.i] || "Stratégie") || "").trim(); if (!old && !name) return; E.savePreset(S, c.id, +d.i, name); toast("Stratégie enregistrée."); break; }
     case "pload": E.applyPreset(S, c.id, +d.i); toast(`Stratégie « ${c.presets[+d.i].name} » chargée.`); break;
     case "pdel": E.deletePreset(S, c.id, +d.i); break;
+    case "setupcopy": ui.setupFrom = +d.id; ui.heroMore = false; toast(`Setup ${deNom(char(+d.id).name)} copié : ouvre un autre héros et touche « Coller ».`, "info"); break;
+    case "setupclear": ui.setupFrom = null; break;
+    case "setupsheet": ui.heroMore = false; setupSheet(+d.id); return;
+    case "setuppaste": { const a = char(ui.setupFrom), c = char(ui.setupTo); if (!a || !c) { closeSheet(); return; }
+      const w = (id) => { const x = $("#" + id); return !!(x && x.checked && !x.disabled); };
+      const what = { st: w("cpSt"), sp: w("cpSp"), mt: w("cpMt"), eq: w("cpEq") }; if (!what.st && !what.sp && !what.mt && !what.eq) { toast("Coche au moins une ligne."); return; }
+      const r = E.copySetup(S, a.id, c.id, what); if (r.err) { toast(r.err); return; }
+      if (r.mt && window.MAITUI && window.MAITUI.st) window.MAITUI.st.key = ""; // l'arbre affiché se recharge
+      dirty = true; closeSheet(); ui.cid = c.id;
+      const parts = [r.st && "caractéristiques", r.sp && "sorts", r.mt && "Maîtrise", what.eq && `${r.eq} objet${r.eq > 1 ? "s" : ""}`].filter(Boolean);
+      toast(`Setup collé sur ${c.name} : ${parts.join(", ")}.${r.miss.length ? ` ${r.miss.length} objet${r.miss.length > 1 ? "s" : ""} manquant${r.miss.length > 1 ? "s" : ""} : ${r.miss.slice(0, 4).map((m) => ITEMS[m.tpl].name).join(", ")}${r.miss.length > 4 ? "…" : ""}.` : ""}`, "info", r.miss.length ? 7000 : 0); break; }
     case "buildsheet": ui.buildRead = null; ui.buildIn = ""; buildSheet(+d.id); return;
     case "buildcopy": { const ta = $("#buildOut"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Code du build copié."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
     case "buildread": { ui.buildIn = $("#buildIn").value; const b = E.parseBuild(ui.buildIn); if (!b) { ui.buildRead = null; const m = $("#buildMsg"); if (m) m.textContent = "Ce texte n'est pas un code de build valide."; return; } ui.buildRead = b; buildSheet(ui.buildCid); return; }

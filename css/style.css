@@ -5792,3 +5792,12 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .li.chestall{flex-wrap:wrap;gap:8px;border:1px solid var(--gold);border-radius:12px}
 .li.chestall .grow{min-width:180px}
 .archisheet .sh-star.on,.archisheet .sh-star:hover{color:var(--gold)}
+/* 2.1.8 « Copier le setup » */
+.setupbar{display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 12px;border:2px dashed var(--gold);border-radius:12px;background:var(--panel2)}
+.setupbar .uico{width:16px;height:16px;vertical-align:-3px}
+.setupck{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:var(--panel2);cursor:pointer}
+.setupck input{margin-top:3px;width:18px;height:18px;flex:none}
+.setupck>span{display:flex;flex-direction:column;gap:2px}
+.setupck.off{opacity:.55;cursor:default}
+.setupit{width:30px;height:30px;border-radius:6px;background:var(--panel3)}
+.setupit.miss{filter:grayscale(1);opacity:.45;outline:2px dashed var(--bad,#c55);outline-offset:-2px}

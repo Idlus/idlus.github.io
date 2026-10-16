@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.8 « Copier le setup »
+
+Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques, sorts et stratégies, Maîtrise (même classe) et équipement pris dans le sac, jamais dupliqué.
+
 ## 2.1.7 « Raccourcis de l'Ascension »
 
 L'Ascension sur PC : 1 à 9 lancent les sorts et prennent les choix des paliers, Entrée ou Espace finit le tour ou lance l'étage, Échap passe, ← → changent de cible.

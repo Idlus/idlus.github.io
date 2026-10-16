@@ -1,6 +1,16 @@
 {
-  "version": "2.1.7",
+  "version": "2.1.8",
   "versions": [
+    {
+      "v": "2.1.8",
+      "name": "Copier le setup",
+      "guide": "equipe",
+      "items": [
+        "Fiche du héros › ⋯ Plus › « Copier le setup », puis « Coller » sur un autre héros : caractéristiques (ou leur mode auto), sorts, conditions et stratégies, arbre de Maîtrise et équipement",
+        "Sorts et Maîtrise se copient entre héros de la même classe ; les caractéristiques et l'équipement, entre toutes les classes",
+        "L'équipement n'est jamais dupliqué : le héros prend dans le sac une copie libre du même objet (la meilleure), sans rien retirer aux autres héros ; ce qui manque est grisé"
+      ]
+    },
     {
       "v": "2.1.7",
       "name": "Raccourcis de l'Ascension",

@@ -111,7 +111,7 @@
       ]],
     ] });
   /* ======================= Héros et combat ======================= */
-  add({ id: "equipe", f: "Héros", n: "Équipe, recrutement et placement", ic: "combat", page: "team", k: "recruter congedier synergie ligne arriere reserve",
+  add({ id: "equipe", f: "Héros", n: "Équipe, recrutement et placement", ic: "combat", page: "team", k: "recruter congedier synergie ligne arriere reserve copier coller setup",
     ou: "Héros › Équipe et héros", de: "dès le début (1 héros, les autres se recrutent avec des kamas)",
     voir: ["classes", "caracs", "equipement", "combat"],
     b: () => {
@@ -122,6 +122,7 @@
         ["kv", [["Héros au plus", N(() => E.HERO_MAX)], ["Héros dans l'équipe de combat", N(() => E.TEAM_MAX)], ["2e héros", fr(cost[0]) + " kamas"], ["5e héros", fr(cost[3]) + " kamas"], ["10e héros", fr(cost[8]) + " kamas"], ["Dernier héros", fr(cost[cost.length - 1]) + " kamas"]]],
         ["ul", [
           "**Congédier** un héros rend la moitié du prix du dernier recrutement ; son équipement revient dans le sac.",
+          "**Copier le setup** (menu ⋯ Plus de la fiche) puis **Coller** sur un autre héros : caractéristiques, sorts et stratégies, arbre de Maîtrise (même classe) et équipement. Les objets sont pris dans le sac s'il y en a une copie libre, jamais dupliqués ni retirés à un autre héros.",
           "**Synergie** : +2 % de dommages et d'XP par classe différente dans l'équipe (à partir de 2 héros).",
           `**Collection des classes** : chaque classe montée niveau ${N(() => E.MAX_LVL)} donne +${N(() => E.CLASS_BONUS)} % d'XP et de kamas à tout le compte (même si le héros est supprimé ensuite).`,
           "**Petite équipe** : jouer à 1 à 4 héros donne des points de vie en plus et réduit les dommages subis (plus fort en chasse qu'en donjon).",

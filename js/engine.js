@@ -799,6 +799,68 @@
     return null;
   };
 
+  /* 2.1.8 « Copier le setup » : recopier le réglage d'un héros sur un autre (caractéristiques, sorts et stratégies,
+     arbre de Maîtrise, équipement). L'équipement n'est jamais dupliqué : on prend dans le sac une copie libre du même objet
+     (ni portée, de préférence hors tenue) ; ce qui manque est listé. Sorts et Maîtrise : même classe seulement. */
+  E.setupPower = (it) => { let s = 0; for (const k in it.stats || {}) s += (+it.stats[k] || 0) * ((STATS[k] && STATS[k].w) || 1); return s; };
+  E.setupPlan = (S, fromId, toId) => {
+    const a = S.chars.find((x) => x.id === fromId), c = S.chars.find((x) => x.id === toId); if (!a || !c || a === c) return null;
+    const same = a.cls === c.cls;
+    const eq = [], used = new Set();
+    for (const sl of Object.keys(a.equip)) {
+      const src = S.items[a.equip[sl]]; if (!src || !ITEMS[src.tpl]) continue; const T = ITEMS[src.tpl];
+      const mine = S.items[c.equip[sl]]; if (mine && mine.tpl === src.tpl) { eq.push({ sl, tpl: src.tpl, st: "ok" }); continue; }
+      if (T.lvl > c.lvl) { eq.push({ sl, tpl: src.tpl, st: "lvl" }); continue; }
+      const alt = Object.values(S.items).filter((it) => it.tpl === src.tpl && !used.has(it.uid) && !E.equippedBy(S, it.uid))
+        .sort((x, y) => (E.inGear(S, x.uid) ? 1 : 0) - (E.inGear(S, y.uid) ? 1 : 0) || E.setupPower(y) - E.setupPower(x))[0];
+      if (alt) { used.add(alt.uid); eq.push({ sl, tpl: src.tpl, st: "take", uid: alt.uid }); } else eq.push({ sl, tpl: src.tpl, st: "miss" });
+    }
+    let mt = null;
+    if (same && E.mtOn && E.mtOn(a) && E.mtOn(c) && a.mt) {
+      const want = [...E.mtGot(a)]; const ids = E.mtClean(c, want); const got = E.mtGot(c); const keep = new Set(ids);
+      const usedT = got.size - 1; const rm = [...got].filter((x) => !keep.has(x)).length - 1; // l'étoile de départ n'est jamais dans ids
+      const nIds = ids.length; const free = E.mtFreeWeek && E.mtFreeWeek();
+      const cost = free ? 0 : Math.max(0, Math.min(rm, usedT - E.MT_FREE)) * E.MT_RESPEC;
+      mt = { ids, want: want.length - 1, n: nIds, rm, cost };
+    }
+    return { a, c, same, eq, mt };
+  };
+  E.copySetup = (S, fromId, toId, what) => {
+    const P = E.setupPlan(S, fromId, toId); if (!P) return { err: "Héros introuvable." };
+    const { a, c } = P; const out = { st: false, sp: false, mt: 0, eq: 0, miss: [], err: null };
+    if (what.mt && P.mt && P.mt.cost > S.kamas) return { err: `Pas assez de kamas : changer l'arbre de Maîtrise coûte ${P.mt.cost.toLocaleString("fr-FR")} kamas.` };
+    if (what.st) {
+      c.autoStat = a.autoStat || null; c.autoCap = a.autoCap || 200; c.autoThen = a.autoThen || "vit";
+      c.autoPlan = a.autoPlan ? JSON.parse(JSON.stringify(a.autoPlan)) : c.autoPlan; c.autoRest = a.autoRest || c.autoRest;
+      c.pts = (c.lvl - 1) * 5; BASE_STATS.forEach((k) => (c.alloc[k] = 0));
+      if (c.autoStat) E.autoAllocate(S, c);
+      else { const r = a.lvl > 1 ? Math.min(1, (c.lvl - 1) / (a.lvl - 1)) : 1;
+        BASE_STATS.slice().sort((x, y) => (a.alloc[y] || 0) - (a.alloc[x] || 0)).forEach((k) => { const want = Math.floor((a.alloc[k] || 0) * r); if (want > 0) E.allocate(S, c.id, k, want); }); }
+      out.st = true;
+    }
+    if (what.sp && P.same) {
+      const cp = (L) => L.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
+      c.spells = E.memFit(c, cp(a.spells)).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
+      c.presets = (a.presets || []).map((p) => (p ? { name: p.name, spells: cp(p.spells || []) } : null));
+      c.activePreset = a.activePreset != null && c.presets[a.activePreset] ? a.activePreset : null;
+      c.zonePreset = Object.assign({}, a.zonePreset || {}); c.spellsManual = true; out.sp = true;
+    }
+    if (what.mt && P.mt) {
+      const M = E.mt(c); S.kamas -= P.mt.cost; M.t[M.lo] = P.mt.ids.slice(); const keep = new Set(P.mt.ids);
+      for (const id in M.j) if (!keep.has(+id)) delete M.j[id]; M.obj = null; out.mt = P.mt.n;
+    }
+    if (what.eq) {
+      for (const e of P.eq) {
+        if (e.st === "ok") { out.eq++; continue; }
+        if (e.st !== "take") { out.miss.push({ tpl: e.tpl, why: e.st }); continue; }
+        const r = E.equip(S, c.id, e.uid, e.sl); if (r) out.miss.push({ tpl: e.tpl, why: "ko", msg: r }); else out.eq++;
+      }
+      if (E.syncGearLocks) E.syncGearLocks(S);
+    }
+    E.refreshSpells(c, E.charStats(S, c));
+    return out;
+  };
+
   /* ---------------- Création des entités de combat ---------------- */
   /* 3.1 : compensation des paliers de caractéristiques (les héros ont moins de stat d'élément à haut niveau) */
   E.MON_HP_CURVE = [[36, 1], [48, 0.8], [64, 0.78], [76, 0.74], [88, 0.66], [100, 0.64], [120, 0.6], [200, 0.5]];
