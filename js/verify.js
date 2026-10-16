@@ -76,6 +76,90 @@
     } finally { E.setRng(Math.random); E.setClock(null); E.dungeonUnlocked = keepUnlock; }
   };
 
+  /* 2.1.4 « Bouclier du serveur » (choix 1A 2A de Mathis) : le serveur calcule lui-même le résumé des classements depuis la
+     partie (avant, le jeu l'envoyait à part et le serveur le croyait), puis vérifie la partie avant de la garder comme
+     « dernière partie validée » (table saves_ok : classements, hôtel de vente, combats rejoués). */
+  V.fullSummary = (E, S) => {
+    const r = V.summary(E, S);
+    try { if (E.alignMeta) r.align = E.alignMeta(S); } catch (e) { /* sans alignement */ }
+    try { if (E.dpotSublimes) { const L = E.dpotSublimes(S); if (L.length) r.dsub = L; } } catch (e) { /* sans Potentiel */ }
+    try { if (S.mounts && E.elevSummary) { r.elev = E.elevSummary(S); if (S.elev && S.elev.rare && S.elev.rare.length) r.mrare = S.elev.rare.slice(-10); } } catch (e) { /* sans élevage */ }
+    return r;
+  };
+
+  /* Bilan d'une partie : ce que le serveur compare d'une partie validée à la suivante. */
+  V.bilan = (E, S) => {
+    let r = 0; for (const k in S.res || {}) r += Math.max(0, +S.res[k] || 0);
+    let mt = 0, bn = 0, lv = 0;
+    (S.chars || []).forEach((c) => { lv += c.lvl || 1; if (c.mt) { mt += c.mt.lvl || 0; bn += c.mt.bn || 0; } });
+    const dof = Object.values(S.items || {}).filter((it) => /^dofus_/.test(it.tpl)).length;
+    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)) };
+  };
+
+  /* Ce qu'aucune partie honnête ne peut contenir, quel que soit le temps de jeu. Renvoie la raison, ou null. */
+  V.impossible = (E, S, nu0) => { // nu0 : objets nés avant le bouclier (uid plus petit) : marge plus large (anciens jets d'avant un rééquilibrage)
+    const D = root.DATA || E.DATA || {}; const ITEMS = D.ITEMS || {}, STATS = D.STATS || {};
+    const MAX = E.MAX_LVL || 200;
+    for (const c of S.chars || []) {
+      const nm = String(c.name || "un héros").slice(0, 20);
+      if (!(c.lvl >= 1 && c.lvl <= MAX)) return `${nm} : niveau ${c.lvl}`;
+      if (E.pointCost && c.alloc) { let spent = Math.max(0, +c.pts || 0);
+        for (const k in c.alloc) { const n = Math.max(0, Math.floor(+c.alloc[k] || 0)); if (n > 5000) return `${nm} : ${n} points en ${k}`; for (let i = 0; i < n; i++) spent += E.pointCost(k, i); }
+        if (spent > (c.lvl - 1) * 5 + 5) return `${nm} : ${spent} points de caractéristiques pour ${(c.lvl - 1) * 5} possibles`; }
+      for (const k in c.scrolls || {}) if ((+c.scrolls[k] || 0) > (E.SCROLL_MAX || 100)) return `${nm} : ${c.scrolls[k]} parchemins en ${k}`;
+    }
+    const itemBad = (it) => {
+      const T = ITEMS[it.tpl]; if (!T) return `objet inconnu (${String(it.tpl).slice(0, 30)})`;
+      for (const k in it.stats || {}) {
+        const v = +it.stats[k]; if (!isFinite(v)) return `${T.name} : ${k} illisible`;
+        if (v <= 0) continue;
+        const cap = E.fmCap && STATS[k] ? E.fmCap(T, k) : T.stats[k] ? T.stats[k][1] : 0;
+        const lim = Math.ceil(Math.max(cap, T.stats[k] ? T.stats[k][1] : 0, 1) * (+it.uid < (nu0 || 0) ? 3 : 1.6)) + 2; // Rayonnant (+50 % au plus), parfait (+2 %), forgemagie
+        if (v > lim) return `${T.name} : ${v} ${STATS[k] ? STATS[k].name : k} (au plus ${lim})`;
+      }
+      return null;
+    };
+    for (const u in S.items || {}) { const w = itemBad(S.items[u]); if (w) return w; }
+    for (const it of Array.isArray(S.over) ? S.over : []) { const w = itemBad(it); if (w) return w; }
+    const PS = E.PET_STAR_COST ? E.PET_STAR_COST.length : 5;
+    for (const u in S.pets || {}) if ((+S.pets[u].st || 0) > PS) return `familier à ${S.pets[u].st} étoiles`;
+    for (const u in S.mounts || {}) { const M = S.mounts[u]; const cap = (E.ST_BASE || 5) + 2; if ((+M.st || 1) > cap) return `monture à ${M.st} étoiles`; }
+    if (!(+S.kamas >= 0) || +S.kamas > 1e13) return `kamas illisibles (${S.kamas})`;
+    return null;
+  };
+
+  /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :
+     la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 48 h, et chaque gain en consomme
+     selon le meilleur rythme honnête (× 3 de marge). Les kamas et ressources donnés par le serveur (hôtel de vente,
+     codes cadeaux, lots) sont retirés avant. Renvoie { ok, res (réserve restante), why }. */
+  V.RES_MAX = 48; V.RES_RATE = 1.25;
+  /* Rythmes mesurés par simulation (tools/simulate.js --chasse 20,60,120,200 --profils optimise, équipe de 8, 16/10/2026) :
+     kamas par heure de chasse sans bonus 75 000 (niv. 20), 385 000 (60), 510 000 (120), 870 000 (200) ; environ 6 000 ressources
+     par heure ; 4,8 points de Maîtrise par héros et par heure au niveau 200. Marge × 5 (double gain, Almanax, potions, donjons,
+     récolte, lots de quête), soit 180 points de Maîtrise par heure pour toute l'équipe. */
+  V.KAMAS_PTS = [[1, 20000], [20, 75000], [60, 385000], [120, 510000], [200, 870000]];
+  V.KAMAS_H = (l) => { const P = V.KAMAS_PTS; for (let i = 1; i < P.length; i++) if (l <= P[i][0]) { const [a, x] = P[i - 1], [b, y] = P[i]; return x + (y - x) * (l - a) / (b - a); } return P[P.length - 1][1]; };
+  V.rates = (lv) => { // ce qu'une heure de jeu peut rapporter au plus, pour une équipe dont le meilleur héros est au niveau lv
+    const l = Math.max(1, Math.min(200, lv || 1));
+    return { k: 5 * V.KAMAS_H(l), r: 5 * 15000, mt: 180, lv: 960 };
+  };
+  V.check = (E, prev, cur, hours, gift, res0, topLvl) => {
+    let res = Math.min(V.RES_MAX, (res0 == null ? V.RES_MAX : res0) + Math.max(0, hours) * V.RES_RATE);
+    const R = V.rates(topLvl); gift = gift || {};
+    const dk = cur.k - prev.k - (gift.k || 0), dr = cur.r - prev.r - (gift.r || 0), dm = cur.mt - prev.mt, dl = cur.lv - prev.lv - Math.max(0, (cur.rec || 0) - (prev.rec || 0)) - (gift.lv || 0);
+    if (cur.bn > prev.bn) return { ok: false, res, why: `points de Maîtrise des vies passées en hausse (+${cur.bn - prev.bn})` };
+    if (cur.dof - prev.dof > 2 + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
+    const need = { k: Math.max(0, dk) / R.k, r: Math.max(0, dr) / R.r, mt: Math.max(0, dm) / R.mt, lv: Math.max(0, dl) / R.lv };
+    const used = Math.max(need.k, need.r, need.mt, need.lv);
+    if (used > res + 0.01) {
+      const fm = (n) => Math.round(n).toLocaleString("fr-FR");
+      const why = need.k === used ? `+${fm(dk)} kamas` : need.r === used ? `+${fm(dr)} ressources` : need.mt === used ? `+${fm(dm)} points de Maîtrise` : `+${fm(dl)} niveaux`;
+      const h1 = (n) => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
+      return { ok: false, res, why: `${why} en ${hours < 1 ? Math.max(1, Math.round(hours * 60)) + " min" : h1(hours) + " h"} (au plus ${h1(res)} h de jeu possibles, il en faudrait ${h1(used)})` };
+    }
+    return { ok: true, res: res - used };
+  };
+
   root.VERIFY = V;
   if (typeof module !== "undefined" && module.exports) module.exports = V;
 })(typeof window !== "undefined" ? window : globalThis);

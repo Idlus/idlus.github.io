@@ -56,7 +56,8 @@ end $$;
 revoke all on function public.elevage_from_save() from public, anon, authenticated;
 -- après saves_ladder (ordre alphabétique des déclencheurs) : la ligne du classement est déjà à jour
 drop trigger if exists saves_suite_elevage on public.saves;
-create trigger saves_suite_elevage after insert or update on public.saves for each row execute function public.elevage_from_save();
+drop trigger if exists saves_suite_elevage on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_suite_elevage after insert or update on public.saves_ok for each row execute function public.elevage_from_save();
 
 create or replace view public.lb_elevage as
   select e.user_id, p.pseudo, l.main, l.main_lvl, e.colours, e.stars, e.chroma

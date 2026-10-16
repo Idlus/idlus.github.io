@@ -82,7 +82,8 @@ begin
 exception when others then return new; -- le camp ne doit jamais empêcher d'enregistrer une partie
 end $$;
 drop trigger if exists saves_align on public.saves;
-create trigger saves_align after insert or update on public.saves for each row execute function public.align_from_save();
+drop trigger if exists saves_align on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_align after insert or update on public.saves_ok for each row execute function public.align_from_save();
 
 -- ---------- vues et appels ----------
 -- qui est de quel camp (sans les comptes « en vérification »)

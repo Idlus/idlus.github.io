@@ -56,7 +56,8 @@ revoke all on function public.chroma_from_save() from public, anon, authenticate
 -- après saves_ladder (les déclencheurs passent par ordre alphabétique : saves_chroma < saves_ladder ne marche pas),
 -- d'où le nom saves_zchroma : la ligne du classement (flagged) est déjà à jour
 drop trigger if exists saves_zchroma on public.saves;
-create trigger saves_zchroma after insert or update on public.saves for each row execute function public.chroma_from_save();
+drop trigger if exists saves_zchroma on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_zchroma after insert or update on public.saves_ok for each row execute function public.chroma_from_save();
 
 create or replace view public.lb_chroma as
   select c.user_id, p.pseudo, l.main, l.main_lvl, c.n, c.vit

@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
+  let body: { verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
   if (body.dofus) return dofusAnn(db, user.id, body.dofus);
   if (body.songe) return songe(db, user.id);
   if (body.prism) return prism(db, user.id, String(body.prism));
+  if (body.verif) return json(await validate(db, user.id, false));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
   lastTry.set(user.id, now);
 
   const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", user.id).maybeSingle(),
+    okSave(db, user.id),
     db.from("ladder").select("flagged,suspect").eq("user_id", user.id).maybeSingle(),
     db.from("profiles").select("pseudo").eq("id", user.id).maybeSingle(),
   ]);
@@ -131,7 +132,7 @@ async function defi(db: any, uid: string, tier: string) {
   lastTry.set(uid + ":defi", now);
   const day = E.defiDay(now);
   const [{ data: save }, { data: lad }, { data: old }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    okSave(db, uid),
     db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
     db.from("defi").select("turns,hp,score,sends").eq("user_id", uid).eq("day", day).eq("tier", tier).maybeSingle(),
   ]);
@@ -170,7 +171,7 @@ async function guildSave(db: any, uid: string, key: string) {
   if (now - (lastTry.get(uid + key) || 0) < 5000) return { err: json({ ok: false, err: "trop tôt", retry: 5 }, 429) };
   lastTry.set(uid + key, now);
   const [{ data: save }, { data: lad }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    okSave(db, uid),
     db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
   ]);
   if (!save) return { err: json({ ok: false, err: "aucune partie en ligne" }, 404) };
@@ -295,7 +296,7 @@ async function koli(db: any, uid: string, k: any) {
   if (now - (lastTry.get(uid + key) || 0) < wait) return json({ ok: false, err: "Doucement : réessaie dans quelques secondes." }, 429);
   lastTry.set(uid + key, now);
   const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    okSave(db, uid),
     db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
     db.from("profiles").select("pseudo").eq("id", uid).maybeSingle(),
   ]);
@@ -371,7 +372,7 @@ async function dofusAnn(db: any, uid: string, b: any) {
   const dg = D.DUNGEONS[did];
   if (!(iu > 0) || !dg || !(k >= 1 && k <= 15)) return json({ ok: false, err: "annonce invalide" }, 400);
   const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    okSave(db, uid),
     db.from("ladder").select("flagged,main,main_lvl").eq("user_id", uid).maybeSingle(),
     db.from("profiles").select("pseudo").eq("id", uid).maybeSingle(),
   ]);
@@ -415,7 +416,7 @@ async function songe(db: any, uid: string) {
   if (now - (lastTry.get(uid + ":songe") || 0) < WAIT_S * 1000) return json({ ok: false, err: "trop tôt", retry: WAIT_S }, 429);
   lastTry.set(uid + ":songe", now);
   const [{ data: save }, { data: lad }] = await Promise.all([
-    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    okSave(db, uid),
     db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
   ]);
   if (!save) return json({ ok: false, err: "aucune partie en ligne" }, 404);
@@ -445,4 +446,92 @@ async function songe(db: any, uid: string) {
   const { count: ahead } = await db.from("lb_songe").select("user_id", { count: "exact", head: true }).eq("w", w).or(`ii.gt.${fin.ii},and(ii.eq.${fin.ii},waves.gt.${fin.waves})`);
   out.rank = (ahead || 0) + 1; out.fii = fin.ii; out.fwaves = fin.waves;
   return json(out);
+}
+
+// ---------- 2.1.4 « Bouclier du serveur » (choix 1A 2A 3A 4A de Mathis) ----------
+// Le jeu envoie sa partie toutes les 30 s (saves). Ici, le serveur la relit, calcule lui-même le résumé des classements
+// (VERIFY.fullSummary) et la vérifie (VERIFY.impossible : objets, points, étoiles ; VERIFY.check : gains depuis la dernière
+// partie validée, comparés au temps réel). Si tout va bien, elle devient la « dernière partie validée » (saves_ok) : les
+// classements, l'hôtel de vente et les combats rejoués partent d'elle. Sinon, le compte est signalé à Mathis (suspect) et
+// la partie validée ne bouge pas. Mathis décide toujours (panel Xener › En vérification : « C'est bon » l'accepte).
+const VERIF_MIN_S = 20; // au plus une vérification toutes les 20 s par compte (le jeu envoie sa partie toutes les 30 s), sauf avant un combat rejoué
+const parisDay = (t: number) => new Date(t + 2 * 3600 * 1000).toISOString().slice(0, 10);
+// deno-lint-ignore no-explicit-any
+async function validate(db: any, uid: string, force: boolean): Promise<Record<string, unknown>> {
+  const [{ data: head }, { data: ok }, { data: adm }] = await Promise.all([
+    db.from("saves").select("updated_at").eq("user_id", uid).maybeSingle(),
+    db.from("saves_ok").select("src_at,bilan,res,at,accept").eq("user_id", uid).maybeSingle(),
+    db.from("admins").select("user_id").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (!head) return { ok: false, err: "aucune partie en ligne" };
+  const curAt = new Date(head.updated_at).getTime();
+  if (ok && ok.src_at && new Date(ok.src_at).getTime() === curAt) return { ok: true, same: true };
+  if (ok && !force && !ok.accept && Date.now() - new Date(ok.at).getTime() < VERIF_MIN_S * 1000) return { ok: true, later: true };
+  const { data: cur } = await db.from("saves").select("data,updated_at").eq("user_id", uid).maybeSingle();
+  if (!cur) return { ok: false, err: "aucune partie en ligne" };
+  // deno-lint-ignore no-explicit-any
+  let S: any, meta: Record<string, unknown>, bil: Record<string, number>, top = 1;
+  try {
+    S = E.deserialize(cur.data); E.events.length = 0;
+    meta = V.fullSummary(E, S); bil = V.bilan(E, S);
+    top = Math.max(1, ...S.chars.map((c: { lvl: number }) => c.lvl || 1));
+  } catch (_) { return { ok: false, err: "partie illisible" }; }
+  let why: string | null = null, res: number | null = ok ? ok.res : null;
+  // deno-lint-ignore no-explicit-any
+  let prev: any = ok ? ok.bilan : null;
+  if (ok && !prev) { // partie validée d'avant le bouclier : son bilan est calculé une fois
+    const { data: od } = await db.from("saves_ok").select("data").eq("user_id", uid).maybeSingle();
+    try { const O = E.deserialize(od.data); E.events.length = 0; prev = Object.assign(V.bilan(E, O), { op: Number((O.hdv && O.hdv.op) || 0), nu0: Number(O.nextUid) || 0 }); } catch (_) { prev = null; }
+  }
+  // objets nés avant le bouclier (ou avant le premier envoi d'un compte) : marge plus large, leurs jets ont pu suivre un ancien équilibrage
+  const nu0 = prev ? Number(prev.nu0) || 0 : Number(S.nextUid) || 0;
+  // la partie de Mathis (panel de test) n'est pas retenue : elle reste hors des classements par le résumé (panel)
+  if (!(ok && ok.accept) && !adm) {
+    why = V.impossible(E, S, nu0);
+    if (!why && ok && prev) {
+      const hours = Math.max(0, (new Date(cur.updated_at).getTime() - new Date(ok.src_at).getTime()) / 3600000);
+      // ce que le serveur a donné entre-temps : opérations de l'hôtel de vente (et lots, Jackpot, Pluie…) pas encore dans
+      // la partie validée, et codes cadeaux utilisés depuis
+      const gift = { k: 0, r: 0, dof: 0 };
+      const op0 = Number(prev.op || 0), op1 = Number((S.hdv && S.hdv.op) || 0);
+      if (op1 > op0) {
+        const { data: ops } = await db.from("hdv_ops").select("payload").eq("user_id", uid).gt("id", op0).lte("id", op1).limit(2000);
+        // deno-lint-ignore no-explicit-any
+        (ops || []).forEach((o: any) => { const p = o.payload || {}; gift.k += Math.max(0, Number(p.k) || 0);
+          for (const x in p.res || {}) gift.r += Math.max(0, Number(p.res[x]) || 0);
+          // deno-lint-ignore no-explicit-any
+          (p.add || []).forEach((it: any) => { if (it && /^dofus_/.test(String(it.tpl))) gift.dof++; }); });
+      }
+      const { data: codes } = await db.from("gift_uses").select("code, gift_codes(reward)").eq("user_id", uid).gte("at", new Date(new Date(ok.src_at).getTime() - 600000).toISOString());
+      // deno-lint-ignore no-explicit-any
+      (codes || []).forEach((u: any) => { const w = (u.gift_codes && u.gift_codes.reward) || {}; gift.k += Math.max(0, Number(w.k) || 0);
+        // deno-lint-ignore no-explicit-any
+        (w.r || []).forEach((x: any) => { gift.r += Math.max(0, Number(x[1]) || 0); });
+        // deno-lint-ignore no-explicit-any
+        (w.i || []).forEach((x: any) => { if (/^dofus_/.test(String(x[0]))) gift.dof += Math.max(0, Number(x[1]) || 1); }); });
+      const c = V.check(E, prev, bil, hours, gift, res, top);
+      if (!c.ok) why = c.why; else res = c.res;
+    }
+  }
+  if (why) {
+    const { data: last } = await db.from("bouclier_log").select("why,at").eq("user_id", uid).order("at", { ascending: false }).limit(1).maybeSingle();
+    if (!last || last.why !== why || Date.now() - new Date(last.at).getTime() > 3600000) await db.from("bouclier_log").insert({ user_id: uid, why });
+    await db.rpc("bouclier_signal", { p_user: uid, p_why: why });
+    return { ok: false, held: true };
+  }
+  bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0;
+  const now = new Date().toISOString();
+  const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: bil, res: res == null ? V.RES_MAX : res, src_at: cur.updated_at, at: now, accept: false });
+  if (error) return { ok: false, err: "écriture impossible" };
+  // 4A : une copie de la partie validée par jour (heure de Paris), gardée 7 jours, pour que Mathis puisse remettre un joueur en arrière
+  const day = parisDay(Date.now());
+  await db.from("saves_jour").upsert({ user_id: uid, day, data: cur.data, lvl: bil.lv, kamas: bil.k, at: now }, { onConflict: "user_id,day", ignoreDuplicates: true });
+  await db.from("saves_jour").delete().eq("user_id", uid).lt("day", parisDay(Date.now() - 7 * 86400000));
+  return { ok: true };
+}
+// La dernière partie validée, vérifiée juste avant si la partie envoyée a changé (combats rejoués).
+// deno-lint-ignore no-explicit-any
+async function okSave(db: any, uid: string) {
+  try { await validate(db, uid, true); } catch (_) { /* on garde la partie validée d'avant */ }
+  return db.from("saves_ok").select("data").eq("user_id", uid).maybeSingle();
 }

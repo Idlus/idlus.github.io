@@ -83,8 +83,10 @@ begin
   if p_user is null then raise exception 'Connecte-toi pour utiliser l''hôtel de vente.'; end if;
   if not exists (select 1 from profiles where id = p_user) then raise exception 'Choisis d''abord ton pseudo.'; end if;
   if exists (select 1 from profiles where id = p_user and suspended_at is not null) then raise exception 'Compte suspendu.'; end if;
-  if exists (select 1 from ladder where user_id = p_user and flagged) then raise exception 'Ta partie est en vérification : les échanges sont bloqués en attendant.'; end if;
-  select data::jsonb into d from saves where user_id = p_user;
+  -- 2.1.4 « Bouclier du serveur » (choix 3A) : un compte suspect a aussi ses échanges en pause, et l'hôtel de vente part de la
+  -- dernière partie validée par le serveur (saves_ok, schema.sql), plus de la partie envoyée telle quelle
+  if exists (select 1 from ladder where user_id = p_user and (flagged or suspect)) then raise exception 'Ta partie est en vérification : les échanges sont bloqués en attendant.'; end if;
+  select data::jsonb into d from saves_ok where user_id = p_user;
   if d is null then raise exception 'Ta partie n''est pas encore en ligne : attends quelques secondes.'; end if;
   if coalesce((d->>'panelUsed')::boolean, false) then raise exception 'Partie retouchée par le panel de test : tu peux regarder, mais pas vendre ni acheter.'; end if;
   return d;
@@ -313,8 +315,8 @@ create or replace function public.trade_state() returns jsonb language sql stabl
 as $$
   select coalesce((select jsonb_build_object('id', t.id, 'me', case when t.a = auth.uid() then 'a' else 'b' end, 'pa', pseudo_of(t.a), 'pb', pseudo_of(t.b),
       'oa', t.offer_a, 'ob', t.offer_b, 'ka', t.ok_a, 'kb', t.ok_b, 'ver', t.ver, 'st', t.status, 'note', t.note,
-      'ia', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves s, jsonb_array_elements(t.offer_a->'items') u where s.user_id = t.a),
-      'ib', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves s, jsonb_array_elements(t.offer_b->'items') u where s.user_id = t.b))
+      'ia', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(t.offer_a->'items') u where s.user_id = t.a),
+      'ib', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(t.offer_b->'items') u where s.user_id = t.b))
     from trades t where (t.a = auth.uid() or t.b = auth.uid()) and (t.status = 'open' and t.updated_at > now() - interval '15 minutes' or t.updated_at > now() - interval '20 seconds')
     order by t.id desc limit 1), 'null'::jsonb)
 $$;

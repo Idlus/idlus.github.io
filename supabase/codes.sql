@@ -62,7 +62,8 @@ begin
   if x.ends is not null and (now() at time zone 'Europe/Paris')::date > x.ends then
     return jsonb_build_object('err', format('Ce code a expiré le %s.', to_char(x.ends, 'DD/MM/YYYY')));
   end if;
-  if x.accounts_only and u is null then return jsonb_build_object('err', 'Ce code est réservé aux joueurs avec un compte.'); end if;
+  -- 2.1.4 (choix 6A de Mathis) : un code à nombre limité demande aussi un compte (sans compte, un nouvel identifiant à chaque essai le vidait)
+  if (x.accounts_only or x.max_uses is not null) and u is null then return jsonb_build_object('err', 'Ce code est réservé aux joueurs avec un compte.'); end if;
   if exists (select 1 from gift_uses where code = c and ((u is not null and user_id = u) or (g is not null and guest = g))) then
     return jsonb_build_object('err', 'Tu as déjà utilisé ce code.');
   end if;

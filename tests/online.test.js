@@ -165,6 +165,7 @@ const MOCK = () => {
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
     functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco || o.body.prism) return guildInvoke(o.body); const d = db();
+      if (o.body.verif) { d.verifs = (d.verifs || 0) + 1; put(d); return { data: { ok: true }, error: null }; } // 2.1.4 « Bouclier du serveur »
       if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
       if (o.body.songe) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: true, songe: 1, w: Math.floor((Date.now() / 864e5 + 3) / 7), ii: 2, waves: 20, claim: 20, best: 20, improved: true, rank: 3, fii: 2, fwaves: 20 }, error: null }; } // 1.0.30 : Songe infini rejoué par le serveur
       d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
@@ -284,7 +285,11 @@ const MOCK = () => {
       if (name === "my_role") return { data: d.role || null, error: null };
       if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4, closed: !!d.chatClosed }, role: d.role }, error: null };
       if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
-      if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
+      if (name === "adm_msgs" || name === "adm_mods") return { data: [], error: null };
+      // 2.1.4 « Bouclier du serveur » : un compte retenu par le serveur, ses raisons, ses ventes et ses copies des 7 jours
+      if (name === "adm_flagged") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", reason: "Bouclier : +48 000 000 kamas en 6 min (au plus 48 h de jeu possibles, il en faudrait 61,3)", level: 4812, updated_at: new Date().toISOString(), flagged: false }], error: null };
+      if (name === "adm_bouclier") { const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10); return { data: { held: true, okAt: new Date(Date.now() - 3600e3).toISOString(), log: [{ why: "+48 000 000 kamas en 6 min (au plus 48 h de jeu possibles, il en faudrait 61,3)", at: new Date(Date.now() - 600e3).toISOString() }, { why: "Épée de Fouraille : 99999 Vitalité (au plus 810)", at: new Date(Date.now() - 900e3).toISOString() }], sold: [{ to: "Tofuline", n: 3, k: 2400000 }, { to: "Pandawa_92", n: 1, k: 900000 }], trades: 1, days: [0, 1, 2, 3].map((n) => ({ day: day(n), lvl: 4812 - n * 40, kamas: 52000000 - n * 4e6, at: new Date().toISOString() })) }, error: null }; }
+      if (name === "adm_save_restore") { log(); return { data: null, error: null }; }
       if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
       // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql) : la première part tout de suite (bandeau + chat)
       if (name === "ann_tick") { const L = (d.loops || []).filter((x) => x.active && Date.parse(x.next_at) <= Date.now()); L.forEach((x) => { d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 100 + x.id * 10 + x.sent, body: x.body, banner: true, until: new Date(Date.now() + 6e5).toISOString() }); x.sent++; x.last_at = new Date().toISOString(); x.next_at = new Date(Date.now() + x.every_min * 6e4).toISOString(); }); put(d); return { data: (d.loops || []).filter((x) => x.active).map((x) => x.next_at).sort()[0] || null, error: null }; }
@@ -527,6 +532,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-first-sb.png", fullPage: true });
     await page.click('[data-act="lb-fview"][data-v="all"]'); await page.waitForTimeout(300);
     m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
+    if (!m.verifs) fail("2.1.4 : la partie envoyée n'a pas été vérifiée par le serveur (bouclier)");
     // 1.0.30 : classement du donjon dans sa fiche : top 5 et ma place, équipe de chaque record, Records / Cette semaine, « Classement complet »
     const dgW = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const V = window.VERIFY; const W = V.weekIdx(Date.now()); const did = V.weeklyDungeons(window.DATA.DUNGEONS, W)[0].did;
       const P = [["u9", "Kralamour", "iop", 10, 250, ["iop", "eni", "sacri", "cra"]], ["u8", "Tofuline", "eni", 10, 300, ["eni", "feca"]], ["u7", "Bworkman", "sacri", 9, 200, []], ["u6", "Xenerium", "cra", 8, 400, ["cra", "osa", "eni"]], ["u5", "Nyx", "sram", 8, 450, ["sram"]], ["u4", "Gloubi", "osa", 7, 500, ["osa", "cra"]]];
@@ -706,6 +712,13 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('.adm [data-act="adm-tab"][data-v="joueurs"]'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-sel"]'); await page.waitForSelector(".adm .fiche", { timeout: 5000 });
     await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);
+    // 2.1.4 « Bouclier du serveur » (4A) : onglet En vérification › Détails : raisons, ventes, remettre la partie à un jour
+    await page.click('.adm [data-act="adm-tab"][data-v="verif"]'); await page.waitForSelector('.adm [data-act="adm-bdet"]', { timeout: 5000 });
+    await page.click('.adm [data-act="adm-bdet"]'); await page.waitForSelector('.adm .bq-det [data-act="adm-brest"]', { timeout: 5000 });
+    if (!/Partie retenue/.test(await page.textContent(".adm .bq-det")) || !/Tofuline/.test(await page.textContent(".adm .bq-det"))) fail("bouclier : détails incomplets dans le panel");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/bouclier-pc.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/bouclier-mob.png" }); await page.setViewportSize(vp); await page.waitForTimeout(200); }
+    page.once("dialog", (dg) => dg.accept()); await page.click('.adm .bq-det [data-act="adm-brest"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_save_restore" && x[1].p_user === "u9")) fail("bouclier : remise en arrière non envoyée");
     await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admAnn", { timeout: 5000 });
     await page.fill("#admAnn", "Maintenance ce soir"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(600);
     // 1.2.10.1 : tous les droits de Mathis sur le chat : supprimer un message, sanctions depuis le pseudo, fermer le chat

@@ -55,7 +55,8 @@ begin
   return new;
 end $$;
 drop trigger if exists saves_ascension on public.saves;
-create trigger saves_ascension after insert or update on public.saves for each row execute function public.asc_from_save();
+drop trigger if exists saves_ascension on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_ascension after insert or update on public.saves_ok for each row execute function public.asc_from_save();
 
 -- classement public (sans les comptes « en vérification ») ; rapidité : le moins de tours d'abord
 create or replace view public.lb_asc as

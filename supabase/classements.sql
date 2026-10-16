@@ -367,7 +367,8 @@ begin
   return new;
 end $$;
 drop trigger if exists saves_ladder on public.saves;
-create trigger saves_ladder after insert or update on public.saves for each row execute function public.ladder_from_save();
+drop trigger if exists saves_ladder on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_ladder after insert or update on public.saves_ok for each row execute function public.ladder_from_save();
 
 -- ---------- panneau de test : joueurs « en vérification » ----------
 create or replace function public.is_admin() returns boolean language sql stable security definer set search_path = public
@@ -381,13 +382,55 @@ as $$ select l.user_id, p.pseudo, l.flag_reason, l.level, l.updated_at from publ
 create or replace function public.admin_unflag(p_user uuid)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  update public.ladder set flagged = false, suspect = false, flag_reason = null, verified = true where user_id = p_user; end $$;
+  update public.ladder set flagged = false, suspect = false, flag_reason = null, verified = true where user_id = p_user;
+  update public.saves_ok set accept = true where user_id = p_user; end $$; -- 2.1.4 : la partie que le bouclier retenait est acceptée à son prochain envoi
 create or replace function public.admin_flag(p_user uuid, p_reason text)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
   update public.ladder set flagged = true, suspect = false, flag_reason = coalesce(p_reason, 'décision de Mathis'), verified = false where user_id = p_user; end $$;
 revoke all on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) from public, anon;
 grant execute on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) to authenticated;
+
+-- ---------- 2.1.4 « Bouclier du serveur » : ce que le panel Xener montre et permet (choix 2A 3A 4A) ----------
+-- bouclier_signal : appelé par la fonction serveur « record » quand une partie envoyée est refusée. Le compte devient
+-- « suspect » (il reste classé sur sa dernière partie validée, ses échanges sont en pause) ; seul Mathis décide ensuite.
+create or replace function public.bouclier_signal(p_user uuid, p_why text) returns void language plpgsql security definer set search_path = public
+as $$ begin
+  insert into public.ladder (user_id, suspect, flag_reason) values (p_user, true, 'Bouclier : ' || left(p_why, 200))
+    on conflict (user_id) do update set suspect = true, flag_reason = case when public.ladder.flag_reason like 'Bouclier : %' or public.ladder.flag_reason is null then excluded.flag_reason else public.ladder.flag_reason end
+    where not public.ladder.flagged;
+end $$;
+revoke all on function public.bouclier_signal(uuid, text) from public, anon, authenticated;
+grant execute on function public.bouclier_signal(uuid, text) to service_role;
+-- Fiche d'un compte pour le panel : raisons du bouclier, copies des 7 derniers jours, ventes et échanges de la semaine.
+create or replace function public.adm_bouclier(p_user uuid) returns jsonb language plpgsql stable security definer set search_path = public
+as $$ begin
+  if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
+  return jsonb_build_object(
+    'log', (select coalesce(jsonb_agg(jsonb_build_object('why', why, 'at', at) order by at desc), '[]'::jsonb) from (select why, at from bouclier_log where user_id = p_user order by at desc limit 10) x),
+    'days', (select coalesce(jsonb_agg(jsonb_build_object('day', day, 'lvl', lvl, 'kamas', kamas, 'at', at) order by day desc), '[]'::jsonb) from saves_jour where user_id = p_user),
+    'held', (select s.updated_at is distinct from o.src_at from saves s left join saves_ok o on o.user_id = s.user_id where s.user_id = p_user),
+    'okAt', (select src_at from saves_ok where user_id = p_user),
+    'sold', (select coalesce(jsonb_agg(jsonb_build_object('to', pseudo, 'n', n, 'k', k)), '[]'::jsonb) from (
+      select coalesce(p.pseudo, '?') pseudo, count(*) n, sum(x.price) k from hdv_sales x left join profiles p on p.id = x.buyer
+      where x.seller = p_user and x.at > now() - interval '7 days' group by p.pseudo order by sum(x.price) desc limit 10) y),
+    'trades', (select count(*) from trades where (a = p_user or b = p_user) and status = 'done' and created_at > now() - interval '7 days'));
+end $$;
+-- Remettre la partie d'un joueur à la copie d'un jour : sa partie en ligne et sa partie validée reprennent cette copie
+-- (son appareil lui demandera quelle version garder ; s'il garde l'autre, le bouclier la retiendra de nouveau).
+create or replace function public.adm_save_restore(p_user uuid, p_day date) returns text language plpgsql security definer set search_path = public
+as $$ declare d text; t timestamptz;
+begin
+  if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
+  select data into d from saves_jour where user_id = p_user and day = p_day;
+  if d is null then return 'Pas de copie ce jour-là.'; end if;
+  update saves set data = d, updated_at = clock_timestamp() where user_id = p_user returning updated_at into t;
+  update saves_ok set data = d, src_at = t, bilan = null, accept = false, at = now() where user_id = p_user;
+  perform public.alog(format('Bouclier : partie de %s remise au %s', (select pseudo from profiles where id = p_user), to_char(p_day, 'DD/MM')));
+  return null;
+end $$;
+revoke all on function public.adm_bouclier(uuid), public.adm_save_restore(uuid, date) from public, anon;
+grant execute on function public.adm_bouclier(uuid), public.adm_save_restore(uuid, date) to authenticated;
 
 -- ---------- 1.0.30 (choix 37A) : GIGA annonce d'un Dofus ----------
 -- Un Dofus tombé sur un boss s'annonce en plein écran chez tous les joueurs connectés, puis dans le chat Général.

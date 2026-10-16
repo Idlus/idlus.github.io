@@ -34,4 +34,5 @@ end $$;
 revoke all on function public.dsub_from_save() from public, anon, authenticated;
 -- après saves_ladder (les déclencheurs passent par ordre alphabétique) : la ligne du classement est déjà à jour
 drop trigger if exists saves_sublime on public.saves;
-create trigger saves_sublime after insert or update on public.saves for each row execute function public.dsub_from_save();
+drop trigger if exists saves_sublime on public.saves_ok; -- 2.1.4 : sur la dernière partie validée (schema.sql)
+create trigger saves_sublime after insert or update on public.saves_ok for each row execute function public.dsub_from_save();

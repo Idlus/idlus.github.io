@@ -305,6 +305,7 @@ create or replace function public.adm_flag(p_user uuid, p_on boolean) returns vo
 as $$ begin
   perform public.adm_need(true);
   update ladder set flagged = p_on, suspect = false, flag_reason = case when p_on then 'décision de Mathis' end, verified = not p_on where user_id = p_user; -- 1.0.32.11 : remis = vérifié, il y reste ; 1.0.32.13 : « C'est bon » d'un signalé aussi
+  if not p_on then update saves_ok set accept = true where user_id = p_user; end if; -- 2.1.4 « Bouclier du serveur » : la partie retenue est acceptée à son prochain envoi
   perform public.alog(format(case when p_on then '%s mis en vérification' else '%s remis dans les classements' end, public.pseudo_of(p_user)));
 end $$;
 

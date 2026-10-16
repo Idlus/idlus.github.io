@@ -235,11 +235,20 @@
         }
         if (!data) { setState("conflict"); return "conflict"; }
         ON.setLink({ uid: ON.user.id, base: data, savedAt });
-        ON.lastPush = Date.now(); setState("ok"); return "ok";
+        ON.lastPush = Date.now(); setState("ok");
+        if (SLOT === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
+        return "ok";
       } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
       finally { pushing = null; }
     })();
     pushing = p; return p;
+  };
+  /* 2.1.4 « Bouclier du serveur » : après chaque envoi, le serveur relit la partie, calcule lui-même le résumé des classements
+     et la garde comme « dernière partie validée » si elle est possible (fonction « record », { verif: 1 }). Rien à montrer
+     au joueur : une partie retenue reste sur sa dernière version validée et Mathis décide. */
+  ON.verif = async () => {
+    if (!sb || !ON.user) return null;
+    try { const { data } = await withTimeout(sb.functions.invoke("record", { body: { verif: 1 } }), 10000); return data || null; } catch (e) { return null; }
   };
   /* ---------- classements (étape 3) ---------- */
   ON.db = () => sb;

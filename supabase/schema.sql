@@ -106,3 +106,46 @@ begin
 end $$;
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- ---------- 2.1.4 « Bouclier du serveur » (choix 1A 2A 3A 4A de Mathis) : la dernière partie validée ----------
+-- Le jeu continue d'envoyer sa partie dans saves (toutes les 30 s). La fonction serveur « record » ({ verif: 1 }) la relit,
+-- calcule elle-même le résumé des classements et vérifie la partie (objets possibles, points de caractéristiques, gains
+-- depuis la partie validée d'avant comparés au temps réel). Si tout va bien, elle est copiée ici. Les classements
+-- (déclencheurs sur saves_ok), l'hôtel de vente (hdv_save) et les combats rejoués partent de cette copie.
+-- Personne ne lit ni n'écrit cette table depuis le jeu (aucune règle) : seuls le serveur et les fonctions ci-dessous.
+create table if not exists public.saves_ok (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  data text not null,
+  meta jsonb not null default '{}'::jsonb,   -- résumé calculé par le serveur (VERIFY.fullSummary)
+  bilan jsonb,                               -- kamas, ressources, Maîtrise, niveaux, Dofus, opération HdV (VERIFY.bilan)
+  res real,                                  -- réserve d'heures de jeu (VERIFY.check)
+  src_at timestamptz,                        -- date de la partie de saves qui a été validée
+  at timestamptz not null default now(),
+  accept boolean not null default false      -- « C'est bon » de Mathis : la prochaine partie envoyée est acceptée telle quelle
+);
+alter table public.saves_ok enable row level security;
+-- Au premier passage, les parties déjà en ligne deviennent les parties validées de départ (rien n'est remis à zéro).
+-- La date est reculée d'une heure pour que la première vérification se fasse tout de suite.
+insert into public.saves_ok (user_id, data, meta, src_at, at)
+  select user_id, data, '{}'::jsonb, updated_at, now() - interval '1 hour' from public.saves on conflict (user_id) do nothing;
+
+-- 4A : une copie de la partie validée par jour (heure de Paris), 7 jours, pour remettre un joueur en arrière.
+create table if not exists public.saves_jour (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  day date not null,
+  data text not null,
+  lvl int, kamas bigint,
+  at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+alter table public.saves_jour enable row level security;
+
+-- Ce que le bouclier a refusé (raison en clair), lu par le panel Xener.
+create table if not exists public.bouclier_log (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  why text not null,
+  at timestamptz not null default now()
+);
+create index if not exists bouclier_log_user on public.bouclier_log (user_id, at desc);
+alter table public.bouclier_log enable row level security;

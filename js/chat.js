@@ -513,7 +513,7 @@
     }
     if (A.tab === "verif") {
       const F = A.flag || [];
-      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span>${x.flagged ? `<span class="st m">Retiré</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il revient dans les classements et y reste, même après ses prochains envois">Remettre</button>` : `<span class="st v">Toujours classé</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il reste dans les classements, la vérification ne le signale plus">C'est bon</button><button class="btn sm danger" data-act="adm-flag" data-u="${x.id}" data-v="1" title="Il triche : retiré des classements jusqu'à ce que tu le remettes">Retirer</button>`}<button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button></div>`).join("")}</div>`
+      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span>${x.flagged ? `<span class="st m">Retiré</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il revient dans les classements et y reste, même après ses prochains envois">Remettre</button>` : `<span class="st v">Toujours classé</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il reste dans les classements, la vérification ne le signale plus">C'est bon</button><button class="btn sm danger" data-act="adm-flag" data-u="${x.id}" data-v="1" title="Il triche : retiré des classements jusqu'à ce que tu le remettes">Retirer</button>`}<button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button><button class="btn sm" data-act="adm-bdet" data-u="${x.id}" aria-expanded="${A.bdet && A.bdet.u === x.id ? "true" : "false"}">Détails</button></div>${A.bdet && A.bdet.u === x.id ? bouclierHtml(A.bdet) : ""}`).join("")}</div>`
         : `<div class="box"><div class="empty">Personne n'est en vérification.</div></div>`;
     }
     if (A.tab === "ann") {
@@ -572,6 +572,19 @@
       ${A.ren === x.id ? `<div class="srch"><input id="admRen" value="${h(x.pseudo)}" maxlength="16" autocomplete="off"><button class="btn primary" data-act="adm-renamego" data-u="${x.id}">Renommer</button></div>` : ""}
       ${A.sus === x.id ? `<div class="stack" style="gap:6px"><span class="minus small">Le compte de ${h(x.pseudo)} ne pourra plus envoyer sa partie ni écrire dans le chat, et disparaît des classements. Tu pourras le rétablir.</span><div class="row"><button class="btn sm danger" data-act="adm-suspendgo" data-u="${x.id}">Confirmer la suspension</button><button class="btn sm" data-act="adm-suspendno">Annuler</button></div></div>` : ""}
       <h2>Ses derniers messages publics</h2>${(A.msgs || []).map((m) => `<div class="ln"><span class="t" style="margin:0;min-width:64px">${hhmm(m.created_at)}</span>${h(m.body)}</div>`).join("") || `<div class="ln muted">Aucun message ces dernières 48 h.</div>`}</div>`;
+  }
+  /* 2.1.4 « Bouclier du serveur » (choix 4A) : pourquoi le serveur a retenu la partie, à qui le joueur a vendu cette semaine,
+     et les copies des 7 derniers jours pour le remettre en arrière (adm_bouclier, adm_save_restore : supabase/classements.sql). */
+  function bouclierHtml(B) {
+    const d = B.d; if (!d) return `<div class="bq-det"><span class="xs muted">${B.err ? h(B.err) : "Chargement…"}</span></div>`;
+    const fk = (n) => Math.round(+n || 0).toLocaleString("fr-FR");
+    const day = (s) => new Date(s + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "numeric" });
+    return `<div class="bq-det">
+      <p class="small">${d.held ? `<span class="st v">Partie retenue</span> Le classement et l'hôtel de vente utilisent sa partie validée du ${when(d.okAt)}.` : `<span class="st mod">À jour</span> Sa dernière partie envoyée est validée.`}</p>
+      ${(d.log || []).length ? `<div class="xs"><b>Ce que le serveur a refusé</b>${d.log.map((l) => `<div class="ln"><span class="grow">${h(l.why)}</span><span class="t">${when(l.at)}</span></div>`).join("")}</div>` : `<p class="xs muted">Rien de refusé par le bouclier : signalé par l'ancienne vérification de vitesse.</p>`}
+      <div class="xs"><b>Cette semaine</b> : ${(d.sold || []).length ? `a vendu à ${d.sold.map((x) => `${h(x.to)} (${x.n} vente${x.n > 1 ? "s" : ""}, ${fk(x.k)} k)`).join(", ")}` : "aucune vente à l'hôtel de vente"}${d.trades ? `, ${d.trades} échange${d.trades > 1 ? "s" : ""}` : ""}.</div>
+      ${(d.days || []).length ? `<div class="xs"><b>Remettre sa partie au</b><div class="row" style="flex-wrap:wrap;gap:6px;margin-top:4px">${d.days.map((x) => `<button class="btn sm" data-act="adm-brest" data-u="${B.u}" data-v="${h(x.day)}" title="Niveaux ${fk(x.lvl)}, ${fk(x.kamas)} kamas">${day(x.day)}</button>`).join("")}</div></div>` : `<p class="xs muted">Pas encore de copie de sa partie (une par jour, gardée 7 jours).</p>`}
+    </div>`;
   }
   async function admDo(name, args, msg) {
     if (A.busy) return; A.busy = true;
@@ -640,6 +653,8 @@
       case "adm-mute": if (d.m) closeMenu(); if (await admDo("adm_mute", { p_user: d.u, p_min: +d.v }, +d.v ? "Joueur rendu muet." : "Le joueur peut de nouveau écrire.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-ban": if (d.m) closeMenu(); if (await admDo("adm_ban", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur banni du chat." : "Bannissement levé.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-close": admDo("adm_report_close", { p_user: d.u }, "Signalements classés."); return;
+      case "adm-bdet": if (A.bdet && A.bdet.u === d.u) { A.bdet = null; repaintAdm(); return; } A.bdet = { u: d.u }; repaintAdm(); { const r = await ON.rpc("adm_bouclier", { p_user: d.u }); if (A.bdet && A.bdet.u === d.u) { if (r.err) A.bdet.err = r.err; else A.bdet.d = r.data; repaintAdm(); } } return;
+      case "adm-brest": if (!confirm(`Remettre la partie de ce joueur à sa copie du ${d.v.split("-").reverse().join("/")} ? Tout ce qu'il a fait depuis sera perdu (son appareil lui demandera quelle version garder).`)) return; if (await admDo("adm_save_restore", { p_user: d.u, p_day: d.v }, "Partie remise à cette copie.")) A.bdet = null; repaintAdm(); return;
       case "adm-flag": admDo("adm_flag", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur retiré des classements." : "Joueur vérifié : il reste dans les classements."); return;
       case "adm-rename": A.ren = A.ren === d.u ? null : d.u; repaintAdm(); return;
       case "adm-renamego": if (await admDo("adm_rename", { p_user: d.u, p_pseudo: ($("#admRen").value || "").trim() }, "Pseudo changé.")) A.ren = null; repaintAdm(); return;
