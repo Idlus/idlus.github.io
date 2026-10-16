@@ -136,6 +136,7 @@
 <div id="protobar" style="position:fixed;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom,0px));z-index:9999;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px);background:#1b2316;color:#eef3e6;border:2px solid #9fe7ff;border-radius:14px;padding:6px 10px;font:700 13px Nunito,system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)">
 <span>Prototype · branches lointaines · ta vraie partie n'est pas touchée</span>
 <button data-act="frompublic" style="border:0;border-radius:10px;background:#9fe7ff;color:#11160e;font:800 13px Nunito,system-ui,sans-serif;padding:5px 10px;cursor:pointer">Copier ma partie du jeu public</button>
+<button onclick="(function(){var X=window.DX;if(!X||!X.S||!X.E)return;X.E.MT_GATES.forEach(function(G){var SI=X.E.stasisInfo(X.S,G.did);SI.max=Math.max(SI.max,G.s);});X.E.mtGateSync(X.S);X.render();this.textContent='Portes ouvertes';}).call(this)" style="border:0;border-radius:10px;background:#f2c14e;color:#11160e;font:800 13px Nunito,system-ui,sans-serif;padding:5px 10px;cursor:pointer">Ouvrir les 5 Portes (essai)</button>
 <button onclick="this.parentNode.remove()" aria-label="Fermer" style="border:0;background:none;color:#eef3e6;font:800 15px system-ui;cursor:pointer">✕</button>
 </div>
 </body>
