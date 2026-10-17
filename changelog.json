@@ -1,6 +1,14 @@
 {
-  "version": "2.1.15",
+  "version": "2.1.16",
   "versions": [
+    {
+      "v": "2.1.16",
+      "name": "Tous les joyaux",
+      "guide": "maitrise",
+      "items": [
+        "Sertissage : un emplacement de joyau propose maintenant toutes les sortes de joyaux que tu possèdes (un bouton par sorte, avec ×N quand tu en as plusieurs). Avant, seuls les 6 premiers joyaux du sac étaient proposés"
+      ]
+    },
     {
       "v": "2.1.15",
       "name": "La Maîtrise lente",
