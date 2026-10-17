@@ -1,6 +1,13 @@
 {
-  "version": "2.1.16",
+  "version": "2.1.17",
   "versions": [
+    {
+      "v": "2.1.17",
+      "name": "Bouclier des étoiles",
+      "items": [
+        "Le serveur vérifie aussi les points de Maîtrise des parties envoyées : une Maîtrise impossible pour le temps écoulé depuis la Maîtrise lente est signalée"
+      ]
+    },
     {
       "v": "2.1.16",
       "name": "Tous les joyaux",

@@ -127,8 +127,18 @@
     for (const u in S.pets || {}) if ((+S.pets[u].st || 0) > PS) return `familier à ${S.pets[u].st} étoiles`;
     for (const u in S.mounts || {}) { const M = S.mounts[u]; const cap = (E.ST_BASE || 5) + 2; if ((+M.st || 1) > cap) return `monture à ${M.st} étoiles`; }
     if (!(+S.kamas >= 0) || +S.kamas > 1e13) return `kamas illisibles (${S.kamas})`;
+    { /* 2.1.17 : Maîtrise plafonnée par le temps écoulé depuis le reset de la Maîtrise lente (2.1.15, 16/10 18:15 Paris) : sans ça,
+         une partie retouchée envoyée pour la première fois (ou après une coupure) passait, VERIFY.check ne comparant qu'à la partie validée d'avant */
+      const h = Math.max(0, ((V.now ? V.now() : Date.now()) - V.MT_T0) / 3600000) * V.RES_RATE;
+      const hero = Math.floor(V.MT_HERO0 + V.MT_HERO_H * h), team = Math.floor(V.MT_TEAM0 + V.MT_TEAM_H * h); let tot = 0;
+      for (const c of S.chars || []) { if (!c.mt) continue; const nm = String(c.name || "un héros").slice(0, 20), lv = Math.max(0, Math.floor(+c.mt.lvl || 0));
+        if (E.MT_RESET && (+c.mt.bn || 0) > 0) return `${nm} : ${c.mt.bn} points de Maîtrise des vies passées (remis à 0 avec la Maîtrise lente)`;
+        if (lv > hero) return `${nm} : ${lv} points de Maîtrise (au plus ${hero} depuis le reset)`; tot += lv; }
+      if (tot > team) return `${tot} points de Maîtrise dans l'équipe (au plus ${team} depuis le reset)`; }
     return null;
   };
+  /* rythmes de V.rates, marge comprise : 180 points par heure pour l'équipe, 30 pour un seul héros (4,8 mesurés × 5, arrondi) */
+  V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180;
 
   /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :
      la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 48 h, et chaque gain en consomme

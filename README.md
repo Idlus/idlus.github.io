@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.17 « Bouclier des étoiles »
+
+- Le serveur vérifie aussi les points de Maîtrise des parties envoyées (plafond selon le temps écoulé depuis la Maîtrise lente).
+
 ## 2.1.16 « Tous les joyaux »
 
 - Sertissage : toutes les sortes de joyaux possédées sont proposées (un bouton par sorte, ×N), au lieu des 6 premiers du sac.

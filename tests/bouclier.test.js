@@ -46,6 +46,14 @@ console.log("  " + bad((Y) => { Y.chars[0].alloc.vit += 5000; }, "points de cara
 console.log("  " + bad((Y) => { Y.chars[0].scrolls.fo = 500; }, "parchemins au-delà de 100"));
 console.log("  " + bad((Y) => { Y.chars[0].lvl = 999; }, "niveau au-delà de 200"));
 console.log("  " + bad((Y) => { Y.kamas = 1e15; }, "kamas illisibles"));
+/* 2.1.17 : Maîtrise plafonnée depuis le reset (cas de Sigmar : 21 388 points par héros le lendemain du reset) */
+{ const T = Date.UTC(2026, 9, 17, 13, 40); V.now = () => T;
+  const mk = (lvls, bn) => { const Y = E.deserialize(txt); Y.chars.forEach((c, i) => { c.lvl = 200; c.mt = { lvl: lvls[i] || 0, xp: 0, bn: bn || 0, t: [[], [], []], lo: 0, j: {} }; }); return Y; };
+  assert.strictEqual(V.impossible(E, mk([40, 36, 35]), 0), null, "Maîtrise honnête du lendemain : acceptée");
+  console.log("  " + V.impossible(E, mk([21388, 18028, 16521]), 0)); assert.ok(V.impossible(E, mk([21388, 18028, 16521]), 0), "21 388 points le lendemain : refusé");
+  assert.ok(V.impossible(E, mk([10, 10, 10], 5), 0), "points des vies passées après le reset : refusé");
+  V.now = () => Date.UTC(2027, 9, 17); assert.strictEqual(V.impossible(E, mk([2000, 1500, 1000]), 0), null, "un an plus tard, 2 000 points : acceptés");
+  delete V.now; }
 /* un objet né avant le bouclier a une marge plus large (anciens jets) */
 { const Y = E.deserialize(txt); const it = E.rollItem(Y, anyTpl, { radiant: false }); it.stats.vit = Math.ceil(Math.max(D.ITEMS[anyTpl].stats.vit[1], E.fmCap(D.ITEMS[anyTpl], "vit")) * 2.2);
   assert.ok(V.impossible(E, Y, 0), "objet récent trop fort : refusé"); assert.strictEqual(V.impossible(E, Y, it.uid + 1), null, "le même objet né avant le bouclier : accepté"); }
