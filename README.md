@@ -1220,6 +1220,18 @@ Le jeu public reçoit tout le contenu de la version de test : niveau 200 et 51 n
 - `assets/` : images (monstres `m/`, objets `i/`, sorts `s/`, héros `h/`, stats `c/`, métiers `j/`)
 - `tools/import_dofusdb.py` puis `tools/build_data.py` : import et génération des données
 
+## Publier une nouvelle version
+Une seule commande met la version à jour partout (`GAME_VERSION` et notes de mise à jour dans `js/ui.js`, les `?v=` de `index.html`, `sw.js`, `version.json`, `changelog.json`) :
+
+```
+node tools/bump_version.js 3.1.2 "Nom de la version" "Nouveauté 1" "Nouveauté 2"
+```
+
+- Si l'entrée de la version est déjà écrite à la main dans le `CHANGELOG` de `js/ui.js`, il suffit de `node tools/bump_version.js 3.1.2`.
+- `--dry-run` affiche les fichiers qui changeraient sans rien écrire.
+- Le script s'arrête sans rien modifier s'il ne trouve pas tous les endroits attendus ou si la version est inférieure à l'actuelle.
+- Une fois poussé sur `main`, le changement de `version.json` déclenche l'annonce Discord.
+
 ## Mentions
 Projet de fan gratuit et non commercial, sans lien avec Ankama Games.
 DOFUS, ses noms, images et contenus sont la propriété d'Ankama Games. Données : [DofusDB](https://dofusdb.fr).
