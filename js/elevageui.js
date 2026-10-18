@@ -73,12 +73,12 @@
       <b>${h(E.colourName(A.sp, A.c))} ${starsOf(A)} + ${h(E.colourName(B.sp, B.c))} ${starsOf(B)}</b> <span class="xs muted">couple ${p.s + 1}</span>
       <div class="el-odds xs">${odds}</div>
       <div class="xs">Petit : ${starsHtml(Math.min(cap, I.st), cap)} <span class="muted">· ${fmtPct(I.up)} une étoile de plus, ${fmtPct(I.down)} une de moins · ${fmtPct(I.cap)} une capacité</span></div>
-      <div class="xs ${p.wait ? "ko" : "muted"}" data-elt="${idx}">${p.wait ? "Le petit attend : l'écurie est pleine, relâchez une monture" : `Naissance dans ${eta(p.t)} · continue hors ligne`}</div><div class="bar"><i data-elb="${idx}" style="width:${100 - Math.round((p.t / (p.T || p.t || 1)) * 100)}%"></i></div>
+      <div class="xs ${p.wait ? "ko" : "muted"}" data-elt="${idx}">${p.wait ? "Le petit attend : son écurie est pleine, relâchez une monture de cette espèce" : `Naissance dans ${eta(p.t)} · continue hors ligne`}</div><div class="bar"><i data-elb="${idx}" style="width:${100 - Math.round((p.t / (p.T || p.t || 1)) * 100)}%"></i></div>
       ${slotItems(s, p.s)}</div><button class="btn sm" data-act="breedstop" data-i="${idx}" data-a="${p.a}">Annuler</button></div>`;
   }
   const fmtPct = (v) => `${String(Math.round(v * 10) / 10).replace(".", ",")} %`;
   function enclosPanel(s) {
-    if (!s.enclos.built) return `<section class="panel"><div class="phead"><h2>Enclos ${window.GUIDE ? GUIDE.q("elevage") : ""}</h2></div><div class="pad stack"><p class="note" style="margin:0">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute ${E.STABLE_ENCLOS} places à l'écurie et accueille ${E.PAIRS_BASE} couples.</p><div><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button></div></div></section>`;
+    if (!s.enclos.built) return `<section class="panel"><div class="phead"><h2>Enclos ${window.GUIDE ? GUIDE.q("elevage") : ""}</h2></div><div class="pad stack"><p class="note" style="margin:0">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute ${E.STABLE_SP_ENCLOS} places à chaque écurie et accueille ${E.PAIRS_BASE} couples.</p><div><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button></div></div></section>`;
     const cap = E.pairCap(s); const rows = [];
     for (let i = 0; i < cap; i++) {
       const idx = s.enclos.pairs.findIndex((p) => p.s === i);
@@ -145,19 +145,24 @@
     const sorts = { st: (a, b) => (b.st || 1) - (a.st || 1) || b.lvl - a.lvl, lvl: (a, b) => b.lvl - a.lvl || (b.st || 1) - (a.st || 1), col: (a, b) => E.MOUNT_ORDER.indexOf(a.sp) - E.MOUNT_ORDER.indexOf(b.sp) || E.gen(b.sp, b.c) - E.gen(a.sp, a.c) || a.c.localeCompare(b.c, "fr") };
     L.sort(sorts[st.sort] || sorts.st);
     const mass = E.massReleaseList(s); const massE = mass.reduce((a, M) => a + E.releaseEss(M), 0);
-    const cap = E.stableCap(s); const canBuy = cap + E.STABLE_BUY <= E.STABLE_MAXCAP; const cost = E.stableBuyCost(s);
+    // 3A : une écurie par espèce ; les trois cartes servent aussi de filtre (un second clic montre toutes les montures)
+    const one = st.sp !== "all"; const capT = E.stableCap(s);
+    const spCard = (sp) => { const n = E.stableN(s, sp), c = E.stableCap(s, sp);
+      return `<button class="el-stc ${st.sp === sp ? "on" : ""} ${n >= c ? "full" : ""}" data-act="el-sp" data-v="${st.sp === sp ? "all" : sp}" aria-pressed="${st.sp === sp}">${mImg(sp, E.MOUNT_SP[sp].wild[0])}<span class="el-stct"><b>${h(spPl(sp))}</b><small>${n} / ${c} places${n >= c ? " · pleine" : ""}</small><span class="bar"><i style="width:${Math.min(100, Math.round(n / c * 100))}%"></i></span></span></button>`; };
+    const buyRow = (sp) => { const c = E.stableCap(s, sp); const cost = E.stableBuyCost(s, sp); const can = c + E.STABLE_BUY <= E.STABLE_SP_MAX;
+      return `<div class="row between"><span class="small"><b>${h(spPl(sp))}</b> <span class="xs muted">${can ? `${c} → ${c + E.STABLE_BUY}` : `${c} places, le maximum`}</span></span>${can ? `<button class="btn sm ${s.kamas >= cost ? "primary" : ""}" data-act="el-stbuy" data-v="${sp}" ${s.kamas >= cost ? "" : "disabled"}>+${E.STABLE_BUY} places · ${fmt(cost)} k</button>` : ""}</div>`; };
     return `<div class="el-2c"><div class="col">
-      <section class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(s)} / ${cap} places</span></div><div class="pad stack" style="gap:8px">
-        <div class="co-chips">${[["all", "Toutes", all.length]].concat(E.MOUNT_ORDER.map((sp) => [sp, spPl(sp), all.filter((M) => M.sp === sp).length])).map(([k, n, c]) => `<button class="co-chip" data-act="el-sp" data-v="${k}" aria-pressed="${st.sp === k}">${h(n)} <span class="n">${c}</span></button>`).join("")}</div>
+      <section class="panel"><div class="phead"><h2>${one ? `Écurie des ${h(spPl(st.sp).toLowerCase())}` : "Écuries"}</h2><span class="xs muted">${one ? `${E.stableN(s, st.sp)} / ${E.stableCap(s, st.sp)}` : `${E.stableN(s)} / ${capT}`} places</span></div><div class="pad stack" style="gap:8px">
+        <div class="el-stcs">${E.MOUNT_ORDER.map(spCard).join("")}</div>
         <div class="row"><span class="co-chips">${FILTERS.map(([k, n]) => `<button class="co-chip" data-act="el-f" data-v="${k}" aria-pressed="${st.f === k}">${h(n)} <span class="n">${bySp.filter((M) => fOk(s, M, k)).length}</span></button>`).join("")}</span>
           <select data-el="sort" aria-label="Tri">${[["st", "Tri : étoiles"], ["lvl", "Tri : niveau"], ["col", "Tri : couleur"]].map(([k, n]) => `<option value="${k}" ${st.sort === k ? "selected" : ""}>${n}</option>`).join("")}</select></div>
         ${mass.length ? `<div class="el-mass"><div class="grow"><b>Relâcher en masse</b><div class="xs muted">${mass.length} monture${mass.length > 1 ? "s" : ""} à ★1-2, sans capacité ni nom, ni montées, ni à l'enclos, ni en balade, en gardant la meilleure de chaque couleur · rend ${fmt(massE)} Essence</div></div><button class="btn sm" data-act="el-masslist">Voir la liste</button><button class="btn sm primary" data-act="el-mass">Relâcher les ${mass.length}</button></div>` : ""}
       </div><div class="list">${L.map((M) => mountRow(s, M)).join("") || `<div class="empty">${all.length ? "Aucune monture avec ce filtre." : "Aucune monture : chassez dans une zone sauvage avec un filet de capture (onglet Capture)."}</div>`}</div>
       <div class="pad"><p class="note xs" style="margin:0">Étoiles : un petit a la moyenne de ses parents, avec ${E.ST_UP} % de chance d'en gagner une et ${E.ST_DOWN} % d'en perdre une. Chaque étoile ajoute ${String(E.ST_STEP * 100).replace(".", ",")} % à la stat de sa couleur (PA, PM et Invocation à part) : ★★★★★ = +50 %. Les captures naissent à ★.</p></div></section>
       </div><div class="col">${balPanel(s)}
-      <section class="panel"><div class="phead"><h2>Agrandir l'écurie</h2><span class="xs muted">${cap} places</span></div><div class="pad stack" style="gap:6px">
-        ${canBuy ? `<div class="row between"><span class="small"><b>+${E.STABLE_BUY} places</b> <span class="xs muted">${cap} → ${cap + E.STABLE_BUY}</span></span><button class="btn sm ${s.kamas >= cost ? "primary" : ""}" data-act="el-stbuy" ${s.kamas >= cost ? "" : "disabled"}>Acheter · ${fmt(cost)} k</button></div>` : `<span class="small">L'écurie a ses ${E.STABLE_MAXCAP} places.</span>`}
-        <p class="note xs" style="margin:0">${E.STABLE} places, +${E.STABLE_ENCLOS} avec l'enclos, +${E.STABLE_CARNET} par carnet d'espèce complet, +${E.STABLE_BUY} par achat (le prix double à chaque fois), ${E.STABLE_MAXCAP} au plus.</p></div></section>
+      <section class="panel"><div class="phead"><h2>Agrandir les écuries</h2><span class="xs muted">${capT} places</span></div><div class="pad stack" style="gap:6px">
+        ${E.MOUNT_ORDER.map(buyRow).join("")}
+        <p class="note xs" style="margin:0">Chaque espèce a son écurie : ${E.STABLE} places, +${E.STABLE_SP_ENCLOS} avec l'enclos, +${E.STABLE_CARNET} au carnet complet de l'espèce, +${E.STABLE_BUY} par achat (le prix double à chaque fois), ${E.STABLE_SP_MAX} au plus.</p></div></section>
       ${essPanel(s)}</div></div>`;
   }
   function ficheSheet(uid) {
@@ -300,7 +305,7 @@
       case "el-bal": if (done(E.act(s, "baladeStart", +d.uid, +d.h), `Partie en balade pour ${+d.h} h.`)) X().closeSheet(); break;
       case "el-balstop": { if (!confirm("Rappeler cette monture ? La balade s'arrête sans rien rapporter.")) return; done(E.act(s, "baladeStop", +d.uid)); break; }
       case "el-balpick": balPickSheet(); return;
-      case "el-stbuy": done(E.act(s, "stableBuy")); break;
+      case "el-stbuy": done(E.act(s, "stableBuy", d.v)); break;
       case "el-awayok": done(E.act(s, "awayOk")); break;
       case "el-go": UI().tab = "elev"; if (d.v) st.tab = d.v; X().closeSheet(); X().render(); window.scrollTo(0, 0); return;
       default: return;
@@ -329,7 +334,7 @@
   /* pièce Enclos du Havre-Sac : un résumé et le lien vers la page */
   function roomHtml() {
     const s = S(); E.elevState(s);
-    if (!s.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : ${E.PAIRS_BASE} couples, étoiles, capacités, éleveur automatique. Il ajoute aussi ${E.STABLE_ENCLOS} places à l'écurie.</p><div class="row"><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button><button class="btn sm" data-act="el-go">Ouvrir l'Élevage</button></div>`;
+    if (!s.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : ${E.PAIRS_BASE} couples, étoiles, capacités, éleveur automatique. Il ajoute aussi ${E.STABLE_SP_ENCLOS} places à chaque écurie.</p><div class="row"><button class="btn sm ${s.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${s.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button><button class="btn sm" data-act="el-go">Ouvrir l'Élevage</button></div>`;
     const P = s.enclos.pairs.map((p) => { const A = s.mounts[p.a], B = s.mounts[p.b]; return A && B ? `<div class="xs">${h(E.colourName(A.sp, A.c))} + ${h(E.colourName(B.sp, B.c))} · ${p.wait ? "écurie pleine" : `naissance dans ${eta(p.t)}`}</div>` : ""; }).join("");
     return `<div class="stack" style="gap:6px">${P || `<p class="note xs" style="margin:0">Enclos libre.</p>`}<div class="xs muted">Éleveur automatique : ${s.elev.auto.on ? "allumé" : "éteint"} · ${essTxt(s.elev.ess)}</div><div><button class="btn sm primary" data-act="el-go">Ouvrir l'Élevage</button></div></div>`;
   }

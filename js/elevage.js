@@ -40,6 +40,7 @@
   E.ESS_LVL = 100;               // Essence pour un niveau
   E.ESS_STAR = 2000;             // Essence pour polir une étoile (une fois par jour et par monture)
   E.STABLE_BUY = 5; E.STABLE_BUY_COST = 1000000; E.STABLE_MAXCAP = 50; E.STABLE_CARNET = 5;
+  E.STABLE_SP_ENCLOS = 15; E.STABLE_SP_MAX = 60;  // une écurie par espèce (3A) : 25 places avec l'enclos, 60 au plus chacune
   E.ITEM_USES = 20;              // naissances par objet d'élevage
   E.BAL_MAX = 2; E.BAL_LVL = 50;
   E.ORD_N = 3; E.ORD_LVL = 50;
@@ -135,12 +136,23 @@
   E.capName = (k) => (E.CAPS[k] ? E.CAPS[k].name : "");
 
   /* ---------- écurie (18A, 6A) ---------- */
-  E.stableCap = (S) => Math.min(E.STABLE_MAXCAP + 1, E.STABLE + ((S.elev && S.elev.qPlace) || 0) + (S.enclos && S.enclos.built ? E.STABLE_ENCLOS : 0) + E.STABLE_CARNET * E.spDoneN(S) + E.STABLE_BUY * ((S.elev && S.elev.buy) || 0));
-  E.stableBuyCost = (S) => E.STABLE_BUY_COST * Math.pow(2, (S.elev && S.elev.buy) || 0);
-  E.stableBuy = (S) => {
-    const v = EV(S); if (E.stableCap(S) - (v.qPlace || 0) + E.STABLE_BUY > E.STABLE_MAXCAP) return `L'écurie a déjà ${E.STABLE_MAXCAP} places au plus.`;
-    const c = E.stableBuyCost(S); if (S.kamas < c) return `Il faut ${fmt(c)} kamas.`;
-    S.kamas -= c; v.buy++; note(S, `L'écurie gagne ${E.STABLE_BUY} places (${E.stableCap(S)} en tout).`, "up"); return null;
+  /* 2.1.x « Une écurie par espèce » (Akileuss, choix 3A de Mathis) : dragodindes, muldos et volkornes ont chacune leur écurie.
+     Chacune : 10 places, +15 avec l'enclos, +1 avec la quête, +5 au carnet complet de l'espèce, +5 par achat, 60 au plus.
+     Les achats faits avant (S.elev.buy, écurie commune) comptent pour les trois écuries. Sans espèce : le total des trois. */
+  E.stableBuys = (S, sp) => { const v = S.elev || {}; return v.buySp && v.buySp[sp] != null ? v.buySp[sp] : (v.buy || 0); };
+  E.stableCap = (S, sp) => {
+    if (!sp) return E.MOUNT_ORDER.reduce((a, k) => a + E.stableCap(S, k), 0);
+    return Math.min(E.STABLE_SP_MAX, E.STABLE + ((S.elev && S.elev.qPlace) || 0) + (S.enclos && S.enclos.built ? E.STABLE_SP_ENCLOS : 0) + (E.spDone(S, sp) ? E.STABLE_CARNET : 0) + E.STABLE_BUY * E.stableBuys(S, sp));
+  };
+  E.stableN = (S, sp) => (sp ? Object.values(S.mounts || {}).filter((M) => M.sp === sp).length : Object.keys(S.mounts || {}).length);
+  E.stableFull = (S, sp) => E.stableN(S, sp) >= E.stableCap(S, sp);
+  E.stableBuyCost = (S, sp) => E.STABLE_BUY_COST * Math.pow(2, E.stableBuys(S, sp || "dd"));
+  E.stableBuy = (S, sp) => {
+    if (!MOUNTS[sp]) return "Choisis une écurie.";
+    const v = EV(S); if (E.stableCap(S, sp) + E.STABLE_BUY > E.STABLE_SP_MAX) return `L'écurie des ${MOUNTS[sp].name.toLowerCase()}s a déjà ${E.STABLE_SP_MAX} places au plus.`;
+    const c = E.stableBuyCost(S, sp); if (S.kamas < c) return `Il faut ${fmt(c)} kamas.`;
+    if (!v.buySp) v.buySp = { dd: v.buy || 0, mu: v.buy || 0, vk: v.buy || 0 };
+    S.kamas -= c; v.buySp[sp] = (v.buySp[sp] || 0) + 1; note(S, `L'écurie des ${MOUNTS[sp].name.toLowerCase()}s gagne ${E.STABLE_BUY} places (${E.stableCap(S, sp)} en tout).`, "up"); return null;
   };
   E.onBalade = (S, uid) => !!(S.elev && S.elev.bal.some((b) => b.uid === uid));
   E.mountBusy = (S, M) => (E.mountOwner(S, M.uid) ? "montée" : E.inPair(S, M.uid) ? "à l'enclos" : E.onBalade(S, M.uid) ? "en balade" : null);
@@ -148,7 +160,7 @@
   /* ---------- naissance d'une monture (capture, enclos, commande…) ---------- */
   E.giveMount = (S, sp, c, why, opts = {}) => {
     if (!MOUNTS[sp] || !(isBico(c) ? MOUNTS[sp].bico[c] : MOUNTS[sp].cols[c])) return null;
-    if (E.stableN(S) >= E.stableCap(S)) { if (!opts.quiet) note(S, `Écurie pleine (${E.stableCap(S)} places) : ${MOUNTS[sp].name} ${E.colourName(sp, c)} relâché${fem(sp)}.`, "warn"); return null; }
+    if (E.stableFull(S, sp)) { if (!opts.quiet) note(S, `Écurie des ${MOUNTS[sp].name.toLowerCase()}s pleine (${E.stableCap(S, sp)} places) : ${MOUNTS[sp].name} ${E.colourName(sp, c)} relâché${fem(sp)}.`, "warn"); return null; }
     const uid = S.mountUid++; const M = S.mounts[uid] = { uid, sp, c, lvl: 1, xp: 0, kids: 0, got: E.now(), st: 1 };
     if (opts.st) M.st = opts.st; if (opts.cap) M.cap = opts.cap; if (opts.chr) M.chr = 1; if (opts.pc) M.pc = opts.pc; if (opts.gc) M.gc = opts.gc;
     const neu = !(S.mountSeen[sp] && S.mountSeen[sp][c]); E.seeColour(S, sp, c);
@@ -227,7 +239,7 @@
   };
   const birth = (S, p) => {
     const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return true; // monture disparue : couple annulé
-    if (E.stableN(S) >= E.stableCap(S)) { if (!p.wait) { p.wait = true; note(S, "Un petit attend à l'enclos : l'écurie est pleine. Relâchez une monture pour lui faire de la place.", "warn"); log(S, "Un petit attend : écurie pleine"); } return false; }
+    if (E.stableFull(S, A.sp)) { if (!p.wait) { p.wait = true; note(S, `Un petit attend à l'enclos : l'écurie des ${MOUNTS[A.sp].name.toLowerCase()}s est pleine. Relâchez une monture pour lui faire de la place.`, "warn"); log(S, `Un petit attend : écurie des ${MOUNTS[A.sp].name.toLowerCase()}s pleine`); } return false; }
     const si = p.s; const odds = E.breedOdds(S, A, B, si); const c = pick(odds);
     const chr = rnd() < 1 / E.CHR_ODDS;
     const proto = { sp: A.sp, c, chr };

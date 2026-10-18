@@ -176,7 +176,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // montilier : la place de la monture est prise
   E.givePet(S9, "siroko"); assert.strictEqual(E.mountStats(S9, c), null, "le montilier bloque la monture"); E.equipPet(S9, c.id, null);
   // enclos : recette Rousse + Dorée = Indigo ; naissance après 8 h, même hors ligne
-  S9.kamas = 100000; assert.strictEqual(E.buildEnclos(S9), null, "enclos construit"); assert.strictEqual(E.stableCap(S9), 20, "20 places avec l'enclos");
+  S9.kamas = 100000; assert.strictEqual(E.buildEnclos(S9), null, "enclos construit"); assert.strictEqual(E.stableCap(S9, "dd"), 25, "25 places par écurie avec l'enclos (2.1.x : une écurie par espèce)");
   const A = E.giveMount(S9, "dd", "Rousse", ""), B = E.giveMount(S9, "dd", "Dorée", ""); A.lvl = B.lvl = 60;
   assert.strictEqual(E.childOf("dd", "Rousse", "Dorée"), "Indigo", "recette Indigo"); assert.ok(E.nextCrosses(S9, "dd").some((x) => x.c === "Indigo" && x.ok), "le carnet propose Indigo");
   assert.strictEqual(E.startBreed(S9, A.uid, B.uid), null, "couple à l'enclos"); assert.ok(E.startBreed(S9, A.uid, B.uid), "déjà à l'enclos");

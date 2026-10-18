@@ -1,6 +1,17 @@
 {
-  "version": "2.1.22",
+  "version": "2.1.23",
   "versions": [
+    {
+      "v": "2.1.23",
+      "name": "La carte du monde",
+      "guide": "world",
+      "items": [
+        "Monde : la page s'ouvre sur la vraie carte du Monde des Douze (idée de lucy8). Chaque région a son point et ses niveaux ; un clic ouvre ses sous-zones à côté. Le bouton « Liste » remet l'ancienne liste",
+        "Chasse : Éveil des Sceaux (idée de Sky). Au rang 5, un Sceau s'éveille 5 fois avec des Éclats de champion (100, 200, 350, 550, 800) : +10 % de son effet par niveau. Les 6 Sceaux éveillés à fond donnent le titre « Champion éveillé »",
+        "Chasse : Comptoir des Éclats. Appât de Champion (pouvoir au choix), Piste fraîche, Coffre en argent, ornement « Éclat doré », titre « Collectionneur d'éclats », et revente au Traqueur (10 Éclats = 100 000 kamas)",
+        "Élevage : une écurie par espèce (idée d'Akileuss). Dragodindes, Muldos et Volkornes ont chacune 10 places, +15 avec l'enclos, +5 au carnet complet, +5 par achat, 60 au plus. Les achats déjà faits comptent pour les trois écuries"
+      ]
+    },
     {
       "v": "2.1.22",
       "name": "Le Sablier",

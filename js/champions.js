@@ -53,7 +53,7 @@
 
   const st = (S) => {
     const c = S.ch || (S.ch = {});
-    c.k = c.k || {}; c.f = c.f || []; c.z = c.z || {}; c.t = c.t || {}; c.l = c.l || {}; c.sh = c.sh || 0;
+    c.k = c.k || {}; c.f = c.f || []; c.z = c.z || {}; c.t = c.t || {}; c.l = c.l || {}; c.sh = c.sh || 0; c.ev = c.ev || {};
     return c;
   };
   E.champState = st;
@@ -67,7 +67,9 @@
     if (!c || !c.seal || !S) return null;
     const ks = c.seal.split("+"); const fused = ks.length > 1;
     if (fused && !st(S).f.includes(c.seal)) return null;
-    const list = ks.filter((k) => E.SEALS[k]).map((k) => { const r = fused ? 5 : E.sealRank(S, k); return { k, r, v: fused ? Math.round(E.sealVal(k, 5) * E.SEAL_FUSE_PCT * 10) / 10 : E.sealVal(k, r) }; }).filter((x) => x.r);
+    const w = fused ? Math.min(...ks.map((k) => E.sealEv(S, k))) : E.sealEv(S, ks[0]); // 2.1.x : Éveil (une fusion suit le moins éveillé des deux)
+    const list = ks.filter((k) => E.SEALS[k]).map((k) => { const r = fused ? 5 : E.sealRank(S, k); const f = r >= 5 && k !== "veloce" ? 1 + E.SEAL_EV_STEP * w : 1;
+      return { k, r, w: r >= 5 ? w : 0, v: Math.round((fused ? E.sealVal(k, 5) * E.SEAL_FUSE_PCT : E.sealVal(k, r)) * f * 10) / 10 }; }).filter((x) => x.r);
     return list.length ? { key: c.seal, list, cri: list.every((x) => x.r >= 5) } : null;
   };
   E.sealCanWear = (S, key) => (key.includes("+") ? st(S).f.includes(key) : !!E.SEALS[key] && E.sealRank(S, key) > 0);
@@ -198,8 +200,67 @@
     s.list.forEach((x) => {
       if (x.k === "enrage" && e.hp < e.hpMax * 0.5) v *= 1 + x.v * mul / 100;
       if (x.k === "traqueur" && tgt && tgt.hp < tgt.hpMax * 0.5) v *= 1 + x.v * mul / 100;
+      if (x.k === "veloce" && x.w && F && F.round <= 1) v *= 1 + E.SEAL_EV_VELOCE * x.w / 100; // Véloce éveillé : +4 % de dégâts au premier tour par Éveil
     });
     if (e.criOn && F && F.round !== e.criRound) { e.criRound = F.round; e.criOn--; if (!e.criOn) { const vp = s.list.find((x) => x.k === "vampire"); if (vp) e.vamp = vp.v / 100; } }
     return v;
+  };
+
+  /* ---------- 2.1.x « Les Éclats du Traqueur » (Sky, choix 2C de Mathis) ----------
+     Éveil : un Sceau au rang 5 s'éveille 5 fois avec des Éclats (100, 200, 350, 550, 800 : 12 000 pour les 6 Sceaux),
+     chaque Éveil ajoute 10 % à son effet ; Véloce, qui joue déjà en premier, gagne 4 % de dégâts au premier tour par Éveil.
+     Simulation (équipes de 8, bon équipement et optimisé) : +0,1 stasis entre les Sceaux au rang 5 et l'Éveil complet.
+     Comptoir des Éclats : appât, piste, coffre, ornement, titre et revente (10 000 kamas l'Éclat, environ +10 % de kamas en chasse).
+     État : S.ch.ev = { pouvoir: Éveil 0-5 }, S.ch.bait = pouvoir de l'appât (prochain combat de chasse). */
+  E.SEAL_EV_MAX = 5; E.SEAL_EV_STEP = 0.1; E.SEAL_EV_VELOCE = 4;
+  E.SEAL_EV_COST = [100, 200, 350, 550, 800];
+  E.sealEv = (S, k) => (S && S.ch && S.ch.ev && S.ch.ev[k]) || 0;
+  E.sealEveil = (S, k) => {
+    const C = st(S); if (!E.SEALS[k]) return "Sceau inconnu.";
+    if (E.sealRank(S, k) < 5) return "Le Sceau doit être au rang 5 pour s'éveiller.";
+    const n = E.sealEv(S, k); if (n >= E.SEAL_EV_MAX) return "Ce Sceau est déjà complètement éveillé.";
+    const cost = E.SEAL_EV_COST[n]; if (C.sh < cost) return `Il faut ${cost} Éclats.`;
+    C.sh -= cost; C.ev[k] = n + 1;
+    E.note(S, `Sceau ${E.SEALS[k].name} : Éveil ${n + 1} / ${E.SEAL_EV_MAX} !`, "rare");
+    if (E.SEAL_ORDER.every((x) => E.sealEv(S, x) >= E.SEAL_EV_MAX)) { const t = "Champion éveillé"; if (!(S.titlesExtra || []).includes(t)) { (S.titlesExtra = S.titlesExtra || []).push(t); E.note(S, `Les six Sceaux sont éveillés : titre « ${t} » !`, "rare"); } }
+    return null;
+  };
+  E.SHARD_SELL = 10000; E.SHARD_SELL_N = 10;
+  E.SHARD_SHOP = {
+    appat:  { name: "Appât de Champion", cost: 15, txt: "Ton prochain combat de chasse a un Champion du pouvoir de ton choix" },
+    piste:  { name: "Piste fraîche", cost: 20, txt: "+1 piste de traque dans ta zone de chasse" },
+    coffre: { name: "Coffre en argent", cost: 30, txt: "Environ 15 minutes de chasse : kamas, poussière, ressources" },
+    orn:    { name: "Ornement « Éclat doré »", cost: 400, once: true, txt: "Un ornement de carte de héros" },
+    titre:  { name: "Titre « Collectionneur d'éclats »", cost: 1000, once: true, txt: "Un titre de compte" },
+    vente:  { name: "Revendre au Traqueur", cost: E.SHARD_SELL_N, txt: `${E.SHARD_SELL_N} Éclats contre ${(E.SHARD_SELL * E.SHARD_SELL_N).toLocaleString("fr-FR")} kamas` },
+  };
+  E.SHARD_ORDER = ["appat", "piste", "coffre", "orn", "titre", "vente"];
+  E.SHARD_TITLE = "Collectionneur d'éclats";
+  E.shardOwned = (S, id) => (id === "orn" ? !!(S.unlocks && S.unlocks.eclatDore) : id === "titre" ? (S.titlesExtra || []).includes(E.SHARD_TITLE) : false);
+  E.shardBuy = (S, id, arg) => {
+    const C = st(S); const it = E.SHARD_SHOP[id]; if (!it) return "Article inconnu.";
+    if (it.once && E.shardOwned(S, id)) return "Déjà obtenu.";
+    if (C.sh < it.cost) return `Il faut ${it.cost} Éclats.`;
+    if (id === "appat") { if (!E.SEALS[arg]) return "Choisis un pouvoir."; if (C.bait) return "Un appât attend déjà le prochain combat de chasse."; C.bait = arg; }
+    else if (id === "piste") { const sid = S.sub; if (!S.hunting || !sid || S.dungeon || !E.SUBS[sid]) return "Il faut chasser dans une sous-zone."; if ((C.t[sid] || 0) >= E.CHAMP_TRAILS) return `Déjà ${E.CHAMP_TRAILS} pistes ici.`; C.t[sid] = (C.t[sid] || 0) + 1; }
+    else if (id === "coffre") E.addCons(S, "coffre_argent");
+    else if (id === "orn") { S.unlocks = S.unlocks || {}; S.unlocks.eclatDore = 1; }
+    else if (id === "titre") (S.titlesExtra = S.titlesExtra || []).push(E.SHARD_TITLE);
+    else if (id === "vente") S.kamas += E.SHARD_SELL * E.SHARD_SELL_N;
+    C.sh -= it.cost;
+    E.note(S, id === "appat" ? `Appât de Champion posé : le prochain combat de chasse aura un Champion ${E.SEALS[arg].name}.` : id === "piste" ? `Piste fraîche : ${C.t[S.sub]} / ${E.CHAMP_TRAILS} pistes à ${E.SUBS[S.sub].name}.` : id === "vente" ? `${it.cost} Éclats revendus au Traqueur.` : `Comptoir des Éclats : ${it.name}.`, "info");
+    return null;
+  };
+  Object.assign(E.ACTIONS, { sealEveil: "éveiller un Sceau de champion", shardBuy: "acheter au Comptoir des Éclats" });
+  /* l'appât : le prochain groupe de chasse (pas en donjon, ni pendant l'absence, ni face au légendaire) a un Champion du pouvoir choisi */
+  const mg2 = E.makeGroup;
+  E.makeGroup = (S, sub, teamSize) => {
+    const g = mg2(S, sub, teamSize);
+    const C = S.ch; if (!C || !C.bait || E.catchingUp || S.dungeon || !S.hunting || g.some((m) => m.champLeg)) return g;
+    const k = C.bait; C.bait = null; if (!E.SEALS[k]) return g;
+    const cur = g.find((m) => m.champ && !m.idolChamp);
+    if (cur) { cur.hpMax = cur.hp = Math.round(cur.hpMax / 2); cur.dmg /= 1.2; cur.shield = 0; cur.vamp = 0; cur.enrageMod = false; if (cur.champ === "veloce") cur.ini -= 1e6; E.makeChampion(cur, k); return g; }
+    const cand = g.filter((m) => !m.archi && !m.champ); if (cand.length) E.makeChampion(cand[0], k);
+    return g;
   };
 })(typeof window !== "undefined" ? window : globalThis);

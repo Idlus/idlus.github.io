@@ -1246,6 +1246,7 @@
     legende:   { name: () => "Couronne de la Légende", req: "Être l'un des 10 premiers comptes à finir la quête principale après la sortie de la 1.0 (récompense unique)", ok: (S) => !!S.unlocks.legende },
     enclume:   { name: () => "Enclume du Phénix", req: "Dix renaissances sur un même métier", ok: (S) => !!(S.unlocks && S.unlocks.enclume) }, // 1.0.25
     classes19: { name: () => "Blason des 19 classes", req: "Monter un héros de chaque classe au niveau 200", ok: (S) => E.classesN(S) >= 19 }, // 1.0.34
+    eclat:     { name: () => "Éclat doré", req: "Comptoir des Éclats (menu Chasse, 400 Éclats de champion)", ok: (S) => !!(S.unlocks && S.unlocks.eclatDore) }, // 2.1.x : Comptoir des Éclats
     gardien:   { name: () => "Gardien de la 1.1", req: "Être l'un des 10 premiers comptes à réunir les 4 Dofus de la 1.1 (récompense unique)", ok: (S) => !!(S.unlocks && S.unlocks.gardien) }, // 1.1
   };
   /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */

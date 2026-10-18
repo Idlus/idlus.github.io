@@ -258,7 +258,7 @@
       ["h", "Mode manuel"],
       ["p", `Sur la page Combat, le mode manuel te laisse choisir chaque sort. Sans réponse au bout de ${N(() => E.MANUAL_TIMEOUT)} s, le héros joue tout seul.`],
     ] });
-  add({ id: "chasse", f: "Héros", n: "Champions, Sceaux et Éclats", ic: "trophee", page: "chasse", k: "champion sceau eclat legendaire pouvoir cri conclave fusion piste",
+  add({ id: "chasse", f: "Héros", n: "Champions, Sceaux et Éclats", ic: "trophee", page: "chasse", k: "champion sceau eclat eveil comptoir appat legendaire pouvoir cri conclave fusion piste",
     ou: "Héros › Chasse", de: "le premier Champion vaincu débloque son Sceau",
     voir: ["world", "combat"],
     b: () => [
@@ -280,6 +280,19 @@
         `Le vaincre donne un titre et ${N(() => E.CHAMP_LEG_SHARDS)} **Éclats de champion** ; perdu, les pistes restent.`,
         `**Appel automatique** (bouton sous la traque, en combat ou dans le menu Chasse) : le légendaire est appelé tout seul dès ${N(() => E.CHAMP_TRAILS)} pistes dans la zone chassée. Après une défaite contre lui, pause de ${N(() => E.CHAMP_AUTO_PAUSE / 60000)} min dans cette zone.`,
         "Un Éclat = +1 Champion compté sur le Sceau de ton choix.",
+      ]],
+      ["h", "Éveil des Sceaux"],
+      ["ul", [
+        `Un Sceau au rang max s'éveille avec des Éclats : ${N(() => E.SEAL_EV_MAX)} niveaux, +${pc(V(() => E.SEAL_EV_STEP, 0))} de son effet par niveau (Véloce : +${N(() => E.SEAL_EV_VELOCE)} % de dégâts au 1er tour par niveau).`,
+        `Coût par niveau : ${V(() => E.SEAL_EV_COST.map(fr).join(", "), "")} Éclats. Un Sceau fusionné garde l'Éveil le plus bas de ses deux pouvoirs.`,
+        "Les 6 Sceaux éveillés au maximum donnent le titre « Champion éveillé ».",
+      ]],
+      ["h", "Comptoir des Éclats"],
+      ["ul", [
+        `**Appât** (${N(() => E.SHARD_SHOP.appat.cost)} Éclats) : le prochain Champion de la chasse a le pouvoir choisi.`,
+        `**Piste fraîche** (${N(() => E.SHARD_SHOP.piste.cost)}) : +1 piste vers le légendaire. **Coffre en argent** (${N(() => E.SHARD_SHOP.coffre.cost)}) : environ 15 minutes de chasse.`,
+        `Ornement « Éclat doré » (${N(() => E.SHARD_SHOP.orn.cost)}) et titre « Collectionneur d'éclats » (${N(() => E.SHARD_SHOP.titre.cost)}), une fois chacun.`,
+        `Revente : ${N(() => E.SHARD_SELL_N)} Éclats contre ${N(() => E.SHARD_SELL * E.SHARD_SELL_N)} kamas.`,
         "Les Champions tués avant la 1.1 ne comptent pas.",
       ]],
     ] });
@@ -333,7 +346,8 @@
     b: () => [
       ["p", "L'élevage fait naître de nouvelles montures : nouvelles couleurs, plus d'étoiles, capacités. Deux montures d'une même espèce forment un couple dans l'enclos."],
       ["kv", [
-        ["Places d'écurie de base", N(() => E.STABLE)], ["Avec l'enclos", "+" + N(() => E.STABLE_ENCLOS)], ["Par carnet d'espèce complet", "+" + N(() => E.STABLE_CARNET)], ["Places au plus", N(() => E.STABLE_MAXCAP)],
+        ["Écuries", "une par espèce (Dragodindes, Muldos, Volkornes)"], ["Places de base par écurie", N(() => E.STABLE)], ["Avec l'enclos", "+" + N(() => E.STABLE_SP_ENCLOS) + " par écurie"], ["Carnet de l'espèce complet", "+" + N(() => E.STABLE_CARNET) + " à son écurie"],
+        ["Agrandissement acheté", "+" + N(() => E.STABLE_BUY) + " à une écurie, prix doublé à chaque fois"], ["Places au plus", N(() => E.STABLE_SP_MAX) + " par écurie"],
         ["Couples en même temps", N(() => E.PAIRS_BASE) + " (+1 possible)"], ["Niveau pour se reproduire", N(() => E.BREED_LVL)], ["Petits par monture", N(() => E.KIDS)],
         ["Durée d'une naissance", N(() => E.BIRTH_MS / 3600000) + " h"], ["Chance de capacité", pc(V(() => E.CAP_PCT > 1 ? E.CAP_PCT / 100 : E.CAP_PCT, 0))], ["Naissance chromatique", "1 / " + N(() => E.CHR_ODDS)],
       ]],
@@ -498,11 +512,12 @@
       ]],
     ] });
 
-  add({ id: "world", f: "Aventure", n: "Monde et zones de chasse", ic: "monde", page: "world", k: "zone sous-zone chasse etoiles vagabonde trophee de zone archimonstre chromatique cle",
+  add({ id: "world", f: "Aventure", n: "Monde et zones de chasse", ic: "monde", page: "world", k: "carte zone sous-zone chasse etoiles vagabonde trophee de zone archimonstre chromatique cle",
     ou: "Aventure › Monde", de: "les zones s'ouvrent en battant pour la première fois certains boss de donjon",
     voir: ["donjons", "chasse", "archis", "chroma"],
     b: () => [
       ["p", `${N(() => D.ZONES.length)} zones et leurs sous-zones, chacune avec une plage de niveaux. Choisis une sous-zone : l'équipe y enchaîne les combats. Il n'y a pas de niveau minimum, mais des monstres trop forts font perdre ; trop faibles, ils rapportent moins d'XP.`],
+      ["p", "La page s'ouvre sur la carte du Monde des Douze : touche une région pour voir ses sous-zones à côté. Le bouton « Liste » remet l'ancienne liste. Incarnam et les autres mondes sont sous la carte."],
       ["h", "Ouvrir de nouvelles zones"],
       ["ul", V(() => D.ZONES.filter((z) => z.requires && z.requires.boss).map((z) => { const b = z.requires.boss; const dg = D.DUNGEONS[b] || Object.values(D.DUNGEONS).find((x) => x.boss === b); return `**${z.name}** : battre ${dg ? dg.name : b}`; }), [])],
       ["h", "Étoiles de zone"],

@@ -106,6 +106,24 @@
     return `<div class="panel ch-panel ch-line"><div class="ch-ic">${cur ? icoSeal(cur.key) : crown}</div><div class="ch-lt">${txt}</div>${cur && cur.cri ? `<span class="ch-cri" data-tip="Une fois par combat sous 30 % de PV : pouvoirs doublés pendant 2 tours.">Cri prêt</span>` : ""}<button class="btn sm" data-act="chp-page">${cur ? "Changer" : "Menu Chasse"}</button></div>`;
   }
 
+  /* ---------- 2.1.x : Éveil des Sceaux et Comptoir des Éclats (choix 2C) ---------- */
+  const evVal = (k, r, w) => (r >= 5 && k !== "veloce" ? Math.round(E().sealVal(k, r) * (1 + E().SEAL_EV_STEP * w) * 10) / 10 : E().sealVal(k, r));
+  function eveilRow(S, k) {
+    const e = E(); const C = e.champState(S); const n = e.sealEv(S, k); const max = e.SEAL_EV_MAX; const cost = e.SEAL_EV_COST[n];
+    const next = n >= max ? "" : k === "veloce" ? `Prochain : +${e.SEAL_EV_VELOCE * (n + 1)} % de dégâts au premier tour` : `Prochain : ${e.SEALS[k].txt(evVal(k, 5, n + 1))}`;
+    return `<div class="ch-ev"><div class="ch-evh"><span class="ch-evs" aria-label="Éveil ${n} sur ${max}">${"✦".repeat(n)}<i>${"✦".repeat(max - n)}</i></span><b>Éveil ${n} / ${max}</b></div>
+      ${n < max ? `<span class="xs">${h(next)}</span><button class="btn sm ${C.sh >= cost ? "gold" : ""}" data-act="chp-eveil" data-v="${k}" ${C.sh >= cost ? "" : "disabled"} data-tip="${C.sh >= cost ? "" : `Il te manque ${cost - C.sh} Éclats`}">Éveiller · ${cost} ◆</button>` : `<span class="xs">${k === "veloce" ? `+${e.SEAL_EV_VELOCE * max} % de dégâts au premier tour` : ""}</span><span class="ch-tag">Éveil complet</span>`}</div>`;
+  }
+  const SHOP_ICO = { appat: "traqueur", piste: "meneur", coffre: "blinde", orn: "enrage", titre: "vampire", vente: "veloce" };
+  function comptoir(S) {
+    const e = E(); if (!e.SHARD_SHOP) return ""; const C = e.champState(S);
+    const row = (id) => { const it = e.SHARD_SHOP[id]; const own = e.shardOwned(S, id); const ok = C.sh >= it.cost && !own;
+      const pickPw = id === "appat" ? `<select data-act="chp-bait" aria-label="Pouvoir de l'appât">${e.SEAL_ORDER.map((k) => `<option value="${k}" ${st.bait === k ? "selected" : ""}>${e.SEALS[k].name}</option>`).join("")}</select>` : "";
+      const sub = id === "appat" && C.bait ? `Posé : Champion ${e.SEALS[C.bait].name} au prochain combat de chasse` : id === "piste" && S.hunting && !S.dungeon && e.SUBS[S.sub] ? `${it.txt} (${e.SUBS[S.sub].name} : ${Math.min(e.CHAMP_TRAILS, C.t[S.sub] || 0)} / ${e.CHAMP_TRAILS})` : it.txt;
+      return `<div class="ch-it">${ico(SHOP_ICO[id])}<span class="ch-itn"><b>${h(it.name)}</b><small>${h(sub)}</small></span><span class="ch-itb">${pickPw}${own ? `<span class="ch-tag">Obtenu</span>` : `<button class="btn sm ${ok ? "gold" : ""}" data-act="chp-shop" data-v="${id}" ${ok ? "" : "disabled"}>${id === "vente" ? `Revendre ${it.cost} ◆` : `${it.cost} ◆`}</button>`}</span></div>`; };
+    return `<section class="panel ch-panel"><div class="phead"><h2>${crown} Comptoir des Éclats</h2><span class="ch-chip gold">◆ ${X().fmt(C.sh)} Éclat${C.sh > 1 ? "s" : ""}</span></div><div class="pad"><p class="xs muted ch-zhelp">Les Éclats que tes Sceaux n'utilisent plus s'échangent ici.</p><div class="ch-shop">${e.SHARD_ORDER.map(row).join("")}</div></div></section>`;
+  }
+
   /* ---------- menu Chasse : Champions, Sceaux de l'équipe, fusions, trophées et traque de toutes les zones ---------- */
   const st = { f: "cours" };
   const D = () => window.DATA;
@@ -142,13 +160,13 @@
     const teamBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Sceaux de l'équipe ${window.GUIDE ? GUIDE.q("chasse#sceaux") : ""}</h2><span class="ch-chip ${reso ? "on" : ""}" data-tip="Conclave des Champions : au moins 4 héros portent un Sceau, avec 4 pouvoirs différents en tout. Bonus : +${e.SEAL_RESO} % de dégâts et de PV pour toute l'équipe.">Conclave ${Math.min(kinds.size, 4)}/4${reso ? ` · +${e.SEAL_RESO} %` : ""}</span></div><div class="pad"><div class="ch-team">${teamRows}</div></div></section>`;
     // les 6 Sceaux (progression du compte) et les fusions : le panneau du héros, sans les boutons Porter
     const tiles = e.SEAL_ORDER.map((k) => { const n = e.sealKills(S, k), r = e.sealRank(S, k), nx = nextAt(n); const w = S.chars.filter((x) => x.seal === k).map((x) => x.name);
-      return `<div class="ch-st ${r ? "" : "off"}"><div class="ch-sth">${ico(k)}<b>${e.SEALS[k].name}</b>${pips(r)}</div><span class="ch-std">${r ? h(e.SEALS[k].txt(e.sealVal(k, r))) : `Vaincs un Champion ${e.SEALS[k].name} pour le débloquer.`}</span><div class="ch-bar"><i style="width:${barPct(n, r)}%"></i></div>
-        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small data-tip="${h(w.join(", "))}">${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${shardBtn(C, k, nx)}</span></div></div>`; }).join("");
+      return `<div class="ch-st ${r ? "" : "off"}"><div class="ch-sth">${ico(k)}<b>${e.SEALS[k].name}</b>${pips(r)}</div><span class="ch-std">${r ? h(e.SEALS[k].txt(evVal(k, r, e.sealEv(S, k)))) : `Vaincs un Champion ${e.SEALS[k].name} pour le débloquer.`}</span><div class="ch-bar"><i style="width:${barPct(n, r)}%"></i></div>
+        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small data-tip="${h(w.join(", "))}">${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${shardBtn(C, k, nx)}</span></div>${r >= 5 ? eveilRow(S, k) : ""}</div>`; }).join("");
     const ready = e.SEAL_ORDER.filter((k) => e.sealRank(S, k) >= 5); const pairs = []; for (let i = 0; i < ready.length; i++) for (let j = i + 1; j < ready.length; j++) pairs.push(e.fuseKey(ready[i], ready[j]));
     const toFuse = pairs.filter((p) => !C.f.includes(p));
     const fz = C.f.map((f) => `<div class="ch-fc ok"><span class="ch-fi">${icoSeal(f)}</span><span class="ch-fn"><b>${h(e.SEAL_FUSIONS[f])}</b><small>${f.split("+").map((k) => e.SEALS[k].name).join(" + ")}</small></span></div>`)
       .concat(toFuse.map((f) => `<div class="ch-fc"><span class="ch-fi">${icoSeal(f)}</span><span class="ch-fn"><b>???</b><small>${f.split("+").map((k) => e.SEALS[k].name).join(" + ")}</small></span><button class="btn sm gold" data-act="chp-fuse" data-v="${f}">Fusionner</button></div>`)).join("");
-    const sealBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Sceaux ${window.GUIDE ? GUIDE.q("chasse#sceaux") : ""}</h2><span class="small muted">rangs à 1, 5, 15, 40 et 100 Champions</span></div><div class="pad"><div class="ch-how"><p><b>Monter un Sceau</b> : vaincs en chasse des Champions de son pouvoir (un combat sur ${Math.round(1 / e.CHAMP_CHANCE)}, bandeau doré). Chaque Champion compte pour le Sceau de son pouvoir, tout seul.</p><p><b class="ch-gold">◆ Éclats${C.sh ? ` (${C.sh})` : ""}</b> : gagnés contre les Champions légendaires (10 chacun). Un Éclat = un Champion vaincu, pour le Sceau de ton choix (bouton +1 ◆).</p></div><div class="ch-seals six">${tiles}</div>
+    const sealBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Sceaux ${window.GUIDE ? GUIDE.q("chasse#sceaux") : ""}</h2><span class="small muted">rangs 1 à 5 avec les Champions, Éveil 1 à 5 avec les Éclats</span></div><div class="pad"><div class="ch-how"><p><b>Monter un Sceau</b> : vaincs en chasse des Champions de son pouvoir (un combat sur ${Math.round(1 / e.CHAMP_CHANCE)}, bandeau doré). Chaque Champion compte pour le Sceau de son pouvoir, tout seul.</p><p><b class="ch-gold">◆ Éclats${C.sh ? ` (${C.sh})` : ""}</b> : gagnés contre les Champions légendaires (10 chacun). Un Éclat = un Champion vaincu, pour le Sceau de ton choix (bouton +1 ◆). Au rang 5, ils éveillent le Sceau (+10 % par Éveil) ; le reste s'échange au Comptoir.</p></div><div class="ch-seals six">${tiles}</div>
       <div class="ch-sec"><div class="ch-sech"><b>Fusions</b><span class="xs muted">${C.f.length} / 15 découvertes</span></div>${fz ? `<div class="ch-fz">${fz}</div>` : ""}<div class="xs muted">Deux Sceaux au rang 5 donnent un Sceau double au nom unique, qui garde les deux pouvoirs à 70 %.</div></div></div></section>`;
     // zones : « En cours » (un Champion déjà vaincu ici, ou la zone de chasse), « Complètes », « Toutes » rangées par région
     const live = (r) => r.got < 6 && (r.got > 0 || r.t > 0 || (S.hunting && r.id === S.sub));
@@ -161,7 +179,7 @@
     else { const L = rows.filter(st.f === "done" ? (r) => r.got === 6 : live).sort((x, y) => (y.id === S.sub) - (x.id === S.sub) || y.got + y.t / 10 - (x.got + x.t / 10) || x.ord - y.ord);
       zl = L.length ? `<div class="ch-zl">${L.map((r) => zoneCard(S, r)).join("")}</div>` : `<p class="muted small">${st.f === "done" ? "Aucune zone complète pour l'instant." : "Vaincs un Champion en chasse : sa zone apparaîtra ici."}</p>`; }
     const zoneBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Zones</h2>${chips}</div><div class="pad"><p class="xs muted ch-zhelp">Les 6 pouvoirs vaincus dans une zone : +${e.CHAMP_ZONE_BONUS} % d'XP, de kamas et de butin. Chaque Champion vaincu laisse une piste ; à 3 pistes, appelle le Champion légendaire.</p><div class="ch-autorow">${autoBtn(C)}</div>${zl}</div></section>`;
-    const html = `<div class="page ch-page"><div class="ch-ph"><h1>Chasse aux Champions</h1><p class="muted small">Un combat de chasse sur ${Math.round(1 / e.CHAMP_CHANCE)}, un monstre devient Champion.</p></div>${kpis}<div class="ch-cols"><div class="ch-cl">${teamBox}${sealBox}</div><div class="ch-cr">${zoneBox}</div></div></div>`;
+    const html = `<div class="page ch-page"><div class="ch-ph"><h1>Chasse aux Champions</h1><p class="muted small">Un combat de chasse sur ${Math.round(1 / e.CHAMP_CHANCE)}, un monstre devient Champion.</p></div>${kpis}<div class="ch-cols"><div class="ch-cl">${teamBox}${sealBox}</div><div class="ch-cr">${comptoir(S)}${zoneBox}</div></div></div>`;
     if (main.querySelector(".ch-page") && window.DX.morph) window.DX.morph(main, html); else main.innerHTML = html; // la boucle du jeu garde une liste déroulante ouverte
   }
 
@@ -174,6 +192,9 @@
     else if (a === "chp-flt") { st.f = d.v; window.DX.render(); return; }
     else if (a === "chp-wearsel") { r = e.act(S, "sealWear", +d.id, t.value || null); if (!r) X().toast(t.value ? `Sceau ${e.sealName(t.value)} porté.` : "Sceau retiré."); }
     else if (a === "chp-auto") { const on = !e.champState(S).auto; r = e.act(S, "champAuto", on); if (!r) X().toast(on ? `Appel automatique du légendaire activé (dès ${e.CHAMP_TRAILS} pistes).` : "Appel automatique du légendaire coupé."); }
+    else if (a === "chp-eveil") { r = e.act(S, "sealEveil", d.v); if (!r) X().toast(`Sceau ${e.SEALS[d.v].name} : Éveil ${e.sealEv(S, d.v)} / ${e.SEAL_EV_MAX}.`); }
+    else if (a === "chp-bait") { st.bait = t.value; return; }
+    else if (a === "chp-shop") { r = e.act(S, "shardBuy", d.v, st.bait || "enrage"); if (!r) X().toast(d.v === "vente" ? `${e.SHARD_SELL_N} Éclats revendus : +${X().fmt(e.SHARD_SELL * e.SHARD_SELL_N)} kamas.` : `${e.SHARD_SHOP[d.v].name} : c'est fait.`); }
     else if (a === "chp-leg") { r = e.act(S, "champLegGo"); if (!r) X().toast("Le Champion légendaire arrive au prochain combat !"); }
     if (r) { X().toast(r); return; }
     X().markDirty(); X().render();

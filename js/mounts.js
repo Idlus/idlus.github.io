@@ -100,7 +100,7 @@
   E.mountHunt = (S, sid) => {
     const sp = E.MOUNT_ORDER.find((k) => E.MOUNT_SP[k].sub === sid); if (!sp) return null;
     if (!(S.cons.filet > 0) || rnd() >= E.MOUNT_SP[sp].rate) return null;
-    if (E.stableN(S) >= E.stableCap(S)) return null; // écurie pleine : le filet n'est pas perdu
+    if (E.stableN(S, sp) >= E.stableCap(S, sp)) return null; // écurie pleine : le filet n'est pas perdu
     const wild = E.MOUNT_SP[sp].wild; const c = wild[Math.floor(rnd() * wild.length)];
     const M = E.giveMount(S, sp, c, "capturé au filet"); if (!M) return null;
     S.cons.filet--; if (!S.cons.filet) delete S.cons.filet;

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.23 « La carte du monde »
+
+- Carte du Monde des Douze cliquable (DofusDB), Éveil des Sceaux et Comptoir des Éclats, une écurie par espèce de monture (60 places chacune).
+
 ## 2.1.22 « Le Sablier »
 
 - Sablier de Xélor : butin −10 % en ×2 et −20 % en ×3 (ressources, équipements, clés, kamas ; ni l'XP ni les Dofus). Réserve 36 h, 48 h avec les heures gagnées.

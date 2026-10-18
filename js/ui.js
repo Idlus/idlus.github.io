@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.22";
+const GAME_VERSION = "2.1.23";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.23", name: "La carte du monde", guide: "world", items: [
+    "Monde : la page s'ouvre sur la vraie carte du Monde des Douze (idée de lucy8). Chaque région a son point et ses niveaux ; un clic ouvre ses sous-zones à côté. Le bouton « Liste » remet l'ancienne liste",
+    "Chasse : Éveil des Sceaux (idée de Sky). Au rang 5, un Sceau s'éveille 5 fois avec des Éclats de champion (100, 200, 350, 550, 800) : +10 % de son effet par niveau. Les 6 Sceaux éveillés à fond donnent le titre « Champion éveillé »",
+    "Chasse : Comptoir des Éclats. Appât de Champion (pouvoir au choix), Piste fraîche, Coffre en argent, ornement « Éclat doré », titre « Collectionneur d'éclats », et revente au Traqueur (10 Éclats = 100 000 kamas)",
+    "Élevage : une écurie par espèce (idée d'Akileuss). Dragodindes, Muldos et Volkornes ont chacune 10 places, +15 avec l'enclos, +5 au carnet complet, +5 par achat, 60 au plus. Les achats déjà faits comptent pour les trois écuries",
+  ] },
   { v: "2.1.22", name: "Le Sablier", guide: "sablier", items: [
     "Sablier de Xélor : le temps rapide a maintenant une contrepartie. Butin −10 % en ×2 et −20 % en ×3 (ressources, équipements, clés et kamas). L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus",
     "La réserve du Sablier monte à 36 h (24 h avant), et jusqu'à 48 h avec les heures gagnées ou offertes (36 h avant). La recharge reste de 3 h par jour",
@@ -2266,6 +2272,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn && orn.startsWith("bt_") && window.MAITUI) ornHtml = window.MAITUI.ornHtml(orn); // 2.0 : ornements du Bestiaire
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
+  else if (orn === "eclat") ornHtml = `<span class="orn seal">💠</span>`; // 2.1.x : Comptoir des Éclats
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
   else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
   else if (orn === "classes19") ornHtml = `<span class="orn crown c19">🏆</span>`; // 1.0.34 : les 19 classes au niveau 200
@@ -3290,8 +3297,9 @@ function worldHtml() {
   let body = "";
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
+    const carte = mapView() === "carte" && window.CARTE;
     body = tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
-      + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
+      + (carte ? worldMapHtml(t) : (window.CARTE ? `<div class="row wm-back"><button class="btn sm" data-act="mapview" data-v="carte">${IC("monde")} Voir la carte</button></div>` : "") + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`));
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
   else body = encyclopediaHtml();
@@ -3299,6 +3307,28 @@ function worldHtml() {
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
     <div class="stack">${body}</div>`;
+}
+/* 2.1.x : la carte du Monde des Douze (idée de lucy8, choix 1A de Mathis) : les régions sur la vraie carte de DOFUS (DofusDB,
+   js/carte.js généré par tools/build_carte.py), un clic ouvre la région à côté ; la liste reste à un bouton */
+function mapView() { if (!ui.mapView) { try { ui.mapView = localStorage.getItem("idlus-mapview") || "carte"; } catch (e) { ui.mapView = "carte"; } } return ui.mapView; }
+function worldMapHtml(t) {
+  const XY = window.CARTE; const inTier = (s) => t < 0 || tierOf(s.lvl[0]) === t;
+  const zl = (z) => [Math.min(...z.subs.map((s) => s.lvl[0])), Math.min(200, Math.max(...z.subs.map((s) => s.lvl[1])))];
+  const best = bestSub(); const huntZ = S.hunting && !S.dungeon && E.SUBS[S.sub] ? E.SUBS[S.sub].zone : null;
+  const bestZ = best && E.SUBS[best] ? E.SUBS[best].zone : null;
+  const sel = ZONES.find((z) => z.id === ui.mapSel) || ZONES.find((z) => z.id === (huntZ || mapOpenZone(t) || bestZ)) || ZONES[0];
+  const cls = (z) => `${E.zoneUnlocked(S, z.id) ? "" : "lk"} ${z.subs.some(inTier) ? "" : "dim"} ${z.id === huntZ ? "here" : z.id === bestZ ? "best" : ""} ${z.id === sel.id ? "sel" : ""}`;
+  const tags = (z) => { const t = (window.ALLY ? window.ALLY.foldTag(z) : "") + (window.CHASSE ? window.CHASSE.foldTag(z) : ""); return t ? `<em class="wm-tags">${t}</em>` : ""; }; // prismes d'alliance et percepteurs, comme dans la liste
+  const pins = ZONES.filter((z) => XY.z[z.id]).map((z) => { const [lo, hi] = zl(z); const p = XY.z[z.id];
+    return `<button class="wm-z ${cls(z)} ${p[0] > 800 ? "l" : ""}" style="left:${(p[0] / 10).toFixed(1)}%;top:${(p[1] / 8).toFixed(1)}%" data-act="mapzone" data-id="${z.id}" aria-label="${h(z.name)}"><i></i><span><b>${E.zoneUnlocked(S, z.id) ? "" : G("lock")}${h(z.name)}</b><small>niv. ${lo}–${hi}${z.id === huntZ ? " · chasse" : z.id === bestZ ? " · conseillée" : ""}</small>${tags(z)}</span></button>`; }).join("");
+  const others = ZONES.filter((z) => !XY.z[z.id]).map((z) => { const [lo, hi] = zl(z);
+    return `<button class="wm-chip ${cls(z)}" data-act="mapzone" data-id="${z.id}">${E.zoneUnlocked(S, z.id) ? "" : G("lock")}${h(z.name)} <small>${lo}–${hi}</small></button>`; }).join("");
+  const side = zonePanel(sel, -1, true).replace(/data-act="zonefold"[^>]*aria-expanded="true"/, 'data-act="mapzone" data-id="' + sel.id + '" aria-expanded="true"');
+  return `<div class="wm-wrap"><section class="panel wm-panel"><div class="phead"><h2>Le Monde des Douze</h2><span class="seg"><button data-act="mapview" data-v="carte" aria-pressed="true">${IC("monde")} Carte</button><button data-act="mapview" data-v="liste" aria-pressed="false">Liste</button></span></div>
+    <div class="wm-scroll"><div class="wm-map"><img src="assets/carte/monde.webp" alt="Carte du Monde des Douze" draggable="false">${pins}</div></div>
+    <div class="wm-leg xs muted"><span><i class="d here"></i>Chasse en cours</span><span><i class="d best"></i>Zone conseillée</span><span><i class="d"></i>Ouverte</span><span><i class="d lk"></i>Verrouillée</span><span class="grow"></span><span>Carte : DofusDB</span></div>
+    ${others ? `<div class="wm-others"><span class="xs muted">Hors de la carte :</span>${others}</div>` : ""}</section>
+    <div class="wm-side">${side}</div></div>`;
 }
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
@@ -6128,7 +6158,7 @@ function mountPanel(c) {
           <p class="note xs" style="margin:0">${c.lvl >= E.MAX_LVL ? `Au niveau ${E.MAX_LVL}, l'XP remplit la Maîtrise de ${h(c.name)} : ${share ? `sa monture en reçoit ${share} %` : "la monture ne gagne pas d'XP pour l'instant"}` : share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(Math.ceil(E.mountXpNeed(M.sp, M.lvl) - M.xp))} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
       : `<div class="empty">${c.lvl < E.MOUNT_LVL ? `Une monture se monte dès le niveau ${E.MOUNT_LVL}.` : mine.length ? "Aucune monture montée : choisissez-en une ci-dessous." : "Aucune monture pour l'instant : chassez dans une zone sauvage avec un filet de capture dans le sac."}</div>`}
   </div></div>
-  ${others.length ? `<div class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(S)} / ${E.stableCap(S)} places${S.enclos.built ? "" : " · +10 avec l'enclos"}</span>${window.ELEVUI ? `<button class="btn sm" data-act="el-go" data-v="ecurie">Ouvrir l'Élevage</button>` : ""}</div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
+  ${others.length ? `<div class="panel"><div class="phead"><h2>Écuries</h2><span class="xs muted">${E.MOUNT_ORDER.map((sp) => `${E.MOUNTS[sp].name}s ${E.stableN(S, sp)}/${E.stableCap(S, sp)}`).join(" · ")}${S.enclos.built ? "" : ` · +${E.STABLE_SP_ENCLOS || 10} chacune avec l'enclos`}</span>${window.ELEVUI ? `<button class="btn sm" data-act="el-go" data-v="ecurie">Ouvrir l'Élevage</button>` : ""}</div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
   <div class="panel"><div class="phead"><h2>Capture</h2><span class="row small">${emo("🪢")} <b class="num">${nets}</b> filet${nets > 1 ? "s" : ""}<button class="btn sm ${S.kamas >= E.NET_COST ? "primary" : ""}" data-act="buynet" ${S.kamas >= E.NET_COST ? "" : "disabled"}>Acheter 1 · ${fmt(E.NET_COST)} k</button></span></div>
     <div class="list">${zones}</div>
     <div class="pad"><p class="note xs" style="margin:0">Avec un filet dans le sac, chaque victoire dans une zone sauvage peut capturer une monture de niveau 1 (dragodindes : environ une toutes les 30 min de chasse, muldos : une par heure, volkornes : une toutes les 3 h), en ligne comme hors ligne. Le filet n'est utilisé que si la capture réussit. Le Bricoleur en fabrique dès le niveau 40. Les autres couleurs naissent à l'enclos du Havre-Sac.</p></div></div>`;
@@ -6141,7 +6171,7 @@ const mtChip = (sp, c) => { const own = seenCol(sp, c); const n = Object.values(
   return `<span class="mtchip ${own ? "own" : ""}" data-tip="${h(own ? `${E.MOUNTS[sp].name} ${E.colourName(sp, c)} · au niveau 100 : ${mountStatTxt(E.mountStatsMax(sp, c))}${E.MOUNTS[sp].cols[c] && E.MOUNTS[sp].cols[c].p ? ` · ${E.MOUNTS[sp].cols[c].p.join(" + ")}` : " · capture"}` : "Couleur jamais obtenue")}">${im(mountImg(sp, c), "", own ? c : "?")}${n > 1 ? `<em>×${n}</em>` : ""}</span>`; };
 function enclosBody() {
   if (window.ELEVUI) return window.ELEVUI.roomHtml(); // 1.1 : tout l'élevage est dans Héros › Élevage (js/elevageui.js)
-  if (!S.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute aussi ${E.STABLE_ENCLOS} places à l'écurie.</p><button class="btn sm ${S.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${S.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button>`;
+  if (!S.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute aussi ${E.STABLE_SP_ENCLOS} places à chaque écurie.</p><button class="btn sm ${S.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${S.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button>`;
   const sp = mtSp(); const Sp = E.MOUNTS[sp]; const next = E.nextCrosses(S, sp);
   const pairs = S.enclos.pairs.map((p, i) => { const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return "";
     return `<div class="breed"><div class="bpair">${im(mountImg(A.sp, A.c), "", "")}<b>+</b>${im(mountImg(B.sp, B.c), "", "")}</div><div class="grow"><b>${h(E.colourName(A.sp, A.c))} + ${h(E.colourName(B.sp, B.c))}</b> <span class="xs muted">${h(E.MOUNTS[A.sp].name)}s</span>
@@ -9747,6 +9777,8 @@ document.addEventListener("click", (ev) => {
     case "encfamopen": (ui.encFamOpen = ui.encFamOpen || {})[d.v] = !(ui.encFamOpen || {})[d.v]; break;
     case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
+    case "mapzone": ui.mapSel = d.id; break; // 2.1.x : la carte du monde, la région choisie s'ouvre à côté
+    case "mapview": ui.mapView = d.v; try { localStorage.setItem("idlus-mapview", d.v); } catch (e) { /* navigation privée */ } break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": { ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; dirty = true; render(); const hd = $(".enczhead"); if (hd && hd.getBoundingClientRect().top < $("#status").getBoundingClientRect().bottom) hd.scrollIntoView(); return; } // 1.0.12.8 : on remonte au titre de la zone choisie
     case "enctab": ui.enc.tab = d.v; break;
@@ -10022,7 +10054,7 @@ document.addEventListener("change", (ev) => {
   const t = ev.target; if (t.id === "recqtyn") { recQtyLive(t, true); return; } const a = t.dataset.act; if (!a || !S) return;
   if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
-  if (a === "chp-wearsel") { if (window.CHAMPUI) window.CHAMPUI.act(a, t); return; } // menu Chasse (js/champui.js)
+  if (a === "chp-wearsel" || a === "chp-bait") { if (window.CHAMPUI) window.CHAMPUI.act(a, t); return; } // menu Chasse (js/champui.js) ; 2.1.x : pouvoir de l'appât
   if (a === "kzkey") { if (window.KOLIUI) window.KOLIUI.act("kz-key", t); return; } // 1.0.24 : donjon du Trousseau de clés
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
   if (a === "cx-zonesel") { if (window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : album chromatique

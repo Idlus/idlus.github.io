@@ -35,7 +35,7 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   assert.ok(E.act(S, "sealWear", c.id, "blinde"), "Sceau pas encore débloqué");
   kill(S, "blinde");
   assert.strictEqual(E.act(S, "sealWear", c.id, "blinde"), null);
-  assert.deepStrictEqual(E.sealOf(S, c).list, [{ k: "blinde", r: 1, v: 2 }]);
+  assert.deepStrictEqual(E.sealOf(S, c).list, [{ k: "blinde", r: 1, w: 0, v: 2 }]);
   kill(S, "enrage", 100); kill(S, "vampire", 100);
   assert.ok(S.titlesExtra.includes("Champion Enragé"), "titre du premier rang 5");
   assert.ok(!S.titlesExtra.includes("Champion Vampirique"), "un seul titre « Champion »");
@@ -138,6 +138,40 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   assert.ok(html.includes("js/champui.js"), "champui.js dans index.html");
   const sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8"); assert.ok(sw.includes('"js/champions.js"') && sw.includes('"js/champui.js"'), "hors-ligne");
   assert.ok(fs.readFileSync(path.join(ROOT, "tools", "build_server.js"), "utf8").includes('"champions"'), "le serveur rejoue les combats avec les Sceaux");
+}
+
+// 2.1.x « Les Éclats du Traqueur » : Éveil des Sceaux et Comptoir des Éclats (choix 2C)
+{
+  const S = team(200); const c = S.chars[0]; const C = E.champState(S);
+  kill(S, "enrage", 100); kill(S, "vampire", 100); kill(S, "veloce", 100); kill(S, "blinde", 4);
+  assert.ok(/rang 5/.test(E.act(S, "sealEveil", "blinde")), "il faut le rang 5");
+  assert.ok(/100 Éclats/.test(E.act(S, "sealEveil", "enrage")), "il faut des Éclats");
+  C.sh = 2100;
+  assert.strictEqual(E.act(S, "sealEveil", "enrage"), null); assert.strictEqual(C.sh, 2000); assert.strictEqual(E.sealEv(S, "enrage"), 1);
+  E.act(S, "sealWear", c.id, "enrage"); assert.strictEqual(E.sealOf(S, c).list[0].v, 16.5, "Éveil 1 : +10 % (15 → 16,5)");
+  for (let i = 0; i < 4; i++) assert.strictEqual(E.act(S, "sealEveil", "enrage"), null);
+  assert.strictEqual(C.sh, 100, "100 + 200 + 350 + 550 + 800 = 2 000 Éclats"); assert.strictEqual(E.sealOf(S, c).list[0].v, 22.5, "Éveil complet : +50 %");
+  assert.ok(/déjà/.test(E.act(S, "sealEveil", "enrage")));
+  // fusion : suit le Sceau le moins éveillé ; Véloce garde « joue en premier » et frappe plus fort au premier tour
+  E.act(S, "sealFuse", "enrage", "vampire"); E.act(S, "sealWear", c.id, "enrage+vampire");
+  assert.deepStrictEqual(E.sealOf(S, c).list.map((x) => x.v), [10.5, 5.6], "vampire pas éveillé : fusion à 70 % sans bonus");
+  C.ev.vampire = 2; assert.deepStrictEqual(E.sealOf(S, c).list.map((x) => x.v), [12.6, 6.7], "fusion : Éveil 2 des deux");
+  C.ev.veloce = 3; E.act(S, "sealWear", c.id, "veloce"); const sv = E.sealOf(S, c).list[0]; assert.strictEqual(sv.v, 1); assert.strictEqual(sv.w, 3);
+  const F = { round: 1 }; assert.strictEqual(Math.round(E.sealDmg(F, { side: "c", seal: E.sealOf(S, c), hp: 100, hpMax: 100 }, null, 100)), 112, "Véloce Éveil 3 : +12 % au premier tour");
+  F.round = 2; assert.strictEqual(Math.round(E.sealDmg(F, { side: "c", seal: E.sealOf(S, c), hp: 100, hpMax: 100 }, null, 100)), 100);
+  // Comptoir des Éclats
+  C.sh = 2000; const k0 = S.kamas;
+  assert.strictEqual(E.act(S, "shardBuy", "vente"), null); assert.strictEqual(S.kamas, k0 + 100000); assert.strictEqual(C.sh, 1990);
+  assert.ok(/pouvoir/.test(E.act(S, "shardBuy", "appat", "nope")));
+  assert.strictEqual(E.act(S, "shardBuy", "appat", "meneur"), null); assert.strictEqual(C.bait, "meneur"); assert.ok(/attend déjà/.test(E.act(S, "shardBuy", "appat", "enrage")));
+  const sub = subAt(195); E.startHunt(S, sub.id); const g = E.makeGroup(S, E.SUBS[sub.id], 4);
+  assert.strictEqual(g.filter((m) => m.champ === "meneur").length, 1, "l'appât donne un Champion Meneur au prochain combat"); assert.strictEqual(C.bait, null);
+  assert.strictEqual(E.act(S, "shardBuy", "piste"), null); assert.strictEqual(C.t[S.sub], 1);
+  assert.strictEqual(E.act(S, "shardBuy", "coffre"), null); assert.strictEqual(S.cons.coffre_argent, 1);
+  assert.strictEqual(E.act(S, "shardBuy", "orn"), null); assert.ok(E.ornUnlocked(S, "eclat")); assert.ok(/Déjà/.test(E.act(S, "shardBuy", "orn")));
+  assert.strictEqual(E.act(S, "shardBuy", "titre"), null); assert.ok(S.titlesExtra.includes("Collectionneur d'éclats"));
+  assert.strictEqual(C.sh, 1990 - 15 - 20 - 30 - 400 - 1000);
+  const S2 = E.deserialize(E.serialize(S)); assert.strictEqual(S2.ch.ev.enrage, 5); assert.strictEqual(S2.ch.sh, C.sh);
 }
 
 console.log("champions.test.js : OK");

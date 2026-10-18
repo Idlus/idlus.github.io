@@ -55,3 +55,11 @@ img.el-chr{filter:hue-rotate(140deg) saturate(1.6) drop-shadow(0 0 5px #ffd36b) 
 .el-q.now{font-weight:800}
 .el-q .ck{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--panel3);font-weight:900;font-size:12px;flex:none}.el-q .ck.ok{background:#9be15d;color:#1b2a10}
 .el-alm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:linear-gradient(90deg,rgba(255,211,107,.18),transparent);border:1px solid rgba(255,211,107,.5);border-radius:12px;padding:8px 12px;margin-bottom:10px}
+/* 3A : une écurie par espèce (cartes qui servent aussi de filtre) */
+.el-stcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.el-stc{display:flex;gap:8px;align-items:center;text-align:left;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:inherit;cursor:pointer;min-width:0}
+.el-stc.on{border-color:var(--action);box-shadow:0 0 0 1px var(--action) inset}
+.el-stc.full small{color:var(--danger)}
+.el-stc img{width:40px;height:40px;object-fit:contain;flex:none}
+.el-stct{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}.el-stct small{opacity:.8;font-size:11px}
+@media (max-width:700px){.el-stcs{gap:6px}.el-stc{flex-direction:column;align-items:stretch;padding:6px}.el-stc img{width:30px;height:30px;align-self:center}.el-stct b{font-size:12px}.el-stct small{font-size:10px}}

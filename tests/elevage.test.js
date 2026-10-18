@@ -161,17 +161,23 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
 
 // 11. Carnet complet : titre, +5 places, 6e étoile ; les trois : Grand Éleveur et 4e couple ; places en kamas
 {
-  const S = fresh(); const cap0 = E.stableCap(S);
+  const S = fresh(); const cap0 = E.stableCap(S, "dd"); const mu0 = E.stableCap(S, "mu");
   for (const c of E.spColours("dd")) mk(S, "dd", c);
-  assert.ok(S.titlesExtra.includes("Éleveur de dragodindes")); assert.strictEqual(E.stableCap(S), cap0 + 5); assert.strictEqual(E.starCap(S, { sp: "dd" }), 6);
-  for (const sp of ["mu", "vk"]) for (const c of E.spColours(sp)) { if (E.stableN(S) >= E.stableCap(S)) for (const uid in S.mounts) { if (S.mounts[uid].sp === "dd") delete S.mounts[uid]; } mk(S, sp, c); }
+  assert.ok(S.titlesExtra.includes("Éleveur de dragodindes")); assert.strictEqual(E.stableCap(S, "dd"), cap0 + 5); assert.strictEqual(E.stableCap(S, "mu"), mu0, "le carnet ne touche que son écurie"); assert.strictEqual(E.starCap(S, { sp: "dd" }), 6);
+  for (const sp of ["mu", "vk"]) for (const c of E.spColours(sp)) mk(S, sp, c);
   assert.ok(S.titlesExtra.includes("Grand Éleveur")); assert.strictEqual(E.pairCap(S), 4);
-  const S2 = fresh(); const c0 = E.stableCap(S2); S2.kamas = 2.5e6;
-  assert.strictEqual(E.stableBuy(S2), null); assert.strictEqual(E.stableCap(S2), c0 + 5); assert.strictEqual(S2.kamas, 1.5e6);
-  assert.ok(/kamas/.test(E.stableBuy(S2)), "le prix double");
-  S2.kamas = 1e12; for (let i = 0; i < 10; i++) E.stableBuy(S2); assert.strictEqual(E.stableCap(S2), 50, "50 places au plus");
+  const S2 = fresh(); const c0 = E.stableCap(S2, "mu"); S2.kamas = 2.5e6;
+  assert.strictEqual(E.stableCap(S2, "dd"), 25, "25 places par espèce avec l'enclos");
+  assert.strictEqual(E.stableBuy(S2, "mu"), null); assert.strictEqual(E.stableCap(S2, "mu"), c0 + 5); assert.strictEqual(E.stableCap(S2, "dd"), 25, "un achat ne touche que son écurie"); assert.strictEqual(S2.kamas, 1.5e6);
+  assert.ok(/kamas/.test(E.stableBuy(S2, "mu")), "le prix double");
+  S2.kamas = 1e12; for (let i = 0; i < 10; i++) E.stableBuy(S2, "mu"); assert.strictEqual(E.stableCap(S2, "mu"), 60, "60 places au plus par écurie");
+  // une écurie pleine n'empêche pas les autres espèces d'arriver
+  const S4 = fresh(); for (let i = 0; i < 30; i++) E.giveMount(S4, "dd", "Rousse", "t", { quiet: true }); assert.strictEqual(E.stableN(S4, "dd"), 25); assert.ok(E.giveMount(S4, "mu", "Doré", "t"), "les muldos ont leur propre écurie");
+  // ancienne partie : les achats de l'écurie commune valent pour les trois écuries
+  const S5 = fresh(); S5.elev.buy = 4; assert.deepStrictEqual(E.MOUNT_ORDER.map((sp) => E.stableCap(S5, sp)), [45, 45, 45]); S5.kamas = 1e9; E.stableBuy(S5, "vk"); assert.deepStrictEqual(E.MOUNT_ORDER.map((sp) => E.stableCap(S5, sp)), [45, 45, 50]);
   assert.ok(/4e couple|kamas/.test(E.pair4Buy(Object.assign(fresh(), { kamas: 0 }))));
-  console.log("ok - carnet complet (titre, places, étoile), Grand Éleveur et 4e couple, places en kamas jusqu'à 50");
+  console.log("ok - carnet complet (titre, places, étoile), Grand Éleveur et 4e couple, une écurie par espèce (25 places, achats, 60 au plus)");
+
 }
 
 // 12. Ancienne partie : montures à ★1, couples gardés avec leur emplacement, sauvegarde aller-retour
@@ -193,7 +199,7 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
   const B = E.giveMount(S, "dd", "Rousse", "t"); B.lvl = 100; E.startBreed(S, A.uid, B.uid); E.enclosTick(S, 9 * 3600e3);
   assert.ok(S.elev.q >= 3 && S.elev.inv.some((it) => it.k === "baf"), "Baffeur I pour le premier petit");
   assert.ok(S.ach.elv1, "succès Premier petit");
-  const cap0 = E.stableCap(S); S.elev.n.maxSt = 2; E.setAuto(S, true, "carnet"); assert.strictEqual(S.elev.q, 5); assert.strictEqual(E.stableCap(S), cap0 + 1);
+  const cap0 = E.stableCap(S, "dd"); S.elev.n.maxSt = 2; E.setAuto(S, true, "carnet"); assert.strictEqual(S.elev.q, 5); assert.strictEqual(E.stableCap(S, "dd"), cap0 + 1);
   S.mountSeen.dd.Pourpre = 1; E.elevCheck(S); assert.strictEqual(S.elev.q, 6); assert.ok(S.titlesExtra.includes("Éleveur en herbe"));
   assert.strictEqual(E.ACH.filter((a) => a.cat === "Élevage").length, 10, "10 succès d'élevage");
   // jour de l'élevage : objets −30 %, balades ×2, +10 % d'étoile
