@@ -109,11 +109,13 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   const S = team(60); const sub = subAt(60);
   E.SEAL_ORDER.forEach((k) => kill(S, k, 100));
   ["blinde", "vampire", "meneur", "traqueur"].forEach((k, i) => (S.chars[i].seal = k));
+  const sf0 = E.sealFight; let sh0 = null; E.sealFight = (S2, F2) => { sf0(S2, F2); const h0 = F2.ents.find((e) => e.side === "c" && !e.summon); if (sh0 === null && h0) sh0 = { s: h0.shield, m: h0.hpMax }; }; // bouclier lu au début du combat (les premiers tours peuvent l'entamer)
   E.startHunt(S, sub.id); for (let i = 0; i < 40 && !S.fight; i++) { now += 1000; E.tick(S, now); }
+  E.sealFight = sf0;
   const F = S.fight; assert.ok(F, "un combat");
   const hs = F.ents.filter((e) => e.side === "c" && !e.summon);
   assert.strictEqual(F.sealReso, 3, "Conclave : 4 pouvoirs différents"); assert.strictEqual(F.sealMen, 5, "Meneur rang 5");
-  assert.ok(hs[0].shield >= Math.round(hs[0].hpMax * 0.1), "bouclier du Blindé"); assert.strictEqual(hs[1].vamp, 0.08, "vol de vie du Vampirique");
+  assert.ok(sh0 && sh0.s >= Math.round(sh0.m * 0.1), "bouclier du Blindé"); assert.strictEqual(hs[1].vamp, 0.08, "vol de vie du Vampirique");
   const e = hs[3]; const tgt = { hp: 10, hpMax: 100 };
   const v0 = E.sealDmg(F, e, tgt, 100); assert.ok(Math.abs(v0 - 100 * 1.08 * 1.2) < 1e-9, "Meneur + Conclave + Traqueur");
   e.hp = Math.floor(e.hpMax * 0.2); const v1 = E.sealDmg(F, e, tgt, 100);

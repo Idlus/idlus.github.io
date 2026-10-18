@@ -26,7 +26,7 @@
     roub: [["Explobombe", { d: 18, t1: -30 }], ["Mur de bombes", { res: 10, d: -5 }], ["Roublabot", { pass: 30, d: -8 }]],
     hupper: [["Polarité", { d: 15, cri: -5 }], ["Rune élémentaire", { pass: 35, hp: -8 }], ["Cristal", { cx: 30, d: -5 }]],
     eni: [["Mot de Régénération", { h: 30, d: -10 }], ["Mot Stimulant", { h: 20, ini: 400, hp: -5 }], ["Mot Interdit", { d: 15, h: -15 }]],
-    enu: [["Pelle Fantomatique", { pp: 100, d: -8 }], ["Coffre animé", { sh: 12, res: 5, d: -8 }], ["Fortune", { pp: 150, hp: -10 }]],
+    enu: [["Pelle Fantomatique", { pass: 35, d: -5 }], ["Coffre animé", { sh: 12, res: 5, d: -8 }], ["Fortune", { pp: 150, hp: -10 }]],
     steam: [["Tourelle Harponneuse", { pass: 35, hp: -8 }], ["Scaphandre", { sh: 20, d: -8 }], ["Marée", { h: 20, e: 10, hp: -8 }]],
     osa: [["Dragonnet", { pass: 35, hp: -12 }], ["Fouet", { pass: 20, ini: 600, d: -5 }], ["Crapaud", { h: 25, res: 5, d: -10 }]],
     cra: [["Flèche Punitive", { t1: 30, d: 5, hp: -8 }], ["Œil de Taupe", { d: 15, hp: -10 }], ["Tir Éloigné", { pass: 30, res: -8 }]],

@@ -160,6 +160,7 @@
     b: () => [
       ["p", `${N(() => D.CLASS_ORDER.length)} classes, chacune avec ses sorts, une caractéristique principale, un élément conseillé et un passif propre :`],
       ["ul", V(() => D.CLASS_ORDER.map((k) => { const C = D.CLASSES[k]; return `**${C.name}** · ${C.passive ? C.passive.name + " : " + C.passive.desc : ""}`; }), [])],
+      ["p", "Au Kolizéum, le Féca, le Sadida, l'Enutrof, le Sacrieur, l'Eniripsa et le Zobal gardent leurs anciens passifs (sans sève, butin de guerre, Transposition ni soin en trop) : l'arène est équilibrée à part."],
       ["h", "Les pièges du Sram"],
       ["ul", [
         `Un sort de piège ne frappe pas tout de suite : il **pose le piège** (${N(() => E.SR_TRAP_MAX)} au plus par Sram, jamais deux fois le même). La jauge sous le Sram compte ses pièges posés.`,

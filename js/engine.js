@@ -1331,6 +1331,12 @@
   E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
   /* Le grand équilibrage (choix 4A de Mathis) : difficulté propre à quelques donjons (PV et dégâts de leurs monstres, × la valeur),
      réglée par simulation (équipe de 8 héros de leur niveau, bon équipement, stasis 7 visée). */
+  /* Valeurs des passifs de classe (retouches des sorts) */
+  /* Retouches des classes faibles (Mathis : « réequilibrer les sorts et la maîtrise » plutôt qu'un bonus en %), réglées par simulation.
+     E.PSV0 = anciennes valeurs, gardées au Kolizéum (équilibré à part par E.KOLI_POW). */
+  E.PSV0 = { fecaProt: 0.1, fecaRenvoi: 0.15, fecaSoin: 0.03, sadiAttire: 0.5, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.1, eniLie: 0.15, zobDef: 0.2, zobSoin: 0.04, sacriTransp: 0, enuButin: 0, sadiSeve: 0, eniSurplus: 0, sacriDr: 0 };
+  E.PSV = { fecaProt: 0.2, fecaRenvoi: 0.3, fecaSoin: 0.08, sadiAttire: 0.65, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.2, eniLie: 0.25, zobDef: 0.2, zobSoin: 0.06, sacriTransp: 0.3, enuButin: 0.08, sadiSeve: 0.04, eniSurplus: 0.6, sacriDr: 0.015 };
+  const psv = (x) => (x && x.tm !== undefined ? E.PSV0 : E.PSV);
   E.DG_DIFF = { tertre_long_sommeil: 1.7, refuge_sylvestre: 1.45, chateau_wa_wabbit: 1.34, caverne_koulosse: 1.3, cour_bouftou_royal: 1.3, theatre_dramak: 1.18, miausolee_pounicheur: 1.17, gelaxieme_dimension: 0.7 };
   const applyDiff = (S, mons) => { const m = E.DG_DIFF[S.dungeon && S.dungeon.id]; if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
   const applyStasis = (S, F, mons, room, isBoss) => {
@@ -1503,7 +1509,8 @@
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
     if (src) v *= 1 - Math.min(60, debSum(src, "weak")) / 100;
-    if (isHero(F, tgt)) { v *= (glyphOf(F, tgt) === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    if (isHero(F, tgt)) { v *= (glyphOf(F, tgt) === "prot" ? 1 - psv(tgt).fecaProt : 1) * (tgt.mask === "def" ? 1 - psv(tgt).zobDef : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100) * (tgt.cls === "sacri" && !tgt.summon && psv(tgt).sacriDr ? 1 - Math.min(15, tgt.suffer || 0) * psv(tgt).sacriDr : 1); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    if (F && !F.pvp && E.PSV.sacriTransp && v > 0 && tgt.side === "c" && !tgt.summon && tgt.cls !== "sacri") { const sc = F.ents.find((x) => x.side === "c" && x.cls === "sacri" && !x.summon && x.alive && x.hp > 1); if (sc) { const p = Math.min(v * E.PSV.sacriTransp, sc.hp - 1); sc.hp -= p; v -= p; } } // Sacrieur : Transposition
     /* 0.1 : rôles de monstres et mécaniques de boss qui changent les dégâts reçus */
     if (F && isHero(F, tgt) && tgt.gold > 0) return 0;
     if (F && tgt.side === "m") {
@@ -1534,8 +1541,9 @@
     tgt.hp -= v;
     if (!Number.isFinite(tgt.hp)) tgt.hp = Number.isFinite(tgt.hpMax) ? Math.max(0, tgt.hpMax - v) : 0;
     if (F) trackHit(F, src, tgt, v, el);
-    if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
+    if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * psv(tgt).fecaRenvoi)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.mt && tgt.mt.rv > 0 && src && src.alive && src.side !== tgt.side && v > 0 && !F.pvp) { const rv = Math.max(1, Math.round(v * tgt.mt.rv / 100)); src.hp -= rv; if (F) trackHit(F, tgt, src, rv, null); if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } } // 2.1 : Miroir (renvoi)
+    if (F && !F.pvp && E.PSV.enuButin && tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon) alive(F, "c").forEach((x) => { x.shield = Math.max(x.shield || 0, Math.round(x.hpMax * E.PSV.enuButin * (1 + 0.25 * (src.evc || 0)))); }); // Enutrof : butin de guerre
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (isHero(F, tgt) && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
     if (src && src.side === "c" && tgt.side === "m" && v > 0 && !(F && F.pushHit)) { // 0.1.24 : reliques d'expédition (vol de vie, poison) ; 1.0.30 : pas sur la poussée
@@ -1624,7 +1632,7 @@
   };
   const healAmount = (e, f) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
+    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1 + psv(e).eniSoin + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
   };
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
@@ -1723,7 +1731,7 @@
     if (F.idol && F.idol.fail && ["dmg", "aoe", "drain", "dot", "heal"].includes(kind) && rnd() < F.idol.fail) { flog(F, `${e.name} · ${sp.name} → échec (idole Yushe) !`, "dim"); return { ok: true, extraPa: 0 }; }
     if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
     if (E.srMult && e.cls === "sram" && kind !== "heal") classMult *= E.srMult(F, e, parts); // Sram (sram.js)
-    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15 + 0.05 * (e.evc || 0); e.eniDmg = false; }
+    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1 + psv(e).eniLie + 0.05 * (e.evc || 0); e.eniDmg = false; }
     let leech = 0; let dealt = 0; const hitIdx = [];
     const idc = E.idPre ? E.idPre(F, e, sp, g, parts) : null; if (idc && idc.crit) e.idCrit = idc.crit; // identité des sorts (js/identite.js)
     for (const f of g.fx) {
@@ -1741,7 +1749,7 @@
           if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
+            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < psv(e).enuPelle + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
@@ -1751,8 +1759,8 @@
         if (e.cls === "eni") e.eniHeal = true;
       } else if (f.k === "heal" || f.k === "healpct") {
         const ts = f.self ? [e] : f.n > 1 ? alive(F, "c") : [ (forced && forced.alive && forced.side === "c") ? forced : alive(F, "c").slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0] ];
-        let tot = 0; const bonus = e.cls === "eni" && e.eniHeal ? 1.15 : 1; if (e.cls === "eni") { e.eniHeal = false; e.eniDmg = true; }
-        ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
+        let tot = 0; const bonus = e.cls === "eni" && e.eniHeal ? 1 + psv(e).eniLie : 1; if (e.cls === "eni") { e.eniHeal = false; e.eniDmg = true; }
+        ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; if (e.cls === "eni" && E.PSV.eniSurplus && !F.pvp && want > got && t.alive) t.shield = Math.round(Math.min(t.hpMax * 0.25, (t.shield || 0) + (want - got) * E.PSV.eniSurplus)); /* Eniripsa : le soin en trop devient bouclier */ if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
         const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * Math.max(0.1, 1 + ((e.mt && e.mt.h) || 0) / 100); // 2.1 : la Maîtrise « soins et boucliers » compte aussi pour les boucliers
@@ -1948,14 +1956,15 @@
       if (e.gold > 0) { e.gold--; flog(F, `${e.name} est une statue d'or et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cuve) { e.cuve = false; e.ivresse = 0; flog(F, `${e.name} cuve son ivresse et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cls === "feca") { e.glyphI = ((e.glyphI ?? -1) + 1) % 3; const gk = ["prot", "renvoi", "soin"][e.glyphI]; F.glyph = gk;
-        flog(F, `${e.name} pose un Glyphe ${gk === "prot" ? "de Protection (−10 % de dégâts subis)" : gk === "renvoi" ? "de Renvoi (15 % des dégâts renvoyés)" : "de Soin (+3 % des PV)"}.`, "buff");
-        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * (0.03 + 0.01 * (e.evc || 0)), F)); }
+        { const P = psv(e); flog(F, `${e.name} pose un Glyphe ${gk === "prot" ? `de Protection (−${Math.round(P.fecaProt * 100)} % de dégâts subis)` : gk === "renvoi" ? `de Renvoi (${Math.round(P.fecaRenvoi * 100)} % des dégâts renvoyés)` : `de Soin (+${Math.round(P.fecaSoin * 100)} % des PV)`}.`, "buff"); }
+        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * (psv(e).fecaSoin + 0.01 * (e.evc || 0)), F)); }
+      if (e.cls === "sadi" && !F.pvp && E.PSV.sadiSeve && F.ents.some((t) => t.tree && t.summon && t.alive && t.side === "c")) alive(F, "c").forEach((a) => { if (a.hp < a.hpMax) doHeal(a, a.hpMax * E.PSV.sadiSeve * (1 + 0.25 * (e.evc || 0)), F); }); // Sadida : sève de l'arbre
       if (e.cls === "forge") { const np = e.hp > e.hpMax * 0.5 ? "lance" : "rempart"; if (np !== e.posture) { e.posture = np; flog(F, `${e.name} passe en posture ${np === "lance" ? "Lance (+20 % de dégâts)" : "Rempart (−25 % de dégâts subis)"}.`, "buff"); } }
       if (e.cls === "zobal") { // masque adapté à la situation
         const hurt = alive(F, "c").filter((a) => !a.summon && a !== e && a.hp < a.hpMax * 0.5).length;
         const nm = e.hp < e.hpMax * 0.45 ? "def" : hurt ? "soin" : "atk";
         if (nm !== e.mask) { e.mask = nm; flog(F, `${e.name} enfile le Masque ${nm === "def" ? "du Pleutre (défense)" : nm === "soin" ? "de l'Hystérique (soutien)" : "du Psychopathe (attaque)"}.`, "buff"); }
-        if (e.mask === "soin") alive(F, "c").forEach((a) => { if (a.hp < a.hpMax) doHeal(a, a.hpMax * 0.04, F); });
+        if (e.mask === "soin") alive(F, "c").forEach((a) => { if (a.hp < a.hpMax) doHeal(a, a.hpMax * psv(e).zobSoin, F); });
       }
     }
     if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: Math.max(1, e.st.pa - (e.paLoss || 0)), t: F.dur, n: 0, casts: {} }; e.paLoss = 0; return; }
@@ -2026,7 +2035,7 @@
   const rowOf = (t) => (t.summon ? "f" : t.row || "f");
   const pickHero = (F, targets, e) => {
     if (targets.some((t) => t.gold > 0) && targets.some((t) => !(t.gold > 0))) targets = targets.filter((t) => !(t.gold > 0));
-    const tree = targets.find((t) => t.tree && t.summon); if (tree && rnd() < 0.5) return tree;
+    const tree = targets.find((t) => t.tree && t.summon); if (tree && rnd() < E.PSV.sadiAttire) return tree;
     if (e && e.champ === "traqueur") { const hs = targets.filter((t) => !t.summon); if (hs.length) return hs.sort((a, b) => a.hp - b.hp)[0]; }
     let pool = targets;
     const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
@@ -2082,7 +2091,7 @@
           const base = monCrit(e, e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15));
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
-          ts.forEach((t) => { if (f.k === "dot") { const v = base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1); t.dots.push({ v, turns: f.t || 2, el, src: e.name }); if (E.midHit) E.midHit(F, e, sp, t, v, el); } else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
+          ts.forEach((t) => { if (f.k === "dot") { const v = base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1); t.dots.push({ v, turns: f.t || 2, el, src: e.name }); if (E.midHit) E.midHit(F, e, sp, t, v, el); } else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
           F.midB = base; F.midEl = el; F.midTs = ts;
           parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
         } else if (f.k === "heal" || f.k === "healpct") {
