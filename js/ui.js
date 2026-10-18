@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.17.1";
+const GAME_VERSION = "2.1.18";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.18", name: "Bouclier plus juste", items: [
+    "Vérification des parties : les gros gains de fin de jeu (ressources, kamas, Dofus) ne mettent plus les joueurs honnêtes « en vérification » à chaque sauvegarde, et un joueur vérifié par Mathis le reste",
+  ] },
   { v: "2.1.17.1", name: "Étoiles de monture", guide: "elevage", items: [
     "Montures : l'info « une étoile de plus possible » des chromatiques dit maintenant comment la monter (bouton « +1 étoile » de la fiche, Héros › Élevage › Écurie › Fiche, 2 000 Essence, une fois par jour). Le guide Élevage l'explique aussi. Les étoiles des montures se voient aussi quand on les croise (choix des deux montures), dans la Collection et sur l'emplacement Monture du héros (signalement de Hayabusa)",
   ] },

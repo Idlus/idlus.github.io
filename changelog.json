@@ -1,6 +1,13 @@
 {
-  "version": "2.1.17.1",
+  "version": "2.1.18",
   "versions": [
+    {
+      "v": "2.1.18",
+      "name": "Bouclier plus juste",
+      "items": [
+        "Vérification des parties : les gros gains de fin de jeu (ressources, kamas, Dofus) ne mettent plus les joueurs honnêtes « en vérification » à chaque sauvegarde, et un joueur vérifié par Mathis le reste"
+      ]
+    },
     {
       "v": "2.1.17.1",
       "name": "Étoiles de monture",

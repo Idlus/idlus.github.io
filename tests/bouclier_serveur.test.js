@@ -24,11 +24,12 @@ const q = (t) => { const f = []; let ord = null, lim = null, mode = "select", pa
   const rows = () => { let r = T[t].filter((x) => f.every((g) => g(x))); if (ord) r = r.slice().sort((a, b) => (a[ord.k] < b[ord.k] ? -1 : 1) * (ord.asc ? 1 : -1)); if (lim != null) r = r.slice(0, lim); return r; };
   const run = () => {
     if (mode === "delete") { const keep = T[t].filter((x) => !f.every((g) => g(x))); T[t] = keep; return { data: null, error: null }; }
+    if (mode === "update") { T[t].filter((x) => f.every((g) => g(x))).forEach((x) => Object.assign(x, payload)); return { data: null, error: null }; }
     return { data: rows(), error: null }; };
   const b = { select() { return b; }, eq(k, v) { f.push((x) => x[k] === v); return b; }, gt(k, v) { f.push((x) => x[k] > v); return b; }, lte(k, v) { f.push((x) => x[k] <= v); return b; },
     gte(k, v) { f.push((x) => x[k] >= v); return b; }, lt(k, v) { f.push((x) => x[k] < v); return b; }, order(k, o) { ord = { k, asc: !o || o.ascending !== false }; return b; }, limit(n) { lim = n; return b; },
     maybeSingle() { const r = rows(); return Promise.resolve({ data: r[0] || null, error: null }); },
-    delete() { mode = "delete"; return b; },
+    delete() { mode = "delete"; return b; }, update(p) { mode = "update"; payload = p; return b; },
     then(res, rej) { return Promise.resolve(run()).then(res, rej); },
     upsert(row, o) { const keys = (o && o.onConflict ? o.onConflict.split(",") : ["user_id"]); const i = T[t].findIndex((x) => keys.every((k) => x[k] === row[k]));
       if (i >= 0) { if (!(o && o.ignoreDuplicates)) T[t][i] = Object.assign({}, T[t][i], row); } else T[t].push(Object.assign({}, row)); return Promise.resolve({ error: null }); },
@@ -75,6 +76,16 @@ T.saves_ok[0].accept = true;
 r = await call("u1", { verif: 1 }); if (!r.ok) fail("« C'est bon » n'accepte pas la partie : " + JSON.stringify(r));
 if (T.saves_ok[0].accept) fail("l'accord de Mathis n'est valable qu'une fois");
 console.log("ok - objet impossible retenu, « C'est bon » de Mathis l'accepte");
+// 5 bis. 2.1.18 : compte vérifié par Mathis : plus de contrôle des gains, le signalement du Bouclier s'efface ; l'impossible reste refusé
+Object.assign(L, { verified: true, flagged: false });
+const S3 = E.deserialize(good); S3.kamas += 5e9; Object.assign(T.saves[0], { data: E.serialize(S3), updated_at: iso(t0 + 3800e3) });
+T.saves_ok[0].at = iso(Date.now() - 60e3);
+r = await call("u1", { verif: 1 }); if (!r.ok) fail("compte vérifié retenu pour ses gains : " + JSON.stringify(r));
+if (L.suspect) fail("le signalement du Bouclier reste sur un compte vérifié");
+const S4 = E.deserialize(good); const it4 = E.rollItem(S4, tpl, { radiant: false }); it4.stats.vit = 99999;
+Object.assign(T.saves[0], { data: E.serialize(S4), updated_at: iso(t0 + 3900e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
+r = await call("u1", { verif: 1 }); if (r.ok) fail("objet impossible accepté sur un compte vérifié");
+console.log("ok - compte vérifié : gains libres, impossible toujours refusé");
 // 6. combats rejoués : ils partent de la partie validée (un record de donjon sur une partie retenue ne voit pas les retouches)
 if (!/okSave\\(db, uid\\)/.test(${JSON.stringify(src)})) fail("les combats ne lisent pas la partie validée");
 console.log("ok - les combats rejoués lisent la partie validée");

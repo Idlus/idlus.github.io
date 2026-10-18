@@ -153,14 +153,17 @@
   V.KAMAS_H = (l) => { const P = V.KAMAS_PTS; for (let i = 1; i < P.length; i++) if (l <= P[i][0]) { const [a, x] = P[i - 1], [b, y] = P[i]; return x + (y - x) * (l - a) / (b - a); } return P[P.length - 1][1]; };
   V.rates = (lv) => { // ce qu'une heure de jeu peut rapporter au plus, pour une équipe dont le meilleur héros est au niveau lv
     const l = Math.max(1, Math.min(200, lv || 1));
-    return { k: 5 * V.KAMAS_H(l), r: 5 * 15000, mt: 180, lv: 960 };
+    // 2.1.18 : kamas × 25 et 500 000 ressources par heure : les meilleurs joueurs honnêtes (stasis 10+, tout tombe × 15, ventes au jeu
+    // d'un stock accumulé) gagnaient 3 à 9 millions de ressources par jour et jusqu'à 25 millions de kamas par heure, et restaient bloqués
+    return { k: 25 * V.KAMAS_H(l), r: 500000, mt: 180, lv: 960 };
   };
   V.check = (E, prev, cur, hours, gift, res0, topLvl) => {
     let res = Math.min(V.RES_MAX, (res0 == null ? V.RES_MAX : res0) + Math.max(0, hours) * V.RES_RATE);
     const R = V.rates(topLvl); gift = gift || {};
     const dk = cur.k - prev.k - (gift.k || 0), dr = cur.r - prev.r - (gift.r || 0), dm = cur.mt - prev.mt, dl = cur.lv - prev.lv - Math.max(0, (cur.rec || 0) - (prev.rec || 0)) - (gift.lv || 0);
     if (cur.bn > prev.bn) return { ok: false, res, why: `points de Maîtrise des vies passées en hausse (+${cur.bn - prev.bn})` };
-    if (cur.dof - prev.dof > 2 + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
+    // 2.1.18 : un Dofus de plus permis toutes les 4 h (échelle des Dofus jusqu'à la stasis 15 ; un compte bloqué accumulait sans fin)
+    if (cur.dof - prev.dof > 2 + Math.floor(Math.max(0, hours) / 4) + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
     const need = { k: Math.max(0, dk) / R.k, r: Math.max(0, dr) / R.r, mt: Math.max(0, dm) / R.mt, lv: Math.max(0, dl) / R.lv };
     const used = Math.max(need.k, need.r, need.mt, need.lv);
     if (used > res + 0.01) {

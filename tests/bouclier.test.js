@@ -68,6 +68,11 @@ assert.ok(V.check(E, b0, at({ k: b0.k + 1e9 }), 0.05, { k: 1e9 }, null, 60).ok, 
 assert.ok(!V.check(E, b0, at({ mt: b0.mt + 3000 }), 1, {}, 2, 200).ok, "3 000 points de Maîtrise en une heure, réserve vide : refusé");
 assert.ok(!V.check(E, b0, at({ bn: b0.bn + 10 }), 10, {}, null, 200).ok, "points des vies passées en hausse : refusé");
 assert.ok(!V.check(E, b0, at({ dof: b0.dof + 4 }), 1, {}, null, 200).ok, "4 Dofus d'un coup : refusé");
+// 2.1.18 : les meilleurs joueurs honnêtes (relevés du serveur, 18/10) passent
+assert.ok(V.check(E, b0, at({ r: b0.r + 8816277 }), 26.2, {}, 0, 200).ok, "8,8 millions de ressources en 26 h : normal en fin de jeu");
+assert.ok(V.check(E, b0, at({ k: b0.k + 74401818 }), 3, {}, 0, 200).ok, "74 millions de kamas en 3 h (vente d'un stock) : normal");
+assert.ok(V.check(E, b0, at({ dof: b0.dof + 5 }), 18, {}, null, 200).ok, "5 Dofus en 18 h : normal");
+assert.ok(!V.check(E, b0, at({ k: b0.k + 1e10 }), 3, {}, 0, 200).ok, "10 milliards de kamas en 3 h : refusé");
 // la réserve : 48 h de jeu d'avance au plus (Sablier), puis le rythme du temps réel
 let res = null, ok = 0; const R = V.rates(200);
 for (let i = 0; i < 200; i++) { const c = V.check(E, b0, at({ k: b0.k + R.k * 0.5 }), 1 / 120, {}, res, 200); if (!c.ok) break; res = c.res; ok++; }

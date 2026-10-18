@@ -458,10 +458,11 @@ const VERIF_MIN_S = 20; // au plus une vérification toutes les 20 s par compte 
 const parisDay = (t: number) => new Date(t + 2 * 3600 * 1000).toISOString().slice(0, 10);
 // deno-lint-ignore no-explicit-any
 async function validate(db: any, uid: string, force: boolean): Promise<Record<string, unknown>> {
-  const [{ data: head }, { data: ok }, { data: adm }] = await Promise.all([
+  const [{ data: head }, { data: ok }, { data: adm }, { data: lad }] = await Promise.all([
     db.from("saves").select("updated_at").eq("user_id", uid).maybeSingle(),
     db.from("saves_ok").select("src_at,bilan,res,at,accept").eq("user_id", uid).maybeSingle(),
     db.from("admins").select("user_id").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("verified,suspect,flag_reason").eq("user_id", uid).maybeSingle(),
   ]);
   if (!head) return { ok: false, err: "aucune partie en ligne" };
   const curAt = new Date(head.updated_at).getTime();
@@ -488,7 +489,9 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // la partie de Mathis (panel de test) n'est pas retenue : elle reste hors des classements par le résumé (panel)
   if (!(ok && ok.accept) && !adm) {
     why = V.impossible(E, S, nu0);
-    if (!why && ok && prev) {
+    // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») ne passe plus le contrôle des gains (kamas, ressources, Dofus…),
+    // seulement celui de l'impossible : sinon les meilleurs joueurs retombaient « en vérification » à chaque envoi
+    if (!why && ok && prev && !(lad && lad.verified)) {
       const hours = Math.max(0, (new Date(cur.updated_at).getTime() - new Date(ok.src_at).getTime()) / 3600000);
       // ce que le serveur a donné entre-temps : opérations de l'hôtel de vente (et lots, Jackpot, Pluie…) pas encore dans
       // la partie validée, et codes cadeaux utilisés depuis
@@ -523,6 +526,8 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   const now = new Date().toISOString();
   const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: bil, res: res == null ? V.RES_MAX : res, src_at: cur.updated_at, at: now, accept: false });
   if (error) return { ok: false, err: "écriture impossible" };
+  // 2.1.18 : compte vérifié par Mathis signalé seulement par le Bouclier : la partie passe, le signalement s'efface
+  if (lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);
   // 4A : une copie de la partie validée par jour (heure de Paris), gardée 7 jours, pour que Mathis puisse remettre un joueur en arrière
   const day = parisDay(Date.now());
   await db.from("saves_jour").upsert({ user_id: uid, day, data: cur.data, lvl: bil.lv, kamas: bil.k, at: now }, { onConflict: "user_id,day", ignoreDuplicates: true });
