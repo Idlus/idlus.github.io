@@ -2665,7 +2665,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .opttabs button{white-space:nowrap;flex:none}
 .optbody{display:flex;flex-direction:column;gap:10px}
 .optsec{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.optsec.danger{border-color:var(--bad,#c0392b)}
+.optsec.danger{border-color:var(--danger,#c0392b)}
 .savebar{height:8px;border-radius:6px;background:var(--panel3);overflow:hidden}.savebar i{display:block;height:100%;background:var(--gold);border-radius:6px} /* 1.0.33.1 : poids de la sauvegarde */
 .optsec-h{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
 .optsec-h>b{font-size:14.5px;display:flex;align-items:center;gap:6px}
@@ -5828,3 +5828,9 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .ch-auto{margin-top:6px}.ch-auto[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
 .ch-autorow{margin:0 0 8px}
 .pslotrow{flex-wrap:nowrap}.pslotrow .pslot{margin:0}.pslotall{flex:none;width:auto;padding-left:14px;padding-right:14px;white-space:nowrap}
+/* 2.1.21 « Mon ordre » : attaques numérotées, bascule Auto / Mon ordre, comparaison avec l'auto dans l'aperçu */
+.spslot .n.an{background:var(--action);color:var(--action-ink)}
+.sphd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.spmode .spc{padding:3px 10px}
+.spcmp{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px 12px;border:1px solid var(--line);border-radius:12px;padding:8px 12px}.spcmp>div{display:flex;flex-direction:column;align-items:center}.spcmp b{font-size:18px}
+.spcmp .vs{font-weight:900;font-size:16px}.spcmp .txt{grid-column:1/-1;text-align:center}.spcmp .btn{grid-column:1/-1;justify-self:center}
+.spcmp.bad{border-color:color-mix(in srgb,var(--danger,#c0392b) 60%,var(--line))}.spcmp.bad .vs{color:var(--danger,#c0392b)}.spcmp.good{border-color:color-mix(in srgb,var(--good,#2e8b57) 60%,var(--line))}.spcmp.good .vs{color:var(--good,#2e8b57)}

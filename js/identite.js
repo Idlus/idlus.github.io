@@ -200,6 +200,27 @@
     if (has(id, "crit")) c.crit = 20;
     return c;
   };
+  /* 2.1.21 : valeur attendue d'un sort pour l'IA (planTurn), selon la situation : sans elle, l'IA ne voyait que les dégâts de base,
+     baissés pour compenser la mécanique, et délaissait les sorts à cumul, bombe, écho… (Pandawa, Osamodas) */
+  E.idPlan = (F, e, sp) => {
+    if (!E.idOn || F.pvp && !E.idPvp) return null; const id = E.ID[sp.id]; if (!id) return null;
+    const x = e.idn || {}; let m = E.ID_G;
+    const cu = has(id, "cumul"); if (cu) { const n = x["c" + sp.id] || 0; m *= 1 + (cu.a || 10) * n / 100 + (n < (cu.max || 3) ? (cu.a || 10) / 200 : 0); } // le prochain lancer en profitera aussi
+    if (has(id, "contact") && (e.row || "f") === "f") m *= 1.18;
+    if (x.vol) m *= 1 + 0.06 * x.vol.n; if (x.pui && x.pui.r >= F.round) m *= 1.05;
+    if (has(id, "crit")) m *= 1.06; if (has(id, "echo")) m *= 1.1; if (has(id, "retard")) m *= 1.17; if (has(id, "brulure")) m *= 1.15;
+    if (has(id, "relance")) m *= 1.12; if (has(id, "bombe")) m *= 1.4; if (has(id, "glyphe")) m *= 1 + 0.4 * Math.min(3, alive(F, "m").length) / 2;
+    if (has(id, "puissance")) m *= 1.06; if (has(id, "vol")) m *= 1.06; if (has(id, "piege")) m *= 1.2;
+    return { m, premier: !!has(id, "premier"), execute: !!has(id, "execute"), etat: !!has(id, "etat"), src: e };
+  };
+  E.idPlanT = (F, P, t) => { // même chose, pour une cible
+    let m = 1; const tn = t.idn || {};
+    if (tn.st && tn.st.src === P.src && tn.st.r >= F.round) m *= 1.12;
+    if (tn.att && tn.att >= F.round) m *= 1.1;
+    if (P.premier && t.hp >= t.hpMax) m *= 1.2;
+    if (P.execute && t.hp < t.hpMax * 0.3) m *= 1.25;
+    return m;
+  };
   /* multiplicateur par cible */
   E.idMul = (F, e, c, t, f) => {
     let m = c.m; const id = c.id; const tn = t.idn || {};

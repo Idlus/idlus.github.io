@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.20";
+const GAME_VERSION = "2.1.21";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.21", name: "Mon ordre", guide: "sorts", items: [
+    "Sorts & stratégies : nouvel interrupteur Auto / « Mon ordre » au-dessus des attaques. En « Mon ordre », elles sont numérotées et partent une fois chacune, de gauche à droite, puis ça recommence (idée de Sky). Le réglage est gardé dans chaque stratégie, dans « Copier le setup » et au Kolizéum",
+    "« Ce que fera ton héros » compare ton ordre à l'Auto, et propose « Revenir à l'auto » s'il fait moins de dégâts",
+    "Auto plus malin : il connaît le passif de l'Huppermage (alterner les éléments), la valeur des effets des sorts (cumul, bombe, écho…) et les bonus d'équipe posés par une attaque. L'Osamodas lance enfin Cri de l'Ours, le Pandawa ses meilleures attaques",
+  ] },
   { v: "2.1.20", name: "Idées des joueurs", guide: "metiers", items: [
     "Artisanat : la fiche d'une recette dit combien tu en possèdes déjà (sac et trop-plein), pour les objets comme pour les clés et objets du Bricoleur (signalement d'Akileuss)",
     "Récolte : envoie plusieurs héros d'un coup sur la même ressource. Bouton « Les N libres » sur la carte du métier, ou touche les héros voulus dans « Envoyer récolter » (idée d'Opla)",
@@ -6433,9 +6438,15 @@ const ATK_KINDS = ["dmg", "aoe", "drain", "dot"];
 const MECA_NOMS = { cumul: "Cumul", retard: "Retardement", etat: "État", contagion: "Contagion", erosion: "Érosion", attire: "Attirance", tp: "Téléportation", telefrag: "Téléfrag", piege: "Piège", glyphe: "Glyphe", boom: "Bombe", portail: "Portail", sacrifice: "Sacrifice", pioche: "Main pleine", echo: "Écho", relance: "Relance", rune: "Rune" };
 const spPrevCache = { key: null, data: null };
 const spPrevTeam = (c) => ui.spPrevMode === "team" && c.inTeam && !c.job && E.team(S).length > 1;
+const spAutoCache = { key: null, data: null };
+function spPrevAuto(c, team) { // 2.1.21 : le même aperçu, réglé sur Auto
+  const key = JSON.stringify([spPrevCache.key]);
+  if (spAutoCache.key !== key) { let d = null; try { d = E.poutchPreview(S, c.id, { team, auto: true }); } catch (e) { console.warn("aperçu auto", e); } spAutoCache.key = key; spAutoCache.data = d; }
+  return spAutoCache.data;
+}
 function spPreviewOf(c) {
   const team = spPrevTeam(c);
-  const key = JSON.stringify([c.id, c.lvl, c.spells, c.equip, c.pet, c.mount, c.stats, team, team ? S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job, x.spells, x.equip]) : 0]);
+  const key = JSON.stringify([c.id, c.lvl, c.spells, c.atkMode, c.equip, c.pet, c.mount, c.stats, team, team ? S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job, x.spells, x.equip]) : 0]);
   if (spPrevCache.key !== key) { let d = null; try { d = E.poutchPreview(S, c.id, { team }); } catch (e) { console.warn("aperçu des sorts", e); } spPrevCache.key = key; spPrevCache.data = d; }
   return spPrevCache.data;
 }
@@ -6479,6 +6490,14 @@ function spTips(c, P) {
   }
   return tips.slice(0, 4);
 }
+/* 2.1.21 : « Mon ordre » comparé à l'auto, avec un bouton pour y revenir (choix 3A) */
+function spCmpHtml(c, P, nR, team) {
+  if (c.atkMode !== "ordre") return "";
+  const A = spPrevAuto(c, team); if (!A || !A.total) return "";
+  const me = P.total / Math.max(1, nR), au = A.total / Math.max(1, A.rounds.length); const d = Math.round((me / au - 1) * 100);
+  return `<div class="spcmp ${d < -2 ? "bad" : d > 2 ? "good" : ""}"><div><span class="xs muted">Ton ordre</span><b>${fmt(Math.round(me))}</b><span class="xs muted">par tour</span></div><div class="vs">${d > 0 ? "+" : ""}${d} %</div><div><span class="xs muted">Auto</span><b>${fmt(Math.round(au))}</b><span class="xs muted">par tour</span></div>
+    <span class="txt small">${d < -2 ? `Ton ordre fait <b>${-d} % de dégâts en moins</b> que l'auto contre le Poutch.` : d > 2 ? `Ton ordre fait <b>${d} % de dégâts en plus</b> que l'auto contre le Poutch.` : "Ton ordre fait autant de dégâts que l'auto contre le Poutch."}</span>${d < -2 ? `<button class="btn sm" data-act="atkmode" data-v="">Revenir à l'auto</button>` : ""}</div>`;
+}
 function spPreviewHtml(c) {
   const P = spPreviewOf(c); const canTeam = c.inTeam && !c.job && E.team(S).length > 1; const team = spPrevTeam(c);
   const head = `<div class="phead"><h2>Ce que fera ton héros</h2><span class="spchips">${[["solo", "Seul"], ["team", "Avec l'équipe"]].map(([k, n]) => `<button class="spc ${(k === "team") === team ? "on" : ""}" data-act="spprev" data-k="${k}" ${k === "team" && !canTeam ? `disabled data-tip="Ce héros n'est pas dans l'équipe de combat"` : ""}>${n}</button>`).join("")}</span></div>`;
@@ -6502,7 +6521,7 @@ function spPreviewHtml(c) {
   const tips = spTips(c, LP);
   return `${head}<div class="pad stack" style="gap:8px">
     <p class="xs muted">${team ? "Avec ton équipe" : "Seul"} contre un <b>Poutch de ${fmt(P.hp)} PV</b> qui ne riposte pas, pendant ${nR} tours : toute sa séquence, pour vérifier ses instructions. Une seule cible : ses sorts de zone partent moins souvent qu'en vrai combat.</p>
-    <div class="spstat"><div><b>${fmt(Math.round(P.total / Math.max(1, nR)))}</b><span>dégâts par tour</span></div><div><b>${paAvg.toFixed(1).replace(".", ",")}/${P.paMax}</b><span>PA utilisés par tour</span></div><div class="${nUsed < eq.length ? "warn" : ""}"><b>${nUsed}/${eq.length}</b><span>sorts lancés</span></div></div>
+    ${spCmpHtml(c, P, nR, team)}<div class="spstat"><div><b>${fmt(Math.round(P.total / Math.max(1, nR)))}</b><span>dégâts par tour</span></div><div><b>${paAvg.toFixed(1).replace(".", ",")}/${P.paMax}</b><span>PA utilisés par tour</span></div><div class="${nUsed < eq.length ? "warn" : ""}"><b>${nUsed}/${eq.length}</b><span>sorts lancés</span></div></div>
     <div class="spturns">${rows}</div>
     <div class="splab">Sur ses ${nR} tours</div>
     <div class="spfreq">${freq}</div>
@@ -6528,10 +6547,18 @@ function spBarGroups(c, slots) {
   const tmp = document.createElement("div"); tmp.innerHTML = slots; const sup = [], atk = [];
   [...tmp.children].forEach((x) => (x.dataset.grp === "sup" ? sup : atk).push(x.outerHTML));
   return `<div class="spgrp sup"><div class="spgl"><b>① Soutien</b> · lancés d'abord, <b>dans cet ordre</b>, si leur condition est remplie</div><div class="spbar">${sup.join("") || `<span class="xs muted">Aucun sort de soutien</span>`}</div></div>
-    <div class="spgrp atk"><div class="spgl"><b>② Attaques</b> · <b>pas d'ordre</b> : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts (arme comprise)</div><div class="spbar">${atk.join("")}</div></div>`;
+    <div class="spgrp atk">${spAtkHead(c)}<div class="spbar">${atk.join("")}</div></div>`;
+}
+/* 2.1.21 « Mon ordre » (idée de Sky, choix de Mathis 1A 2A 3A 4A) : Auto ou dans l'ordre de la barre, une fois chacune puis on recommence */
+function spAtkHead(c) {
+  const m = c.atkMode === "ordre";
+  const chips = `<span class="spchips spmode">${[["", "Auto"], ["ordre", "Mon ordre"]].map(([v, n]) => `<button class="spc ${(m ? "ordre" : "") === v ? "on" : ""}" data-act="atkmode" data-v="${v}" aria-pressed="${(m ? "ordre" : "") === v}">${n}</button>`).join("")}</span>`;
+  const txt = m ? `<b>Dans ton ordre</b> : une fois chacune, de gauche à droite, puis il recommence. S'il manque de PA, il passe à la suivante.${canHover ? " Glisse un sort pour changer sa place." : ""}`
+    : `<b>Pas d'ordre</b> : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts (arme comprise), en tenant compte de son passif et des effets de ses sorts`;
+  return `<div class="spgl sphd"><b>② Attaques</b>${chips}</div><div class="spgl">${txt}</div>`;
 }
 function spHowHtml() {
-  const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux", "Avec les PA restants, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles. L'ordre des attaques ne compte pas."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
+  const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux ou dans ton ordre", "En Auto, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles, passif de classe et effets des sorts compris. En « Mon ordre », il les lance une fois chacune, de gauche à droite, puis recommence."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
   return `<details class="sphow" ${ui.spHowOpen ? "open" : ""}><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
 }
 function grimNew(c, pairs, eqIds, F) {
@@ -6581,7 +6608,8 @@ function charSpellsView(c) {
     if (!sp) return `<div class="spslotw"><button class="spslot empty ${sel === i ? "sel" : ""}" data-act="spsel" data-i="${i}" data-spslot="${i}" aria-label="Case ${i + 1} vide">+</button><span class="spcl"></span></div>`;
     const g = E.spellGrade(sp, c.lvl);
     const atk = ATK_KINDS.includes(spKindOf(c, sp)); const sn = eq.slice(0, i + 1).filter((y) => { const d = E.spellDef(c.cls, y.id); return d && !ATK_KINDS.includes(spKindOf(c, d)); }).length;
-    const nb = atk ? "" : `<span class="n">${sn}</span>`; // seuls les sorts de soutien ont un ordre
+    const an = eq.slice(0, i + 1).filter((y) => { const d = E.spellDef(c.cls, y.id); return d && ATK_KINDS.includes(spKindOf(c, d)); }).length;
+    const nb = atk ? (c.atkMode === "ordre" ? `<span class="n an">${an}</span>` : "") : `<span class="n">${sn}</span>`; // 2.1.21 : les attaques sont numérotées en « Mon ordre »
     return `<div class="spslotw" data-grp="${atk ? "atk" : "sup"}"><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-spdrag="s${i}" draggable="true" data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${nb}${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span class="pa">${g.pa}</span></button><span class="spcl ${COND_SHORT[x.cond] ? "on" : ""}">${COND_SHORT[x.cond] !== undefined ? COND_SHORT[x.cond] : h(CONDITIONS[x.cond] || "")}</span></div>`;
   }).join("");
   // grimoire par paires
@@ -9818,6 +9846,7 @@ document.addEventListener("click", (ev) => {
     case "spsel": ui.spSel = +d.i; break;
     case "spprev": ui.spPrevMode = d.k; break;
     case "spput": { const r = spPlace(c, d.id, +d.i, true); if (r) { toast(r); return; } ui.spUndo = null; break; }
+    case "atkmode": { if (d.v === "ordre") c.atkMode = "ordre"; else delete c.atkMode; c.activePreset = null; toast(c.atkMode ? "Mon ordre : les attaques partent dans l'ordre de la barre." : "Attaques en auto."); break; } // 2.2
     case "spopt": { const old = c.spells.map((x) => ({ ...x })); const r = spOptimize(c);
       if (!r.best) { toast("La barre est déjà bien rangée pour ce combat."); return; }
       c.spells = r.best; c.spellsManual = true; c.activePreset = null; ui.spUndo = { cid: c.id, spells: old }; ui.spSel = 0; toast(`Barre rangée : +${r.gain} % de dégâts sur 3 tours.`); break; }

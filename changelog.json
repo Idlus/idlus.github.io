@@ -1,6 +1,16 @@
 {
-  "version": "2.1.20",
+  "version": "2.1.21",
   "versions": [
+    {
+      "v": "2.1.21",
+      "name": "Mon ordre",
+      "guide": "sorts",
+      "items": [
+        "Sorts & stratégies : nouvel interrupteur Auto / « Mon ordre » au-dessus des attaques. En « Mon ordre », elles sont numérotées et partent une fois chacune, de gauche à droite, puis ça recommence (idée de Sky). Le réglage est gardé dans chaque stratégie, dans « Copier le setup » et au Kolizéum",
+        "« Ce que fera ton héros » compare ton ordre à l'Auto, et propose « Revenir à l'auto » s'il fait moins de dégâts",
+        "Auto plus malin : il connaît le passif de l'Huppermage (alterner les éléments), la valeur des effets des sorts (cumul, bombe, écho…) et les bonus d'équipe posés par une attaque. L'Osamodas lance enfin Cri de l'Ours, le Pandawa ses meilleures attaques"
+      ]
+    },
     {
       "v": "2.1.20",
       "name": "Idées des joueurs",

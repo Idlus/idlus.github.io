@@ -698,11 +698,13 @@
   E.savePreset = (S, cid, idx, name) => {
     const c = S.chars.find((x) => x.id === cid); if (!c || idx < 0 || idx >= E.MAX_PRESETS) return;
     c.presets[idx] = { name: (name || `Stratégie ${idx + 1}`).slice(0, 24), spells: c.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt })) };
+    if (c.atkMode === "ordre") c.presets[idx].am = "ordre"; // 2.1.21 : « Mon ordre » est gardé dans la stratégie
     c.activePreset = idx;
   };
   E.applyPreset = (S, cid, idx) => {
     const c = S.chars.find((x) => x.id === cid); const p = c && c.presets[idx]; if (!p) return false;
     c.spells = E.memFit(c, p.spells).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" })); c.spellsManual = true;
+    if (p.am === "ordre") c.atkMode = "ordre"; else delete c.atkMode;
     c.activePreset = idx; return true;
   };
   E.deletePreset = (S, cid, idx) => {
@@ -841,7 +843,8 @@
     if (what.sp && P.same) {
       const cp = (L) => L.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
       c.spells = E.memFit(c, cp(a.spells)).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
-      c.presets = (a.presets || []).map((p) => (p ? { name: p.name, spells: cp(p.spells || []) } : null));
+      c.presets = (a.presets || []).map((p) => (p ? Object.assign({ name: p.name, spells: cp(p.spells || []) }, p.am === "ordre" ? { am: "ordre" } : {}) : null));
+      if (a.atkMode === "ordre") c.atkMode = "ordre"; else delete c.atkMode;
       c.activePreset = a.activePreset != null && c.presets[a.activePreset] ? a.activePreset : null;
       c.zonePreset = Object.assign({}, a.zonePreset || {}); c.spellsManual = true; out.sp = true;
     }
@@ -1860,22 +1863,23 @@
      il estime les dégâts vraiment utiles : résistances de chaque cible (et peau du boss), PV restants (pas de dégâts perdus
      sur un monstre déjà mort), bonus quand un monstre tombe (coup de grâce), zone seulement s'il y a plusieurs ennemis.
      Il lance ensuite le sort le plus utile de la meilleure combinaison, puis recommence avec la situation nouvelle. */
-  E.PLAN = { kill: 0.3, depth: 5 };
-  const atkFx = (F, e, g) => { const pui = e.st.pui + buffSum(e, "pui"); const pw = E.classPow(e.cls, e.lvl);
+  E.PLAN = { kill: 0.3, depth: 5, passifs: !(typeof process !== "undefined" && process.env && process.env.NO_PASSIFS) }; // 2.1.21 : passifs = l'IA connaît le passif de l'Huppermage et la valeur des mécaniques des sorts
+  const atkFx = (F, e, g, sp) => { const pui = e.st.pui + buffSum(e, "pui"); const ip = E.PLAN.passifs && E.idPlan && sp ? E.idPlan(F, e, sp) : null;
+    const pw = E.classPow(e.cls, e.lvl) * (ip ? ip.m : 1); // 2.1.21 : valeur de la mécanique du sort (cumul, bombe, écho…) dans la situation du moment
     return g.fx.filter((f) => ["dmg", "drain", "dot"].includes(f.k)).map((f) => {
       const el = f.el === "best" ? bestEl(e.st) : f.el || "n"; const E2 = ELEMENTS[el] || ELEMENTS.n;
       const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
       let v = (((f.min + f.max) / 2) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + (e.st.do || 0) + (e.st[E2.dmg] || 0)) * pw * (f.n > 1 ? 0.85 : 1);
       if (f.k === "dot") v *= 0.55 * (f.t || 2) * 0.85; // un poison arrive plus tard : un peu moins utile
       if (f.k === "drain" && e.hp < e.hpMax * 0.7) v *= 1.15;
-      return { v, el, n: f.n || 1, dot: f.k === "dot" };
+      return { v, el, n: f.n || 1, dot: f.k === "dot", ip };
     }); };
-  const planGain = (fx, foes, hp) => { // dégâts utiles d'un sort sur l'état estimé (hp modifié en place)
+  const planGain = (fx, foes, hp, F) => { // dégâts utiles d'un sort sur l'état estimé (hp modifié en place)
     let gain = 0;
     for (const f of fx) {
       const order = foes.map((m, i) => i).filter((i) => hp[i] > 0).sort((x, y) => hp[x] - hp[y]).slice(0, f.n);
       for (const i of order) { const t = foes[i]; if (f.dot && t.noDot) continue;
-        let r = Math.min(50, (t.res || {})[f.el] || 0); let d = f.v * (1 - r / 100);
+        let r = Math.min(50, (t.res || {})[f.el] || 0); let d = f.v * (1 - r / 100) * (f.ip && F ? E.idPlanT(F, f.ip, { ...t, hp: hp[i] }) : 1);
         if (t.skinEl && t.skinEl === f.el) d *= t.mech && t.mech.includes("humeurs") ? 0.25 : 0.5;
         if (t.shield) d = Math.max(d * 0.3, d - t.shield);
         const used = Math.min(d, hp[i]); gain += used; hp[i] -= used;
@@ -1883,26 +1887,46 @@
     }
     return gain;
   };
+  /* 2.1.21 « Mon ordre » : l'IA connaît le passif de l'Huppermage (élément différent du précédent +10 %, 4 éléments = runes ×1,3) ;
+     pour lui l'ordre des attaques compte, toutes les suites sont donc essayées */
+  const hupMul = (e, el, lastEl, els) => { const evc = e.evc || 0; return (lastEl && lastEl !== el ? 1.1 + 0.05 * evc : 1) * (els.length >= 4 ? 1.3 + 0.1 * evc : 1); };
   const planTurn = (F, e, cands, pa) => { // cands : [{ idx, g, left }] ; renvoie l'idx à lancer
     const foes = alive(F, "m"); const hp0 = foes.map((m) => m.hp);
-    const fxOf = cands.map((c) => atkFx(F, e, c.g));
+    const fxOf = cands.map((c) => atkFx(F, e, c.g, c.sp));
+    const hup = e.cls === "hupper" && E.PLAN.passifs;
+    // 2.1.21 : bonus posés par une attaque (Puissance, PA, vulnérabilité) : l'Osamodas délaissait Cri de l'Ours (+150 Puissance à l'équipe)
+    const bonus = cands.map(() => 0);
+    if (E.PLAN.passifs) {
+      const perPa = Math.max(0, ...cands.map((c, k) => fxOf[k].reduce((a, f) => a + f.v * Math.min(f.n, Math.max(1, foes.length)), 0) / Math.max(1, c.g.pa)));
+      const turn = perPa * Math.max(1, e.st.pa || 6); const team = 1 + 0.6 * Math.max(0, alive(F, "c").filter((a) => !a.summon).length - 1);
+      const EL = ELEMENTS[bestEl(e.st)] || ELEMENTS.n; const base = 100 + Math.max(-50, (e.st[EL.stat] || 0) + buffSum(e, EL.stat) + e.st.pui + buffSum(e, "pui"));
+      cands.forEach((c, k) => c.g.fx.forEach((f) => {
+        if (f.k === "buff" && f.st === "pa") bonus[k] += f.v * perPa;
+        else if (f.k === "buff" && (f.st === "pui" || f.st === EL.stat) && !(e.buffs || []).some((b) => b.name === c.sp.name && b.turns > 0)) bonus[k] += turn * (f.v / base) * Math.min(2, f.t || 1) * (f.all ? team : 1) * 0.5;
+        else if (f.k === "vuln" && !foes.some((m) => (m.debuffs || []).some((d) => d.vuln && d.turns > 0))) bonus[k] += turn * (f.v / 100) * Math.min(2, f.t || 1) * team * 0.5;
+      }));
+    }
     let best = { v: -1, first: null };
-    const rec = (from, pa, left, hp, total, first, firstGain, depth) => {
+    const rec = (from, pa, left, hp, total, first, firstGain, depth, lastEl, els) => {
       if (total > best.v || (total === best.v && first !== null && best.first === null)) best = { v: total, first, firstGain };
       if (depth >= E.PLAN.depth) return;
-      for (let k = from; k < cands.length; k++) {
+      for (let k = hup ? 0 : from; k < cands.length; k++) { // Huppermage : l'ordre compte, toutes les suites sont essayées
         const c = cands[k]; if (c.g.pa > pa || left[k] <= 0) continue;
-        const h2 = hp.slice(); const gn = planGain(fxOf[k], foes, h2);
+        const h2 = hp.slice(); let fx = fxOf[k]; let le = lastEl, es = els;
+        if (hup) fx = fx.map((f, i) => { const o = { ...f, v: f.v * (i === 0 ? hupMul(e, f.el, le, es) : le && le !== f.el ? 1.1 : 1) }; if (i === 0 && es.length >= 4) es = []; le = f.el; if (!es.includes(f.el)) es = es.concat(f.el); return o; });
+        const gn = planGain(fx, foes, h2, F) + (left[k] === c.left ? bonus[k] : 0);
         if (gn <= 0) continue;
         left[k]--;
-        const f2 = first === null || gn > firstGain ? k : first; // dans la combinaison, on commence par le sort le plus utile
-        rec(k, pa - c.g.pa, left, h2, total + gn, f2, f2 === k ? gn : firstGain, depth + 1);
+        const f2 = hup ? (first === null ? k : first) : first === null || gn > firstGain ? k : first; // dans la combinaison, on commence par le sort le plus utile
+        rec(k, pa - c.g.pa, left, h2, total + gn, f2, f2 === k ? gn : firstGain, depth + 1, le, es);
         left[k]++;
       }
     };
-    rec(0, pa, cands.map((c) => c.left), hp0, 0, null, 0, 0);
+    rec(0, pa, cands.map((c) => c.left), hp0, 0, null, 0, 0, e.lastEl || null, (e.els || []).slice());
     return best.first === null ? null : cands[best.first].idx;
   };
+  /* 2.1.21 « Mon ordre » (idée de Sky) : chaque attaque une fois, dans l'ordre de la barre, puis on recommence ; s'il manque de PA, la suivante */
+  const orderPick = (e, cands) => { const o = cands.slice().sort((a, b) => a.idx - b.idx); const p = e.ordI ?? -1; const x = o.find((y) => y.idx > p) || o[0]; e.ordI = x.idx; return x.idx; };
   const castLimit = (g) => (g.casts > 0 ? Math.min(g.casts, 3) : 1);
   const charTurn = (S, F, e, paStart) => {
     const c = S.chars.find((x) => x.id === e.cid); if (!c) return;
@@ -1950,7 +1974,7 @@
           if (!["dmg", "aoe", "drain", "dot"].includes(E.spellKind(g)) || (nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa || (e.silence > 0 && g.cd)) return;
           if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g)) return;
           cands.push({ idx, g, sp, slot, left: Math.min(castLimit(g) - (nCast[idx] || 0), g.cd ? 1 : 9) }); });
-        const pick = cands.length > 1 ? planTurn(F, e, cands, pa) : null;
+        const pick = c.atkMode === "ordre" && cands.length ? orderPick(e, cands) : cands.length > 1 ? planTurn(F, e, cands, pa) : null;
         const pc = pick !== null && cands.find((x) => x.idx === pick); if (pc) best = { slot: pc.slot, idx: pc.idx, sp: pc.sp, g: pc.g };
       }
       if (!best) break;
@@ -2256,7 +2280,7 @@
      st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
-    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") + E.mtPass(S, c), lg: E.legOf ? E.legOf(S, c) : null,
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), am: c.atkMode === "ordre" ? 1 : 0, st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") + E.mtPass(S, c), lg: E.legOf ? E.legOf(S, c) : null,
     mt: E.mtFx ? E.mtFx(S, c) : null, bt: E.btFx ? E.btFx(S) : null, // 2.0 : Maîtrise
     dp: E.dofpOf ? E.dofpOf(S, c) : null, dpB: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus
     wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
@@ -2265,7 +2289,7 @@
     const chars = [], ents = [];
     [A, B].forEach((T, tm) => T.forEach((h, i) => {
       const id = tm ? 1000000 + i : (opts.ids && opts.ids[i]) || 900000 + i; const st = Object.assign({}, h.st);
-      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), alloc: {}, equip: {}, eveils: {} }); /* 2.0.10 : les Éveils n'existent plus, une ancienne équipe de défense ne les garde pas */
+      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "ordre" : undefined, alloc: {}, equip: {}, eveils: {} }); /* 2.0.10 : les Éveils n'existent plus, une ancienne équipe de défense ne les garde pas */
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
         buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.mt ? h.evc || 0 : 0, ev: {}, mt: h.mt || null, bt: h.bt || null,
@@ -2304,6 +2328,7 @@
       let seed = 7919; rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
       const S2 = JSON.parse(JSON.stringify(S)); const c = S2.chars.find((x) => x.id === cid);
       if (o.spells) c.spells = o.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+      if (o.auto) delete c.atkMode; // 2.1.21 : comparaison de « Mon ordre » avec l'auto
       S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
       const team = o.team && c.inTeam && !c.job;
       if (!team) S2.chars.forEach((x) => (x.inTeam = x.id === cid));

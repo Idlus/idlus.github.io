@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.21 « Mon ordre »
+
+- Sorts & stratégies : interrupteur Auto / « Mon ordre » (attaques une fois chacune dans l'ordre de la barre), comparaison avec l'Auto dans l'aperçu, Auto qui connaît le passif de l'Huppermage, les mécaniques des sorts et les bonus d'attaque.
+
 ## 2.1.20 « Idées des joueurs »
 
 - Artisanat : la fiche d'une recette dit combien on possède déjà de l'objet fabriqué (ticket #124, Akileuss).

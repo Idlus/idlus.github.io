@@ -186,7 +186,7 @@
       ["p", `Les petits parchemins donnent +1, les grands +3, pour toujours, jusqu'à ${N(() => E.SCROLL_MAX)} par caractéristique et par héros. Ils ne comptent pas dans les paliers de coût. Les petits se fabriquent avec de la Poussière de stasis et des kamas (le prix monte à chaque fabrication).`],
     ] });
 
-  add({ id: "sorts", f: "Héros", n: "Sorts et stratégies", ic: "idee", page: "team", pages: ["spells"], k: "sort variante barre condition cible preset strategie identite mecanique poutch apercu",
+  add({ id: "sorts", f: "Héros", n: "Sorts et stratégies", ic: "idee", page: "team", pages: ["spells"], k: "sort variante barre condition cible preset strategie identite mecanique poutch apercu ordre mon ordre sequence auto attaques",
     ou: "Héros › Équipe et héros › fiche du héros › Sorts & stratégies", de: "les sorts arrivent avec les niveaux",
     voir: ["combat", "maitrise"],
     b: () => [
@@ -195,7 +195,10 @@
       ["ul", [
         "Tant que tu n'as pas touché la barre, elle se remplit seule : au moins 3 attaques, puis une invocation, un soin et une protection.",
         "Chaque sort peut avoir une **condition** (par exemple « si un allié a moins de 50 % de vie ») et une **cible** préférée.",
-        "Une **stratégie** est une barre enregistrée ; elle peut être liée à une zone.",
+        "Les sorts de **Soutien** (invocations, soins, boucliers, bonus) partent d'abord, dans l'ordre de la barre, si leur condition est remplie.",
+        "Les **Attaques** sont en **Auto** par défaut : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts, en tenant compte de son passif de classe (l'Huppermage alterne ses éléments) et des effets de ses sorts.",
+        "Avec **« Mon ordre »**, les attaques sont numérotées et partent une fois chacune, de gauche à droite, puis ça recommence ; s'il manque de PA, le héros passe à la suivante. « Ce que fera ton héros » compare alors ton ordre à l'Auto et propose d'y revenir s'il fait moins de dégâts.",
+        "Une **stratégie** est une barre enregistrée, avec son réglage Auto ou « Mon ordre » ; elle peut être liée à une zone.",
         "L'arme équipée ajoute un **coup d'arme** sur la barre (voir Équipement).",
         "Chaque sort a sa propre **mécanique** (cumul, retardement, piège, glyphe, bombe, portail…), expliquée dans le bloc « Identité du sort » de sa fiche. En combat, les noms des sorts ne s'affichent pas : on reconnaît un sort à son animation.",
         `Le bloc **« Ce que fera ton héros »** le fait taper un **Poutch de ${N(() => E.POUTCH_HP)} PV** qui ne riposte pas, pendant ${N(() => E.POUTCH_TOURS)} tours, seul ou avec l'équipe : chaque tour, ses sorts, leurs dégâts, leurs mécaniques et ses PA. C'est le moyen de vérifier ses instructions. Une seule cible : les sorts de zone y partent moins qu'en vrai combat.`,
