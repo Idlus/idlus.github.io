@@ -54,7 +54,7 @@
     ebene:     ["Marque d'ébène", (v) => `L'ennemi frappé par le porteur est marqué : toute l'équipe lui fait +${pc(v)} % de dégâts jusqu'au tour suivant (une marque à la fois).`, 6, "Contrôle", "hit", "dps"],
     glaces:    ["Cœur de glace", (v) => `Quand le porteur est touché, ${pc(v)} % de chance de geler l'attaquant : il perd 1 PM et joue en dernier au tour suivant.`, 35, "Contrôle", "hurt", "front"],
     sylvestre: ["Sève sylvestre", (v) => `Au début du tour du porteur, l'allié le plus blessé récupère ${pc(v)} % de ses PV.`, 3, "Soin", "turn", "heal"],
-    argente:   ["Lueur d'Ilyzaelle", () => `Une fois par combat, quand un allié tombe à 0 PV, la lueur le garde debout avec 1 PV.`, 1, "Défense", "ally", "all"],
+    argente:   ["Lueur d'Ilyzaelle", () => `Une fois par combat et par équipe (même avec plusieurs porteurs), quand un allié tombe à 0 PV, la lueur le garde debout avec 1 PV.`, 1, "Défense", "ally", "all"],
     cauchemar: ["Terreur nocturne", (v) => `Les ennemis touchés par le porteur infligent ${pc(v)} % de dégâts en moins jusqu'à leur prochain tour.`, 5, "Contrôle", "hit", "dps"],
     verdoyant: ["Floraison", (v) => `Chaque allié soigné par le porteur fleurit : son prochain coup fait +${pc(v)} % de dégâts.`, 10, "Soin", "heal", "heal"],
     tachete:   ["Écailles tachetées", (v) => `Chaque coup reçu durcit ses écailles : −2 % de dégâts subis jusqu'à la fin du combat (jusqu'à −${pc(v)} %).`, 10, "Défense", "hurt", "front"],
@@ -163,8 +163,9 @@
   /* Lueur d'Ilyzaelle : un porteur debout (ou le héros lui-même) le garde en vie à 1 PV, une fois par combat */
   E.dofpSave = (F, tgt) => {
     if (!tgt.dp || tgt.summon) return;
+    const tm = tgt.tm !== undefined ? tgt.tm : tgt.side; F.dpArg = F.dpArg || {}; if (F.dpArg[tm]) return; // grand équilibrage : une seule lueur par équipe et par combat
     const w = F.ents.find((m) => m.side === tgt.side && !m.summon && (m.alive || m === tgt) && m.dpS && m.dpS.save && has(m, "argente")); if (!w) return;
-    w.dpS.save = 0; tgt.hp = 1;
+    w.dpS.save = 0; F.dpArg[tm] = 1; tgt.hp = 1;
     F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); proc(F, w, "argente", `${tgt.name} reste debout`);
   };
   /* après un coup du porteur */

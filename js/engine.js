@@ -1329,7 +1329,12 @@
     return out;
   };
   E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
+  /* Le grand équilibrage (choix 4A de Mathis) : difficulté propre à quelques donjons (PV et dégâts de leurs monstres, × la valeur),
+     réglée par simulation (équipe de 8 héros de leur niveau, bon équipement, stasis 7 visée). */
+  E.DG_DIFF = {};
+  const applyDiff = (S, mons) => { const m = E.DG_DIFF[S.dungeon && S.dungeon.id]; if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
   const applyStasis = (S, F, mons, room, isBoss) => {
+    applyDiff(S, mons);
     const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1 && !(D2.mods || []).length) return mons;
     const M = E.stasisMult(k); const mods = D2.mods || [];
     mons.forEach((m) => {
@@ -1573,6 +1578,9 @@
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
   /* 2.1.26.1 (Mathis) : Crâ −5 % dès le niveau 88 (0,8 → 0,76) */
   E.CLASS_POW = {"iop":[0.8,0.8,0.8,0.89,1.2,1.2,1.2,0.98,0.98,0.98,0.98,0.98],"cra":[1.2,1.2,1.2,1.2,1.16,0.82,0.76,0.76,0.76,0.76,0.76,0.76],"eni":[1.2,1.19,1.07,1.02,0.98,1,1.1,1.17,1.25,1.5,1.25,1.17],"feca":[1.02,0.98,0.93,0.95,0.99,1,1,1.02,1.02,1.02,1.02,1.02],"osa":[0.94,0.92,0.92,0.91,0.91,0.93,0.97,0.97,0.97,0.97,0.97,0.97],"enu":[1.02,1.06,1.06,1.07,1.1,1.11,1.13,1.16,1.3,1.16,1.05,1.3],"sram":[1.04,1.03,1.02,1.01,1.01,1.04,1.07,1.04,1.04,1.04,1.04,1.04],"xelor":[0.98,1.02,1.03,1.03,1.02,0.99,0.96,1,1,1.15,1.22,1],"eca":[1.2,1.2,0.75,0.75,0.8,0.8,0.8,0.86,0.86,0.86,0.86,0.86],"sadi":[0.8,0.81,0.81,0.82,0.86,0.91,0.95,0.98,0.98,0.98,0.98,0.98],"sacri":[1.01,0.98,0.98,1.03,1.08,1.11,1.1,1.06,1.06,1.06,1.06,1.06],"panda":[0.91,0.87,0.84,0.86,0.88,0.85,0.84,0.86,0.86,0.86,0.86,0.86],"roub":[1.01,0.98,0.85,0.85,1.01,0.99,1.02,1.05,1.05,1.05,1.17,1.05],"zobal":[1.11,1.06,1.07,1.15,1.2,1.2,1.11,0.96,0.96,0.96,0.96,0.96],"steam":[0.81,0.81,0.83,0.84,0.88,0.92,0.94,0.98,0.98,0.98,0.98,0.98],"elio":[0.95,1.06,1.4,1.35,1.2,1.2,1.2,1.2,1.2,1.2,1.2,0.95],"hupper":[0.82,0.85,0.84,0.84,0.93,1.02,1.06,1.14,1.14,1.22,1.3,1.08],"ougi":[1.05,1.03,1.01,1.02,1.05,1.08,1.09,1.09,1.09,0.95,0.92,0.95],"forge":[0.97,1,0.99,1,1.02,1.03,1.04,1,1,1,1,1]}; // 0.1.12.5 : paliers 120, 140, 170 et 200 ajoutés pour régler les hauts niveaux
+  /* Le grand équilibrage (choix 1A de Mathis : on remonte les classes faibles, on ne baisse personne) : × sur les paliers 140, 170 et 200,
+     réglé par simulation (équipes de 4 héros, mono et mixtes, bon et optimisé ; objectif stasis 7 à 7,5 en mixte). */
+  Object.entries({ sadi: 1.2, enu: 1.2, sacri: 1.15, feca: 1.15, sram: 1.12, eni: 1.12, zobal: 1.08 }).forEach(([c, m]) => { E.CLASS_POW[c] = E.CLASS_POW[c].map((x, i) => (i >= 9 ? +(x * m).toFixed(3) : x)); });
   E.classPow = (cls, lvl) => {
     const t = E.CLASS_POW[cls]; if (!t) return (CLASSES[cls] && CLASSES[cls].pow) || 1;
     const L = E.POW_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
