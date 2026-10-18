@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.17";
+const GAME_VERSION = "2.1.17.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.17.1", name: "Étoiles de monture", guide: "elevage", items: [
+    "Montures : l'info « une étoile de plus possible » des chromatiques dit maintenant comment la monter (bouton « +1 étoile » de la fiche, Héros › Élevage › Écurie › Fiche, 2 000 Essence, une fois par jour). Le guide Élevage l'explique aussi. Les étoiles des montures se voient aussi quand on les croise (choix des deux montures), dans la Collection et sur l'emplacement Monture du héros (signalement de Hayabusa)",
+  ] },
   { v: "2.1.17", name: "Bouclier des étoiles", items: [
     "Le serveur vérifie aussi les points de Maîtrise des parties envoyées : une Maîtrise impossible pour le temps écoulé depuis la Maîtrise lente est signalée",
   ] },
@@ -6047,7 +6050,7 @@ const mountStatTxt = (stats) => petBonus(stats);
 const mountBar = (M) => `<div class="pbar"><i style="width:${M.lvl >= E.MOUNT_MAX ? 100 : pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i><span>${M.lvl >= E.MOUNT_MAX ? `Niveau ${E.MOUNT_MAX} : bonus au maximum` : `Niveau ${M.lvl} · ${Math.floor(pct(M.xp, E.mountXpNeed(M.sp, M.lvl)))} %`}</span></div>`;
 function mountSlot(c) {
   const M = E.mountOf(S, c); const blocked = E.mountBlocked(S, c);
-  const tip = blocked ? "Monture : la place est prise par le montilier" : M ? `${E.mountName(M)} · niveau ${M.lvl}` : c.lvl < E.MOUNT_LVL ? `Monture : dès le niveau ${E.MOUNT_LVL}` : "Monture : vide";
+  const tip = blocked ? "Monture : la place est prise par le montilier" : M ? `${E.mountName(M)} ${"★".repeat(M.st || 1)} · niveau ${M.lvl}` : c.lvl < E.MOUNT_LVL ? `Monture : dès le niveau ${E.MOUNT_LVL}` : "Monture : vide";
   return `<button class="dslot pet mount ${M ? "filled" : ""} ${blocked ? "blocked" : ""}" data-act="herotab" data-v="pet" data-tip="${h(tip)}">
     ${M ? im(mountImg(M.sp, M.c), "", E.mountName(M)) : `<span class="dlabel">Monture</span>`}${M && M.lvl < E.MOUNT_MAX ? `<i class="pgrow" style="width:${M.lvl}%"></i>` : ""}</button>`;
 }
@@ -6113,13 +6116,14 @@ function enclosBody() {
     <p class="note xs" style="margin:0">Croisement connu : ${E.ODDS.known[0]} % la nouvelle couleur, ${E.ODDS.known[1]} % chaque parent, ${E.ODDS.known[3]} % un bicolore. Autre couple : ${E.ODDS.free[1]} % chaque parent, ${E.ODDS.free[3]} % un bicolore. Un bicolore transmet sa première couleur. Chaque monture a ${E.kidsCap(S)} petits au plus, puis se repose (elle reste montable).</p>
   </div>`;
 }
+const mtStars = (M) => (window.ELEVUI ? window.ELEVUI.starsOf(M) + (window.ELEVUI.capTag ? " " + window.ELEVUI.capTag(M.cap) : "") : ""); // 2.1.17.1 : étoiles visibles au croisement
 function breedPickSheet() {
   const sp = ui.breedA ? S.mounts[ui.breedA].sp : null;
   const list = Object.values(S.mounts).filter((M) => (!sp || M.sp === sp) && M.uid !== ui.breedA).sort((a, b) => E.MOUNT_ORDER.indexOf(a.sp) - E.MOUNT_ORDER.indexOf(b.sp) || b.lvl - a.lvl);
   const A = ui.breedA ? S.mounts[ui.breedA] : null;
-  openSheet(`<h2>${IC("ailes")} Croiser deux montures</h2><p class="small muted">${A ? `Première monture : <b>${h(E.mountName(A))}</b>. Choisissez la seconde (même espèce).` : "Choisissez la première monture. Il faut le niveau " + E.BREED_LVL + " et des petits restants."}</p>
+  openSheet(`<h2>${IC("ailes")} Croiser deux montures</h2><p class="small muted">${A ? `Première monture : <b>${h(E.mountName(A))}</b> ${mtStars(A)}. Choisissez la seconde (même espèce).` : "Choisissez la première monture. Il faut le niveau " + E.BREED_LVL + " et des petits restants."}</p>
     <div class="list">${list.map((M) => { const why = E.breedWhy(S, M); const odds = A ? E.breedOdds(S, A, M) : null;
-      return `<div class="li"><span class="icobox">${im(mountImg(M.sp, M.c), "", "")}</span><span class="grow"><b>${h(E.mountName(M))}</b> <span class="xs muted">niv. ${M.lvl} · petits ${M.kids}/${E.kidsCap(S, M)}</span>${odds ? `<br><span class="xs">${odds.map(([c, pc, neu]) => `${neu && !seenCol(M.sp, c) ? `<b class="neu">nouvelle couleur</b>` : h(E.colourName(M.sp, c))} ${String(Math.round(pc * 10) / 10).replace(".", ",")} %`).join(" · ")}</span>` : ""}${why ? `<br><span class="xs ko">${why}</span>` : ""}</span>
+      return `<div class="li"><span class="icobox">${im(mountImg(M.sp, M.c), "", "")}</span><span class="grow"><b>${h(E.mountName(M))}</b> ${mtStars(M)} <span class="xs muted">niv. ${M.lvl} · petits ${M.kids}/${E.kidsCap(S, M)}</span>${odds ? `<br><span class="xs">${odds.map(([c, pc, neu]) => `${neu && !seenCol(M.sp, c) ? `<b class="neu">nouvelle couleur</b>` : h(E.colourName(M.sp, c))} ${String(Math.round(pc * 10) / 10).replace(".", ",")} %`).join(" · ")}</span>` : ""}${why ? `<br><span class="xs ko">${why}</span>` : ""}</span>
         <button class="btn sm primary" data-act="${A ? "breed" : "breedsel"}" ${A ? `data-a="${A.uid}" data-b="${M.uid}"` : `data-uid="${M.uid}"`} ${why ? "disabled" : ""}>${A ? "Lancer" : "Choisir"}</button></div>`; }).join("") || `<div class="empty">Aucune monture${sp ? " de cette espèce" : ""}.</div>`}</div>
     <div class="row">${A ? `<button class="btn" data-act="breedpick" data-reset="1">Changer la première</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }

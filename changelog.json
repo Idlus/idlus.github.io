@@ -1,6 +1,14 @@
 {
-  "version": "2.1.17",
+  "version": "2.1.17.1",
   "versions": [
+    {
+      "v": "2.1.17.1",
+      "name": "Étoiles de monture",
+      "guide": "elevage",
+      "items": [
+        "Montures : l'info « une étoile de plus possible » des chromatiques dit maintenant comment la monter (bouton « +1 étoile » de la fiche, Héros › Élevage › Écurie › Fiche, 2 000 Essence, une fois par jour). Le guide Élevage l'explique aussi. Les étoiles des montures se voient aussi quand on les croise (choix des deux montures), dans la Collection et sur l'emplacement Monture du héros (signalement de Hayabusa)"
+      ]
+    },
     {
       "v": "2.1.17",
       "name": "Bouclier des étoiles",

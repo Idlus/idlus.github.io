@@ -34,7 +34,7 @@
   const starsHtml = (n, max) => `<span class="el-st" aria-label="${n} étoile${n > 1 ? "s" : ""}">${"★".repeat(n)}<i>${"★".repeat(Math.max(0, max - n))}</i></span>`;
   const starsOf = (M) => starsHtml(M.st || 1, E.starCap(S(), M));
   const capTag = (k) => (k && E.CAPS[k] ? `<span class="tag el-cap" data-tip="${h(E.CAPS[k].txt)}">${h(E.CAPS[k].name)}</span>` : "");
-  const chrTag = (M) => (M.chr ? `<span class="tag el-chrt" data-tip="Variante chromatique : une étoile de plus possible">chromatique</span>` : "");
+  const chrTag = (M) => (M.chr ? `<span class="tag el-chrt" data-tip="Variante chromatique : une étoile de plus possible (${E.ST_BASE + 1} au lieu de ${E.ST_BASE}). Pour la monter : bouton « +1 étoile » de sa fiche (Héros › Élevage › Écurie › Fiche), ${fmt(E.ESS_STAR)} Essence, une fois par jour.">chromatique</span>` : "");
   const statTxt = (o) => (window.DX.social.petBonus ? window.DX.social.petBonus(o) : Object.entries(o).map(([k, v]) => `+${v} ${k}`).join(" · "));
   const statsNow = (M) => bonusTxt(E.mountStatsAt(M));
   const PCT = ["cri", "rt", "rf", "re", "ra", "rn", "dsort"];
@@ -317,7 +317,7 @@
     const s = S();
     if (ev.t === "elevrare") { const M = s.mounts[ev.uid]; if (!M) return "";
       const k = ev.kind === "chr" ? "Naissance chromatique !" : ev.kind === "st" ? `Naissance ${"★".repeat(M.st)}` : "Dernière génération";
-      return `<div class="cele-art pet">${mImg(M.sp, M.c, M.chr, "celepet")}</div><div class="cele-k">${IC("ailes")} ${k}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">${ev.kind === "chr" ? "Une naissance sur 150 : couleurs inversées, halo doré et une étoile de plus possible." : `Au niveau ${E.MOUNT_MAX} : ${h(bonusTxt(E.mountStatsMax(M.sp, M.c, M)))}`} Tout le serveur l'apprend dans le chat (compte en ligne).</div>`; }
+      return `<div class="cele-art pet">${mImg(M.sp, M.c, M.chr, "celepet")}</div><div class="cele-k">${IC("ailes")} ${k}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">${ev.kind === "chr" ? "Une naissance sur 150 : couleurs inversées, halo doré et une étoile de plus possible : polissez-la depuis sa fiche dans l'Écurie (« +1 étoile », " + fmt(E.ESS_STAR) + " Essence par jour)." : `Au niveau ${E.MOUNT_MAX} : ${h(bonusTxt(E.mountStatsMax(M.sp, M.c, M)))}`} Tout le serveur l'apprend dans le chat (compte en ligne).</div>`; }
     if (ev.t === "elevcarnet") return `<div class="cele-art pet">${mImg(ev.sp, E.MOUNT_SP[ev.sp].wild[0], false, "celepet")}</div><div class="cele-k">${IC("trophee")} Carnet complet</div><div class="cele-t">${h(E.SP_TITLE[ev.sp])}</div><div class="cele-s">Titre débloqué, +${E.STABLE_CARNET} places d'écurie et une 6e étoile possible pour les ${h(spPl(ev.sp).toLowerCase())}.${E.grandEleveur(s) ? ` Les trois carnets : « ${E.GRAND_TITLE} » et un 4e couple !` : ""}</div>`;
     return "";
   }

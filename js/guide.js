@@ -331,7 +331,7 @@
       ["ul", [
         "Avec une recette connue, la chance d'une nouvelle couleur part de 20 % et monte avec la pureté des parents (une monture capturée compte comme pure), jusqu'à 60 %.",
         `Un petit reçoit la moyenne des étoiles de ses parents, avec ${pc(V(() => E.ST_UP > 1 ? E.ST_UP / 100 : E.ST_UP, 0))} de chance d'une de plus et ${pc(V(() => E.ST_DOWN > 1 ? E.ST_DOWN / 100 : E.ST_DOWN, 0))} d'une de moins (${N(() => E.ST_BASE)} étoiles au plus, +1 avec le carnet complet, +1 si chromatique).`,
-        `**Essence** : relâcher une monture en donne (niveau × étoiles). ${N(() => E.ESS_LVL)} Essence = +1 niveau ; ${N(() => E.ESS_STAR)} Essence = +1 étoile (une fois par jour).`,
+        `**Essence** : relâcher une monture en donne (niveau × étoiles). ${N(() => E.ESS_LVL)} Essence = +1 niveau ; ${N(() => E.ESS_STAR)} Essence = +1 étoile (une fois par jour et par monture), avec le bouton « +1 étoile » de la fiche de la monture (Héros › Élevage › Écurie › Fiche). C'est le seul moyen de monter les étoiles d'une monture déjà née, chromatique comprise.`,
         `**Objets d'élevage** (Baffeur, Caresseur, Foudroyeur, Dragofesse) : 5 niveaux, chacun dure ${N(() => E.ITEM_USES)} naissances.`,
         `**Balades** de 4 h ou 8 h : Essence et ressources (${N(() => E.BAL_MAX)} en même temps, monture niveau ${N(() => E.BAL_LVL)}+).`,
         `**Commandes d'éleveur** : ${N(() => E.ORD_N)} par jour.`,
