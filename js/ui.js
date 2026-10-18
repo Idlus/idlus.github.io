@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.26.1";
+const GAME_VERSION = "2.1.26.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.26.2", name: "La partition du Phénix", items: [
+    "Partitions : l'air « Renaissance du Phénix » se trouve maintenant sur la page Maîtrise. Il était introuvable depuis que la Renaissance est devenue la Maîtrise (2.0), ce qui bloquait le succès Mélomane à 49/50",
+  ] },
   { v: "2.1.26.1", name: "Crâ ajusté", guide: "classes", items: [
     "Crâ : dégâts légèrement réduits (−5 %) à partir du niveau 88. Au Kolizéum, rien ne change",
   ] },
@@ -9283,10 +9286,11 @@ const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", ca
   obscure: "obscure", harebourg: "harebourg", sufokia: "sufokia", cavaliers: "obscure", wukin: "wukin", possedes: "landes", ecailles: "sufokia", vulkania: "vulkania" };
 const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles: "brakmar" };
 const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier",
-  defi: "defi", team: "heros", heroes: "heros", inv: "sac", ren: "phenix", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees", // 1.0.29 : un air pour chaque menu
-  comptoirs: "comptoirs", foire: "foire", pets: "montures", cours: "cours" }; // 1.0.32.7 : les menus arrivés avec la 1.0.30
+  defi: "defi", team: "heros", heroes: "heros", inv: "sac", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees", // 1.0.29 : un air pour chaque menu
+  comptoirs: "comptoirs", foire: "foire", pets: "montures", cours: "cours", // 1.0.32.7 : les menus arrivés avec la 1.0.30
+  maitrise: "phenix" }; // 2.1.26.2 : la Renaissance est devenue la Maîtrise (2.0), son air « Renaissance du Phénix » ne se trouvait plus nulle part
 const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie",
-  monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Renaissance", quetes: "page Quêtes",
+  monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Maîtrise", quetes: "page Quêtes",
   succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions",
   comptoirs: "page Comptoirs", foire: "page Foire du Trool", montures: "page Familiers et montures", cours: "page Cours des ressources" };
 const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };

@@ -1,6 +1,13 @@
 {
-  "version": "2.1.26.1",
+  "version": "2.1.26.2",
   "versions": [
+    {
+      "v": "2.1.26.2",
+      "name": "La partition du Phénix",
+      "items": [
+        "Partitions : l'air « Renaissance du Phénix » se trouve maintenant sur la page Maîtrise. Il était introuvable depuis que la Renaissance est devenue la Maîtrise (2.0), ce qui bloquait le succès Mélomane à 49/50"
+      ]
+    },
     {
       "v": "2.1.26.1",
       "name": "Crâ ajusté",
