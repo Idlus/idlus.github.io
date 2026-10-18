@@ -111,7 +111,7 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   if (R1.done) assert.strictEqual(E.stasisInfo(P, did).max, 2, "la stasis gagnée en groupe compte");
   console.log(`ok - mercenaire et groupe (${R1.rooms.length} salles, ${L.kamas} kamas)`);
 }
-// 7. Métiers (M1) : tout jusqu'au niveau 100, 3 spécialités jusqu'à 200, un changement par manche ; récolte 2 fois plus rapide.
+// 7. Métiers (M1) : récolte et artisanat jusqu'au niveau 100, forgemagie jusqu'à 200, 3 spécialités jusqu'à 200, un changement par manche ; récolte 2 fois plus rapide.
 {
   now = Date.UTC(2030, 0, 9, 12, 0);
   const S = E.monoStart(E.newState("Artisan", "iop")); S.crafts = S.crafts || {};
@@ -122,8 +122,8 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   const pot = () => { S.cons = S.cons || {}; S.cons.potion_savoir = 5; return E.useConsumable ? E.useConsumable(S, "potion_savoir", "paysan") : null; };
   if (E.useConsumable) { pot(); assert.strictEqual(S.jobs.paysan.lvl, 100, "bloqué au niveau 100"); }
   assert.strictEqual(E.monoSetSpec(S, 0, "tailleur"), null); assert.strictEqual(E.monoSetSpec(S, 1, "paysan"), null); assert.strictEqual(E.monoSetSpec(S, 2, "mineur"), null);
-  assert.strictEqual(E.jobCap(S, "c", "tailleur"), 200); assert.strictEqual(E.jobCap(S, "f", "costumage"), 200, "la forgemagie suit son métier");
-  assert.strictEqual(E.jobCap(S, "f", "forgemage"), 100);
+  assert.strictEqual(E.jobCap(S, "c", "tailleur"), 200); assert.strictEqual(E.jobCap(S, "f", "costumage"), 200);
+  assert.ok(Object.keys(E.FM_JOBS).every((f) => E.jobCap(S, "f", f) === 200), "toute la forgemagie jusqu'au niveau 200");
   assert.ok(/déjà une spécialité/.test(E.monoSetSpec(S, 1, "tailleur")));
   S.jobs.paysan.lvl = 150; S.jobs.paysan.xp = 7;
   assert.ok(/une fois par manche/.test(E.monoSetSpec(S, 1, "bucheron")) === false, "premier changement libre");

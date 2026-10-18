@@ -7494,13 +7494,12 @@ function monoSpecHtml() {
   const M = E.MONO.jobs, sp = E.monoSpecs(S), can = E.monoCanSwap(S), man = E.monoManche(S);
   const jobs = Object.keys(GATHER_JOBS).map((j) => [j, GATHER_JOBS[j].name, "Récolte"]).concat(Object.keys(CRAFT_JOBS).map((j) => [j, CRAFT_JOBS[j].name, "Artisanat"]));
   const lvlOf = (j) => (GATHER_JOBS[j] ? (S.jobs[j] || {}).lvl : ((S.crafts || {})[j] || {}).lvl) || 1;
-  const fmOf = (j) => (E.FM_JOBS ? Object.keys(E.FM_JOBS).filter((f) => E.FM_JOBS[f].base === j).map((f) => E.FM_JOBS[f].name) : []);
   const card = (i) => { const j = sp[i]; const lock = j && !can;
     const opts = `<option value="">${j ? "Retirer" : "Choisir un métier…"}</option>${["Récolte", "Artisanat"].map((g) => `<optgroup label="${g}">${jobs.filter((x) => x[2] === g && (x[0] === j || !sp.includes(x[0]))).map(([k, n]) => `<option value="${k}" ${k === j ? "selected" : ""}>${h(n)} (niv. ${lvlOf(k)})</option>`).join("")}</optgroup>`).join("")}`;
-    return `<div class="spc${j ? " spcon" : ""}"><span class="xs muted">Spécialité ${i + 1}</span>${j ? `<b>${h((GATHER_JOBS[j] || CRAFT_JOBS[j]).name)}</b><span class="xs">niveau ${lvlOf(j)} / 200${fmOf(j).length ? ` · avec ${h(fmOf(j).join(", "))}` : ""}</span>` : `<b class="muted">Libre</b><span class="xs muted">à choisir quand tu veux</span>`}
+    return `<div class="spc${j ? " spcon" : ""}"><span class="xs muted">Spécialité ${i + 1}</span>${j ? `<b>${h((GATHER_JOBS[j] || CRAFT_JOBS[j]).name)}</b><span class="xs">niveau ${lvlOf(j)} / 200</span>` : `<b class="muted">Libre</b><span class="xs muted">à choisir quand tu veux</span>`}
       <select data-act="monospec" data-i="${i}" aria-label="Spécialité ${i + 1}" ${lock ? "disabled" : ""}>${opts}</select></div>`; };
   return `<div class="card monospec"><div class="row between" style="gap:8px;flex-wrap:wrap"><h2 style="margin:0">${G("star")} Spécialités</h2><span class="xs muted">Monocompte · manche ${man}</span></div>
-    <p class="small muted" style="margin:6px 0 10px">Tous tes métiers montent jusqu'au niveau ${M.cap}. Tes ${M.spec} spécialités montent jusqu'au niveau 200 (une spécialité d'artisanat emmène sa forgemagie). Les cases libres se remplissent quand tu veux ; remplacer une spécialité, c'est une fois par manche, et le métier quitté redescend au niveau ${M.cap} jusqu'à ce que tu le reprennes. La récolte va 2 fois plus vite.</p>
+    <p class="small muted" style="margin:6px 0 10px">Tes métiers de récolte et d'artisanat montent jusqu'au niveau ${M.cap}, tes ${M.spec} spécialités jusqu'au niveau 200. Les 6 métiers de forgemagie montent tous jusqu'au niveau 200. Les cases libres se remplissent quand tu veux ; remplacer une spécialité, c'est une fois par manche, et le métier quitté redescend au niveau ${M.cap} jusqu'à ce que tu le reprennes. La récolte va 2 fois plus vite.</p>
     <div class="spcgrid">${[0, 1, 2].map(card).join("")}</div>
     ${can ? "" : `<p class="xs muted" style="margin:8px 0 0">Spécialité déjà changée cette manche : prochain changement à la manche ${man + 1}.</p>`}</div>`;
 }
