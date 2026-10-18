@@ -181,7 +181,8 @@ function testHtml() {
     + `<span class="xs muted">Bon : meilleurs objets du niveau, jets moyens. Optimisé : jets parfaits, Dofus et parchemins à 100 (comme le simulateur).</span>`);
   const time = box("Temps", row(`<span class="seg">${[1, 10, 100].map((v) => `<button data-adm="speed" data-v="${v}" aria-pressed="${DX.speed === v}">×${v}</button>`).join("")}</span><span class="xs muted">tant que la page reste ouverte</span>`)
     + row(`<span class="muted small">Absence :</span>${[1, 4, 8].map((n) => btn("away", `${n} h`, `data-v="${n}"`)).join("")}${inp("admAway", `type="number" min="1" max="48" value="${st.away}" style="width:64px"`)}<span class="xs">h</span>${btn("away", "Simuler", `data-v="input"`)}`)
-    + `<span class="xs muted">Plafond du jeu : ${Math.round(E.OFFLINE_MAX_S / 3600 + E.bonus(s, "offtime"))} h d'absence.</span>`);
+    + `<span class="xs muted">Plafond du jeu : ${Math.round(E.OFFLINE_MAX_S / 3600 + E.bonus(s, "offtime"))} h d'absence.</span>`
+    + (E.sabMtLvl ? row(`<span class="muted small">Maîtrise du temps (niv. ${E.sabMtLvl(s)}) :</span>${[1, 10, 25, 45, 50].map((n) => btn("sabmt", `${n}`, `data-v="${n}"`)).join("")}${btn("sabfill", "Sablier plein")}`) : "")); // 2.1.27
   const prog = box("Progression et Songe", `<div class="px-chips">${chip("unlock", "Débloquer toutes les zones")}${chip("stasis", `Stasis ${E.STASIS_MAX} dans tous les donjons`)}${chip("bribes", "+1 000 Bribes", `data-v="1000"`)}${chip("bribes", "+10 000 Bribes", `data-v="10000"`)}${chip("sgunl", "Toutes les intensités")}${chip("legone", "Un légendaire au hasard")}${chip("legall", "Tous les légendaires")}${chip("expend", "Réveiller l'équipe")}</div>`);
   const T = P.toggles.filter((x) => { try { return x.ok ? x.ok() : true; } catch (e) { return false; } });
   const news = box("Essayer une nouveauté", `<div class="stack" style="gap:8px">${[{ id: "hal", n: "Thème d'Halouine (cette page seulement)", on: () => !!window.HAL_FORCE }].concat(T).map((x) => `<button class="px-tog ${x.on() ? "" : "off"}" data-adm="tog" data-id="${h(x.id)}" aria-pressed="${!!x.on()}"><i></i>${h(x.n)}</button>`).join("")}</div><span class="xs muted">Rien de tout ça ne part en ligne : c'est pour voir les nouveautés avant les joueurs.</span>`);
@@ -238,6 +239,8 @@ function act(a, d) {
     case "setlvl": { const L = Math.round(+val("admLvl")); if (!(L >= 1)) return; st.lvl = Math.min(E.MAX_LVL, L); targets(s).forEach((c) => setLevel(s, c, st.lvl)); done(`Niveau ${st.lvl} appliqué.`); return; }
     case "gear": targets(s).forEach((c) => { if (d.v === "aucun") { Object.keys(c.equip).forEach((sl) => E.unequip(s, c.id, sl)); E.refreshSpells(c, E.charStats(s, c)); } else gearUp(s, c, d.v); }); done(d.v === "aucun" ? "Équipement retiré." : "Équipement donné."); return;
     case "kamas": s.kamas += +d.v; done(`+${fmt(+d.v)} kamas.`); return;
+    case "sabmt": { const L = +d.v; E.sabMt(s).xp = E.sabMtXpAt(L); if (L >= E.SAB_MT_MAX) { s.titlesExtra = s.titlesExtra || []; if (!s.titlesExtra.includes(E.SAB_MT_TITLE)) s.titlesExtra.push(E.SAB_MT_TITLE); } s.sabMt.wk = null; done(`Maîtrise du temps niveau ${L}.`); return; } // 2.1.27
+    case "sabfill": { const B = E.sab(s); B.open = true; B.r = E.sabMaxOf(s); done("Sablier plein."); return; }
     case "pets": Object.keys(E.PETS || {}).forEach((id) => { if (!E.petOwned(s, id)) E.givePet(s, id, "panel de test"); }); E.events.length = 0; done("Tous les familiers et montiliers donnés."); return;
     case "petgrow": Object.values(s.pets || {}).forEach((P) => (P.g = 100)); done("Tous les familiers sont niveau 100."); return;
     case "petess": if (E.addEss) E.addEss(s, 5000); done("+5 000 Essence (Éveil des familiers, Élevage)."); return; // 1.1

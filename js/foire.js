@@ -103,7 +103,7 @@
     } else if (kind === "potion") {
       const q = clamp(Math.floor(V / F.REF.potion), 1, 5); lot.cons = ["potion_savoir", q]; goods = q * F.REF.potion;
     } else if (kind === "sab") {
-      const B = E.sab ? E.sab(S) : null; const room = B && B.open ? Math.floor((E.SAB_GIFT_MAX - B.r) / 3600) : 0;
+      const B = E.sab ? E.sab(S) : null; const room = B && B.open ? Math.floor((E.sabGiftMaxOf(S) - B.r) / 3600) : 0;
       const q = Math.min(3, Math.floor(V / F.REF.sab), room);
       if (q >= 1) { lot.sab = q; goods = q * F.REF.sab; } // sinon (Sablier pas encore débloqué ou plein) : des kamas
     } else if (kind === "key") {

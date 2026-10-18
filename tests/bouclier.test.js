@@ -77,11 +77,16 @@ assert.ok(!V.check(E, b0, at({ k: b0.k + 1e10 }), 3, {}, 0, 200).ok, "10 milliar
 assert.ok(!V.check(E, b0, at({ k: b0.k + 1.61e9 }), 27, {}, 0, 200, true).ok, "1,61 milliard de kamas en 27 h, même vérifié : refusé");
 assert.ok(!V.check(E, b0, at({ pt: b0.pt + 160 }), 27, {}, null, 200, true).ok, "+160 h de jeu en 27 h, même vérifié : refusé");
 assert.ok(V.check(E, b0, at({ pt: b0.pt + 27 }), 27, {}, null, 200).ok, "27 h de jeu en 27 h : normal");
+// 2.1.27 : ×2 illimité dès le niveau 15 de la Maîtrise du temps : 2,25 h de jeu par heure réelle
+{ const R2 = V.rates(200), k = R2.k * 50; assert.ok(!V.check(E, b0, at({ k: b0.k + k }), 24, {}, 0, 200).ok, "50 h de gains en 24 h au niveau 1 : refusé");
+  assert.ok(V.check(E, Object.assign({}, b0, { sl: 15 }), at({ k: b0.k + k, sl: 15 }), 24, {}, 0, 200).ok, "50 h de gains en 24 h en ×2 illimité : accepté");
+  assert.ok(!V.check(E, Object.assign({}, b0, { sx: 0 }), at({ sx: 9000 }), 2, {}, null, 200).ok, "niveau 25 de Maîtrise du temps en 2 h : refusé");
+  assert.ok(V.check(E, Object.assign({}, b0, { sx: 0 }), at({ sx: 4000 }), 2, {}, null, 200).ok, "réserve pleine vidée en 2 h : accepté"); }
 assert.ok(!V.check(E, b0, at({ mt: b0.mt + 3000 }), 1, {}, 2, 200, true).ok, "3 000 points de Maîtrise en une heure, même vérifié : refusé");
-// la réserve : 48 h de jeu d'avance au plus (Sablier), puis le rythme du temps réel
+// la réserve : 72 h de jeu d'avance au plus (Sablier, ×4 de la Maîtrise du temps), puis le rythme du temps réel
 let res = null, ok = 0; const R = V.rates(200);
 for (let i = 0; i < 200; i++) { const c = V.check(E, b0, at({ k: b0.k + R.k * 0.5 }), 1 / 120, {}, res, 200); if (!c.ok) break; res = c.res; ok++; }
-assert.ok(ok >= 90 && ok < 100, `la réserve de 48 h s'épuise (${ok} envois de 30 h de kamas en 30 s)`);
+assert.ok(ok >= 140 && ok < 150, `la réserve de 72 h s'épuise (${ok} envois de 30 h de kamas en 30 s)`);
 const c2 = V.check(E, b0, at({ k: b0.k + R.k * 2 }), 2, {}, 0, 200);
 assert.ok(c2.ok, "après 2 h réelles, 2 h de gains passent de nouveau");
-console.log("ok - gains comparés au temps réel (réserve de 48 h)");
+console.log("ok - gains comparés au temps réel (réserve de 72 h)");

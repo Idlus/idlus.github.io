@@ -3618,7 +3618,42 @@
      (une fois par jour au plus chacune), Horloger de Xélor (Fioles de temps très chères), Grain de Xélor très rare en donjon.
      Les Fioles et les Grains se vendent à l'hôtel de vente. */
   E.SAB_CLOCK_MIN = 30;
-  E.sabRate = (S) => E.SAB_RATE * (1 + (E.havreLvl && S ? E.havreLvl(S, "sablier") : 0) * E.SAB_CLOCK_MIN / 180);
+  E.sabRate = (S) => E.SAB_RATE * (1 + ((E.havreLvl && S ? E.havreLvl(S, "sablier") : 0) * E.SAB_CLOCK_MIN + (S ? E.sabMtRecharge(S) : 0)) / 180);
+  /* 2.1.27 « Maîtrise du temps » (Mathis 1A 2C 3A 4A 5A) : chaque minute de réserve utilisée donne 1 XP au Sablier (un par compte).
+     50 niveaux : passer du niveau n au niveau n+1 demande 30 × n minutes (environ 612 h de Sablier pour le niveau 50).
+     Paliers : +1 h de réserve tous les 2 niveaux, butin moins réduit aux niveaux 10, 20, 30 et 40, +30 min de recharge par jour
+     aux niveaux 15 et 35, Fioles de temps offertes chaque semaine (1 dès le 25, 2 dès le 45), vitesse ×4 et titre au 50,
+     et un Grain de Xélor (+15 min) à chaque niveau impair (3 à 49, 24 en tout). Mathis 3B puis 5B : dès le niveau 15, le ×2 ne coûte plus
+     de réserve (il ne donne alors plus d'XP : la Maîtrise avance avec le ×3 et le ×4).
+     Tout le monde commence au niveau 1. */
+  E.SAB_MT_MAX = 50; E.SAB_MT_STEP = 30; E.SAB_MT_TITLE = "Maître du temps";
+  E.sabMtXpAt = (l) => E.SAB_MT_STEP * (l - 1) * l / 2; // XP totale pour atteindre le niveau l
+  E.sabMt = (S) => { if (!S.sabMt || typeof S.sabMt !== "object") S.sabMt = { xp: 0 }; if (!(+S.sabMt.xp >= 0)) S.sabMt.xp = 0; return S.sabMt; };
+  E.sabMtLvl = (S) => { const x = S && S.sabMt ? Math.max(0, +S.sabMt.xp || 0) : 0; let l = Math.floor((1 + Math.sqrt(1 + 8 * x / E.SAB_MT_STEP)) / 2); while (l > 1 && E.sabMtXpAt(l) > x) l--; while (l < E.SAB_MT_MAX && E.sabMtXpAt(l + 1) <= x) l++; return Math.max(1, Math.min(E.SAB_MT_MAX, l)); };
+  E.sabMtProg = (S) => { const l = E.sabMtLvl(S), x = S && S.sabMt ? Math.max(0, +S.sabMt.xp || 0) : 0; if (l >= E.SAB_MT_MAX) return { l, x, a: 0, b: 0, p: 1 }; const a = x - E.sabMtXpAt(l), b = E.SAB_MT_STEP * l; return { l, x, a, b, p: Math.min(1, a / b) }; };
+  E.sabMtRecharge = (S) => { const l = E.sabMtLvl(S); return (l >= 15 ? 30 : 0) + (l >= 35 ? 30 : 0); }; // minutes par jour en plus
+  E.SAB_MT_MALUS = [[40, 0.06, 0.12], [30, 0.07, 0.14], [20, 0.08, 0.16], [10, 0.09, 0.18], [1, 0.1, 0.2]]; // [niveau, ×2, ×3]
+  E.SAB_X4_LOOT = 0.25;
+  E.sabMalus = (l, spd) => { const R = E.SAB_MT_MALUS.find((x) => l >= x[0]); return spd >= 4 ? E.SAB_X4_LOOT : spd >= 3 ? R[2] : spd >= 2 ? R[1] : 0; };
+  E.SAB_FREE2_LVL = 15; E.sabFree2 = (S) => E.sabMtLvl(S) >= E.SAB_FREE2_LVL; // ×2 illimité (Mathis 3B)
+  E.sabMaxSpd = (S) => (E.sabMtLvl(S) >= E.SAB_MT_MAX ? 4 : 3);
+  E.sabMaxOf = (S) => E.SAB_MAX + Math.floor(E.sabMtLvl(S) / 2) * 3600;   // réserve de recharge : 36 h + 1 h tous les 2 niveaux
+  E.sabGiftMaxOf = (S) => E.sabMaxOf(S) + (E.SAB_GIFT_MAX - E.SAB_MAX);   // avec des heures achetées ou offertes : 12 h de plus
+  E.sabFioleWeek = (l) => (l >= 45 ? 2 : l >= 25 ? 1 : 0);
+  E.sabWeekKey = () => { const d = new Date(E.now()); const day = (d.getUTCDay() + 6) % 7; return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day)).toISOString().slice(0, 10); }; // lundi (UTC)
+  E.sabMtWeekly = (S) => { // Fioles offertes : une fois par semaine, au premier passage de la semaine
+    const n = E.sabFioleWeek(E.sabMtLvl(S)); if (!n) return 0; const M = E.sabMt(S), w = E.sabWeekKey(); if (M.wk && M.wk >= w) return 0; // horloge reculée : pas de nouvelle Fiole
+    M.wk = w; for (let i = 0; i < n; i++) E.addCons(S, "fiole_temps");
+    note(S, `Maîtrise du temps : ${n > 1 ? n + " Fioles de temps offertes" : "1 Fiole de temps offerte"} cette semaine.`, "info"); return n;
+  };
+  E.sabMtGain = (S, min) => { // min = minutes de réserve utilisées
+    if (!(min > 0)) return; const M = E.sabMt(S), l0 = E.sabMtLvl(S); if (l0 >= E.SAB_MT_MAX) { M.xp = Math.max(M.xp, E.sabMtXpAt(E.SAB_MT_MAX)); return; }
+    M.xp = Math.min(E.sabMtXpAt(E.SAB_MT_MAX), M.xp + min); const l = E.sabMtLvl(S); if (l <= l0) return;
+    const got = []; for (let k = l0 + 1; k <= l; k++) { if (k % 2 === 0) got.push("+1 h de réserve"); else { E.addCons(S, "grain_xelor"); got.push("Grain de Xélor"); } /* Mathis 2C : un Grain à chaque niveau impair */ if (k % 10 === 0 && k < 50) got.push("butin moins réduit"); if (k === 15 || k === 35) got.push("+30 min de recharge par jour"); if (k === 25 || k === 45) got.push("Fiole offerte chaque semaine"); if (k === E.SAB_FREE2_LVL) got.push("×2 illimité"); }
+    if (l >= E.SAB_MT_MAX) { got.push("vitesse ×4"); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.SAB_MT_TITLE)) { S.titlesExtra.push(E.SAB_MT_TITLE); got.push(`titre « ${E.SAB_MT_TITLE} »`); } }
+    note(S, `Maîtrise du temps niveau ${l}${got.length ? " : " + [...new Set(got)].join(", ") : ""} !`, l % 5 === 0 ? "rare" : "info");
+    if (E.sabFioleWeek(l) > E.sabFioleWeek(l0)) { const M2 = E.sabMt(S); if (M2.wk && M2.wk >= E.sabWeekKey()) { const n = E.sabFioleWeek(l) - E.sabFioleWeek(l0); for (let i = 0; i < n; i++) E.addCons(S, "fiole_temps"); } else E.sabMtWeekly(S); }
+  };
   E.SAB_EARN = { defi: [1, 1, "Défi du jour gagné"], alm: [0.5, 1, "Offrande de l'Almanax"], wb: [0.5, 3, "Essai au boss des mondes"], gb: [0.5, 2, "Essai au boss de guilde"] }; // [heures, fois par jour, origine]
   E.sabDay = (S) => { const d = E.dayKey ? E.dayKey() : new Date(E.now()).toISOString().slice(0, 10); if (!S.sabDay || S.sabDay.d !== d) S.sabDay = { d }; return S.sabDay; };
   E.sabEarnLeft = (S, k) => { const R = E.SAB_EARN[k]; return R ? Math.max(0, R[1] - (E.sabDay(S)[k] || 0)) : 0; };
@@ -3644,11 +3679,12 @@
   E.sabUnlocked = (S) => !!(S.sablier && S.sablier.open) || !!(S.quest && S.quest.step >= E.SAB_UNLOCK_STEP);
   E.sab = (S) => {
     if (!S.sablier) S.sablier = { r: E.SAB_MAX, at: E.now(), spd: 1, open: false }; // plein au départ
-    const B = S.sablier, now = E.now();
+    const B = S.sablier, now = E.now(), MX = E.sabMaxOf(S);
     if (!(B.at <= now)) B.at = now; // horloge revenue en arrière : on ne rend rien
-    const r0 = Math.max(0, +B.r || 0); B.r = r0 > E.SAB_MAX ? r0 : Math.min(E.SAB_MAX, r0 + ((now - B.at) / 1000) * E.sabRate(S)); B.at = now; // un code cadeau peut dépasser le maximum
+    const r0 = Math.max(0, +B.r || 0); B.r = r0 > MX ? r0 : Math.min(MX, r0 + ((now - B.at) / 1000) * E.sabRate(S)); B.at = now; // un code cadeau peut dépasser le maximum
     if (!B.open && E.sabUnlocked(S)) { B.open = true; note(S, "Sablier de Xélor débloqué : le temps peut filer ×2 ou ×3 (barre du haut).", "rare"); }
-    if (![1, 2, 3].includes(B.spd)) B.spd = 1;
+    if (!(B.spd >= 1 && B.spd <= E.sabMaxSpd(S) && B.spd === Math.floor(B.spd))) B.spd = 1;
+    if (B.open && S.sabMt && !(S.sabMt.wk >= E.sabWeekKey())) E.sabMtWeekly(S);
     return B;
   };
   /* vitesse réellement appliquée pour realMs millisecondes de vrai temps ; vide la réserve en conséquence */
@@ -3657,28 +3693,34 @@
     || S.chars.some((c) => c.job) || (S.atelier && S.atelier.built && S.atelier.cid != null && !S.atelier.stall)
     || (E.fmPlanActive && E.fmPlanActive(S).length));
   E.sabSpend = (S, realMs) => {
-    const B = E.sab(S); if (!B.open || B.spd === 1 || !E.sabBusy(S)) return 1;
+    const B = E.sab(S); E.sabLvlNow = E.sabMtLvl(S); if (!B.open || B.spd === 1 || !E.sabBusy(S)) return 1;
+    const f = E.sabFree2(S) ? 2 : 1; // 2.1.27 (Mathis 3B) : ×2 illimité dès le niveau 25, sans réserve ni XP
+    if (B.spd <= f) return B.spd;
     const need = (realMs / 1000) * (B.spd - 1);
-    if (need <= B.r) { B.r -= need; return B.spd; }
-    // la réserve se termine pendant ce pas : on finit ce qui reste puis retour à ×1
-    const m = 1 + (B.spd - 1) * (B.r / need); B.r = 0; B.spd = 1;
-    note(S, "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
+    if (need <= B.r) { B.r -= need; E.sabMtGain(S, need / 60); return B.spd; }
+    // la réserve se termine pendant ce pas : on finit ce qui reste puis retour à ×1 (×2 dès le niveau 25)
+    const t = B.r / need, m = B.spd * t + f * (1 - t); E.sabMtGain(S, B.r / 60); B.r = 0; B.spd = f;
+    note(S, f > 1 ? "Sablier de Xélor vide : retour au ×2 illimité. Il se remplit tout seul." : "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
     return m;
   };
   /* 2.1.22 « Le Sablier » (Mathis 1B 2B 3A) : contrepartie du temps rapide, butin −10 % en ×2 et −20 % en ×3
      (ressources, équipements, clés et kamas des combats, de la récolte et des expéditions ; jamais l'XP ni les Dofus).
      E.sabNow = vitesse réellement appliquée au pas de jeu en cours (posée par la boucle du jeu autour de E.tick, 1 ailleurs). */
   E.SAB_LOOT = 0.1;
-  E.sabNow = 1;
-  E.sabLootAt = (spd) => Math.max(0, 1 - E.SAB_LOOT * (Math.max(1, +spd || 1) - 1));
-  E.sabLoot = () => E.sabLootAt(E.sabNow);
+  E.sabNow = 1; E.sabLvlNow = 1; // niveau de Maîtrise du temps du pas en cours (posé par E.sabSpend)
+  E.sabLootAt = (spd, lvl) => { // 2.1.27 : malus selon le niveau de Maîtrise du temps ; vitesse non entière (réserve vide en cours de pas) : entre les deux
+    const v = Math.max(1, Math.min(4, +spd || 1)), l = Math.max(1, +lvl || 1), a = Math.floor(v), f = v - a;
+    const m = E.sabMalus(l, a) * (1 - f) + (f > 0 ? E.sabMalus(l, a + 1) * f : 0); return Math.max(0, 1 - m);
+  };
+  E.sabLoot = () => E.sabLootAt(E.sabNow, E.sabLvlNow);
   E.SAB_GIFT_MAX = 48 * 3600;    // réserve maximale avec des heures achetées ou offertes (24 h avant la 1.2.3, 36 h jusqu'à la 2.1.21)
-  E.sabGift = (S, hours) => { const B = E.sab(S); B.r = Math.min(E.SAB_GIFT_MAX, B.r + Math.max(0, +hours || 0) * 3600); return B.r; };
+  E.sabGift = (S, hours) => { const B = E.sab(S); B.r = Math.min(E.sabGiftMaxOf(S), B.r + Math.max(0, +hours || 0) * 3600); return B.r; };
   E.sabSet = (S, v) => {
     const B = E.sab(S); v = +v;
     if (!B.open) return "Le Sablier de Xélor se débloque à la fin d'Incarnam : terminez la quête « La Crypte de Kardorim ».";
-    if (![1, 2, 3].includes(v)) return "Vitesse inconnue.";
-    if (v > 1 && B.r < 1) return "Le sablier est vide : il se remplit tout seul (3 h par jour).";
+    if (v === 4 && E.sabMaxSpd(S) < 4) return `La vitesse ×4 se débloque au niveau ${E.SAB_MT_MAX} de la Maîtrise du temps.`;
+    if (![1, 2, 3, 4].includes(v)) return "Vitesse inconnue.";
+    if (v > (E.sabFree2(S) ? 2 : 1) && B.r < 1) return "Le sablier est vide : il se remplit tout seul (3 h par jour).";
     B.spd = v; return null;
   };
 

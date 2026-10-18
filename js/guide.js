@@ -81,23 +81,35 @@
       ["tip", "Les meubles et améliorations du Havre-Sac (Lit douillet, Majordome…) allongent la durée et l'efficacité hors-ligne."],
     ] });
 
-  add({ id: "sablier", f: "Bien débuter", n: "Sablier de Xélor", ic: "cristal", page: null, k: "vitesse x2 x3 accélérer",
+  add({ id: "sablier", f: "Bien débuter", n: "Sablier de Xélor", ic: "cristal", page: null, k: "vitesse x2 x3 x4 accélérer maîtrise du temps maitre",
     ou: "la pastille du sablier dans la barre du haut", de: "après « La Crypte de Kardorim », à la fin d'Incarnam (étape " + N(() => E.SAB_UNLOCK_STEP) + " de la quête principale)",
     voir: ["absence", "aide"],
     b: () => [
-      ["p", "Le Sablier est une réserve de temps rapide : il fait tourner le jeu ×2 ou ×3 tant qu'il reste du sable. Il se remplit en temps réel, jeu ouvert ou fermé, et commence plein."],
+      ["p", "Le Sablier est une réserve de temps rapide : il fait tourner le jeu ×2 ou ×3 (×4 au niveau 50 de la Maîtrise du temps) tant qu'il reste du sable. Il se remplit en temps réel, jeu ouvert ou fermé, et commence plein."],
       ["kv", [
-        ["Remplissage", N(() => E.SAB_RATE * 86400 / 3600) + " h par jour (jusqu'à 4,5 h avec l'Horloge de Xélor)"],
-        ["Réserve maximum", N(() => E.SAB_MAX / 3600) + " h"],
-        ["Maximum avec des heures achetées ou offertes", N(() => E.SAB_GIFT_MAX / 3600) + " h"],
+        ["Remplissage", N(() => E.SAB_RATE * 86400 / 3600) + " h par jour (jusqu'à 5,5 h avec l'Horloge de Xélor et la Maîtrise du temps)"],
+        ["Réserve maximum", N(() => E.SAB_MAX / 3600) + " h, +1 h tous les 2 niveaux de Maîtrise du temps (" + N(() => E.SAB_MAX / 3600 + 25) + " h au niveau 50)"],
+        ["Avec des heures achetées ou offertes", "12 h de plus que la réserve"],
         ["Coût en ×2", "1 s de réserve par seconde"],
         ["Coût en ×3", "2 s de réserve par seconde"],
-        ["Butin en ×2", "−" + N(() => Math.round((1 - E.sabLootAt(2)) * 100)) + " %"],
-        ["Butin en ×3", "−" + N(() => Math.round((1 - E.sabLootAt(3)) * 100)) + " %"],
+        ["Coût en ×4", "3 s de réserve par seconde (niveau 50)"],
+        ["Butin en ×2", "−" + N(() => Math.round((1 - E.sabLootAt(2, 1)) * 100)) + " % (−" + N(() => Math.round((1 - E.sabLootAt(2, 40)) * 100)) + " % au niveau 40)"],
+        ["Butin en ×3", "−" + N(() => Math.round((1 - E.sabLootAt(3, 1)) * 100)) + " % (−" + N(() => Math.round((1 - E.sabLootAt(3, 40)) * 100)) + " % au niveau 40)"],
+        ["Butin en ×4", "−" + N(() => Math.round((1 - E.sabLootAt(4, 50)) * 100)) + " %"],
+      ]],
+      ["h", "Maîtrise du temps"],
+      ["p", "Chaque minute de réserve utilisée donne 1 XP au Sablier (un seul par compte). Il a 50 niveaux : passer du niveau n au suivant demande 30 × n minutes, soit environ 600 h de Sablier pour le niveau 50 (environ 100 jours à 6 h par jour)."],
+      ["ul", [
+        "Tous les 2 niveaux : +1 h de réserve. Les autres niveaux donnent un Grain de Xélor (+15 min).",
+        "Niveaux 10, 20, 30 et 40 : butin moins réduit (×2 −9, −8, −7 puis −6 % ; ×3 −18, −16, −14 puis −12 %).",
+        "Niveaux 15 et 35 : +30 min de recharge par jour.",
+        "Niveau 15 : le ×2 devient illimité (plus de réserve ni d'XP en ×2 : la Maîtrise avance en ×3 et ×4).",
+        "Niveau 25 : 1 Fiole de temps offerte chaque semaine (2 dès le niveau 45).",
+        "Niveau 50 : vitesse ×4 (3 minutes de réserve par minute, butin −25 %) et titre « Maître du temps ».",
       ]],
       ["ul", [
         "Il ne s'use que si quelque chose avance : combat, chasse, donjon, expédition, récolte, atelier, forgemagie. Équipe au repos, il est en pause.",
-        "Contrepartie : moins de butin (ressources, équipements, clés et kamas) tant que le temps file plus vite. L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus.",
+        "Contrepartie : moins de butin (ressources, équipements, clés et kamas) tant que le temps file plus vite. L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus (au niveau 50 : 1,9, 2,7 et 3 fois en ×4).",
         "Réserve vide : retour à la vitesse normale.",
         "Plus d'heures : Horloge de Xélor dans la Chambre du Havre-Sac (+30 min de recharge par jour et par niveau), +1 h au Défi du jour gagné, +30 min avec l'offrande de l'Almanax, +30 min par essai au boss des mondes (3 par jour) et au boss de guilde (2 par jour).",
         "L'Horloger de Xélor (fiche du Sablier) vend une Fiole de temps (+1 h) par achat, 3 par jour, à partir de 5 millions de kamas (le prix double à chaque achat du jour). Les boss de donjon dès la stasis 6 lâchent très rarement un Grain de Xélor (+15 min). Fioles et Grains se vendent à l'hôtel de vente.",
@@ -1096,8 +1108,8 @@
     sablier: () => {
       const s = S(); const B = s.sablier || {}; const ok = V(() => E.sabUnlocked(s), false);
       if (!ok) return ["", [["Sablier", "pas encore débloqué"]]];
-      const r = B.r || 0, max = V(() => E.SAB_MAX, 0);
-      return ["", [["Ta réserve", dur(r)], ["Réserve maximum", dur(max)], ["Plein dans", r >= max ? "déjà plein" : dur((max - r) / E.sabRate(s))], ["En ×2, la réserve dure", dur(r)], ["En ×3, la réserve dure", dur(r / 2)]]];
+      const r = B.r || 0, max = V(() => E.sabMaxOf(s), 0);
+      return ["", [["Ta réserve", dur(r)], ["Réserve maximum", dur(max)], ["Plein dans", r >= max ? "déjà plein" : dur((max - r) / E.sabRate(s))], ["En ×2, la réserve dure", dur(r)], ["En ×3, la réserve dure", dur(r / 2)], ...(V(() => E.sabMaxSpd(s), 3) >= 4 ? [["En ×4, la réserve dure", dur(r / 3)]] : []), ["Maîtrise du temps", "niveau " + V(() => E.sabMtLvl(s), 1) + " / 50"]]];
     },
     xp: () => {
       const s = S(); const L = s.chars; const c = L.find((x) => String(x.id) === String(st.calc.xh)) || L[0]; if (!c) return ["", []];
@@ -1157,7 +1169,7 @@
       return [top ? `${M.length} héros avec de la Maîtrise, au plus ${fr(E.mtPts(top))} points (${top.name}).` : "Aucune Maîtrise pour l'instant.", top ? `Placer les points de ${top.name} (Héros › Maîtrise).` : `Monter un héros niveau ${N(() => E.MAX_LVL)}.`]; },
     metiers: () => { const J = sv().jobs || {}; const ks = Object.keys(J); if (!ks.length) return null; const lo = lowJob();
       return [`${ks.length} métiers de récolte, meilleur niveau ${Math.max(...ks.map((k) => J[k].lvl || 1))}.`, lo ? `Monter le métier le plus bas (${lo[0]}, niveau ${lo[1]}).` : null]; },
-    sablier: () => { const s = sv(); if (!V(() => E.sabUnlocked(s), false)) return ["Pas encore débloqué.", `Atteindre l'étape ${N(() => E.SAB_UNLOCK_STEP)} de la quête principale.`]; const r = (s.sablier || {}).r || 0; return [`Réserve : ${dur(r)} sur ${dur(V(() => E.SAB_MAX, 0))}.`, null]; },
+    sablier: () => { const s = sv(); if (!V(() => E.sabUnlocked(s), false)) return ["Pas encore débloqué.", `Atteindre l'étape ${N(() => E.SAB_UNLOCK_STEP)} de la quête principale.`]; const r = (s.sablier || {}).r || 0; return [`Réserve : ${dur(r)} sur ${dur(V(() => E.sabMaxOf(s), 0))}.`, null]; },
     succes: () => { const s = sv(); const n = cnt(s.ach), t = V(() => E.ACH.length, 0); return [`${fr(n)} succès sur ${fr(t)}.`, null]; },
     archis: () => { const n = cnt(sv().souls); return [`${fr(n)} âme${n > 1 ? "s" : ""} capturée${n > 1 ? "s" : ""} sur ${N(() => E.ARCHI_TOTAL)}.`, null]; },
     alignement: () => { const s = sv(); const req = V(() => E.ALIGN_MIN_LVL, 30); return s.align ? [`Niveau d'alignement ${N(() => E.alignLvl(s))}.`, null] : ["Pas encore d'alignement.", best() < req ? `Monter un héros niveau ${req}.` : "Choisir Bonta ou Brâkmar."]; },

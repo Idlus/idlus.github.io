@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.27 « Maîtrise du temps »
+
+- Refonte du Sablier (choix de Mathis 1A 2C 3A 4A 5A, puis Grain aux niveaux impairs, ×2 illimité au 15, ∞ et profil public) : 1 XP par minute de réserve utilisée, 50 niveaux (30 × n minutes du niveau n au suivant, environ 612 h), paliers (+1 h de réserve tous les 2 niveaux, malus de butin réduit aux niveaux 10/20/30/40, +30 min de recharge aux 15 et 35, Fioles de temps offertes chaque semaine dès le 25 et le 45, Grain de Xélor à chaque niveau impair, ×2 illimité dès le 15 sans XP), vitesse ×4 et titre « Maître du temps » au 50. Tout le monde commence au niveau 1.
+- Bouclier : rythme de 2,25 h par heure réelle pour les comptes au niveau 15 (×2 illimité), réserve de 72 h (48 h avant) pour le ×4 et la réserve plus grande ; XP de Maîtrise du temps plafonnée depuis sa sortie (73 h + 30 h par jour).
+
 ## 2.1.26.4 « Exos et objets parfaits »
 
 - Fiche du héros, équipement porté : pastille de l'exo (icône de la caractéristique, coin bas gauche, comme DofusBook) et, pour un objet Parfait (`E.isPerfect` : toutes les lignes au jet maximum), contour doré, reflet animé et étoile (coin bas droit, sauf sur un Dofus qui a déjà sa pastille de Potentiel). Demande de Mathis.

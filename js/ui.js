@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.26.4";
+const GAME_VERSION = "2.1.27";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.27", name: "Maîtrise du temps", guide: "sablier", items: [
+    "Sablier de Xélor : nouvelle Maîtrise du temps. Chaque minute de Sablier utilisée donne 1 XP. 50 niveaux, environ 600 h de Sablier pour le dernier (environ 100 jours à 6 h par jour). Tout le monde commence au niveau 1",
+    "Tous les 2 niveaux : +1 h de réserve (61 h au niveau 50, 73 h avec les heures gagnées ou offertes). Les niveaux impairs donnent chacun un Grain de Xélor (+15 min)",
+    "Niveau 15 : le ×2 devient illimité (il ne coûte plus de réserve, et ne donne alors plus d'XP : la Maîtrise avance en ×3 et ×4)",
+    "Niveaux 10, 20, 30 et 40 : butin moins réduit, jusqu'à −6 % en ×2 et −12 % en ×3. Niveaux 15 et 35 : +30 min de recharge par jour",
+    "Niveau 25 : 1 Fiole de temps offerte chaque semaine, 2 dès le niveau 45",
+    "Niveau 50 : vitesse ×4 (3 minutes de réserve par minute, butin −25 %) et titre « Maître du temps »",
+    "Le niveau, sa jauge et tous les paliers sont dans la fiche du Sablier (clic sur la pastille ⏳ en haut). En ×2 illimité, la pastille affiche « ∞ », et le niveau se voit dans son info-bulle et sur le profil public",
+  ] },
   { v: "2.1.26.4", name: "Exos et objets parfaits", guide: "equipement", items: [
     "Équipement porté : un objet exo affiche maintenant une pastille violette avec l'icône de sa caractéristique (PA, PM, PO ou Invocation) dans le coin de sa case, comme sur DofusBook",
     "Un objet Parfait (toutes ses caractéristiques au jet maximum) porté par un héros a un contour doré, un reflet qui passe et une petite étoile dans le coin",
@@ -2740,12 +2749,16 @@ function statusHtml() {
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
-const sabMal = (v) => `−${Math.round((1 - E.sabLootAt(v)) * 100)} %`; // 2.1.22 : malus de butin du Sablier
+const sabMal = (v, l) => `−${Math.round((1 - E.sabLootAt(v, l == null ? E.sabMtLvl(S) : l)) * 100)} %`; // 2.1.22 : malus de butin du Sablier (2.1.27 : selon la Maîtrise du temps)
+const sabSpds = () => [1, 2, 3, 4].slice(0, E.sabMaxSpd(S));
+/* 2.1.27 (Mathis 4A) : « ∞ » en ×2 illimité, niveau de Maîtrise du temps dans l'info-bulle */
+const sabPillTxt = () => (S.sablier.spd === 2 && E.sabFree2(S) ? "∞" : sabLeft(S.sablier.r));
+const sabPillTip = () => `Sablier de Xélor : ${sabLeft(S.sablier.r)} en réserve (+${sabDur(E.sabRate(S) * 86400)} par jour) · Maîtrise du temps niveau ${E.sabMtLvl(S)}${E.sabFree2(S) ? " · ×2 illimité" : ""}`;
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
 function sabHtml() {
   const B = E.sab(S);
   if (!B.open) return `<button class="it sabpill lock" data-act="sabinfo" data-tip="Vitesse ×2 / ×3 : se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim »)."><span class="sb">⏳</span>${G("lock")}<span class="hide-sm">Vitesse</span></button>`;
-  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b>${B.spd > 1 ? `<span class="sabmal hide-sm">butin ${sabMal(B.spd)}</span>` : ""}</button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}${v > 1 ? ` (butin ${sabMal(v)})` : ""}">×${v}</button>`).join("")}</span></span>`;
+  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="${h(sabPillTip())}"><span class="sb">⏳</span><b class="num" id="stSab">${sabPillTxt()}</b>${B.spd > 1 ? `<span class="sabmal hide-sm">butin ${sabMal(B.spd)}</span>` : ""}</button><span class="seg">${sabSpds().map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}${v > 1 ? ` (butin ${sabMal(v)})` : ""}">×${v}</button>`).join("")}</span></span>`;
 }
 /* 1.0.14.2 « Menu de la poussière » : la pastille de poussière de stasis ouvre une petite fenêtre accrochée dessous
    (pleine largeur au téléphone) : parchemins à fabriquer sur place, autres dépenses avec « Y aller », et d'où elle vient. */
@@ -2790,18 +2803,20 @@ document.addEventListener("click", (ev) => { const p = $("#dustpop"); if (p && !
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("#dustpop")) dustClose(); });
 addEventListener("resize", () => dustPlace());
 function sabSheet() {
-  const B = E.sab(S); const fill = Math.min(100, Math.round((B.r / E.SAB_MAX) * 100));
+  const B = E.sab(S); const MX = E.sabMaxOf(S); const fill = Math.min(100, Math.round((B.r / MX) * 100)); const L = E.sabMtLvl(S);
   openSheet(`<h2>⏳ Sablier de Xélor</h2>
     ${B.open ? `<p style="margin:0">Le temps file plus vite tant que le sablier n'est pas vide : combats, donjons, expédition, récolte, ateliers, familiers et enclos.</p>
     <div class="bar"><i style="width:${fill}%"></i></div>
-    <div class="row between small"><span>Réserve : <b class="num">${sabLeft(B.r)}</b> / ${E.SAB_MAX / 3600} h</span><span class="muted">+3 h par jour, même jeu fermé</span></div>
-    <div class="row"><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}">×${v}${v > 1 ? ` <span class="sabmal2">butin ${sabMal(v)}</span>` : ""}</button>`).join("")}</span></div>`
-    : `<p style="margin:0"><b>Pas encore débloqué.</b> Terminez Incarnam (quête principale « La Crypte de Kardorim ») et le sablier s'ouvre, déjà plein : ${E.SAB_MAX / 3600} h de temps rapide.</p>
+    <div class="row between small"><span>Réserve : <b class="num">${sabLeft(B.r)}</b> / ${MX / 3600} h</span><span class="muted">+${sabDur(E.sabRate(S) * 86400)} par jour, même jeu fermé</span></div>
+    ${sabMtHtml()}
+    <div class="row"><span class="seg">${[1, 2, 3, 4].map((v) => v > E.sabMaxSpd(S) ? `<button disabled title="Niveau ${E.SAB_MT_MAX} de la Maîtrise du temps">×${v} <span class="sabmal2">${G("lock")} niv. ${E.SAB_MT_MAX}</span></button>` : `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}">×${v}${v > 1 ? ` <span class="sabmal2">butin ${sabMal(v)}</span>` : ""}</button>`).join("")}</span></div>`
+    : `<p style="margin:0"><b>Pas encore débloqué.</b> Terminez Incarnam (quête principale « La Crypte de Kardorim ») et le sablier s'ouvre, déjà plein : ${MX / 3600} h de temps rapide.</p>
     <p class="small muted" style="margin:0">Quête en cours : ${h((E.questStep(S) || {}).title || "—")} (étape ${Math.min((S.quest && S.quest.step) || 0, E.SAB_UNLOCK_STEP) + 1} sur ${E.SAB_UNLOCK_STEP}).</p>`}
     <ul class="small" style="margin:0;padding-left:18px">
-      <li><b>×2</b> : 1 minute de réserve par minute.</li>
+      <li><b>×2</b> : 1 minute de réserve par minute${E.sabFree2(S) ? " : <b>illimité</b> avec ta Maîtrise du temps (plus de réserve ni d'XP en ×2)" : `, illimité dès le niveau ${E.SAB_FREE2_LVL} de la Maîtrise du temps`}.</li>
       <li><b>×3</b> : 2 minutes de réserve par minute. Même temps gagné qu'en ×2, plus vite, mais moins de butin.</li>
-      <li><b>Contrepartie</b> : butin ${sabMal(2)} en ×2 et ${sabMal(3)} en ×3 (ressources, équipements, clés et kamas). L'XP et les Dofus ne changent pas.</li>
+      <li><b>×4</b> (niveau ${E.SAB_MT_MAX} de la Maîtrise du temps) : 3 minutes de réserve par minute, butin ${sabMal(4)}.</li>
+      <li><b>Contrepartie</b> : butin ${sabMal(2)} en ×2 et ${sabMal(3)} en ×3 (ressources, équipements, clés et kamas), moins avec la Maîtrise du temps. L'XP et les Dofus ne changent pas.</li>
       <li>Il ne s'use que quand quelque chose avance : combat, donjon, expédition, récolte, atelier ou forgemagie automatique. Équipe au repos : la réserve ne bouge pas.</li>
       <li>Sablier vide : retour à ×1 tout seul, rien n'est perdu.</li>
       <li>Jeu fermé : le sablier se remplit, les gains hors ligne ne changent pas.</li>
@@ -2810,9 +2825,17 @@ function sabSheet() {
     ${sabWhereHtml()}
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
+/* 2.1.27 « Maîtrise du temps » : niveau du Sablier (1 XP par minute de réserve utilisée) et ses paliers */
+const SAB_PAL = () => { const M = (l) => `×2 ${sabMal(2, l)}, ×3 ${sabMal(3, l)}`; return [[2, "Réserve +1 h", "tous les 2 niveaux (+25 h au 50)"], [3, "Grain de Xélor", "+15 min, à chaque niveau impair"], [10, "Butin moins réduit", M(10)], [15, "×2 illimité", "le ×2 ne coûte plus de réserve · recharge +30 min par jour"], [20, "Butin moins réduit", M(20)], [25, "Fiole gratuite", "1 par semaine"], [30, "Butin moins réduit", M(30)], [35, "Recharge +30 min", "par jour"], [40, "Butin moins réduit", M(40)], [45, "Fiole gratuite", "2 par semaine"], [50, "Vitesse ×4", `butin ${sabMal(4, 50)} · titre « ${E.SAB_MT_TITLE} »`]]; };
+function sabMtHtml() {
+  const P = E.sabMtProg(S), L = P.l, top = L >= E.SAB_MT_MAX;
+  return `<div class="mdt"><div class="lv"><span class="lvn num">${L}</span><span class="grow"><b>Maîtrise du temps · niveau ${L} / ${E.SAB_MT_MAX}</b><div class="bar"><i style="width:${Math.round(P.p * 100)}%"></i></div><span class="xs muted">${top ? `Niveau maximum : vitesse ×4 et titre « ${E.SAB_MT_TITLE} ».` : `+1 XP par minute de Sablier utilisée · ${fmt(Math.floor(P.a))} / ${fmt(P.b)} XP pour le niveau ${L + 1}`}</span></span></div>
+    <div class="pal">${SAB_PAL().map(([n, t, d]) => `<div class="${n <= L ? "ok" : ""}"><b>Niv. ${n}${n <= L ? " ✓" : ""}</b>${t}<br><span class="muted">${d}</span></div>`).join("")}</div></div>`;
+}
 /* 1.2.2 « Sablier plus grand » : d'où viennent les heures de Sablier (chaque ligne mène à sa page) */
 const SAB_WHERE = [
-  ["cristal", "Recharge du jour", () => `+${sabDur(E.sabRate(S) * 86400)} par jour, même jeu fermé, jusqu'à ${E.SAB_MAX / 3600} h.`, ""],
+  ["cristal", "Recharge du jour", () => `+${sabDur(E.sabRate(S) * 86400)} par jour, même jeu fermé, jusqu'à ${E.sabMaxOf(S) / 3600} h.`, ""],
+  ["cristal", "Maîtrise du temps", () => { const l = E.sabMtLvl(S), n = E.sabFioleWeek(l); return n ? `${n > 1 ? n + " Fioles de temps offertes" : "1 Fiole de temps offerte"} chaque semaine (niveau ${l}).` : "1 Fiole de temps offerte chaque semaine dès le niveau 25, 2 dès le niveau 45."; }, ""],
   ["havre", "Horloge de Xélor", () => { const l = E.havreLvl(S, "sablier"); return `Havre-Sac › Chambre : +30 min de recharge par jour et par niveau (niveau ${l}/3${l < 3 ? `, prochain à ${fmt(E.havreCost(S, "sablier"))} kamas` : ""}).`; }, "home"],
   ["combat", "Défi du jour", () => `+1 h à la victoire, une fois par jour${sabDone("defi")}.`, "defi"],
   ["almanax", "Almanax", () => `+30 min avec l'offrande du jour${sabDone("alm")}.`, "quests"],
@@ -2839,7 +2862,7 @@ function horlogerHtml() {
 }
 function sabWhereHtml() {
   return `<div class="sab-where"><b>Comment en obtenir</b>
-    <p class="xs muted" style="margin:2px 0 6px">Les heures achetées ou gagnées peuvent dépasser la réserve, jusqu'à ${E.SAB_GIFT_MAX / 3600} h.</p>
+    <p class="xs muted" style="margin:2px 0 6px">Les heures achetées ou gagnées peuvent dépasser la réserve, jusqu'à ${E.sabGiftMaxOf(S) / 3600} h.</p>
     ${horlogerHtml()}${SAB_WHERE.map(([ic, t, d, v]) => (d = typeof d === "function" ? d() : d, `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`)).join("")}</div>`;
 }
 function sabGo(v) {
@@ -2981,7 +3004,7 @@ function homeTiles() {
     out.push(tile({ ic: IC("bourse"), t: "Commandes du jour", s: r.length ? `${r.length} prête${r.length > 1 ? "s" : ""} à livrer · ${fmt(r.reduce((a, g) => a + g.q * g.price, 0))} k` : dn === GB.length ? "toutes livrées, nouvelles à minuit" : `${GB.length - dn} en attente de ressources`, done: dn === GB.length, hot: r.length > 0,
       act: `data-act="hgo" data-v="gbuy"`, badge: `<span class="pill num">${dn}/${GB.length}</span>` })); }
   const sb = E.sab(S);
-  if (sb.open) { const p = Math.round(sb.r / E.SAB_MAX * 100);
+  if (sb.open) { const p = Math.round(sb.r / E.sabMaxOf(S) * 100);
     out.push(tile({ ic: `<span class="ac-te">⏳</span>`, t: "Sablier de Xélor", s: `${dur(sb.r)} en réserve${sb.spd > 1 ? ` · vitesse ×${sb.spd}` : p >= 95 ? " · plein, il ne se remplit plus" : ""}`, hot: p >= 95 && sb.spd === 1, act: `data-act="sabinfo"`, badge: `<span class="ac-sab"><i style="width:${p}%"></i></span>` })); }
   if (S.chars.length < E.HERO_MAX) { const pr = recruitPrice(); const can = canRecruit();
     out.push(tile({ ic: `<span class="head ac-tadd">+</span>`, t: "Prochain héros", s: `${pr ? `${fmt(pr)} kamas` : "gratuit"} · ${can ? "tu peux recruter" : `il manque ${fmt(pr - S.kamas)}`}`, hot: can, act: `data-act="recruitsheet"`, badge: `<span class="coin"></span>` })); }
@@ -9824,7 +9847,7 @@ document.addEventListener("click", (ev) => {
     case "chalall": Object.keys(E.CHALLENGES).forEach((id) => chalPickSet(id, d.v === "1")); dirty = true; chalPickSheet(); return;
     case "sabgo": sabGo(d.v); return;
     case "sabbuy": { const r = E.horlogerBuy(S); if (r) { toast(r); return; } toast("Fiole de temps achetée : elle est dans ton sac (Utiliser pour +1 h, ou à vendre à l'hôtel de vente)."); dirty = true; renderStatus(); sabSheet(); return; }
-    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
+    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % E.sabMaxSpd(S)) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3 (→ ×4 au niveau 50 de la Maîtrise du temps)
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": reloadTo(false); return; // 1.0.11 : on revient directement dans la partie en cours
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
@@ -11087,7 +11110,7 @@ async function lbProfile(u) {
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
-    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
+    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
@@ -11245,8 +11268,8 @@ function loop() {
         else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets vont dans le trop-plein : faites de la place.");
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) setTxt(k, fmt(S.kamas)); // 1.0.25.8 : le texte n'est réécrit que s'il change (sinon toute la page se remettait en page 8 fois par seconde)
-    const sab = $("#stSab"); if (sab && S.sablier) { const v = sabLeft(S.sablier.r); if (sab.textContent !== v) sab.textContent = v; }
-    const sbp = sab && sab.closest(".sabpill"); if (sbp) { const idle = S.sablier.spd > 1 && !E.sabBusy(S); if (sbp.classList.contains("idle") !== idle) { sbp.classList.toggle("idle", idle); sbp.querySelector(".sbi").dataset.tip = idle ? "Sablier en pause : rien n'avance (équipe au repos), la réserve ne s'use pas" : "Sablier de Xélor : réserve de temps rapide (+3 h par jour)"; } }
+    const sab = $("#stSab"); if (sab && S.sablier) { const v = sabPillTxt(); if (sab.textContent !== v) sab.textContent = v; }
+    const sbp = sab && sab.closest(".sabpill"); if (sbp) { const idle = S.sablier.spd > 1 && !E.sabBusy(S); if (sbp.classList.contains("idle") !== idle) { sbp.classList.toggle("idle", idle); sbp.querySelector(".sbi").dataset.tip = idle ? "Sablier en pause : rien n'avance (équipe au repos), la réserve ne s'use pas" : sabPillTip(); } }
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) setTxt(sb, dur(Math.min(...ab.map((b) => b.left)))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) setTxt(kl, fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0)));
     if (ui.tab !== "combat" && window.FORMUI) window.FORMUI.loop(); // 1.0.30 : petit module de combat (ses propres éléments seulement)

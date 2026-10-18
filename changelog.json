@@ -1,6 +1,20 @@
 {
-  "version": "2.1.26.4",
+  "version": "2.1.27",
   "versions": [
+    {
+      "v": "2.1.27",
+      "name": "Maîtrise du temps",
+      "guide": "sablier",
+      "items": [
+        "Sablier de Xélor : nouvelle Maîtrise du temps. Chaque minute de Sablier utilisée donne 1 XP. 50 niveaux, environ 600 h de Sablier pour le dernier (environ 100 jours à 6 h par jour). Tout le monde commence au niveau 1",
+        "Tous les 2 niveaux : +1 h de réserve (61 h au niveau 50, 73 h avec les heures gagnées ou offertes). Les niveaux impairs donnent chacun un Grain de Xélor (+15 min)",
+        "Niveau 15 : le ×2 devient illimité (il ne coûte plus de réserve, et ne donne alors plus d'XP : la Maîtrise avance en ×3 et ×4)",
+        "Niveaux 10, 20, 30 et 40 : butin moins réduit, jusqu'à −6 % en ×2 et −12 % en ×3. Niveaux 15 et 35 : +30 min de recharge par jour",
+        "Niveau 25 : 1 Fiole de temps offerte chaque semaine, 2 dès le niveau 45",
+        "Niveau 50 : vitesse ×4 (3 minutes de réserve par minute, butin −25 %) et titre « Maître du temps »",
+        "Le niveau, sa jauge et tous les paliers sont dans la fiche du Sablier (clic sur la pastille ⏳ en haut). En ×2 illimité, la pastille affiche « ∞ », et le niveau se voit dans son info-bulle et sur le profil public"
+      ]
+    },
     {
       "v": "2.1.26.4",
       "name": "Exos et objets parfaits",

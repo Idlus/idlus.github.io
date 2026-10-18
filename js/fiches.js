@@ -63,7 +63,7 @@
       heroes, kamas: S.kamas || 0, playtime: (S.stats && S.stats.playtime) || 0, fights: (S.stats && S.stats.fights) || 0, wins: (S.stats && S.stats.wins) || 0, created: S.created,
       items: Object.keys(items).length, res: sum(S.res), resN: Object.keys(S.res || {}).length, runes: sum(S.runes), cons: sum(S.cons),
       pets: Object.keys(S.pets || {}).length, mounts: Object.keys(S.mounts || {}).length, idols: Object.keys((S.idols && S.idols.own) || {}).length,
-      sab: S.sablier ? (S.sablier.open ? `${Math.floor((S.sablier.r || 0) / 3600)} h ${String(Math.floor(((S.sablier.r || 0) % 3600) / 60)).padStart(2, "0")} en réserve` : "pas encore débloqué") : "—",
+      sab: S.sablier ? (S.sablier.open ? `${Math.floor((S.sablier.r || 0) / 3600)} h ${String(Math.floor(((S.sablier.r || 0) % 3600) / 60)).padStart(2, "0")} en réserve${E.sabMtLvl ? ` · Maîtrise du temps niv. ${E.sabMtLvl(S)}` : ""}` : "pas encore débloqué") : "—",
       kz: (S.tokens && S.tokens[E.KOLI_CUR || "kolizetons"]) || 0,
       subsOpen, subsTot: subs.length, dgs: dgs.length, dgTot: Object.keys(D.DUNGEONS || {}).length, stMax, bossKills,
       dofus, souls: E.soulCount ? (() => { try { return E.soulCount(S); } catch (e) { return 0; } })() : 0,

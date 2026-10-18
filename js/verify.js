@@ -19,6 +19,7 @@
     const heroes = S.chars.map((c) => ({ cls: c.cls, lvl: c.lvl || 1, ren: c.ren || 0, name: String(c.name || "").slice(0, 20), gear: gear(c),
       ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [], ...(E.mtCode && c.lvl >= 200 && c.mt ? { mc: E.mtCode(c) } : {}) } : {}) })); // 2.0 : Maîtrise (classement) ; 2.1 : code de l'arbre (« Voir l'arbre »)
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
+    if (main && E.sabMtLvl && S.sabMt) { const i = S.chars.indexOf(main); if (heroes[i]) heroes[i].smt = E.sabMtLvl(S); } // 2.1.27 (Mathis 4B) : niveau de Maîtrise du temps sur le profil public (porté par le héros principal)
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
     // 2.1.12 : chaque point de Maîtrise compte un niveau ; mtl = Maîtrise comptée dans level (le serveur ne la prend pas pour une montée suspecte au premier envoi)
     const best = heroes.map((h) => ({ t: h.lvl + h.ren * V.REB_LVL + (h.mt || 0), mt: h.mt || 0 })).sort((x, y) => y.t - x.t).slice(0, 8);
@@ -96,7 +97,7 @@
     (S.chars || []).forEach((c) => { lv += c.lvl || 1; if (c.mt) { mt += c.mt.lvl || 0; bn += c.mt.bn || 0; } });
     const dof = Object.values(S.items || {}).filter((it) => /^dofus_/.test(it.tpl)).length;
     // 2.1.25 : pt = heures de temps de jeu (le vrai temps, même en vitesse ×2 / ×3)
-    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600) };
+    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600), sl: E.sabMtLvl ? E.sabMtLvl(S) : 1, sx: Math.max(0, Math.floor(+(S.sabMt && S.sabMt.xp) || 0)) }; // 2.1.27 : sl / sx = niveau et XP de Maîtrise du temps
   };
 
   /* Ce qu'aucune partie honnête ne peut contenir, quel que soit le temps de jeu. Renvoie la raison, ou null. */
@@ -139,16 +140,23 @@
         if (E.MT_RESET && (+c.mt.bn || 0) > 0) return `${nm} : ${c.mt.bn} points de Maîtrise des vies passées (remis à 0 avec la Maîtrise lente)`;
         if (lv > hero) return `${nm} : ${lv} points de Maîtrise (au plus ${hero} depuis le reset)`; tot += lv; }
       if (tot > team) return `${tot} points de Maîtrise dans l'équipe (au plus ${team} depuis le reset)`; }
+    { /* 2.1.27 « Maîtrise du temps » : l'XP du Sablier vient de la réserve utilisée (1 par minute). Au plus la réserve de départ
+         (73 h) plus 30 h par jour depuis sa sortie : le plus gros joueur honnête (recharge, Défi, boss, Horloger, comptoirs) en gagne environ 18 */
+      const xp = Math.max(0, +(S.sabMt && S.sabMt.xp) || 0), d = Math.max(0, ((V.now ? V.now() : Date.now()) - V.SAB_T0) / 86400000);
+      const cap = Math.floor((V.SAB_H0 + V.SAB_H_DAY * d) * 60);
+      if (xp > cap) return `Maîtrise du temps : ${Math.floor(xp).toLocaleString("fr-FR")} XP (au plus ${cap.toLocaleString("fr-FR")} depuis sa sortie)`; }
     return null;
   };
   /* rythmes de V.rates, marge comprise : 180 points par heure pour l'équipe, 30 pour un seul héros (4,8 mesurés × 5, arrondi) */
   V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 225; V.MT_PAD = 20;
+  V.SAB_T0 = Date.UTC(2026, 9, 18, 18, 15); V.SAB_H0 = 73; V.SAB_H_DAY = 30;
 
   /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :
-     la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 48 h, et chaque gain en consomme
+     la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 72 h (2.1.27 : 48 h avant le ×4 et la réserve plus grande de la
+     Maîtrise du temps ; le rythme reste 1,25 h : les rythmes ont déjà leur marge, et 1,5 h laissait passer 1,61 milliard de kamas en 27 h), et chaque gain en consomme
      selon le meilleur rythme honnête (× 3 de marge). Les kamas et ressources donnés par le serveur (hôtel de vente,
      codes cadeaux, lots) sont retirés avant. Renvoie { ok, res (réserve restante), why }. */
-  V.RES_MAX = 48; V.RES_RATE = 1.25;
+  V.RES_MAX = 72; V.RES_RATE = 1.25; V.RES_RATE2 = 2.25;
   /* Rythmes mesurés par simulation (tools/simulate.js --chasse 20,60,120,200 --profils optimise, équipe de 8, 16/10/2026) :
      kamas par heure de chasse sans bonus 75 000 (niv. 20), 385 000 (60), 510 000 (120), 870 000 (200) ; environ 6 000 ressources
      par heure ; 4,8 points de Maîtrise par héros et par heure au niveau 200. Marge × 5 (double gain, Almanax, potions, donjons,
@@ -166,13 +174,17 @@
      ne passait plus du tout ce contrôle, et une partie retouchée à 1,6 milliard de kamas et +160 h de jeu en 27 h passait) */
   V.SURE = 2;
   V.check = (E, prev, cur, hours, gift, res0, topLvl, sure) => {
-    let res = Math.min(V.RES_MAX, (res0 == null ? V.RES_MAX : res0) + Math.max(0, hours) * V.RES_RATE);
+    // 2.1.27 : ×2 illimité dès le niveau 15 de la Maîtrise du temps (plafonnée par V.impossible) : 2 h de jeu par heure réelle
+    const rate = Math.min(+prev.sl || 1, +cur.sl || 1) >= (E && E.SAB_FREE2_LVL || 15) ? V.RES_RATE2 : V.RES_RATE;
+    let res = Math.min(V.RES_MAX, (res0 == null ? V.RES_MAX : res0) + Math.max(0, hours) * rate);
     const R = Object.assign({}, V.rates(topLvl)); gift = gift || {};
     if (sure) { R.k *= V.SURE; R.r *= V.SURE; }
     if (prev.pt != null && cur.pt != null && cur.pt - prev.pt > Math.max(0, hours) * 1.5 + 2) {
       const h1 = (n) => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
       return { ok: false, res, why: `+${h1(cur.pt - prev.pt)} h de temps de jeu en ${h1(Math.max(0, hours))} h réelles` };
     }
+    // 2.1.27 : XP de Maîtrise du temps au plus la réserve pleine (73 h) plus 30 h par jour réel depuis la dernière partie validée
+    if (prev.sx != null && cur.sx != null && cur.sx - prev.sx > (V.SAB_H0 + Math.max(0, hours) * V.SAB_H_DAY / 24) * 60) return { ok: false, res, why: `+${Math.round(cur.sx - prev.sx).toLocaleString("fr-FR")} XP de Maîtrise du temps en ${(Math.round(Math.max(0, hours) * 10) / 10).toLocaleString("fr-FR")} h réelles` };
     const dk = cur.k - prev.k - (gift.k || 0), dr = cur.r - prev.r - (gift.r || 0), dm = cur.mt - prev.mt, dl = cur.lv - prev.lv - Math.max(0, (cur.rec || 0) - (prev.rec || 0)) - (gift.lv || 0);
     if (cur.bn > prev.bn) return { ok: false, res, why: `points de Maîtrise des vies passées en hausse (+${cur.bn - prev.bn})` };
     // 2.1.18 : un Dofus de plus permis toutes les 4 h (échelle des Dofus jusqu'à la stasis 15 ; un compte bloqué accumulait sans fin)
