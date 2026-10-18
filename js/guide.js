@@ -409,6 +409,7 @@
           "Rang X = **Sublimé** : +50 %, aura dorée et annonce sur le serveur.",
           `Porter les 6 Dofus primordiaux réveille l'**Éveil des Dragons** : +${N(() => E.DOFP_RESO * (E.DOFP_RESO < 1 ? 100 : 1))} %.`,
           `Au Kolizéum, les passifs comptent ×${N(() => E.DOFP_PVP)}.`,
+          "La **Lueur d'Ilyzaelle** (Dofus Argenté Scintillant) ne sauve qu'un allié par équipe et par combat, même avec plusieurs porteurs.",
         ]],
       ];
     } });
@@ -569,6 +570,7 @@
       ["h", "La stasis"],
       ["p", `Chaque donjon a sa difficulté de 1 à ${N(() => E.STASIS_MAX)}. Réussir une stasis ouvre la suivante pour ce donjon. Plus elle est haute, plus les monstres sont forts et les récompenses grandes.`],
       ["kv", [1, 5, 10, 15].map((k) => [`Stasis ${k}`, V(() => { const m = E.stasisMult(k); return `vie ×${fr(Math.round(m.hp * 100) / 100)} · dégâts ×${fr(Math.round(m.dmg * 100) / 100)} · gains ×${fr(Math.round(m.rew * 100) / 100)}`; })])],
+      ["p", V(() => { const L = Object.keys(E.DG_DIFF || {}).filter((k) => D.DUNGEONS[k] && E.DG_DIFF[k] !== 1); return L.length ? `Quelques donjons ont leur propre réglage (vie et dégâts des monstres), pour que la stasis 7 demande partout un bon équipement : ${L.map((k) => `${D.DUNGEONS[k].name} ×${fr(E.DG_DIFF[k])}`).join(", ")}.` : ""; }, "")],
       ["ul", V(() => (Array.isArray(E.STASIS_STEPS) ? E.STASIS_STEPS : Object.values(E.STASIS_STEPS)).map((x, i) => (typeof x === "string" ? x : x.t || x.txt || x.desc ? `**Stasis ${x.k || i + 1}** : ${x.t || x.txt || x.desc}` : "")).filter(Boolean), [])],
       ["h", "Sorts des monstres et des boss"],
       ["ul", [
