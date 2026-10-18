@@ -30,8 +30,12 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur]
         default: verifier
+      pseudo:
+        description: "Pseudo du joueur (étape enquete-joueur)"
+        type: string
+        default: ""
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
         type: string
@@ -205,6 +209,26 @@ jobs:
           node tools/compensation_fm.js "$f" "$q" $([ "${{ inputs.etape }}" = compensation-fm ] && echo --appliquer)
           rm -f "$f"
           bash tools/serveur/vps_sql.sh fichier "$q"
+      - name: Enquête sur un joueur (lecture seule, demande de Mathis)
+        if: inputs.etape == 'enquete-joueur'
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          # 18/10/2026 : « Just ever triche ? vérifie ça sauvegarde » (Mathis). Lecture seule ; le journal n'affiche que des chiffres de jeu
+          # (tools/enquete_joueur.js), jamais la partie : le relevé reste dans le dossier temporaire de l'action et il est effacé.
+          p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_-'); [ -n "$p" ] || { echo "Pseudo manquant." >&2; exit 1; }
+          f="$RUNNER_TEMP/releve.json"
+          bash tools/serveur/vps_sql.sh lecture "select p.pseudo, p.created_at as cree, s.data as save, s.updated_at as save_at,
+            (select row_to_json(x) from (select l.suspect, l.flagged, l.verified, l.flag_reason, l.level, l.playtime, l.updated_at from public.ladder l where l.user_id = p.id) x) as ladder,
+            (select row_to_json(x) from (select o.bilan, o.res, o.src_at, o.at, o.accept from public.saves_ok o where o.user_id = p.id) x) as ok,
+            (select o.data from public.saves_ok o where o.user_id = p.id) as ok_data,
+            (select row_to_json(x) from (select k.w, k.cote, k.n, k.win, k.loss from public.koli k where k.user_id = p.id) x) as koli,
+            (select coalesce(json_agg(x order by x.at desc), '[]') from (select b.why, b.at from public.bouclier_log b where b.user_id = p.id order by b.at desc limit 60) x) as bouclier,
+            (select coalesce(json_agg(x), '[]') from (select g.code, g.at from public.gift_uses g where g.user_id = p.id order by g.at) x) as codes,
+            (select coalesce(json_agg(x), '[]') from (select j.day, j.at, j.data from public.saves_jour j where j.user_id = p.id) x) as jours
+            from public.profiles p left join public.saves s on s.user_id = p.id where lower(p.pseudo) = lower('$p')" > "$f"
+          node tools/enquete_joueur.js "$f"
+          rm -f "$f"
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
         run: |
