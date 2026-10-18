@@ -1331,7 +1331,7 @@
   E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
   /* Le grand équilibrage (choix 4A de Mathis) : difficulté propre à quelques donjons (PV et dégâts de leurs monstres, × la valeur),
      réglée par simulation (équipe de 8 héros de leur niveau, bon équipement, stasis 7 visée). */
-  E.DG_DIFF = {};
+  E.DG_DIFF = { tertre_long_sommeil: 1.7, refuge_sylvestre: 1.45, chateau_wa_wabbit: 1.34, caverne_koulosse: 1.3, cour_bouftou_royal: 1.3, theatre_dramak: 1.18, miausolee_pounicheur: 1.17, gelaxieme_dimension: 0.7 };
   const applyDiff = (S, mons) => { const m = E.DG_DIFF[S.dungeon && S.dungeon.id]; if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
   const applyStasis = (S, F, mons, room, isBoss) => {
     applyDiff(S, mons);

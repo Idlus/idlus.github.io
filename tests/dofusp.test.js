@@ -51,12 +51,12 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
   const mon = F.ents.find((e) => e.side === "m" && e.alive);
   // 1.0.30 : selon le tirage, des héros ont pu tomber dès les premiers tours (et la Lueur servir) : on repart d'une équipe debout
   F.ents.forEach((e) => { if (e.side === "c" && !e.summon) { e.alive = true; e.hp = e.hpMax; } }); F.deaths = F.deaths.filter((i) => F.ents[i].side !== "c");
-  eb.dpS.save = 1; eb.dpS.rage = 0; F.dpN = {}; F.dpSeen = {};
+  eb.dpS.save = 1; eb.dpS.rage = 0; F.dpN = {}; F.dpSeen = {}; F.dpArg = {};
   ea.shield = 0; ea.hp = ea.hpMax; const d = API.dealDamage(F, mon, ea, ea.hpMax * 3, null);
   assert.ok(d <= Math.ceil(ea.hpMax * 0.4) && ea.alive, `Carapace d'ivoire : coup de ${d} pour ${ea.hpMax} PV`);
   ea.hp = 5; ea.shield = 0; API.dealDamage(F, mon, ea, ea.hpMax, null);
   assert.ok(ea.alive && ea.hp === 1, "Lueur d'Ilyzaelle (portée par un allié) : reste debout à 1 PV");
-  ea.hp = 5; API.dealDamage(F, mon, ea, ea.hpMax, null); assert.ok(!ea.alive, "une seule fois par combat");
+  ea.hp = 5; ec.dpS.save = 1; ec.dp = (ec.dp || []).concat("argente"); API.dealDamage(F, mon, ea, ea.hpMax, null); assert.ok(!ea.alive, "une seule fois par combat et par équipe, même avec un 2e porteur"); ec.dp = ec.dp.filter((x) => x !== "argente"); ec.dpS.save = 0;
   assert.strictEqual(eb.dpS.rage, 1, "Colère du Bworker : +1 allié à terre");
   const m2 = F.ents.find((e) => e.side === "m" && e.alive && !e.boss); if (m2) { ec.dpS = {}; m2.stun = 0; delete m2.lgStun; delete m2.dpMelt; m2.hp = m2.hpMax * 10; m2.hpMax *= 10; API.dealDamage(F, ec, m2, 1, null); assert.ok(m2.stun === 1 && m2.lgStun, "Prison d'ambre : figé"); assert.ok(m2.dpMelt >= 2 && m2.dpMeltS === "c", "Fonte des armures");
     API.dealDamage(F, ec, m2, 1, null); assert.ok(ec.dpS.amber === 1); }
