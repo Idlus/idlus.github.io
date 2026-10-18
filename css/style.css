@@ -5913,3 +5913,20 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .mdt .pal div.ok{background:color-mix(in srgb, var(--good, #8ccf72) 18%, transparent)}
 .mdt .pal b{display:block}
 @media (max-width:500px){.mdt .pal{grid-template-columns:1fr 1fr}}
+/* Monocompte (js/mono.js) : choix du serveur, cartes de l'écran des parties, pastille du statut */
+.srvpick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.srvc{all:unset;box-sizing:border-box;cursor:pointer;border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:color-mix(in srgb,var(--panel2) 70%,transparent);transition:border-color .15s,box-shadow .15s}
+.srvc:hover{border-color:var(--frame)}.srvc:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.srvc.on{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent),0 6px 22px rgba(0,0,0,.3);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 12%,transparent),transparent)}
+.srvh{margin:0;font-family:var(--fd,inherit);font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.srvtg{font-family:var(--fb,inherit);font-size:11px;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold);font-weight:800;letter-spacing:.04em}
+.srvwho{font-size:12.5px;color:var(--muted)}
+.srvul{margin:2px 0 0;padding-left:18px;font-size:13px;line-height:1.5;display:grid;gap:2px}
+.svsrv{display:grid;gap:3px;margin-top:6px}.svsrv h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.svsrv.mono{margin-top:18px}
+.svc2.empty.mono{border-color:var(--gold)}.svc2.empty.mono .plus{border-color:var(--gold);font-size:28px}
+.svm .tag.mo,.svback .tag.mo{background:linear-gradient(90deg,#4a6d1c,#7ea52a);color:#f3ffd0}
+#status .monob{padding:3px 10px;border-radius:99px;background:linear-gradient(90deg,#3f5e1a,#6b8f24);color:#f3ffd0;border:1px solid #a9cf4c;white-space:nowrap;font-size:13px}
+#status .monob b{color:#f3ffd0}
+@media (max-width:640px){.srvpick{grid-template-columns:minmax(0,1fr)}}
+.svgrid.mono{grid-template-columns:minmax(0,560px);justify-content:center}

@@ -1430,7 +1430,7 @@
     if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
     if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
     /* 0.1 : bonus « petit groupe » en donjon (solo et duo) ; 0.1.24.3 : en chasse aussi (solo, duo, trio) */
-    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
+    const sm = S.mono && E.monoSmall && !XP ? E.monoSmall(S, team, !!S.dungeon) : S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length]; // Monocompte : bonus Héros unique (js/mono.js)
     if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
@@ -2232,6 +2232,7 @@
       e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
       e.resBonus = 0; e.regen = 0;
     });
+    if (S.mono && E.monoDmg) heroes0.forEach((e) => (e.dmgBonus += E.monoDmg(S, e))); // Monocompte : dégâts du Héros unique
     if (F.exp && E.expBonuses) E.expBonuses(S, F); // 0.1.24 : reliques et bénédictions de l'expédition
   };
 
@@ -2565,7 +2566,7 @@
       const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1)); let n = 0;
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1) * (S.mono && E.monoItem ? E.monoItem(S, ITEMS[tpl]) : 1)); let n = 0; // Monocompte : butin d'équipement du héros seul
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
         for (let ii = 0; ii < n; ii++) {
           seen(m.key, tpl);
@@ -3747,7 +3748,7 @@
   E.catchUp = (S, seconds) => {
     seconds = Math.min(seconds, E.OFFLINE_MAX_S + E.bonus(S, "offtime") * 3600);
     if (seconds < 60) return null;
-    const eff = seconds * E.offRate(S);
+    const eff = seconds * E.offRate(S) * (S.mono && E.MONO ? E.MONO.off : 1); // Monocompte : gains hors ligne à 80 % (js/mono.js)
     const rec = S.stats.recent;
     const avg = rec.length ? rec.reduce((s, r) => s + r.d, 0) / rec.length : 15;
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;

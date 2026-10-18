@@ -2759,9 +2759,10 @@ function statusHtml() {
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
+    ${S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${E.MONO.nom} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐ <b>Monocompte</b><span class="hide-sm">&nbsp;· ${h(E.MONO.nom)}</span></span>` : ""}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     ${sabHtml()}
-    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
+    ${S.mono ? "" : `<span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>`}
     <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
@@ -2940,18 +2941,33 @@ function headPick(id, sex) {
 }
 const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
 const hasPublicSave = () => !!SV.store().get("dofousxen-save");
+/* Monocompte : au tout premier lancement, choix du serveur au-dessus du choix du héros ; depuis l'écran des parties, la carte Monocompte y mène directement */
+const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && !SV.local.get(slotKey(MONO_SLOT));
+const startMono = () => SLOT === MONO_SLOT || (srvFirst() && ui.startSrv === "mono");
+const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, saisons et Pass de saison : bientôt`];
+function srvPick() {
+  if (!menuOn() || TESTMODE) return "";
+  if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur Classique ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
+  if (!srvFirst()) return "";
+  const on = ui.startSrv === "mono" ? "mono" : "cl";
+  return `<div class="panel"><div class="pad stack"><h2>Choisis ton serveur</h2><div class="srvpick">
+    <button class="srvc ${on === "cl" ? "on" : ""}" data-act="startsrv" data-v="cl" aria-pressed="${on === "cl"}"><span class="srvh">🌍 Classique</span><span class="srvwho">L'aventure complète, avec toute ton équipe</span><ul class="srvul"><li>Jusqu'à 19 héros, 8 en combat</li><li>Classements, Hôtel de vente, guildes, Kolizéum</li><li>Alliances et Boss des mondes</li></ul></button>
+    <button class="srvc ${on === "mono" ? "on" : ""}" data-act="startsrv" data-v="mono" aria-pressed="${on === "mono"}"><span class="srvh">⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></span><span class="srvwho">Tout le monde repart de 0, à égalité</span><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul></button>
+  </div><span class="small muted">Tu peux jouer sur les deux : chaque serveur garde sa propre partie (Options › Sauvegarde › Changer de partie).</span></div></div>`;
+}
 function renderStart() {
   renderStatus(); renderNav();
   const sex = ui.startSex || CLASSES[ui.startCls].sex;
   $("#main").innerHTML = `
   <section class="start stack">
-    ${menuOn() && (SLOT !== 1 || (ON && ON.user) || [1, 2, 3].some((k) => k !== SLOT && SV.local.get(slotKey(k)))) ? `<div class="svback"><button class="lnk" data-act="sv-menu">← Choisir une autre partie</button><span class="tag ${SLOT === 1 ? "cl" : "lo"}">Partie ${SLOT}${SLOT === 1 ? " · classements" : " · solo"}</span></div>` : ""}
+    ${menuOn() && (SLOT !== 1 || (ON && ON.user) || [1, 2, 3, MONO_SLOT].some((k) => k !== SLOT && SV.local.get(slotKey(k)))) ? `<div class="svback"><button class="lnk" data-act="sv-menu">← Choisir une autre partie</button><span class="tag ${SLOT === 1 ? "cl" : SLOT === MONO_SLOT ? "mo" : "lo"}">${h(partName(SLOT))}${SLOT === 1 ? " · classements" : SLOT === MONO_SLOT ? "" : " · solo"}</span></div>` : ""}
     <div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>
     ${BETA && hasPublicSave() ? `<div class="panel"><div class="pad stack"><b>Version de test</b><span class="small muted">Votre partie du jeu public n'est pas modifiée ici. Vous pouvez en faire une copie pour tester les nouveautés avec vos héros.</span><div><button class="btn primary" data-act="frompublic">Copier ma partie du jeu public</button></div></div></div>` : ""}
     ${ON && !ON.user ? `<div class="panel"><div class="pad row between"><span><b>Déjà un compte ?</b><br><span class="small muted">Connecte-toi pour retrouver ta partie. Sinon, joue tout de suite : tu pourras créer un compte plus tard, ta partie te suivra.</span></span><button class="btn sm" data-act="on-loginscreen">Se connecter</button></div></div>` : ""}
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
+    ${srvPick()}
     <div class="panel"><div class="pad stack">
-      <h2>Choisissez votre premier héros</h2>
+      <h2>${startMono() ? `Choisis ton héros de ${h(E.MONO.nom)}` : "Choisissez votre premier héros"}</h2>
       ${classPick(ui.startCls, sex)}
       ${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
       <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
@@ -5582,7 +5598,7 @@ function dofpHeroPanel(c) {
       <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
   const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
     : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
-  return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / 6 actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
+  return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / ${D.DOFUS_SLOTS.length} actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
 }
 /* choix du Dofus : familles, passif lisible, conseillés pour le héros en premier, Dofus pas encore obtenus avec leur quête */
 function dofpPickHtml(c, all, g) {
@@ -7974,7 +7990,7 @@ function optionsSheet() {
     + optSec("Butin qui améliore un héros", "", optChk(`data-act="setlootup"`, !S.settings.lootUpOff, "Prévenir quand un objet est mieux", "le message « ▲ Mieux pour … » avec un bouton « Équiper » quand un objet tombé améliore un héros de l'équipe"))
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
     + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
-  else if (tab === "sauvegarde") body = (menuOn() ? optSec(`Partie ${SLOT}`, SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">3 parties : la 1 pour les classements, la 2 et la 3 en solo</span></div>`) : "")
+  else if (tab === "sauvegarde") body = (menuOn() ? optSec(partName(SLOT), SLOT === MONO_SLOT ? "serveur Monocompte : un seul héros, partie gardée sur cet appareil en attendant son serveur" : SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">Classique : la partie 1 pour les classements, la 2 et la 3 en solo · Monocompte : une partie</span></div>`) : "")
     + (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile && ON.slotOnline() ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
     + saveWeightHtml()
@@ -9704,7 +9720,10 @@ document.addEventListener("click", (ev) => {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+    case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
+    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
+      const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -10188,7 +10207,7 @@ document.addEventListener("click", (ev) => {
     case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }
     case "savenow": saveNow(true); return;
     case "copyexp": { const ta = $("#exp"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Sauvegarde copiée."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
-    case "import": { try { const txt = decodeURIComponent(escape(atob($("#imp").value.trim()))); const N = E.deserialize(txt); if (S) pushCopy(E.serialize(S), "avant", S); S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); closeSheet(); ui.tab = "home"; render(); toast("Sauvegarde importée."); if (S.migration) { migrationSheet(S.migration); S.migration = null; } } catch (e) { const m = $("#impmsg"); if (m) m.textContent = "Ce texte n'est pas une sauvegarde valide."; } return; }
+    case "import": { try { const txt = decodeURIComponent(escape(atob($("#imp").value.trim()))); const N = E.deserialize(txt); if (!N.mono !== (SLOT !== MONO_SLOT)) { const m = $("#impmsg") || {}; m.textContent = N.mono ? "Cette sauvegarde vient du serveur Monocompte : importe-la dans la partie Monocompte." : "La partie Monocompte ne reprend pas une sauvegarde du serveur Classique : tout le monde repart de 0."; if (!$("#impmsg")) toast(m.textContent); return; } if (S) pushCopy(E.serialize(S), "avant", S); S = N; if (S.mono) E.monoBoot(S); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); closeSheet(); ui.tab = "home"; render(); toast("Sauvegarde importée."); if (S.migration) { migrationSheet(S.migration); S.migration = null; } } catch (e) { const m = $("#impmsg"); if (m) m.textContent = "Ce texte n'est pas une sauvegarde valide."; } return; }
     case "askreset": ui.confirm = "reset"; optionsSheet(); return;
     case "askrestore": ui.confirm = "restore" + d.i; if (S) optionsSheet(); else renderStart(); return;
     case "cancelrestore": ui.confirm = null; if (S) optionsSheet(); else renderStart(); return;
@@ -10320,7 +10339,7 @@ const onLive = () => !!(ON && ON.user && ON.profile && booted && S && ON.slotOnl
 /* 1.0.11 : la partie 1 seule entre aux classements et joue avec les autres (Hôtel de vente, guilde, Kolizéum classé…) */
 const ranked = () => onLive() && SLOT === 1;
 /* Bandeau des pages qui se jouent avec la partie 1 (classements, Hôtel de vente, guilde, Kolizéum classé, boss des mondes) */
-const soloPanel = (what) => `<div class="panel solob"><div class="pad row between"><span><b>Partie ${SLOT} : solo</b><br><span class="small muted">${what[0].toUpperCase() + what.slice(1)} se joue${/^les /.test(what) ? "nt" : ""} avec ta partie 1. Ici, tu regardes sans y prendre part.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>`;
+const soloPanel = (what) => SLOT === MONO_SLOT ? `<div class="panel solob"><div class="pad row between"><span><b>Monocompte</b><br><span class="small muted">${what[0].toUpperCase() + what.slice(1)} du Monocompte arrive${/^les /.test(what) ? "nt" : ""} avec son serveur, aux prochaines étapes. Ici, tu regardes celui du serveur Classique.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>` : `<div class="panel solob"><div class="pad row between"><span><b>Partie ${SLOT} : solo</b><br><span class="small muted">${what[0].toUpperCase() + what.slice(1)} se joue${/^les /.test(what) ? "nt" : ""} avec ta partie 1. Ici, tu regardes sans y prendre part.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>`;
 function openGate(html) { hideTip(); $("#sheet").innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 5.3A17 17 0 0 0 15.4 4l-.5 1a15.6 15.6 0 0 0-5.8 0l-.5-1a17 17 0 0 0-4.2 1.3C1.7 9.3 1 13.2 1.3 17a17 17 0 0 0 5.2 2.6l1.1-1.8c-.6-.2-1.2-.5-1.7-.8l.4-.3a12 12 0 0 0 11.4 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.9-11.7ZM8.7 14.7c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>`;
 function onBlank(txt) { $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = ""; $("#main").innerHTML = `<section class="start stack"><div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div><p class="muted" style="text-align:center">${h(txt)}</p></section>`; }
@@ -10353,7 +10372,9 @@ function conflictSheet(st, info) {
    parties de l'appareil et laisse jouer. Quand une partie a avancé à la fois ici et ailleurs, les deux versions sont
    montrées dans sa carte, la plus avancée en premier, et on choisit laquelle jouer. */
 const BASE_KEY = LS_KEY;
-const slotKey = (n) => (n === 1 ? BASE_KEY : `${BASE_KEY}-${n}`);
+const MONO_SLOT = 4; // serveur Monocompte (js/mono.js) : sa propre partie, gardée sur l'appareil en attendant son serveur
+const slotKey = (n) => (n === 1 ? BASE_KEY : n === MONO_SLOT ? `${BASE_KEY}-mono` : `${BASE_KEY}-${n}`);
+const partName = (n) => (n === MONO_SLOT ? `Monocompte · ${E.MONO.nom}` : `Partie ${n}`);
 let SLOT = 1;
 function setSlot(n) {
   SLOT = n; LS_KEY = slotKey(n); SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
@@ -10406,7 +10427,7 @@ async function menuStart(err) {
     try { await ON.fetchProfile(); } catch (e) { MENU.off = true; }
     if (!MENU.off && !ON.profile) return pseudoSheet();
   }
-  MENU.slots = [1, 2, 3].map(slotRead);
+  MENU.slots = [1, 2, 3, MONO_SLOT].map(slotRead);
   if (menuLive()) {
     try {
       const infos = await Promise.all(MENU.slots.map((sl) => (ON.slotOnline(sl.n) ? ON.remoteInfo(sl.n) : null)));
@@ -10431,20 +10452,21 @@ function cardInfo(m, st) {
   return { name: mh ? mh.name : m.hn || top.name || "", cls: mh ? mh.cls : m.hc || m.main || top.cls || "iop", sex: mh ? mh.sex : m.hs || "m", head: mh ? mh.head || 0 : m.hh || 0,
     lvl: mh ? mh.lvl || 1 : m.hl || m.mainLvl || top.lvl || m.lvl || 1, level: m.level || 0, succes: m.succes || 0, n: st ? st.chars.length : m.n || (m.heroes || []).length || 0, kamas: st ? Math.floor(st.kamas || 0) : m.km };
 }
-const svStats = (ci) => `<div class="st"><div><b>${fmt(ci.level)}</b><span>niveaux cumulés</span></div><div><b>${fmt(ci.succes)}</b><span>succès</span></div><div><b>${ci.n} / ${E.HERO_MAX}</b><span>héros</span></div><div><b>${ci.kamas == null ? "—" : kShort(ci.kamas)}</b><span>kamas</span></div></div>`;
+const svStats = (ci, mono) => `<div class="st"><div><b>${fmt(ci.level)}</b><span>${mono ? "niveau" : "niveaux cumulés"}</span></div><div><b>${fmt(ci.succes)}</b><span>succès</span></div><div>${mono ? `<b>${h(E.MONO.nom)}</b><span>héros unique</span>` : `<b>${ci.n} / ${E.HERO_MAX}</b><span>héros</span>`}</div><div><b>${ci.kamas == null ? "—" : kShort(ci.kamas)}</b><span>kamas</span></div></div>`;
 const devTxt = () => (ON && ON.device() === "téléphone" ? "Cet appareil" : "Cet ordinateur");
 function slotCard(sl) {
-  const n = sl.n, solo = n !== 1, last = (menuPref().last || 1) === n, plan = sl.plan, rem = sl.rem;
-  const tags = `${solo ? `<span class="tag lo" data-tip="Hors classements : ni Hôtel de vente, ni guilde, ni Kolizéum classé, ni boss des mondes">Solo</span>` : `<span class="tag cl" data-tip="Classements, course, Hôtel de vente, guilde, Kolizéum classé et boss des mondes">Classements</span>`}${rem || ["sync", "own", "resend"].includes(plan) ? `<span class="tag on">En ligne</span>` : sl.st ? `<span class="tag dv">Sur cet appareil</span>` : ""}`;
+  const n = sl.n, solo = n !== 1, mono = n === MONO_SLOT, last = (menuPref().last || 1) === n, plan = sl.plan, rem = sl.rem;
+  const tags = `${mono ? `<span class="tag mo" data-tip="Serveur Monocompte : un seul héros, tout le monde repart de 0">Monocompte</span>` : solo ? `<span class="tag lo" data-tip="Hors classements : ni Hôtel de vente, ni guilde, ni Kolizéum classé, ni boss des mondes">Solo</span>` : `<span class="tag cl" data-tip="Classements, course, Hôtel de vente, guilde, Kolizéum classé et boss des mondes">Classements</span>`}${rem || ["sync", "own", "resend"].includes(plan) ? `<span class="tag on">En ligne</span>` : sl.st ? `<span class="tag dv">Sur cet appareil</span>` : ""}`;
   const conf = MENU.confirm;
   const mini = [];
   if (sl.st) mini.push(`<button data-act="sv-copies" data-n="${n}">Copies de secours</button>`);
   if (solo && (sl.st || rem)) mini.push(`<button data-act="sv-del" data-n="${n}">Supprimer</button>`);
   if (plan === "send") mini.push(`<button data-act="sv-fresh" data-n="${n}">Nouvelle partie à la place</button>`);
   let foot = mini.length ? `<div class="mini">${mini.join("")}</div>` : "";
-  if (conf === "del" + n) foot = `<div class="svask"><span class="minus small">La partie ${n} sera effacée de cet appareil${menuLive() && ON.slotOnline(n) && rem ? " et de ton compte" : ""}. Une copie de secours reste sur l'appareil.</span><div class="row"><button class="btn sm danger" data-act="sv-delgo" data-n="${n}">Supprimer</button><button class="btn sm" data-act="sv-no">Annuler</button></div></div>`;
-  if (conf === "fresh" + n) foot = `<div class="svask"><span class="minus small">La partie de cet appareil part dans les copies de secours et une nouvelle aventure commence dans la partie ${n}.</span><div class="row"><button class="btn sm danger" data-act="sv-freshgo" data-n="${n}">Commencer</button><button class="btn sm" data-act="sv-no">Annuler</button></div></div>`;
+  if (conf === "del" + n) foot = `<div class="svask"><span class="minus small">${mono ? "La partie Monocompte" : `La partie ${n}`} sera effacée de cet appareil${menuLive() && ON.slotOnline(n) && rem ? " et de ton compte" : ""}. Une copie de secours reste sur l'appareil.</span><div class="row"><button class="btn sm danger" data-act="sv-delgo" data-n="${n}">Supprimer</button><button class="btn sm" data-act="sv-no">Annuler</button></div></div>`;
+  if (conf === "fresh" + n) foot = `<div class="svask"><span class="minus small">La partie de cet appareil part dans les copies de secours et une nouvelle aventure commence dans ${mono ? "la partie Monocompte" : `la partie ${n}`}.</span><div class="row"><button class="btn sm danger" data-act="sv-freshgo" data-n="${n}">Commencer</button><button class="btn sm" data-act="sv-no">Annuler</button></div></div>`;
   if (!sl.st && !rem) {
+    if (mono) return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">${h(E.MONO.nom)}</span><div class="plus">⭐</div><b>Nouvelle partie Monocompte</b><span class="small muted">Un seul héros, qui part du niveau 1 sans rien, comme tous les joueurs</span><button class="btn primary" data-act="sv-play" data-n="${n}">Commencer la ${h(E.MONO.nom)}</button></div>`;
     return `<div class="svc2 empty" data-slot="${n}"><span class="pn">Partie ${n}</span><div class="plus">+</div><b>Nouvelle partie</b><span class="small muted">${solo ? "Solo, hors classements : une autre aventure dans le même compte" : "Classements, course, Hôtel de vente, guilde et Kolizéum"}</span>
       ${!solo && ON && ON.user && MENU.off ? `<span class="xs muted">Serveur injoignable : ta partie en ligne n'apparaît pas pour l'instant.</span>` : ""}
       <button class="btn primary" data-act="sv-play" data-n="${n}">Commencer</button></div>`;
@@ -10452,7 +10474,7 @@ function slotCard(sl) {
   const useRem = plan === "take" || plan === "remote";
   const ci = cardInfo(useRem ? rem.meta : sl.meta, useRem ? null : sl.st);
   const cls = CLASSES[ci.cls] || CLASSES.iop;
-  const head = `<div class="hd"><div class="pt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></div><div class="min0"><div class="sub">Partie ${n}</div><div class="nm">${h(ci.name || "Partie " + n)}</div><div class="sub">${h(cls.name)} niv. ${ci.lvl}</div><div class="tags">${tags}</div></div></div>`;
+  const head = `<div class="hd"><div class="pt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></div><div class="min0"><div class="sub">${h(partName(n))}</div><div class="nm">${h(ci.name || partName(n))}</div><div class="sub">${h(cls.name)} niv. ${ci.lvl}</div><div class="tags">${tags}</div></div></div>`;
   let mid;
   if (plan === "both") {
     const lm = sl.meta, rm = rem.meta || {}, adv = saveAdv(rm, lm), rt = Date.parse(rem.updated_at) || 0, remFirst = adv ? adv > 0 : rt >= sl.at;
@@ -10467,7 +10489,7 @@ function slotCard(sl) {
       : plan === "remote" ? `<span class="svnote">Sur ton compte : elle sera chargée sur cet appareil.</span>`
       : solo && ON && ON.user && !ON.slotsOk ? `<span class="svnote">Gardée sur cet appareil pour l'instant (pas encore en ligne).</span>`
       : sl.restored ? `<span class="svnote">Sauvegarde illisible : la copie de secours la plus récente sera utilisée.</span>` : "";
-    mid = `${svStats(ci)}<div class="when">Dernière partie ${h(agoTxt(t) || "—")}${dev && dev !== (ON && ON.device()) ? ` · ${h(dev)}` : ""}</div>${note}<div class="go"><button class="btn primary" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
+    mid = `${svStats(ci, mono)}<div class="when">Dernière partie ${h(agoTxt(t) || "—")}${dev && dev !== (ON && ON.device()) ? ` · ${h(dev)}` : ""}</div>${note}<div class="go"><button class="btn primary" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
   }
   return `<div class="svc2${last ? " last" : ""}" data-slot="${n}" style="--cc:${cls.color}">${last ? `<span class="lastb">Dernière jouée</span>` : ""}${head}${mid}${foot}</div>`;
 }
@@ -10485,8 +10507,11 @@ function renderMenu() {
   const pref = menuPref();
   $("#main").innerHTML = `<section class="svm"><div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>${acc}
     ${MENU.msg ? `<div class="svmsg minus small" id="onMsg">${h(MENU.msg)}</div>` : `<span id="onMsg" class="minus small" hidden></span>`}
-    <div class="svtitle"><h2>Choisis ta partie</h2><span class="small muted">La partie 1 porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et le boss des mondes. Les parties 2 et 3 se jouent en solo.</span></div>
-    <div class="svgrid">${MENU.slots.map(slotCard).join("")}</div>
+    <div class="svtitle"><h2>Choisis ton serveur et ta partie</h2></div>
+    <div class="svsrv"><h3>🌍 Classique</h3><span class="small muted">La partie 1 porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et le boss des mondes. Les parties 2 et 3 se jouent en solo.</span></div>
+    <div class="svgrid">${MENU.slots.filter((sl) => sl.n !== MONO_SLOT).map(slotCard).join("")}</div>
+    <div class="svsrv mono"><h3>⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></h3><span class="small muted">Un seul héros, tout le monde repart de 0. Pour l'instant, la partie reste sur cet appareil : les groupes en direct, les saisons et le serveur arrivent ensuite.</span></div>
+    <div class="svgrid mono">${MENU.slots.filter((sl) => sl.n === MONO_SLOT).map(slotCard).join("")}</div>
     <label class="svopt"><input type="checkbox" data-act="sv-auto" ${pref.auto ? "checked" : ""}> Ouvrir directement ma dernière partie</label>
     <div class="svfoot">Pour revenir ici en jeu : ${G("gear", "opt-in")}Options › ${ON ? "Compte" : "Sauvegarde"} › Changer de partie. Version ${GAME_VERSION}</div></section>`;
 }
@@ -11336,6 +11361,7 @@ function bootGame(pushNow) {
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
   if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
   if (S) {
+    if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
     const gap = (E.now() - (S.lastTick || E.now())) / 1000;

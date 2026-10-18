@@ -385,7 +385,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (await page.$('[data-act="on-discord"]')) fail("écran de connexion au premier lancement");
     // « Se connecter » depuis l'écran de départ : écran « Choisis ta partie » (1.0.11) avec Discord en haut, puis partie 1 sans compte
     await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
-    if ((await page.$$(".svm .svc2")).length !== 3) fail("choix des parties : il faut 3 emplacements");
+    if ((await page.$$(".svm .svc2")).length !== 4 || !(await page.$(`.svm .svc2[data-slot="4"]`))) fail("choix des parties : il faut 3 emplacements Classique et la partie Monocompte");
     await page.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector('[data-act="startgame"]');
     await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     if (await page.$(".svm")) fail("choix des parties : affiché alors qu'il n'y a aucune partie ni compte");
