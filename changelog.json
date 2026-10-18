@@ -1,6 +1,14 @@
 {
-  "version": "2.1.26",
+  "version": "2.1.26.1",
   "versions": [
+    {
+      "v": "2.1.26.1",
+      "name": "Crâ ajusté",
+      "guide": "classes",
+      "items": [
+        "Crâ : dégâts légèrement réduits (−5 %) à partir du niveau 88. Au Kolizéum, rien ne change"
+      ]
+    },
     {
       "v": "2.1.26",
       "name": "Le nouveau Sram",

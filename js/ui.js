@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.26";
+const GAME_VERSION = "2.1.26.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.26.1", name: "Crâ ajusté", guide: "classes", items: [
+    "Crâ : dégâts légèrement réduits (−5 %) à partir du niveau 88. Au Kolizéum, rien ne change",
+  ] },
   { v: "2.1.26", name: "Le nouveau Sram", guide: "classes", items: [
     "Sram : ses pièges se posent (3 au plus, jamais deux fois le même) et explosent au début du tour du prochain ennemi, sur lui et ses voisins, avec de gros dégâts. Plusieurs pièges dans le même tour : Réaction en chaîne, +15 % par piège",
     "Invisibilité et Brume : le Sram passe 2 tours dans l'ombre, prend 50 % de dégâts en moins, et son premier coup en sortant fait +40 %",
