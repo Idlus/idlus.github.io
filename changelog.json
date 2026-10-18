@@ -1,6 +1,16 @@
 {
-  "version": "2.1.27",
+  "version": "2.1.27.1",
   "versions": [
+    {
+      "v": "2.1.27.1",
+      "name": "Guide à jour",
+      "guide": "classement",
+      "items": [
+        "Guide : nouveau passage « Vérification des parties » dans Classements (ce que le serveur contrôle, compte suspendu, suspension qui se lève toute seule) et une question fréquente sur le sujet",
+        "Guide : le vote de la règle du Grand défi du dimanche, la fiche du Sablier (clic sur la pastille ⏳, « ∞ » au niveau 15), la pastille « ← Retour aux Dofus », la Maîtrise dans le classement par classe",
+        "Guide : où trouver les partitions (5 s passées dans un endroit, l'air du Phénix sur la page Maîtrise) et les codes cadeaux à nombre limité réservés aux comptes connectés"
+      ]
+    },
     {
       "v": "2.1.27",
       "name": "Maîtrise du temps",

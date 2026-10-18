@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.27.1 « Guide à jour »
+
+- Guide (js/guide.js) relu chapitre par chapitre contre la 2.1.27 : ajout de la vérification des parties et des suspensions (Classements + FAQ), du vote du Grand défi, de la fiche du Sablier et du « ∞ », du retour aux Dofus, de la Maîtrise au classement par classe, des partitions et des codes à nombre limité. Demandé par Mathis.
+
 ## 2.1.27 « Maîtrise du temps »
 
 - Refonte du Sablier (choix de Mathis 1A 2C 3A 4A 5A, puis Grain aux niveaux impairs, ×2 illimité au 15, ∞ et profil public) : 1 XP par minute de réserve utilisée, 50 niveaux (30 × n minutes du niveau n au suivant, environ 612 h), paliers (+1 h de réserve tous les 2 niveaux, malus de butin réduit aux niveaux 10/20/30/40, +30 min de recharge aux 15 et 35, Fioles de temps offertes chaque semaine dès le 25 et le 45, Grain de Xélor à chaque niveau impair, ×2 illimité dès le 15 sans XP), vitesse ×4 et titre « Maître du temps » au 50. Tout le monde commence au niveau 1.

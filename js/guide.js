@@ -82,7 +82,7 @@
     ] });
 
   add({ id: "sablier", f: "Bien débuter", n: "Sablier de Xélor", ic: "cristal", page: null, k: "vitesse x2 x3 x4 accélérer maîtrise du temps maitre",
-    ou: "la pastille du sablier dans la barre du haut", de: "après « La Crypte de Kardorim », à la fin d'Incarnam (étape " + N(() => E.SAB_UNLOCK_STEP) + " de la quête principale)",
+    ou: "la pastille ⏳ dans la barre du haut (un clic ouvre sa fiche : niveau de Maîtrise du temps, paliers, Horloger)", de: "après « La Crypte de Kardorim », à la fin d'Incarnam (étape " + N(() => E.SAB_UNLOCK_STEP) + " de la quête principale)",
     voir: ["absence", "aide"],
     b: () => [
       ["p", "Le Sablier est une réserve de temps rapide : il fait tourner le jeu ×2 ou ×3 (×4 au niveau 50 de la Maîtrise du temps) tant qu'il reste du sable. Il se remplit en temps réel, jeu ouvert ou fermé, et commence plein."],
@@ -103,7 +103,7 @@
         "Tous les 2 niveaux : +1 h de réserve. Les autres niveaux donnent un Grain de Xélor (+15 min).",
         "Niveaux 10, 20, 30 et 40 : butin moins réduit (×2 −9, −8, −7 puis −6 % ; ×3 −18, −16, −14 puis −12 %).",
         "Niveaux 15 et 35 : +30 min de recharge par jour.",
-        "Niveau 15 : le ×2 devient illimité (plus de réserve ni d'XP en ×2 : la Maîtrise avance en ×3 et ×4).",
+        "Niveau 15 : le ×2 devient illimité (plus de réserve ni d'XP en ×2 : la Maîtrise avance en ×3 et ×4). La pastille affiche alors « ∞ ».",
         "Niveau 25 : 1 Fiole de temps offerte chaque semaine (2 dès le niveau 45).",
         "Niveau 50 : vitesse ×4 (3 minutes de réserve par minute, butin −25 %) et titre « Maître du temps ».",
       ]],
@@ -397,6 +397,7 @@
           "**Butin du boss** : chaque héros de l'équipe a sa propre chance quand le boss du Dofus est vaincu. Plus la stasis est haute, meilleure est la chance, jusqu'à la stasis 10 (au-delà, même chance).",
           "**Aucun bonus** (butin, prospection, idoles…) ne change ces chances.",
           "Le Dofus Ocre vient de l'Album des archimonstres.",
+          "« Y aller » sur une ressource de quête lance la chasse ; la pastille « ← Retour aux Dofus » ramène ensuite au même endroit pour choisir la suivante.",
         ]],
         ["kv", Array.isArray(O) ? [1, 4, 7, 10].map((k) => [`Stasis ${k}`, O[k - 1] ? "1 / " + fr(O[k - 1]) : "?"]) : []],
         ["h", "Potentiel"],
@@ -636,6 +637,7 @@
       ["ul", [
         "Bronze : bourse de kamas et poussière ; argent : + coffre en bois ; or : + kamas et coffre en argent.",
         "Série de jours : coffre en or au 7e jour, ornement et Coffre des Douze au 30e, cadre au 100e. Un joker par semaine.",
+        "**Vote du Grand défi** : du lundi au samedi, vote pour l'une des 3 règles proposées de la semaine. Le dimanche, la règle gagnante s'ajoute aux règles du Grand défi (égalité ou aucun vote : la première proposée), aussi quand tu le lances depuis l'accueil.",
         "En ligne : classement du jour, de la saison et des guildes.",
       ]],
       ["tip", "« Comment ça marche » sur la page reprend le barème complet."],
@@ -870,9 +872,12 @@
   add({ id: "classement", f: "Communauté", n: "Classements, Builds et chat", ic: "trophee", page: "ladder", pages: ["builds"], k: "classement ladder builds code partager chat canal",
     ou: "Communauté › Classements · Communauté › Builds", de: "en ligne",
     b: () => [
-      ["p", "**Classements** : course, niveau (la somme des 8 meilleurs héros, chaque point de Maîtrise compte un niveau), Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
+      ["p", "**Classements** : course, niveau (la somme des 8 meilleurs héros, chaque point de Maîtrise compte un niveau ; par classe, « niv. 200 · Maîtrise 150 » du meilleur héros), Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit)."],
       ["p", "**Builds** : partage les sorts et caractéristiques d'un héros avec un code « IDLUS1-… ». Appliquer un build copie seulement les sorts et les points. Publier demande une connexion Discord."],
       ["p", "**Chat** : canaux Général, Commerce, PvP, Guilde, Alliance, Privé et Hauts faits. Messages de 200 caractères au plus."],
+      ["h", "Vérification des parties"],
+      ["p", "Le serveur contrôle chaque partie envoyée : niveaux, Maîtrise, kamas, ressources, Dofus et temps de jeu. Les classements, l'hôtel de vente et les Premiers partent de la dernière partie validée. Une progression impossible pour le temps joué (une partie modifiée à la main, par exemple) n'est pas acceptée et le compte est signalé à Xener, qui seul décide d'une sanction."],
+      ["p", "Un compte **suspendu** (quelques jours ou définitivement) sort des classements et sa partie n'est plus envoyée en ligne (pastille « Compte suspendu ») ; elle reste jouable sur l'appareil. Une suspension temporaire se lève toute seule à la fin et le compte revient dans les classements."],
     ] });
 
   add({ id: "aide", f: "Communauté", n: "Suggestions, bugs et codes cadeaux", ic: "idee", page: "sugg", k: "suggestion idee bug signaler code cadeau discord pluie de kamas cagnotte",
@@ -881,7 +886,7 @@
       ["ul", [
         "**Suggestions** : propose une idée (titre et texte courts) ; sans serveur, elle est copiée et le Discord s'ouvre.",
         "**Signaler un bug** (en bas du menu) : décris ce qui s'est passé ; le diagnostic (version, appareil, page, dernières erreurs) peut être joint. Le rapport part directement pour être corrigé.",
-        "**Codes cadeaux** : dans Options › Jeu, un code par partie. Ils sont annoncés en jeu et sur le Discord.",
+        "**Codes cadeaux** : dans Options › Jeu, un code par partie. Ils sont annoncés en jeu et sur le Discord. Les codes à nombre limité demandent d'être connecté à un compte.",
         "**Pluie de kamas** : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes (annoncé dans le bandeau et le chat). Clique « Je participe » sur l'accueil : à la fin, la pluie est partagée à parts égales entre tous les participants. Il faut un compte.",
       ]],
     ] });
@@ -894,7 +899,7 @@
       ["ul", [
         "**Économie de batterie** (Affichage, tout en haut) : coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent, et met l'écran à jour moins souvent. Le jeu avance exactement pareil ; à garder sur téléphone ou portable débranché. En combat, l'appareil travaille environ 5 fois moins (mesuré sur PC et téléphone).",
         "**Affichage** : thème (Émeraude, Nuit violette, Givre, Ambre, Braise, Écume ; Halouine du 24 octobre au 3 novembre), ambiance animée, taille du texte, contraste, animations de combat, mouvements réduits.",
-        "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées.",
+        "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées (l'air d'un endroit se trouve après 5 s passées là-bas, même sans musique ; celui de la Renaissance du Phénix est sur la page Maîtrise).",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",
         "**Sauvegarde** : la partie est enregistrée dans le navigateur toutes les 15 s et des copies de secours sont gardées. « Changer d'appareil » exporte et importe la partie.",
         "**Compte en ligne** : la partie 1 se synchronise avec le serveur (Hôtel de vente, guilde, classements…). Les parties 2 et 3 restent sur l'appareil.",
@@ -1233,6 +1238,7 @@
       ["more", "Pourquoi mon équipe est redescendue de zone ?", ["p", "Avec la progression automatique, l'équipe redescend d'une zone après 3 défaites sur les 6 derniers combats, et remonte après 12 victoires d'affilée."]],
       ["more", "Combien de chance pour une monture ?", ["p", "La chance est par victoire dans la zone sauvage de l'espèce, pas par héros, et les bonus de butin ne la changent pas. Les chiffres sont dans le chapitre Montures."]],
       ["more", "Ma partie est-elle sauvegardée en ligne ?", ["p", "Avec un compte, la partie 1 se synchronise avec le serveur. Sans compte, elle reste sur l'appareil : Options › Sauvegarde permet de l'exporter."]],
+      ["more", "Pourquoi mon compte n'est plus au classement ?", ["p", "Le serveur ne classe que des parties qu'il a validées. Une progression impossible pour le temps joué est signalée à Xener ; un compte suspendu sort des classements jusqu'à la fin de sa suspension. Détails dans le chapitre Classements."]],
       ["more", "Comment signaler un bug ?", ["p", "« Signaler un bug » en bas du menu : le signalement part directement à l'équipe du jeu, avec ce qu'il faut pour le corriger."]],
     ] });
 
