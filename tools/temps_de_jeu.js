@@ -23,16 +23,18 @@ for (const [p, L] of Object.entries(by)) {
     if (!worst || over > worst.over) worst = { over, real, play, from: a.at, to: b.at, mt: b.mt - a.mt, k: b.k - a.k };
   }
   const first = U[0], last = U[U.length - 1], real = (last.t - first.t) / 3600000;
-  const top = U.reduce((m, x) => (x.mtmax > m.mtmax ? x : m), U[0]);
+  // Maîtrise : seulement les copies d'après la remise à zéro (version de partie 13, 2.1.15) ; les copies plus anciennes ont les points d'avant
+  const V13 = U.filter((x) => (+x.v || 0) >= 13), top = V13.reduce((m, x) => (x.mtmax > m.mtmax ? x : m), V13[0] || { mtmax: 0, t: MT_T0 });
   const capMt = 50 + 30 * 1.25 * Math.max(0, (top.t - MT_T0) / 3600000);
-  out.push({ p, n: U.length, real, play: sum, total: last.pt / 3600, worst, mt: last.mt, mtmax: top.mtmax, mtOver: top.mtmax > capMt, capMt, src: last.src });
+  out.push({ p, n: U.length, real, play: sum, total: last.pt / 3600, worst, mt: last.mt, mtAt: top.at, mtmax: top.mtmax, mtOver: top.mtmax > capMt, capMt, src: last.src });
 }
 out.sort((a, b) => (b.worst ? b.worst.over : -1e9) - (a.worst ? a.worst.over : -1e9));
 const bad = out.filter((o) => (o.worst && o.worst.over > 0) || o.mtOver);
+
 console.log(`== ${out.length} comptes, ${R.length} copies lues. Dépassements (temps de jeu > temps réel + ${RESERVE} h de Sablier, ou Maîtrise au-dessus du plafond) : ${bad.length}`);
 for (const o of bad) {
   const w = o.worst;
-  console.log(`  ${o.p} : ${w ? `${h1(w.play)} h de jeu en ${h1(w.real)} h réelles (${String(w.from).slice(5, 16)} → ${String(w.to).slice(5, 16)}), Maîtrise ${fm(w.mt)}, kamas ${fm(w.k)}` : ""}${o.mtOver ? ` · Maîtrise d'un héros ${fm(o.mtmax)} (plafond ${fm(o.capMt)})` : ""} · temps de jeu total ${h1(o.total)} h`);
+  console.log(`  ${o.p} : ${w ? `${h1(w.play)} h de jeu en ${h1(w.real)} h réelles (${String(w.from).slice(5, 16)} → ${String(w.to).slice(5, 16)}), Maîtrise ${fm(w.mt)}, kamas ${fm(w.k)}` : ""}${o.mtOver ? ` · Maîtrise d'un héros ${fm(o.mtmax)} le ${String(o.mtAt).slice(5, 16)} (plafond ${fm(o.capMt)})` : ""} · temps de jeu total ${h1(o.total)} h`);
 }
 console.log("\n== Tous les comptes (du plus serré au plus large) : copies, période réelle, temps de jeu gagné, pire écart, Maîtrise équipe / meilleur héros");
 for (const o of out) console.log(`  ${o.p} : ${o.n} copies, ${h1(o.real)} h réelles, +${h1(o.play)} h de jeu, pire écart ${o.worst ? (o.worst.over > 0 ? "+" : "") + h1(o.worst.over) + " h" : "—"}, Maîtrise ${fm(o.mt)} / ${fm(o.mtmax)}, total ${h1(o.total)} h`);

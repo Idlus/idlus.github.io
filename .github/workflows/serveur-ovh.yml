@@ -229,7 +229,7 @@ jobs:
               select user_id, 'jour' as src, at, data from public.saves_jour
               union all select user_id, 'validée', src_at, data from public.saves_ok where data is not null
               union all select user_id, 'en ligne', updated_at, data from public.saves)
-            select public.pseudo_of(c.user_id) as pseudo, c.src, c.at, (j->'stats'->>'playtime')::float as pt, (j->>'kamas')::float as k,
+            select public.pseudo_of(c.user_id) as pseudo, c.src, c.at, (j->'stats'->>'playtime')::float as pt, (j->>'kamas')::float as k, (j->>'v')::int as v,
               (select coalesce(sum((x->'mt'->>'lvl')::float), 0) from json_array_elements(j->'chars') x) as mt,
               (select coalesce(max((x->'mt'->>'lvl')::float), 0) from json_array_elements(j->'chars') x) as mtmax
             from c cross join lateral (select c.data::json as j) z" > "$f"
