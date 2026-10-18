@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.29 « Classes et donjons 200 »
+
+- Retouches des classes faibles sans bonus en pourcentage (demande de Mathis) : E.PSV dans js/engine.js (sève du Sadida, butin de guerre de l'Enutrof, Transposition et Souffrance du Sacrieur, soin en trop de l'Eniripsa, glyphes du Féca, Hystérique du Zobal), anciennes valeurs E.PSV0 au Kolizéum ; clé de voûte Enutrof « Pelle Fantomatique » (js/maitrise_moteur.js). Les 34 donjons de niveau 200 ont une difficulté propre (E.DG_DIFF). Réglé par simulation (équipes de 8, cibles 0-1 / 5-7 / 8-10). Tests : tests/classes.test.js.
+
 ## 2.1.28.1 « Remise imposée »
 
 - Quand Mathis remet la partie d'un joueur à une copie (panel, adm_save_restore), la partie en ligne porte la marque meta.remise : le jeu la reprend sans poser la question des deux versions (slotPlan → « take », onConflictLive → takeRemote) et push_save refuse l'envoi forcé tant que la marque est là ; l'envoi normal suivant l'efface. Test dans tests/online.test.js.

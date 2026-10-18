@@ -1,6 +1,20 @@
 {
-  "version": "2.1.28.1",
+  "version": "2.1.29",
   "versions": [
+    {
+      "v": "2.1.29",
+      "name": "Classes et donjons 200",
+      "guide": "classes",
+      "items": [
+        "Sadida : la sève de l'arbre soigne toute l'équipe de 4 % de ses PV à chaque tour du Sadida, et l'arbre attire 65 % des attaques (au lieu de 50 %)",
+        "Enutrof : butin de guerre, chaque monstre qu'il achève donne à toute l'équipe un bouclier de 8 % de ses PV ; la clé de voûte « Pelle Fantomatique » renforce son passif (+35 %) au lieu de donner de la Prospection",
+        "Sacrieur : Transposition, il encaisse 30 % des dégâts de ses alliés (sans descendre sous 1 PV), et chaque coup reçu réduit aussi ses dégâts subis de 1,5 % (jusqu'à −22 %)",
+        "Eniripsa : soins +20 % et Mots liés +25 %, et le soin en trop devient un bouclier (40 % du surplus)",
+        "Féca : glyphes plus forts (Protection −15 %, Renvoi 25 %, Soin 6 % des PV) ; Zobal : le masque Hystérique soigne 6 % par tour",
+        "Au Kolizéum, ces classes gardent leurs anciens passifs (l'arène est équilibrée à part)",
+        "Les 34 donjons de niveau 200 sont plus durs (vie et dégâts des monstres ×1,05 à ×1,55, selon le donjon)"
+      ]
+    },
     {
       "v": "2.1.28.1",
       "name": "Remise imposée",

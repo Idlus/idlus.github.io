@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.28.1";
+const GAME_VERSION = "2.1.29";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29", name: "Classes et donjons 200", guide: "classes", items: [
+    "Sadida : la sève de l'arbre soigne toute l'équipe de 4 % de ses PV à chaque tour du Sadida, et l'arbre attire 65 % des attaques (au lieu de 50 %)",
+    "Enutrof : butin de guerre, chaque monstre qu'il achève donne à toute l'équipe un bouclier de 8 % de ses PV ; la clé de voûte « Pelle Fantomatique » renforce son passif (+35 %) au lieu de donner de la Prospection",
+    "Sacrieur : Transposition, il encaisse 30 % des dégâts de ses alliés (sans descendre sous 1 PV), et chaque coup reçu réduit aussi ses dégâts subis de 1,5 % (jusqu'à −22 %)",
+    "Eniripsa : soins +20 % et Mots liés +25 %, et le soin en trop devient un bouclier (40 % du surplus)",
+    "Féca : glyphes plus forts (Protection −15 %, Renvoi 25 %, Soin 6 % des PV) ; Zobal : le masque Hystérique soigne 6 % par tour",
+    "Au Kolizéum, ces classes gardent leurs anciens passifs (l'arène est équilibrée à part)",
+    "Les 34 donjons de niveau 200 sont plus durs (vie et dégâts des monstres ×1,05 à ×1,55, selon le donjon)",
+  ] },
   { v: "2.1.28.1", name: "Remise imposée", guide: "classement", items: [
     "Partie remise à une copie par Mathis (vérification des parties) : ton jeu reprend tout seul la version du serveur, sans te demander laquelle garder. Ta version d'avant reste dans Options › Copies de secours",
   ] },
