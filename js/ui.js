@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.26.2";
+const GAME_VERSION = "2.1.26.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.26.3", name: "Le bon dimanche", items: [
+    "Grand défi du dimanche : lancé depuis l'Accueil, le jeu ne connaissait pas toujours la règle votée par les joueurs et jouait la première proposée. Le serveur, lui, rejouait avec la règle votée : le score validé au classement n'était pas celui affiché. Le jeu lit maintenant la règle votée avant de lancer le combat",
+  ] },
   { v: "2.1.26.2", name: "La partition du Phénix", items: [
     "Partitions : l'air « Renaissance du Phénix » se trouve maintenant sur la page Maîtrise. Il était introuvable depuis que la Renaissance est devenue la Maîtrise (2.0), ce qui bloquait le succès Mélomane à 49/50",
   ] },
@@ -2949,6 +2952,7 @@ function homeTiles() {
   /* défi du jour : « Lancer » joue tout de suite, comme l'ancienne carte */
   const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defi(tid);
   if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
+    if (def.sun && defiVoteNeeded()) defiVoteFetch(); // 2.1.26.3 : la règle votée du dimanche, avant « Lancer »
     const near = Math.max(...E.team(S).map((c) => c.lvl)) >= dg.lvl - 10; // 1.0.10.3 : pas allumée pour une équipe loin du niveau du donjon (perdu d'avance)
     const tErr = E.defiTeamErr(S, def); // 1.1 : règle d'équipe du jour pas respectée, la tuile mène à la page du défi
     const dz = E.defiDanger(S); // 1.1 (série 4, 2A) : série en danger
@@ -8592,17 +8596,22 @@ function defiGoldGoal() {
 }
 /* 1.1 (série 4, 4A) : vote de la règle du Grand défi (du lundi au samedi, un vote par compte, modifiable) */
 function defiVoteSync() { const R = S && S.defiVoteRes; if (R && R.w != null && !E.DEFI_VOTE[R.w]) E.DEFI_VOTE[R.w] = R.c || {}; }
-let dfVoteAt = 0;
+let dfVoteAt = 0, dfVoteDay = -1;
 async function defiVoteFetch(force) {
   if (!ON || !ON.db || !ON.db() || (!force && Date.now() - dfVoteAt < 60000)) return; dfVoteAt = Date.now();
   const wk = E.defiWeek(); const before = E.defiVoteWin(wk);
   try {
-    const { data } = await ON.db().from("defi_vote_count").select("rule,n").eq("week", wk);
-    const c = {}; (data || []).forEach((x) => { c[x.rule] = x.n; }); E.DEFI_VOTE[wk] = c; ui.dfVoteC = { w: wk, c };
+    const { data, error } = await ON.db().from("defi_vote_count").select("rule,n").eq("week", wk);
+    if (error) return;
+    const c = {}; (data || []).forEach((x) => { c[x.rule] = x.n; }); E.DEFI_VOTE[wk] = c; ui.dfVoteC = { w: wk, c }; dfVoteDay = E.defiDay();
     if (E.defiSunday(E.defiDay())) { S.defiVoteRes = { w: wk, c }; dirty = true; }
     if (ui.tab === "defi" && !$("#sheet").innerHTML && !isEditing() && (force || before !== E.defiVoteWin(wk) || !$("#dfVote .df-vopt"))) render();
   } catch (e) {}
 }
+/* 2.1.26.3 : le dimanche, la règle votée est lue au serveur avant de jouer. Lancé depuis l'Accueil (sans passer par la page
+   du défi), le jeu jouait la 1re règle proposée alors que le serveur rejoue avec la règle votée : le score validé changeait. */
+const defiVoteNeeded = () => !!(ON && ON.db && ON.db()) && E.defiSunday(E.defiDay()) && dfVoteDay !== E.defiDay();
+async function defiVoteReady() { if (defiVoteNeeded()) await defiVoteFetch(true); }
 function defiVoteHtml() {
   defiVoteSync(); const day = E.defiDay(); const wk = E.defiWeek(day); const opts = E.defiVoteOpts(wk); const C = (ui.dfVoteC && ui.dfVoteC.w === wk ? ui.dfVoteC.c : E.DEFI_VOTE[wk]) || {};
   const tot = opts.reduce((a, r) => a + (C[r] || 0), 0); const mine = S.defiVote && S.defiVote.w === wk ? S.defiVote.rule : null; const open = E.defiVoteOpen(day); const win = E.defiVoteWin(wk);
@@ -8679,7 +8688,10 @@ function defiBanner() {
       ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}<button class="btn sm" data-act="sm-watch" data-v="${tid}" ${teamErr ? "disabled" : ""} data-tip="Le combat joué sous tes yeux, avec ton équipe actuelle (ne compte pas comme un essai)">Regarder</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}" ${teamErr ? `disabled data-tip="${h(teamErr)}"` : ""}>Lancer le défi</button></div></div>`;
 }
 let defiLast = null;
-function defiPlay(tid) {
+let dfPlaying = false;
+async function defiPlay(tid) {
+  if (dfPlaying) return;
+  if (defiVoteNeeded()) { dfPlaying = true; try { await defiVoteReady(); } finally { dfPlaying = false; } }
   const r = E.act(S, "defiPlay", tid);
   if (typeof r === "string") { toast(r, "warn"); return; }
   dirty = true; defiLast = r; render(); defiSheet(r);
@@ -9007,8 +9019,9 @@ function cardX() {
 
 /* ---------- 0.1.19.2 : « Regarder le combat » du défi du jour ----------
    Le défi est rejoué pas à pas sur l'écran de combat (E.defiWatchStep), avec le même hasard que le score. */
-function watchStart(tid) {
+async function watchStart(tid) {
   if (!E.defiTierOk(S, tid)) { toast("Ce palier n'est plus pour ton équipe.", "warn"); return; }
+  await defiVoteReady(); // 2.1.26.3 : le combat regardé est celui du serveur, avec la règle votée du dimanche
   watchStop(); const def = E.defi(tid); const W = E.defiWatch(S, def, E.now());
   if (W.err) { toast(W.err, "warn"); return; }
   E.defiWatchStep(W); ui.watch = { W, tid, spd: (ui.watch && ui.watch.spd) || 1, timer: null };

@@ -1213,6 +1213,22 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(m.claims >= 1)) fail("Songe : lots de la semaine passée jamais demandés");
     { const r = await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const op = S.hdv && S.hdv.op; const b0 = E.songe(S).br; window.MARKET.apply([{ id: 99999, p: { bribes: 1000 } }], true); const b1 = E.songe(S).br; S.hdv.op = op; return b1 - b0; });
       if (r !== 1000) fail("Songe : Bribes des lots non ajoutées (" + r + ")"); }
+    // 2.1.26.3 : Grand défi du dimanche lancé depuis l'Accueil : la règle votée est lue au serveur avant de jouer (le serveur rejoue avec elle)
+    { const r = await page.evaluate(async () => {
+        const E = window.ENGINE, S = window.DX.S; const day0 = E.defiDay, sun0 = E.defiSunday; const fake = day0() + 7 * 52;
+        const keep = JSON.stringify({ defi: S.defi, defiStreak: S.defiStreak, defiLog: S.defiLog, defiHist: S.defiHist, defiVoteRes: S.defiVoteRes, kamas: S.kamas, cnt: S.cnt });
+        E.defiDay = () => fake; E.defiSunday = () => true;
+        try {
+          const wk = E.defiWeek(fake); const opts = E.defiVoteOpts(wk); delete E.DEFI_VOTE[wk];
+          const d = JSON.parse(localStorage.getItem("__mock")); d.views = d.views || {}; d.views.defi_vote_count = [{ week: wk, rule: opts[2], n: 8 }, { week: wk, rule: opts[0], n: 1 }]; localStorage.setItem("__mock", JSON.stringify(d));
+          const T = E.DEFI_TIERS.find((x) => E.defiTierOk(S, x.id)); if (!T) return "aucun palier";
+          const b = document.createElement("button"); b.dataset.act = "sm-dplay"; b.dataset.v = T.id; document.querySelector("#main").appendChild(b); b.click(); b.remove();
+          for (let i = 0; i < 40 && !(S.defi && S.defi.day === fake && S.defi.tries.length); i++) await new Promise((ok) => setTimeout(ok, 50));
+          const st = S.defi && S.defi.day === fake ? S.defi : null; if (!st || !st.tries.length) return "défi pas joué";
+          return E.defiVoteWin(wk) === opts[2] && E.defi(T.id, fake).rules.includes(opts[2]) ? "ok" : "règle votée absente : " + E.defi(T.id, fake).rules.join(",");
+        } finally { E.defiDay = day0; E.defiSunday = sun0; Object.assign(S, JSON.parse(keep)); window.DX.social.closeSheet(); }
+      });
+      if (r !== "ok") fail("Grand défi : la règle votée n'est pas lue avant de jouer depuis l'Accueil (" + r + ")"); }
     // Panel Xener : menu par thème, recherche d'actions, onglet Test ; les modérateurs ne voient que le chat
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .px-nav", { timeout: 5000 }).catch(() => fail("Panel Xener : menu par thème absent"));
     await page.click("#pxQ"); await page.keyboard.type("Krala"); await page.waitForTimeout(200);

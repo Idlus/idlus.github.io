@@ -1,6 +1,13 @@
 {
-  "version": "2.1.26.2",
+  "version": "2.1.26.3",
   "versions": [
+    {
+      "v": "2.1.26.3",
+      "name": "Le bon dimanche",
+      "items": [
+        "Grand défi du dimanche : lancé depuis l'Accueil, le jeu ne connaissait pas toujours la règle votée par les joueurs et jouait la première proposée. Le serveur, lui, rejouait avec la règle votée : le score validé au classement n'était pas celui affiché. Le jeu lit maintenant la règle votée avant de lancer le combat"
+      ]
+    },
     {
       "v": "2.1.26.2",
       "name": "La partition du Phénix",
