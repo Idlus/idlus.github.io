@@ -31,9 +31,9 @@ const fight = (ents) => ({ ents, fx: [], seq: 0, log: [], deaths: [], round: 1, 
 
 // 3. Valeurs : nouvelles en donjon, anciennes au Kolizéum ; les textes des passifs suivent.
 {
-  assert.strictEqual(E.PSV.fecaProt, 0.2); assert.strictEqual(E.PSV0.fecaProt, 0.1); assert.strictEqual(E.PSV0.enuButin, 0);
+  assert.strictEqual(E.PSV.fecaProt, 0.15); assert.strictEqual(E.PSV0.fecaProt, 0.1); assert.strictEqual(E.PSV0.enuButin, 0);
   assert.ok(/Butin de guerre/.test(D.CLASSES.enu.passive.desc) && /sève/.test(D.CLASSES.sadi.passive.desc) && /Transposition/.test(D.CLASSES.sacri.passive.desc));
-  assert.ok(/−20 %/.test(D.CLASSES.feca.passive.desc) && /bouclier/.test(D.CLASSES.eni.passive.desc));
+  assert.ok(/−15 %/.test(D.CLASSES.feca.passive.desc) && /bouclier/.test(D.CLASSES.eni.passive.desc));
   console.log("ok - valeurs et textes");
 }
 console.log("classes.test.js : tout est bon");

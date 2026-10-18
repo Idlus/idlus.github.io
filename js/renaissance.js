@@ -30,7 +30,7 @@
   E.EVEIL_MAX = 3;
   /* Éveil de classe : ce qu'il renforce, par classe (rang I puis II) */
   const CLASS_EVEIL = {
-    feca: "Glyphe de Soin : +9 % puis +10 % des PV (au lieu de 8 %)", osa: "Invocations : +45 % puis +60 % de PV (au lieu de 30 %)",
+    feca: "Glyphe de Soin : +7 % puis +8 % des PV (au lieu de 6 %)", osa: "Invocations : +45 % puis +60 % de PV (au lieu de 30 %)",
     enu: "Pelle : 15 % puis 20 % de chances de retirer 1 PA (au lieu de 10 %), butin de guerre +25 % puis +50 %", sram: "Poisons : +35 % puis +45 % (au lieu de 25 %)",
     xelor: "L'Horloge sonne à 11 h puis 10 h (au lieu de 12)", eca: "Pile : +25 % puis +30 % de dégâts pour l'équipe (au lieu de 20 %)",
     eni: "Soins +25 % puis +30 %, et Mots liés +30 % puis +35 % (au lieu de 20 % et 25 %)", iop: "La Colère éclate à 5 puis 4 charges (au lieu de 6)",

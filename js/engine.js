@@ -1335,7 +1335,7 @@
   /* Retouches des classes faibles (Mathis : « réequilibrer les sorts et la maîtrise » plutôt qu'un bonus en %), réglées par simulation.
      E.PSV0 = anciennes valeurs, gardées au Kolizéum (équilibré à part par E.KOLI_POW). */
   E.PSV0 = { fecaProt: 0.1, fecaRenvoi: 0.15, fecaSoin: 0.03, sadiAttire: 0.5, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.1, eniLie: 0.15, zobDef: 0.2, zobSoin: 0.04, sacriTransp: 0, enuButin: 0, sadiSeve: 0, eniSurplus: 0, sacriDr: 0 };
-  E.PSV = { fecaProt: 0.2, fecaRenvoi: 0.3, fecaSoin: 0.08, sadiAttire: 0.65, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.2, eniLie: 0.25, zobDef: 0.2, zobSoin: 0.06, sacriTransp: 0.3, enuButin: 0.08, sadiSeve: 0.04, eniSurplus: 0.6, sacriDr: 0.015 };
+  E.PSV = { fecaProt: 0.15, fecaRenvoi: 0.25, fecaSoin: 0.06, sadiAttire: 0.65, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.2, eniLie: 0.25, zobDef: 0.2, zobSoin: 0.06, sacriTransp: 0.3, enuButin: 0.08, sadiSeve: 0.04, eniSurplus: 0.4, sacriDr: 0.015 };
   const psv = (x) => (x && x.tm !== undefined ? E.PSV0 : E.PSV);
   E.DG_DIFF = { tertre_long_sommeil: 1.7, refuge_sylvestre: 1.45, chateau_wa_wabbit: 1.34, caverne_koulosse: 1.3, cour_bouftou_royal: 1.3, theatre_dramak: 1.18, miausolee_pounicheur: 1.17, gelaxieme_dimension: 0.7 };
   /* Mathis : « tous les dj 200 plus difficiles » (bon équipement visé 7, optimisé 9, au moins ×1,05 chacun) */
