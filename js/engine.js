@@ -1338,6 +1338,8 @@
   E.PSV = { fecaProt: 0.2, fecaRenvoi: 0.3, fecaSoin: 0.08, sadiAttire: 0.65, enuPelle: 0.1, sacriDrain: 0.5, eniSoin: 0.2, eniLie: 0.25, zobDef: 0.2, zobSoin: 0.06, sacriTransp: 0.3, enuButin: 0.08, sadiSeve: 0.04, eniSurplus: 0.6, sacriDr: 0.015 };
   const psv = (x) => (x && x.tm !== undefined ? E.PSV0 : E.PSV);
   E.DG_DIFF = { tertre_long_sommeil: 1.7, refuge_sylvestre: 1.45, chateau_wa_wabbit: 1.34, caverne_koulosse: 1.3, cour_bouftou_royal: 1.3, theatre_dramak: 1.18, miausolee_pounicheur: 1.17, gelaxieme_dimension: 0.7 };
+  /* Mathis : « tous les dj 200 plus difficiles » (bon équipement visé 7, optimisé 9, au moins ×1,05 chacun) */
+  Object.assign(E.DG_DIFF, { aquadome_merkator: 1.09, arbre_mort: 1.24, aurore_pourpre: 1.08, autel_dechireuse: 1.05, belvedere_ilyzaelle: 1.5, brasserie_dazak: 1.26, breuil_venerable: 1.23, chambre_malefices: 1.05, chambre_tal_kasha: 1.05, defi_chaloeil: 1.26, donjon_harebourg: 1.1, fers_tyrannie: 1.11, forgefroide_frizz: 1.26, labo_nileza: 1.55, manoir_katrepat: 1.1, memoire_orukam: 1.15, oeil_vortex: 1.22, palais_dantinea: 1.05, palais_nidas: 1.37, rituel_kabahal: 1.11, salons_klime: 1.22, sanctuaire_torkelonia: 1.05, sentence_balance: 1.09, souvenir_imagiro: 1.05, tempete_eliocalypse: 1.05, temple_kao: 1.05, temple_koutoulou: 1.11, tour_bethel: 1.33, tour_solar: 1.05, transporteur_sylargh: 1.31, trone_cour_sombre: 1.42, trone_sang: 1.23, vaisseau_meno: 1.05, ventre_baleine: 1.05 });
   const applyDiff = (S, mons) => { const m = E.DG_DIFF[S.dungeon && S.dungeon.id]; if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
   const applyStasis = (S, F, mons, room, isBoss) => {
     applyDiff(S, mons);
