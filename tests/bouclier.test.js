@@ -73,6 +73,11 @@ assert.ok(V.check(E, b0, at({ r: b0.r + 8816277 }), 26.2, {}, 0, 200).ok, "8,8 m
 assert.ok(V.check(E, b0, at({ k: b0.k + 74401818 }), 3, {}, 0, 200).ok, "74 millions de kamas en 3 h (vente d'un stock) : normal");
 assert.ok(V.check(E, b0, at({ dof: b0.dof + 5 }), 18, {}, null, 200).ok, "5 Dofus en 18 h : normal");
 assert.ok(!V.check(E, b0, at({ k: b0.k + 1e10 }), 3, {}, 0, 200).ok, "10 milliards de kamas en 3 h : refusé");
+// 2.1.25 : compte vérifié (sure) : marge × 2 sur les kamas, mais le temps de jeu et la Maîtrise restent contrôlés
+assert.ok(!V.check(E, b0, at({ k: b0.k + 1.61e9 }), 27, {}, 0, 200, true).ok, "1,61 milliard de kamas en 27 h, même vérifié : refusé");
+assert.ok(!V.check(E, b0, at({ pt: b0.pt + 160 }), 27, {}, null, 200, true).ok, "+160 h de jeu en 27 h, même vérifié : refusé");
+assert.ok(V.check(E, b0, at({ pt: b0.pt + 27 }), 27, {}, null, 200).ok, "27 h de jeu en 27 h : normal");
+assert.ok(!V.check(E, b0, at({ mt: b0.mt + 3000 }), 1, {}, 2, 200, true).ok, "3 000 points de Maîtrise en une heure, même vérifié : refusé");
 // la réserve : 48 h de jeu d'avance au plus (Sablier), puis le rythme du temps réel
 let res = null, ok = 0; const R = V.rates(200);
 for (let i = 0; i < 200; i++) { const c = V.check(E, b0, at({ k: b0.k + R.k * 0.5 }), 1 / 120, {}, res, 200); if (!c.ok) break; res = c.res; ok++; }

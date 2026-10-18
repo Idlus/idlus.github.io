@@ -1,6 +1,13 @@
 {
-  "version": "2.1.24",
+  "version": "2.1.25",
   "versions": [
+    {
+      "v": "2.1.25",
+      "name": "Bouclier sans faille",
+      "items": [
+        "Vérification des parties : la Maîtrise et le temps de jeu sont contrôlés pour tous les comptes, même vérifiés, et le plafond de Maîtrise suit le vrai coût des points"
+      ]
+    },
     {
       "v": "2.1.24",
       "name": "Carte zoomable",

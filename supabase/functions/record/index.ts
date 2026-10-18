@@ -487,11 +487,13 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // objets nés avant le bouclier (ou avant le premier envoi d'un compte) : marge plus large, leurs jets ont pu suivre un ancien équilibrage
   const nu0 = prev ? Number(prev.nu0) || 0 : Number(S.nextUid) || 0;
   // la partie de Mathis (panel de test) n'est pas retenue : elle reste hors des classements par le résumé (panel)
-  if (!(ok && ok.accept) && !adm) {
+  // 2.1.25 : le « C'est bon » de Mathis (accept) passe le contrôle des gains, plus celui de l'impossible : une partie à 31 710 points
+  // de Maîtrise et 1,6 milliard de kamas était acceptée telle quelle juste après un « C'est bon »
+  if (!adm) {
     why = V.impossible(E, S, nu0);
-    // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») ne passe plus le contrôle des gains (kamas, ressources, Dofus…),
-    // seulement celui de l'impossible : sinon les meilleurs joueurs retombaient « en vérification » à chaque envoi
-    if (!why && ok && prev && !(lad && lad.verified)) {
+    // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») a une marge plus large sur les kamas, ressources et Dofus (V.check, sure) ;
+    // 2.1.25 : la Maîtrise, les niveaux et le temps de jeu restent contrôlés comme pour tout le monde
+    if (!why && ok && prev && !ok.accept) {
       const hours = Math.max(0, (new Date(cur.updated_at).getTime() - new Date(ok.src_at).getTime()) / 3600000);
       // ce que le serveur a donné entre-temps : opérations de l'hôtel de vente (et lots, Jackpot, Pluie…) pas encore dans
       // la partie validée, et codes cadeaux utilisés depuis
@@ -512,7 +514,7 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
         (w.r || []).forEach((x: any) => { gift.r += Math.max(0, Number(x[1]) || 0); });
         // deno-lint-ignore no-explicit-any
         (w.i || []).forEach((x: any) => { if (/^dofus_/.test(String(x[0]))) gift.dof += Math.max(0, Number(x[1]) || 1); }); });
-      const c = V.check(E, prev, bil, hours, gift, res, top);
+      const c = V.check(E, prev, bil, hours, gift, res, top, !!(lad && lad.verified));
       if (!c.ok) why = c.why; else res = c.res;
     }
   }

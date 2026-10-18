@@ -95,7 +95,8 @@
     let mt = 0, bn = 0, lv = 0;
     (S.chars || []).forEach((c) => { lv += c.lvl || 1; if (c.mt) { mt += c.mt.lvl || 0; bn += c.mt.bn || 0; } });
     const dof = Object.values(S.items || {}).filter((it) => /^dofus_/.test(it.tpl)).length;
-    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)) };
+    // 2.1.25 : pt = heures de temps de jeu (le vrai temps, même en vitesse ×2 / ×3)
+    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600) };
   };
 
   /* Ce qu'aucune partie honnête ne peut contenir, quel que soit le temps de jeu. Renvoie la raison, ou null. */
@@ -130,7 +131,10 @@
     { /* 2.1.17 : Maîtrise plafonnée par le temps écoulé depuis le reset de la Maîtrise lente (2.1.15, 16/10 18:15 Paris) : sans ça,
          une partie retouchée envoyée pour la première fois (ou après une coupure) passait, VERIFY.check ne comparant qu'à la partie validée d'avant */
       const h = Math.max(0, ((V.now ? V.now() : Date.now()) - V.MT_T0) / 3600000) * V.RES_RATE;
-      const hero = Math.floor(V.MT_HERO0 + V.MT_HERO_H * h), team = Math.floor(V.MT_TEAM0 + V.MT_TEAM_H * h); let tot = 0;
+      // 2.1.25 : plafond par héros tiré du coût réel des points (Maîtrise lente) : 225 fois l'XP du niveau 199 par heure, 4 fois le meilleur
+      // joueur vérifié mesuré le 18/10 (91 points en 48 h, soit environ 56 fois cette XP par heure), + 20 points de marge
+      const X = V.MT_XP_H * h, hero = E.MT_LENT && E.mtXpTot ? Math.floor((-20.1 + Math.sqrt(20.1 * 20.1 + 0.4 * X)) / 0.2) + V.MT_PAD : Math.floor(V.MT_HERO0 + V.MT_HERO_H * h);
+      const team = Math.floor(V.MT_TEAM0 + V.MT_TEAM_H * h); let tot = 0;
       for (const c of S.chars || []) { if (!c.mt) continue; const nm = String(c.name || "un héros").slice(0, 20), lv = Math.max(0, Math.floor(+c.mt.lvl || 0));
         if (E.MT_RESET && (+c.mt.bn || 0) > 0) return `${nm} : ${c.mt.bn} points de Maîtrise des vies passées (remis à 0 avec la Maîtrise lente)`;
         if (lv > hero) return `${nm} : ${lv} points de Maîtrise (au plus ${hero} depuis le reset)`; tot += lv; }
@@ -138,7 +142,7 @@
     return null;
   };
   /* rythmes de V.rates, marge comprise : 180 points par heure pour l'équipe, 30 pour un seul héros (4,8 mesurés × 5, arrondi) */
-  V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180;
+  V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 225; V.MT_PAD = 20;
 
   /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :
      la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 48 h, et chaque gain en consomme
@@ -157,13 +161,22 @@
     // d'un stock accumulé) gagnaient 3 à 9 millions de ressources par jour et jusqu'à 25 millions de kamas par heure, et restaient bloqués
     return { k: 25 * V.KAMAS_H(l), r: 500000, mt: 180, lv: 960 };
   };
-  V.check = (E, prev, cur, hours, gift, res0, topLvl) => {
+  /* 2.1.25 : sure = compte vérifié par Mathis : kamas, ressources et Dofus jugés 2 fois plus large, mais la Maîtrise, les niveaux,
+     les points des vies passées et le temps de jeu restent contrôlés comme pour tout le monde (en 2.1.18, un compte vérifié
+     ne passait plus du tout ce contrôle, et une partie retouchée à 1,6 milliard de kamas et +160 h de jeu en 27 h passait) */
+  V.SURE = 2;
+  V.check = (E, prev, cur, hours, gift, res0, topLvl, sure) => {
     let res = Math.min(V.RES_MAX, (res0 == null ? V.RES_MAX : res0) + Math.max(0, hours) * V.RES_RATE);
-    const R = V.rates(topLvl); gift = gift || {};
+    const R = Object.assign({}, V.rates(topLvl)); gift = gift || {};
+    if (sure) { R.k *= V.SURE; R.r *= V.SURE; }
+    if (prev.pt != null && cur.pt != null && cur.pt - prev.pt > Math.max(0, hours) * 1.5 + 2) {
+      const h1 = (n) => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
+      return { ok: false, res, why: `+${h1(cur.pt - prev.pt)} h de temps de jeu en ${h1(Math.max(0, hours))} h réelles` };
+    }
     const dk = cur.k - prev.k - (gift.k || 0), dr = cur.r - prev.r - (gift.r || 0), dm = cur.mt - prev.mt, dl = cur.lv - prev.lv - Math.max(0, (cur.rec || 0) - (prev.rec || 0)) - (gift.lv || 0);
     if (cur.bn > prev.bn) return { ok: false, res, why: `points de Maîtrise des vies passées en hausse (+${cur.bn - prev.bn})` };
     // 2.1.18 : un Dofus de plus permis toutes les 4 h (échelle des Dofus jusqu'à la stasis 15 ; un compte bloqué accumulait sans fin)
-    if (cur.dof - prev.dof > 2 + Math.floor(Math.max(0, hours) / 4) + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
+    if (cur.dof - prev.dof > (2 + Math.floor(Math.max(0, hours) / 4)) * (sure ? V.SURE : 1) + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
     const need = { k: Math.max(0, dk) / R.k, r: Math.max(0, dr) / R.r, mt: Math.max(0, dm) / R.mt, lv: Math.max(0, dl) / R.lv };
     const used = Math.max(need.k, need.r, need.mt, need.lv);
     if (used > res + 0.01) {

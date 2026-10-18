@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.24";
+const GAME_VERSION = "2.1.25";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.25", name: "Bouclier sans faille", items: [
+    "Vérification des parties : la Maîtrise et le temps de jeu sont contrôlés pour tous les comptes, même vérifiés, et le plafond de Maîtrise suit le vrai coût des points",
+  ] },
   { v: "2.1.24", name: "Carte zoomable", guide: "world", items: [
     "Carte du monde : zoom avec la molette, deux doigts sur téléphone ou les boutons + / −, et déplacement en glissant. La carte devient plus nette en zoomant",
     "Étiquettes lisibles : seulement le nom de la région, plus gros, et plus aucune étiquette qui en recouvre une autre (les noms cachés reviennent en zoomant ou au survol). Les niveaux s'affichent en zoomant",

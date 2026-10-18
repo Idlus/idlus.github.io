@@ -71,21 +71,28 @@ const S2 = E.deserialize(good); const tpl = Object.keys(D.ITEMS).find((k) => D.I
 const it = E.rollItem(S2, tpl, { radiant: false }); it.stats.vit = 99999;
 Object.assign(T.saves[0], { data: E.serialize(S2), updated_at: iso(t0 + 3700e3) });
 r = await call("u1", { verif: 1 }); if (r.ok) fail("objet à 99 999 Vitalité accepté");
-// 5. « C'est bon » de Mathis : la partie retenue est acceptée telle quelle
+// 5. « C'est bon » de Mathis : la partie retenue pour ses gains est acceptée telle quelle ; 2.1.25 : jamais une partie impossible
 T.saves_ok[0].accept = true;
+r = await call("u1", { verif: 1 }); if (r.ok) fail("« C'est bon » accepte un objet impossible");
+const S1 = E.deserialize(good); S1.kamas += 1e9; Object.assign(T.saves[0], { data: E.serialize(S1), updated_at: iso(t0 + 3750e3) });
 r = await call("u1", { verif: 1 }); if (!r.ok) fail("« C'est bon » n'accepte pas la partie : " + JSON.stringify(r));
 if (T.saves_ok[0].accept) fail("l'accord de Mathis n'est valable qu'une fois");
-console.log("ok - objet impossible retenu, « C'est bon » de Mathis l'accepte");
-// 5 bis. 2.1.18 : compte vérifié par Mathis : plus de contrôle des gains, le signalement du Bouclier s'efface ; l'impossible reste refusé
+console.log("ok - objet impossible retenu même après « C'est bon », gains acceptés par « C'est bon »");
+// 5 bis. 2.1.18 : compte vérifié par Mathis : marge plus large sur les gains (15 h de kamas pour 10 h de réserve), le signalement du Bouclier s'efface ; l'impossible reste refusé
 Object.assign(L, { verified: true, flagged: false });
-const S3 = E.deserialize(good); S3.kamas += 5e9; Object.assign(T.saves[0], { data: E.serialize(S3), updated_at: iso(t0 + 3800e3) });
+T.saves_ok[0].res = 10; const S3 = E.deserialize(good); S3.kamas += Math.floor(V.rates(30).k * 15);
+Object.assign(T.saves[0], { data: E.serialize(S3), updated_at: iso(t0 + 3800e3) });
 T.saves_ok[0].at = iso(Date.now() - 60e3);
-r = await call("u1", { verif: 1 }); if (!r.ok) fail("compte vérifié retenu pour ses gains : " + JSON.stringify(r));
+r = await call("u1", { verif: 1 }); if (!r.ok || r.same || r.later) fail("compte vérifié retenu pour ses gains : " + JSON.stringify(r));
 if (L.suspect) fail("le signalement du Bouclier reste sur un compte vérifié");
 const S4 = E.deserialize(good); const it4 = E.rollItem(S4, tpl, { radiant: false }); it4.stats.vit = 99999;
 Object.assign(T.saves[0], { data: E.serialize(S4), updated_at: iso(t0 + 3900e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
 r = await call("u1", { verif: 1 }); if (r.ok) fail("objet impossible accepté sur un compte vérifié");
-console.log("ok - compte vérifié : gains libres, impossible toujours refusé");
+// 2.1.25 : le temps de jeu reste contrôlé même pour un compte vérifié
+const S5 = E.deserialize(good); S5.stats.playtime += 160 * 3600;
+Object.assign(T.saves[0], { data: E.serialize(S5), updated_at: iso(t0 + 4000e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
+r = await call("u1", { verif: 1 }); if (r.ok) fail("+160 h de temps de jeu accepté sur un compte vérifié");
+console.log("ok - compte vérifié : marge plus large, temps de jeu et impossible toujours refusés");
 // 6. combats rejoués : ils partent de la partie validée (un record de donjon sur une partie retenue ne voit pas les retouches)
 if (!/okSave\\(db, uid\\)/.test(${JSON.stringify(src)})) fail("les combats ne lisent pas la partie validée");
 console.log("ok - les combats rejoués lisent la partie validée");
