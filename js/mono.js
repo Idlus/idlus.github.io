@@ -31,7 +31,7 @@
   E.isMono = (S) => !!(S && S.mono);
   E.monoStart = (S) => { S.mono = { s: M.saison, t0: E.now() }; return S; };
   const adj = (cls) => M.cls[cls] || {};
-  /* Groupes (étape 2) : le bonus Héros unique baisse à chaque joueur ajouté. Un mercenaire (c.merc) compte pour un demi-joueur.
+  /* Groupes (étape 2) : le bonus Héros unique baisse à chaque joueur ajouté. Le mercenaire (c.merc, solo seulement) compte pour un demi-joueur.
      M.group[n] : part du bonus gardée pour n joueurs (entre deux tailles, on prend la moyenne). */
   M.group = { 1: 1, 2: 0.72, 3: 0.61, 4: 0.58 }; // simulation du 18/10 (6 classes) : optimisés à 2 → 8,1, à 3 → 8,8, à 4 → 9,9
   E.monoPlayers = (S, heroes) => heroes.reduce((a, h) => { const c = S.chars.find((x) => x.id === (h.cid != null ? h.cid : h.id)); return a + (c && c.merc ? 0.5 : 1); }, 0);
@@ -72,7 +72,8 @@
      Un combat de groupe est joué d'un coup par le vrai moteur, comme le boss de guilde : une petite partie de travail avec
      la photo de chaque héros (E.monoSnap), une graine commune, donc le même combat chez chacun (et sur le serveur, plus tard).
      Le joueur qui se déconnecte reste dans le combat, joué en automatique comme tous les héros. Butin individuel :
-     chacun reçoit ses récompenses dans sa propre partie (E.monoGroupLoot), comme s'il avait fait le donjon seul. */
+     chacun reçoit ses récompenses dans sa propre partie (E.monoGroupLoot), comme s'il avait fait le donjon seul.
+     Pas de mercenaire dans un groupe de joueurs (Mathis, 18/10) : il reste un appoint du joueur seul. */
   M.groupMax = 4;
   M.merc = { cost: 25000, max: 1 };
   const kam = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -133,12 +134,13 @@
   E.tick = function (S) { const r = tick0.apply(this, arguments); if (S && S.mono && S.mono.merc && !S.dungeon) E.monoMercClear(S); return r; };
 
   /* ---------------- combat de groupe ---------------- */
-  /* snaps : photos des héros du groupe (1 à 4 joueurs, 1 mercenaire au plus). Renvoie la partie de travail prête à jouer. */
+  /* snaps : photos des héros du groupe (1 à 4 joueurs ; un mercenaire seulement avec un joueur seul). Renvoie la partie de travail prête à jouer. */
   E.monoGroupSetup = (snaps, did, stasis) => {
     const players = snaps.filter((h) => !h.merc).length, mercs = snaps.length - players;
     if (!players) return { err: "Il faut au moins un joueur." };
     if (players > M.groupMax) return { err: `${M.groupMax} joueurs au plus par groupe.` };
-    if (mercs > M.merc.max) return { err: "Un seul mercenaire par groupe." };
+    if (mercs && players > 1) return { err: "Pas de mercenaire dans un groupe de joueurs." };
+    if (mercs > M.merc.max) return { err: "Un seul mercenaire." };
     const S2 = E.monoStart(E.newState("Groupe", snaps[0].cls)); S2.chars = []; S2.journal = [];
     snaps.forEach((h, i) => S2.chars.push({ id: i + 1, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren || 0, spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "ordre" : undefined,
       alloc: {}, equip: {}, eveils: {}, inTeam: true, row: i === 0 ? "f" : "b", snap: JSON.parse(JSON.stringify(h)), merc: h.merc ? 1 : 0, xp: 0, pts: 0 }));

@@ -93,14 +93,16 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   assert.ok(!S.dungeon && !E.monoMercOf(S) && !S.mono.merc, "il repart à la fin du donjon");
   assert.ok(!Object.values(S.items).some((it) => it.merc), "son équipement repart avec lui");
   assert.ok(E.recruit(S, "cra", "X"), "toujours un seul héros"); void x0;
-  // groupe : même graine, même combat ; 5 joueurs ou 2 mercenaires refusés
+  // groupe : même graine, même combat ; 5 joueurs, mercenaire dans un groupe ou 2 mercenaires refusés
   const snap = (cls) => { const T = E.monoStart(E.newState("G" + cls, cls)); T.chars[0].lvl = 60; return E.monoSnap(T, T.chars[0]); };
   const grp = [snap("iop"), snap("eni"), snap("cra")];
   const R1 = E.monoGroupRun(grp, did, 2, 77), R2 = E.monoGroupRun(grp, did, 2, 77);
   assert.strictEqual(JSON.stringify(R1), JSON.stringify(R2), "combat de groupe déterministe");
   assert.ok(R1.rooms.length > 0, "au moins une salle jouée");
   assert.ok(E.monoGroupRun([snap("iop"), snap("iop"), snap("iop"), snap("iop"), snap("iop")], did, 1, 1).err, "4 joueurs au plus");
+  assert.ok(/Pas de mercenaire/.test(E.monoGroupRun([snap("iop"), snap("cra"), E.monoMercSnap("eni", 60, 1)], did, 1, 1).err), "pas de mercenaire dans un groupe de joueurs");
   assert.ok(E.monoGroupRun([snap("iop"), E.monoMercSnap("eni", 60, 1), E.monoMercSnap("cra", 60, 2)], did, 1, 1).err, "un mercenaire au plus");
+  assert.ok(!E.monoGroupRun([snap("iop"), E.monoMercSnap("eni", 60, 1)], did, 1, 1).err, "seul avec un mercenaire : accepté");
   assert.strictEqual(JSON.stringify(E.monoMercSnap("eni", 60, 5)), JSON.stringify(E.monoMercSnap("eni", 60, 5)), "même graine, même mercenaire");
   // butin individuel dans la partie de chacun
   const P = E.monoStart(E.newState("P", "iop")); P.chars[0].lvl = 60; const k0 = P.kamas, xp0 = P.chars[0].xp;

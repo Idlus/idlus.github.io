@@ -3844,7 +3844,7 @@ function monoDgBox() {
     <div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Mercenaire</b><span class="xs muted">${fmt(cost)} kamas par donjon · compte pour un demi-joueur · ne prend ni XP ni butin</span></div>
       <div class="mercpick"><button class="${mc ? "" : "on"}" data-act="mercpick" data-v="" aria-pressed="${!mc}">Seul</button>${CLASS_ORDER.map((k) => `<button class="${mc === k ? "on" : ""}" data-act="mercpick" data-v="${k}" aria-pressed="${mc === k}" ${poor ? "disabled" : ""} data-tip="${h(E.monoMercName(k))}" style="--cc:${CLASSES[k].color}"><img src="${symImg(k)}" alt="${h(CLASSES[k].name)}"></button>`).join("")}</div>
       ${mc ? `<span class="xs">${h(E.monoMercName(mc))} niveau ${me.lvl}, équipement correct de son niveau. Il repart à la fin du donjon.</span>` : poor ? `<span class="xs muted">Il faut ${fmt(cost)} kamas pour engager un mercenaire.</span>` : ""}
-      <span class="xs muted">Groupes en direct jusqu'à ${E.MONO.groupMax} joueurs : avec le serveur Monocompte, à l'étape suivante.</span></div>`;
+      <span class="xs muted">Le mercenaire est réservé au jeu en solo : pas de mercenaire dans les groupes de joueurs (jusqu'à ${E.MONO.groupMax}, avec le serveur Monocompte).</span></div>`;
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
