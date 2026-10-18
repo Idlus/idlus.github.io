@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, temps-de-jeu-tous]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -219,6 +219,22 @@ jobs:
           node tools/compensation_fm.js "$f" "$q" $([ "${{ inputs.etape }}" = compensation-fm ] && echo --appliquer)
           rm -f "$f"
           bash tools/serveur/vps_sql.sh fichier "$q"
+      - name: Temps de jeu de tous les comptes (lecture seule, demande de Mathis)
+        if: inputs.etape == 'temps-de-jeu-tous'
+        run: |
+          # 18/10/2026 : « tu peux regarder le temps de jeu comme tu as fais pour justever avec les autres ? » (Mathis). Lecture seule :
+          # le serveur ne renvoie que temps de jeu, kamas et Maîtrise de chaque copie (tools/temps_de_jeu.js), jamais la partie.
+          f="$RUNNER_TEMP/temps.json"
+          bash tools/serveur/vps_sql.sh lecture "with c as (
+              select user_id, 'jour' as src, at, data from public.saves_jour
+              union all select user_id, 'validée', src_at, data from public.saves_ok where data is not null
+              union all select user_id, 'en ligne', updated_at, data from public.saves)
+            select public.pseudo_of(c.user_id) as pseudo, c.src, c.at, (j->'stats'->>'playtime')::float as pt, (j->>'kamas')::float as k,
+              (select coalesce(sum((x->'mt'->>'lvl')::float), 0) from json_array_elements(j->'chars') x) as mt,
+              (select coalesce(max((x->'mt'->>'lvl')::float), 0) from json_array_elements(j->'chars') x) as mtmax
+            from c cross join lateral (select c.data::json as j) z" > "$f"
+          node tools/temps_de_jeu.js "$f"
+          rm -f "$f"
       - name: Enquête sur un joueur (lecture seule, demande de Mathis)
         if: inputs.etape == 'enquete-joueur'
         env:
