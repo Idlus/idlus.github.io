@@ -25,6 +25,7 @@ const D = require("../js/data.js");
 require("../js/mono.js");
 if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
 if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
+if (process.env.MONOGRP) process.env.MONOGRP.split(",").forEach((v, i) => (E.MONO.group[i + 2] = +v)); // MONOGRP="0.9,0.8,0.7" : part du bonus à 2, 3 et 4 joueurs
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
 const flag = (k) => process.argv.includes("--" + k);

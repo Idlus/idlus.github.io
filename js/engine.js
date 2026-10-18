@@ -989,6 +989,7 @@
     return null;
   };
   const charEntity = (S, c) => {
+    if (c.snap && E.monoSnapEnt) return E.monoSnapEnt(S, c); // Monocompte : héros d'un autre joueur du groupe ou mercenaire (photo, js/mono.js)
     const st = E.charStats(S, c);
     const fs = E.freeSpirit(S);
     const hpMax = Math.round(st.hpMax * (1 + fs / 200) * (E.teamHas(S, "osa") ? 1.05 : 1) * (1 + E.bonus(S, "hp") / 100));
@@ -1430,8 +1431,9 @@
     if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
     if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
     /* 0.1 : bonus « petit groupe » en donjon (solo et duo) ; 0.1.24.3 : en chasse aussi (solo, duo, trio) */
-    const sm = S.mono && E.monoSmall && !XP ? E.monoSmall(S, team, !!S.dungeon) : S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length]; // Monocompte : bonus Héros unique (js/mono.js)
+    const sm = S.mono && E.monoEnts && !XP ? null : S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
     if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
+    else if (S.mono && E.monoEnts && !XP) E.monoEnts(S, ents, !!S.dungeon); // Monocompte : bonus Héros unique, qui baisse avec le groupe (js/mono.js)
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
@@ -2232,7 +2234,7 @@
       e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
       e.resBonus = 0; e.regen = 0;
     });
-    if (S.mono && E.monoDmg) heroes0.forEach((e) => (e.dmgBonus += E.monoDmg(S, e))); // Monocompte : dégâts du Héros unique
+    if (S.mono && E.monoDmg) heroes0.forEach((e) => (e.dmgBonus += E.monoDmg(S, e, heroes0))); // Monocompte : dégâts du Héros unique (et du groupe)
     if (F.exp && E.expBonuses) E.expBonuses(S, F); // 0.1.24 : reliques et bénédictions de l'expédition
   };
 
@@ -2503,9 +2505,9 @@
     const v = { vit: list.reduce((t, T) => t + T.stats.vit[0], 0), sa: list.reduce((t, T) => t + T.stats.sa[0], 0), list: list.map((T) => T.trophy) };
     vitrineCache.set(S, { n: keys.length, v }); return v;
   };
-  E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
+  E.lootRolls = (S) => Math.max(1, E.team(S).filter((c) => !c.merc).length); // 1.0.3 : un tirage de ressource par héros (Monocompte : pas pour le mercenaire)
   const giveRewards = (S, mons, opts = {}) => {
-    const team = E.team(S);
+    const team = E.team(S).filter((c) => !c.merc); // Monocompte : le mercenaire ne prend ni XP ni butin
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {

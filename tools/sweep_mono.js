@@ -8,7 +8,7 @@ const DUN = arg("donjons", "cour_bouftou_royal,donjon_bworks,labo_brumen,caverne
 const TR = arg("essais", "2"), PR = arg("profils", "aucun,optimise");
 const CLS = arg("classes", "") ? arg("classes").split(",") : D.CLASS_ORDER;
 const PAR = +arg("par", 8);
-const one = (cls) => new Promise((res) => execFile("node", [__dirname + "/sim_mono.js", "--classes", cls, "--donjons", DUN, "--essais", TR, "--profils", PR, "--json"], { maxBuffer: 1e8, env: process.env }, (e, out) => {
+const one = (cls) => new Promise((res) => execFile("node", [__dirname + "/sim_mono.js", "--classes", cls, "--donjons", DUN, "--essais", TR, "--profils", PR, "--taille", arg("taille", "1"), "--json"], { maxBuffer: 1e8, env: process.env }, (e, out) => {
   if (e) return res({ cls, err: String(e).slice(0, 200) });
   const j = JSON.parse(out); const r = {}; PR.split(",").forEach((p) => { const v = j.results.map((x) => x.fine[p]); r[p] = { avg: v.reduce((a, b) => a + b, 0) / v.length, min: Math.min(...v), max: Math.max(...v), v }; }); res({ cls, r });
 }));

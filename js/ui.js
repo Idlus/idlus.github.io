@@ -2361,7 +2361,7 @@ function fsGauge() {
   /* 1.0.5.1 : l'Esprit Libre est supprimé ; la jauge montre la taille de l'équipe (plus elle est grande, plus chaque héros monte vite) */
   const team = E.team(S); const n = team.length; const syn = E.synergy(S);
   return `<div class="fsg ${n >= 8 ? "solo" : n ? "" : "zero"}" style="--p:${Math.round(n * 12.5)}" data-tip="Équipe : plus elle compte de héros, plus elle bat de monstres et plus chaque héros monte vite (8 héros montent bien plus vite qu'un héros seul). Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
-    <span class="flame"><i></i></span><span class="txt"><b>Équipe ${n}/8</b><br><span class="xs muted">${n ? (syn ? `Synergie +${syn} %` : "pas de synergie") : "aucun héros ne chasse"}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((k) => `<i class="${k <= n ? "" : "off"}"></i>`).join("")}</span></span></div>`;
+    <span class="flame"><i></i></span><span class="txt"><b>Équipe ${n}/${S.mono ? Math.max(n, 1) : 8}</b><br><span class="xs muted">${n ? (syn ? `Synergie +${syn} %` : "pas de synergie") : "aucun héros ne chasse"}</span><span class="pips5">${(S.mono ? [1, 2].slice(0, Math.max(n, 1)) : [1, 2, 3, 4, 5, 6, 7, 8]).map((k) => `<i class="${k <= n ? "" : "off"}"></i>`).join("")}</span></span></div>`;
 }
 function questAlert() { if (window.QUI) return window.QUI.todo(S) > 0; return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); } // 0.1.28 : tout ce qui est prêt dans Quêtes (js/questui.js)
 const jobImg = (j) => `assets/j/${j}.png`;
@@ -3807,7 +3807,7 @@ function dungeonSheet(did) {
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${S.dungeon && S.dungeon.id === did && !S.dungeon.defi ? `<div class="wkbox">${IC("combat")} <div class="grow"><b>En cours : ${chainTxt()}stasis ${S.dungeon.stasis || 1}</b><div class="ac-rate xs" style="margin-top:2px">${dgRateLine(E.dgChainRate(S))}</div></div></div>` : ""}
-      ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; const one = E.team(S).length === 1; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${one ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${one ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${one ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
+      ${S.mono ? monoDgBox() : ""}${S.mono ? "" : (() => { const sm = E.SMALL_TEAM[E.team(S).length]; const one = E.team(S).length === 1; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${one ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${one ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${one ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
       ${compSuggest(did)}
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de l'heure : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b> pendant cette heure (encore ${weeklyLeft()}). Une course commencée garde son bonus.</span></div>` : ""}
       ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
@@ -3833,6 +3833,18 @@ function dungeonSheet(did) {
     </div>
     ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${climbT && chainN > 1 ? ` → ${k + chainN - 1}` : keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* Monocompte : bonus Héros unique et mercenaire, sur la fiche du donjon */
+function monoDgBox() {
+  const me = S.chars.find((c) => !c.merc) || S.chars[0]; const mc = ui.mercCls && CLASSES[ui.mercCls] ? ui.mercCls : null;
+  const team = mc ? [me, { id: -1, cls: mc, merc: 1 }] : [me]; const fake = { chars: mc ? [me, { id: -1, merc: 1 }] : [me] };
+  const sm = E.monoSmall(fake, team, true); const dmg = Math.round(E.monoDmg(fake, { cls: me.cls }, team));
+  const cost = E.MONO.merc.cost, poor = S.kamas < cost;
+  return `<div class="smallbox monobox">${G("shield")} <span><b>Bonus Héros unique${mc ? " (avec mercenaire)" : ""}</b> : +${Math.round(sm.hp)} % de PV, ${Math.round(sm.dr)} % de dégâts subis en moins, +${dmg} % de dégâts. Il baisse à chaque joueur ajouté au groupe.</span></div>
+    <div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Mercenaire</b><span class="xs muted">${fmt(cost)} kamas par donjon · compte pour un demi-joueur · ne prend ni XP ni butin</span></div>
+      <div class="mercpick"><button class="${mc ? "" : "on"}" data-act="mercpick" data-v="" aria-pressed="${!mc}">Seul</button>${CLASS_ORDER.map((k) => `<button class="${mc === k ? "on" : ""}" data-act="mercpick" data-v="${k}" aria-pressed="${mc === k}" ${poor ? "disabled" : ""} data-tip="${h(E.monoMercName(k))}" style="--cc:${CLASSES[k].color}"><img src="${symImg(k)}" alt="${h(CLASSES[k].name)}"></button>`).join("")}</div>
+      ${mc ? `<span class="xs">${h(E.monoMercName(mc))} niveau ${me.lvl}, équipement correct de son niveau. Il repart à la fin du donjon.</span>` : poor ? `<span class="xs muted">Il faut ${fmt(cost)} kamas pour engager un mercenaire.</span>` : ""}
+      <span class="xs muted">Groupes en direct jusqu'à ${E.MONO.groupMax} joueurs : avec le serveur Monocompte, à l'étape suivante.</span></div>`;
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
@@ -9720,6 +9732,7 @@ document.addEventListener("click", (ev) => {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
+    case "mercpick": ui.mercCls = t.dataset.v || null; if (ui.dgSel) dungeonSheet(ui.dgSel); else render(); return;
     case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
@@ -9957,7 +9970,7 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": if (window.COLL) { ui.tab = "world"; ui.world = "enc"; ui.zoneView = null; (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "sets"; break; } ui.tab = "inv"; ui.inv = "sets"; break; // 1.0.30 : la Collection de panoplies est dans l'Encyclopédie
-    case "enterdg": { const cn = ui.dgSel === d.id ? chainCount(d.id) : 1; const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+    case "enterdg": { const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id && !merc ? chainCount(d.id) : 1; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null;
       /* 1.0.32.3 : depuis une étape de quête « en stasis N », la fiche propose déjà la montée de la meilleure stasis jusqu'à N */
       if (d.k && DUNGEONS[d.id]) { dgPick(d.id); const SI = E.stasisInfo(S, d.id); const T = +d.k; if (SI.max < T) { ui.dgStasis = Math.min(T, SI.max + 1); if (ui.dgStasis < T) ui.dgClimb = T; } }

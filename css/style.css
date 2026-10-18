@@ -5930,3 +5930,10 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 #status .monob b{color:#f3ffd0}
 @media (max-width:640px){.srvpick{grid-template-columns:minmax(0,1fr)}}
 .svgrid.mono{grid-template-columns:minmax(0,560px);justify-content:center}
+/* Monocompte : mercenaire sur la fiche du donjon */
+.mercbox{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.mercpick{display:flex;flex-wrap:wrap;gap:4px}
+.mercpick button{min-width:34px;height:34px;padding:0 8px;border-radius:9px;border:1px solid var(--frame);background:var(--panel);color:inherit;font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.mercpick button img{width:22px;height:22px;object-fit:contain}
+.mercpick button.on{border-color:var(--cc,var(--accent));box-shadow:0 0 0 2px var(--cc,var(--accent)) inset;background:var(--panel2)}
+.mercpick button:disabled{opacity:.4;cursor:default}

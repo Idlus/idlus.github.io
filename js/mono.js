@@ -31,11 +31,20 @@
   E.isMono = (S) => !!(S && S.mono);
   E.monoStart = (S) => { S.mono = { s: M.saison, t0: E.now() }; return S; };
   const adj = (cls) => M.cls[cls] || {};
-  E.monoSmall = (S, team, dungeon) => {
-    const k = adj(team[0] && team[0].cls);
-    return dungeon ? { hp: M.hp + (k.hp || 0), dr: Math.min(80, M.dr + (k.dr || 0)), name: "Héros unique" } : { hp: M.huntHp, dr: M.huntDr, name: "Héros unique" };
+  /* Groupes (étape 2) : le bonus Héros unique baisse à chaque joueur ajouté. Un mercenaire (c.merc) compte pour un demi-joueur.
+     M.group[n] : part du bonus gardée pour n joueurs (entre deux tailles, on prend la moyenne). */
+  M.group = { 1: 1, 2: 0.72, 3: 0.61, 4: 0.58 }; // simulation du 18/10 (6 classes) : optimisés à 2 → 8,1, à 3 → 8,8, à 4 → 9,9
+  E.monoPlayers = (S, heroes) => heroes.reduce((a, h) => { const c = S.chars.find((x) => x.id === (h.cid != null ? h.cid : h.id)); return a + (c && c.merc ? 0.5 : 1); }, 0);
+  E.monoFade = (p) => { p = Math.max(1, Math.min(4, p)); const lo = Math.floor(p), hi = Math.ceil(p); return M.group[lo] + (M.group[hi] - M.group[lo]) * (p - lo); };
+  E.monoEnts = (S, ents, dungeon) => {
+    const hs = ents.filter((e) => e.side === "c" && !e.summon); const f = E.monoFade(E.monoPlayers(S, hs));
+    hs.forEach((e) => { const k = adj(e.cls);
+      const hp = dungeon ? (M.hp + (k.hp || 0)) * f : M.huntHp * f, dr = dungeon ? Math.min(80, Math.max(0, (M.dr + (k.dr || 0)) * f)) : M.huntDr * f;
+      e.hpMax = e.hp = Math.round(e.hpMax * (1 + hp / 100)); e.smallDr = dr; });
   };
-  E.monoDmg = (S, e) => M.dmg + (adj(e.cls).dmg || 0);
+  E.monoSmall = (S, team, dungeon) => { const f = E.monoFade(E.monoPlayers(S, team)); const k = adj(team[0] && team[0].cls); // pour l'affichage (héros seul)
+    return dungeon ? { hp: (M.hp + (k.hp || 0)) * f, dr: Math.min(80, (M.dr + (k.dr || 0)) * f), name: "Héros unique" } : { hp: M.huntHp * f, dr: M.huntDr * f, name: "Héros unique" }; };
+  E.monoDmg = (S, e, heroes) => (M.dmg + (adj(e.cls).dmg || 0)) * (heroes ? E.monoFade(E.monoPlayers(S, heroes)) : 1);
   E.monoItem = (S, T) => (T && T.lvl > M.lootLvl ? M.lootHigh : M.lootLow);
 
   /* dans le jeu (une partie par page) : la partie Monocompte limite l'équipe à 1 héros et les emplacements de Dofus à 3 */
@@ -57,5 +66,116 @@
       return equip0.call(this, S, cid, uid, o);
     }
     return equip0.apply(this, arguments);
+  };
+
+  /* ---------------- Étape 2 : groupes en direct et mercenaire ----------------
+     Un combat de groupe est joué d'un coup par le vrai moteur, comme le boss de guilde : une petite partie de travail avec
+     la photo de chaque héros (E.monoSnap), une graine commune, donc le même combat chez chacun (et sur le serveur, plus tard).
+     Le joueur qui se déconnecte reste dans le combat, joué en automatique comme tous les héros. Butin individuel :
+     chacun reçoit ses récompenses dans sa propre partie (E.monoGroupLoot), comme s'il avait fait le donjon seul. */
+  M.groupMax = 4;
+  M.merc = { cost: 25000, max: 1 };
+  const kam = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const mulberry = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  /* photo d'un héros : ses caractéristiques finales et ses passifs, sans les objets */
+  E.monoSnap = (S, c) => {
+    const k = E.koliSnap(S, [c.id])[0];
+    return Object.assign(k, { id: c.id, merc: c.merc ? 1 : 0, seal: E.sealOf ? E.sealOf(S, c) : null, pet: E.petEnt ? E.petEnt(S, c) : null, hpB: E.bonus(S, "hp") || 0 });
+  };
+  E.monoSnapEnt = (S, c) => {
+    const h = c.snap; const st = JSON.parse(JSON.stringify(h.st));
+    const hpMax = Math.round(st.hpMax * (E.teamHas(S, "osa") ? 1.05 : 1) * (1 + (h.hpB || 0) / 100));
+    return { side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax, ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
+      evc: h.evc || 0, ev: {}, mt: h.mt || null, bt: h.bt || null, lg: h.lg || null, dp: h.dp || null, dpBoost: !!h.dpB,
+      wsp: h.wp && ITEMS[h.wp.t] ? E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) : null, seal: h.seal || null, pet: h.pet || null };
+  };
+  /* le mercenaire : un héros de la classe choisie, au niveau du groupe, avec un équipement correct de son niveau (jets moyens) */
+  const GEAR = ["coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "arme", "bouclier"];
+  const byLvl = {};
+  const gearFor = (slot, lvl) => { const s0 = slot.startsWith("anneau") ? "anneau" : slot; const k = s0 + ":" + lvl;
+    if (!byLvl[k]) byLvl[k] = Object.keys(ITEMS).filter((id) => ITEMS[id].slot === s0 && ITEMS[id].lvl <= lvl && !ITEMS[id].noDrop && !ITEMS[id].trophy).sort((a, b) => ITEMS[b].lvl - ITEMS[a].lvl).slice(0, 4);
+    return byLvl[k]; };
+  let quiet = 0; // l'équipement du mercenaire ne compte pas pour les quêtes et les succès
+  const mercGear = (S, c, rng) => { quiet++; try { GEAR.forEach((sl) => { const L = gearFor(sl, c.lvl); if (!L.length) return; const tpl = L[Math.floor(rng() * L.length)]; const it = E.rollItem(S, tpl, { radiant: false });
+    for (const k in it.stats) { const [a, b] = ITEMS[tpl].stats[k]; it.stats[k] = Math.round((a + b) / 2); } it.merc = 1; E.equip(S, c.id, it.uid, sl); }); } finally { quiet--; } };
+  E.monoMercName = (cls) => `Mercenaire ${(D.CLASSES[cls] || {}).name || ""}`.trim();
+  /* photo d'un mercenaire (groupe) : même graine, même mercenaire */
+  E.monoMercSnap = (cls, lvl, seed = 1) => {
+    const rng0 = E.getRng(); const rng = mulberry(seed); E.setRng(rng);
+    try { const T = E.monoStart(E.newState("Merc", cls)); T.chars = []; const c = E.addChar(T, cls, E.monoMercName(cls), Math.max(1, Math.min(200, lvl))); c.merc = 1; mercGear(T, c, rng);
+      E.autoAllocate(T, c); c.spellsManual = false; E.refreshSpells(c, E.charStats(T, c)); return E.monoSnap(T, c); }
+    finally { E.setRng(rng0); }
+  };
+  E.monoMercOf = (S) => S.chars.find((c) => c.merc);
+  /* solo : engager un mercenaire pour un donjon (payé à l'entrée, il repart à la fin) */
+  E.monoEnter = (S, did, stasis, mercCls) => {
+    if (!E.isMono(S)) return E.enterDungeon(S, did, stasis);
+    if (mercCls) {
+      if (!D.CLASSES[mercCls]) return "Classe inconnue.";
+      if (S.kamas < M.merc.cost) return `Il faut ${kam(M.merc.cost)} kamas pour le mercenaire.`;
+      const me = S.chars.find((c) => !c.merc); if (!me) return "Héros introuvable.";
+      E.monoMercClear(S);
+      const c = E.addChar(S, mercCls, E.monoMercName(mercCls), me.lvl); c.merc = 1; c.inTeam = true; mercGear(S, c, () => E.rnd());
+      E.autoAllocate(S, c); c.spellsManual = false; E.refreshSpells(c, E.charStats(S, c)); E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
+      const err = E.enterDungeon(S, did, stasis);
+      if (err) { E.monoMercClear(S); return err; }
+      S.kamas -= M.merc.cost; S.mono.merc = c.id; E.note(S, `${c.name} rejoint ${me.name} pour ce donjon (${kam(M.merc.cost)} kamas).`, "info");
+      return null;
+    }
+    return E.enterDungeon(S, did, stasis);
+  };
+  E.monoMercClear = (S) => {
+    S.chars.filter((c) => c.merc).forEach((c) => { Object.values(c.equip || {}).forEach((u) => { if (S.items[u] && S.items[u].merc) delete S.items[u]; }); });
+    S.chars = S.chars.filter((c) => !c.merc); if (S.mono) delete S.mono.merc;
+  };
+  /* le mercenaire repart dès que le donjon est fini (ou quitté) */
+  const tick0 = E.tick;
+  E.tick = function (S) { const r = tick0.apply(this, arguments); if (S && S.mono && S.mono.merc && !S.dungeon) E.monoMercClear(S); return r; };
+
+  /* ---------------- combat de groupe ---------------- */
+  /* snaps : photos des héros du groupe (1 à 4 joueurs, 1 mercenaire au plus). Renvoie la partie de travail prête à jouer. */
+  E.monoGroupSetup = (snaps, did, stasis) => {
+    const players = snaps.filter((h) => !h.merc).length, mercs = snaps.length - players;
+    if (!players) return { err: "Il faut au moins un joueur." };
+    if (players > M.groupMax) return { err: `${M.groupMax} joueurs au plus par groupe.` };
+    if (mercs > M.merc.max) return { err: "Un seul mercenaire par groupe." };
+    const S2 = E.monoStart(E.newState("Groupe", snaps[0].cls)); S2.chars = []; S2.journal = [];
+    snaps.forEach((h, i) => S2.chars.push({ id: i + 1, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren || 0, spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "ordre" : undefined,
+      alloc: {}, equip: {}, eveils: {}, inTeam: true, row: i === 0 ? "f" : "b", snap: JSON.parse(JSON.stringify(h)), merc: h.merc ? 1 : 0, xp: 0, pts: 0 }));
+    S2.nextCid = snaps.length + 1;
+    const dg = D.DUNGEONS[did]; if (!dg) return { err: "Donjon inconnu." };
+    S2.res[dg.key] = 1; const SI = E.stasisInfo(S2, did); SI.max = Math.max(0, stasis - 1);
+    const du = E.dungeonUnlocked; E.dungeonUnlocked = () => true; const tm = E.TEAM_MAX; E.TEAM_MAX = Math.max(tm, snaps.length);
+    let err; try { err = E.enterDungeon(S2, did, stasis); } finally { E.dungeonUnlocked = du; E.TEAM_MAX = tm; }
+    if (err) return { err };
+    S2.monoRun = { did, stasis, rooms: [], done: false, win: null };
+    return { S2 };
+  };
+  const emit0 = E.emit;
+  E.emit = function (S, t, d) { if (quiet) return; if (S && S.monoRun) { if (t === "win" && d && d.dungeon) S.monoRun.rooms.push(d.mons); if (t === "dungeon") S.monoRun.done = true; return; } return emit0.apply(this, arguments); };
+  /* joue tout le combat (graine commune) : { win, rooms, done, stasis } */
+  E.monoGroupRun = (snaps, did, stasis, seed) => {
+    const rng0 = E.getRng(); const evLen = E.events.length; E.setRng(mulberry(seed >>> 0));
+    const tm = E.TEAM_MAX; E.TEAM_MAX = Math.max(tm, snaps.length); let S2;
+    try { const G = E.monoGroupSetup(snaps, did, stasis); if (G.err) return G; S2 = G.S2;
+      for (let t = 0; S2.dungeon && t < 3 * 3600 * 1000; t += 1000) { E.tick(S2, 1000); if (S2.fight && S2.fight.over && S2.fight.result === "lose") break; } }
+    finally { E.setRng(rng0); E.events.length = evLen; E.TEAM_MAX = tm; }
+    const R = S2.monoRun; R.win = R.done; return R;
+  };
+  /* butin individuel : chaque joueur reçoit dans sa partie l'XP, les kamas et le butin des salles gagnées */
+  E.monoGroupLoot = (S, R) => {
+    if (!E.isMono(S) || !R || !R.rooms) return null;
+    const k = R.stasis || 1, sr = k > 1 ? E.stasisMult(k).rew : 1; const tot = { xp: 0, kamas: 0, items: [], res: {} };
+    const sd = S.dungeon; S.dungeon = null;
+    try {
+      R.rooms.forEach((ms) => {
+        const mons = ms.map((m) => Object.assign({ name: (D.MONSTERS[m.key] || {}).name || m.key, side: "m" }, m));
+        const r = E.giveRewards(S, mons, { dungeon: true, stasis: k, xpMult: sr * E.PACE_REW, dropMult: sr * E.PACE_REW, kamasMult: E.PACE_REW });
+        tot.xp += Object.values(r.xp).reduce((a, b) => a + b, 0); tot.kamas += r.kamas; tot.items.push(...r.items); for (const n in r.res) tot.res[n] = (tot.res[n] || 0) + r.res[n];
+      });
+    } finally { S.dungeon = sd; }
+    if (R.done) { const SI = E.stasisInfo(S, R.did); SI.max = Math.max(SI.max || 0, k); S.progress.bossKills[R.did] = (S.progress.bossKills[R.did] || 0) + 1;
+      S.mono.grp = (S.mono.grp || 0) + 1; E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true }); }
+    return tot;
   };
 })(typeof window !== "undefined" ? window : globalThis);
