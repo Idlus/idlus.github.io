@@ -3,7 +3,7 @@
 
 Construit :
   - assets/carte/monde.webp : la carte du monde de DOFUS (DofusDB, monde 1, échelle 0.4, 16 × 13 tuiles de 250 px),
-    réduite à 1600 × 1280 ;
+    réduite à 1600 × 1280, et assets/carte/monde-hd.webp (3200 × 2560) pour le zoom ;
   - js/carte.js : la place de chaque sous-zone sur cette carte (moyenne des cartes extérieures de la sous-zone,
     worldMap 1) et de chaque région (moyenne de ses sous-zones). Coordonnées de 0 à 1000 (largeur) et 0 à 800 (hauteur).
 
@@ -32,9 +32,11 @@ def tiles():
     with ThreadPoolExecutor(12) as ex:
         for n, t in ex.map(one, range(cols * rows)):
             img.paste(t, ((n % cols) * 250, (n // cols) * 250))
-    img = img.crop((0, 0, 4000, 3200)).resize((1600, 1280), Image.LANCZOS)
+    img = img.crop((0, 0, 4000, 3200))
     os.makedirs(os.path.join(ROOT, 'assets', 'carte'), exist_ok=True)
-    img.save(os.path.join(ROOT, 'assets', 'carte', 'monde.webp'), quality=72)
+    img.resize((1600, 1280), Image.LANCZOS).save(os.path.join(ROOT, 'assets', 'carte', 'monde.webp'), quality=72)
+    # 2.1.24 : la version nette, chargée seulement quand on zoome
+    img.resize((3200, 2560), Image.LANCZOS).save(os.path.join(ROOT, 'assets', 'carte', 'monde-hd.webp'), quality=68)
 
 def zones():
     js = subprocess.check_output(['node', '-e', 'global.window=global;require("./js/gamedata.js");process.stdout.write(JSON.stringify(GAMEDATA.ZONES.map(z=>({id:z.id,subs:z.subs.map(s=>({id:s.id,db:s.dbid}))}))))'], cwd=ROOT)
@@ -67,4 +69,5 @@ def main():
     print(f'{len(R)} régions, {len(S)} sous-zones placées sur {len(subs)}')
 
 if __name__ == '__main__':
-    main()
+    import sys
+    tiles() if sys.argv[1:] == ['--images'] else main()

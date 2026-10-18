@@ -5849,33 +5849,42 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .ch-itb{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .ch-itb select{max-width:120px}
 @media (max-width:520px){.ch-it{grid-template-columns:24px minmax(0,1fr)}.ch-itb{grid-column:1/-1;justify-content:flex-start}}
-/* 2.1.x : la carte du Monde des Douze (page Zones) : les étiquettes sont posées sur l'image, d'où leurs fonds sombres fixes */
+/* 2.1.x : la carte du Monde des Douze (page Zones) : les étiquettes sont posées sur l'image, d'où leurs fonds sombres fixes.
+   2.1.24 : zoom (--z), étiquettes réduites au nom et masquées quand elles se recouvrent (mapLabels dans js/ui.js) */
 .wm-wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;align-items:start}
 @media (max-width:900px){.wm-wrap{grid-template-columns:1fr}}
 .wm-panel{overflow:hidden}
-.wm-scroll{overflow:auto;position:relative;border-radius:8px}
-.wm-map{position:relative;width:100%;aspect-ratio:5/4}
-.wm-map img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;user-select:none}
-@media (max-width:700px){.wm-map{width:760px}}
-.wm-z{position:absolute;transform:translate(-7px,-50%);display:flex;align-items:center;gap:5px;background:none;border:0;padding:0;cursor:pointer;z-index:2;color:#fff}
-.wm-z i{width:14px;height:14px;border-radius:50%;background:#2fbf71;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.35);flex:none}
-.wm-z span{display:flex;flex-direction:column;background:rgba(10,24,18,.82);border-radius:7px;padding:2px 7px;line-height:1.15;text-align:left;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.wm-z b{font-size:12px}.wm-z small{font-size:10px;opacity:.8}
-.wm-z:hover span,.wm-z:focus-visible span{background:rgba(10,24,18,.95)}
-.wm-z.lk i{background:#8a8f8c}.wm-z.lk span{background:rgba(40,40,40,.78)}
-.wm-z.dim{opacity:.4}.wm-z.dim span{display:none}
+.wm-view{position:relative}
+.wm-scroll{overflow:auto;position:relative;border-radius:8px;aspect-ratio:5/4;max-height:74vh;touch-action:pan-x pan-y;overscroll-behavior:contain;cursor:grab;scrollbar-width:thin;background:#a9cfc8}
+.wm-scroll.grab{cursor:grabbing}.wm-scroll.grab .wm-z{pointer-events:none}
+.wm-map{position:relative;width:calc(var(--z,1) * 100%);aspect-ratio:5/4}
+@media (max-width:700px){.wm-scroll{aspect-ratio:4/5;max-height:62vh}.wm-map{width:calc(var(--z,1) * 156.25%)}}
+.wm-map img{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+.wm-z{position:absolute;transform:translate(-8px,-50%);display:flex;align-items:center;gap:4px;background:none;border:0;padding:0;cursor:pointer;z-index:2;color:#fff;font:inherit}
+.wm-z.l{flex-direction:row-reverse;transform:translate(calc(-100% + 8px),-50%)}
+.wm-z i{position:relative;width:16px;height:16px;border-radius:50%;background:#2fbf71;border:2px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.45);flex:none}
+.wm-z span{display:flex;flex-direction:column;background:rgba(8,20,14,.86);border-radius:6px;padding:2px 7px;line-height:1.15;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.wm-z b{font-size:13px;font-weight:700}
+.wm-z small{display:none;font-size:11px;opacity:.85}.wm-map.z2 .wm-z small{display:block}
+.wm-z.nl span{display:none}
+.wm-z:hover,.wm-z:focus-visible{z-index:5}.wm-z:hover span,.wm-z:focus-visible span{display:flex;background:rgba(8,20,14,.97)}
+.wm-z.lk i{background:#8a8f8c}.wm-z.lk span{background:rgba(38,38,38,.84)}
+.wm-z.dim{opacity:.45}
 .wm-z.best i{background:#f2c14e}
 .wm-z.here i{background:#3ee08a;box-shadow:0 0 0 3px rgba(62,224,138,.45),0 0 14px 4px rgba(62,224,138,.8)}
-.wm-z.sel span{outline:2px solid var(--gold,#f2c14e)}.wm-z.sel{z-index:3}
+.wm-z.sel{z-index:4}.wm-z.sel span{outline:2px solid var(--gold,#f2c14e)}.wm-z.sel i{outline:2px solid var(--gold,#f2c14e);outline-offset:2px}
+.wm-z.pr i{box-shadow:0 0 0 3px #b06cff,0 0 0 4.5px rgba(0,0,0,.4)}
+.wm-pc{position:absolute;right:-9px;top:-10px;font-style:normal;font-size:10px;line-height:14px;width:15px;height:15px;border-radius:50%;background:#e08a2c;color:#fff;text-align:center;box-shadow:0 0 0 1.5px #fff}
+.wm-zui{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px;z-index:6}
+.wm-zui button{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(8,20,14,.82);color:#fff;font:700 20px/1 var(--font-body,inherit);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.wm-zui button:disabled{opacity:.35;cursor:default}.wm-zui .wm-z0{font-size:16px}
 .wm-leg{display:flex;flex-wrap:wrap;gap:12px;padding:8px 2px 0}
 .wm-leg .d{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2fbf71;margin-right:4px;vertical-align:-1px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3)}
-.wm-leg .d.here{background:#3ee08a;box-shadow:0 0 6px 2px rgba(62,224,138,.8)}.wm-leg .d.best{background:#f2c14e}.wm-leg .d.lk{background:#8a8f8c}
+.wm-leg .d.pr{box-shadow:0 0 0 2px #b06cff}.wm-leg .d.here{background:#3ee08a;box-shadow:0 0 6px 2px rgba(62,224,138,.8)}.wm-leg .d.best{background:#f2c14e}.wm-leg .d.lk{background:#8a8f8c}
 .wm-others{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 2px 2px}
 .wm-chip{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink);cursor:pointer}
 .wm-chip small{opacity:.65}.wm-chip.dim{opacity:.45}.wm-chip.lk{opacity:.7}.wm-chip.sel{outline:2px solid var(--gold,#f2c14e)}.wm-chip.here{border-color:#3ee08a}
 .wm-side .zonefoldp{margin:0}
 .wm-back{justify-content:flex-end}
-.wm-z.l{flex-direction:row-reverse;transform:translate(calc(-100% + 7px),-50%)}.wm-z.l span{text-align:right}
 .wm-panel .phead .seg button{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
-.wm-side .zonefold{flex-wrap:wrap}.wm-side .zf-name{flex:1 1 100%;white-space:normal}
-.wm-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;font-style:normal;font-size:10px}.wm-tags .tag,.wm-tags>span{font-size:10px}
+.wm-side .zonefold{grid-template-columns:1fr auto;row-gap:4px}.wm-side .zonefold .zf-meta{grid-column:1;grid-row:2}.wm-side .zonefold .chev{grid-column:2;grid-row:1}

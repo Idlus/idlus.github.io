@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.24 « Carte zoomable »
+
+- Carte du monde : zoom (molette, deux doigts, + / −), déplacement, étiquettes réduites au nom et qui ne se recouvrent plus, prismes et Percepteurs en repères sur les points.
+
 ## 2.1.23 « La carte du monde »
 
 - Carte du Monde des Douze cliquable (DofusDB), Éveil des Sceaux et Comptoir des Éclats, une écurie par espèce de monture (60 places chacune).

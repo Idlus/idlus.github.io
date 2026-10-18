@@ -1178,7 +1178,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!/Tous à Cania ce soir/.test(await page.textContent("#chat"))) fail("alliances : messages de l'alliance absents du chat");
     await page.click('[data-act="ch-close"]').catch(() => {});
     await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.ui.world = "map"; window.DX.ui.mapTier = -1; window.DX.render(); }); await page.waitForTimeout(300);
-    if (!(await page.$(".al-legend")) || !(await page.$(".zonefold .al-chip, .wm-z .al-chip"))) fail("alliances : prismes absents de la carte du Monde");
+    if (!(await page.$(".al-legend")) || !(await page.$(".zonefold .al-chip, .wm-z.pr"))) fail("alliances : prismes absents de la carte du Monde");
     await gwide("la carte des prismes", "alliance-carte");
     // retour à l'accueil de la guilde pour le test du départ
     await page.evaluate(() => { const G = window.GUILD.G; G.tab = "home"; G.atk = null; G.view = null; window.DX.ui.tab = "guild"; window.DX.render(); });

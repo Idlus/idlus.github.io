@@ -1,6 +1,16 @@
 {
-  "version": "2.1.23",
+  "version": "2.1.24",
   "versions": [
+    {
+      "v": "2.1.24",
+      "name": "Carte zoomable",
+      "guide": "world",
+      "items": [
+        "Carte du monde : zoom avec la molette, deux doigts sur téléphone ou les boutons + / −, et déplacement en glissant. La carte devient plus nette en zoomant",
+        "Étiquettes lisibles : seulement le nom de la région, plus gros, et plus aucune étiquette qui en recouvre une autre (les noms cachés reviennent en zoomant ou au survol). Les niveaux s'affichent en zoomant",
+        "Prismes d'alliance et Percepteurs ne couvrent plus les noms : un anneau violet et un petit ⚔ sur le point de la région, le détail dans la bulle et dans le panneau"
+      ]
+    },
     {
       "v": "2.1.23",
       "name": "La carte du monde",

@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.23";
+const GAME_VERSION = "2.1.24";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.24", name: "Carte zoomable", guide: "world", items: [
+    "Carte du monde : zoom avec la molette, deux doigts sur téléphone ou les boutons + / −, et déplacement en glissant. La carte devient plus nette en zoomant",
+    "Étiquettes lisibles : seulement le nom de la région, plus gros, et plus aucune étiquette qui en recouvre une autre (les noms cachés reviennent en zoomant ou au survol). Les niveaux s'affichent en zoomant",
+    "Prismes d'alliance et Percepteurs ne couvrent plus les noms : un anneau violet et un petit ⚔ sur le point de la région, le détail dans la bulle et dans le panneau",
+  ] },
   { v: "2.1.23", name: "La carte du monde", guide: "world", items: [
     "Monde : la page s'ouvre sur la vraie carte du Monde des Douze (idée de lucy8). Chaque région a son point et ses niveaux ; un clic ouvre ses sous-zones à côté. Le bouton « Liste » remet l'ancienne liste",
     "Chasse : Éveil des Sceaux (idée de Sky). Au rang 5, un Sceau s'éveille 5 fois avec des Éclats de champion (100, 200, 350, 550, 800) : +10 % de son effet par niveau. Les 6 Sceaux éveillés à fond donnent le titre « Champion éveillé »",
@@ -3288,7 +3293,7 @@ function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
   if (ui.world === "tresor") ui.world = "map";
   const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
-  repaintKeep($("#main"), worldHtml()); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
+  repaintKeep($("#main"), worldHtml()); mapAfter(); // 2.1.24 : zoom de la carte ; 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
   if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
 }
 function worldHtml() {
@@ -3318,17 +3323,74 @@ function worldMapHtml(t) {
   const bestZ = best && E.SUBS[best] ? E.SUBS[best].zone : null;
   const sel = ZONES.find((z) => z.id === ui.mapSel) || ZONES.find((z) => z.id === (huntZ || mapOpenZone(t) || bestZ)) || ZONES[0];
   const cls = (z) => `${E.zoneUnlocked(S, z.id) ? "" : "lk"} ${z.subs.some(inTier) ? "" : "dim"} ${z.id === huntZ ? "here" : z.id === bestZ ? "best" : ""} ${z.id === sel.id ? "sel" : ""}`;
-  const tags = (z) => { const t = (window.ALLY ? window.ALLY.foldTag(z) : "") + (window.CHASSE ? window.CHASSE.foldTag(z) : ""); return t ? `<em class="wm-tags">${t}</em>` : ""; }; // prismes d'alliance et percepteurs, comme dans la liste
+  // 2.1.24 : sur la carte, seulement le nom ; niveaux, prisme et Percepteurs passent en repères sur le point et dans la bulle
+  const txt = (x) => x.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const zoom = mapZoom();
   const pins = ZONES.filter((z) => XY.z[z.id]).map((z) => { const [lo, hi] = zl(z); const p = XY.z[z.id];
-    return `<button class="wm-z ${cls(z)} ${p[0] > 800 ? "l" : ""}" style="left:${(p[0] / 10).toFixed(1)}%;top:${(p[1] / 8).toFixed(1)}%" data-act="mapzone" data-id="${z.id}" aria-label="${h(z.name)}"><i></i><span><b>${E.zoneUnlocked(S, z.id) ? "" : G("lock")}${h(z.name)}</b><small>niv. ${lo}–${hi}${z.id === huntZ ? " · chasse" : z.id === bestZ ? " · conseillée" : ""}</small>${tags(z)}</span></button>`; }).join("");
+    const pr = window.ALLY ? window.ALLY.foldTag(z) : ""; const pc = window.CHASSE ? window.CHASSE.foldTag(z) : "";
+    const tip = [`${z.name} · niv. ${lo}–${hi}`, z.id === huntZ ? "chasse en cours" : z.id === bestZ ? "zone conseillée" : "", E.zoneUnlocked(S, z.id) ? "" : "verrouillée", txt(pr), txt(pc)].filter(Boolean).join(" · ");
+    return `<button class="wm-z ${cls(z)} ${pr ? "pr" : ""}" style="left:${(p[0] / 10).toFixed(1)}%;top:${(p[1] / 8).toFixed(1)}%" data-act="mapzone" data-id="${z.id}" data-x="${p[0]}" aria-label="${h(tip)}" data-tip="${h(tip)}"><i>${pc ? `<em class="wm-pc">⚔</em>` : ""}</i><span><b>${E.zoneUnlocked(S, z.id) ? "" : G("lock")}${h(z.name)}</b><small>${lo}–${hi}</small></span></button>`; }).join("");
   const others = ZONES.filter((z) => !XY.z[z.id]).map((z) => { const [lo, hi] = zl(z);
     return `<button class="wm-chip ${cls(z)}" data-act="mapzone" data-id="${z.id}">${E.zoneUnlocked(S, z.id) ? "" : G("lock")}${h(z.name)} <small>${lo}–${hi}</small></button>`; }).join("");
   const side = zonePanel(sel, -1, true).replace(/data-act="zonefold"[^>]*aria-expanded="true"/, 'data-act="mapzone" data-id="' + sel.id + '" aria-expanded="true"');
+  const anyPr = window.ALLY && ZONES.some((z) => window.ALLY.foldTag(z)); const anyPc = window.CHASSE && ZONES.some((z) => window.CHASSE.foldTag(z));
   return `<div class="wm-wrap"><section class="panel wm-panel"><div class="phead"><h2>Le Monde des Douze</h2><span class="seg"><button data-act="mapview" data-v="carte" aria-pressed="true">${IC("monde")} Carte</button><button data-act="mapview" data-v="liste" aria-pressed="false">Liste</button></span></div>
-    <div class="wm-scroll"><div class="wm-map"><img src="assets/carte/monde.webp" alt="Carte du Monde des Douze" draggable="false">${pins}</div></div>
-    <div class="wm-leg xs muted"><span><i class="d here"></i>Chasse en cours</span><span><i class="d best"></i>Zone conseillée</span><span><i class="d"></i>Ouverte</span><span><i class="d lk"></i>Verrouillée</span><span class="grow"></span><span>Carte : DofusDB</span></div>
+    <div class="wm-view"><div class="wm-scroll" id="wmscroll"><div class="wm-map ${zoom >= 2 ? "z2" : ""}" style="--z:${zoom}"><img src="assets/carte/${zoom > 1.4 ? "monde-hd" : "monde"}.webp" alt="Carte du Monde des Douze" draggable="false">${pins}</div></div>
+      <div class="wm-zui"><button data-act="mapzoom" data-v="1" aria-label="Zoomer" ${zoom >= MAP_ZMAX ? "disabled" : ""}>+</button><button data-act="mapzoom" data-v="-1" aria-label="Dézoomer" ${zoom <= 1 ? "disabled" : ""}>−</button>${zoom > 1 ? `<button data-act="mapzoom" data-v="0" aria-label="Vue entière" class="wm-z0">⤢</button>` : ""}</div></div>
+    <div class="wm-leg xs muted"><span><i class="d here"></i>Chasse en cours</span><span><i class="d best"></i>Zone conseillée</span><span><i class="d"></i>Ouverte</span><span><i class="d lk"></i>Verrouillée</span>${anyPr ? `<span><i class="d pr"></i>Prisme d'alliance</span>` : ""}${anyPc ? `<span>⚔ Percepteurs</span>` : ""}<span class="grow"></span><span>Molette, deux doigts ou + / − pour zoomer</span><span>Carte : DofusDB</span></div>
     ${others ? `<div class="wm-others"><span class="xs muted">Hors de la carte :</span>${others}</div>` : ""}</section>
     <div class="wm-side">${side}</div></div>`;
+}
+/* 2.1.24 : zoom de la carte (molette, pincement, boutons, glisser) et étiquettes qui ne se recouvrent plus */
+const MAP_ZMAX = 4;
+function mapZoom() { return Math.min(MAP_ZMAX, Math.max(1, ui.mapZoom || 1)); }
+function mapSetZoom(z2, cx, cy) {
+  const sc = $("#wmscroll"); const map = sc && sc.querySelector(".wm-map"); if (!map) return;
+  const z1 = mapZoom(); z2 = Math.min(MAP_ZMAX, Math.max(1, Math.round(z2 * 100) / 100)); if (z2 === z1) return;
+  const r = sc.getBoundingClientRect(); const ox = cx == null ? r.width / 2 : cx - r.left, oy = cy == null ? r.height / 2 : cy - r.top;
+  const k = z2 / z1; const nl = (sc.scrollLeft + ox) * k - ox, nt = (sc.scrollTop + oy) * k - oy;
+  ui.mapZoom = z2; map.style.setProperty("--z", z2); map.classList.toggle("z2", z2 >= 2);
+  const img = map.querySelector("img"); if (z2 > 1.4 && !/monde-hd/.test(img.src)) img.src = "assets/carte/monde-hd.webp";
+  sc.scrollLeft = nl; sc.scrollTop = nt; ui.mapScroll = [sc.scrollLeft, sc.scrollTop];
+  const ui2 = sc.parentNode.querySelector(".wm-zui"); if (ui2) { ui2.querySelector('[data-v="1"]').disabled = z2 >= MAP_ZMAX; ui2.querySelector('[data-v="-1"]').disabled = z2 <= 1; }
+  mapLabels();
+}
+function mapLabels() {
+  const sc = $("#wmscroll"); if (!sc) return;
+  const pins = [...sc.querySelectorAll(".wm-z")]; const rank = (b) => (b.classList.contains("sel") ? 5 : b.classList.contains("here") ? 4 : b.classList.contains("best") ? 3 : b.classList.contains("dim") ? 0 : b.classList.contains("lk") ? 1 : 2);
+  pins.forEach((b) => b.classList.remove("nl", "l"));
+  const box = (e, p) => { const r = e.getBoundingClientRect(); return [r.left - p, r.top - p, r.right + p, r.bottom + p]; };
+  const hit = (a, L) => L.some((c) => a[0] < c[2] && a[2] > c[0] && a[1] < c[3] && a[3] > c[1]);
+  const dots = pins.map((b) => box(b.querySelector("i"), 1)); const taken = [];
+  const mw = sc.querySelector(".wm-map").getBoundingClientRect();
+  pins.map((b, i) => [b, i]).sort((x, y) => rank(y[0]) - rank(x[0])).forEach(([b, i]) => {
+    if (rank(b) === 0) { b.classList.add("nl"); return; }
+    const others = dots.filter((_, j) => j !== i);
+    const tryIt = () => { const a = box(b.querySelector("span"), 2); return a[0] >= mw.left && a[2] <= mw.right && !hit(a, taken) && !hit(a, others) ? a : null; };
+    let a = tryIt(); if (!a) { b.classList.add("l"); a = tryIt(); }
+    if (a) taken.push(a); else { b.classList.remove("l"); b.classList.add("nl"); }
+  });
+}
+function mapAfter() {
+  const sc = $("#wmscroll"); if (!sc || sc.dataset.on) return; sc.dataset.on = "1";
+  if (ui.mapScroll) { sc.scrollLeft = ui.mapScroll[0]; sc.scrollTop = ui.mapScroll[1]; }
+  else { const s = sc.querySelector(".wm-z.sel") || sc.querySelector(".wm-z.here"); if (s && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = s.offsetLeft - sc.clientWidth / 2; }
+  sc.addEventListener("scroll", () => { ui.mapScroll = [sc.scrollLeft, sc.scrollTop]; }, { passive: true });
+  sc.addEventListener("wheel", (e) => { const z = mapZoom(); const z2 = z * (e.deltaY < 0 ? 1.25 : 0.8); if ((z2 > z && z >= MAP_ZMAX) || (z2 < z && z <= 1)) return; e.preventDefault(); mapSetZoom(z2, e.clientX, e.clientY); }, { passive: false });
+  // glisser à la souris ; au doigt, le défilement natif suffit et deux doigts zooment
+  let drag = null, moved = false, pinch = null;
+  sc.addEventListener("pointerdown", (e) => { moved = false; if (e.pointerType === "mouse" && e.button === 0) drag = [e.clientX, e.clientY, sc.scrollLeft, sc.scrollTop]; });
+  sc.addEventListener("pointermove", (e) => { if (!drag) return; const dx = e.clientX - drag[0], dy = e.clientY - drag[1];
+    if (Math.abs(dx) + Math.abs(dy) > 4) { moved = true; sc.classList.add("grab"); } sc.scrollLeft = drag[2] - dx; sc.scrollTop = drag[3] - dy; });
+  const up = () => { drag = null; sc.classList.remove("grab"); };
+  sc.addEventListener("pointerup", up); sc.addEventListener("pointerleave", up);
+  const two = (T) => [Math.hypot(T[0].clientX - T[1].clientX, T[0].clientY - T[1].clientY), (T[0].clientX + T[1].clientX) / 2, (T[0].clientY + T[1].clientY) / 2];
+  sc.addEventListener("touchstart", (e) => { if (e.touches.length === 2) { pinch = [two(e.touches)[0], mapZoom()]; moved = true; } }, { passive: true });
+  sc.addEventListener("touchmove", (e) => { if (!pinch || e.touches.length !== 2) return; e.preventDefault(); const [d, x, y] = two(e.touches); mapSetZoom(pinch[1] * d / pinch[0], x, y); }, { passive: false });
+  sc.addEventListener("touchend", (e) => { if (e.touches.length < 2) pinch = null; }, { passive: true });
+  sc.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true); // un glisser n'ouvre pas de région
+  const img = sc.querySelector("img"); if (img.complete) mapLabels(); else img.addEventListener("load", mapLabels, { once: true });
+  requestAnimationFrame(mapLabels);
 }
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
@@ -9777,7 +9839,8 @@ document.addEventListener("click", (ev) => {
     case "encfamopen": (ui.encFamOpen = ui.encFamOpen || {})[d.v] = !(ui.encFamOpen || {})[d.v]; break;
     case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
-    case "mapzone": ui.mapSel = d.id; break; // 2.1.x : la carte du monde, la région choisie s'ouvre à côté
+    case "mapzone": ui.mapSel = d.id; break;
+    case "mapzoom": { const v = +d.v; if (!v) { ui.mapZoom = 1; ui.mapScroll = null; break; } mapSetZoom(mapZoom() * (v > 0 ? 1.5 : 1 / 1.5)); return; } // 2.1.x : la carte du monde, la région choisie s'ouvre à côté
     case "mapview": ui.mapView = d.v; try { localStorage.setItem("idlus-mapview", d.v); } catch (e) { /* navigation privée */ } break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": { ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; dirty = true; render(); const hd = $(".enczhead"); if (hd && hd.getBoundingClientRect().top < $("#status").getBoundingClientRect().bottom) hd.scrollIntoView(); return; } // 1.0.12.8 : on remonte au titre de la zone choisie
