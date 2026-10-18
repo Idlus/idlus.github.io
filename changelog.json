@@ -1,6 +1,16 @@
 {
-  "version": "2.1.27.1",
+  "version": "2.1.28",
   "versions": [
+    {
+      "v": "2.1.28",
+      "name": "Argenté et donjons",
+      "guide": "donjons",
+      "items": [
+        "Dofus Argenté Scintillant : la Lueur d'Ilyzaelle ne sauve plus qu'un allié par équipe et par combat, même avec plusieurs porteurs (une équipe qui le portait partout tenait 1,5 stasis de plus que sans Dofus)",
+        "8 donjons réglés pour que la stasis 7 demande partout un bon équipement : plus durs pour le Tertre du long sommeil, le Refuge sylvestre, le Château du Wa Wabbit, la Caverne du Koulosse, la Cour du Bouftou Royal, le Théâtre de Dramak et le Miausolée du Pounicheur ; plus facile pour la Gelaxième Dimension",
+        "Seuls la vie et les dégâts de leurs monstres changent (butin, clés et boss identiques). La liste est dans le Guide › Donjons"
+      ]
+    },
     {
       "v": "2.1.27.1",
       "name": "Guide à jour",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.28 « Argenté et donjons »
+
+- Lueur d'Ilyzaelle (Dofus Argenté Scintillant) une fois par équipe et par combat (js/dofusp.js, F.dpArg). Difficulté propre à 8 donjons (E.DG_DIFF dans js/engine.js, vie et dégâts des monstres), réglée par simulation (équipe de 8, bon équipement, stasis 7 visée). Choix 3 et 4A de Mathis ; les classes viendront par des retouches de sorts.
+
 ## 2.1.27.1 « Guide à jour »
 
 - Guide (js/guide.js) relu chapitre par chapitre contre la 2.1.27 : ajout de la vérification des parties et des suspensions (Classements + FAQ), du vote du Grand défi, de la fiche du Sablier et du « ∞ », du retour aux Dofus, de la Maîtrise au classement par classe, des partitions et des codes à nombre limité. Demandé par Mathis.

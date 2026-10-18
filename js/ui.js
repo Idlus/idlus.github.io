@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.27.1";
+const GAME_VERSION = "2.1.28";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.28", name: "Argenté et donjons", guide: "donjons", items: [
+    "Dofus Argenté Scintillant : la Lueur d'Ilyzaelle ne sauve plus qu'un allié par équipe et par combat, même avec plusieurs porteurs (une équipe qui le portait partout tenait 1,5 stasis de plus que sans Dofus)",
+    "8 donjons réglés pour que la stasis 7 demande partout un bon équipement : plus durs pour le Tertre du long sommeil, le Refuge sylvestre, le Château du Wa Wabbit, la Caverne du Koulosse, la Cour du Bouftou Royal, le Théâtre de Dramak et le Miausolée du Pounicheur ; plus facile pour la Gelaxième Dimension",
+    "Seuls la vie et les dégâts de leurs monstres changent (butin, clés et boss identiques). La liste est dans le Guide › Donjons",
+  ] },
   { v: "2.1.27.1", name: "Guide à jour", guide: "classement", items: [
     "Guide : nouveau passage « Vérification des parties » dans Classements (ce que le serveur contrôle, compte suspendu, suspension qui se lève toute seule) et une question fréquente sur le sujet",
     "Guide : le vote de la règle du Grand défi du dimanche, la fiche du Sablier (clic sur la pastille ⏳, « ∞ » au niveau 15), la pastille « ← Retour aux Dofus », la Maîtrise dans le classement par classe",
