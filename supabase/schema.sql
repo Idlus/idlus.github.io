@@ -79,6 +79,9 @@ declare r timestamptz;
 begin
   if auth.uid() is null then raise exception 'non connecté'; end if;
   if public.susp(auth.uid()) then raise exception 'compte suspendu'; end if;
+  -- Remise imposée : partie remise à une copie par Mathis (adm_save_restore, meta.remise) : pas d'envoi forcé par-dessus,
+  -- l'appareil doit d'abord reprendre la version en ligne (son envoi suivant, normal, efface la marque)
+  if p_force and exists (select 1 from saves where user_id = auth.uid() and meta ? 'remise') then p_force := false; end if;
   if p_force then
     insert into saves (user_id, data, meta, game_version, device, updated_at)
       values (auth.uid(), p_data, coalesce(p_meta, '{}'::jsonb), p_version, p_device, clock_timestamp())

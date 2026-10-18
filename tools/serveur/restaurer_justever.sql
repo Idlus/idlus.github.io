@@ -21,7 +21,7 @@ select count(*) = 1 as copie_ok from public.saves_jour where user_id = :'uid' an
   \quit
 \endif
 with d as (select data from public.saves_jour where user_id = :'uid' and day = date '2026-10-17')
-update public.saves s set data = d.data, updated_at = clock_timestamp() from d where s.user_id = :'uid';
+update public.saves s set data = d.data, meta = s.meta || jsonb_build_object('remise', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS')), updated_at = clock_timestamp() from d where s.user_id = :'uid';
 update public.saves_ok o set data = s.data, src_at = s.updated_at, bilan = null, accept = false, at = now() from public.saves s where o.user_id = :'uid' and s.user_id = :'uid';
 select public.alog('Bouclier : partie de JustEver remise au 17/10 (demande de Mathis)');
 \echo '== Après'

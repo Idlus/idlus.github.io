@@ -1,6 +1,14 @@
 {
-  "version": "2.1.28",
+  "version": "2.1.28.1",
   "versions": [
+    {
+      "v": "2.1.28.1",
+      "name": "Remise imposée",
+      "guide": "classement",
+      "items": [
+        "Partie remise à une copie par Mathis (vérification des parties) : ton jeu reprend tout seul la version du serveur, sans te demander laquelle garder. Ta version d'avant reste dans Options › Copies de secours"
+      ]
+    },
     {
       "v": "2.1.28",
       "name": "Argenté et donjons",

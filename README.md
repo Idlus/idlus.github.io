@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.28.1 « Remise imposée »
+
+- Quand Mathis remet la partie d'un joueur à une copie (panel, adm_save_restore), la partie en ligne porte la marque meta.remise : le jeu la reprend sans poser la question des deux versions (slotPlan → « take », onConflictLive → takeRemote) et push_save refuse l'envoi forcé tant que la marque est là ; l'envoi normal suivant l'efface. Test dans tests/online.test.js.
+
 ## 2.1.28 « Argenté et donjons »
 
 - Lueur d'Ilyzaelle (Dofus Argenté Scintillant) une fois par équipe et par combat (js/dofusp.js, F.dpArg). Difficulté propre à 8 donjons (E.DG_DIFF dans js/engine.js, vie et dégâts des monstres), réglée par simulation (équipe de 8, bon équipement, stasis 7 visée). Choix 3 et 4A de Mathis ; les classes viendront par des retouches de sorts.

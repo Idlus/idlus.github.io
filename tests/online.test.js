@@ -265,6 +265,7 @@ const MOCK = () => {
       if (name === "delete_slot") { d.slots = d.slots || {}; delete d.slots[u.id + ":" + a.p_slot]; put(d); return { data: null, error: null }; }
       if (name === "save_info") return { data: s ? [{ updated_at: s.updated_at, meta: s.meta, device: s.device, game_version: s.game_version }] : [], error: null };
       if (name === "push_save") {
+        if (a.p_force && s && s.meta && s.meta.remise) a = Object.assign({}, a, { p_force: false }); // remise imposée, comme push_save
         if (!a.p_force && ((a.p_expected == null && s) || (a.p_expected != null && (!s || s.updated_at !== a.p_expected)))) return { data: null, error: null };
         d.saves[u.id] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.pushes = (d.pushes || 0) + 1; put(d);
         if (window.__lostReply) { window.__lostReply = false; throw new Error("Failed to fetch"); } // 1.0.10.2 : enregistré en ligne, mais la réponse se perd (serveur lent)
@@ -437,6 +438,15 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/conflit.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/conflit-mob.png" }); await page.setViewportSize(vp); }
     await page.click('[data-act="on-keepremote"]'); await page.waitForTimeout(500);
     if ((await S()).kamas < 55555) fail("conflit : version en ligne non chargée");
+    // 5 bis. remise imposée : Mathis a remis la partie à une copie (meta.remise) -> la version en ligne est chargée sans question,
+    // l'envoi forcé est refusé et l'envoi suivant efface la marque
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 33333; d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-02T12:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "panel", remise: "2099-01-02T12:00:00" }); localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { window.DX.S.kamas = 22222; });
+    await page.click("#onPill"); await page.waitForTimeout(1200);
+    if (await page.$('[data-act="on-keepremote"]')) fail("remise imposée : le choix « Deux versions » est encore proposé");
+    if ((await S()).kamas !== 33333) fail("remise imposée : version remise non chargée (" + (await S()).kamas + ")");
+    await page.evaluate(() => { window.DX.S.kamas = 33334; window.DX.saveNow(); }); await page.click("#onPill"); await page.waitForTimeout(800);
+    m = await mock(); if (JSON.parse(m.saves.u1.data).kamas !== 33334 || (m.saves.u1.meta || {}).remise) fail("remise imposée : envoi suivant refusé ou marque restée");
     // 6. conflit au lancement, on garde celle d'ici (envoi forcé)
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil-3" }); localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
     // 4A : même avec « Ouvrir directement », les deux versions sont montrées dans la carte, la plus avancée marquée

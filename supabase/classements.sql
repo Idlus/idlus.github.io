@@ -427,7 +427,7 @@ begin
   if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
   select data into d from saves_jour where user_id = p_user and day = p_day;
   if d is null then return 'Pas de copie ce jour-là.'; end if;
-  update saves set data = d, updated_at = clock_timestamp() where user_id = p_user returning updated_at into t;
+  update saves set data = d, meta = meta || jsonb_build_object('remise', to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS')), updated_at = clock_timestamp() where user_id = p_user returning updated_at into t; -- remise imposée (push_save)
   update saves_ok set data = d, src_at = t, bilan = null, accept = false, at = now() where user_id = p_user;
   perform public.alog(format('Bouclier : partie de %s remise au %s', (select pseudo from profiles where id = p_user), to_char(p_day, 'DD/MM')));
   return null;

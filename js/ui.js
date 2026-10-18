@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.28";
+const GAME_VERSION = "2.1.28.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.28.1", name: "Remise imposée", guide: "classement", items: [
+    "Partie remise à une copie par Mathis (vérification des parties) : ton jeu reprend tout seul la version du serveur, sans te demander laquelle garder. Ta version d'avant reste dans Options › Copies de secours",
+  ] },
   { v: "2.1.28", name: "Argenté et donjons", guide: "donjons", items: [
     "Dofus Argenté Scintillant : la Lueur d'Ilyzaelle ne sauve plus qu'un allié par équipe et par combat, même avec plusieurs porteurs (une équipe qui le portait partout tenait 1,5 stasis de plus que sans Dofus)",
     "8 donjons réglés pour que la stasis 7 demande partout un bon équipement : plus durs pour le Tertre du long sommeil, le Refuge sylvestre, le Château du Wa Wabbit, la Caverne du Koulosse, la Cour du Bouftou Royal, le Théâtre de Dramak et le Miausolée du Pounicheur ; plus facile pour la Gelaxième Dimension",
@@ -10372,6 +10375,7 @@ function slotPlan(sl) {
   if (!rem) return !st ? "new" : l.uid === uid ? "resend" : "send";
   if (!st) return "remote";
   if (l.uid === uid && l.base === rem.updated_at) return "sync";
+  if (rem.meta && rem.meta.remise) return "take"; // remise imposée : Mathis a remis cette partie à une copie (panel), la version en ligne s'impose
   if (ON.ownPush(rem, l) && (st.savedAt || 0) >= ((rem.meta && rem.meta.sa) || 0)) return "own"; // 1.0.10.2
   // 14/10/2026 (déménagement du serveur) : la version en ligne est plus ancienne que le dernier envoi connu de cet appareil :
   // le serveur a perdu des envois, la partie d'ici les contient tous : on la renvoie par-dessus (comme « own »)
@@ -10595,6 +10599,7 @@ async function onConflictLive() {
   let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return; }
   if (!info) { ON.setLink({ base: null }); return onPush(); }
   if (ON.ownPush(info)) { ON.setLink({ base: info.updated_at }); return onPush(); } // 1.0.10.2
+  if (info.meta && info.meta.remise) { toast("Ta partie a été remise à une version précédente par Mathis."); return takeRemote(info); } // remise imposée : pas de choix, le serveur refuse l'envoi forcé
   conflictSheet(S, info);
 }
 const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."], suspended: ["off", "Compte suspendu", "", "Ton compte a été suspendu : ta partie n'est plus envoyée en ligne. Elle reste sur cet appareil."] };
