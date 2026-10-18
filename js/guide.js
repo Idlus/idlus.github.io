@@ -87,15 +87,20 @@
     b: () => [
       ["p", "Le Sablier est une réserve de temps rapide : il fait tourner le jeu ×2 ou ×3 tant qu'il reste du sable. Il se remplit en temps réel, jeu ouvert ou fermé, et commence plein."],
       ["kv", [
-        ["Remplissage", N(() => E.SAB_RATE * 86400 / 3600) + " h par jour"],
+        ["Remplissage", N(() => E.SAB_RATE * 86400 / 3600) + " h par jour (jusqu'à 4,5 h avec l'Horloge de Xélor)"],
         ["Réserve maximum", N(() => E.SAB_MAX / 3600) + " h"],
         ["Maximum avec des heures achetées ou offertes", N(() => E.SAB_GIFT_MAX / 3600) + " h"],
         ["Coût en ×2", "1 s de réserve par seconde"],
         ["Coût en ×3", "2 s de réserve par seconde"],
+        ["Butin en ×2", "−" + N(() => Math.round((1 - E.sabLootAt(2)) * 100)) + " %"],
+        ["Butin en ×3", "−" + N(() => Math.round((1 - E.sabLootAt(3)) * 100)) + " %"],
       ]],
       ["ul", [
         "Il ne s'use que si quelque chose avance : combat, chasse, donjon, expédition, récolte, atelier, forgemagie. Équipe au repos, il est en pause.",
+        "Contrepartie : moins de butin (ressources, équipements, clés et kamas) tant que le temps file plus vite. L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus.",
         "Réserve vide : retour à la vitesse normale.",
+        "Plus d'heures : Horloge de Xélor dans la Chambre du Havre-Sac (+30 min de recharge par jour et par niveau), +1 h au Défi du jour gagné, +30 min avec l'offrande de l'Almanax, +30 min par essai au boss des mondes (3 par jour) et au boss de guilde (2 par jour).",
+        "L'Horloger de Xélor (fiche du Sablier) vend une Fiole de temps (+1 h) par achat, 3 par jour, à partir de 5 millions de kamas (le prix double à chaque achat du jour). Les boss de donjon dès la stasis 6 lâchent très rarement un Grain de Xélor (+15 min). Fioles et Grains se vendent à l'hôtel de vente.",
         "Le temps d'absence n'est jamais accéléré.",
       ]],
     ] });
@@ -1067,7 +1072,7 @@
       const s = S(); const B = s.sablier || {}; const ok = V(() => E.sabUnlocked(s), false);
       if (!ok) return ["", [["Sablier", "pas encore débloqué"]]];
       const r = B.r || 0, max = V(() => E.SAB_MAX, 0);
-      return ["", [["Ta réserve", dur(r)], ["Réserve maximum", dur(max)], ["Plein dans", r >= max ? "déjà plein" : dur((max - r) / E.SAB_RATE)], ["En ×2, la réserve dure", dur(r)], ["En ×3, la réserve dure", dur(r / 2)]]];
+      return ["", [["Ta réserve", dur(r)], ["Réserve maximum", dur(max)], ["Plein dans", r >= max ? "déjà plein" : dur((max - r) / E.sabRate(s))], ["En ×2, la réserve dure", dur(r)], ["En ×3, la réserve dure", dur(r / 2)]]];
     },
     xp: () => {
       const s = S(); const L = s.chars; const c = L.find((x) => String(x.id) === String(st.calc.xh)) || L[0]; if (!c) return ["", []];

@@ -30,6 +30,7 @@
     { id: "bag",     name: "Grenier",               icon: "🎒", per: 100, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac (et 10 de trop-plein)" },
     { id: "offtime", name: "Lit douillet",          icon: "🛏", per: 1,  max: 8,  base: 2000, g: 1.9,  unit: " h de progression hors ligne (8 h de base)" },
     { id: "offrate", name: "Majordome",             icon: "🎩", per: 5,  max: 7,  base: 2500, g: 1.9,  unit: " % d'efficacité hors ligne (25 % de base)" },
+    { id: "sablier", name: "Horloge de Xélor",      icon: "⏳", per: 30, max: 3,  base: 25000000, g: 4, unit: " min de recharge du Sablier par jour (3 h de base)" }, // 25 M, 100 M, 400 M
   ];
   E.HAVRE = HAVRE;
   E.havreLvl = (S, id) => (S.havre && S.havre[id]) || 0;
@@ -130,6 +131,7 @@
     S.res[A.res] -= A.qty; if (!S.res[A.res]) delete S.res[A.res];
     S.almanax = { day: A.day, kind: A.kind, v: A.bonus.v, t: A.target, job: A.job };
     S.kamas += A.kamas; S.cnt.almanax = (S.cnt.almanax || 0) + 1;
+    if (E.sabEarn) E.sabEarn(S, "alm");
     (E.team(S).length ? E.team(S) : S.chars).forEach((c) => E.giveXp(S, c, E.almOfferXp(c.lvl)));
     note(S, `Offrande à ${A.mer} acceptée : ${A.bonus.txt}, jusqu'à minuit.`, "rare");
     // série de jours consécutifs (un jour manqué fait redescendre d'un palier)
@@ -323,7 +325,7 @@
     { id: "entrain",  name: "Salle d'entraînement", icon: "combat",       color: "#ff8a6b", desc: "Endurance et héros au repos", ups: ["hp"], post: "train" },
     { id: "reserve",  name: "Réserve",              icon: "coffre",       color: "#c99a2e", desc: "Kamas et place dans le sac", ups: ["kamas", "bag"], slots: () => 2 },
     { id: "jardin",   name: "Jardin",               icon: "pioche",       color: "#8fd16a", desc: "Récolte",                   ups: ["gather"], slots: () => 2 },
-    { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
+    { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate", "sablier"], slots: () => 2 },
     { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier", slots: () => 2 },
     { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#d9a066", desc: "Élevage des montures",       ups: [], post: "enclos", slots: () => 3 },
     { id: "menagerie", name: "Ménagerie",           icon: "ailes",        color: "#e6bd57", desc: "Tes familiers s'y promènent", ups: [], post: "menagerie" }, // 1.1 : album de la ménagerie, palier 75
@@ -621,6 +623,11 @@
     }
     if (id === "cristal_fm") { if (S.fmShield) return "Un Cristal est déjà actif."; take(); S.fmShield = true; note(S, "Cristal de Forgemagie actif : la prochaine forgemagie ne peut rien faire baisser.", "info"); return null; }
     if (C.kind === "chest") { take(); E.openChest(S, id); return null; }
+    if (C.kind === "sab") {
+      if (!E.sabUnlocked(S)) return "Le Sablier de Xélor se débloque à la fin d'Incarnam.";
+      const B = E.sab(S); if (B.r + C.h * 3600 > E.SAB_GIFT_MAX) return `Ta réserve de Sablier est presque pleine (${E.SAB_GIFT_MAX / 3600} h au plus).`;
+      take(); E.sabGift(S, C.h); note(S, `${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier de Xélor.`, "info"); return null;
+    }
     return "Inutilisable.";
   };
 

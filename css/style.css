@@ -2845,6 +2845,8 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .status .sabpill .seg{background:rgba(0,0,0,.25);border:0;padding:1px}
 .status .sabpill .seg button{color:#fff7e3;font-size:11.5px;padding:2px 7px}
 .status .sabpill .seg button[aria-pressed="true"]{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1d08}
+.status .sabpill .sabmal{font-size:11px;color:var(--gold2);opacity:.85;white-space:nowrap}
+.sabmal2{font-size:.82em;opacity:.8}
 .status .sabpill.on{box-shadow:0 0 10px rgba(var(--glw,230,190,90),.45)}
 .status .sabpill.on .sb{animation:sabspin 2.4s ease-in-out infinite}
 @keyframes sabspin{0%,70%{transform:rotate(0)}85%,100%{transform:rotate(180deg)}}

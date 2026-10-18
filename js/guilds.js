@@ -637,6 +637,7 @@
           if (!r.ok) { X().toast(r.err || "Refusé par le serveur."); break; }
           G.res = Object.assign({ id: +d.g || 0 }, r);
           if (r.gboss && E.dofusQuestEvent) E.dofusQuestEvent(S(), "guild", { k: "boss" }); // 1.1 : étape du Dofus des Alliances
+          if (r.gboss && E.sabEarn) E.sabEarn(S(), "gb"); // Plus de Sablier (3B) : +30 min par essai, 2 par jour
           if (r.gboss && G.batch) { G.batch.n++; G.batch.pts += r.points || 0; }
           if (r.gboss && G.ex && G.ex.boss) { const b = G.ex.boss; Object.assign(b, { pts: r.pts, goal: r.goal || b.goal, tok: r.tok != null ? r.tok : b.tok, every: r.every || b.every, mine: (b.mine || 0) + (r.points || 0), tries: (b.tries || 0) + 1 }); G.exAt = Date.now();
             const now2 = E.gbossPhase(b.pts, b.goal).done; if (now2 > was) X().toast(now2 > 5 ? `Phase Ultime ${now2 - 5} tombée ! ${E.GBOSS_ULT_DUST} Poussières pour chaque membre qui a fait ${E.GBOSS_MIN_TRIES} essais.` : now2 === 5 ? "🏆 Boss de la semaine vaincu ! Trophée et Coffre du trophée. Il se relève : phases Ultimes jusqu'à lundi." : `Phase ${now2} tombée ! Des kamas dans le coffre et un coffre pour chaque membre qui a fait ${E.GBOSS_MIN_TRIES} essais.`, "rare"); was = now2; }

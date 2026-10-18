@@ -290,9 +290,9 @@
     const m = run.m; const st = E.charStats(S, c);
     const p = Math.min(run.p0, E.misChance(S, c, m, st)); const ok = rnd() < p; const f = ok ? 1 : E.MIS.fail;
     const R = E.misReward(S, c, m, st);
-    const out = { id: m.id, t: m.t, sub: m.sub, lvl: m.lvl, cid: c.id, name: c.name, cls: c.cls, ok, p: Math.round(p * 100) / 100, at: E.now(), kamas: Math.round(R.kamas * f), res: {}, nres: 0, xp: Math.round(R.xp * f), keys: 0, key: m.key, item: null, tpl: null, up: 0 };
+    const out = { id: m.id, t: m.t, sub: m.sub, lvl: m.lvl, cid: c.id, name: c.name, cls: c.cls, ok, p: Math.round(p * 100) / 100, at: E.now(), kamas: Math.round(R.kamas * f * E.sabLoot()), res: {}, nres: 0, xp: Math.round(R.xp * f), keys: 0, key: m.key, item: null, tpl: null, up: 0 };
     S.kamas += out.kamas;
-    const pool = zoneRes(m.sub); const nres = Math.round(R.res * f);
+    const pool = zoneRes(m.sub); const nres = Math.round(R.res * f * E.sabLoot()); // 2.1.22 : Sablier ×2 / ×3
     if (pool.length && nres > 0) {
       const tot = pool.reduce((a, [, x]) => a + x, 0); const draws = Math.min(nres, 24); let left = nres;
       for (let i = 0; i < draws; i++) {

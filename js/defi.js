@@ -288,6 +288,7 @@
         if (lvl === 3) { const m = E.defiMonth(day); S.defiGold = S.defiGold || [];
           if (!S.defiGold.includes(m) && E.defiGoldCount(S, day) >= E.DEFI_GOLD_MONTH) { S.defiGold.push(m); S.unlocks = S.unlocks || {}; S.unlocks.moisDore = 1; out.gold = m; } }
       }
+      if (E.sabEarn) out.sab = E.sabEarn(S, "defi"); // Plus de Sablier (3B) : +1 h à la victoire, une fois par jour
       if (!st.chest) {
         st.chest = true;
         const ss = S.defiStreak; const joker = bridged(ss, day);

@@ -1,6 +1,19 @@
 {
-  "version": "2.1.21",
+  "version": "2.1.22",
   "versions": [
+    {
+      "v": "2.1.22",
+      "name": "Le Sablier",
+      "guide": "sablier",
+      "items": [
+        "Sablier de Xélor : le temps rapide a maintenant une contrepartie. Butin −10 % en ×2 et −20 % en ×3 (ressources, équipements, clés et kamas). L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus",
+        "La réserve du Sablier monte à 36 h (24 h avant), et jusqu'à 48 h avec les heures gagnées ou offertes (36 h avant). La recharge reste de 3 h par jour",
+        "Le malus est affiché sur les boutons ×2 / ×3, dans la pastille du haut et dans la fiche du Sablier",
+        "Plus de Sablier : l'Horloge de Xélor (Havre-Sac › Chambre, 3 niveaux à 25, 100 et 400 millions de kamas) ajoute 30 min de recharge par jour à chaque niveau",
+        "Heures gagnées : +1 h au Défi du jour gagné, +30 min avec l'offrande de l'Almanax, +30 min par essai au boss des mondes (3 par jour) et au boss de guilde (2 par jour)",
+        "L'Horloger de Xélor (fiche du Sablier) vend des Fioles de temps (+1 h) : 5 millions de kamas, le prix double à chaque achat du jour, 3 par jour. Les boss de donjon dès la stasis 6 lâchent très rarement un Grain de Xélor (+15 min). Fioles et Grains se vendent à l'hôtel de vente"
+      ]
+    },
     {
       "v": "2.1.21",
       "name": "Mon ordre",

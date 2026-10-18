@@ -181,6 +181,7 @@
     ui.busy = false;
     if (R.net) { X().toast("Pas de connexion au serveur : réessaie dans un moment."); paint(); return; }
     if (!R.ok) { X().toast(R.err || "Refusé par le serveur."); load(true); return; }
+    if (E.sabEarn) E.sabEarn(S(), "wb"); // Plus de Sablier (3B) : +30 min par essai
     if (window.MARKET) { try { await window.MARKET.sync(); } catch (e) { /* les coffres arriveront à la prochaine synchro */ } }
     load(true);
     watch(Object.assign({ dmg0: R.before != null ? R.before : Math.max(0, R.dmg - R.points) }, R));
@@ -195,6 +196,7 @@
     const r = E.wbSim(s, def, phase, seed); if (r.err) { X().toast(r.err); return; }
     const G = E.wbGrade(r.points);
     for (const k in G.cons) E.addCons(s, k, G.cons[k]);
+    if (E.sabEarn) E.sabEarn(s, "wb");
     s.res[FRAG] = (s.res[FRAG] || 0) + G.frag;
     const dmg0 = L.dmg; L.k++; L.today++; L.pts += r.points; L.best = Math.max(L.best || 0, r.points); L.dmg += r.points;
     const R = Object.assign({ local: true, n: L.n, k: L.k - 1, seed, phase, name: def.name, frag: G.frag, cons: G.cons, hp: L.hp, dmg0, dmg: Math.min(L.dmg, L.hp), killed: false, left: E.WB_TRIES - L.today, rank: 1 }, r);

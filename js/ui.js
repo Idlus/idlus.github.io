@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.21";
+const GAME_VERSION = "2.1.22";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.22", name: "Le Sablier", guide: "sablier", items: [
+    "Sablier de Xélor : le temps rapide a maintenant une contrepartie. Butin −10 % en ×2 et −20 % en ×3 (ressources, équipements, clés et kamas). L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus",
+    "La réserve du Sablier monte à 36 h (24 h avant), et jusqu'à 48 h avec les heures gagnées ou offertes (36 h avant). La recharge reste de 3 h par jour",
+    "Le malus est affiché sur les boutons ×2 / ×3, dans la pastille du haut et dans la fiche du Sablier",
+    "Plus de Sablier : l'Horloge de Xélor (Havre-Sac › Chambre, 3 niveaux à 25, 100 et 400 millions de kamas) ajoute 30 min de recharge par jour à chaque niveau",
+    "Heures gagnées : +1 h au Défi du jour gagné, +30 min avec l'offrande de l'Almanax, +30 min par essai au boss des mondes (3 par jour) et au boss de guilde (2 par jour)",
+    "L'Horloger de Xélor (fiche du Sablier) vend des Fioles de temps (+1 h) : 5 millions de kamas, le prix double à chaque achat du jour, 3 par jour. Les boss de donjon dès la stasis 6 lâchent très rarement un Grain de Xélor (+15 min). Fioles et Grains se vendent à l'hôtel de vente",
+  ] },
   { v: "2.1.21", name: "Mon ordre", guide: "sorts", items: [
     "Sorts & stratégies : nouvel interrupteur Auto / « Mon ordre » au-dessus des attaques. En « Mon ordre », elles sont numérotées et partent une fois chacune, de gauche à droite, puis ça recommence (idée de Sky). Le réglage est gardé dans chaque stratégie, dans « Copier le setup » et au Kolizéum",
     "« Ce que fera ton héros » compare ton ordre à l'Auto, et propose « Revenir à l'auto » s'il fait moins de dégâts",
@@ -2697,11 +2705,12 @@ function statusHtml() {
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
+const sabMal = (v) => `−${Math.round((1 - E.sabLootAt(v)) * 100)} %`; // 2.1.22 : malus de butin du Sablier
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
 function sabHtml() {
   const B = E.sab(S);
   if (!B.open) return `<button class="it sabpill lock" data-act="sabinfo" data-tip="Vitesse ×2 / ×3 : se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim »)."><span class="sb">⏳</span>${G("lock")}<span class="hide-sm">Vitesse</span></button>`;
-  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b></button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}">×${v}</button>`).join("")}</span></span>`;
+  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b>${B.spd > 1 ? `<span class="sabmal hide-sm">butin ${sabMal(B.spd)}</span>` : ""}</button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}${v > 1 ? ` (butin ${sabMal(v)})` : ""}">×${v}</button>`).join("")}</span></span>`;
 }
 /* 1.0.14.2 « Menu de la poussière » : la pastille de poussière de stasis ouvre une petite fenêtre accrochée dessous
    (pleine largeur au téléphone) : parchemins à fabriquer sur place, autres dépenses avec « Y aller », et d'où elle vient. */
@@ -2751,12 +2760,13 @@ function sabSheet() {
     ${B.open ? `<p style="margin:0">Le temps file plus vite tant que le sablier n'est pas vide : combats, donjons, expédition, récolte, ateliers, familiers et enclos.</p>
     <div class="bar"><i style="width:${fill}%"></i></div>
     <div class="row between small"><span>Réserve : <b class="num">${sabLeft(B.r)}</b> / ${E.SAB_MAX / 3600} h</span><span class="muted">+3 h par jour, même jeu fermé</span></div>
-    <div class="row"><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}">×${v}</button>`).join("")}</span></div>`
+    <div class="row"><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}">×${v}${v > 1 ? ` <span class="sabmal2">butin ${sabMal(v)}</span>` : ""}</button>`).join("")}</span></div>`
     : `<p style="margin:0"><b>Pas encore débloqué.</b> Terminez Incarnam (quête principale « La Crypte de Kardorim ») et le sablier s'ouvre, déjà plein : ${E.SAB_MAX / 3600} h de temps rapide.</p>
     <p class="small muted" style="margin:0">Quête en cours : ${h((E.questStep(S) || {}).title || "—")} (étape ${Math.min((S.quest && S.quest.step) || 0, E.SAB_UNLOCK_STEP) + 1} sur ${E.SAB_UNLOCK_STEP}).</p>`}
     <ul class="small" style="margin:0;padding-left:18px">
       <li><b>×2</b> : 1 minute de réserve par minute.</li>
-      <li><b>×3</b> : 2 minutes de réserve par minute. Même temps gagné qu'en ×2, juste plus vite.</li>
+      <li><b>×3</b> : 2 minutes de réserve par minute. Même temps gagné qu'en ×2, plus vite, mais moins de butin.</li>
+      <li><b>Contrepartie</b> : butin ${sabMal(2)} en ×2 et ${sabMal(3)} en ×3 (ressources, équipements, clés et kamas). L'XP et les Dofus ne changent pas.</li>
       <li>Il ne s'use que quand quelque chose avance : combat, donjon, expédition, récolte, atelier ou forgemagie automatique. Équipe au repos : la réserve ne bouge pas.</li>
       <li>Sablier vide : retour à ×1 tout seul, rien n'est perdu.</li>
       <li>Jeu fermé : le sablier se remplit, les gains hors ligne ne changent pas.</li>
@@ -2767,7 +2777,14 @@ function sabSheet() {
 }
 /* 1.2.2 « Sablier plus grand » : d'où viennent les heures de Sablier (chaque ligne mène à sa page) */
 const SAB_WHERE = [
-  ["cristal", "Recharge du jour", `+3 h par jour, même jeu fermé, jusqu'à ${E.SAB_MAX / 3600} h.`, ""],
+  ["cristal", "Recharge du jour", () => `+${sabDur(E.sabRate(S) * 86400)} par jour, même jeu fermé, jusqu'à ${E.SAB_MAX / 3600} h.`, ""],
+  ["havre", "Horloge de Xélor", () => { const l = E.havreLvl(S, "sablier"); return `Havre-Sac › Chambre : +30 min de recharge par jour et par niveau (niveau ${l}/3${l < 3 ? `, prochain à ${fmt(E.havreCost(S, "sablier"))} kamas` : ""}).`; }, "home"],
+  ["combat", "Défi du jour", () => `+1 h à la victoire, une fois par jour${sabDone("defi")}.`, "defi"],
+  ["almanax", "Almanax", () => `+30 min avec l'offrande du jour${sabDone("alm")}.`, "quests"],
+  ["trophee", "Boss des mondes", () => `+30 min par essai, 3 par jour (encore ${E.sabEarnLeft(S, "wb")} aujourd'hui).`, "wb"],
+  ["ailes", "Boss de guilde", () => `+30 min par essai, 2 par jour (encore ${E.sabEarnLeft(S, "gb")} aujourd'hui).`, "guild"],
+  ["cle", "Donjons en stasis 6 et plus", "Grain de Xélor (+15 min) : très rare sur les boss, 1 sur 1 000 (1 sur 400 en stasis 15).", "dungeons"],
+  ["bourse", "Hôtel de vente", "Les Fioles de temps et les Grains de Xélor s'achètent et se vendent entre joueurs.", "hdv"],
   ["quetes", "Bureau des primes", "1 h pour 12 Jetons de chasseur, une fois par jour.", "cpt:prime"],
   ["ailes", "Comptoir de la cité", "1 h pour 40 Insignes de cité, une fois par jour.", "cpt:cite"],
   ["cristal", "Comptoir des temples", "1 h pour 8 Doplons, une fois par jour.", "cpt:temple"],
@@ -2776,10 +2793,19 @@ const SAB_WHERE = [
   ["bonbon", "Foire du Trool", "Un lot rare d'une caisse peut donner 1 à 3 h.", "foire"],
   ["cle", "Codes cadeaux", "Donnés sur le Discord, à entrer dans Options › Jeu.", "gift"],
 ];
+/* « Plus de Sablier » : Horloger de Xélor (Fioles de temps très chères) et Fioles / Grains du sac */
+const sabDur = (sec) => { const m = Math.round(sec / 60); return m % 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m / 60} h`; };
+const sabDone = (k) => (E.sabEarnLeft(S, k) ? "" : " (déjà reçu aujourd'hui)");
+function horlogerHtml() {
+  const left = E.horlogerLeft(S), k = E.horlogerCost(S), can = left > 0 && S.kamas >= k && E.sabUnlocked(S);
+  const own = ["fiole_temps", "grain_xelor"].filter((id) => S.cons[id] > 0);
+  return `<div class="sab-src"><span class="sab-ic">${IC("cristal")}</span><span class="grow small"><b>Horloger de Xélor</b><br><span class="muted">Une Fiole de temps (+1 h, vendable) pour ${fmt(E.HORLOGER.base)} kamas. Le prix double à chaque achat du jour, ${E.HORLOGER.max} par jour.${left ? ` Encore ${left} aujourd'hui.` : " Plus rien aujourd'hui."}</span></span>${left ? `<button class="btn sm ${can ? "primary" : ""}" data-act="sabbuy" ${can ? "" : "disabled"}>Acheter · ${fmt(k)}</button>` : ""}</div>
+    ${own.map((id) => `<div class="sab-src"><span class="sab-ic">${consIco(CONSUMABLES[id], true)}</span><span class="grow small"><b>${h(CONSUMABLES[id].name)}</b> <span class="num muted">×${fmt(S.cons[id])}</span><br><span class="muted">${h(CONSUMABLES[id].desc)}</span></span><button class="btn sm primary" data-act="usecons" data-id="${id}">Utiliser</button></div>`).join("")}`;
+}
 function sabWhereHtml() {
   return `<div class="sab-where"><b>Comment en obtenir</b>
     <p class="xs muted" style="margin:2px 0 6px">Les heures achetées ou gagnées peuvent dépasser la réserve, jusqu'à ${E.SAB_GIFT_MAX / 3600} h.</p>
-    ${SAB_WHERE.map(([ic, t, d, v]) => `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`).join("")}</div>`;
+    ${horlogerHtml()}${SAB_WHERE.map(([ic, t, d, v]) => (d = typeof d === "function" ? d() : d, `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`)).join("")}</div>`;
 }
 function sabGo(v) {
   closeSheet();
@@ -9663,6 +9689,7 @@ document.addEventListener("click", (ev) => {
     case "chalpick": chalPickSheet(); return;
     case "chalall": Object.keys(E.CHALLENGES).forEach((id) => chalPickSet(id, d.v === "1")); dirty = true; chalPickSheet(); return;
     case "sabgo": sabGo(d.v); return;
+    case "sabbuy": { const r = E.horlogerBuy(S); if (r) { toast(r); return; } toast("Fiole de temps achetée : elle est dans ton sac (Utiliser pour +1 h, ou à vendre à l'hôtel de vente)."); dirty = true; renderStatus(); sabSheet(); return; }
     case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": reloadTo(false); return; // 1.0.11 : on revient directement dans la partie en cours
@@ -9671,7 +9698,8 @@ document.addEventListener("click", (ev) => {
     case "usecons": { if (CONSUMABLES[d.id] && CONSUMABLES[d.id].kind === "scroll") { const C = CONSUMABLES[d.id];
         openSheet(`<h2>${IC("quetes")} ${h(C.name)}</h2><p class="small muted">${h(C.desc)} Choisissez le héros.</p><div class="list">${S.chars.map((x) => `<div class="li">${head(x)}<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${STATS[C.stat].name} par parchemins : ${(x.scrolls || {})[C.stat] || 0}/${E.SCROLL_MAX}</span></span><button class="btn sm primary" data-act="scrollto" data-id="${x.id}" data-sid="${d.id}" ${E.scrollRoom(x, C.stat) <= 0 ? "disabled" : ""}>Utiliser</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       if (d.id === "potion_savoir") { openSheet(`<h2>${IC("parchemin_or")} Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
-      const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
+      const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`);
+      if (C.kind === "sab") { toast(`${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier.`); dirty = true; renderStatus(); if ($("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) { sabSheet(); return; } } break; }
     case "chestall": { if (!E.openAllChests(S)) { toast("Aucun coffre à ouvrir."); return; } break; }
     case "chestauto": { S.settings.autoChest = d.v === "1"; if (S.settings.autoChest) E.openAllChests(S, true); toast(S.settings.autoChest ? "Ouverture automatique des coffres activée." : "Ouverture automatique désactivée : les coffres attendent dans le sac."); break; }
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
@@ -11068,7 +11096,7 @@ function loop() {
     if (ui.launchPending && !window.__IDLUS_NOLAUNCH && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (Équipe et héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
-    { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.tick(S, real * m, real);
+    { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.sabNow = m; try { E.tick(S, real * m, real); } finally { E.sabNow = 1; }
       if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
     S.lastTick = E.now();
     lootUpCheck();

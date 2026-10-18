@@ -392,6 +392,8 @@
     potion_savoir:     { name: "Potion de Savoir",   icon: "📘", kind: "util", desc: "Donne environ un niveau d'expérience au métier de récolte de votre choix (au moins 25 % d'un niveau)." },
     parchemin_avis:    { name: "Parchemin d'Avis",   icon: "📜", kind: "util", auto: true, desc: "Utilisé automatiquement quand vous changez un avis de recherche : le changement est gratuit." },
     cristal_fm:        { name: "Cristal de Forgemagie", icon: "💎", kind: "util", desc: "La prochaine forgemagie ne peut pas faire baisser une autre caractéristique." },
+    fiole_temps:       { name: "Fiole de temps",     icon: "⏳", kind: "sab", h: 1, desc: "+1 h dans la réserve du Sablier de Xélor. Se vend à l'hôtel de vente." },
+    grain_xelor:       { name: "Grain de Xélor",     icon: "⌛", kind: "sab", h: 0.25, desc: "+15 min dans la réserve du Sablier de Xélor. Très rare, sur les boss de donjon dès la stasis 6. Se vend à l'hôtel de vente." },
     filet:             { name: "Filet de capture", icon: "🪢", kind: "util", auto: true, desc: "Automatique : en chassant dans une zone de montures sauvages, chaque victoire peut capturer une monture. Le filet n'est utilisé que si la capture réussit." },
     coffre_bois:       { name: "Coffre en bois",       icon: "📦", img: "bois",       kind: "chest", tier: 0, desc: "Environ 5 minutes de chasse : kamas selon ton niveau, poussière de stasis et ressources." },
     coffre_argent:     { name: "Coffre en argent",     icon: "🎁", img: "argent",     kind: "chest", tier: 1, desc: "Environ 15 minutes de chasse : kamas, poussière de stasis, ressources et un bonbon." },

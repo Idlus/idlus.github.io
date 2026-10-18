@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.22 « Le Sablier »
+
+- Sablier de Xélor : butin −10 % en ×2 et −20 % en ×3 (ressources, équipements, clés, kamas ; ni l'XP ni les Dofus). Réserve 36 h, 48 h avec les heures gagnées.
+- Plus d'heures : Horloge de Xélor (Havre-Sac), Défi du jour, Almanax, boss des mondes et de guilde, Horloger de Xélor (Fioles de temps vendables), Grain de Xélor très rare en donjon.
+
 ## 2.1.21 « Mon ordre »
 
 - Sorts & stratégies : interrupteur Auto / « Mon ordre » (attaques une fois chacune dans l'ordre de la barre), comparaison avec l'Auto dans l'aperçu, Auto qui connaît le passif de l'Huppermage, les mécaniques des sorts et les bonus d'attaque.

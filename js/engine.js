@@ -2473,7 +2473,7 @@
     mons.forEach((m) => {
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1) * E.almMult(S, "xp", m); // 1.0.33 : chromatique (js/chroma.js) // 0.1.39 : Almanax (famille, donjon ou fête)
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.sabLoot() * E.almMult(S, "kamas", m));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1; if (E.btKill) E.btKill(S, m); // 2.0 : Maîtrise du Bestiaire
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); if (E.champKill) out.champ.ch = E.champKill(S, m, opts); }
@@ -2503,7 +2503,7 @@
     if (E.mtTeam) out.kamas = Math.round(out.kamas * E.mtTeam(S, team, "kam")); // 2.1 : Banquier
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.btLoot ? E.btLoot(S, mons) : 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts) * (E.mtTeam ? E.mtTeam(S, team, "loot") : 1); // 2.1 : Pilleur (jamais les Dofus)
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.sabLoot() * (E.btLoot ? E.btLoot(S, mons) : 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts) * (E.mtTeam ? E.mtTeam(S, team, "loot") : 1); // 2.1 : Pilleur (jamais les Dofus)
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -2521,6 +2521,7 @@
       if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
       E.tkLoot(S, m, nRoll, out); // 1.0.7 : Tickets de Koli en combat
       if (m.boss && opts.dungeon && (opts.stasis || 0) >= 10 && E.joyDrop) E.joyDrop(S, opts.stasis, out); // 2.0 : joyaux de Maîtrise
+      if (m.boss && opts.dungeon && !opts.offline && Math.random() < E.grainRate(opts.stasis || 0)) { E.addCons(S, "grain_xelor"); out.cons = (out.cons || 0) + 1; note(S, "Butin très rare : Grain de Xélor (+15 min de Sablier) !", "rare"); }
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       /* 1.0.15 (Mathis 4A, 5A, 7C) : une chance par héros ; le boss d'un donjon a plus de chances avec la stasis (×1 à la 1, ×3,25 à la 10) ;
          un équipement jamais obtenu est annoncé en grand */
@@ -3245,6 +3246,7 @@
     if (E.mtOwn) v *= E.mtOwn(S, c, "rec"); // 2.1 : Artisan (récolte)
     if (E.filonOn(S, W.res)) v *= 2;
     v *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
+    v *= E.sabLoot(); // 2.1.22 : Sablier ×2 / ×3
     if (frac >= 1 && !opts.quiet) E.protSpawn(S, c, W, k);
     let q = Math.floor(v); if (rnd() < v - q) q++;
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
@@ -3589,14 +3591,41 @@
      La vitesse ×2 retire 1 s de réserve par seconde, ×3 en retire 2 : la réserve est du « temps de jeu en plus ».
      Il se débloque à la fin d'Incarnam (quête principale « La Crypte de Kardorim » terminée). Hors ligne, rien n'accélère. */
   E.SAB_RATE = 7.5 / 60;          // +7 min 30 par heure = 3 h par jour
-  E.SAB_MAX = 24 * 3600;          // 8 jours de réserve (9 h avant la 1.2.2, 15 h en 1.2.2)
+  E.SAB_MAX = 36 * 3600;          // 12 jours de recharge (9 h avant la 1.2.2, 15 h en 1.2.2, 24 h de la 1.2.3 à la 2.1.21)
+  /* « Plus de Sablier » (Mathis : 1 un vrai défi, 2A beaucoup plus cher, 3B, 4 beaucoup plus rare, 5B) :
+     Horloge de Xélor du Havre-Sac (+30 min de recharge par jour et par niveau, 3 niveaux), heures gagnées par activité
+     (une fois par jour au plus chacune), Horloger de Xélor (Fioles de temps très chères), Grain de Xélor très rare en donjon.
+     Les Fioles et les Grains se vendent à l'hôtel de vente. */
+  E.SAB_CLOCK_MIN = 30;
+  E.sabRate = (S) => E.SAB_RATE * (1 + (E.havreLvl && S ? E.havreLvl(S, "sablier") : 0) * E.SAB_CLOCK_MIN / 180);
+  E.SAB_EARN = { defi: [1, 1, "Défi du jour gagné"], alm: [0.5, 1, "Offrande de l'Almanax"], wb: [0.5, 3, "Essai au boss des mondes"], gb: [0.5, 2, "Essai au boss de guilde"] }; // [heures, fois par jour, origine]
+  E.sabDay = (S) => { const d = E.dayKey ? E.dayKey() : new Date(E.now()).toISOString().slice(0, 10); if (!S.sabDay || S.sabDay.d !== d) S.sabDay = { d }; return S.sabDay; };
+  E.sabEarnLeft = (S, k) => { const R = E.SAB_EARN[k]; return R ? Math.max(0, R[1] - (E.sabDay(S)[k] || 0)) : 0; };
+  E.sabEarn = (S, k) => { // heures données (0 si déjà fait aujourd'hui, Sablier fermé ou réserve pleine)
+    const R = E.SAB_EARN[k]; if (!R || !E.sabUnlocked(S) || !E.sabEarnLeft(S, k)) return 0;
+    const B = E.sab(S); const r0 = B.r; E.sabGift(S, R[0]); const got = (B.r - r0) / 3600; if (got <= 0) return 0;
+    const D = E.sabDay(S); D[k] = (D[k] || 0) + 1; note(S, `${R[2]} : +${got >= 1 ? Math.round(got * 10) / 10 + " h" : Math.round(got * 60) + " min"} de Sablier de Xélor.`, "info"); return got;
+  };
+  /* Horloger de Xélor : une Fiole de temps (1 h, vendable) pour 5 millions de kamas, le prix double à chaque achat du jour, 3 par jour */
+  E.HORLOGER = { base: 5000000, max: 3 };
+  E.horlogerLeft = (S) => Math.max(0, E.HORLOGER.max - (E.sabDay(S).buy || 0));
+  E.horlogerCost = (S) => E.HORLOGER.base * Math.pow(2, E.sabDay(S).buy || 0);
+  E.horlogerBuy = (S) => {
+    if (!E.sabUnlocked(S)) return "Le Sablier de Xélor se débloque à la fin d'Incarnam.";
+    if (!E.horlogerLeft(S)) return "L'Horloger n'a plus de Fiole aujourd'hui. Reviens demain.";
+    const k = E.horlogerCost(S); if (S.kamas < k) return `Il faut ${k.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= k; const D = E.sabDay(S); D.buy = (D.buy || 0) + 1; E.addCons(S, "fiole_temps"); return null;
+  };
+  /* Grain de Xélor : boss de donjon dès la stasis 6, 1 sur 1 000 (1 sur 400 en stasis 15). Tirage à part (Math.random) :
+     il ne décale pas le hasard des combats rejoués par le serveur. */
+  E.grainRate = (st) => (st >= 6 ? 0.001 * (1 + (Math.min(15, st) - 6) / 6) : 0);
   E.SAB_UNLOCK_STEP = 6;          // étapes de la quête principale à finir (jusqu'à la Crypte de Kardorim)
   E.sabUnlocked = (S) => !!(S.sablier && S.sablier.open) || !!(S.quest && S.quest.step >= E.SAB_UNLOCK_STEP);
   E.sab = (S) => {
     if (!S.sablier) S.sablier = { r: E.SAB_MAX, at: E.now(), spd: 1, open: false }; // plein au départ
     const B = S.sablier, now = E.now();
     if (!(B.at <= now)) B.at = now; // horloge revenue en arrière : on ne rend rien
-    const r0 = Math.max(0, +B.r || 0); B.r = r0 > E.SAB_MAX ? r0 : Math.min(E.SAB_MAX, r0 + ((now - B.at) / 1000) * E.SAB_RATE); B.at = now; // un code cadeau peut dépasser le maximum
+    const r0 = Math.max(0, +B.r || 0); B.r = r0 > E.SAB_MAX ? r0 : Math.min(E.SAB_MAX, r0 + ((now - B.at) / 1000) * E.sabRate(S)); B.at = now; // un code cadeau peut dépasser le maximum
     if (!B.open && E.sabUnlocked(S)) { B.open = true; note(S, "Sablier de Xélor débloqué : le temps peut filer ×2 ou ×3 (barre du haut).", "rare"); }
     if (![1, 2, 3].includes(B.spd)) B.spd = 1;
     return B;
@@ -3615,7 +3644,14 @@
     note(S, "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
     return m;
   };
-  E.SAB_GIFT_MAX = 36 * 3600;    // réserve maximale avec des heures achetées ou offertes (1.2.3 : 24 h avant, la réserve normale monte à 24 h)
+  /* 2.1.22 « Le Sablier » (Mathis 1B 2B 3A) : contrepartie du temps rapide, butin −10 % en ×2 et −20 % en ×3
+     (ressources, équipements, clés et kamas des combats, de la récolte et des expéditions ; jamais l'XP ni les Dofus).
+     E.sabNow = vitesse réellement appliquée au pas de jeu en cours (posée par la boucle du jeu autour de E.tick, 1 ailleurs). */
+  E.SAB_LOOT = 0.1;
+  E.sabNow = 1;
+  E.sabLootAt = (spd) => Math.max(0, 1 - E.SAB_LOOT * (Math.max(1, +spd || 1) - 1));
+  E.sabLoot = () => E.sabLootAt(E.sabNow);
+  E.SAB_GIFT_MAX = 48 * 3600;    // réserve maximale avec des heures achetées ou offertes (24 h avant la 1.2.3, 36 h jusqu'à la 2.1.21)
   E.sabGift = (S, hours) => { const B = E.sab(S); B.r = Math.min(E.SAB_GIFT_MAX, B.r + Math.max(0, +hours || 0) * 3600); return B.r; };
   E.sabSet = (S, v) => {
     const B = E.sab(S); v = +v;
