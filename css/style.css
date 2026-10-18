@@ -5021,6 +5021,9 @@ body.reduced #halfx,body.nomotion #halfx{display:none}
 .ent.tk .fc.bf{background:rgba(240,138,60,.42)}
 .ent.tk .fc.sh{background:rgba(127,179,255,.42)}
 .ent.tk .fc.db{background:rgba(199,125,255,.42)}
+.ent.tk .fc.tr{background:rgba(150,80,230,.6);color:#f1e6ff}.ent.tk .fc svg{width:10px;height:9px}
+.ent.trboom{animation:trboom .65s ease-out}
+@keyframes trboom{0%{box-shadow:0 0 0 0 rgba(176,92,255,0)}35%{box-shadow:0 0 0 5px rgba(176,92,255,.85),0 0 22px #b05cff}100%{box-shadow:0 0 0 0 rgba(176,92,255,0)}}
 .arena.fmode .ent.tk .float{top:-10px;left:auto;right:4px;transform:none;font-size:15px}
 .arena.fmode .ent.tk .fxb,.arena.fmode .ent.tk .ring{left:25px;top:50%}
 .arena.fmode .ent.tk.act .av{animation:fmact .45s ease-out}

@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.26 « Le nouveau Sram »
+
+- Sram refait (choix de Mathis) : pièges posés qui explosent au tour ennemi (3 au plus, ×2,6, réaction en chaîne), Invisibilité/Brume à −50 % de dégâts reçus et +40 % au premier coup, passif Assassin (+25 % sous 30 % de PV, +2 PA en achevant). Pastille des pièges en combat, pièges au Kolizéum, coefficient du Sram au Kolizéum réglé par simulation (js/sram.js).
+- La classe à l'honneur : chaque semaine, une classe peu jouée gagne +10 % d'XP (Maîtrise comprise) et de butin (Sram d'abord).
+
 ## 2.1.25 « Bouclier sans faille »
 
 - Vérification des parties : un compte vérifié garde une marge plus large sur les kamas, ressources et Dofus, mais la Maîtrise, les niveaux et le temps de jeu restent contrôlés ; le « C'est bon » de Mathis n'accepte plus une partie impossible ; plafond de Maîtrise par héros tiré du vrai coût des points.

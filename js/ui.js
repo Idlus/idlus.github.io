@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.25";
+const GAME_VERSION = "2.1.26";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.26", name: "Le nouveau Sram", guide: "classes", items: [
+    "Sram : ses pièges se posent (3 au plus, jamais deux fois le même) et explosent au début du tour du prochain ennemi, sur lui et ses voisins, avec de gros dégâts. Plusieurs pièges dans le même tour : Réaction en chaîne, +15 % par piège",
+    "Invisibilité et Brume : le Sram passe 2 tours dans l'ombre, prend 50 % de dégâts en moins, et son premier coup en sortant fait +40 %",
+    "Nouveau passif Assassin : +25 % de dégâts sur une cible sous 30 % de PV, et achever un ennemi rend 2 PA (une fois par tour). Les poisons +25 % et le butin en double restent",
+    "En combat, une pastille sous le Sram compte ses pièges posés, et l'ennemi qui en déclenche un s'entoure d'un éclair violet. Au Kolizéum, les pièges explosent sous les héros adverses (puissance du Sram réglée pour rester à 50 % de victoires)",
+    "La classe à l'honneur : chaque lundi, une classe peu jouée gagne +10 % d'XP (Maîtrise comprise) pour ses héros et +10 % de butin pour l'équipe qui en a un. Le Sram ouvre le bal cette semaine",
+  ] },
   { v: "2.1.25", name: "Bouclier sans faille", items: [
     "Vérification des parties : la Maîtrise et le temps de jeu sont contrôlés pour tous les comptes, même vérifiés, et le plafond de Maîtrise suit le vrai coût des points",
   ] },
@@ -3154,7 +3161,7 @@ function altarHtml() {
 }
 function bonusBox() {
   const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
-  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.honorCls ? `${CLASSES[E.honorCls()].name} à l'honneur : +${E.HONOR_PCT} % XP (ses héros) et butin (équipe avec un ${CLASSES[E.honorCls()].name})` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
   const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
   return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
@@ -4510,9 +4517,11 @@ function anFx(F, A, src, sn, def, hits, when) {
     }, when(f) + 40); });
 }
 function anBuff(A, n, e, txt) {
+  if (txt === "Piège !" && n) { n.classList.remove("trboom"); void n.offsetWidth; n.classList.add("trboom"); setTimeout(() => n.classList.remove("trboom"), 700); } // Sram : un piège explose (toutes les vues)
   if (!anOn(A) || !n || !e) return; const b = axBody(n); if (!b) return; const f = anFoot(A, n), p = axPt(A, n, 0.5), r = b.getBoundingClientRect();
   if (/^Bouclier/.test(txt)) { const d = axMk(A, "andome", p.x, p.y + r.height * 0.08); d.style.width = r.width * 1.15 + "px"; d.style.height = r.height * 1.05 + "px";
     d.animate([{ transform: "translate(-50%,-50%) scale(.2,0)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.08)", opacity: 1, offset: 0.35 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0.9, offset: 0.7 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0 }], { duration: 1100 }); axLater(d, 1150); }
+  else if (txt === "Piège !") { const r2 = axMk(A, "ring", f.x, f.y - 4, { "--c": "#b05cff" }); axLater(r2, 700); axPuff(A, f.x, f.y - 10, "rgba(176,92,255,.8)", 8); } // Sram : un piège posé explose
   else if (/^\+/.test(txt)) { const r2 = axMk(A, "ring", f.x, f.y - 4, { "--c": "#ffd84d" }); axLater(r2, 700);
     for (let i = 0; i < 7; i++) { const s = axMk(A, "anspark", f.x + axRnd(-r.width * 0.35, r.width * 0.35), f.y - 4); s.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(-50%,calc(-50% - ${axRnd(40, r.height * 0.9)}px))`, opacity: 0 }], { duration: 900, delay: i * 60, fill: "both" }); axLater(s, 1000 + i * 60); } }
 }
@@ -6452,7 +6461,7 @@ function spSentence0(c, sp) {
       case "push": out.push(`Repousse la cible de ${f.v} case${f.v > 1 ? "s" : ""} : si elle percute un monstre, les deux prennent des dégâts`); break;
     }
   });
-  const txt = out.length ? out.map((s, i) => (i ? s.charAt(0).toLowerCase() + s.slice(1) : s)).join(", ") + "." : "Aucun effet en combat automatique.";
+  const txt = (E.srSentence && E.srSentence(c, sp, r, fmt)) || (out.length ? out.map((s, i) => (i ? s.charAt(0).toLowerCase() + s.slice(1) : s)).join(", ") + "." : "Aucun effet en combat automatique."); // Sram : pièges posés, invisibilité (sram.js)
   const use = [`${g.pa} PA`, g.casts ? `jusqu'à ${g.casts} fois par tour` : "", g.cd ? `puis attend ${g.cd} tour${g.cd > 1 ? "s" : ""}` : ""].filter(Boolean);
   return { g, r, txt, use, perTurn: r ? r.turn : 0, adapt: g.fx.some((f) => f.adapt || f.fb) };
 }
@@ -7998,6 +8007,8 @@ function renderUpdBar() {
   else if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
     html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
+  if (S && E.honorCls && S.honorHide !== E.honorIdx()) { const k = E.honorCls(), C = CLASSES[k], hh = Math.max(1, Math.ceil((E.honorEnd() - E.now()) / 3600e3)), left = hh >= 24 ? `${Math.floor(hh / 24)} j` : `${hh} h`, mine = S.chars.some((c) => c.cls === k);
+    html += tchip({ k: "ev", ico: `<img src="${symImg(k)}" alt="" style="width:18px;height:18px">`, t: `${h(C.name)} à l'honneur`, d: `+${E.HONOR_PCT} % XP et butin`, s: `+${E.HONOR_PCT} % · ${left}`, tip: `La classe à l'honneur : cette semaine, les héros ${h(C.name)} gagnent +${E.HONOR_PCT} % d'XP (Maîtrise comprise), et une équipe avec au moins un ${h(C.name)} a +${E.HONOR_PCT} % de butin. ${mine ? "Tu en as un !" : "Tu n'en as pas encore."} Encore ${left}, puis une autre classe peu jouée prend le relais.`, x: `data-act="honorhide"`, xt: "Masquer cette semaine" }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
   if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
@@ -9774,6 +9785,7 @@ document.addEventListener("click", (ev) => {
     case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast(S.protector && S.protector.back ? "L'équipe part affronter le protecteur. Ensuite, chacun reprend ce qu'il faisait." : "L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
+    case "honorhide": S.honorHide = E.honorIdx(); dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
     case "sabinfo": sabSheet(); return;

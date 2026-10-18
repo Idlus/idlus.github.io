@@ -2,7 +2,7 @@
    Lancer : node tools/koli_tune.js [tours=5] [combats=1200] → affiche la table à coller dans js/engine.js */
 "use strict";
 global.window = global;
-for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli"]) require("../js/" + f + ".js");
+for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli", "sram"]) require("../js/" + f + ".js");
 const E = window.ENGINE; const { CLASSES } = window.DATA;
 const IT = +process.argv[2] || 5, N = +process.argv[3] || 1200; const L = E.KOLI_LVLS;
 const P = {}; Object.keys(CLASSES).forEach((c) => (P[c] = (E.KOLI_POW[c] || L.map(() => 1)).slice()));

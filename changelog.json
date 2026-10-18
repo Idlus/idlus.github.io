@@ -1,6 +1,18 @@
 {
-  "version": "2.1.25",
+  "version": "2.1.26",
   "versions": [
+    {
+      "v": "2.1.26",
+      "name": "Le nouveau Sram",
+      "guide": "classes",
+      "items": [
+        "Sram : ses pièges se posent (3 au plus, jamais deux fois le même) et explosent au début du tour du prochain ennemi, sur lui et ses voisins, avec de gros dégâts. Plusieurs pièges dans le même tour : Réaction en chaîne, +15 % par piège",
+        "Invisibilité et Brume : le Sram passe 2 tours dans l'ombre, prend 50 % de dégâts en moins, et son premier coup en sortant fait +40 %",
+        "Nouveau passif Assassin : +25 % de dégâts sur une cible sous 30 % de PV, et achever un ennemi rend 2 PA (une fois par tour). Les poisons +25 % et le butin en double restent",
+        "En combat, une pastille sous le Sram compte ses pièges posés, et l'ennemi qui en déclenche un s'entoure d'un éclair violet. Au Kolizéum, les pièges explosent sous les héros adverses (puissance du Sram réglée pour rester à 50 % de victoires)",
+        "La classe à l'honneur : chaque lundi, une classe peu jouée gagne +10 % d'XP (Maîtrise comprise) pour ses héros et +10 % de butin pour l'équipe qui en a un. Le Sram ouvre le bal cette semaine"
+      ]
+    },
     {
       "v": "2.1.25",
       "name": "Bouclier sans faille",

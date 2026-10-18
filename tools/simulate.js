@@ -16,6 +16,8 @@ require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"
 require("../js/identmon.js"); // identité des sorts des monstres (NO_MID=1 : sans)
 require("../js/identboss.js"); // sorts uniques des boss
 require("../js/maitrise_moteur.js"); // 2.0 : la Maîtrise (--maitrise N : N points placés par héros niveau 200)
+require("../js/sram.js"); // le nouveau Sram (NO_SRAM=1 : l'ancien)
+if (process.env.NO_SRAM) E.SR2 = false;
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -171,7 +173,7 @@ if (arg("chasse", "")) {
    (chaque équipe monte d'une intensité tant qu'elle valide : -1 = même pas le Rêve, 0 = Rêve, 1-4 = Paradoxe, 5-7 = Cauchemar).
    Cibles : sans équipement au plus le Rêve, bon équipement Paradoxe 1-2, optimisé Paradoxe 4 - Cauchemar 1 et plus. */
 if (flag("songe")) {
-  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/songe.js");
+  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/sram.js"); require("../js/songe.js");
   const lvls = arg("niveaux", "60,120,200").split(",").map(Number);
   const PROFS = arg("profils", "aucun,bon,optimise").split(",");
   const XT = { aucun: [-1, 0], bon: [1, 2], optimise: [4, 7] };

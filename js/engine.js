@@ -1487,6 +1487,7 @@
   };
   const dealDamage = (F, src, tgt, raw, el) => {
     let v = raw;
+    if (tgt.srInvis > 0 && src && src.side !== tgt.side && E.SR2) v *= 1 - E.SR_HIDE; // Sram : dans l'ombre, les coups ennemis le touchent mal (sram.js)
     let res = 0;
     if (tgt.side === "m" && !isHero(F, tgt)) { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
@@ -1566,7 +1567,7 @@
     if (F && src && src.pet && v > 0 && E.petHit && !F.pushHit) E.petHit(F, src, tgt, v, el); // 1.1 : familiers (souffle, soin, griffe)
     return v;
   };
-  E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a), rowOf: (t) => rowOf(t), resists: (...a) => resists(...a), spawnMon: (...a) => spawnMon(...a), mobKey: (...a) => mobKey(...a) };
+  E.fightApi = { charDamage: (...a) => charDamage(...a), dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a), rowOf: (t) => rowOf(t), resists: (...a) => resists(...a), spawnMon: (...a) => spawnMon(...a), mobKey: (...a) => mobKey(...a) };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
@@ -1590,6 +1591,7 @@
     if (e.dp && E.dofpDmg) v = E.dofpDmg(F, e, tgt, crit, v); // 1.0.16 : passifs des Dofus
     if (E.sealDmg && (e.seal || (F && (F.sealMen || F.sealReso)))) v = E.sealDmg(F, e, tgt, v); // Sceaux de champion, Meneur et Conclave
     v *= 1 + (e.dmgBonus || 0) / 100;
+    if (E.srDmg && e.cls === "sram") v = E.srDmg(F, e, tgt, v); // Sram (sram.js)
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
     // 0.1.12 : Éveils de la Renaissance (Fureur, Premier sang)
@@ -1697,6 +1699,7 @@
   const castSpell = (S, F, e, sp, forced, slot) => {
     const g = E.spellGrade(sp, e.lvl); const allies = alive(F, "c").filter((a) => !a.summon); const parts = []; let ok = false; let extraPa = 0;
     const kind = E.spellKind(g); e.wcast = sp.wp ? sp : null;
+    if (E.srCast && e.cls === "sram") { const r0 = E.srCast(S, F, e, sp, g); if (r0) { e.wcast = null; return r0; } } // Sram (sram.js)
     // sorts inutiles : ne pas les gaspiller
     if (kind === "heal" && !alive(F, "c").some((a) => a.hp < a.hpMax)) return { ok: false };
     if (kind === "summon" && ownSums(F, F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
@@ -1713,6 +1716,7 @@
     if (e.cls === "panda" && ["dmg", "aoe", "drain", "dot"].includes(kind) && rnd() < 0.03 * (e.ivresse || 0)) { e.ivresse = Math.min(5, (e.ivresse || 0) + 1); flog(F, `${e.name} · ${sp.name} → raté, l'ivresse fait tituber le Pandawa !`, "dim"); return { ok: true, extraPa: 0 }; }
     if (F.idol && F.idol.fail && ["dmg", "aoe", "drain", "dot", "heal"].includes(kind) && rnd() < F.idol.fail) { flog(F, `${e.name} · ${sp.name} → échec (idole Yushe) !`, "dim"); return { ok: true, extraPa: 0 }; }
     if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
+    if (E.srMult && e.cls === "sram" && kind !== "heal") classMult *= E.srMult(F, e, parts); // Sram (sram.js)
     if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15 + 0.05 * (e.evc || 0); e.eniDmg = false; }
     let leech = 0; let dealt = 0; const hitIdx = [];
     const idc = E.idPre ? E.idPre(F, e, sp, g, parts) : null; if (idc && idc.crit) e.idCrit = idc.crit; // identité des sorts (js/identite.js)
@@ -1768,6 +1772,7 @@
     if (sp.wp && ok) weaponFx(S, F, e, sp, dealt, hitIdx, parts);
     e.wcast = null;
     if (!ok) return { ok: false };
+    if (E.srPost && e.cls === "sram") extraPa += E.srPost(F, e, hitIdx, parts); // Sram (sram.js)
     if (kind === "shield" || kind === "buff") failChal(F, "barbare", `${sp.name} lancé`);
     if (e.cls === "iop") e.stack = Math.min(6, (e.stack || 0) + 1);
     if (e.cls === "panda") e.ivresse = Math.min(5, (e.ivresse || 0) + 1);
@@ -1932,6 +1937,7 @@
     const c = S.chars.find((x) => x.id === e.cid); if (!c) return;
     if (paStart === undefined) {
       F.cs.turnCasts[e.cid] = {}; F.cs.hitTurn[e.cid] = new Set(); e.portal = false;
+      if (E.srTurn && e.cls === "sram") E.srTurn(F, e); // Sram (sram.js)
       if (e.stun > 0) { e.stun--; flog(F, `${e.name} ne peut pas bouger et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.gold > 0) { e.gold--; flog(F, `${e.name} est une statue d'or et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cuve) { e.cuve = false; e.ivresse = 0; flog(F, `${e.name} cuve son ivresse et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
@@ -2035,6 +2041,7 @@
   const monCrit = (e, v) => (e.crit && rnd() * 100 < e.crit ? v * 1.25 + (e.dcri || 0) : v); // idoles Hadibel et Tigel
   const monsterTurn = (S, F, e) => {
     if (E.midTurn) E.midTurn(F, e); // identité des sorts des monstres : signature de boss
+    if (E.srTrig && F.srTraps && F.srTraps.length) { E.srTrig(S, F, e); if (!e.alive) return; } // Sram (sram.js) : un piège posé se déclenche
     const skip = e.mech ? bossMech(S, F, e) : false;
     if (e.role) roleTurn(S, F, e);
     if (skip || !e.alive || !alive(F, "c").length) return;
@@ -2242,7 +2249,7 @@
   E.KOLI = { size: 3, ero: 10, eroStep: 10, eroMax: 90, maxRound: 20 };
   /* puissance par classe au Kolizéum (dégâts et invocations), réglée par simulation (tools/koli_sim.js) aux niveaux E.KOLI_LVLS */
   E.KOLI_LVLS = [20, 50, 100, 150, 200];
-  E.KOLI_POW = {"iop":[1.29,1.49,1.25,0.94,1.82],"cra":[1.28,1.87,1.36,1.23,1.62],"eni":[1.71,1.29,1.36,1.23,0.95],"feca":[0.69,1.18,1.81,1.67,2.3],"osa":[0.26,0.37,0.63,0.93,0.99],"enu":[0.89,1.45,1.4,1.26,1.28],"sram":[1.72,1.39,1.53,1.64,1.84],"xelor":[1.07,0.79,0.4,0.72,0.34],"eca":[2.5,1.68,1.54,1.44,1.17],"sadi":[1.17,1.15,0.8,0.88,0.85],"sacri":[1.47,1.65,1.73,1.48,1.67],"panda":[2.02,1.13,1.05,1,1.6],"roub":[0.46,0.52,0.49,0.42,0.25],"zobal":[1.15,1.04,1.65,1.97,1.81],"steam":[0.71,0.73,0.41,0.89,1.1],"elio":[1.35,1.56,1.5,1.2,1.16],"hupper":[1.93,1.35,0.97,1.14,0.48],"ougi":[1.84,1.57,2.05,1.05,1.62],"forge":[0.79,0.41,0.75,0.84,1.14]};
+  E.KOLI_POW = {"iop":[1.29,1.49,1.25,0.94,1.82],"cra":[1.28,1.87,1.36,1.23,1.62],"eni":[1.71,1.29,1.36,1.23,0.95],"feca":[0.69,1.18,1.81,1.67,2.3],"osa":[0.26,0.37,0.63,0.93,0.99],"enu":[0.89,1.45,1.4,1.26,1.28],"sram":[1.04,1.13,0.83,0.81,1.08],"xelor":[1.07,0.79,0.4,0.72,0.34],"eca":[2.5,1.68,1.54,1.44,1.17],"sadi":[1.17,1.15,0.8,0.88,0.85],"sacri":[1.47,1.65,1.73,1.48,1.67],"panda":[2.02,1.13,1.05,1,1.6],"roub":[0.46,0.52,0.49,0.42,0.25],"zobal":[1.15,1.04,1.65,1.97,1.81],"steam":[0.71,0.73,0.41,0.89,1.1],"elio":[1.35,1.56,1.5,1.2,1.16],"hupper":[1.93,1.35,0.97,1.14,0.48],"ougi":[1.84,1.57,2.05,1.05,1.62],"forge":[0.79,0.41,0.75,0.84,1.14]};
   E.koliPow = (cls, lvl) => { const t = E.KOLI_POW[cls]; if (!t) return 1; const L = E.KOLI_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
     let i = 0; while (lvl > L[i + 1]) i++; return t[i] + (t[i + 1] - t[i]) * (lvl - L[i]) / (L[i + 1] - L[i]); };
   const koliFlip = (F) => F.ents.forEach((x) => { x.side = x.side === "c" ? "m" : "c"; });
@@ -2270,7 +2277,8 @@
       const flip = e.tm === 1; if (flip) koliFlip(F);
       try {
         F.glyph = (F.glyphs || [])[e.tm] || null;
-        if (startOfTurn(S, F, e)) { if (e.summon) summonTurn(S, F, e); else charTurn(S, F, e); }
+        if (E.srTrig && F.srTraps && F.srTraps.length) E.srTrig(S, F, e); // Sram : un piège adverse explose sous lui (sram.js)
+        if (e.alive && startOfTurn(S, F, e)) { if (e.summon) summonTurn(S, F, e); else charTurn(S, F, e); }
         if (e.cls === "feca" && !e.summon) F.glyphs[e.tm] = F.glyph;
       } finally { if (flip) koliFlip(F); }
       return koliCheck(S, F);
@@ -2434,9 +2442,21 @@
   /* 0.1.28.3 : événement « Double gain », XP et butin x2 pour tout le monde (dates fixes ; 21 h → dimanche 18 octobre 23 h, heure de Paris ; prolongé en 0.1.48.6) */
   E.EVENT = { name: "Semaine de la Maîtrise", from: Date.parse("2026-10-12T19:00:00Z"), to: Date.parse("2026-10-22T21:00:00Z"), xp: 2, drop: 2 };
   E.eventOn = (t = E.now()) => !!E.EVENT && t >= E.EVENT.from && t < E.EVENT.to;
+  /* « La classe à l'honneur » (choix 5A de Mathis) : chaque semaine (du lundi au dimanche, heure de Paris), une classe peu jouée
+     gagne +10 % d'XP pour ses héros (Maîtrise comprise au niveau 200) et +10 % de butin pour l'équipe qui en a un.
+     Ordre : le Sram d'abord, puis les classes du moins au plus joué (héros au classement des classes du serveur, 18/10). */
+  E.HONOR_ORDER = ["sram", "hupper", "steam", "roub", "ougi", "osa", "sadi", "elio", "xelor", "zobal", "forge", "panda", "sacri", "eca", "eni", "feca", "iop", "enu", "cra"];
+  E.HONOR_START = Date.parse("2026-10-18T23:00:00Z"); // lundi 19/10 (minuit à Paris en heure d'hiver, dès le 25/10)
+  E.HONOR_PCT = 10;
+  E.HONOR_WEEK = 7 * 864e5;
+  E.honorIdx = (t = E.now()) => Math.max(0, Math.floor((t - E.HONOR_START) / E.HONOR_WEEK));
+  E.honorCls = (t = E.now()) => E.HONOR_ORDER[E.honorIdx(t) % E.HONOR_ORDER.length];
+  E.honorEnd = (t = E.now()) => E.HONOR_START + (E.honorIdx(t) + 1) * E.HONOR_WEEK;
+  E.honorXp = (c) => (c && c.cls === E.honorCls() ? 1 + E.HONOR_PCT / 100 : 1); // aussi sur la Maîtrise au niveau 200 (choix 2B de Mathis)
+  E.honorDrop = (S) => (E.teamHas(S, E.honorCls()) ? 1 + E.HONOR_PCT / 100 : 1);
   E.evMult = (kind, t) => (E.eventOn(t) ? E.EVENT[kind] || 1 : 1);
   E.dropMult = (S) => {
-    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100) * (1 + (E.petFlair ? E.petFlair(S) : 0)); // 1.1 : Flair des familiers
+    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100) * (1 + (E.petFlair ? E.petFlair(S) : 0)) * E.honorDrop(S); // 1.1 : Flair des familiers ; classe à l'honneur
   };
 
   /* 1.0.5.1 (Mathis) : part de l'XP du combat reçue par chaque héros. Avant : 2/(n+1) plus l'Esprit Libre (+100 % en solo),
@@ -2486,7 +2506,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") / (c.lvl >= E.MAX_LVL && E.eventOn() ? E.EVENT.xp || 1 : 1) * (E.mtAcctMult ? E.mtAcctMult(S) : 1) * (E.mtOwn ? E.mtOwn(S, c, "xp") : 1)); // 2.0 : Maîtrise du compte ; 2.1 : Érudit ; Maîtrise lente (2A) : le x2 de l'événement ne compte plus au niveau 200 (bonus d'alliance et de boss des mondes gardés) // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp") / (c.lvl >= E.MAX_LVL && E.eventOn() ? E.EVENT.xp || 1 : 1) * (E.mtAcctMult ? E.mtAcctMult(S) : 1) * (E.mtOwn ? E.mtOwn(S, c, "xp") : 1) * E.honorXp(c)); // classe à l'honneur ; 2.0 : Maîtrise du compte ; 2.1 : Érudit ; Maîtrise lente (2A) : le x2 de l'événement ne compte plus au niveau 200 (bonus d'alliance et de boss des mondes gardés) // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
       if (E.montiXpShare) g -= E.montiXpShare(S, c, g); // 1.1 : le montilier grandit avec l'XP du héros
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture

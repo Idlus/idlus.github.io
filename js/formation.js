@@ -112,6 +112,7 @@
   }
   function heroChips(F, e, i) {
     const out = [];
+    if (E.srChip) { const c = E.srChip(F, e); if (c) out.push(...c); } // Sram : pièges posés et invisibilité (sram.js)
     if (e.shield > 0) out.push(["sh", `${G("shield")}${short(e.shield)}`, `bouclier de ${nf(e.shield)} PV`]);
     const bf = (e.buffs || []).filter((b) => b.turns >= 1 && !b.mdmg);
     if (bf.length) out.push(["bf", `${G("bolt")}${bf.length > 1 ? bf.length : ""}`, "boosts : " + bf.map(buffTxt).join(", ")]);

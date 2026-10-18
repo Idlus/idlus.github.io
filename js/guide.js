@@ -142,12 +142,21 @@
       ];
     } });
 
-  add({ id: "classes", f: "Héros", n: "Les classes", ic: "couronne", page: "team", k: "classe passif element feca iop cra",
+  add({ id: "classes", f: "Héros", n: "Les classes", ic: "couronne", page: "team", k: "classe passif element feca iop cra sram piege invisibilite honneur",
     ou: "Héros › Équipe et héros › Recruter", de: "toutes les classes dès le début",
     voir: ["equipe", "sorts"],
     b: () => [
       ["p", `${N(() => D.CLASS_ORDER.length)} classes, chacune avec ses sorts, une caractéristique principale, un élément conseillé et un passif propre :`],
       ["ul", V(() => D.CLASS_ORDER.map((k) => { const C = D.CLASSES[k]; return `**${C.name}** · ${C.passive ? C.passive.name + " : " + C.passive.desc : ""}`; }), [])],
+      ["h", "Les pièges du Sram"],
+      ["ul", [
+        `Un sort de piège ne frappe pas tout de suite : il **pose le piège** (${N(() => E.SR_TRAP_MAX)} au plus par Sram, jamais deux fois le même). La jauge sous le Sram compte ses pièges posés.`,
+        `Au début du tour du prochain ennemi (un héros adverse au Kolizéum), le plus ancien piège **explose** sous lui et ses voisins : dégâts du sort ×${N(() => String(E.SR_TRAP).replace(".", ","))}.`,
+        `**Réaction en chaîne** : chaque piège qui explose dans le même tour de jeu fait +${N(() => Math.round(E.SR_CHAIN * 100))} % de plus que le précédent (+${N(() => Math.round(E.SR_CHAIN * 300))} % au plus).`,
+        `**Invisibilité** et **Brume** : ${N(() => E.SR_INVIS)} tours dans l'ombre, −${N(() => Math.round(E.SR_HIDE * 100))} % de dégâts reçus, et +${N(() => Math.round(E.SR_AMBUSH * 100))} % au premier coup en sortant.`,
+      ]],
+      ["h", "La classe à l'honneur"],
+      ["p", V(() => `Chaque semaine (le lundi), une classe peu jouée est à l'honneur : ses héros gagnent +${E.HONOR_PCT} % d'XP (et de Maîtrise au niveau ${E.MAX_LVL}) et une équipe qui en a au moins un a +${E.HONOR_PCT} % de butin. Cette semaine : **${D.CLASSES[E.honorCls()].name}**.`, "")],
     ] });
 
   add({ id: "niveaux", f: "Héros", n: "Niveaux et expérience", ic: "trophee", page: "team", k: "xp experience niveau sagesse malus",

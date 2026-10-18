@@ -4,8 +4,8 @@
    Lancer : node tools/koli_sim.js [combats par niveau=1500] [niveaux=50,100,150,200] */
 "use strict";
 global.window = global;
-for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli"]) require("../js/" + f + ".js");
-const E = window.ENGINE; const { CLASSES } = window.DATA;
+for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli", "sram"]) require("../js/" + f + ".js");
+const E = window.ENGINE; const { CLASSES } = window.DATA; if (process.env.NO_SRAM) E.SR2 = false;
 const N = +process.argv[2] || 1500; const LVLS = (process.argv[3] || "50,100,150,200").split(",").map(Number);
 const out = {};
 for (const lvl of LVLS) {
