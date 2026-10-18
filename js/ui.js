@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.26.3";
+const GAME_VERSION = "2.1.26.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.26.4", name: "Exos et objets parfaits", guide: "equipement", items: [
+    "Équipement porté : un objet exo affiche maintenant une pastille violette avec l'icône de sa caractéristique (PA, PM, PO ou Invocation) dans le coin de sa case, comme sur DofusBook",
+    "Un objet Parfait (toutes ses caractéristiques au jet maximum) porté par un héros a un contour doré, un reflet qui passe et une petite étoile dans le coin",
+  ] },
   { v: "2.1.26.3", name: "Le bon dimanche", items: [
     "Grand défi du dimanche : lancé depuis l'Accueil, le jeu ne connaissait pas toujours la règle votée par les joueurs et jouait la première proposée. Le serveur, lui, rejouait avec la règle votée : le score validé au classement n'était pas celui affiché. Le jeu lit maintenant la règle votée avant de lancer le combat",
   ] },
@@ -6036,11 +6040,14 @@ function planWork(dl) {
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
   for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !eqLocked(c, s) && !E.equip(S, c.id, plan[s], s)) n++;
   return n; }
+/* 2.1.26.4 : sur l'équipement porté, pastille de l'exo (icône de la caractéristique, comme DofusBook) et contour doré + étoile des objets Parfaits */
+const eqMarks = (it, pf, dofp) => `${pf ? `<span class="perfsh"></span>${dofp ? "" : `<span class="perf-badge" title="Parfait : toutes les caractéristiques au jet maximum">★</span>`}` : ""}${it.exo && STATS[it.exo] ? `<span class="exo-badge" title="Exo +1 ${h(STATS[it.exo].name)}">${sIco(it.exo) || h(STATS[it.exo].short)}</span>` : ""}`;
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
-  return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
-    ${it && eqLocked(c, s) ? `<span class="eqlk" title="Verrouillé : Équiper au mieux n'y touche pas">${G("lock")}</span>` : ""}${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+  const pf = it && E.isPerfect(it); const dofp = T && T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus];
+  return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${pf ? "perf" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
+    ${it && eqLocked(c, s) ? `<span class="eqlk" title="Verrouillé : Équiper au mieux n'y touche pas">${G("lock")}</span>` : ""}${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (dofp ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") + eqMarks(it, pf, dofp) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */

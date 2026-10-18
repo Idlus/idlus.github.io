@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.26.4 « Exos et objets parfaits »
+
+- Fiche du héros, équipement porté : pastille de l'exo (icône de la caractéristique, coin bas gauche, comme DofusBook) et, pour un objet Parfait (`E.isPerfect` : toutes les lignes au jet maximum), contour doré, reflet animé et étoile (coin bas droit, sauf sur un Dofus qui a déjà sa pastille de Potentiel). Demande de Mathis.
+
 ## 2.1.26.3 « Le bon dimanche »
 
 - Grand défi du dimanche : le jeu lit la règle votée (defi_vote_count) avant de jouer ou de regarder le défi, aussi depuis l'Accueil. Sans elle, il jouait la 1re règle proposée alors que la fonction serveur « record » rejoue avec la règle votée : le score validé au classement différait du score affiché.

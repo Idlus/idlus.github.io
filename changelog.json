@@ -1,6 +1,15 @@
 {
-  "version": "2.1.26.3",
+  "version": "2.1.26.4",
   "versions": [
+    {
+      "v": "2.1.26.4",
+      "name": "Exos et objets parfaits",
+      "guide": "equipement",
+      "items": [
+        "Équipement porté : un objet exo affiche maintenant une pastille violette avec l'icône de sa caractéristique (PA, PM, PO ou Invocation) dans le coin de sa case, comme sur DofusBook",
+        "Un objet Parfait (toutes ses caractéristiques au jet maximum) porté par un héros a un contour doré, un reflet qui passe et une petite étoile dans le coin"
+      ]
+    },
     {
       "v": "2.1.26.3",
       "name": "Le bon dimanche",

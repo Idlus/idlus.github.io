@@ -228,6 +228,7 @@
         "Un objet doit être d'un niveau inférieur ou égal à celui du héros.",
         "Pas deux fois le même anneau, ni le même Dofus ou trophée.",
         "Un seul exo PA, un seul exo PM et un seul exo PO par héros ; un seul objet légendaire.",
+        "Sur la fiche, un objet exo porte une pastille violette avec l'icône de sa caractéristique, et un objet Parfait (toutes ses caractéristiques au jet maximum) un contour doré avec une étoile.",
         "**Équiper au mieux** choisit les meilleures pièces selon la vraie répartition de caractéristiques du héros, en testant les panoplies entières ; « Privilégier » fait compter une caractéristique beaucoup plus.",
         "**Verrouiller** (bouton du cadenas quand on clique un emplacement) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus.",
         `**Tenues** : ${N(() => E.MAX_GEAR)} équipements complets enregistrés par héros (un de plus avec la Collection de panoplies).`,

@@ -5891,3 +5891,14 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .wm-back{justify-content:flex-end}
 .wm-panel .phead .seg button{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
 .wm-side .zonefold{grid-template-columns:1fr auto;row-gap:4px}.wm-side .zonefold .zf-meta{grid-column:1;grid-row:2}.wm-side .zonefold .chev{grid-column:2;grid-row:1}
+/* 2.1.26.4 : équipement porté, exo et objets Parfaits */
+.dslot .exo-badge{position:absolute;left:-7px;bottom:-7px;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:2px solid #b07cff;box-shadow:0 0 7px rgba(176,124,255,.75);z-index:2;font-size:9px;font-weight:800;color:#d9c2ff}
+.dslot .exo-badge .sico{width:17px;height:17px;margin:0}
+.dslot.perf.filled:not(.radiant){border-color:#ffd84d}
+.dslot.perf.filled:not(.radiant):not(.up):not(.on):not(.hl){box-shadow:0 0 0 1px rgba(255,216,77,.55),0 0 12px rgba(255,216,77,.45),inset 0 0 12px rgba(255,216,77,.25)}
+.dslot .perfsh{position:absolute;inset:0;border-radius:12px;overflow:hidden;pointer-events:none}
+.dslot .perfsh::before{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(100deg,transparent,rgba(255,240,170,.38),transparent);transform:skewX(-18deg);animation:perfsh 3.4s ease-in-out infinite}
+@keyframes perfsh{0%,55%{left:-60%}100%{left:130%}}
+.dslot .perf-badge{position:absolute;right:-6px;bottom:-6px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#fff1a8,#ffc93c 55%,#d9931b);color:#5a3a00;font-size:12px;line-height:1;border:2px solid var(--panel);box-shadow:0 0 7px rgba(255,201,60,.8);z-index:2}
+@media (prefers-reduced-motion:reduce){.dslot .perfsh::before{animation:none;display:none}}
+@media (max-width:520px){.dslot .exo-badge{width:21px;height:21px;left:-6px;bottom:-6px}.dslot .exo-badge .sico{width:14px;height:14px}.dslot .perf-badge{width:17px;height:17px;font-size:10px;right:-5px;bottom:-5px}}
