@@ -9,6 +9,15 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.20 « Idées des joueurs »
+
+- Artisanat : la fiche d'une recette dit combien on possède déjà de l'objet fabriqué (ticket #124, Akileuss).
+- Récolte : plusieurs héros d'un coup sur la même ressource (« Les N libres », ou choix des héros dans « Envoyer récolter ») (Opla).
+- Donjons : les zones où tombe la clé sont des boutons sous sa recette (Hayabusa).
+- Règles automatiques : « Sous le niveau N » brise les objets lâchés sous un niveau choisi (Hayabusa).
+- Pastille « ← Retour aux Dofus » / « ← Retour aux quêtes » après un « Y aller » (Hayabusa).
+- Champions : appel automatique du légendaire dès 3 pistes, pause de 30 min après une défaite (Sky).
+
 ## 2.1.19 « Suspensions temporaires »
 
 - Panel Xener › Joueurs : suspension de 1, 3, 7 ou 30 jours (ou définitive), levée toute seule à la fin.

@@ -100,7 +100,17 @@
     C.pend = sid; E.note(S, `Le Champion légendaire de ${E.SUBS[sid].name} arrive au prochain combat !`, "rare");
     return null;
   };
-  Object.assign(E.ACTIONS, { sealWear: "porter un Sceau de champion", sealFuse: "fusionner deux Sceaux de champion", sealShard: "utiliser un Éclat de champion", champLegGo: "appeler le Champion légendaire" });
+  /* 2.1.20 : appel automatique du légendaire dès 3 pistes dans la zone chassée (idée de Sky). Après une défaite contre lui,
+     plus d'appel automatique dans cette zone pendant 30 minutes (sinon une équipe trop faible ne ferait plus que ça). */
+  E.CHAMP_AUTO_PAUSE = 30 * 60 * 1000;
+  E.champAuto = (S, on) => { st(S).auto = !!on; return null; };
+  const autoCall = (S, sub) => {
+    const C = S.ch; if (!C || !C.auto || C.pend || E.catchingUp || !S.hunting || S.dungeon || !S.sub || E.SUBS[S.sub] !== sub) return;
+    if ((E.expActive && E.expActive(S)) || (C.t[S.sub] || 0) < E.CHAMP_TRAILS || E.champLegHere(S)) return;
+    const A = C.autoAt || (C.autoAt = {}); if (A[S.sub] && E.now() - A[S.sub] < E.CHAMP_AUTO_PAUSE) return;
+    A[S.sub] = E.now(); C.pend = S.sub; E.note(S, `Appel automatique : le Champion légendaire de ${sub.name} arrive !`, "rare");
+  };
+  Object.assign(E.ACTIONS, { champAuto: "appel automatique du Champion légendaire", sealWear: "porter un Sceau de champion", sealFuse: "fusionner deux Sceaux de champion", sealShard: "utiliser un Éclat de champion", champLegGo: "appeler le Champion légendaire" });
 
   /* ---------- Champions vaincus (appelé par giveRewards) ---------- */
   const addKill = (S, k, n) => {
@@ -117,7 +127,7 @@
   E.champKill = (S, m, opts = {}) => {
     const C = st(S);
     if (m.champLeg) {
-      const sid = m.champLeg; C.l[sid] = (C.l[sid] || 0) + 1; C.t[sid] = Math.max(0, (C.t[sid] || 0) - E.CHAMP_TRAILS); C.sh += E.CHAMP_LEG_SHARDS;
+      const sid = m.champLeg; if (C.autoAt) delete C.autoAt[sid]; C.l[sid] = (C.l[sid] || 0) + 1; C.t[sid] = Math.max(0, (C.t[sid] || 0) - E.CHAMP_TRAILS); C.sh += E.CHAMP_LEG_SHARDS;
       const sub = E.SUBS[sid]; const title = `Traqueur de ${sub ? sub.name : sid}`;
       if (!(S.titlesExtra || []).includes(title)) (S.titlesExtra = S.titlesExtra || []).push(title);
       E.note(S, `Champion légendaire vaincu ! Titre « ${title} » et ${E.CHAMP_LEG_SHARDS} Éclats de champion.`, "rare");
@@ -143,6 +153,7 @@
   const mg = E.makeGroup;
   E.makeGroup = (S, sub, teamSize) => {
     const g = mg(S, sub, teamSize);
+    autoCall(S, sub);
     const C = S.ch; if (!C || !C.pend || E.catchingUp || E.SUBS[C.pend] !== sub) return g; // 1.1.0.1 : jamais pendant l'absence (combat tiré d'avance, gagné sans le voir)
     if ((C.t[C.pend] || 0) < E.CHAMP_TRAILS) { C.pend = null; return g; }
     const cand = g.filter((m) => !m.archi); if (!cand.length) return g;

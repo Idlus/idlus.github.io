@@ -1,6 +1,19 @@
 {
-  "version": "2.1.19",
+  "version": "2.1.20",
   "versions": [
+    {
+      "v": "2.1.20",
+      "name": "Idées des joueurs",
+      "guide": "metiers",
+      "items": [
+        "Artisanat : la fiche d'une recette dit combien tu en possèdes déjà (sac et trop-plein), pour les objets comme pour les clés et objets du Bricoleur (signalement d'Akileuss)",
+        "Récolte : envoie plusieurs héros d'un coup sur la même ressource. Bouton « Les N libres » sur la carte du métier, ou touche les héros voulus dans « Envoyer récolter » (idée d'Opla)",
+        "Donjons : sous la recette de la clé, les zones où elle tombe sont des boutons qui y mènent (idée de Hayabusa)",
+        "Règles automatiques : nouvelle règle « Sous le niveau », qui brise les objets lâchés plus bas que le niveau choisi, même si un héros est encore niveau 1. Panoplies, Rayonnants et exo gardés (idée de Hayabusa)",
+        "Après un « Y aller » depuis la page Dofus ou les Quêtes, une pastille « ← Retour aux Dofus » ramène au même endroit pour choisir la ressource suivante (idée de Hayabusa)",
+        "Champions : « Appel automatique » du légendaire dès 3 pistes dans la zone chassée. Après une défaite contre lui, pause de 30 minutes dans cette zone (idée de Sky)"
+      ]
+    },
     {
       "v": "2.1.19",
       "name": "Suspensions temporaires",

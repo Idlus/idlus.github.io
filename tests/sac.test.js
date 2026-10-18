@@ -55,6 +55,12 @@ console.log("ok - sac de 3 000 places");
   const c = mk(high); assert.strictEqual(E.applyAuto(T, c), null, "objet à niveau gardé");
   const d = mk(low); d.locked = true; assert.strictEqual(E.applyAuto(T, d), null, "cadenas gardé");
   T.settings.auto.low = 0; const f = mk(low); assert.strictEqual(E.applyAuto(T, f), null, "règle éteinte");
+  // 2.1.20 : « Sous le niveau N », sans regarder le niveau des héros (un héros niveau 1 ne bloque plus la règle)
+  E.addChar(T, "cra", "Petit", 1).inTeam = true; T.settings.auto.lowLvl = D.ITEMS[low].lvl + 1;
+  const g = mk(low); assert.strictEqual(E.applyAuto(T, g), "low", "sous le niveau choisi : brisé"); assert.ok(!T.items[g.uid]);
+  const g2 = mk(high); assert.strictEqual(E.applyAuto(T, g2), null, "au-dessus : gardé");
+  const g3 = mk(lowSet); assert.strictEqual(E.applyAuto(T, g3), null, "panoplie gardée");
+  T.settings.auto.lowLvl = 0; const g4 = mk(low); assert.strictEqual(E.applyAuto(T, g4), null, "réglage vide : gardé");
 }
 console.log("ok - règle Bas niveau");
 // 5. « Tout prendre » : le trop-plein revient dans le sac, dans la limite de la place

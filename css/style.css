@@ -5816,3 +5816,15 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 /* 2.1.9 : emplacement verrouillé (Équiper au mieux n'y touche pas) */
 .dslot .eqlk{position:absolute;left:-6px;top:-7px;width:18px;height:18px;border-radius:50%;background:var(--gold);color:#1b1b1b;display:grid;place-items:center;z-index:2;box-shadow:0 0 0 2px var(--panel)}
 .dslot .eqlk svg{width:11px;height:11px}
+/* 2.1.20 : pastille « Retour aux Dofus » après un « Y aller » */
+#backchip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--navh, 64px) + 12px);z-index:70;box-shadow:0 4px 16px rgba(0,0,0,.35);border-radius:999px;padding:8px 16px;white-space:nowrap}
+@media (min-width:860px){#backchip{bottom:20px}}
+.kp-drop .btn{margin:2px 2px 0 0}
+.gspick{display:flex;flex-wrap:wrap;gap:6px}
+.gsph{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;border:1px solid var(--line);background:var(--panel2,transparent);color:inherit;cursor:pointer;font:inherit}
+.gsph .head{width:26px;height:26px}
+.gsph.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);background:color-mix(in srgb,var(--gold) 18%,transparent)}
+.gsph i{font-style:normal;opacity:.8}.gsph i .uico{width:14px;height:14px}
+.ch-auto{margin-top:6px}.ch-auto[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.ch-autorow{margin:0 0 8px}
+.pslotrow{flex-wrap:nowrap}.pslotrow .pslot{margin:0}.pslotall{flex:none;width:auto;padding-left:14px;padding-right:14px;white-space:nowrap}

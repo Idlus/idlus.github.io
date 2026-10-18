@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.19";
+const GAME_VERSION = "2.1.20";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.20", name: "Idées des joueurs", guide: "metiers", items: [
+    "Artisanat : la fiche d'une recette dit combien tu en possèdes déjà (sac et trop-plein), pour les objets comme pour les clés et objets du Bricoleur (signalement d'Akileuss)",
+    "Récolte : envoie plusieurs héros d'un coup sur la même ressource. Bouton « Les N libres » sur la carte du métier, ou touche les héros voulus dans « Envoyer récolter » (idée d'Opla)",
+    "Donjons : sous la recette de la clé, les zones où elle tombe sont des boutons qui y mènent (idée de Hayabusa)",
+    "Règles automatiques : nouvelle règle « Sous le niveau », qui brise les objets lâchés plus bas que le niveau choisi, même si un héros est encore niveau 1. Panoplies, Rayonnants et exo gardés (idée de Hayabusa)",
+    "Après un « Y aller » depuis la page Dofus ou les Quêtes, une pastille « ← Retour aux Dofus » ramène au même endroit pour choisir la ressource suivante (idée de Hayabusa)",
+    "Champions : « Appel automatique » du légendaire dès 3 pistes dans la zone chassée. Après une défaite contre lui, pause de 30 minutes dans cette zone (idée de Sky)",
+  ] },
   { v: "2.1.19", name: "Suspensions temporaires", items: [
     "Panel Xener › Joueurs : un compte peut être suspendu 1, 3, 7 ou 30 jours (ou définitivement). La suspension se lève toute seule à la fin, et le compte revient dans les classements",
   ] },
@@ -3650,7 +3658,8 @@ function keyPanel(did) {
     <div class="kp-prog"><div class="bar"><i style="width:${pct(ok, ing.length)}%"></i></div><span class="xs num">${ok}/${ing.length} ingrédients</span>${eta}</div>
     <div class="kp-list">${ing.filter((x) => x.have < x.q).map((x) => `<div class="kp-ing">${im(resImg(x.r), "kp-rico", x.r)}<span class="kp-n">${h(x.r)}</span><span class="kp-q num">${fmt(x.have)}/${x.q}</span><span class="kp-src">${keySource(x.r)}</span></div>`).join("")}</div>
     ${ok ? `<div class="kp-done"><span class="xs muted">Déjà réunis :</span>${ing.filter((x) => x.have >= x.q).map((x) => `<span class="kp-chip">${im(resImg(x.r), "", x.r)}${h(x.r)} ✓</span>`).join("")}</div>` : ""}
-    ${sub && dg.keyDrop ? `<div class="xs muted">La clé tombe aussi parfois sur les monstres de <b>${h(sub.name)}</b>.</div>` : ""}
+    ${sub && dg.keyDrop ? (() => { const L = Object.values(E.SUBS).filter((z) => (z.dungeons || (z.dungeon ? [z.dungeon] : [])).includes(did)); if (!L.some((z) => z.id === sub.id)) L.unshift(sub); /* 2.1.20 : zones cliquables (idée d'Hayabusa) */
+      return `<div class="xs muted kp-drop">La clé tombe aussi parfois sur les monstres de ${L.map((z) => `<button class="btn xs" data-act="zoneview" data-id="${z.id}" data-gotab="world" data-tip="Ouvrir la zone pour y chasser">${IC("carte")} ${h(z.name)}</button>`).join(" ")}</div>`; })() : ""}
   </div>`;
 }
 /* 0.1.32 : Encyclopédie rangée en onglets (Bestiaire, Familles, Boss de donjon), zones avec progression,
@@ -6777,13 +6786,14 @@ function resDetail(n) {
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
-  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}</summary>
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}${A.lowLvl > 1 ? ` <span class="tag good">Sous le niv. ${A.lowLvl}</span>` : ""}</summary>
     <div class="pad stack" style="padding-top:0;gap:8px">
       <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
       <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
         <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
       <label class="row small">Bas niveau <select data-act="autolow"><option value="" ${!(A.low > 0) ? "selected" : ""}>garder</option>${[20, 30, 50].map((v) => `<option value="${v}" ${A.low === v ? "selected" : ""}>briser à ${v} niveaux sous mon héros le plus faible</option>`).join("")}</select> <span class="tag soft">panoplies, Rayonnants et exo gardés</span></label>
+      <label class="row small">Sous le niveau <input type="number" min="0" max="200" step="10" data-act="autolowlvl" value="${A.lowLvl > 1 ? A.lowLvl : ""}" placeholder="aucun" style="width:80px"> <span class="xs muted">briser les objets plus bas que ce niveau, quel que soit le niveau de tes héros</span></label>
       <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
@@ -7007,7 +7017,7 @@ function recolteHtml() {
         <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="row between"><span class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-g="gather" data-v="${id}" data-tip="Classement des joueurs en ${h(J.name)}">${IC("couronne")} Classement</button>` : ""}</div></div></div>
       <div class="pad stack" style="gap:8px">
         ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · coup de ${hitDur(E.gatherPeriod(S, c))}</span></div><div class="row between xs pwhit"><span>Reste <b data-wleft="${c.id}">${hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.hitQty(S, c))))} ${h(c.job.res)} à la fin du coup</span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
-        <button class="pslot" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>
+        <div class="row pslotrow" style="gap:6px"><button class="pslot grow" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>${free.length > 1 ? `<button class="pslot pslotall" data-act="gathersheet" data-job="${id}" data-all="1" data-tip="Choisir la ressource puis envoyer d'un coup tous les héros libres">Les ${free.length} libres</button>` : ""}</div>
         <details class="ptool" data-job="${id}" ${ui.toolOpen && ui.toolOpen[id] ? "open" : ""}><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de ressources par coup</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
         ${resGrid(id)}
       </div></div>`; }).join("");
@@ -7112,6 +7122,12 @@ function galetBox(r) {
       ${q ? `<button class="btn sm ${on ? "primary" : ""}" data-act="recgalet" data-g="${h(g.name)}" aria-pressed="${on}">${on ? "✓ Ajouté" : "Ajouter"}</button>` : `<button class="btn sm" data-act="kz-shop" data-g="${h(g.name)}">Boutique</button>`}</div>`; }).join("")}
     <div class="xs muted">Un Galet par fabrication. Sans Galet, la recette marche comme avant. Les Galets s'achètent dans la boutique du Kolizéum.</div></div>`;
 }
+/* 2.1.20 : combien on possède déjà de ce qu'on fabrique (signalement d'Akileuss, ticket #124) */
+function recOwned(r) {
+  if (r.k === "tpl") { let n = 0; for (const u in S.items) if (S.items[u].tpl === r.id) n++; for (const o of S.over || []) if (o.tpl === r.id) n++; return n; }
+  const R = r.R || {}; if (R.idol) return E.idolOwned(S, R.idol) ? 1 : 0; if (R.dofus) return null;
+  if (R.furn) return (S.furniture || []).filter((x) => x === r.id).length; if (R.cons) return (S.cons || {})[R.cons] || 0; return S.res[r.id] || 0;
+}
 function recDetail(r, job) {
   if (!r) return `<div class="empty">Choisis une recette dans la liste.</div>`;
   const J = S.crafts[job] || { lvl: 1 }; const pic = r.T ? itemImg(r.id) : resImg(r.id); const pinned = S.shop.some((e) => e.id === r.id);
@@ -7123,6 +7139,7 @@ function recDetail(r, job) {
     ${rf ? `<div class="xs pjrenl">${IC("phenix")} <b>Renaissance ${E.roman(rn)}</b> : ${rf >= 1 ? "chaque objet sort au jet parfait." : `aucun jet sous ${Math.round(rf * 100)} % de la fourchette · chance d'un objet Parfait : <b>${pctTiny(perfOdds(r.T, rf))}</b>`}</div>` : ""}` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
   return `<div class="pdet"><div class="row" style="gap:12px"><span class="icobox lg">${im(pic, "", r.name)}</span><div class="grow"><h2 style="margin:0">${h(r.name)}</h2>
       <div class="small muted">${r.T ? `${h(slotName(r.T.slot))} · ` : ""}niveau ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? ` · <a href="#" data-act="searchset" data-id="${r.T.set}">${h(SETS[r.T.set].name)}</a>` : ""}</div>
+      ${(() => { const o = recOwned(r); return o === null ? "" : `<div class="small" id="recown" style="margin-top:2px">${IC("sac")} Tu en possèdes <b class="num">${fmt(o)}</b></div>`; })()}
       ${r.for ? `<div class="small plus" style="margin-top:2px"><span class="pdot"></span> Mieux que ce que porte <b>${h(r.for.name)}</b></div>` : ""}</div>
       <button class="btn sm ghost" data-act="recfav" data-id="${h(r.id)}" title="Favori">${r.fav ? "★" : "☆"}</button></div>
     ${stats}
@@ -7666,6 +7683,9 @@ function gatherPick(job) {
 }
 function gatherSheet() {
   const g = ui.gs; const c = char(g.cid) || S.chars[0]; g.cid = c.id;
+  /* 2.1.20 : plusieurs héros d'un coup sur la même ressource (idée d'Opla) ; g.pick = héros choisis, le premier sert à l'aperçu */
+  if (!Array.isArray(g.pick) || !g.pick.length) g.pick = [c.id]; g.pick = g.pick.filter((id) => char(id)); if (!g.pick.length) g.pick = [c.id];
+  const pick = g.pick; const free = S.chars.filter((x) => !x.job && !x.inTeam);
   if (!g.job) g.job = c.job ? c.job.job : "bucheron";
   const list = E.jobRes(g.job); const lv = S.jobs[g.job].lvl;
   if (!g.res || !list.find((x) => x[0] === g.res && x[1] <= lv)) g.res = (c.job && c.job.job === g.job ? c.job.res : null) || (list.filter((x) => x[1] <= lv).pop() || [])[0];
@@ -7673,12 +7693,13 @@ function gatherSheet() {
   openSheet(`<h2>${IC("pioche")} Envoyer récolter</h2>
     <p class="small muted">Le héros quitte l'équipe de chasse pendant qu'il récolte. Les niveaux de métier sont communs à tous vos héros.</p>
     <div class="stack" style="gap:8px">
-      <label class="row small"><span style="min-width:90px">Héros</span><select data-act="gs" data-k="cid">${S.chars.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.name)} (niv. ${x.lvl})${x.job ? " — récolte déjà" : ""}</option>`).join("")}</select></label>
+      <div class="row small" style="align-items:flex-start"><span style="min-width:90px;padding-top:6px">Héros</span><div class="gspick grow">${S.chars.map((x) => { const on = pick.includes(x.id); return `<button class="gsph ${on ? "on" : ""}" data-act="gspick" data-id="${x.id}" aria-pressed="${on}" data-tip="${h(x.name)} · niv. ${x.lvl}${x.job ? ` · récolte déjà ${h(x.job.res)}` : x.inTeam ? " · dans l'équipe de chasse" : " · au repos"}">${head(x)}<span class="xs">${h(x.name)}</span>${x.job ? `<i class="xs">${IC("pioche")}</i>` : ""}</button>`; }).join("")}</div></div>
+      ${free.length ? `<div class="row small"><span style="min-width:90px"></span><button class="btn sm" data-act="gsall">${pick.length > 1 && free.every((x) => pick.includes(x.id)) ? "Ne garder qu'un héros" : `Choisir les ${free.length} héros libres`}</button><span class="xs muted">plusieurs héros peuvent récolter la même ressource</span></div>` : ""}
       <div class="row small"><span style="min-width:90px">Métier</span>${Object.keys(GATHER_JOBS).map((j) => `<button class="jobpick ${j === g.job ? "on" : ""}" data-act="gsjob" data-v="${j}" data-tip="${h(GATHER_JOBS[j].name)} niv. ${S.jobs[j].lvl}">${im(jobImg(j), "joblogo sm", GATHER_JOBS[j].name)}</button>`).join("")}</div>
       <div class="respick">${list.map(([r, l]) => `<button class="${r === g.res ? "on" : ""}" data-act="gsres" data-v="${h(r)}" ${l > lv ? "disabled" : ""} data-tip="${h(r)} · niveau ${l}${l > lv ? " (verrouillé)" : ""} · en stock : ${fmt(S.res[r] || 0)}">${im(resImg(r), "ico", r)}<span class="xs">${h(r)}</span>${l > lv ? `<i class="xs">niv. ${l}</i>` : ""}</button>`).join("")}</div>
       ${g.res ? `<div class="small muted">coup de ${hitDur(per)} · ≈ ${fmt(Math.max(1, Math.round(E.hitQty(S, Object.assign({}, c, { job: { job: g.job, res: g.res, prog: 0 } })))))} ${h(g.res)} par coup${E.filonOn(S, g.res) ? " · <b class='plus'>filon actif ×2 !</b>" : ""}${c.cls === "sadi" && (g.job === "bucheron" || g.job === "alchimiste") ? " · passif Sadida" : ""}${c.cls === "steam" && g.job === "pecheur" ? " · passif Steamer" : ""}</div>` : ""}
     </div>
-    <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
+    <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>${pick.length > 1 ? `Envoyer les ${pick.length} héros` : "Envoyer"}</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 /* ---------- 3.2.2 : notifications ---------- */
 const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets vont dans le trop-plein"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Évènement rare", "Champion, objet Rayonnant ou archimonstre"]];
@@ -7898,7 +7919,24 @@ function render() {
   else if (PAGES[ui.tab]) PAGES[ui.tab]($("#main")); // 1.0.30 : Comptoirs, Foire du Trool, Cours des ressources
   else { ui.tab = "home"; renderHome(); }
   tabsKeep();
+  backChip();
   tipTick();
+}
+/* 2.1.20 : « Retour aux Dofus » (idée d'Hayabusa) : un « Y aller » depuis la page Dofus ou les Quêtes garde la page d'origine ;
+   une pastille en bas de l'écran y ramène (même Dofus, même défilement) pour choisir la ressource suivante. Elle part quand on y revient. */
+const BACK_FROM = { dofus: "Retour aux Dofus", quests: "Retour aux quêtes" };
+const BACK_GO = new Set(["searchzone", "zoneview", "hunt", "dgopen", "gathersheet", "gatherassign", "searchcraft", "nav"]);
+function backMark(t) {
+  if (!S || !BACK_FROM[ui.tab] || t.closest("#nav,#subnav,#backchip")) return; const a = t.dataset.act;
+  if (t.dataset.tab || t.dataset.gotab || BACK_GO.has(a)) ui.backTo = { tab: ui.tab, qt: ui.qt, y: window.scrollY };
+}
+function backChip() {
+  let el = document.getElementById("backchip"); const B = ui.backTo;
+  if (B && ui.tab === B.tab && !document.querySelector(".sheet-bg")) ui.backTo = null;
+  const on = ui.backTo && ui.tab !== ui.backTo.tab;
+  if (!on) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("button"); el.id = "backchip"; el.className = "btn sm primary"; el.dataset.act = "backgo"; document.body.appendChild(el); }
+  const txt = `← ${BACK_FROM[ui.backTo.tab]}`; if (el.textContent !== txt) el.textContent = txt;
 }
 /* 1.0.15 : au téléphone, chaque rangée d'onglets tient sur une ligne qui défile ; le redessin des 3 s ne la remet pas au début */
 const tabScroll = {};
@@ -9405,6 +9443,7 @@ document.addEventListener("click", (ev) => {
   if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
+  backMark(t);
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
   if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; if (ui.tab === "quests" && t.closest("#nav,#subnav")) ui.qt = "jour"; if (ui.tab === "team") { ui.tview = "list"; ui.heroMore = false; } closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
@@ -9456,6 +9495,7 @@ document.addEventListener("click", (ev) => {
     case "searchcraft": { ui.craftJob = d.job; const F = fltOf("met"); F.q = d.q || ""; F.mode = "all"; const tp = Object.keys(ITEMS).find((k) => ITEMS[k].name === d.q && ITEMS[k].craft); if (tp) ui.recSel = tp; pageGo("craft"); if (narrow() && tp) recSheet(); return; }
     case "searchdg": dungeonSheet(d.id); return;
     case "searchmon": { const q = ($("#wsq") || {}).value; if (q) wsRemember(q.trim()); searchClose(); if (d.dg) dungeonSheet(d.dg); else { closeSheet(); ui.zoneView = d.sub; ui.tab = "world"; render(); window.scrollTo(0, 0); } return; }
+    case "backgo": { const B = ui.backTo; if (!B) return; ui.backTo = null; closeSheet(); ui.tab = B.tab; if (B.qt) ui.qt = B.qt; ui.zoneView = null; render(); window.scrollTo(0, B.y || 0); return; }
     case "searchzone": closeSheet(); ui.zoneFromEnc = d.from === "enc" ? d.id : null; if (ui.zoneFromEnc) ui.encScroll = window.scrollY; ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
     case "searchinv": closeSheet(); ui.tab = "inv"; ui.inv = "items"; ui.invSel = d.tpl; ui.slotFilter = "all"; render(); window.scrollTo(0, 0); return;
     case "searchres": closeSheet(); ui.tab = "inv"; ui.inv = "res"; ui.resSel = d.n; render(); window.scrollTo(0, 0); return;
@@ -9503,10 +9543,18 @@ document.addEventListener("click", (ev) => {
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Économie › Comptoirs ; 1.0.33 : Héros › Dofus
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
-    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
+    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null };
+      if (d.all) { const fr = S.chars.filter((x) => !x.job && !x.inTeam).map((x) => x.id); if (fr.length) { ui.gs.pick = fr; ui.gs.cid = fr[0]; } } gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
     case "gsres": ui.gs.res = d.v; gatherSheet(); return;
-    case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
+    case "gsgo": { const g = ui.gs; const ids = g.pick && g.pick.length ? g.pick : [g.cid]; const ok = [], ko = [];
+      for (const id of ids) { const r = E.setJob(S, id, g.job, g.res); if (r) ko.push(`${char(id).name} : ${r}`); else ok.push(char(id).name); }
+      if (!ok.length) { toast(ko[0] || "Personne n'est parti."); return; } closeSheet(); dirty = true;
+      toast(ok.length > 1 ? `${ok.length} héros partent récolter ${g.res}.${ko.length ? ` ${ko.length} n'ont pas pu partir.` : ""}` : `${ok[0]} part récolter.`); break; }
+    case "gspick": { const g = ui.gs; const id = +d.id; const i = g.pick.indexOf(id); if (i >= 0) { if (g.pick.length > 1) g.pick.splice(i, 1); } else g.pick.push(id); g.cid = g.pick[0]; gatherSheet(); return; }
+    case "gsall": { const g = ui.gs; const free = S.chars.filter((x) => !x.job && !x.inTeam).map((x) => x.id);
+      if (g.pick.length > 1 && free.every((id) => g.pick.includes(id))) g.pick = [g.pick[0]]; else g.pick = [...new Set([...g.pick, ...free])];
+      g.cid = g.pick[0]; gatherSheet(); return; }
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); break;
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
@@ -9963,6 +10011,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
   else if (a === "autolow") { S.settings.auto.low = +t.value || 0; ui.autoOpen = true; }
+  else if (a === "autolowlvl") { S.settings.auto.lowLvl = Math.max(0, Math.min(200, Math.floor(+t.value) || 0)); ui.autoOpen = true; }
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;

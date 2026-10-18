@@ -76,6 +76,7 @@
     const tail = !m.idolChamp && e.SEALS && e.SEALS[m.champ] ? `fait monter ton Sceau ${e.SEALS[m.champ].name}` : "butin doublé";
     return `<div class="ch-ban"><span class="ch-bi">${ico(m.champ)}</span><div><b>Champion ${h(P.name)} : ${h(m.name)}</b><small>${h(P.desc.replace(/\.$/, ""))} · PV ×2, dégâts +20 % · ${tail}</small></div></div>`;
   }
+  const autoBtn = (C) => `<button class="btn sm ch-ghost ch-auto" data-act="chp-auto" aria-pressed="${!!C.auto}" data-tip="Le légendaire est appelé tout seul dès que la zone chassée a ${E().CHAMP_TRAILS} pistes. Après une défaite contre lui, pause de 30 minutes dans cette zone.">${C.auto ? "✓ " : ""}Appel automatique ${C.auto ? "activé" : "coupé"}</button>`;
   function huntPanel(S) {
     const e = E(); if (!e.SEALS || !S.hunting || S.dungeon || !S.sub || !e.SUBS[S.sub] || (e.expActive && e.expActive(S))) return "";
     const C = e.champState(S); const sid = S.sub; const sub = e.SUBS[sid];
@@ -91,6 +92,7 @@
       <div class="ch-sech"><b>Traque</b><span class="xs muted">${t} / ${T} pistes${legN ? ` · vaincu ${legN}×` : ""}</span></div>
       <div class="ch-trail">${Array.from({ length: T }, (_, i) => `<i class="${i < t ? "on" : ""}"></i>`).join("")}</div>
       ${legBtn}
+      ${autoBtn(C)}
       <div class="xs muted ch-hint">${t >= T ? `Titre « Traqueur de ${h(sub.name)} » et ${e.CHAMP_LEG_SHARDS} Éclats à la clé.` : "Chaque Champion vaincu ici laisse une piste."}</div>
       <div class="ch-stats"><div><span class="xs muted">Chance</span><b>1 combat sur ${Math.round(1 / e.CHAMP_CHANCE)}</b></div>${near ? `<div><span class="xs muted">Sceau le plus proche</span><b>${ico(near[0])} ${e.SEALS[near[0]].name} ${near[1]}/${near[2]}</b></div>` : ""}</div></div></div>`;
   }
@@ -158,7 +160,7 @@
         return `<details class="ch-zg" ${open ? "open" : ""}><summary><b>${h(G.n)}</b><span class="xs muted">${ok} / ${G.L.length} complètes</span></summary><div class="ch-zl">${G.L.map((r) => zoneCard(S, r)).join("")}</div></details>`; }).join(""); }
     else { const L = rows.filter(st.f === "done" ? (r) => r.got === 6 : live).sort((x, y) => (y.id === S.sub) - (x.id === S.sub) || y.got + y.t / 10 - (x.got + x.t / 10) || x.ord - y.ord);
       zl = L.length ? `<div class="ch-zl">${L.map((r) => zoneCard(S, r)).join("")}</div>` : `<p class="muted small">${st.f === "done" ? "Aucune zone complète pour l'instant." : "Vaincs un Champion en chasse : sa zone apparaîtra ici."}</p>`; }
-    const zoneBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Zones</h2>${chips}</div><div class="pad"><p class="xs muted ch-zhelp">Les 6 pouvoirs vaincus dans une zone : +${e.CHAMP_ZONE_BONUS} % d'XP, de kamas et de butin. Chaque Champion vaincu laisse une piste ; à 3 pistes, appelle le Champion légendaire.</p>${zl}</div></section>`;
+    const zoneBox = `<section class="panel ch-panel"><div class="phead"><h2>${crown} Zones</h2>${chips}</div><div class="pad"><p class="xs muted ch-zhelp">Les 6 pouvoirs vaincus dans une zone : +${e.CHAMP_ZONE_BONUS} % d'XP, de kamas et de butin. Chaque Champion vaincu laisse une piste ; à 3 pistes, appelle le Champion légendaire.</p><div class="ch-autorow">${autoBtn(C)}</div>${zl}</div></section>`;
     const html = `<div class="page ch-page"><div class="ch-ph"><h1>Chasse aux Champions</h1><p class="muted small">Un combat de chasse sur ${Math.round(1 / e.CHAMP_CHANCE)}, un monstre devient Champion.</p></div>${kpis}<div class="ch-cols"><div class="ch-cl">${teamBox}${sealBox}</div><div class="ch-cr">${zoneBox}</div></div></div>`;
     if (main.querySelector(".ch-page") && window.DX.morph) window.DX.morph(main, html); else main.innerHTML = html; // la boucle du jeu garde une liste déroulante ouverte
   }
@@ -171,6 +173,7 @@
     else if (a === "chp-page") { window.DX.ui.tab = "chasse"; window.DX.render(); window.scrollTo(0, 0); return; }
     else if (a === "chp-flt") { st.f = d.v; window.DX.render(); return; }
     else if (a === "chp-wearsel") { r = e.act(S, "sealWear", +d.id, t.value || null); if (!r) X().toast(t.value ? `Sceau ${e.sealName(t.value)} porté.` : "Sceau retiré."); }
+    else if (a === "chp-auto") { const on = !e.champState(S).auto; r = e.act(S, "champAuto", on); if (!r) X().toast(on ? `Appel automatique du légendaire activé (dès ${e.CHAMP_TRAILS} pistes).` : "Appel automatique du légendaire coupé."); }
     else if (a === "chp-leg") { r = e.act(S, "champLegGo"); if (!r) X().toast("Le Champion légendaire arrive au prochain combat !"); }
     if (r) { X().toast(r); return; }
     X().markDirty(); X().render();

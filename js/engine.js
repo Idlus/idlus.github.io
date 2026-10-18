@@ -2555,9 +2555,10 @@
   E.xpPenalty = (diff) => (diff > E.XP_PEN.free ? Math.max(E.XP_PEN.min, 1 - (diff - E.XP_PEN.free) * E.XP_PEN.step) : 1);
   /* 1.0.33.1 : règle « Bas niveau » : un objet trop bas pour l'équipe (A.low niveaux sous son héros le plus faible) est
      brisé. Jamais : panoplies, Rayonnants, exo, parfaits, verrouillés, trophées, Dofus et légendaires. */
-  E.lowItem = (S, it, gap) => {
+  E.lowItem = (S, it, gap, abs) => {
     const T = ITEMS[it && it.tpl]; if (!T || !(gap > 0) || T.slot === "dofus" || T.trophy || T.leg || T.set) return false;
     if (it.radiant || it.exo || it.locked || (E.isPerfect && E.isPerfect(it))) return false;
+    if (abs) return T.lvl < gap; // 2.1.20 : « sous le niveau N » choisi par le joueur (idée d'Hayabusa)
     const team = E.team(S); if (!team.length) return false;
     return T.lvl < Math.min(...team.map((c) => c.lvl)) - gap;
   };
@@ -2570,6 +2571,7 @@
       if (better) { E.breakItem(S, it.uid, null); return "recycle"; }
     }
     if (A.low > 0 && E.lowItem(S, it, A.low)) { E.breakItem(S, it.uid, null); return "low"; }
+    if (A.lowLvl > 1 && E.lowItem(S, it, A.lowLvl, true)) { E.breakItem(S, it.uid, null); return "low"; }
     if (A.action === "none") return null;
     const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
     if (E.itemQuality(it) * 100 >= A.q) return null;

@@ -270,6 +270,7 @@
         `Battre les 6 pouvoirs dans une même sous-zone : +${N(() => E.CHAMP_ZONE_BONUS * (E.CHAMP_ZONE_BONUS < 1 ? 100 : 1))} % d'XP, de kamas et de butin pour toujours dans cette sous-zone.`,
         `Chaque Champion laisse une piste. À ${N(() => E.CHAMP_TRAILS)} pistes, « Appeler le légendaire » le fait venir au combat suivant : tous les pouvoirs, vie ×${N(() => E.CHAMP_LEG_HP)}, dégâts ×${N(() => E.CHAMP_LEG_DMG)}.`,
         `Le vaincre donne un titre et ${N(() => E.CHAMP_LEG_SHARDS)} **Éclats de champion** ; perdu, les pistes restent.`,
+        `**Appel automatique** (bouton sous la traque, en combat ou dans le menu Chasse) : le légendaire est appelé tout seul dès ${N(() => E.CHAMP_TRAILS)} pistes dans la zone chassée. Après une défaite contre lui, pause de ${N(() => E.CHAMP_AUTO_PAUSE / 60000)} min dans cette zone.`,
         "Un Éclat = +1 Champion compté sur le Sceau de ton choix.",
         "Les Champions tués avant la 1.1 ne comptent pas.",
       ]],
@@ -377,7 +378,7 @@
         "Sac plein : les nouveaux objets vont dans le **trop-plein**. Quand lui aussi est plein, l'objet le plus ancien est brisé en runes.",
         "Les Dofus ne quittent jamais le sac.",
         "Le Grenier du Havre-Sac et certains meubles agrandissent le sac et le trop-plein.",
-        "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup.",
+        "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup. « Sous le niveau » brise les objets lâchés plus bas que le niveau choisi, quel que soit le niveau de tes héros (panoplies, Rayonnants et exo gardés).",
         "**Coffres** : « Tout ouvrir » (onglet Consommables ou tuile de l'accueil) les ouvre tous d'un coup, les plus précieux d'abord. Mode **Auto** : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal. Les kamas dépendent du niveau de ton meilleur héros au moment de l'ouverture.",
       ]],
     ] });
@@ -420,6 +421,7 @@
       ["h", "Récolte"],
       ["ul", [
         "Un héros envoyé à la récolte ne combat plus : il récolte en continu, même hors-ligne.",
+        "**Plusieurs héros d'un coup** : dans « Envoyer récolter », touche les héros voulus (ou « Les N libres » sur la carte du métier), choisis la ressource, puis « Envoyer ». Ils peuvent tous récolter la même ressource.",
         `Un coup de récolte dure ${N(() => E.HIT_S.lo)} s.`,
         `Trouvailles : ${pc(V(() => E.FIND_CHANCE, 0))} de chance par coup.`,
         `**Filons** : environ toutes les ${N(() => E.FILON_EVERY_S / 3600)} h, un filon rend ×2 pendant ${N(() => E.FILON_DUR_S / 60)} min.`,
@@ -430,6 +432,7 @@
         "Le niveau de métier demandé est le niveau de l'objet.",
         `L'XP est pleine pour les recettes jusqu'à ${N(() => E.CRAFT_FALL.full)} niveaux sous ta meilleure recette, puis baisse jusqu'à ${N(() => E.CRAFT_FALL.end)} niveaux en dessous.`,
         `Il faut environ ${N(() => E.CRAFT_STEP)} fabrications par niveau (${N(() => E.CRAFT_STEP_BRICO)} pour le Bricoleur).`,
+        "La fiche d'une recette affiche combien tu en possèdes déjà (sac et trop-plein).",
         "La liste de courses suit les ressources qui manquent et prévient quand tout est réuni.",
         "Sac plein : l'objet fabriqué va dans le trop-plein.",
       ]],
@@ -516,7 +519,7 @@
     b: () => [
       ["p", `${N(() => Object.keys(D.DUNGEONS).length)} donjons. Une clé = une tentative : les salles, puis le boss. Perdre ou quitter fait perdre la clé (une Fiole de résurrection relance une fois).`],
       ["h", "Les clés"],
-      ["ul", ["En chasse dans la sous-zone d'accès du donjon.", "Fabriquées par le Bricoleur.", "À l'Hôtel de vente, dans les Comptoirs (Trousseau de clés), à la Foire, en expédition."]],
+      ["ul", ["En chasse dans la sous-zone d'accès du donjon (sous la recette de la clé, le nom de la zone est un bouton qui y mène).", "Fabriquées par le Bricoleur.", "À l'Hôtel de vente, dans les Comptoirs (Trousseau de clés), à la Foire, en expédition."]],
       ["h", "La stasis"],
       ["p", `Chaque donjon a sa difficulté de 1 à ${N(() => E.STASIS_MAX)}. Réussir une stasis ouvre la suivante pour ce donjon. Plus elle est haute, plus les monstres sont forts et les récompenses grandes.`],
       ["kv", [1, 5, 10, 15].map((k) => [`Stasis ${k}`, V(() => { const m = E.stasisMult(k); return `vie ×${fr(Math.round(m.hp * 100) / 100)} · dégâts ×${fr(Math.round(m.dmg * 100) / 100)} · gains ×${fr(Math.round(m.rew * 100) / 100)}`; })])],

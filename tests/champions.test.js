@@ -76,6 +76,20 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   S.ch.pend = sub.id; assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "sans pistes, pas de légendaire");
 }
 
+// 4 bis (2.1.20). Appel automatique : dès 3 pistes, le légendaire vient au groupe suivant ; après une défaite, pause de 30 min dans la zone
+{
+  const S = team(60); const sub = subAt(60); E.startHunt(S, sub.id); S.ch = S.ch || {}; E.champState(S);
+  S.ch.t[sub.id] = 3; assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "coupé par défaut");
+  assert.strictEqual(E.act(S, "champAuto", true), null); assert.strictEqual(S.ch.auto, true);
+  assert.strictEqual(E.makeGroup(S, sub, 4).filter((x) => x.champLeg).length, 1, "appelé tout seul");
+  assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "défaite : pas de nouvel appel tout de suite");
+  now += E.CHAMP_AUTO_PAUSE + 1000; const g = E.makeGroup(S, sub, 4); const m = g.find((x) => x.champLeg); assert.ok(m, "30 min plus tard, nouvel appel");
+  E.champKill(S, m, {}); assert.ok(!S.ch.autoAt[sub.id], "victoire : plus de pause"); assert.strictEqual(S.ch.t[sub.id], 0);
+  assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "sans pistes, rien");
+  S.ch.t[sub.id] = 3; E.catchingUp = true; assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "jamais pendant l'absence"); E.catchingUp = false;
+  E.act(S, "champAuto", false); assert.ok(!E.makeGroup(S, sub, 4).some((x) => x.champLeg), "coupé");
+}
+
 // 5. Fusions : deux Sceaux au rang 5, 15 noms, les deux pouvoirs à 70 %
 {
   assert.strictEqual(Object.keys(E.SEAL_FUSIONS).length, 15);
