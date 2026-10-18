@@ -111,4 +111,30 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   if (R1.done) assert.strictEqual(E.stasisInfo(P, did).max, 2, "la stasis gagnée en groupe compte");
   console.log(`ok - mercenaire et groupe (${R1.rooms.length} salles, ${L.kamas} kamas)`);
 }
+// 7. Métiers (M1) : tout jusqu'au niveau 100, 3 spécialités jusqu'à 200, un changement par manche ; récolte 2 fois plus rapide.
+{
+  now = Date.UTC(2030, 0, 9, 12, 0);
+  const S = E.monoStart(E.newState("Artisan", "iop")); S.crafts = S.crafts || {};
+  const C = E.newState("Classique", "iop");
+  assert.strictEqual(E.jobCap(C, "c", "tailleur"), 200, "Classique : 200");
+  assert.strictEqual(E.jobCap(S, "c", "tailleur"), 100, "Monocompte : 100 hors spécialité");
+  S.jobs.paysan.lvl = 100; S.jobs.paysan.xp = 0;
+  const pot = () => { S.cons = S.cons || {}; S.cons.potion_savoir = 5; return E.useConsumable ? E.useConsumable(S, "potion_savoir", "paysan") : null; };
+  if (E.useConsumable) { pot(); assert.strictEqual(S.jobs.paysan.lvl, 100, "bloqué au niveau 100"); }
+  assert.strictEqual(E.monoSetSpec(S, 0, "tailleur"), null); assert.strictEqual(E.monoSetSpec(S, 1, "paysan"), null); assert.strictEqual(E.monoSetSpec(S, 2, "mineur"), null);
+  assert.strictEqual(E.jobCap(S, "c", "tailleur"), 200); assert.strictEqual(E.jobCap(S, "f", "costumage"), 200, "la forgemagie suit son métier");
+  assert.strictEqual(E.jobCap(S, "f", "forgemage"), 100);
+  assert.ok(/déjà une spécialité/.test(E.monoSetSpec(S, 1, "tailleur")));
+  S.jobs.paysan.lvl = 150; S.jobs.paysan.xp = 7;
+  assert.ok(/une fois par manche/.test(E.monoSetSpec(S, 1, "bucheron")) === false, "premier changement libre");
+  assert.strictEqual(S.jobs.paysan.lvl, 100, "le métier quitté redescend à 100");
+  assert.ok(/une fois par manche/.test(E.monoSetSpec(S, 2, "pecheur")), "un seul changement par manche");
+  now += 14 * 86400000; assert.strictEqual(E.monoManche(S), 2);
+  assert.strictEqual(E.monoSetSpec(S, 1, "paysan"), null, "manche suivante : on peut changer");
+  assert.strictEqual(S.jobs.paysan.lvl, 150, "il retrouve son niveau");
+  // récolte : 2 fois plus rapide
+  const c = S.chars[0], c2 = C.chars[0]; c.job = { job: "paysan", res: E.jobRes("paysan")[0][0] }; c2.job = { job: "paysan", res: c.job.res };
+  assert.ok(Math.abs(E.gatherSpeed(S, "paysan", c) / E.gatherSpeed(C, "paysan", c2) - 2) < 1e-9, "récolte ×2");
+  console.log("ok - métiers et spécialités");
+}
 console.log("Monocompte : tout est bon");

@@ -98,6 +98,8 @@
   E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : Math.pow(100 / l, 1.5));
   E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
+  /* niveau maximum d'un métier (g récolte, c artisanat, f forgemagie) : 200 ; le Monocompte le baisse hors spécialités (js/mono.js) */
+  E.jobCap = (S, kind, job) => 200;
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
   /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
   E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)
@@ -3292,7 +3294,8 @@
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
     if (q) addRes(S, W.res, q);
     J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn ? E.mtOwn(S, c, "xpj") : 1); // 2.1 : Artisan (XP de métier)
-    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
+    const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
     return q;
   };
@@ -3419,7 +3422,9 @@
   };
   const craftXp = (S, job, x) => {
     const J = S.crafts[job]; J.xp += x * (E.mtOwn ? Math.max(1, ...S.chars.map((c) => E.mtOwn(S, c, "xpj"))) : 1); // 2.1 : Artisan (le meilleur héros du compte)
-    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
+    const cap = E.jobCap(S, "c", job);
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
+    if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, E.jobXpNeed(J.lvl) - 1);
   };
 
   /* ---------------- Brisage & runes ---------------- */

@@ -5937,3 +5937,9 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .mercpick button img{width:22px;height:22px;object-fit:contain}
 .mercpick button.on{border-color:var(--cc,var(--accent));box-shadow:0 0 0 2px var(--cc,var(--accent)) inset;background:var(--panel2)}
 .mercpick button:disabled{opacity:.4;cursor:default}
+/* Monocompte : spécialités de métier */
+.spcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.spc{display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.spc.spcon{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.spc select{margin-top:4px;width:100%}
+@media (max-width:640px){.spcgrid{grid-template-columns:1fr}}

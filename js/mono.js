@@ -7,7 +7,7 @@
      optimisé seul vers la stasis 7, sans équipement vers la stasis 1 ;
    - le butin d'équipement ×4 jusqu'au niveau 100, ×1,5 au-delà (les ressources ne changent pas : un héros seul
      a déjà la même moyenne qu'une équipe) ; les gains hors ligne à 80 %.
-   Les groupes en direct, le mercenaire, les saisons, le pass et le serveur à part viennent aux étapes suivantes.
+   Étape 2 : mercenaire (solo) et combats de groupe ; étape 3 : métiers et spécialités. Le serveur à part, les saisons et le pass viennent ensuite.
    Crochets dans engine.js : E.monoSmall (PV et dégâts subis), E.monoDmg (dégâts), E.monoItem (butin d'équipement), E.MONO.off (hors ligne).
    ========================================================================== */
 (function (root) {
@@ -180,4 +180,45 @@
       S.mono.grp = (S.mono.grp || 0) + 1; E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true }); }
     return tot;
   };
+
+  /* ---------------- Étape 3 : métiers (choix M1 de Mathis) ----------------
+     Tous les métiers (récolte, artisanat et forgemagie) montent jusqu'au niveau 100 ; 3 spécialités montent jusqu'à 200.
+     Une spécialité d'artisanat emmène sa forgemagie (Tailleur → Costumage…). Les cases vides se remplissent quand on veut ;
+     remplacer une spécialité : une fois par manche (2 semaines). Le métier quitté redescend au niveau 100 et retrouve
+     son niveau s'il redevient spécialité. Le héros combat ou récolte, comme dans DOFUS : la récolte va 2 fois plus vite. */
+  M.jobs = { cap: 100, spec: 3, manche: 14 * 86400000, gather: 2 };
+  const isJob = (j) => !!(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j]);
+  const jobObj = (S, j) => (D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts = S.crafts || {})[j] || (S.crafts[j] = { lvl: 1, xp: 0 }));
+  const fmTwins = (j) => (E.FM_JOBS ? Object.keys(E.FM_JOBS).filter((f) => E.FM_JOBS[f].base === j) : []);
+  E.monoManche = (S) => Math.max(1, Math.floor((E.now() - ((S.mono && S.mono.t0) || E.now())) / M.jobs.manche) + 1);
+  E.monoSpecs = (S) => (S.mono && S.mono.spec) || [];
+  const cap0 = E.jobCap;
+  E.jobCap = (S, kind, job) => {
+    if (!E.isMono(S)) return cap0(S, kind, job);
+    const base = kind === "f" ? E.FM_JOBS && E.FM_JOBS[job] && E.FM_JOBS[job].base : job;
+    return E.monoSpecs(S).includes(base) ? 200 : M.jobs.cap;
+  };
+  E.monoCanSwap = (S) => !S.mono || S.mono.specM !== E.monoManche(S);
+  /* i : case 0 à 2 ; job : métier de récolte ou d'artisanat (null pour vider une case, compte comme un changement) */
+  E.monoSetSpec = (S, i, job) => {
+    if (!E.isMono(S)) return "Réservé au Monocompte.";
+    if (!(i >= 0 && i < M.jobs.spec)) return "Case inconnue.";
+    if (job && !isJob(job)) return "Métier inconnu.";
+    const sp = (S.mono.spec = (S.mono.spec || []).slice()); while (sp.length < M.jobs.spec) sp.push(null); S.mono.spec = sp;
+    if (job && sp.includes(job)) return "Ce métier est déjà une spécialité.";
+    const old = sp[i];
+    if (old && !E.monoCanSwap(S)) return `Une spécialité se change une fois par manche : prochain changement à la manche ${E.monoManche(S) + 1}.`;
+    if (!old && !job) return null;
+    if (old) {
+      [[jobObj(S, old), "jobXpNeed"]].concat(fmTwins(old).map((f) => [E.fmJob(S, f), "fmNeed"])).forEach(([J]) => {
+        if (!J || J.lvl <= M.jobs.cap) return; J.keep = { lvl: J.lvl, xp: J.xp }; J.lvl = M.jobs.cap; J.xp = 0; });
+      S.mono.specM = E.monoManche(S);
+    }
+    sp[i] = job || null;
+    if (job) [jobObj(S, job)].concat(fmTwins(job).map((f) => E.fmJob(S, f))).forEach((J) => { if (J && J.keep) { if (J.keep.lvl > J.lvl) { J.lvl = J.keep.lvl; J.xp = J.keep.xp; } delete J.keep; } });
+    E.note(S, job ? `Spécialité : ${(D.GATHER_JOBS[job] || D.CRAFT_JOBS[job]).name} peut monter jusqu'au niveau 200.` : "Spécialité retirée.", "info");
+    return null;
+  };
+  const gs0 = E.gatherSpeed;
+  E.gatherSpeed = function (S) { return gs0.apply(this, arguments) * (E.isMono(S) ? M.jobs.gather : 1); };
 })(typeof window !== "undefined" ? window : globalThis);
