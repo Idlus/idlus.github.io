@@ -473,6 +473,7 @@
       <p class="small muted">Ce panel agit sur le serveur, pour tous les joueurs. Il ne touche pas à ta partie. « Panel de test » passe sur ta partie de test (hors ligne, sauvegarde séparée) : ta vraie partie est envoyée en ligne puis mise de côté, intacte.</p>${tabs}${body}</section>`;
   }
   const when = (t) => { if (!t) return "—"; const s = (Date.now() - new Date(t)) / 1000; return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
+  const susTo = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }); // 2.1.18 : fin d'une suspension temporaire
   const dur = (sec) => { sec = Math.max(0, Math.round(sec || 0)); return sec >= 3600 ? `${Math.round(sec / 3600)} h` : `${Math.round(sec / 60)} min`; };
   function admBody() {
     const o = A.ov;
@@ -555,7 +556,7 @@
   const loopRead = () => ({ id: A.lp.id, body: $("#admLoop").value, every: +$("#admLoopE").value, banner: $("#admLoopB").checked, chat: $("#admLoopC").checked, show: +$("#admLoopS").value, ends: $("#admLoopF").value });
   function stTags(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now();
-    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">Retiré des classements</span>` : x.suspect ? `<span class="st v">À vérifier</span>` : x.verified ? `<span class="st mod">Vérifié</span>` : ""}`;
+    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu${x.suspended_until ? ` jusqu'au ${susTo(x.suspended_until)}` : " définitivement"}</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">Retiré des classements</span>` : x.suspect ? `<span class="st v">À vérifier</span>` : x.verified ? `<span class="st mod">Vérifié</span>` : ""}`;
   }
   function ficheHtml(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now(); const H = x.heroes || [];
@@ -570,7 +571,7 @@
         <button class="btn sm" data-act="adm-rename" data-u="${x.id}">Changer son pseudo</button>${window.PANEL ? `<button class="btn sm" data-act="adm-pxcopy" data-u="${x.id}" data-p="${h(x.pseudo)}">Copier dans ma partie de test</button>` : ""}
         <button class="btn sm${x.suspended_at ? "" : " danger"}" data-act="adm-suspend" data-u="${x.id}" data-v="${x.suspended_at ? 0 : 1}">${x.suspended_at ? "Rétablir le compte" : "Suspendre le compte"}</button>` : ""}</div>`}
       ${A.ren === x.id ? `<div class="srch"><input id="admRen" value="${h(x.pseudo)}" maxlength="16" autocomplete="off"><button class="btn primary" data-act="adm-renamego" data-u="${x.id}">Renommer</button></div>` : ""}
-      ${A.sus === x.id ? `<div class="stack" style="gap:6px"><span class="minus small">Le compte de ${h(x.pseudo)} ne pourra plus envoyer sa partie ni écrire dans le chat, et disparaît des classements. Tu pourras le rétablir.</span><div class="row"><button class="btn sm danger" data-act="adm-suspendgo" data-u="${x.id}">Confirmer la suspension</button><button class="btn sm" data-act="adm-suspendno">Annuler</button></div></div>` : ""}
+      ${A.sus === x.id ? `<div class="stack" style="gap:6px"><span class="minus small">Le compte de ${h(x.pseudo)} ne pourra plus envoyer sa partie ni écrire dans le chat, et disparaît des classements. Une suspension temporaire se lève toute seule à la fin ; tu pourras aussi le rétablir avant.</span><div class="row">${[[1, "1 jour"], [3, "3 jours"], [7, "7 jours"], [30, "30 jours"]].map(([j, n]) => `<button class="btn sm danger" data-act="adm-suspendgo" data-u="${x.id}" data-j="${j}">${n}</button>`).join("")}<button class="btn sm danger" data-act="adm-suspendgo" data-u="${x.id}" data-j="0">Définitive</button><button class="btn sm" data-act="adm-suspendno">Annuler</button></div></div>` : ""}
       <h2>Ses derniers messages publics</h2>${(A.msgs || []).map((m) => `<div class="ln"><span class="t" style="margin:0;min-width:64px">${hhmm(m.created_at)}</span>${h(m.body)}</div>`).join("") || `<div class="ln muted">Aucun message ces dernières 48 h.</div>`}</div>`;
   }
   /* 2.1.4 « Bouclier du serveur » (choix 4A) : pourquoi le serveur a retenu la partie, à qui le joueur a vendu cette semaine,
@@ -659,7 +660,7 @@
       case "adm-rename": A.ren = A.ren === d.u ? null : d.u; repaintAdm(); return;
       case "adm-renamego": if (await admDo("adm_rename", { p_user: d.u, p_pseudo: ($("#admRen").value || "").trim() }, "Pseudo changé.")) A.ren = null; repaintAdm(); return;
       case "adm-suspend": if (d.v === "0") admDo("adm_suspend", { p_user: d.u, p_on: false }, "Compte rétabli."); else { A.sus = d.u; repaintAdm(); } return;
-      case "adm-suspendgo": A.sus = null; admDo("adm_suspend", { p_user: d.u, p_on: true }, "Compte suspendu."); return;
+      case "adm-suspendgo": { A.sus = null; const j = +d.j || 0; admDo("adm_suspend", { p_user: d.u, p_on: true, p_jours: j || null }, j ? `Compte suspendu ${j} jour${j > 1 ? "s" : ""}.` : "Compte suspendu définitivement."); return; } // 2.1.18 : suspension temporaire
       case "adm-suspendno": A.sus = null; repaintAdm(); return;
       case "adm-settings": admDo("adm_settings", { p_min_level: +$("#admMin").value, p_slow: +$("#admSlow").value }, "Réglages du chat enregistrés."); return;
       case "adm-announce": {

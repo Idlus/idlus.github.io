@@ -82,7 +82,7 @@ declare d jsonb;
 begin
   if p_user is null then raise exception 'Connecte-toi pour utiliser l''hôtel de vente.'; end if;
   if not exists (select 1 from profiles where id = p_user) then raise exception 'Choisis d''abord ton pseudo.'; end if;
-  if exists (select 1 from profiles where id = p_user and suspended_at is not null) then raise exception 'Compte suspendu.'; end if;
+  if public.susp(p_user) then raise exception 'Compte suspendu.'; end if;
   -- 2.1.4 « Bouclier du serveur » (choix 3A) : un compte suspect a aussi ses échanges en pause, et l'hôtel de vente part de la
   -- dernière partie validée par le serveur (saves_ok, schema.sql), plus de la partie envoyée telle quelle
   if exists (select 1 from ladder where user_id = p_user and (flagged or suspect)) then raise exception 'Ta partie est en vérification : les échanges sont bloqués en attendant.'; end if;

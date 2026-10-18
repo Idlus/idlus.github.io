@@ -51,7 +51,7 @@ begin
   if (w || ' ' || coalesce(x, '')) ~* '(https?://|www\.|discord\.(gg|com))' then return jsonb_build_object('err', 'Les liens ne sont pas autorisés dans les signalements.'); end if;
   if u is not null then
     select pseudo, suspended_at into pr from profiles where id = u;
-    if found and pr.suspended_at is not null then return jsonb_build_object('err', 'Ton compte est suspendu.'); end if;
+    if found and public.susp(u) then return jsonb_build_object('err', 'Ton compte est suspendu.'); end if;
     select * into sa from chat_sanctions where user_id = u;
     if found and sa.banned then return jsonb_build_object('err', 'Tu ne peux pas signaler de bug pour le moment.'); end if;
     nm := coalesce(pr.pseudo, left(btrim(coalesce(p_name, '')), 24));

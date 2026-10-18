@@ -131,7 +131,7 @@ begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
   select pseudo, suspended_at into pr from profiles where id = me;
   if not found then return 'Choisis d''abord un pseudo.'; end if;
-  if pr.suspended_at is not null then return 'Ton compte est suspendu.'; end if;
+  if public.susp(me) then return 'Ton compte est suspendu.'; end if;
   select * into sa from chat_sanctions where user_id = me;
   if found and sa.banned then return 'Tu ne peux plus écrire dans le chat.'; end if;
   if found and sa.mute_until > now() then return format('Tu es muet encore %s min.', ceil(extract(epoch from (sa.mute_until - now())) / 60)); end if;
@@ -268,8 +268,9 @@ end $$;
 create or replace function public.adm_players(p_q text) returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need_chat();
+  perform public.susp_lift(); -- 2.1.18 : suspensions finies levées
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (
-    select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, coalesce(l.suspect, false) suspect, l.flag_reason, coalesce(l.verified, false) verified,
+    select p.id, p.pseudo, p.created_at, p.suspended_at, p.suspended_until, l.main cls, l.level, l.playtime, l.heroes, l.flagged, coalesce(l.suspect, false) suspect, l.flag_reason, coalesce(l.verified, false) verified,
       s.updated_at last_save, cs.mute_until, coalesce(cs.banned, false) banned,
       (select count(distinct r.reporter) from reports r where r.target = p.id) reports,
       exists (select 1 from mods m where m.user_id = p.id) is_mod, exists (select 1 from admins a where a.user_id = p.id) is_admin
@@ -319,13 +320,17 @@ as $$ declare old text := public.pseudo_of(p_user); begin
   return null;
 end $$;
 
-create or replace function public.adm_suspend(p_user uuid, p_on boolean) returns void language plpgsql security definer set search_path = public
+-- 2.1.18 : p_jours = durée de la suspension (null = définitive) ; « Rétablir » remet aussi le compte dans les classements
+drop function if exists public.adm_suspend(uuid, boolean);
+create or replace function public.adm_suspend(p_user uuid, p_on boolean, p_jours int default null) returns void language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need(true);
   if exists (select 1 from admins where user_id = p_user) then raise exception 'impossible sur Mathis'; end if;
-  update profiles set suspended_at = case when p_on then now() end where id = p_user;
-  if p_on then update ladder set flagged = true, flag_reason = 'compte suspendu' where user_id = p_user; end if;
-  perform public.alog(format(case when p_on then 'compte de %s suspendu' else 'compte de %s rétabli' end, public.pseudo_of(p_user)));
+  if p_jours is not null and (p_jours < 1 or p_jours > 365) then raise exception 'durée invalide'; end if;
+  update profiles set suspended_at = case when p_on then now() end, suspended_until = case when p_on and p_jours is not null then now() + make_interval(days => p_jours) end where id = p_user;
+  if p_on then update ladder set flagged = true, flag_reason = 'compte suspendu' where user_id = p_user;
+  else update ladder set flagged = false, flag_reason = null where user_id = p_user and flag_reason = 'compte suspendu'; end if;
+  perform public.alog(format(case when not p_on then 'compte de %s rétabli' when p_jours is null then 'compte de %s suspendu' else 'compte de %s suspendu ' || p_jours || ' jour(s)' end, public.pseudo_of(p_user)));
 end $$;
 
 create or replace function public.adm_reports() returns jsonb language plpgsql security definer set search_path = public
@@ -429,7 +434,7 @@ end $$;
 
 do $$ declare f text; begin
   foreach f in array array['adm_overview()', 'adm_msg_del(bigint)', 'adm_msg_purge(uuid)', 'adm_chat_clear(text)', 'adm_chat_close(boolean)', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
-    'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
+    'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean, int)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
     'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
@@ -490,7 +495,7 @@ as $$ declare me uuid := auth.uid(); cur text; last timestamptz; susp timestampt
   if me is null then return 'Connecte-toi d''abord.'; end if;
   select pseudo, pseudo_at, suspended_at into cur, last, susp from profiles where id = me;
   if cur is null then return 'Choisis d''abord un pseudo.'; end if;
-  if susp is not null then return 'Compte suspendu : pas de changement de pseudo.'; end if;
+  if susp is not null and public.susp(me) then return 'Compte suspendu : pas de changement de pseudo.'; end if;
   p_pseudo := btrim(coalesce(p_pseudo, ''));
   if p_pseudo !~ '^[A-Za-zÀ-ÖØ-öø-ÿ0-9_-]{3,16}$' then return '3 à 16 caractères : lettres, chiffres, - ou _ (pas d''espace).'; end if;
   if p_pseudo = cur then return null; end if;

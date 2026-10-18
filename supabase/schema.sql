@@ -14,6 +14,26 @@ create table if not exists public.profiles (
 );
 -- 0.1.17 : compte suspendu par Mathis (panel admin) : la partie n'est plus envoyée en ligne
 alter table public.profiles add column if not exists suspended_at timestamptz;
+-- 2.1.18 : suspension temporaire (null = définitive) ; levée toute seule à la première vérification après la date
+alter table public.profiles add column if not exists suspended_until timestamptz;
+-- Lève les suspensions arrivées à leur fin (le compte revient aussi dans les classements)
+create or replace function public.susp_lift() returns void language plpgsql security definer set search_path = public
+as $$ declare ids uuid[]; begin
+  with x as (update profiles set suspended_at = null, suspended_until = null where suspended_at is not null and suspended_until <= now() returning id)
+  select array_agg(id) into ids from x;
+  if ids is not null then update ladder set flagged = false, flag_reason = null where user_id = any(ids) and flag_reason = 'compte suspendu'; end if;
+end $$;
+-- Le compte u est-il suspendu en ce moment ? (lève la suspension si elle est finie)
+create or replace function public.susp(u uuid) returns boolean language plpgsql security definer set search_path = public
+as $$ declare t timestamptz; f timestamptz; begin
+  select suspended_at, suspended_until into t, f from profiles where id = u;
+  if t is null then return false; end if;
+  if f is not null and f <= now() then perform public.susp_lift(); return false; end if;
+  return true;
+end $$;
+revoke all on function public.susp_lift() from public, anon, authenticated;
+revoke all on function public.susp(uuid) from public, anon;
+grant execute on function public.susp(uuid) to authenticated;
 create unique index if not exists profiles_pseudo_unique on public.profiles (lower(pseudo));
 alter table public.profiles enable row level security;
 
@@ -58,7 +78,7 @@ as $$
 declare r timestamptz;
 begin
   if auth.uid() is null then raise exception 'non connecté'; end if;
-  if exists (select 1 from profiles where id = auth.uid() and suspended_at is not null) then raise exception 'compte suspendu'; end if;
+  if public.susp(auth.uid()) then raise exception 'compte suspendu'; end if;
   if p_force then
     insert into saves (user_id, data, meta, game_version, device, updated_at)
       values (auth.uid(), p_data, coalesce(p_meta, '{}'::jsonb), p_version, p_device, clock_timestamp())

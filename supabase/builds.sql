@@ -150,7 +150,7 @@ begin
   end if;
   select pseudo, suspended_at into pr from profiles where id = u;
   if not found then return jsonb_build_object('err', 'Choisis d''abord ton pseudo.'); end if;
-  if pr.suspended_at is not null then return jsonb_build_object('err', 'Ton compte est suspendu.'); end if;
+  if public.susp(u) then return jsonb_build_object('err', 'Ton compte est suspendu.'); end if;
   select * into sa from chat_sanctions where user_id = u;
   if found and (sa.banned or sa.mute_until > now()) then return jsonb_build_object('err', 'Tu ne peux pas publier de build pour le moment.'); end if;
   if length(t) < 4 then return jsonb_build_object('err', 'Donne un titre à ton build (4 caractères au moins).'); end if;

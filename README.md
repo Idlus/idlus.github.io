@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.19 « Suspensions temporaires »
+
+- Panel Xener › Joueurs : suspension de 1, 3, 7 ou 30 jours (ou définitive), levée toute seule à la fin.
+
 ## 2.1.18 « Bouclier plus juste »
 
 - Vérification des parties : gains de kamas, ressources et Dofus permis revus à la hausse (relevés des meilleurs joueurs), et un compte vérifié par Mathis ne repasse plus que le contrôle de l'impossible.

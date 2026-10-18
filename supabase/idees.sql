@@ -45,7 +45,7 @@ begin
   if (t || ' ' || b) ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans les idées.'; end if;
   if u is not null then
     select pseudo, suspended_at into pr from profiles where id = u;
-    if found and pr.suspended_at is not null then return 'Ton compte est suspendu.'; end if;
+    if found and public.susp(u) then return 'Ton compte est suspendu.'; end if;
     select * into sa from chat_sanctions where user_id = u;
     if found and (sa.banned or sa.mute_until > now()) then return 'Tu ne peux pas envoyer d''idée pour le moment.'; end if;
     nm := coalesce(pr.pseudo, left(btrim(coalesce(p_name, '')), 24));
