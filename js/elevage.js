@@ -307,6 +307,23 @@
     if (o) E.emit(S, "equip", {});
     return null;
   };
+  /* 2.1.30 « Marché des bêtes » : une monture vendue à l'hôtel de vente ou donnée en échange quitte l'écurie (opération du serveur) ;
+     une monture achetée arrive marquée b (5B de Mathis : elle ne compte ni au carnet de l'éleveur ni au classement d'élevage, ses petits oui) */
+  E.mountGone = (S, uid) => {
+    const M = S.mounts && S.mounts[uid]; if (!M) return;
+    const o = E.mountOwner(S, M.uid); if (o) { delete o.mount; E.refreshSpells(o, E.charStats(S, o)); E.emit(S, "equip", {}); }
+    if (S.enclos && Array.isArray(S.enclos.pairs)) S.enclos.pairs = S.enclos.pairs.filter((p) => p.a !== M.uid && p.b !== M.uid);
+    if (S.elev && Array.isArray(S.elev.bal)) S.elev.bal = S.elev.bal.filter((b) => b.uid !== M.uid);
+    delete S.mounts[uid];
+  };
+  E.mountIn = (S, m) => {
+    if (!m || !MOUNTS[m.sp] || !(isBico(String(m.c)) ? MOUNTS[m.sp].bico[m.c] : MOUNTS[m.sp].cols[m.c])) return null;
+    const uid = S.mountUid++; const M = Object.assign({}, m, { uid, got: E.now() });
+    delete M.nm; delete M.res; if (m.b) M.b = 1; else delete M.b; // une annonce retirée revient sans b : elle reste « à soi »
+    M.lvl = Math.max(1, Math.min(E.MOUNT_MAX, Math.floor(+M.lvl || 1))); M.xp = Math.max(0, +M.xp || 0); M.kids = Math.max(0, Math.floor(+M.kids || 0));
+    M.st = Math.max(1, Math.min(E.ST_BASE + 2, Math.floor(+M.st || 1))); if (M.cap && !E.CAPS[M.cap]) delete M.cap;
+    S.mounts[uid] = M; return M;
+  };
   /* 15A : relâcher en masse les montures faibles (★1-2, sans capacité, ni chromatiques, ni occupées) ; garde la meilleure de chaque couleur */
   E.massReleaseList = (S, maxSt = 2) => {
     const all = Object.values(S.mounts || {});
@@ -509,7 +526,7 @@
   /* ---------- classement et annonces (10A, 12A) ---------- */
   E.elevSummary = (S) => {
     let c = 0, chr = 0; for (const sp of E.MOUNT_ORDER) { c += E.spSeen(S, sp); chr += Object.keys((S.elev && S.elev.chrSeen && S.elev.chrSeen[sp]) || {}).length; }
-    const s = Object.values(S.mounts || {}).reduce((a, M) => a + (M.st || 1), 0);
+    const s = Object.values(S.mounts || {}).reduce((a, M) => a + (M.b ? 0 : M.st || 1), 0); // 2.1.30 : les montures achetées ne comptent pas (5B)
     return { c, s: Math.min(400, s), chr };
   };
   E.elevColoursTotal = () => E.MOUNT_ORDER.reduce((a, sp) => a + E.spColours(sp).length, 0);

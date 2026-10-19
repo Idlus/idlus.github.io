@@ -830,7 +830,7 @@
     ] });
 
   /* ======================= Communauté ======================= */
-  add({ id: "hdv", f: "Économie", n: "Hôtel de vente et Cours des ressources", ic: "bourse", page: "hdv", pages: ["cours"], k: "hotel de vente hdv taxe offre achat echange cours vente directe coefficient vendre plusieurs selection",
+  add({ id: "hdv", f: "Économie", n: "Hôtel de vente et Cours des ressources", ic: "bourse", page: "hdv", pages: ["cours"], k: "hotel de vente hdv taxe offre achat echange cours vente directe coefficient vendre plusieurs selection monture familier bete achetee",
     ou: "Économie › Hôtel de vente · Économie › Cours des ressources", de: "en ligne, avec un compte (partie 1)",
     voir: ["guilde"],
     b: () => [
@@ -841,6 +841,7 @@
         "**Offres d'achat** : 10 au plus, 3, 7 ou 14 jours ; la taxe de 2 % ne porte que sur ce que tu reçois.",
         "**Échange direct** entre joueurs, sans taxe.",
         "Les Dofus ne se vendent ni ne s'échangent.",
+        "**Montures et familiers** (catégories Montures et Familiers, ou « Vendre à l'HdV » sur leur fiche) : la bête garde niveau, étoiles, capacité et petits ; son surnom est effacé. Une bête achetée ne compte ni au carnet de l'éleveur, ni au classement d'élevage, ni à l'album (ses petits comptent). Pas en vente : montures montées, à l'enclos ou en balade, familiers portés, Chacha Doré.",
       ]],
       ["h", "Cours des ressources (vente directe)"],
       ["p", `Vends tes ressources directement au jeu. Le prix = prix de base × un coefficient commun à tout le serveur, entre ×${N(() => E.VENTE.MIN)} et ×${N(() => E.VENTE.MAX)}. Vendre fait baisser le coefficient (${N(() => E.VENTE.VOL)} unités vendues = −1), et il remonte en se rapprochant de ×${N(() => E.VENTE.MAX)} (écart divisé par deux toutes les ${N(() => E.VENTE.HALF_H)} h).`],

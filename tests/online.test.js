@@ -308,6 +308,11 @@ const MOCK = () => {
       const tpl = Object.keys(window.DATA.ITEMS).find((k) => window.DATA.ITEMS[k].lvl === 60 && window.DATA.ITEMS[k].slot === "coiffe"); const T = window.DATA.ITEMS[tpl];
       const item = { tpl, stats: Object.fromEntries(Object.entries(T.stats).map(([k, [lo]]) => [k, lo])) };
       if (name === "hdv_search") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000 }], error: null };
+      // 2.1.30 « Marché des bêtes » : une Dragodinde Rousse en vente (catégorie mt, clé espèce:couleur)
+      if (name === "hdv_market" && a.p_cat === "mt") return { data: [["dd:Rousse", 80, 90000, 3], ["dd:Amande", 100, 140000, 2], ["dd:Dorée", 60, 260000, 1], ["dd:Amande|Dorée", 100, 1200000, 1], ["mu:Doré", 100, 480000, 2]].map(([key, lvl, unit, n]) => ({ cat: "mt", key, name: key, lvl, slot: key.slice(0, 2), n, qty: n, unit, p1: unit, avg: Math.round(unit * 1.1) })), error: null };
+      if (name === "hdv_market" && a.p_cat === "pet") return { data: [], error: null };
+      if (name === "hdv_offers" && /^(dd|mu|vk):/.test(a.p_key || "")) { const [sp, c] = [a.p_key.slice(0, 2), a.p_key.slice(3)];
+        return { data: [[21, 90000, 80, 3, 1, "sage"], [22, 120000, 100, 4, 0, ""], [23, 150000, 100, 5, 2, "endu"]].map(([id, price, lvl, st, kids, cap]) => ({ id, qty: 1, price, item: Object.assign({ sp, c, lvl, st, kids }, cap ? { cap } : {}), mine: false, exp: new Date(Date.now() + 864e5 * 14).toISOString() })), error: null }; }
       if (name === "hdv_offers") return { data: d.hdvSold ? [] : [{ id: 1, qty: 1, price: 5000, item, mine: false, exp: new Date(Date.now() + 864e5 * 14).toISOString() }], error: null };
       if (name === "hdv_market") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000, p1: 5000, avg: 6000 }], error: null };
       if (name === "hdv_history") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600, q: 1 }, { d: "2026-10-11", u: 5000, q: 2 }] }, error: null };
@@ -962,6 +967,15 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(await page.$('.mkdet [data-act="mk-sell"]:not([disabled])'))) fail("hôtel de vente : vente impossible après confirmation");
     await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
+    // 2.1.30 « Marché des bêtes » : catégorie Montures, une ligne par couleur qui s'ouvre sur chaque monture (3A), repère « carnet » (5B)
+    await page.click('.subtabs [data-act="mk-tab"][data-v="buy"]'); await page.waitForTimeout(300);
+    await page.evaluate(() => { window.DX.S.kamas += 200000; });
+    await page.click('[data-act="mk-fam"][data-v="mt"]'); await page.waitForSelector('.mktr2[data-k="dd:Rousse"]', { timeout: 8000 });
+    await page.click('.mktr2[data-k="dd:Rousse"]'); await page.waitForSelector(".mkdet .mkbnote", { timeout: 8000 });
+    { const t = await page.textContent(".mkdet"); if (!/carnet/.test(t) || !/★|étoile/i.test(t)) fail("hôtel de vente : fiche de monture incomplète"); }
+    if (!(await page.$(".mkdet .mkboff"))) fail("hôtel de vente : monture en vente absente de la fiche");
+    if (!(await page.$('.mkdet [data-act="mk-ask"]'))) fail("hôtel de vente : monture sans bouton d'achat " + (await page.textContent(".mkdet .mkboff")).replace(/\s+/g, " ").slice(0, 200));
+    await page.click('[data-act="mk-fam"][data-v="eq"]'); await page.waitForTimeout(300);
     // 7e bis. offres d'achat (0.1.33) : vendre à une offre, puis publier la sienne
     await page.evaluate(() => { const S = window.DX.S; S.res = S.res || {}; S.res["Laine de Bouftou"] = 20; S.kamas = Math.max(S.kamas, 10000); });
     await page.click('.subtabs [data-act="mk-tab"][data-v="ord"]'); await page.waitForSelector('[data-act="mk-ofill"]', { timeout: 5000 });

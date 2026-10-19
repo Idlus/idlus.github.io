@@ -497,7 +497,7 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
       const hours = Math.max(0, (new Date(cur.updated_at).getTime() - new Date(ok.src_at).getTime()) / 3600000);
       // ce que le serveur a donné entre-temps : opérations de l'hôtel de vente (et lots, Jackpot, Pluie…) pas encore dans
       // la partie validée, et codes cadeaux utilisés depuis
-      const gift = { k: 0, r: 0, dof: 0 };
+      const gift = { k: 0, r: 0, dof: 0, mt: 0, ms: 0, pt: 0 }; // 2.1.30 : montures (nombre, étoiles) et familiers reçus de l'HdV ou d'un échange
       const op0 = Number(prev.op || 0), op1 = Number((S.hdv && S.hdv.op) || 0);
       if (op1 > op0) {
         const { data: ops } = await db.from("hdv_ops").select("payload").eq("user_id", uid).gt("id", op0).lte("id", op1).limit(2000);
@@ -505,7 +505,10 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
         (ops || []).forEach((o: any) => { const p = o.payload || {}; gift.k += Math.max(0, Number(p.k) || 0);
           for (const x in p.res || {}) gift.r += Math.max(0, Number(p.res[x]) || 0);
           // deno-lint-ignore no-explicit-any
-          (p.add || []).forEach((it: any) => { if (it && /^dofus_/.test(String(it.tpl))) gift.dof++; }); });
+          (p.add || []).forEach((it: any) => { if (it && /^dofus_/.test(String(it.tpl))) gift.dof++; });
+          // deno-lint-ignore no-explicit-any
+          (p.addM || []).forEach((m: any) => { gift.mt++; gift.ms += Math.max(1, Math.floor(Number(m && m.st) || 1)); });
+          gift.pt += (p.addP || []).length; });
       }
       const { data: codes } = await db.from("gift_uses").select("code, gift_codes(reward)").eq("user_id", uid).gte("at", new Date(new Date(ok.src_at).getTime() - 600000).toISOString());
       // deno-lint-ignore no-explicit-any

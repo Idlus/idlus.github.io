@@ -29,6 +29,9 @@ create table if not exists public.hdv_listings (
   expires_at timestamptz not null default now() + interval '14 days',
   closed_at timestamptz
 );
+-- 2.1.30 « Marché des bêtes » : montures (mt) et familiers (pet) ; item = la bête exacte (niveau, étoiles, capacité…)
+alter table public.hdv_listings drop constraint if exists hdv_listings_cat_check;
+alter table public.hdv_listings add constraint hdv_listings_cat_check check (cat in ('eq', 'res', 'rune', 'cons', 'mt', 'pet'));
 create index if not exists hdv_open_key on public.hdv_listings (key, price) where status = 'open';
 create index if not exists hdv_open_cat on public.hdv_listings (cat, lvl) where status = 'open';
 create index if not exists hdv_seller on public.hdv_listings (seller, status);
@@ -38,7 +41,7 @@ alter table public.hdv_listings enable row level security;
 create table if not exists public.hdv_ops (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
-  payload jsonb not null,         -- { k: kamas, res|runes|cons: {nom: quantité}, rm: [uid], add: [objet] }
+  payload jsonb not null,         -- { k: kamas, res|runes|cons: {nom: quantité}, rm: [uid], add: [objet], rmM|rmP: [uid], addM|addP: [bête] }
   txt text,
   at timestamptz not null default now()
 );
@@ -119,6 +122,32 @@ begin
   return it - 'uid';
 end $$;
 
+-- Nombre positif lu dans un texte, sinon null (sans erreur de conversion).
+create or replace function public.hdv_num(t text) returns numeric language sql immutable as $$ select case when t ~ '^\d{1,12}(\.\d{1,12})?$' then t::numeric end $$;
+
+-- 2.1.30 : monture ou familier échangeable ? Renvoie la bête (sans uid) ou lève une erreur.
+-- Une bête déjà sortie de la partie (vendue, échangée) ne repart jamais, même si une vieille partie la contient encore.
+create or replace function public.hdv_beast(p_user uuid, d jsonb, p_cat text, p_uid bigint) returns jsonb language plpgsql stable security definer set search_path = public
+as $$
+declare b jsonb; u text := p_uid::text;
+begin
+  b := case p_cat when 'mt' then d->'mounts'->u when 'pet' then d->'pets'->u end;
+  if b is null or jsonb_typeof(b) <> 'object' then raise exception '% introuvable dans ta partie en ligne : attends quelques secondes et réessaie.', case p_cat when 'mt' then 'Monture' else 'Familier' end; end if;
+  if exists (select 1 from hdv_ops o where o.user_id = p_user and o.payload->(case p_cat when 'mt' then 'rmM' else 'rmP' end) @> to_jsonb(array[p_uid])) then raise exception 'Cette bête n''est plus à toi.'; end if;
+  if p_cat = 'mt' then
+    if exists (select 1 from jsonb_array_elements(coalesce(d->'chars', '[]'::jsonb)) c where c->>'mount' = u) then raise exception 'Monture montée : descends d''abord.'; end if;
+    if exists (select 1 from jsonb_array_elements(coalesce(d->'enclos'->'pairs', '[]'::jsonb)) x where x->>'a' = u or x->>'b' = u) then raise exception 'Monture à l''enclos : annule d''abord le couple.'; end if;
+    if exists (select 1 from jsonb_array_elements(coalesce(d->'elev'->'bal', '[]'::jsonb)) x where x->>'uid' = u) then raise exception 'Monture en balade : attends son retour.'; end if;
+    if coalesce(b->>'sp', '') not in ('dd', 'mu', 'vk') or coalesce(b->>'c', '') = '' or coalesce(hdv_num(coalesce(b->>'lvl', '1')), 999) > 100
+      or coalesce(hdv_num(coalesce(b->>'st', '1')), 99) > 7 then raise exception 'Monture illisible : elle ne peut pas être vendue.'; end if;
+    return b - 'uid' - 'nm' - 'res' - 'got';
+  end if;
+  if exists (select 1 from jsonb_array_elements(coalesce(d->'chars', '[]'::jsonb)) c where c->>'pet' = u) then raise exception 'Familier porté : retire-le d''abord.'; end if;
+  if b->>'id' = 'chacha_dore' then raise exception 'Le Chacha Doré ne s''échange pas.'; end if;
+  if coalesce(b->>'id', '') = '' or coalesce(hdv_num(coalesce(b->>'st', '0')), 99) > 5 or coalesce(hdv_num(coalesce(b->>'g', '1')), 999) > 100 then raise exception 'Familier illisible : il ne peut pas être vendu.'; end if;
+  return b - 'uid' - 'got' - 'skin';
+end $$;
+
 create or replace function public.hdv_op(p_user uuid, p jsonb, t text) returns void language sql security definer set search_path = public
 as $$ insert into hdv_ops (user_id, payload, txt) values (p_user, p, t) $$;
 
@@ -126,7 +155,11 @@ create or replace function public.hdv_ops_after(p_user uuid, p_after bigint) ret
 as $$ select coalesce(jsonb_agg(jsonb_build_object('id', id, 'p', payload, 't', txt) order by id), '[]'::jsonb) from (select * from hdv_ops where user_id = p_user and id > coalesce(p_after, 0) order by id limit 300) o $$;
 
 create or replace function public.hdv_back(L hdv_listings) returns jsonb language sql immutable
-as $$ select case when L.cat = 'eq' then jsonb_build_object('add', jsonb_build_array(L.item)) else jsonb_build_object(hdv_bucket(L.cat), jsonb_build_object(L.key, L.qty)) end $$;
+as $$ select case when L.cat = 'eq' then jsonb_build_object('add', jsonb_build_array(L.item)) when L.cat = 'mt' then jsonb_build_object('addM', jsonb_build_array(L.item))
+  when L.cat = 'pet' then jsonb_build_object('addP', jsonb_build_array(L.item)) else jsonb_build_object(hdv_bucket(L.cat), jsonb_build_object(L.key, L.qty)) end $$;
+-- 2.1.30 : ce que reçoit l'acheteur ; une bête achetée est marquée b (5B : elle ne compte ni au carnet de l'éleveur ni à l'album)
+create or replace function public.hdv_buyer(L hdv_listings) returns jsonb language sql immutable
+as $$ select case when L.cat in ('mt', 'pet') then jsonb_build_object(case L.cat when 'mt' then 'addM' else 'addP' end, jsonb_build_array(L.item || '{"b": 1}'::jsonb)) else hdv_back(L) end $$;
 
 -- Annonces expirées : l'objet revient au vendeur.
 create or replace function public.hdv_expire() returns void language plpgsql security definer set search_path = public
@@ -173,6 +206,12 @@ begin
     if hdv_qty(me, d, b, p_key) < p_lot * n then return hdv_err('Tu n''en as pas assez (ou la sauvegarde en ligne n''est pas encore à jour).'); end if;
     insert into hdv_listings (seller, cat, key, name, lvl, slot, qty, price) select me, p_cat, p_key, left(coalesce(p_name, p_key), 80), coalesce(p_lvl, 0), left(p_slot, 20), p_lot, p_price from generate_series(1, n);
     perform hdv_op(me, jsonb_build_object('k', -tax * n, b, jsonb_build_object(p_key, -p_lot * n)), 'Mis en vente : ' || n || ' × ' || p_key || ' ×' || p_lot);
+  elsif p_cat in ('mt', 'pet') then
+    begin it := hdv_beast(me, d, p_cat, p_uid); exception when raise_exception then return hdv_err(sqlerrm); end;
+    tpl := case p_cat when 'mt' then (it->>'sp') || ':' || (it->>'c') else it->>'id' end;
+    insert into hdv_listings (seller, cat, key, name, lvl, slot, qty, price, item) values (me, p_cat, tpl, left(coalesce(p_name, tpl), 80),
+      round(coalesce((it->>(case p_cat when 'mt' then 'lvl' else 'g' end))::numeric, 1))::int, case p_cat when 'mt' then it->>'sp' else left(p_slot, 20) end, 1, p_price, it);
+    perform hdv_op(me, jsonb_build_object('k', -tax, case p_cat when 'mt' then 'rmM' else 'rmP' end, jsonb_build_array(p_uid)), 'Mis en vente : ' || coalesce(p_name, tpl));
   else return hdv_err('Catégorie inconnue.');
   end if;
   return jsonb_build_object('ok', true, 'ops', hdv_ops_after(me, p_after));
@@ -190,7 +229,7 @@ begin
   if hdv_kamas(me, d) < L.price then return hdv_err('Pas assez de kamas.'); end if;
   update hdv_listings set status = 'sold', buyer = me, closed_at = now() where id = L.id;
   who := coalesce(pseudo_of(me), 'un joueur');
-  perform hdv_op(me, hdv_back(L) || jsonb_build_object('k', -L.price), 'Acheté : ' || L.name || case when L.qty > 1 then ' ×' || L.qty else '' end);
+  perform hdv_op(me, hdv_buyer(L) || jsonb_build_object('k', -L.price), 'Acheté : ' || L.name || case when L.qty > 1 then ' ×' || L.qty else '' end);
   perform hdv_op(L.seller, jsonb_build_object('k', L.price, 'sold', L.id), 'Vendu à ' || who || ' : ' || L.name || case when L.qty > 1 then ' ×' || L.qty else '' end);
   insert into hdv_sales (key, cat, name, qty, price, seller, buyer) values (L.key, L.cat, L.name, L.qty, L.price, L.seller, me);
   return jsonb_build_object('ok', true, 'ops', hdv_ops_after(me, p_after));
@@ -260,15 +299,22 @@ as $$
 $$;
 
 -- ---------- échanges directs ----------
--- Offre : { k: kamas, items: [uid], res: {nom: n}, runes: {clé: n}, cons: {clé: n} }
+-- Offre : { k: kamas, items: [uid], mounts: [uid], pets: [uid], res: {nom: n}, runes: {clé: n}, cons: {clé: n} }
+-- Renvoie ce que l'autre reçoit : { items: [objet], mounts: [monture], pets: [familier] } (2.1.30 : les bêtes reçues sont marquées b)
 create or replace function public.trade_check(p_user uuid, d jsonb, o jsonb) returns jsonb language plpgsql stable security definer set search_path = public
 as $$
-declare out_items jsonb := '[]'::jsonb; u jsonb; b text; e record;
+declare out_items jsonb := '[]'::jsonb; out_m jsonb := '[]'::jsonb; out_p jsonb := '[]'::jsonb; u jsonb; b text; e record;
 begin
   if coalesce((o->>'k')::numeric, 0) < 0 then raise exception 'Montant invalide.'; end if;
   if hdv_kamas(p_user, d) < coalesce((o->>'k')::numeric, 0) then raise exception 'Pas assez de kamas.'; end if;
   for u in select * from jsonb_array_elements(coalesce(o->'items', '[]'::jsonb)) loop
     out_items := out_items || jsonb_build_array(hdv_item(p_user, d, (u #>> '{}')::bigint));
+  end loop;
+  for u in select * from jsonb_array_elements(coalesce(o->'mounts', '[]'::jsonb)) loop
+    out_m := out_m || jsonb_build_array(hdv_beast(p_user, d, 'mt', (u #>> '{}')::bigint) || '{"b": 1}'::jsonb);
+  end loop;
+  for u in select * from jsonb_array_elements(coalesce(o->'pets', '[]'::jsonb)) loop
+    out_p := out_p || jsonb_build_array(hdv_beast(p_user, d, 'pet', (u #>> '{}')::bigint) || '{"b": 1}'::jsonb);
   end loop;
   foreach b in array array['res', 'runes', 'cons'] loop
     for e in select * from jsonb_each_text(coalesce(o->b, '{}'::jsonb)) loop
@@ -277,11 +323,11 @@ begin
       if hdv_qty(p_user, d, b, e.key) < e.value::numeric then raise exception 'Pas assez de % (ou la sauvegarde en ligne n''est pas encore à jour).', e.key; end if;
     end loop;
   end loop;
-  return out_items;
+  return jsonb_build_object('items', out_items, 'mounts', out_m, 'pets', out_p);
 end $$;
 
 create or replace function public.trade_neg(o jsonb) returns jsonb language sql immutable
-as $$ select jsonb_strip_nulls(jsonb_build_object('k', -coalesce((o->>'k')::numeric, 0), 'rm', o->'items',
+as $$ select jsonb_strip_nulls(jsonb_build_object('k', -coalesce((o->>'k')::numeric, 0), 'rm', o->'items', 'rmM', o->'mounts', 'rmP', o->'pets',
   'res', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'res', '{}'::jsonb))),
   'runes', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'runes', '{}'::jsonb))),
   'cons', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'cons', '{}'::jsonb))))) $$;
@@ -292,6 +338,10 @@ as $$ select jsonb_strip_nulls(jsonb_build_object(
   'k', coalesce((x->>'k')::numeric, 0) + coalesce((y->>'k')::numeric, 0),
   'rm', case when jsonb_array_length(coalesce(x->'rm', '[]')) + jsonb_array_length(coalesce(y->'rm', '[]')) > 0 then coalesce(x->'rm', '[]') || coalesce(y->'rm', '[]') end,
   'add', case when jsonb_array_length(coalesce(x->'add', '[]')) + jsonb_array_length(coalesce(y->'add', '[]')) > 0 then coalesce(x->'add', '[]') || coalesce(y->'add', '[]') end,
+  'rmM', case when jsonb_array_length(coalesce(x->'rmM', '[]')) + jsonb_array_length(coalesce(y->'rmM', '[]')) > 0 then coalesce(x->'rmM', '[]') || coalesce(y->'rmM', '[]') end,
+  'rmP', case when jsonb_array_length(coalesce(x->'rmP', '[]')) + jsonb_array_length(coalesce(y->'rmP', '[]')) > 0 then coalesce(x->'rmP', '[]') || coalesce(y->'rmP', '[]') end,
+  'addM', case when jsonb_array_length(coalesce(x->'addM', '[]')) + jsonb_array_length(coalesce(y->'addM', '[]')) > 0 then coalesce(x->'addM', '[]') || coalesce(y->'addM', '[]') end,
+  'addP', case when jsonb_array_length(coalesce(x->'addP', '[]')) + jsonb_array_length(coalesce(y->'addP', '[]')) > 0 then coalesce(x->'addP', '[]') || coalesce(y->'addP', '[]') end,
   'res', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'res', '{}')) union all select * from jsonb_each_text(coalesce(y->'res', '{}'))) a group by key) b),
   'runes', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'runes', '{}')) union all select * from jsonb_each_text(coalesce(y->'runes', '{}'))) a group by key) b),
   'cons', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'cons', '{}')) union all select * from jsonb_each_text(coalesce(y->'cons', '{}'))) a group by key) b))) $$;
@@ -316,10 +366,19 @@ as $$
   select coalesce((select jsonb_build_object('id', t.id, 'me', case when t.a = auth.uid() then 'a' else 'b' end, 'pa', pseudo_of(t.a), 'pb', pseudo_of(t.b),
       'oa', t.offer_a, 'ob', t.offer_b, 'ka', t.ok_a, 'kb', t.ok_b, 'ver', t.ver, 'st', t.status, 'note', t.note,
       'ia', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(t.offer_a->'items') u where s.user_id = t.a),
-      'ib', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(t.offer_b->'items') u where s.user_id = t.b))
+      'ib', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'it', (s.data::jsonb)->'items'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(t.offer_b->'items') u where s.user_id = t.b),
+      -- 2.1.30 : montures (ma, mb) et familiers (fa, fb) posés dans l'échange
+      'ma', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'm', (s.data::jsonb)->'mounts'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(coalesce(t.offer_a->'mounts', '[]')) u where s.user_id = t.a),
+      'mb', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'm', (s.data::jsonb)->'mounts'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(coalesce(t.offer_b->'mounts', '[]')) u where s.user_id = t.b),
+      'fa', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'p', (s.data::jsonb)->'pets'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(coalesce(t.offer_a->'pets', '[]')) u where s.user_id = t.a),
+      'fb', (select coalesce(jsonb_agg(jsonb_build_object('uid', u, 'p', (s.data::jsonb)->'pets'->(u #>> '{}'))), '[]'::jsonb) from saves_ok s, jsonb_array_elements(coalesce(t.offer_b->'pets', '[]')) u where s.user_id = t.b))
     from trades t where (t.a = auth.uid() or t.b = auth.uid()) and (t.status = 'open' and t.updated_at > now() - interval '15 minutes' or t.updated_at > now() - interval '20 seconds')
     order by t.id desc limit 1), 'null'::jsonb)
 $$;
+
+-- Liste de numéros sans doublon (null si vide).
+create or replace function public.hdv_uniq(a jsonb) returns jsonb language sql immutable
+as $$ select case when jsonb_typeof(a) = 'array' and jsonb_array_length(a) > 0 then (select jsonb_agg(distinct (v #>> '{}')::bigint) from jsonb_array_elements(a) v where (v #>> '{}') ~ '^\d{1,15}$') end $$;
 
 create or replace function public.trade_offer(p_id bigint, p_offer jsonb) returns jsonb language plpgsql security definer set search_path = public
 as $$
@@ -327,8 +386,10 @@ declare me uuid := auth.uid(); t trades; o jsonb;
 begin
   select * into t from trades where id = p_id and status = 'open' and (a = me or b = me) for update;
   if t.id is null then return hdv_err('Échange terminé.'); end if;
-  o := jsonb_strip_nulls(jsonb_build_object('k', greatest(0, coalesce((p_offer->>'k')::bigint, 0)), 'items', p_offer->'items', 'res', p_offer->'res', 'runes', p_offer->'runes', 'cons', p_offer->'cons'));
-  if jsonb_array_length(coalesce(o->'items', '[]')) > 12 then return hdv_err('12 objets au maximum.'); end if;
+  -- 2.1.30 : montures et familiers ; chaque numéro une seule fois (un objet posé deux fois aurait été reçu en double)
+  o := jsonb_strip_nulls(jsonb_build_object('k', greatest(0, coalesce((p_offer->>'k')::bigint, 0)), 'items', hdv_uniq(p_offer->'items'), 'mounts', hdv_uniq(p_offer->'mounts'), 'pets', hdv_uniq(p_offer->'pets'),
+    'res', p_offer->'res', 'runes', p_offer->'runes', 'cons', p_offer->'cons'));
+  if jsonb_array_length(coalesce(o->'items', '[]')) + jsonb_array_length(coalesce(o->'mounts', '[]')) + jsonb_array_length(coalesce(o->'pets', '[]')) > 12 then return hdv_err('12 objets et bêtes au maximum.'); end if;
   if t.a = me then update trades set offer_a = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id;
   else update trades set offer_b = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id; end if;
   return jsonb_build_object('ok', true);
@@ -355,8 +416,10 @@ begin
     update trades set ok_a = false, ok_b = false where id = t.id;
     return hdv_err(sqlerrm);
   end;
-  perform hdv_op(t.a, trade_sum(trade_neg(t.offer_a), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_b->>'k')::numeric, 0), 'add', case when jsonb_array_length(ib) > 0 then ib end, 'res', t.offer_b->'res', 'runes', t.offer_b->'runes', 'cons', t.offer_b->'cons'))), 'Échange avec ' || pseudo_of(t.b));
-  perform hdv_op(t.b, trade_sum(trade_neg(t.offer_b), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_a->>'k')::numeric, 0), 'add', case when jsonb_array_length(ia) > 0 then ia end, 'res', t.offer_a->'res', 'runes', t.offer_a->'runes', 'cons', t.offer_a->'cons'))), 'Échange avec ' || pseudo_of(t.a));
+  perform hdv_op(t.a, trade_sum(trade_neg(t.offer_a), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_b->>'k')::numeric, 0), 'add', case when jsonb_array_length(ib->'items') > 0 then ib->'items' end,
+    'addM', case when jsonb_array_length(ib->'mounts') > 0 then ib->'mounts' end, 'addP', case when jsonb_array_length(ib->'pets') > 0 then ib->'pets' end, 'res', t.offer_b->'res', 'runes', t.offer_b->'runes', 'cons', t.offer_b->'cons'))), 'Échange avec ' || pseudo_of(t.b));
+  perform hdv_op(t.b, trade_sum(trade_neg(t.offer_b), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_a->>'k')::numeric, 0), 'add', case when jsonb_array_length(ia->'items') > 0 then ia->'items' end,
+    'addM', case when jsonb_array_length(ia->'mounts') > 0 then ia->'mounts' end, 'addP', case when jsonb_array_length(ia->'pets') > 0 then ia->'pets' end, 'res', t.offer_a->'res', 'runes', t.offer_a->'runes', 'cons', t.offer_a->'cons'))), 'Échange avec ' || pseudo_of(t.a));
   update trades set status = 'done', note = 'fait', updated_at = now() where id = t.id;
   return jsonb_build_object('ok', true, 'done', true, 'ops', hdv_ops_after(me, p_after));
 end $$;

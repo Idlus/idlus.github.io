@@ -97,7 +97,8 @@
     (S.chars || []).forEach((c) => { lv += c.lvl || 1; if (c.mt) { mt += c.mt.lvl || 0; bn += c.mt.bn || 0; } });
     const dof = Object.values(S.items || {}).filter((it) => /^dofus_/.test(it.tpl)).length;
     // 2.1.25 : pt = heures de temps de jeu (le vrai temps, même en vitesse ×2 / ×3)
-    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600), sl: E.sabMtLvl ? E.sabMtLvl(S) : 1, sx: Math.max(0, Math.floor(+(S.sabMt && S.sabMt.xp) || 0)) }; // 2.1.27 : sl / sx = niveau et XP de Maîtrise du temps
+    return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600), sl: E.sabMtLvl ? E.sabMtLvl(S) : 1, sx: Math.max(0, Math.floor(+(S.sabMt && S.sabMt.xp) || 0)),
+      mn: Object.keys(S.mounts || {}).length, ms: Object.values(S.mounts || {}).reduce((a, M) => a + Math.max(1, Math.floor(+M.st || 1)), 0), pn: Object.keys(S.pets || {}).length }; // 2.1.30 : montures (nombre, étoiles) et familiers, qui se vendent // 2.1.27 : sl / sx = niveau et XP de Maîtrise du temps
   };
 
   /* Ce qu'aucune partie honnête ne peut contenir, quel que soit le temps de jeu. Renvoie la raison, ou null. */
@@ -125,6 +126,9 @@
     };
     for (const u in S.items || {}) { const w = itemBad(S.items[u]); if (w) return w; }
     for (const it of Array.isArray(S.over) ? S.over : []) { const w = itemBad(it); if (w) return w; }
+    // 2.1.30 « Marché des bêtes » : montures et familiers s'échangent ; une bête qui n'existe pas dans le jeu est refusée, comme un objet inconnu
+    if (E.MOUNTS) for (const u in S.mounts || {}) { const M = S.mounts[u], Sp = E.MOUNTS[M.sp]; if (!Sp || !(String(M.c).includes("|") ? Sp.bico[M.c] : Sp.cols[M.c])) return `monture inconnue (${String(M.sp).slice(0, 4)} ${String(M.c).slice(0, 30)})`; }
+    if (E.PETS) for (const u in S.pets || {}) if (!E.PETS[S.pets[u].id]) return `familier inconnu (${String(S.pets[u].id).slice(0, 30)})`;
     const PS = E.PET_STAR_COST ? E.PET_STAR_COST.length : 5;
     for (const u in S.pets || {}) if ((+S.pets[u].st || 0) > PS) return `familier à ${S.pets[u].st} étoiles`;
     for (const u in S.mounts || {}) { const M = S.mounts[u]; const cap = (E.ST_BASE || 5) + 2; if ((+M.st || 1) > cap) return `monture à ${M.st} étoiles`; }
@@ -173,6 +177,7 @@
      les points des vies passées et le temps de jeu restent contrôlés comme pour tout le monde (en 2.1.18, un compte vérifié
      ne passait plus du tout ce contrôle, et une partie retouchée à 1,6 milliard de kamas et +160 h de jeu en 27 h passait) */
   V.SURE = 2;
+  V.BEAST_N0 = 30; V.BEAST_H = 12; V.BEAST_PH = 6; V.ST_MAX = 7; // 2.1.30 : bêtes apparues hors du serveur (marge de départ, par heure réelle)
   V.check = (E, prev, cur, hours, gift, res0, topLvl, sure) => {
     // 2.1.27 : ×2 illimité dès le niveau 15 de la Maîtrise du temps (plafonnée par V.impossible) : 2 h de jeu par heure réelle
     const rate = Math.min(+prev.sl || 1, +cur.sl || 1) >= (E && E.SAB_FREE2_LVL || 15) ? V.RES_RATE2 : V.RES_RATE;
@@ -189,6 +194,17 @@
     if (cur.bn > prev.bn) return { ok: false, res, why: `points de Maîtrise des vies passées en hausse (+${cur.bn - prev.bn})` };
     // 2.1.18 : un Dofus de plus permis toutes les 4 h (échelle des Dofus jusqu'à la stasis 15 ; un compte bloqué accumulait sans fin)
     if (cur.dof - prev.dof > (2 + Math.floor(Math.max(0, hours) / 4)) * (sure ? V.SURE : 1) + (gift.dof || 0)) return { ok: false, res, why: `+${cur.dof - prev.dof} Dofus d'un coup` };
+    // 2.1.30 « Marché des bêtes » : les montures et familiers se vendent, donc ceux qui apparaissent sans passer par le serveur
+    // (hôtel de vente, échange : gift.mt / gift.ms / gift.pt) sont bornés. Très large : une naissance ou une capture toutes les 5 min,
+    // et chaque monture peut gagner une étoile par jour (polissage)
+    if (prev.mn != null && cur.mn != null) {
+      const h = Math.max(0, hours), dn = cur.mn - prev.mn - (gift.mt || 0), ds = cur.ms - prev.ms - (gift.ms || 0);
+      const hs = h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10).toLocaleString("fr-FR") + " h";
+      if (dn > V.BEAST_N0 + V.BEAST_H * h) return { ok: false, res, why: `+${dn} montures en ${hs}` };
+      if (ds > V.ST_MAX * Math.max(0, dn) + cur.mn * (1 + Math.ceil(h / 24)) + V.BEAST_N0) return { ok: false, res, why: `+${ds} étoiles de montures en ${hs}` };
+    }
+    if (prev.pn != null && cur.pn != null) { const h = Math.max(0, hours), dp = cur.pn - prev.pn - (gift.pt || 0);
+      if (dp > V.BEAST_N0 + V.BEAST_PH * h) return { ok: false, res, why: `+${dp} familiers en ${h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10).toLocaleString("fr-FR") + " h"}` }; }
     const need = { k: Math.max(0, dk) / R.k, r: Math.max(0, dr) / R.r, mt: Math.max(0, dm) / R.mt, lv: Math.max(0, dl) / R.lv };
     const used = Math.max(need.k, need.r, need.mt, need.lv);
     if (used > res + 0.01) {

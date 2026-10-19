@@ -48,7 +48,7 @@
   const PK = [["fam", "Familiers"], ["monti", "Montiliers"], ["mt", "Montures"]];
   function petEntries(s, monti) {
     return Object.keys(E.PETS).filter((id) => (E.PETS[id].kind === "monti") === monti).map((id) => {
-      const p = E.PETS[id]; const P = E.petOwned(s, id) || null; const worn = P ? E.petOwner(s, P.uid) : null;
+      const p = E.PETS[id]; const P = (E.petMine && E.petMine(s, id)) || E.petOwned(s, id) || null; const worn = P ? E.petOwner(s, P.uid) : null;
       return { key: id, name: p.name, img: P ? petPic(P) : petImg(id), gold: !!p.gold, stats: E.petMax(id), lvl: p.lvl, own: !!P, P, worn, where: E.petWhere(id), kind: p.kind, fam: p.fam, food: p.food, sub: p.sub, dg: p.dg, req: E.petReqLvl(id) };
     });
   }
@@ -108,6 +108,8 @@
     lines.push(`<div class="co-apt ${aptOn ? "on" : ""}"><b>🐾 ${h(E.petAptName(P))}</b><span class="xs">${h(E.petAptTxt(id))}${aptOn ? "" : " · au niveau 100"}</span></div>`);
     if (E.petHasAura(P)) lines.push(`<div class="xs co-gold">Aura : +${E.PET_AURA} % de dégâts pour toute l'équipe en combat (${E.PET_AURA_MAX} % au plus).</div>`);
     const btns = [];
+    if (P.b) lines.push(`<div class="xs muted">Acheté : il ne compte pas dans l'album de la ménagerie. Obtiens-le toi-même pour le compter.</div>`); // 2.1.30 (5B)
+    if (window.MARKET && p.kind !== "unique" && !E.petOwner(s, P.uid)) btns.push(`<button class="btn sm" data-act="hdvbeast" data-c="pet" data-uid="${P.uid}">Vendre à l'HdV</button>`);
     if (P.g < 100 && mon) lines.push(`<div class="xs muted">Il grandit avec l'XP de son héros : ${E.MONTI_SHARE} % de l'XP gagnée lui revient jusqu'au niveau 100 (au niveau ${E.MAX_LVL}, la part réglée dans Familiers et montures, de 0 à 50 %, le reste va à la Maîtrise).</div>`);
     if (P.g < 100 && !mon) {
       lines.push(`<div class="xs muted">1 âme par monstre vaincu par l'équipe, ${E.PET_PREY} pour ses proies${prey.length ? ` (${h(prey.slice(0, 4).join(", "))}${prey.length > 4 ? "…" : ""})` : ""}. Encore ${fmt(E.petSoulsLeft(P))} âmes avant le niveau 100.</div>`);

@@ -206,6 +206,7 @@
   E.petStats = (S, c) => { const P = E.petOf(S, c); return P && c.lvl >= E.petReqLvl(P.id) ? E.petStatsAt(P.id, P.g, P.st) : null; };
   E.petOwner = (S, uid) => S.chars.find((c) => c.pet === uid);
   E.petOwned = (S, id) => Object.values(S.pets).find((P) => P.id === id);
+  E.petMine = (S, id) => Object.values(S.pets).find((P) => P.id === id && !P.b); // 2.1.30 : sans les familiers achetés (5B : ils ne comptent pas à l'album)
   E.petLvl = (P) => Math.max(1, Math.min(100, Math.floor(P.g || 0))); // le niveau affiché (l'ancienne croissance en %)
 
   E.equipPet = (S, cid, uid) => {
@@ -225,7 +226,7 @@
   /* gain d'un familier ; un double donne de l'Essence (1.1) */
   E.givePet = (S, id, why) => {
     const p = PETS[id]; if (!p) return null;
-    const have = E.petOwned(S, id);
+    const have = E.petMine(S, id);
     if (have) { const n = isMonti(id) ? E.MONTI_DUP_ESS : E.PET_DUP_ESS; E.addEss(S, n); E.note(S, `${p.name} en double : +${n} Essence pour l'Éveil.`, "rare"); return have; }
     const uid = S.petUid++; const P = S.pets[uid] = { uid, id, g: 1, s: 0, st: 0, got: E.now() };
     if (isMonti(id)) P.x = 0;
@@ -243,7 +244,7 @@
   E.petHuntRate = (S, sid) => (E.petTraces(S, sid) >= E.PET_TRACE_N ? E.PET_TRACE_RATE : E.PET_ZONE_RATE);
   E.petHunt = (S, sid) => {
     const id = E.petSubs[sid]; if (!id) return null;
-    if (E.petOwned(S, id)) return rnd() < E.PET_ZONE_RATE ? E.givePet(S, id, "trouvé en chasse") : null; // un double reste possible (Essence)
+    if (E.petMine(S, id)) return rnd() < E.PET_ZONE_RATE ? E.givePet(S, id, "trouvé en chasse") : null; // un double reste possible (Essence)
     const ok = rnd() < E.petHuntRate(S, sid);
     S.petTrace = S.petTrace || {};
     if (ok) return E.givePet(S, id, "trouvé en chasse");
@@ -446,7 +447,7 @@
     { n: 140, id: "dore", name: "Chacha Doré", txt: "un familier unique (2 aptitudes, aura) et le titre « Maître de la ménagerie »" },
   ];
   E.petAlbumAll = () => Object.keys(PETS).filter((id) => PETS[id].kind !== "unique").length;
-  E.petAlbum = (S) => { if (!S || !S.pets) return 0; const seen = new Set(); for (const u in S.pets) { const P = S.pets[u]; if (PETS[P.id] && PETS[P.id].kind !== "unique") seen.add(P.id); } return seen.size; };
+  E.petAlbum = (S) => { if (!S || !S.pets) return 0; const seen = new Set(); for (const u in S.pets) { const P = S.pets[u]; if (PETS[P.id] && PETS[P.id].kind !== "unique" && !P.b) seen.add(P.id); } return seen.size; };
   E.petTierOn = (S, id) => { const T = E.PET_TIERS.find((t) => t.id === id); return !!T && E.petAlbum(S) >= T.n; };
   E.petAlbumCheck = (S) => {
     const n = E.petAlbum(S); S.petTiers = S.petTiers || [];
@@ -455,6 +456,20 @@
       E.note(S, `Album de la ménagerie, palier ${T.n} : ${T.name} (${T.txt}) !`, "rare");
       if (T.id === "dore") { if (!E.petOwned(S, "chacha_dore")) E.givePet(S, "chacha_dore", "Album de la ménagerie"); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.PET_TITLE)) S.titlesExtra.push(E.PET_TITLE); }
     }
+  };
+  /* 2.1.30 « Marché des bêtes » : un familier vendu ou donné en échange quitte la ménagerie ; un familier acheté arrive marqué b */
+  E.petGone = (S, uid) => {
+    const P = S.pets && S.pets[uid]; if (!P) return;
+    const o = E.petOwner(S, P.uid); if (o) { delete o.pet; E.emit(S, "equip", {}); }
+    if (S.petPension === P.uid) delete S.petPension;
+    delete S.pets[uid];
+  };
+  E.petIn = (S, p) => {
+    if (!p || !PETS[p.id] || PETS[p.id].kind === "unique") return null;
+    const uid = S.petUid++; const P = { uid, id: p.id, g: Math.max(1, Math.min(100, +p.g || 1)), s: Math.max(0, +p.s || 0), st: Math.max(0, Math.min(E.PET_STAR_COST.length, Math.floor(+p.st || 0))), got: E.now() };
+    if (p.b) P.b = 1; // une annonce retirée revient sans b
+    if (isMonti(p.id)) P.x = Math.max(0, +p.x || 0);
+    S.pets[uid] = P; return P;
   };
   /* Mue (album 100) : l'apparence d'un autre familier possédé */
   E.setPetSkin = (S, uid, id) => {

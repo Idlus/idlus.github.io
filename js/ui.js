@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29.5";
+const GAME_VERSION = "2.1.30";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30", name: "Marché des bêtes", guide: "hdv", items: [
+    "Hôtel de vente : nouvelles catégories Montures et Familiers. Chaque couleur a sa ligne, qui s'ouvre sur chaque bête en vente avec ses étoiles, son niveau, sa capacité et les petits qui lui restent, avec des filtres",
+    "Vendre : ton écurie et ta ménagerie apparaissent dans « Vendre », et un bouton « Vendre à l'HdV » est sur la fiche de chaque monture et familier. La bête garde tout (niveau, étoiles, capacité, petits), seul son surnom est effacé",
+    "Une bête achetée est marquée « achetée » : elle ne compte ni au carnet de l'éleveur, ni au classement d'élevage, ni à l'album de la ménagerie. Ses petits, eux, comptent",
+    "Pas en vente : les montures montées, à l'enclos ou en balade, les familiers portés et le Chacha Doré",
+    "Échange direct : on peut aussi y proposer des montures et des familiers. Un même objet ne peut plus être proposé deux fois dans un échange",
+  ] },
   { v: "2.1.29.5", name: "Vendre plusieurs ressources", guide: "hdv", items: [
     "Héros › Inventaire › Ressources : nouveau bouton « Vendre plusieurs ». Touche les ressources à vendre (ou « Tout ce filtre », sans tes favorites ★), règle la quantité de chacune, puis « Vendre la sélection » : tout part en un seul clic à la vente directe",
     "Le total estimé s'affiche avant la vente, puis le résultat ressource par ressource (vendue, ou refusée et pourquoi). Prix et règles de la vente directe inchangés",
@@ -10165,6 +10172,7 @@ document.addEventListener("click", (ev) => {
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
     case "hdvitem": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
+    case "hdvbeast": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellBeast(d.c, +d.uid); navGo("hdv"); window.scrollTo(0, 0); break; } // 2.1.30 : vendre une monture ou un familier
     case "hdvres": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Commande livrée : +${fmt(S.kamas - k0)} kamas.`); break; }
     case "gball": { const k0 = S.kamas; const r = E.act(S, "gameBuyAll"); if (r) toast(r, "warn"); else toast(`Commandes livrées : +${fmt(S.kamas - k0)} kamas.`); break; }
