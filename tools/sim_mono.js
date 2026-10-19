@@ -23,6 +23,7 @@ require("../js/sram.js"); // le nouveau Sram (NO_SRAM=1 : l'ancien)
 if (process.env.NO_SRAM) E.SR2 = false;
 const D = require("../js/data.js");
 require("../js/mono.js");
+if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/monodofus.js"); E.phxFreeze = 1; } // PHX=n : renaissances du Dofus du Phénix (25 Braise, 100 Flamme, 300 Phénix) // passifs des Dofus pour comparer le 3e Dofus
 if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
 if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
 if (process.env.MONOGRP) process.env.MONOGRP.split(",").forEach((v, i) => (E.MONO.group[i + 2] = +v)); // MONOGRP="0.9,0.8,0.7" : part du bonus à 2, 3 et 4 joueurs
@@ -73,7 +74,9 @@ const gearUp = (S, c, prof) => {
   for (const slot of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes", "bouclier"]) { const t = bestFor(slot, c.lvl, main)[0]; if (t) give(S, c, t, slot, perfect); }
   const rings = bestFor("anneau", c.lvl, main); if (rings[0]) give(S, c, rings[0], "anneau1", perfect); if (rings[1]) give(S, c, rings[1], "anneau2", perfect);
   if (perfect) {
-    bestFor("dofus", c.lvl, main).slice(0, E.MONO.dofus).forEach((t, i) => give(S, c, t, D.DOFUS_SLOTS[i], true));
+    const dl = bestFor("dofus", c.lvl, main).filter((t) => t !== "dofus_phenix").slice(0, E.MONO.dofus);
+    if (process.env.DOFUS3) dl[E.MONO.dofus - 1] = "dofus_" + process.env.DOFUS3; // comparer un Dofus à la place du 3e
+    dl.forEach((t, i) => give(S, c, t, D.DOFUS_SLOTS[i], true));
     c.scrolls = { vit: 100, sa: 100, [main]: 100 };
   }
 };
@@ -138,7 +141,7 @@ const giveRen = (S) => { if (!REN) return; S.chars.forEach((c) => { c.ren = REN;
 /* ---------- une tentative de donjon ---------- */
 function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
-  const S = E.monoStart(E.newState("Sim", "iop")); S.chars = [];
+  const S = E.monoStart(E.newState("Sim", "iop")); S.chars = []; if (process.env.PHX) S.mono.phx = +process.env.PHX;
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
   S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
   if (FURN) {
@@ -161,7 +164,7 @@ if (arg("chasse", "")) {
     const subs = arg("zones", "") ? arg("zones").split(",") : Object.keys(E.SUBS).filter((k) => E.SUBS[k].lvl && Math.abs((E.SUBS[k].lvl[0] + E.SUBS[k].lvl[1]) / 2 - L) <= 6).slice(0, 4); // --zones id1,id2 : ces sous-zones-là
     let win = 0, lose = 0, kam = 0;
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
-      const S = E.monoStart(E.newState("Sim", "iop")); S.chars = [];
+      const S = E.monoStart(E.newState("Sim", "iop")); S.chars = []; if (process.env.PHX) S.mono.phx = +process.env.PHX; if (process.env.PHX) S.mono.phx = +process.env.PHX;
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
       S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
       E.startHunt(S, sid); let last = null; const k0 = S.kamas;
