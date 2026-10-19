@@ -200,4 +200,30 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   const C = E.newState("Classique", "iop"); C.chars[0].lvl = 200; assert.strictEqual(E.chooseAlign(C, "bonta", "coeur"), null); assert.strictEqual(E.chooseAlign(C, "brakmar", "coeur"), null, "le Classique peut toujours changer");
   console.log(`ok - guerre et Boss de saison (${r.points} points, ${r.grade.g})`);
 }
+// 11. Fin de saison et Éternel.
+{
+  now = Date.UTC(2030, 2, 1, 12, 0);
+  const S = E.monoStart(E.newState("Eternel", "cra")); const c = S.chars[0]; c.lvl = 120;
+  assert.strictEqual(E.monoCurrent(), 1); assert.ok(!E.monoOver(S));
+  const B = E.bpState(S); B.pts = 3 * E.MONO.bp.step; E.mdState(S).best = 8; // 3 paliers à prendre, coffre de la manche 1
+  S.titlesExtra = ["Vieux titre"]; S.unlocks = { wing_or: 1, gift_o_mono_s1: 1, autre: 1 };
+  now += 55 * 86400000; assert.ok(!E.monoOver(S), "encore dans la saison au jour 55");
+  now += 2 * 86400000; assert.ok(E.monoOver(S), "saison finie après 8 semaines");
+  const k0 = S.kamas; const got = E.monoToEternal(S);
+  assert.ok(got.pass >= 3, `récompenses de pass données (${got.pass})`); assert.deepStrictEqual(got.chests, ["coffre_obsidienne"]);
+  assert.ok(E.monoEternal(S) && !E.monoOver(S) && S.kamas >= k0, "le héros est dans l'Éternel avec ses kamas");
+  assert.strictEqual(E.monoToEternal(S), null, "une seule fois");
+  assert.ok(/saison est finie/.test(E.mdEnter(S)), "plus de Défi de la manche"); assert.ok(/saison est finie/.test(E.sbTry(S).err), "plus de Boss de saison");
+  const p0 = E.bpState(S).pts; E.emit(S, "harvest", { n: 50 }); assert.strictEqual(E.bpState(S).pts, p0, "plus de quêtes de saison");
+  assert.ok(E.monoCanSwap(S), "spécialités libres");
+  S.align = { side: "bonta" }; assert.ok(!/un seul camp/.test(E.chooseAlign(S, "brakmar", "coeur") || ""), "camp libre dans l'Éternel");
+  const L = E.monoLegacy(S); assert.ok(L.t.includes("Vieux titre") && L.u.includes("wing_or") && L.u.includes("gift_o_mono_s1") && !L.u.includes("autre"));
+  const N = E.monoStart(E.newState("Nouveau", "iop")); assert.ok(E.monoApplyLegacy(N, E.monoLegacyMerge(null, L)) >= 3);
+  assert.ok(N.titlesExtra.includes("Vieux titre") && N.unlocks.wing_or && N.chars[0].lvl === 1 && !E.monoEternal(N), "nouvelle saison : niveau 1, titres et apparences gardés");
+  // date d'ouverture fixée : la saison est la même pour tous, et rien n'est ouvert après sa fin
+  E.MONO.saisons[1].debut = now; assert.strictEqual(E.monoCurrent(), 1); assert.strictEqual(E.monoT0(N), now);
+  now += 57 * 86400000; assert.strictEqual(E.monoCurrent(), null, "entre deux saisons"); assert.ok(E.monoOver(N));
+  E.MONO.saisons[1].debut = null;
+  console.log("ok - fin de saison et Éternel");
+}
 console.log("Monocompte : tout est bon");

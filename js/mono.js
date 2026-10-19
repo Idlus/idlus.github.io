@@ -29,7 +29,45 @@
     off: 0.8,
   });
   E.isMono = (S) => !!(S && S.mono);
-  E.monoStart = (S) => { S.mono = { s: M.saison, t0: E.now() }; return S; };
+  /* Saisons : 2 mois = 4 manches de 2 semaines, puis le héros part dans l'Éternel (avec ses kamas et ses objets, sans contenu
+     de saison) et une nouvelle saison repart du niveau 1. « debut » est la date d'ouverture, la même pour tous ; tant qu'elle
+     n'est pas fixée (avant l'ouverture), chaque partie compte sa saison depuis son propre départ. */
+  M.saisons = { 1: { nom: "Saison 1", theme: "Guerre de Bonta et Brâkmar", debut: null } };
+  M.len = 56 * 86400000;
+  E.monoSeasonDef = (s) => M.saisons[s] || { nom: `Saison ${s}`, debut: null };
+  // la saison ouverte maintenant (null entre deux saisons)
+  E.monoCurrent = () => { const now = E.now(); const L = Object.keys(M.saisons).map(Number).sort((a, b) => b - a);
+    for (const s of L) { const d = M.saisons[s].debut; if (d == null || (now >= d && now < d + M.len)) return s; } return null; };
+  E.monoT0 = (S) => { const d = S && S.mono && E.monoSeasonDef(S.mono.s).debut; return d != null ? d : (S && S.mono && S.mono.t0) || E.now(); };
+  E.monoEnd = (S) => E.monoT0(S) + M.len;
+  E.monoEternal = (S) => !!(S && S.mono && S.mono.eternel);
+  E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && E.now() >= E.monoEnd(S));
+  E.monoStart = (S) => { const s = E.monoCurrent() || M.saison; S.mono = { s, t0: E.now() }; return S; };
+  /* Fin de saison : les récompenses de pass et les coffres du Défi de la manche pas encore pris sont donnés, puis la partie
+     passe dans l'Éternel. Renvoie ce qui a été donné (pour le message). */
+  E.monoToEternal = (S) => {
+    if (!S || !S.mono || S.mono.eternel) return null;
+    const got = { pass: 0, chests: [] };
+    try { if (E.bpClaimAll) got.pass = E.bpClaimAll(S); } catch (e) {}
+    try { const B = E.bpState && E.bpState(S);
+      if (B && B.md) Object.keys(B.md).forEach((m) => { const R = B.md[m]; const c = !R.got && E.mdChest && E.mdChest(R.best); if (c) { R.got = E.now(); E.addCons(S, c, 1); got.chests.push(c); } });
+    } catch (e) {}
+    if (S.dungeon && S.mono.merc && E.monoMercClear) try { E.monoMercClear(S); } catch (e) {}
+    S.mono.eternel = { s: S.mono.s, at: E.now(), lvl: (S.chars[0] || {}).lvl || 1 };
+    E.note(S, `La ${E.monoSeasonDef(S.mono.s).nom} est finie : ton héros rejoint l'Éternel.`, "rare");
+    return got;
+  };
+  /* Ce que la nouvelle saison garde du compte : titres et apparences (ornements, cadres, ailes, palettes, aura). */
+  E.monoLegacy = (S) => ({ t: (S.titlesExtra || []).slice(), u: Object.keys(S.unlocks || {}).filter((k) => /^(gift_o_|gift_f_|wing_|teint_)/.test(k)),
+    aura: !!(S.chroma && S.chroma.shop && S.chroma.shop.aura) });
+  E.monoLegacyMerge = (a, b) => ({ t: [...new Set([...(a && a.t) || [], ...(b && b.t) || []])], u: [...new Set([...(a && a.u) || [], ...(b && b.u) || []])], aura: !!((a && a.aura) || (b && b.aura)) });
+  E.monoApplyLegacy = (S, L) => {
+    if (!L) return 0; let n = 0; S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
+    (L.t || []).forEach((t) => { if (!S.titlesExtra.includes(t)) { S.titlesExtra.push(t); n++; } });
+    (L.u || []).forEach((k) => { if (!S.unlocks[k]) { S.unlocks[k] = 1; n++; } });
+    if (L.aura && E.GIFT_X && E.GIFT_X.aura) { E.GIFT_X.aura.give(S); n++; }
+    return n;
+  };
   const adj = (cls) => M.cls[cls] || {};
   /* Groupes (étape 2) : le bonus Héros unique baisse à chaque joueur ajouté. Le mercenaire (c.merc, solo seulement) compte pour un demi-joueur.
      M.group[n] : part du bonus gardée pour n joueurs (entre deux tailles, on prend la moyenne). */
@@ -189,7 +227,7 @@
   M.jobs = { cap: 100, spec: 3, manche: 14 * 86400000, gather: 2 };
   const isJob = (j) => !!(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j]);
   const jobObj = (S, j) => (D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts = S.crafts || {})[j] || (S.crafts[j] = { lvl: 1, xp: 0 }));
-  E.monoManche = (S) => Math.max(1, Math.floor((E.now() - ((S.mono && S.mono.t0) || E.now())) / M.jobs.manche) + 1);
+  E.monoManche = (S) => Math.max(1, Math.floor((E.now() - E.monoT0(S)) / M.jobs.manche) + 1);
   E.monoSpecs = (S) => (S.mono && S.mono.spec) || [];
   const cap0 = E.jobCap;
   E.jobCap = (S, kind, job) => {
@@ -197,7 +235,7 @@
     if (kind === "f") return 200; // forgemagie : les 6 métiers jusqu'au niveau 200, hors spécialités (Mathis, 18/10)
     return E.monoSpecs(S).includes(job) ? 200 : M.jobs.cap;
   };
-  E.monoCanSwap = (S) => !S.mono || S.mono.specM !== E.monoManche(S);
+  E.monoCanSwap = (S) => !S.mono || !!S.mono.eternel || S.mono.specM !== E.monoManche(S); // Éternel : changement libre
   /* i : case 0 à 2 ; job : métier de récolte ou d'artisanat (null pour vider une case, compte comme un changement) */
   E.monoSetSpec = (S, i, job) => {
     if (!E.isMono(S)) return "Réservé au Monocompte.";

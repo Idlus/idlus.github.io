@@ -179,7 +179,7 @@
     const c = E.mdChest(R.best); if (!c) return "Pas de coffre pour cette manche."; R.got = E.now(); E.addCons(S, c, 1);
     E.note(S, `Défi de la manche ${m} : ${(D.CONSUMABLES[c] || {}).name} (stasis ${R.best}).`, "rare"); return null; };
   E.mdEnter = (S) => {
-    if (!E.isMono(S)) return "Réservé au Monocompte."; if (S.dungeon) return "Vous êtes déjà en donjon.";
+    if (!E.isMono(S)) return "Réservé au Monocompte."; if (E.monoEternal(S)) return "La saison est finie."; if (S.dungeon) return "Vous êtes déjà en donjon.";
     const R = E.mdState(S); const dg = D.DUNGEONS[R.did]; const k = Math.min(E.STASIS_MAX, R.best + 1);
     const SI = E.stasisInfo(S, R.did); const max0 = SI.max || 0; SI.max = Math.max(max0, k - 1);
     const du = E.dungeonUnlocked; E.dungeonUnlocked = () => true; S.res[dg.key] = (S.res[dg.key] || 0) + 1; let err;
@@ -199,7 +199,7 @@
      cette zone pour la manche ; le serveur additionnera les points de tous les joueurs pour savoir qui tient la zone. */
   const choose1 = E.chooseAlign;
   E.chooseAlign = function (S, side) {
-    if (S && E.isMono(S) && S.align && S.align.side && S.align.side !== side) return "Monocompte : un seul camp par saison. Tu pourras changer à la saison suivante.";
+    if (S && E.isMono(S) && !E.monoEternal(S) && S.align && S.align.side && S.align.side !== side) return "Monocompte : un seul camp par saison. Tu pourras changer à la saison suivante.";
     return choose1.apply(this, arguments);
   };
   E.warState = (S) => { const B = E.bpState(S); if (!B) return null; const m = Math.min(4, E.monoManche(S)); B.war = B.war || {}; return (B.war[m] = B.war[m] || { z: {}, tot: 0 }); };
@@ -214,7 +214,7 @@
   E.sbNext = (t = E.now()) => { const p = paris(t), day = 86400000; const today = Math.floor(p / day) * day + SB.hour * 3600000; return E.sbOpen(t) ? 0 : (p < today ? today : today + day) - p; };
   E.sbState = (S) => { const B = E.bpState(S); if (!B) return null; B.sb = B.sb || { days: {}, best: 0, tot: 0 }; const k = E.bpDay(); return { B: B.sb, day: (B.sb.days[k] = B.sb.days[k] || { tries: 0, pts: 0 }) }; };
   E.sbTry = (S) => {
-    if (!E.isMono(S)) return { err: "Réservé au Monocompte." };
+    if (!E.isMono(S)) return { err: "Réservé au Monocompte." }; if (E.monoEternal(S)) return { err: "La saison est finie." };
     if (!E.sbOpen()) return { err: "Le Boss de saison n'est là que de 21 h à 22 h (heure de Paris)." };
     if (S.dungeon) return { err: "Termine d'abord ton donjon." };
     const def = E.sbDef(); if (!def) return { err: "Boss introuvable." };
@@ -233,7 +233,7 @@
   const emit0 = E.emit;
   E.emit = function (S, t, d) {
     const r = emit0.apply(this, arguments);
-    if (S && S.mono && !S.monoRun && !(d && d.offline && t === "win")) try {
+    if (S && S.mono && !S.mono.eternel && !S.monoRun && !(d && d.offline && t === "win")) try {
       const B = E.bpState(S); d = d || {};
       if (t === "dungeon") { mdDone(S, d); inc(B, "dj"); (B.cnt.djs = B.cnt.djs || {})[d.id] = 1; if (!d.down) inc(B, "clean");
         const day = E.bpDay(); if (B.cnt.dayK !== day) { B.cnt.dayK = day; B.cnt.dayN = 0; } B.cnt.dayN++; B.cnt.bestDay = Math.max(B.cnt.bestDay || 0, B.cnt.dayN);

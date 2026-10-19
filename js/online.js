@@ -41,7 +41,7 @@
   ON.slot = () => SLOT;
   ON.solo = () => SLOT !== 1;
   ON.slotsOk = !!SRV.slots;
-  ON.slotOnline = (n) => (n || SLOT) === 1 || ((n || SLOT) !== 4 && ON.slotsOk); // 4 : partie Monocompte, sur l'appareil en attendant son serveur
+  ON.slotOnline = (n) => (n || SLOT) === 1 || ((n || SLOT) < 4 && ON.slotsOk); // 4 : partie Monocompte, 101… : Éternel, sur l'appareil en attendant son serveur
   ON.setSlot = (n, key) => { SLOT = n; KEY = key; };
   const SOLO_ERR = "Partie solo : les classements, le Kolizéum classé, l'Hôtel de vente, la guilde et les boss se jouent avec ta partie 1.";
   ON.SOLO_ERR = SOLO_ERR;

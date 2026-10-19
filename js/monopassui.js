@@ -82,12 +82,12 @@
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
     const B = E.bpState(s); E.bpQuests(s); E.hfCheck(s);
     const t = E.bpTier(s), into = B.pts - t * BP.step, pp = E.bpPrestigePts(s);
-    const man = E.monoManche ? Math.min(4, E.monoManche(s)) : 1; const left = Math.max(0, (s.mono.t0 || E.now()) + 56 * 86400000 - E.now());
+    const man = E.monoManche ? Math.min(4, E.monoManche(s)) : 1; const left = Math.max(0, E.monoEnd(s) - E.now());
     const nextBig = [...Array(BP.tiers).keys()].map((i) => i + 1).find((x) => x > t && x % 5 === 0) || BP.tiers; const prize = E.MONO_PASS.free[nextBig];
     const ready = [...Array(BP.tiers).keys()].reduce((n, i) => n + (E.bpCanClaim(s, "free", i + 1) ? 1 : 0) + (E.bpCanClaim(s, "pres", i + 1) ? 1 : 0), 0);
     main.innerHTML = `<div class="pagehead"><h1>Pass de saison</h1></div>
       <div class="bp-hero"><div class="bp-lvl"><span>palier</span><b>${t}</b><span>/ ${BP.tiers}</span></div>
-        <div class="bp-mid"><span class="bp-kick">${h(E.MONO.nom)} · manche ${man} / 4</span><h2>Pass de saison</h2>
+        <div class="bp-mid"><span class="bp-kick">${h(E.monoSeasonDef(s.mono.s).nom)} · manche ${man} / 4</span><h2>Pass de saison</h2>
           <div class="bp-xp"><div style="width:${t >= BP.tiers ? 100 : Math.round((into / BP.step) * 100)}%"></div></div>
           <div class="row between small" style="gap:8px;flex-wrap:wrap"><span>${t >= BP.tiers ? "<b>Pass terminé !</b>" : `<b>${fmt(into)} / ${fmt(BP.step)}</b> points vers le palier ${t + 1}`}</span><span class="muted">fin de saison dans ${dur(left)}</span></div>
           <div class="bp-tags"><span class="pill">Gratuit pour tous</span><span class="pill bp-pr">✨ Prestige ${pp} pts, gagnés par les hauts faits</span>${ready ? `<button class="btn sm primary" data-act="bp-all">Tout récupérer (${ready})</button>` : ""}</div></div>
@@ -102,7 +102,7 @@
   function mdPage(main) {
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
     const R = E.mdState(s); const dg = D.DUNGEONS[R.did]; const m = Math.min(4, E.monoManche(s));
-    const end = (s.mono.t0 || E.now()) + m * E.MONO.jobs.manche - E.now(); const k = Math.min(E.STASIS_MAX, R.best + 1);
+    const end = E.monoT0(s) + m * E.MONO.jobs.manche - E.now(); const k = Math.min(E.STASIS_MAX, R.best + 1);
     const me = s.chars.find((c) => !c.merc) || s.chars[0]; const run = s.mono.mdRun;
     const pend = E.mdPending(s); const ch = E.mdChest(R.best);
     const rows = E.MONO.md.chest.slice().reverse().map(([st, c]) => `<div class="bp-hf${R.best >= st ? "" : " soon"}"><img src="assets/ui/coffres/${(D.CONSUMABLES[c] || {}).img}.svg" alt="" style="width:34px;height:34px"><span class="grow"><b>${h(D.CONSUMABLES[c].name)}</b><br><span class="small muted">meilleure stasis ${st} ou plus</span></span>${R.best >= st ? '<span class="bp-ok">✓</span>' : ""}</div>`).join("");
@@ -121,7 +121,7 @@
   /* ---------- Guerre des camps et Boss de saison ---------- */
   function warPage(main) {
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
-    const m = Math.min(4, E.monoManche(s)); const end = (s.mono.t0 || E.now()) + m * E.MONO.jobs.manche - E.now();
+    const m = Math.min(4, E.monoManche(s)); const end = E.monoT0(s) + m * E.MONO.jobs.manche - E.now();
     const side = s.align && s.align.side; const AL = side ? E.ALIGN[side] : null; const W = E.warState(s);
     const zones = Object.entries(W.z).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const zn = (k) => { const z = E.SUBS[k]; return z ? z.name : k; };
@@ -143,6 +143,30 @@
         <span class="xs muted">Les groupes en direct et les dégâts des camps (le camp en tête : +10 % d'XP pour la manche) arrivent avec le serveur Monocompte.</span></div></div>`;
   }
   window.DX.pages.guerre = warPage;
+
+  /* Éternel : la partie d'une saison finie. Le héros garde ses kamas et ses objets ; plus de pass, de Défi de la manche,
+     de guerre ni de Boss de saison. La page garde le bilan de sa saison. */
+  function eternelPage(main) {
+    const s = S(); if (!s || !E.monoEternal(s)) { UI().tab = "home"; X().render(); return; }
+    const ET = s.mono.eternel, def = E.monoSeasonDef(ET.s), B = E.bpState(s) || { cnt: {}, hf: {}, md: {}, war: {} }, c = s.chars[0] || {};
+    const med = [1, 2, 3].map((k) => Object.values(B.hf || {}).filter((v) => v === k).length);
+    const md = [1, 2, 3, 4].map((m) => (B.md && B.md[m] ? B.md[m].best : 0));
+    const war = Object.values(B.war || {}).reduce((a, w) => a + (w.tot || 0), 0), AL = s.align && s.align.side ? E.ALIGN[s.align.side] : null;
+    const sb = B.sb || { days: {}, best: 0 }, ev = Object.values(sb.days || {}).filter((x) => x.tries > 0).length;
+    const tile = (v, l) => `<div class="et-t"><b>${v}</b><span>${l}</span></div>`;
+    const date = new Date(ET.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    const next = E.monoCurrent();
+    main.innerHTML = `<div class="pagehead"><h1>Éternel</h1></div>
+      <div class="bp-hero"><div class="bp-lvl"><span>niveau</span><b>${c.lvl || 1}</b><span>héros</span></div>
+        <div class="bp-mid"><span class="bp-kick">${h(def.nom)} · finie le ${h(date)}</span><h2>${h(c.name || "")} rejoint l'Éternel</h2>
+          <span class="small">Ton héros garde ses kamas, ses objets, ses montures et ses familiers. Plus de contenu de saison ici : le pass, le Défi de la manche, la guerre et le Boss de saison continuent dans la saison en cours.</span>
+          <div class="bp-tags"><span class="pill">Classement de l'Éternel avec le serveur, sans récompenses</span><span class="pill">Spécialités de métier libres</span></div></div></div>
+      <div class="panel"><div class="pad stack"><h2 style="margin:0">Bilan de la ${h(def.nom)}</h2>
+        <div class="et-grid">${tile(`${E.bpTier(s)} / ${BP.tiers}`, "paliers du pass")}${tile(E.bpPrestigePts(s), "points Prestige")}${tile(`${med[0]} · ${med[1]} · ${med[2]}`, "hauts faits bronze · argent · or")}
+          ${tile(md.map((x) => x || "–").join(" · "), "Défi de la manche, stasis par manche")}${tile(AL ? `${fmt(war)}` : "–", AL ? `chasses gagnées pour ${h(AL.name)}` : "pas de camp choisi")}${tile(ev ? `${ev} soir${ev > 1 ? "s" : ""}` : "–", `Boss de saison${sb.best ? `, record ${fmt(sb.best)} pts` : ""}`)}</div></div></div>
+      <div class="panel" style="margin-top:14px"><div class="pad row between" style="gap:10px;flex-wrap:wrap"><span><b>${next ? `La ${h(E.monoSeasonDef(next).nom)} est ouverte` : "La prochaine saison arrive bientôt"}</b><br><span class="small muted">${next ? "Un nouveau héros part du niveau 1, avec tes titres et apparences." : "Tu pourras y lancer un nouveau héros, avec tes titres et apparences."}</span></span>${next ? `<button class="btn primary" data-act="sv-menu">Choisir ma partie</button>` : ""}</div></div>`;
+  }
+  window.DX.pages.eternel = eternelPage;
 
 
 
