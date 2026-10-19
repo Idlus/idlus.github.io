@@ -1,6 +1,16 @@
 {
-  "version": "2.1.29.2",
+  "version": "2.1.29.3",
   "versions": [
+    {
+      "v": "2.1.29.3",
+      "name": "Recherche d'objet",
+      "guide": "equipement",
+      "items": [
+        "Équipe et héros : en cliquant un emplacement, un champ de recherche filtre les objets par nom, par panoplie ou par caractéristique (« PA », « Vitalité »…), idée de SegFault",
+        "Un clic sur l'étiquette « Pano. … » d'un objet montre sur place les pièces de la panoplie (portées, dans le sac ou pas encore obtenues) et ses bonus, sans passer par l'encyclopédie",
+        "Inventaire : la fiche d'un objet de panoplie montre aussi les pièces et les bonus"
+      ]
+    },
     {
       "v": "2.1.29.2",
       "name": "Brisage auto plus précis",

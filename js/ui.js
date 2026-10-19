@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29.2";
+const GAME_VERSION = "2.1.29.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29.3", name: "Recherche d'objet", guide: "equipement", items: [
+    "Équipe et héros : en cliquant un emplacement, un champ de recherche filtre les objets par nom, par panoplie ou par caractéristique (« PA », « Vitalité »…), idée de SegFault",
+    "Un clic sur l'étiquette « Pano. … » d'un objet montre sur place les pièces de la panoplie (portées, dans le sac ou pas encore obtenues) et ses bonus, sans passer par l'encyclopédie",
+    "Inventaire : la fiche d'un objet de panoplie montre aussi les pièces et les bonus",
+  ] },
   { v: "2.1.29.2", name: "Brisage auto plus précis", guide: "inventaire", items: [
     "Règles automatiques du sac : quand « jet inférieur à X % » et une règle de niveau sont réglés ensemble, un objet n'est brisé que s'il remplit toutes les conditions (avant, une seule suffisait : « jet < 80 % » et « sous le niveau 190 » brisait aussi des objets 200). Signalé par Akileuss",
     "Nouveau choix « Briser si : toutes les conditions / une seule suffit » : avec « une seule suffit », la règle de niveau brise quel que soit le jet. Tes réglages actuels sont gardés",

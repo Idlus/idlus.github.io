@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.29.3 « Recherche d'objet »
+
+- Choix d'un objet (Équipe et héros › clic sur un emplacement) : champ de recherche (nom, panoplie sans le mot « Panoplie », caractéristique via statOfQ) ; seule la liste #eqPick se redessine pendant la frappe (morphTo, le champ garde le focus). Idée de SegFault, précisée par Mathis.
+- Étiquette « Pano. … » cliquable (ui.psetOpen) : setDetailHtml (pièces portées / dans le sac / pas encore obtenues + setBlock) ; même détail dans la fiche d'un objet de l'inventaire.
+
 ## 2.1.29.2 « Brisage auto plus précis »
 
 - Règles automatiques du sac (E.applyAuto, js/engine.js) : « jet < X % », « Bas niveau » et « Sous le niveau » se combinent en ET par défaut (signalé par Akileuss : jet < 80 % + sous le niveau 190 brisait des objets 200). Nouveau réglage S.settings.auto.mode (« et » par défaut, « ou » = chaque condition brise seule). Les réglages déjà enregistrés restent valides (sans mode = « et »). Tests : tests/sac.test.js.
