@@ -1,0 +1,240 @@
+/* Monocompte (js/mono.js) : le simulateur d'équilibrage avec un héros seul et le bonus Héros unique.
+   Réglages d'essai : MONO="hp,dr,dmg" et MONOCLS='{"iop":{"dmg":10}}'. Cibles : sans équipement vers 1, optimisé (3 Dofus) vers 7.
+   Ci-dessous, l'aide du simulateur d'origine (tools/simulate.js).
+   Simulateur d'équilibrage : fait jouer des équipes de 4 héros dans les donjons, stasis par stasis,
+   avec trois niveaux d'équipement, et vérifie les paliers voulus :
+     - sans équipement : jusqu'à la stasis 4
+     - bon équipement : stasis 6-7
+     - équipe optimisée : stasis 10
+   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--renaissance N] [--json] | --songe [--niveaux 60,120,200]
+   --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
+   --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
+     moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
+   --chasse niv1,niv2 : au lieu des donjons, une heure de chasse dans une sous-zone de ce niveau (victoires/heure, kamas/heure) ; --profils aucun|debutant|bon|optimise (défaut : aucun) ; --zones id1,id2 pour choisir les sous-zones.
+   Par défaut : un donjon par tranche de niveau, 6 équipes, 3 essais par case. */
+"use strict";
+const E = require("../js/engine.js");
+require("../js/systems.js");
+require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/identite.js"); // identité des sorts (NO_ID=1 : sans)
+require("../js/identmon.js"); // identité des sorts des monstres (NO_MID=1 : sans)
+require("../js/identboss.js"); // sorts uniques des boss
+require("../js/maitrise_moteur.js"); // 2.0 : la Maîtrise (--maitrise N : N points placés par héros niveau 200)
+require("../js/sram.js"); // le nouveau Sram (NO_SRAM=1 : l'ancien)
+if (process.env.NO_SRAM) E.SR2 = false;
+const D = require("../js/data.js");
+require("../js/mono.js");
+if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/monodofus.js"); E.phxFreeze = 1; } // PHX=n : renaissances du Dofus du Phénix (25 Braise, 100 Flamme, 300 Phénix) // passifs des Dofus pour comparer le 3e Dofus
+if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
+if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
+if (process.env.MONOGRP) process.env.MONOGRP.split(",").forEach((v, i) => (E.MONO.group[i + 2] = +v)); // MONOGRP="0.9,0.8,0.7" : part du bonus à 2, 3 et 4 joueurs
+
+const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
+const flag = (k) => process.argv.includes("--" + k);
+const TRIES = +arg("essais", 3), SEED = +arg("graine", 1), JSON_OUT = flag("json"), FURN = flag("meubles");
+
+// aléatoire reproductible (mulberry32)
+let seed = SEED;
+E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });
+E.dungeonUnlocked = () => true; // on teste l'équilibrage, pas la progression
+E.weekly = () => null; E.flash = () => []; // pas de mutateur imposé par la date (voir --mutateur)
+
+/* ---------- équipes ---------- */
+const PARTNERS = ["eni", "feca", "cra", "sacri", "iop"];
+const MUT = arg("mutateur", ""); if (MUT && !E.STASIS_MODS[MUT]) throw new Error("Mutateur inconnu : " + MUT);
+const SIZE = +arg("taille", 1); // --taille 1|2|3|4 : nombre de héros dans l'équipe
+const teamFor = (cls) => [cls, ...PARTNERS.filter((x) => x !== cls)].slice(0, SIZE);
+const CLS = arg("classes", "") === "toutes" ? D.CLASS_ORDER : arg("classes", "") ? arg("classes").split(",") : ["iop", "cra", "eni", "sram", "osa", "zobal"];
+
+/* ---------- donjons : par défaut, le premier de chaque tranche de niveau ---------- */
+const DG = D.DUNGEONS;
+const byLvl = {}; for (const id in DG) if (!byLvl[DG[id].lvl]) byLvl[DG[id].lvl] = id;
+const DUNS = arg("donjons", "") === "tous" ? Object.keys(DG) : arg("donjons", "") ? arg("donjons").split(",") : Object.values(byLvl);
+
+/* ---------- équipement ---------- */
+const STAT_OF_EL = { t: "fo", n: "fo", f: "ine", e: "cha", a: "age" };
+const W = { vit: 0.25, sa: 2, pui: 1, pa: 60, cri: 3, dcri: 1.5, so: 1.5, ini: 0.05, dt: 3, dn: 3, df: 3, de: 3, da: 3 };
+const score = (T, main) => { let s = 0; for (const k in T.stats) { const [a, b] = T.stats[k]; const v = (a + b) / 2; s += v * (k === main ? 1 : W[k] || 0); } return s; };
+const byScore = {};
+const bestFor = (slot, lvl, main) => {
+  const key = slot + lvl + main; if (byScore[key]) return byScore[key];
+  return (byScore[key] = Object.keys(D.ITEMS).filter((id) => D.ITEMS[id].slot === slot && D.ITEMS[id].lvl <= lvl).sort((x, y) => score(D.ITEMS[y], main) - score(D.ITEMS[x], main)));
+};
+const give = (S, c, tpl, slot, perfect) => {
+  const it = E.rollItem(S, tpl, { radiant: false });
+  for (const k in it.stats) { const [a, b] = D.ITEMS[tpl].stats[k]; it.stats[k] = perfect ? b : Math.round((a + b) / 2); }
+  return E.equip(S, c.id, it.uid, slot);
+};
+const gearUp = (S, c, prof) => {
+  if (prof === "aucun") return;
+  if (prof === "debutant") { // joueur qui arrive : objets de 8 niveaux en dessous, jets moyens, ni anneaux ni bouclier
+    const main = D.CLASSES[c.cls].main; for (const slot of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes"]) { const t = bestFor(slot, Math.max(1, c.lvl - 8), main)[0]; if (t) give(S, c, t, slot, false); }
+    return;
+  }
+  const main = D.CLASSES[c.cls].main, perfect = prof === "optimise";
+  for (const slot of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes", "bouclier"]) { const t = bestFor(slot, c.lvl, main)[0]; if (t) give(S, c, t, slot, perfect); }
+  const rings = bestFor("anneau", c.lvl, main); if (rings[0]) give(S, c, rings[0], "anneau1", perfect); if (rings[1]) give(S, c, rings[1], "anneau2", perfect);
+  if (perfect) {
+    const dl = bestFor("dofus", c.lvl, main).filter((t) => t !== "dofus_phenix").slice(0, E.MONO.dofus);
+    if (process.env.DOFUS3) dl[E.MONO.dofus - 1] = "dofus_" + process.env.DOFUS3; // comparer un Dofus à la place du 3e
+    dl.forEach((t, i) => give(S, c, t, D.DOFUS_SLOTS[i], true));
+    c.scrolls = { vit: 100, sa: 100, [main]: 100 };
+  }
+};
+
+/* ---------- stats tactiques (essai 0.1) ---------- */
+const TACT = arg("tactique", "");
+const TACT_P = {
+  moyen: { f: { tac: 32, pm: 3, rpa: 30, epa: 22 }, b: { fui: 48, epm: 30, rpm: 12, inv: 1 } },
+  plafond: { f: { tac: 92, pm: 5, rpa: 50, rpm: 50, epa: 100, epm: 100, inv: 2 }, b: { fui: 60, rpa: 50, rpm: 50, epa: 100, epm: 100, inv: 2 } },
+};
+const CAP = { tac: 92, fui: 60, pm: 5, rpa: 50, rpm: 50, epa: 100, epm: 100, inv: 2 };
+if (CAP[TACT]) TACT_P[TACT] = { f: { [TACT]: CAP[TACT] }, b: { [TACT]: CAP[TACT] } };
+if (TACT && !TACT_P[TACT]) throw new Error("Profil tactique inconnu : " + TACT);
+if (TACT) { E.tactLog = {}; const cs = E.charStats; E.charStats = (S, c, o) => { const st = cs(S, c, o); if (c._row) Object.assign(st, TACT_P[TACT][c._row]); return st; }; }
+/* --familiers : chaque héros porte, adulte, le meilleur familier de son niveau pour son élément (montilier élémentaire dès 60) */
+const FAM = flag("familiers");
+/* --exo pa|pm|po : chaque héros porte un objet exo (0.1.9.2), sur son arme (ou sa coiffe) */
+const EXO = arg("exo", "");
+const giveExo = (S) => { if (!EXO || !["pa", "pm", "po"].includes(EXO)) return; S.chars.forEach((c) => { const uid = c.equip.arme || c.equip.coiffe; const it = uid && S.items[uid]; if (it) it.exo = EXO; }); };
+const petFor = (c) => { const main = D.CLASSES[c.cls].main;
+  const ok = Object.keys(E.PETS).filter((id) => { const p = E.PETS[id]; return p.kind !== "boss" && p.kind !== "unique" && p.fam !== "l" && c.lvl >= E.petReqLvl(id) && p.lvl <= c.lvl && (p.stats[main] || p.stats.pui); });
+  const val = (id) => { const st = E.PETS[id].stats; return (st[main] || 0) + (st.pui || 0) * 1.2 + (st.cri || 0) * 4; };
+  return ok.sort((a, b) => val(b) - val(a))[0]; };
+const givePets = (S) => { if (!FAM) return; S.chars.forEach((c) => { const id = petFor(c); if (!id) return; const uid = S.petUid++; S.pets[uid] = { uid, id, g: 100, t: 0 }; c.pet = uid; E.refreshSpells(c, E.charStats(S, c)); }); };
+/* --montures dd|mu|vk : chaque héros monte, au niveau 100, la monture de son élément (ou la première couleur) de cette espèce */
+const MNT = arg("montures", "");
+const MST = +arg("etoiles", "0"); // 1.1 : --etoiles 7 = montures ★7 Endurantes (refonte de l'élevage, js/elevage.js)
+const giveMounts = (S) => { if (!MNT || !E.MOUNTS[MNT]) return; S.enclos.built = true; S.chars.forEach((c) => { const main = D.CLASSES[c.cls].main; const cols = E.MOUNTS[MNT].cols;
+  const col = Object.keys(cols).find((k) => cols[k].s[main]) || Object.keys(cols).find((k) => cols[k].s.pui) || Object.keys(cols)[0];
+  const M = E.giveMount(S, MNT, col, "", { quiet: true }); if (!M) return; M.lvl = 100; if (MST) { M.st = MST; M.cap = "endu"; } c.mount = M.uid; E.refreshSpells(c, E.charStats(S, c)); }); E.events.length = 0; };
+/* --idoles hebdo,dynamo,farle : active ces idoles (0.1.10) pour toutes les équipes ; « max » = les 6 idoles de plus haut score */
+const IDOLS = arg("idoles", "");
+const giveIdols = (S) => { if (!IDOLS) return; let ids = IDOLS.split(",").map((x) => x.trim()).filter((x) => E.IDOLS[x]);
+  if (IDOLS === "max") { const best = {}; E.IDOL_ORDER.forEach((id) => { const I = E.IDOLS[id]; if (!best[I.fam] || E.IDOLS[best[I.fam]].score < I.score) best[I.fam] = id; }); ids = Object.values(best).sort((a, b) => E.IDOLS[b].score - E.IDOLS[a].score).slice(0, E.IDOL_MAX); }
+  ids.forEach((id) => { E.giveIdol(S, id, ""); E.toggleIdol(S, id); }); E.events.length = 0; };
+const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._row = fr.has(c.id) ? "f" : "b")); };
+
+/* --renaissance N : chaque héros a N renaissances (0.1.12) avec un jeu d'Éveils typique (dégâts, PV, critiques, résistances, Éveil de classe à V et X) */
+const REN = Math.min(E.REN_MAX, +arg("renaissance", 0));
+/* 2.0 --maitrise N : chaque héros niveau 200 place N points comme un joueur : la clé de voûte de son élément fort, puis les meilleures étoiles autour */
+const MTN = +arg("maitrise", 0);
+const PORTES = flag("portes"); // 2.1 --portes : les 5 Portes des étoiles ouvertes (branches lointaines)
+const giveMt = (S) => { if (!MTN) return; if (PORTES) E.MT_GATES.forEach((G) => (E.stasisInfo(S, G.did).max = Math.max(E.stasisInfo(S, G.did).max, G.s))); S.chars.forEach((c) => { if (c.lvl < E.MAX_LVL) return; const T = E.mtTree(c.cls); const got = new Set([T.start]); const main = D.CLASSES[c.cls].main;
+  const EL = { fo: "t", ine: "f", cha: "e", age: "a" }[main] || "t";
+  const val = (n) => { if (n.neb && MTN < E.MT_OPEN) return -1; if (process.env.MTNOBR && n.gated != null) return -1; /* MTNOBR=1 : sans les branches lointaines */ if (n.t === "start") return -1; let v = 0;
+    (n.b || []).forEach(([lb, x]) => { v += lb.startsWith("Passif") ? x * 2 : lb === ({ t: "Force", f: "Intelligence", e: "Chance", a: "Agilité" })[EL] ? x : lb === "Puissance" ? x : lb === `% dégâts ${({ t: "Terre", f: "Feu", e: "Eau", a: "Air" })[EL]}` || lb === "% dégâts" ? x * 12 : lb === "% PV" ? x * 5 : lb === "Vitalité" ? x * 0.2 : lb === "Résistances" || lb === "Résistance" ? x * 4 : lb === "Critique" ? x * 3 : x * 0.1; });
+    (n.b || []).forEach(([lb, x]) => { v += lb === "% dégâts aux boss" ? x * 5 : lb === "% dégâts aux ennemis sous 30 % PV" ? x * 3 : lb === "% vol de vie" ? x * 6 : lb === "% dégâts par tour (10 tours max)" ? x * 50 : lb === "% dégâts renvoyés" ? x * 3 : 0; }); // 2.1
+    if (n.fx) v += (n.fx.boss || 0) * 5 + (n.fx.exe || 0) * 3 + (n.fx.vv || 0) * 6 + (n.fx.cre || 0) * 50 + (n.fx.rv || 0) * 3 + (n.fx.h || 0) * 1 - (n.fx.loot || n.fx.kam || n.fx.xp || n.fx.xpj || n.fx.champ ? 1e3 : 0); // 2.1
+    if (n.fx) v += (n.fx.d || 0) * 12 + (n.fx[EL] || 0) * 12 + (n.fx.hp || 0) * 5 + (n.fx.res || 0) * 4 + (n.fx.t1 || 0) * 3 + (n.fx.cx || 0) * 2 + (n.fx.pass || 0) * 2 + (n.fx.sh || 0) * 3 - (n.fx.pm || 0 ? 30 : 0) - (n.fx.pa ? 80 : 0);
+    return v; };
+  let left = MTN;
+  if (process.env.MTFORCE) { const k0 = T.N.find((n) => n.end && n.br === process.env.MTFORCE); const pv = new Map([[T.start, -1]]); const q0 = [T.start]; while (q0.length) { const x = q0.shift(); for (const y of T.N[x].adj) if (!pv.has(y) && !T.N[y].neb) { pv.set(y, x); q0.push(y); } } for (let x = k0.id; x !== T.start; x = pv.get(x)) { got.add(x); left--; } } // MTFORCE="La Sangsue" : chaque héros prend d'abord cette branche lointaine
+  while (left > 0) { // le meilleur gain par point parmi les chemins de 1 à 8 étoiles
+    const prev = new Map(); const dist = new Map(); const q = [...got]; q.forEach((x) => { prev.set(x, -1); dist.set(x, 0); }); let hd = 0;
+    while (hd < q.length) { const x = q[hd++]; if (dist.get(x) >= Math.min(8, left)) continue; for (const y of T.N[x].adj) { if (prev.has(y) || val(T.N[y]) < 0) continue; prev.set(y, x); dist.set(y, dist.get(x) + 1); q.push(y); } }
+    let best = null, bv = -1; prev.forEach((p, id) => { if (got.has(id)) return; let v = 0, k = id; while (!got.has(k)) { v += val(T.N[k]); k = prev.get(k); } const r = v / dist.get(id); if (r > bv) { bv = r; best = id; } });
+    if (best == null) break; let k = best; while (!got.has(k)) { got.add(k); left--; k = prev.get(k); } }
+  const M = E.mt(c); M.lvl = MTN; M.t[0] = [...got].filter((x) => x !== T.start); E.refreshSpells(c, E.charStats(S, c)); }); };
+const REN_PLAN = ["fureur", "robu", "lame", "fureur", "classe", "ecorce", "fureur", "robu", "lame", "classe"];
+const giveRen = (S) => { if (!REN) return; S.chars.forEach((c) => { c.ren = REN; c.eveils = {}; REN_PLAN.slice(0, REN).forEach((id) => (c.eveils[id] = (c.eveils[id] || 0) + 1)); E.refreshSpells(c, E.charStats(S, c)); }); };
+
+/* ---------- une tentative de donjon ---------- */
+function run(did, k, cls, prof) {
+  const dg = DG[did], lvl = Math.max(1, dg.lvl);
+  const S = E.monoStart(E.newState("Sim", "iop")); S.chars = []; if (process.env.PHX) S.mono.phx = +process.env.PHX;
+  teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
+  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+  if (FURN) {
+    const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
+    S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });
+  }
+  const SI = E.stasisInfo(S, did); SI.max = k - 1; S.res[dg.key] = 1;
+  const err = E.enterDungeon(S, did, k); if (err) throw new Error(`${did} stasis ${k} : ${err}`);
+  if (MUT && !S.dungeon.mods.includes(MUT)) S.dungeon.mods = [MUT].concat(S.dungeon.mods).slice(0, Math.max(1, S.dungeon.mods.length)); // --mutateur : impose un modificateur à toutes les stasis
+  for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S, 1000);
+  return SI.max >= k;
+}
+
+/* ---------- chasse : une heure sans équipement, héros du niveau de la zone ---------- */
+if (arg("chasse", "")) {
+  E.subUnlocked = () => true;
+  const lvls = arg("chasse").split(",").map(Number);
+  const HPROF = arg("profils", "aucun"); // --profils bon|optimise : la même heure de chasse avec cet équipement
+  for (const L of lvls) {
+    const subs = arg("zones", "") ? arg("zones").split(",") : Object.keys(E.SUBS).filter((k) => E.SUBS[k].lvl && Math.abs((E.SUBS[k].lvl[0] + E.SUBS[k].lvl[1]) / 2 - L) <= 6).slice(0, 4); // --zones id1,id2 : ces sous-zones-là
+    let win = 0, lose = 0, kam = 0;
+    for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
+      const S = E.monoStart(E.newState("Sim", "iop")); S.chars = []; if (process.env.PHX) S.mono.phx = +process.env.PHX; if (process.env.PHX) S.mono.phx = +process.env.PHX;
+      teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
+      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+      E.startHunt(S, sid); let last = null; const k0 = S.kamas;
+      for (let t = 0; t < 3600 * 1000; t += 1000) { E.tick(S, 1000); const F = S.fight; if (F && F.over && F !== last) { last = F; F.result === "win" || F.result === true ? win++ : lose++; } }
+      kam += S.kamas - k0;
+    }
+    const n = subs.length * CLS.length * TRIES;
+    console.log(`chasse niv. ${L} (${subs.length} zones) : ${(win / n).toFixed(1)} victoires/h, ${(100 * lose / Math.max(1, win + lose)).toFixed(1)} % de défaites, ${Math.round(kam / n)} kamas/h`);
+  }
+  if (E.tactLog) console.log("déclenchements :", JSON.stringify(E.tactLog));
+  process.exit(0);
+}
+
+/* ---------- 0.1.48 : le Songe infini, joué d'un coup avec les choix automatiques ---------- */
+/* --songe [--niveaux 60,120,200] : intensité la plus haute validée par niveau d'équipe et profil d'équipement
+   (chaque équipe monte d'une intensité tant qu'elle valide : -1 = même pas le Rêve, 0 = Rêve, 1-4 = Paradoxe, 5-7 = Cauchemar).
+   Cibles : sans équipement au plus le Rêve, bon équipement Paradoxe 1-2, optimisé Paradoxe 4 - Cauchemar 1 et plus. */
+if (flag("songe")) {
+  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/sram.js"); require("../js/songe.js");
+  const lvls = arg("niveaux", "60,120,200").split(",").map(Number);
+  const PROFS = arg("profils", "aucun,bon,optimise").split(",");
+  const XT = { aucun: [-1, 0], bon: [1, 2], optimise: [4, 7] };
+  const NM = (ii) => (ii < 0 ? "rien" : E.SG_INT[ii].name);
+  if (arg("bases", "")) arg("bases").split(",").forEach((v, i) => { if (E.SG_INT[i]) E.SG_INT[i].base = +v; }); // essais de réglage : --bases 1,2.2,3.2,…
+  console.log(`Songe infini : intensité la plus haute validée (moyenne et meilleure sur ${CLS.length} équipes × ${TRIES} essais), sans légendaire.`);
+  for (const L of lvls) {
+    const line = [];
+    for (const p of PROFS) {
+      const got = [];
+      for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
+        let top = -1;
+        for (let ii = 0; ii < E.SG_INT.length; ii++) {
+          const S = E.newState("Sim", "iop"); S.chars = [];
+          teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
+          S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+          E.songe(S).unl = 7; const err = E.expStart(S, ii); if (err) throw new Error(err);
+          const r = E.expAutoPlay(S, 600); if (!r.valid) break; top = ii;
+        }
+        got.push(top);
+      }
+      const avg = got.reduce((a, b) => a + b, 0) / got.length; const [lo, hi] = XT[p] || [-1, 9];
+      line.push(`${p.padEnd(8)} ${avg.toFixed(1).padStart(4)} (${NM(Math.round(avg))}, max ${NM(Math.max(...got))}) ${avg >= lo - 0.5 && avg <= hi + 0.5 ? "ok" : avg < lo ? "trop dur" : "trop facile"}`);
+    }
+    console.log(`niveau ${String(L).padStart(3)}  ` + line.join("   "));
+  }
+  process.exit(0);
+}
+
+/* ---------- tableau ---------- */
+const PROFS = [["aucun", "sans équipement", [0, 1]], ["bon", "bon équipement", [4, 6]], ["optimise", "héros optimisé", [7, 7]]];
+const ONLY = arg("profils", ""); const PRF = ONLY ? PROFS.filter(([p]) => ONLY.split(",").includes(p)) : PROFS;
+const results = [];
+for (const did of DUNS) {
+  const row = { did, name: DG[did].name, lvl: DG[did].lvl, prof: {} };
+  for (const [p] of PRF) {
+    // stasis la plus haute réussie au moins une fois sur deux, en montant tant que ça passe
+    let best = 0, rate = {};
+    for (let k = 1; k <= E.STASIS_MAX; k++) {
+      let wins = 0, n = 0;
+      for (const cls of CLS) for (let i = 0; i < TRIES; i++) { n++; if (run(did, k, cls, p)) wins++; }
+      rate[k] = wins / n;
+      if (wins / n < 0.5) break;
+      best = k;
+    }
+    // stasis « fine » : la stasis réussie + la part de victoires à la suivante (ex. 6,4 = stasis 6 et 40 % de victoires en 7)
+    row.prof[p] = best; (row.fine = row.fine || {})[p] = +(best + (rate[best + 1] || 0)).toFixed(2);
+  }
+  results.push(row);
+  if (!JSON_OUT) console.log(`${row.name.padEnd(34)} niv. ${String(row.lvl).padStart(3)}  ` + PRF.map(([p, , [lo, hi]]) => `${p.padEnd(8)} ${String(row.fine[p]).padStart(4)} ${row.prof[p] >= lo && row.prof[p] <= hi ? "ok" : row.prof[p] < lo ? "trop dur" : "trop facile"}`).join("   "));
+}
+if (JSON_OUT) console.log(JSON.stringify({ results, tact: E.tactLog }, null, 1));
+else if (E.tactLog) console.log("déclenchements :", JSON.stringify(E.tactLog));
+else console.log(`\nStasis la plus haute réussie au moins 1 fois sur 2 (${CLS.length} équipes × ${TRIES} essais). Cibles Monocompte : sans équipement 0-1, bon équipement 4-6, optimisé 7.`);

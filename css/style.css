@@ -4562,6 +4562,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 [data-fr="koli"]{--m1:#a8761a;--m2:#ffd36a;--m3:#7a1a12;--gem:#e8304a;--glow:rgba(255,190,80,.45);--ring:repeating-conic-gradient(#ffd36a 0 15deg,#7a1a12 0 30deg)}
 [data-fr="songe"]{--m1:#2a2f7a;--m2:#ffb8e8;--m3:#0e1030;--gem:#5fd8d0;--glow:rgba(255,160,230,.5);--ring:conic-gradient(from var(--ang),#5fd8d0,#2a2f7a,#ffb8e8,#0e1030,#5fd8d0)}
 [data-fr="guilde"]{--gcol:#c9962e;--m1:color-mix(in srgb,var(--gcol) 70%,#000);--m2:color-mix(in srgb,var(--gcol) 45%,#fff);--m3:#1a1206;--gem:#ffd36a;--glow:color-mix(in srgb,var(--gcol) 55%,transparent);--ring:conic-gradient(var(--gcol),#ffd36a 15%,var(--gcol) 30%,#1a1206 45%,var(--gcol) 60%,#ffd36a 75%,var(--gcol))}
+[data-fr="mono_pres"]{--m1:#7a4ad8;--m2:#ffe08a;--m3:#1a0f33;--gem:#ffe08a;--glow:rgba(255,224,138,.6);--ring:conic-gradient(from var(--ang),#ffe08a,#7a4ad8,#fff6d0,#3a2378,#ffe08a)} /* Monocompte : cadre Prestige */
 [data-fr="halouine"]{--m1:#e0761a;--m2:#ffb347;--m3:#140a04;--gem:#ff7a1a;--glow:rgba(255,130,30,.55);--ring:repeating-conic-gradient(#ff8a1a 0 22.5deg,#1a0d04 0 45deg)}
 /* anneau du portrait */
 .head[data-fr]{border:3px solid transparent;background:linear-gradient(var(--cc),var(--cc)) padding-box,var(--ring,conic-gradient(from 210deg,var(--m2),var(--m1) 25%,var(--m3) 50%,var(--m1) 75%,var(--m2))) border-box;box-shadow:0 0 0 1px #000a}
@@ -4569,6 +4570,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .head[data-fr$="2"]{box-shadow:0 0 0 1px #000a,0 0 0 2.5px var(--m2),0 0 0 3.5px #000a}
 .head[data-fr="krosmoz"]{--ring:conic-gradient(from var(--ang),#c77dff,#4fd1e0,#f0c35a,#ff7ac8,#c77dff);box-shadow:0 0 0 1px #000a,0 0 8px rgba(199,125,255,.7);animation:spin 6s linear infinite}
 .head[data-fr="feu"]{--ring:conic-gradient(from var(--ang),#ffc35a,#d9541e,#7a2a0e,#ff9a3d,#ffc35a);box-shadow:0 0 0 1px #000a,0 0 8px rgba(255,140,60,.7);animation:spin 5s linear infinite}
+.head[data-fr="mono_pres"]{box-shadow:0 0 0 1px #000a,0 0 9px var(--glow);animation:spin 7s linear infinite}
 .head:is([data-fr="pionnier"],[data-fr="stasis"],[data-fr="ames"],[data-fr="dofus"],[data-fr="align"],[data-fr="koli"],[data-fr="songe"],[data-fr="guilde"],[data-fr="halouine"]){box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
 .head:is([data-fr="stasis"],[data-fr="songe"]){animation:spin 8s linear infinite}
 .hb-por .head.lg[data-fr]{box-shadow:0 0 0 1px #000c,0 0 16px var(--glow,color-mix(in srgb,var(--cc) 45%,transparent))}
@@ -5963,3 +5965,33 @@ button.pset.open{outline:1px solid var(--action)}
 .offc-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:999px;box-shadow:0 0 10px var(--glow);transition:width .25s}
 .offc-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){.offc-bar i{transition:none}}
+/* Monocompte (js/mono.js) : choix du serveur, cartes de l'écran des parties, pastille du statut */
+.srvpick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.srvc{all:unset;box-sizing:border-box;cursor:pointer;border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:color-mix(in srgb,var(--panel2) 70%,transparent);transition:border-color .15s,box-shadow .15s}
+.srvc:hover{border-color:var(--frame)}.srvc:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.srvc.on{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent),0 6px 22px rgba(0,0,0,.3);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 12%,transparent),transparent)}
+.srvh{margin:0;font-family:var(--fd,inherit);font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.srvtg{font-family:var(--fb,inherit);font-size:11px;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold);font-weight:800;letter-spacing:.04em}
+.srvwho{font-size:12.5px;color:var(--muted)}
+.srvul{margin:2px 0 0;padding-left:18px;font-size:13px;line-height:1.5;display:grid;gap:2px}
+.svsrv{display:grid;gap:3px;margin-top:6px}.svsrv h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.svsrv.mono{margin-top:18px}
+.svc2.empty.mono{border-color:var(--gold)}.svc2.empty.mono .plus{border-color:var(--gold);font-size:28px}
+.svm .tag.mo,.svback .tag.mo{background:linear-gradient(90deg,#4a6d1c,#7ea52a);color:#f3ffd0}
+#status .monob{padding:3px 10px;border-radius:99px;background:linear-gradient(90deg,#3f5e1a,#6b8f24);color:#f3ffd0;border:1px solid #a9cf4c;white-space:nowrap;font-size:13px}
+#status .monob b{color:#f3ffd0}
+@media (max-width:640px){.srvpick{grid-template-columns:minmax(0,1fr)}}
+.svgrid.mono{grid-template-columns:minmax(0,560px);justify-content:center}
+/* Monocompte : mercenaire sur la fiche du donjon */
+.mercbox{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.mercpick{display:flex;flex-wrap:wrap;gap:4px}
+.mercpick button{min-width:34px;height:34px;padding:0 8px;border-radius:9px;border:1px solid var(--frame);background:var(--panel);color:inherit;font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.mercpick button img{width:22px;height:22px;object-fit:contain}
+.mercpick button.on{border-color:var(--cc,var(--accent));box-shadow:0 0 0 2px var(--cc,var(--accent)) inset;background:var(--panel2)}
+.mercpick button:disabled{opacity:.4;cursor:default}
+/* Monocompte : spécialités de métier */
+.spcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.spc{display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.spc.spcon{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.spc select{margin-top:4px;width:100%}
+@media (max-width:640px){.spcgrid{grid-template-columns:1fr}}

@@ -208,7 +208,7 @@
     const g = E.koliGrade(Q.cote, Q.top); const nx = E.koliNext(Q.cote); const tk = E.koliTickets(s);
     const prevMin = g.min === Infinity ? 1700 : g.min; const prog = nx ? Math.max(0, Math.min(100, ((Q.cote - prevMin) / (nx.min - prevMin)) * 100)) : 100;
     const rank = on && ui.me && ui.me.rank ? `${ui.me.rank}<sup>e</sup> sur ${ui.me.players} joueur${ui.me.players > 1 ? "s" : ""}` : on ? "pas encore classé cette semaine" : "hors ligne, contre des Fantômes";
-    main.innerHTML = `<div class="kz-top"><div><h1>Kolizéum</h1><span class="small muted">3 contre 3 · nouvelle semaine dans ${left()} (lundi à minuit)</span></div>
+    main.innerHTML = `<div class="kz-top"><div><h1>Kolizéum</h1><span class="small muted">${K.size} contre ${K.size}${s.mono ? " (Monocompte, réglé par classe)" : ""} · nouvelle semaine dans ${left()} (lundi à minuit)</span></div>
       <div class="row"><button class="btn sm" data-act="kz-shop">${coin("kz-coin sm")} Boutique</button><button class="btn sm" data-act="kz-rules">${X().IC("parchemin_or")} Règles</button></div></div>
     ${on ? "" : ON() && ON().user && ON().solo && ON().solo() ? `<div class="kz-off">${X().IC("logo")} <span><b>Partie solo : tu t'entraînes contre des Fantômes</b> (des équipes créées par le jeu). Le Kolizéum classé se joue avec ta partie 1.</span></div>` : `<div class="kz-off">${X().IC("logo")} <span><b>Sans compte, tu t'entraînes contre des Fantômes</b> (des équipes créées par le jeu). ${ON() && ON().enabled ? "Avec un compte gratuit, tu affrontes les équipes des autres joueurs et tu entres au classement." : "Sur la version de test, tous les adversaires sont des Fantômes."}</span></div>`}
     <section class="panel"><div class="kz-band">${emb(g, "big")}
@@ -361,7 +361,7 @@
   function watchHtml(w) {
     const I = w.koli; const sp = w.spd || 1;
     const title = I.train ? `Entraînement contre ${h(I.opp.name)}` : I.me === 1 ? `${h(I.opp.name)} t'attaque` : `Contre ${h(I.opp.name)}`;
-    return `<div class="pagehead combathead"><div><div class="small muted">${X().IC("combat")} Kolizéum · 3 contre 3 <span id="wroom"></span></div><h1>${title}</h1></div>
+    return `<div class="pagehead combathead"><div><div class="small muted">${X().IC("combat")} Kolizéum · ${K.size} contre ${K.size} <span id="wroom"></span></div><h1>${title}</h1></div>
       <div class="row" style="gap:6px;flex-wrap:wrap"><span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${sp === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wskip">Passer</button><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
     <section class="panel combatpanel watchpanel kzw">
       <div class="kz-vsbar"><span class="side">${heads(I.me === 1 ? I.B : I.A)}<b class="small">${I.me === 1 ? "Ta défense" : "Ton équipe"}</b></span><span class="vs">VS</span><span class="side r"><b class="small">${h(I.opp.name)}</b>${heads(I.me === 1 ? I.A : I.B)}</span></div>

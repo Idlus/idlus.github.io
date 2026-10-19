@@ -618,7 +618,8 @@
     if (id === "potion_savoir") {
       const J = S.jobs[arg]; if (!J) return "Choisissez un métier.";
       take(); J.xp += Math.max(E.jobXpNeed(J.lvl), 0);
-      while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; }
+      const cap = E.jobCap(S, "g", arg); while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; }
+      if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, E.jobXpNeed(J.lvl) - 1);
       note(S, `Potion de Savoir : ${D.GATHER_JOBS[arg].name} niveau ${J.lvl}.`, "up"); return null;
     }
     if (id === "cristal_fm") { if (S.fmShield) return "Un Cristal est déjà actif."; take(); S.fmShield = true; note(S, "Cristal de Forgemagie actif : la prochaine forgemagie ne peut rien faire baisser.", "info"); return null; }
@@ -738,9 +739,10 @@
   E.fmLearned = () => true; // 1.0.12.9 : les six métiers sont ouverts dès le départ
   E.fmNeed = (l) => 20 + 30 * l;
   E.fmGainXp = (S, x, job) => {
-    const J = E.fmJob(S, job || "forgemage"); if (!J || J.lvl >= E.FM_MAX) return; J.xp += x;
-    while (J.lvl < E.FM_MAX && J.xp >= E.fmNeed(J.lvl)) { J.xp -= E.fmNeed(J.lvl); J.lvl++; if (J.lvl % 10 === 0 || J.lvl === E.FM_MAX) note(S, `${E.FM_JOBS[job || "forgemage"].name} niveau ${J.lvl}`, "up"); }
-    if (J.lvl >= E.FM_MAX) J.xp = 0;
+    const cap = Math.min(E.FM_MAX, E.jobCap(S, "f", job || "forgemage"));
+    const J = E.fmJob(S, job || "forgemage"); if (!J || J.lvl >= cap) return; J.xp += x;
+    while (J.lvl < cap && J.xp >= E.fmNeed(J.lvl)) { J.xp -= E.fmNeed(J.lvl); J.lvl++; if (J.lvl % 10 === 0 || J.lvl === E.FM_MAX) note(S, `${E.FM_JOBS[job || "forgemage"].name} niveau ${J.lvl}`, "up"); }
+    if (J.lvl >= cap) J.xp = 0;
   };
   /* XP d'une tentative : comme dans DOFUS, un objet bien en dessous du niveau du métier rapporte peu */
   E.fmXpFor = (S, tpl, weight) => { const T = ITEMS[tpl]; const J = E.fmJob(S, E.fmJobOf(tpl)); const gap = J.lvl - T.lvl;

@@ -81,8 +81,9 @@
   E.cmdReward = (S, o) => Math.round(o.kamas * (1 + 0.1 * E.cmdRank(S, o.art)));
   const giveJobXp = (S, job, x) => {
     const gather = !!GATHER_JOBS[job]; const J = gather ? S.jobs[job] : S.crafts[job]; if (!J) return;
-    J.xp += x;
-    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; E.note(S, `${jobName(job)} niveau ${J.lvl}`, "up"); if (gather) E.emit(S, "joblvl", { job, lvl: J.lvl }); }
+    J.xp += x; const cap = E.jobCap ? E.jobCap(S, gather ? "g" : "c", job) : 200;
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; E.note(S, `${jobName(job)} niveau ${J.lvl}`, "up"); if (gather) E.emit(S, "joblvl", { job, lvl: J.lvl }); }
+    if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, E.jobXpNeed(J.lvl) - 1);
   };
   /* livrer : tout ce qu'on a, jusqu'à la quantité demandée (les livraisons partielles comptent) */
   E.cmdDeliver = (S, id) => {

@@ -98,6 +98,8 @@
   E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : Math.pow(100 / l, 1.5));
   E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
+  /* niveau maximum d'un métier (g récolte, c artisanat, f forgemagie) : 200 ; le Monocompte le baisse hors spécialités (js/mono.js) */
+  E.jobCap = (S, kind, job) => 200;
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
   /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
   E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)
@@ -991,6 +993,7 @@
     return null;
   };
   const charEntity = (S, c) => {
+    if (c.snap && E.monoSnapEnt) return E.monoSnapEnt(S, c); // Monocompte : héros d'un autre joueur du groupe ou mercenaire (photo, js/mono.js)
     const st = E.charStats(S, c);
     const fs = E.freeSpirit(S);
     const hpMax = Math.round(st.hpMax * (1 + fs / 200) * (E.teamHas(S, "osa") ? 1.05 : 1) * (1 + E.bonus(S, "hp") / 100));
@@ -1432,8 +1435,9 @@
     if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
     if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
     /* 0.1 : bonus « petit groupe » en donjon (solo et duo) ; 0.1.24.3 : en chasse aussi (solo, duo, trio) */
-    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
+    const sm = S.mono && E.monoEnts && !XP ? null : S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
     if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
+    else if (S.mono && E.monoEnts && !XP) E.monoEnts(S, ents, !!S.dungeon); // Monocompte : bonus Héros unique, qui baisse avec le groupe (js/mono.js)
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
@@ -2234,6 +2238,7 @@
       e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
       e.resBonus = 0; e.regen = 0;
     });
+    if (S.mono && E.monoDmg) heroes0.forEach((e) => (e.dmgBonus += E.monoDmg(S, e, heroes0))); // Monocompte : dégâts du Héros unique (et du groupe)
     if (F.exp && E.expBonuses) E.expBonuses(S, F); // 0.1.24 : reliques et bénédictions de l'expédition
   };
 
@@ -2504,9 +2509,9 @@
     const v = { vit: list.reduce((t, T) => t + T.stats.vit[0], 0), sa: list.reduce((t, T) => t + T.stats.sa[0], 0), list: list.map((T) => T.trophy) };
     vitrineCache.set(S, { n: keys.length, v }); return v;
   };
-  E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
+  E.lootRolls = (S) => Math.max(1, E.team(S).filter((c) => !c.merc).length); // 1.0.3 : un tirage de ressource par héros (Monocompte : pas pour le mercenaire)
   const giveRewards = (S, mons, opts = {}) => {
-    const team = E.team(S);
+    const team = E.team(S).filter((c) => !c.merc); // Monocompte : le mercenaire ne prend ni XP ni butin
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
@@ -2567,7 +2572,7 @@
       const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1)); let n = 0;
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1) * (S.mono && E.monoItem ? E.monoItem(S, ITEMS[tpl]) : 1)); let n = 0; // Monocompte : butin d'équipement du héros seul
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
         for (let ii = 0; ii < n; ii++) {
           seen(m.key, tpl);
@@ -3296,7 +3301,8 @@
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
     if (q) addRes(S, W.res, q);
     J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn ? E.mtOwn(S, c, "xpj") : 1); // 2.1 : Artisan (XP de métier)
-    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
+    const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
     return q;
   };
@@ -3423,7 +3429,9 @@
   };
   const craftXp = (S, job, x) => {
     const J = S.crafts[job]; J.xp += x * (E.mtOwn ? Math.max(1, ...S.chars.map((c) => E.mtOwn(S, c, "xpj"))) : 1); // 2.1 : Artisan (le meilleur héros du compte)
-    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
+    const cap = E.jobCap(S, "c", job);
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
+    if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, E.jobXpNeed(J.lvl) - 1);
   };
 
   /* ---------------- Brisage & runes ---------------- */
@@ -3759,7 +3767,7 @@
   E.catchUpGen = function* (S, seconds) {
     seconds = Math.min(seconds, E.OFFLINE_MAX_S + E.bonus(S, "offtime") * 3600);
     if (seconds < 60) return null;
-    const eff = seconds * E.offRate(S);
+    const eff = seconds * E.offRate(S) * (S.mono && E.MONO ? E.MONO.off : 1); // Monocompte : gains hors ligne à 80 % (js/mono.js)
     const rec = S.stats.recent;
     const avg = rec.length ? rec.reduce((s, r) => s + r.d, 0) / rec.length : 15;
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;

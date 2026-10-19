@@ -37,6 +37,7 @@
   function questTxt(s, id) {
     const Df = E.DOFUS[id]; const Q = E.dofusQuest(s, id);
     if (Q.done) return "Quête terminée";
+    if (E.dofusClosed && E.dofusClosed(s, id)) return "Monocompte : tombe seulement de son boss";
     if (id === "ocre") return `Éternelle moisson · palier ${E.ocreTier(s) + 1} sur ${E.OCRE_TIERS.length}`;
     if (Df.steps[0] && Df.steps[0].t === "gift") return "Cadeau de lancement";
     const [a, b] = E.dofusStepProgress(s, id, Q.step);
@@ -65,7 +66,7 @@
       <div class="du-vps">${pill(`${done}/${L.length}`, "quêtes finies")}${pill(`${worn}/${T.length * 6}`, "portés par l'équipe")}${E.dpotRank ? pill(pot, "rangs de Potentiel") : ""}${E.DOFP_PRIM ? pill(eveil, "Éveil des Dragons") : ""}</div></div></section>`;
   }
   function todoHtml(s) {
-    const L = ids().filter((id) => !E.dofusQuest(s, id).done && !(E.DOFUS[id].steps[0] && E.DOFUS[id].steps[0].t === "gift")).map((id) => [id, qFrac(s, id)]).sort((a, b) => b[1] - a[1] || E.DOFUS[a[0]].lvl - E.DOFUS[b[0]].lvl).slice(0, 3);
+    const L = ids().filter((id) => !E.dofusQuest(s, id).done && !(E.dofusClosed && E.dofusClosed(s, id)) && !(E.DOFUS[id].steps[0] && E.DOFUS[id].steps[0].t === "gift")).map((id) => [id, qFrac(s, id)]).sort((a, b) => b[1] - a[1] || E.DOFUS[a[0]].lvl - E.DOFUS[b[0]].lvl).slice(0, 3);
     const fr = freeCopies(s);
     const cards = L.map(([id, f]) => { const stp = E.dofusStep(s, id); const go = stp && X().dofusStepGo ? X().dofusStepGo(stp) : "";
       return `<div class="du-td">${im(dimg(id), "du-tdi", E.DOFUS[id].name)}<div class="du-tdt"><b>${h(E.DOFUS[id].name)}</b><span class="bar"><i style="width:${Math.round(f * 100)}%"></i></span><span class="xs muted">${h(questTxt(s, id))}</span></div><div class="du-tdb">${go || `<button class="btn xs" data-act="du-q" data-v="${id}">Voir</button>`}</div></div>`; }).join("");
