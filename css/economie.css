@@ -106,3 +106,13 @@
 .pl-pill .pl-go{background:var(--gold);color:var(--page);font-weight:800;border-radius:999px;padding:4px 10px}
 @media (max-width:640px){.pl-sum{font-size:22px}.pl-big{font-size:26px}.pl-pill{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){.pl-rain i{animation:none;top:auto;bottom:6px}}
+/* 2.1.29.5 : vendre plusieurs ressources d'un coup (js/venteui.js) */
+.vd-pick .vd-prow{align-items:center;gap:8px}
+.vd-pick .vd-prow input{width:96px}
+.vd-pick .vd-psub{min-width:84px;text-align:right}
+.vd-pick .vd-pres{border:1px solid var(--frame);border-radius:10px;padding:8px 10px;background:var(--panel2)}
+.vd-pick .vd-pres .list{max-height:240px;overflow:auto}
+.rtile .ipick{top:4px}
+.vd-pbar{margin-right:110px}
+@media (max-width:860px){.vd-pbar{margin-right:0}}
+@media (max-width:560px){.vd-pick .vd-prow{flex-wrap:wrap}.vd-pick .vd-prow input{width:84px}.vd-pick .vd-psub{min-width:0}}

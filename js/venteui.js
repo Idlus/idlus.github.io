@@ -22,7 +22,7 @@
   const fmt = (n) => X().fmt(n);
   const VV = E.VENTE;
   /* V.c[ressource] = [coef, volume récent, vendues en 24 h, heure locale de la lecture (ms)] ; une ressource absente est au plafond ×3 */
-  const V = { at: 0, c: {}, up: false, err: false, missing: false, block: null, loading: null, busy: false, curve: {}, qty: {}, cq: "", last: null };
+  const V = { at: 0, c: {}, up: false, err: false, missing: false, block: null, loading: null, busy: false, curve: {}, qty: {}, cq: "", last: null, pick: null, pickL: [], pres: null };
 
   /* ---------- compte et serveur ---------- */
   const online = () => !!(ON && ON.enabled);
@@ -159,6 +159,70 @@
     return `<div class="row small vd-inote"><span class="xs muted grow">Les ressources sont partagées entre tous vos héros. Pour vendre : la vente directe au prix du serveur ou l'hôtel de vente, depuis la fiche d'une ressource${V.at ? " (▲ le prix remonte, ▼ il baisse)" : ""}.</span>${online() ? `<button class="btn sm" data-act="nav" data-v="cours">${X().IC("kamas")} Cours des ressources</button>` : ""}</div>`;
   };
 
+  /* ---------- 2.1.29.5 : vendre plusieurs ressources d'un coup (Inventaire › Ressources › Sélectionner) ----------
+     V.pick = Map(ressource → quantité, null = tout le stock) ; la vente passe par vente_sell, par lots de 40 ressources (limite du serveur) */
+  const pickQ = (n) => { const have = (S().res[n] || 0); const q = V.pick.get(n); return Math.max(0, Math.min(have, q == null ? have : q)); };
+  const pickRows = () => [...V.pick.keys()].filter((n) => (S().res[n] || 0) > 0);
+  const pickTotal = () => pickRows().reduce((a, n) => a + quote(n, pickQ(n)), 0);
+  function pickToggle(n) {
+    if (!V.pick) return;
+    if (V.pick.has(n)) { V.pick.delete(n); return; }
+    if (!E.venteOk(n)) { X().toast(`${n} ne se vend pas au jeu.`, "warn"); return; }
+    if (V.pick.size >= 200) { X().toast("200 ressources au plus dans une sélection.", "warn"); return; }
+    V.pick.set(n, null);
+  }
+  /* panneau de la sélection (au-dessus de la grille) et barre du bas ; L = ressources affichées (pour « Tout ce filtre ») */
+  function pickHtml(L) {
+    if (!V.pick) return { top: "", bar: "" };
+    const s = S(); V.pickL = (L || []).filter((n) => E.venteOk(n) && !s.resFav[n]);
+    const R = V.pres && Date.now() - V.pres.at < 5 * 60000 ? V.pres : null;
+    const res = R ? `<div class="vd-pres"><div class="row between"><b>${h(R.head)}</b><button class="linkbtn xs" data-act="vd-pclose">Fermer</button></div><div class="list">${R.rows.map((r) => `<div class="li small">${X().im(X().resImg(r.n), "ico", r.n)}<span class="grow"><b>${h(r.n)}</b><br><span class="xs ${r.ok ? "vd-up" : "vd-dn"}">${h(r.t)}</span></span></div>`).join("")}</div></div>` : "";
+    const rows = pickRows();
+    const priced = !!V.at;
+    const tot = priced ? pickTotal() : 0;
+    const lines = rows.map((n, i) => { const q = pickQ(n); const have = s.res[n] || 0;
+      return `<div class="li small vd-prow">${X().im(X().resImg(n), "ico", n)}<span class="grow"><b>${s.resFav[n] ? "★ " : ""}${h(n)}</b><br><span class="xs muted">tu en as ${fmt(have)}${priced ? ` · ${kTxt(unit(n))} k l'unité ${arrowHtml(now(n).trend)}` : ""}</span></span>
+        <input type="number" id="vdPq${i}" data-act="vd-pq" data-n="${h(n)}" min="1" max="${have}" value="${q}" aria-label="Quantité de ${h(n)} à vendre"><b class="num vd-psub" data-n="${h(n)}">${priced ? `≈ ${fmt(quote(n, q))} k` : ""}</b><button class="btn sm" data-act="vd-punpick" data-n="${h(n)}" title="Retirer de la sélection">✕</button></div>`; }).join("");
+    const gate = sellOk() ? "" : `<div class="small vd-acc"><b>${h(whyNot())}</b></div>`;
+    const top = `<section class="panel vd-pick"><div class="phead"><h2>Vendre plusieurs ressources</h2><span class="xs muted">vente directe au prix du serveur</span></div><div class="pad stack" style="gap:8px">
+      ${res}${gate}
+      ${rows.length ? `<div class="list">${lines}</div><span class="xs muted">Touche une ressource pour l'ajouter ou la retirer. Par défaut tout le stock est vendu : change la quantité si tu veux en garder. Un gros lot fait baisser le prix pendant la vente : le total en tient compte.</span>`
+        : `<span class="small muted">Touche les ressources à vendre dans la grille, ou « Tout ce filtre » (les favorites ★ sont laissées de côté).</span>`}</div></section>`;
+    const busy = V.busy || V.pbusy;
+    const bar = `<div class="invpickbar vd-pbar"><b class="num">${rows.length}</b><span class="small">ressource${rows.length > 1 ? "s" : ""}${priced && rows.length ? ` · ≈ <b class="num" id="vdPtot">${fmt(tot)}</b> kamas` : ""}</span><span class="grow"></span>
+      <button class="btn sm" data-act="vd-pall" ${V.pickL.length ? "" : "disabled"}>Tout ce filtre</button>${rows.length ? `<button class="btn sm" data-act="vd-pclear">Vider</button>` : ""}
+      <button class="btn sm primary" id="vdPgo" data-act="vd-psell" ${rows.length && !busy && sellOk() ? "" : "disabled"}>${busy ? "Vente en cours…" : `Vendre la sélection`}</button><button class="btn sm" data-act="vd-pick">Terminer</button></div>`;
+    return { top, bar };
+  }
+  async function pickSell() {
+    const s = S(); const rows = pickRows(); if (!rows.length || V.pbusy) return;
+    if (!sellOk()) { X().toast(whyNot(), "warn", 6000); return; }
+    const ask = rows.map((n) => [n, pickQ(n)]).filter(([, q]) => q > 0);
+    if (!ask.length) { X().toast("Choisis au moins une quantité à vendre.", "warn"); return; }
+    V.pbusy = true; X().render();
+    const out = []; let k = 0, share = 0, stop = null;
+    try {
+      for (let i = 0; i < ask.length; i += 40) {
+        const part = ask.slice(i, i + 40);
+        if (stop) { part.forEach(([n]) => out.push({ n, ok: false, t: "Pas vendue : " + stop })); continue; }
+        let r; try { r = await sell(Object.fromEntries(part), i > 0); } catch (e) { r = { err: "La vente n'a pas pu se faire : réessaie dans un moment." }; }
+        if (r.err) { stop = r.err; part.forEach(([n]) => out.push({ n, ok: false, t: "Refusée : " + r.err })); continue; }
+        k += r.k || 0; share += r.share || 0;
+        for (const [n, q] of part) {
+          const got = (r.sold || {})[n] || 0;
+          out.push(got >= q ? { n, ok: true, t: `Vendu : ${fmt(got)}` } : got > 0 ? { n, ok: true, t: `Vendu : ${fmt(got)} sur ${fmt(q)} (ta partie en ligne n'en avait pas plus)` }
+            : { n, ok: false, t: "Refusée : ta partie en ligne n'a pas cette ressource (attends quelques secondes et réessaie)" });
+        }
+      }
+    } finally { V.pbusy = false; }
+    const nOk = out.filter((o) => o.ok).length;
+    for (const o of out) if (o.ok) V.pick.delete(o.n);
+    const head = nOk ? `${nOk} ressource${nOk > 1 ? "s" : ""} vendue${nOk > 1 ? "s" : ""} pour ${fmt(k)} kamas${share > 0 ? ` (+${fmt(share)} pour le coffre de ta guilde)` : ""}${nOk < out.length ? ` · ${out.length - nOk} refusée${out.length - nOk > 1 ? "s" : ""}` : ""}` : "Rien n'a été vendu";
+    V.pres = { at: Date.now(), head, rows: out };
+    X().toast(head + ".", nOk ? "rare" : "warn", 6000);
+    if (S()) X().render();
+  }
+
   /* ---------- page Économie › Cours des ressources ---------- */
   function row(n) {
     const s = S(); const x = now(n); const b = E.resPrice(n); const own = s.res[n] || 0;
@@ -206,6 +270,12 @@
     const n = t.dataset.n; const s = S();
     if (a === "vd-all") { V.qty[n] = s.res[n] || 0; X().render(); return; }
     if (a === "vd-inv") { const ui = UI(); ui.tab = "inv"; ui.inv = "res"; ui.newResDone = false; X().render(); window.scrollTo(0, 0); return; }
+    if (a === "vd-pick") { V.pick = V.pick ? null : new Map(); V.pres = null; if (V.pick) { UI().resSel = null; X().closeSheet(); load(); } X().render(); return; }
+    if (V.pick && (a === "vd-ptile" || a === "vd-punpick")) { pickToggle(n); X().render(); return; }
+    if (V.pick && a === "vd-pall") { for (const k of V.pickL) if (V.pick.size < 200 && !V.pick.has(k)) V.pick.set(k, null); X().render(); return; }
+    if (V.pick && a === "vd-pclear") { V.pick.clear(); X().render(); return; }
+    if (a === "vd-pclose") { V.pres = null; X().render(); return; }
+    if (V.pick && a === "vd-psell") { t.disabled = true; t.textContent = "Vente en cours…"; pickSell(); return; }
     if (a === "vd-retry") { V.err = false; load(true).then(() => { if (S()) X().render(); }); return; }
     if (a === "vd-sell") {
       const inp = $("#vdQty"); const q = Math.floor(+(inp ? inp.value : 0) || 0);
@@ -221,6 +291,9 @@
   document.addEventListener("input", (ev) => {
     const t = ev.target; const a = t.dataset && t.dataset.act; if (!a || !/^vd-/.test(a) || !S()) return;
     if (a === "vd-qty") { const n = t.dataset.n; const q = Math.max(0, Math.min(S().res[n] || 0, Math.floor(+t.value || 0))); V.qty[n] = q; const b = $("#vdGo"); if (b) b.textContent = goTxt(q, q ? quote(n, q) : 0); return; }
+    if (a === "vd-pq" && V.pick) { const n = t.dataset.n; const have = S().res[n] || 0; const q = Math.max(0, Math.min(have, Math.floor(+t.value || 0))); V.pick.set(n, q >= have ? null : q);
+      const sub = document.querySelector(`.vd-psub[data-n="${CSS.escape(n)}"]`); if (sub && V.at) sub.textContent = `≈ ${fmt(q ? quote(n, q) : 0)} k`;
+      const tot = $("#vdPtot"); if (tot && V.at) tot.textContent = fmt(pickTotal()); return; }
     if (a === "vd-cq") { V.cq = t.value.slice(0, 40); clearTimeout(V.cqT); V.cqT = setTimeout(() => { const L = $("#vdList"); if (L && UI().tab === "cours") L.innerHTML = listHtml(); }, 150); }
   });
 
@@ -233,5 +306,6 @@
     if (tick % 10 === 0) surplus();
   }, 60000);
 
-  window.VENTEUI = { has: (n) => E.venteOk(n), kept: (n) => !!(V.last && V.last.n === n && Date.now() - V.last.at < 60000), box, arrow, capTxt, capToast, bankTxt, invNote, load, now, quote, sell, surplus, V };
+  window.VENTEUI = { has: (n) => E.venteOk(n), kept: (n) => !!(V.last && V.last.n === n && Date.now() - V.last.at < 60000), box, arrow, capTxt, capToast, bankTxt, invNote, load, now, quote, sell, surplus, V,
+    picking: () => !!V.pick, picked: (n) => !!(V.pick && V.pick.has(n)), pickHtml, pickBtn: () => (online() ? `<button class="btn sm ${V.pick ? "primary" : ""}" data-act="vd-pick" title="Choisir plusieurs ressources et les vendre au jeu d'un seul coup">${V.pick ? "Terminer" : `☑<span class="ilbl"> Vendre plusieurs</span>`}</button>` : "") };
 })();

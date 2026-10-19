@@ -1025,6 +1025,22 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
         await window.VENTEUI.load(true); const off = E.venteDirect(S); S.res["Bois de Frêne"] = 30; S.resCap["Bois de Frêne"] = 5; E.emit(S, "harvest", { n: 1 }); const merch = S.res["Bois de Frêne"];
         d.ecoOff = false; localStorage.setItem("__mock", JSON.stringify(d)); await window.VENTEUI.load(true); delete S.resCap["Bois de Frêne"]; return { off, merch, back: E.venteDirect(S) }; });
       if (r.off || r.merch !== 5 || !r.back) fail("vente directe : sans les fonctions du serveur, le marchand de secours ne reprend pas " + JSON.stringify(r)); }
+    // 2.1.29.5 : plusieurs ressources vendues d'un seul clic (Inventaire › Ressources › Vendre plusieurs), quantité réglable par ressource, résultat par ressource
+    { await page.evaluate(() => { const S = window.DX.S; Object.assign(S.res, { "Laine de Bouftou": 3000, "Bois de Frêne": 50, "Plume de Tofu": 20 }); window.DX.ui.resSel = null; window.DX.render(); });
+      await page.click('.resbar ~ .invbar [data-act="vd-pick"]');
+      for (const n of ["Bois de Frêne", "Plume de Tofu", "Laine de Bouftou"]) await page.click(`.rtile[data-n="${n}"]`);
+      if ((await page.$$(".vd-pick .vd-prow")).length !== 3) fail("vente de plusieurs ressources : la sélection ne suit pas les clics");
+      await page.fill('.vd-prow input[data-n="Laine de Bouftou"]', "500"); await page.waitForTimeout(100);
+      const k0 = await page.evaluate(() => window.DX.S.kamas); const n0 = (await page.evaluate(() => JSON.parse(localStorage.getItem("__mock")).sells || [])).length;
+      if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/vente-plusieurs-choix.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.screenshot({ path: process.env.SHOTS + "/vente-plusieurs-mobile.png" }); await page.setViewportSize(vp); await page.waitForTimeout(400); }
+      await page.click("#vdPgo"); await page.waitForTimeout(1200);
+      const r = await page.evaluate(() => ({ S: window.DX.S.res, k: window.DX.S.kamas, sells: JSON.parse(localStorage.getItem("__mock")).sells || [], t: (document.querySelector(".vd-pres") || {}).textContent || "" }));
+      if (r.S["Bois de Frêne"] || r.S["Plume de Tofu"] || r.S["Laine de Bouftou"] !== 2500 || r.sells.length !== n0 + 1 || !(r.k > k0)) fail("vente de plusieurs ressources : vente mal appliquée " + JSON.stringify([r.S["Laine de Bouftou"], r.sells.slice(-1), r.k - k0]));
+      if (!/3 ressources vendues/.test(r.t.replace(/\s/g, " ")) || !/Vendu : 500/.test(r.t.replace(/\s/g, " "))) fail("vente de plusieurs ressources : résultat par ressource absent : " + r.t.slice(0, 200));
+      if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/vente-plusieurs.png" });
+      await page.click('.vd-pbar [data-act="vd-pick"]');
+      await page.evaluate(() => { const S = window.DX.S; Object.assign(S.res, { "Laine de Bouftou": 3000, "Bois de Frêne": 50, "Plume de Tofu": 20 }); window.DX.ui.resSel = "Laine de Bouftou"; window.DX.render(); });
+      await page.waitForSelector(".vd-box .vd-price", { timeout: 5000 }); }
     if (!(await page.evaluate(() => window.DX.NAV.some((F) => F.pages.some((p) => p[0] === "cours"))))) fail("vente directe : Cours des ressources absent du menu");
     await page.click('.vd-box [data-act="nav"][data-v="cours"]'); await page.waitForSelector(".vd-cours", { timeout: 5000 });
     { const t = await page.textContent("#main"); if (!/Les plus chères/.test(t) || !/Les plus vendues/.test(t) || !/Laine de Bouftou/.test(t) || !/Tes dernières ventes directes/.test(t)) fail("cours des ressources : page incomplète"); }

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.29.5 « Vendre plusieurs ressources »
+
+- Inventaire › Ressources › « Vendre plusieurs » (js/venteui.js, VENTEUI.pickHtml) : sélection de ressources dans la grille ou la liste, quantité par ressource, total estimé, « Vendre la sélection » par la vente directe existante (vente_sell, lots de 40 ressources au plus par appel, aucune modification du serveur), résultat par ressource. Demandé par Mathis. Test : tests/online.test.js.
+
 ## 2.1.29.4 « Infobulle des runes »
 
 - Établi de forgemagie : l'infobulle d'une rune s'affiche sous la rune (data-tippos="below" dans showTip, js/ui.js) et ne cache plus le jet actuel de la caractéristique. Demandé par Mathis.

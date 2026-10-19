@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29.4";
+const GAME_VERSION = "2.1.29.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29.5", name: "Vendre plusieurs ressources", guide: "hdv", items: [
+    "Héros › Inventaire › Ressources : nouveau bouton « Vendre plusieurs ». Touche les ressources à vendre (ou « Tout ce filtre », sans tes favorites ★), règle la quantité de chacune, puis « Vendre la sélection » : tout part en un seul clic à la vente directe",
+    "Le total estimé s'affiche avant la vente, puis le résultat ressource par ressource (vendue, ou refusée et pourquoi). Prix et règles de la vente directe inchangés",
+  ] },
   { v: "2.1.29.4", name: "Infobulle des runes", guide: "forgemagie", items: [
     "Établi de forgemagie : l'infobulle d'une rune s'affiche maintenant sous la rune, pour ne plus cacher le jet actuel de la caractéristique qu'on modifie",
   ] },
@@ -6952,22 +6956,24 @@ function resTabHtml() {
   if (f === "cmd") list = list.filter(([n]) => GBN.has(n));
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
-  const picked = new Set();
-  const detail = invSide() && ui.resSel && (S.res[ui.resSel] || resKept(ui.resSel)) ? resDetail(ui.resSel) : "";
+  const VU = window.VENTEUI; const pk = !!(VU && VU.picking()); // 2.1.29.5 : sélection de plusieurs ressources à vendre (js/venteui.js)
+  const picked = new Set(pk ? list.map(([n]) => n).filter((n) => VU.picked(n)) : []);
+  const PK = pk ? VU.pickHtml(list.map(([n]) => n)) : { top: "", bar: "" };
+  const detail = !pk && invSide() && ui.resSel && (S.res[ui.resSel] || resKept(ui.resSel)) ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
-      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
-      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}</button>`; };
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span>${pk ? `<button class="btn sm ${sel ? "primary" : ""}" data-act="vd-ptile" data-n="${h(n)}">${sel ? "☑ Choisie" : "☐ Choisir"}</button>` : `<button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button>`}</div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n && !pk ? "on" : ""} ${sel ? "picked" : ""}" data-act="${pk ? "vd-ptile" : "ressel"}" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}${pk ? `<span class="ipick">${sel ? "✓" : ""}</span>` : ""}</button>`; };
   return `<div class="row resbar">
       <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${catIco(c)} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
     <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">
       <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"], ["cmd", "Commandées aujourd'hui"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-      <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span></div>
-    ${q ? "" : `${gameBuysHtml()}
+      <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span>${VU ? VU.pickBtn() : ""}</div>
+    ${PK.top}${q || pk ? "" : `${gameBuysHtml()}
     ${window.VENTEUI ? window.VENTEUI.invNote() : `<div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>`}`}
     <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
-      ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
+      ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>${PK.bar}`;
 }
 const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
 /* 1.0.30.7 : la fiche d'une ressource vendue en entier reste ouverte une minute, avec le résultat de la vente (avant : elle disparaissait, « rien ne se passe ») */
@@ -7197,7 +7203,7 @@ function showTip(target) {
   const r = target.getBoundingClientRect(); const w = tipEl.offsetWidth, hh = tipEl.offsetHeight;
   let x = r.left + r.width / 2 - w / 2; x = Math.max(8, Math.min(window.innerWidth - w - 8, x));
   let y = r.top - hh - 8; if (y < 8) y = r.bottom + 8;
-  if (target.dataset.tippos === "below") { y = r.bottom + 8; if (y + hh > window.innerHeight - 8 && r.top - hh - 8 >= 8) y = r.top - hh - 8; } // 2.1.29.4 : sous la rune, pour laisser voir le jet de la stat
+  if (target.dataset.tippos === "below") { y = r.bottom + 8; if (y + hh > window.innerHeight - 8 && r.top - hh - 8 >= 8) y = r.top - hh - 8; } // 2.1.29.5 : sous la rune, pour laisser voir le jet de la stat
   tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
 }
 function hideTip() { if (tipEl) tipEl.style.display = "none"; }

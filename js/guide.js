@@ -830,7 +830,7 @@
     ] });
 
   /* ======================= Communauté ======================= */
-  add({ id: "hdv", f: "Économie", n: "Hôtel de vente et Cours des ressources", ic: "bourse", page: "hdv", pages: ["cours"], k: "hotel de vente hdv taxe offre achat echange cours vente directe coefficient",
+  add({ id: "hdv", f: "Économie", n: "Hôtel de vente et Cours des ressources", ic: "bourse", page: "hdv", pages: ["cours"], k: "hotel de vente hdv taxe offre achat echange cours vente directe coefficient vendre plusieurs selection",
     ou: "Économie › Hôtel de vente · Économie › Cours des ressources", de: "en ligne, avec un compte (partie 1)",
     voir: ["guilde"],
     b: () => [
@@ -844,6 +844,7 @@
       ]],
       ["h", "Cours des ressources (vente directe)"],
       ["p", `Vends tes ressources directement au jeu. Le prix = prix de base × un coefficient commun à tout le serveur, entre ×${N(() => E.VENTE.MIN)} et ×${N(() => E.VENTE.MAX)}. Vendre fait baisser le coefficient (${N(() => E.VENTE.VOL)} unités vendues = −1), et il remonte en se rapprochant de ×${N(() => E.VENTE.MAX)} (écart divisé par deux toutes les ${N(() => E.VENTE.HALF_H)} h).`],
+      ["p", "**Vendre plusieurs ressources d'un coup** : Héros › Inventaire › Ressources › « Vendre plusieurs », touche les ressources (ou « Tout ce filtre », sans les favorites ★), règle la quantité de chacune si tu veux en garder, puis « Vendre la sélection ». Le résultat s'affiche ressource par ressource."],
       ["p", `Sans compte, le marchand de secours paie ${N(() => E.MERCHANT * (E.MERCHANT < 1 ? 100 : 1))} % de la valeur.`],
     ] });
 

@@ -1,6 +1,15 @@
 {
-  "version": "2.1.29.4",
+  "version": "2.1.29.5",
   "versions": [
+    {
+      "v": "2.1.29.5",
+      "name": "Vendre plusieurs ressources",
+      "guide": "hdv",
+      "items": [
+        "Héros › Inventaire › Ressources : nouveau bouton « Vendre plusieurs ». Touche les ressources à vendre (ou « Tout ce filtre », sans tes favorites ★), règle la quantité de chacune, puis « Vendre la sélection » : tout part en un seul clic à la vente directe",
+        "Le total estimé s'affiche avant la vente, puis le résultat ressource par ressource (vendue, ou refusée et pourquoi). Prix et règles de la vente directe inchangés"
+      ]
+    },
     {
       "v": "2.1.29.4",
       "name": "Infobulle des runes",
