@@ -61,6 +61,16 @@ console.log("ok - sac de 3 000 places");
   const g2 = mk(high); assert.strictEqual(E.applyAuto(T, g2), null, "au-dessus : gardé");
   const g3 = mk(lowSet); assert.strictEqual(E.applyAuto(T, g3), null, "panoplie gardée");
   T.settings.auto.lowLvl = 0; const g4 = mk(low); assert.strictEqual(E.applyAuto(T, g4), null, "réglage vide : gardé");
+  // 2.1.29.2 (Akileuss) : « jet < 80 % » + « sous le niveau N » : il faut les deux ; mode « ou » : chacune suffit
+  const lowWide = tpls.find((t) => D.ITEMS[t].lvl < 100 && !D.ITEMS[t].set && !D.ITEMS[t].leg && Object.values(D.ITEMS[t].stats).length >= 1 && Object.values(D.ITEMS[t].stats).every(([x, y]) => y - x >= 5));
+  const good = (it) => { const L = Object.keys(it.stats); L.forEach((k, i) => (it.stats[k] = D.ITEMS[it.tpl].stats[k][1] - (i ? 0 : 1))); if (it.roll) it.roll = { ...it.stats }; return it; }; // bon jet, pas parfait
+  T.settings.auto = { action: "break", q: 80, keepSets: false, recycle: false, lowLvl: Math.max(D.ITEMS[low].lvl, D.ITEMS[lowWide].lvl) + 1 };
+  const k1 = mk(high); assert.strictEqual(E.applyAuto(T, k1), null, "jet bas mais niveau trop haut : gardé");
+  const k2 = mk(low); assert.strictEqual(E.applyAuto(T, k2), "break", "jet bas et sous le niveau : brisé");
+  const k3 = good(mk(lowWide)); assert.ok(E.itemQuality(k3) * 100 >= 80 && !E.isPerfect(k3), "jet ≥ 80 % non parfait");
+  assert.strictEqual(E.applyAuto(T, k3), null, "sous le niveau mais bon jet : gardé");
+  T.settings.auto.mode = "ou"; const k4 = mk(high); assert.strictEqual(E.applyAuto(T, k4), "break", "mode ou : le jet seul suffit");
+  T.settings.auto.action = "none"; const k5 = good(mk(lowWide)); assert.strictEqual(E.applyAuto(T, k5), "low", "niveau seul, quel que soit le jet");
 }
 console.log("ok - règle Bas niveau");
 // 5. « Tout prendre » : le trop-plein revient dans le sac, dans la limite de la place

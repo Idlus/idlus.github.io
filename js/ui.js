@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29.1";
+const GAME_VERSION = "2.1.29.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29.2", name: "Brisage auto plus précis", guide: "inventaire", items: [
+    "Règles automatiques du sac : quand « jet inférieur à X % » et une règle de niveau sont réglés ensemble, un objet n'est brisé que s'il remplit toutes les conditions (avant, une seule suffisait : « jet < 80 % » et « sous le niveau 190 » brisait aussi des objets 200). Signalé par Akileuss",
+    "Nouveau choix « Briser si : toutes les conditions / une seule suffit » : avec « une seule suffit », la règle de niveau brise quel que soit le jet. Tes réglages actuels sont gardés",
+  ] },
   { v: "2.1.29.1", name: "Envois plus rapides", guide: "communaute", items: [
     "Signaler un bug : un envoi toutes les 30 secondes (au lieu de 2 minutes)",
     "Proposer une idée : une idée par minute (au lieu de 10 minutes). Les limites par jour restent les mêmes (15 bugs, 10 idées)",
@@ -7010,7 +7014,7 @@ function resDetail(n) {
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
-  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}${A.lowLvl > 1 ? ` <span class="tag good">Sous le niv. ${A.lowLvl}</span>` : ""}</summary>
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}${A.lowLvl > 1 ? ` <span class="tag good">Sous le niv. ${A.lowLvl}</span>` : ""}${E.autoNConds(A) > 1 ? ` <span class="tag soft">${A.mode === "ou" ? "une seule suffit" : "toutes requises"}</span>` : ""}</summary>
     <div class="pad stack" style="padding-top:0;gap:8px">
       <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
       <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
@@ -7018,6 +7022,8 @@ function autoRulesHtml() {
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
       <label class="row small">Bas niveau <select data-act="autolow"><option value="" ${!(A.low > 0) ? "selected" : ""}>garder</option>${[20, 30, 50].map((v) => `<option value="${v}" ${A.low === v ? "selected" : ""}>briser à ${v} niveaux sous mon héros le plus faible</option>`).join("")}</select> <span class="tag soft">panoplies, Rayonnants et exo gardés</span></label>
       <label class="row small">Sous le niveau <input type="number" min="0" max="200" step="10" data-act="autolowlvl" value="${A.lowLvl > 1 ? A.lowLvl : ""}" placeholder="aucun" style="width:80px"> <span class="xs muted">briser les objets plus bas que ce niveau, quel que soit le niveau de tes héros</span></label>
+      ${E.autoNConds(A) > 1 ? `<label class="row small">Briser si <select data-act="automode"><option value="et" ${A.mode !== "ou" ? "selected" : ""}>toutes les conditions sont remplies (jet ET niveau)</option><option value="ou" ${A.mode === "ou" ? "selected" : ""}>une seule suffit (jet OU niveau)</option></select></label>` : ""}
+      <p class="xs muted" style="margin:0">Pour briser selon le niveau seul, quel que soit le jet : mets l'action sur « Aucune » et garde une règle de niveau, ou choisis « une seule suffit ».</p>
       <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
@@ -10255,6 +10261,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
   else if (a === "autolow") { S.settings.auto.low = +t.value || 0; ui.autoOpen = true; }
   else if (a === "autolowlvl") { S.settings.auto.lowLvl = Math.max(0, Math.min(200, Math.floor(+t.value) || 0)); ui.autoOpen = true; }
+  else if (a === "automode") { S.settings.auto.mode = t.value === "ou" ? "ou" : "et"; ui.autoOpen = true; }
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;

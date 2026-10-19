@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.29.2 « Brisage auto plus précis »
+
+- Règles automatiques du sac (E.applyAuto, js/engine.js) : « jet < X % », « Bas niveau » et « Sous le niveau » se combinent en ET par défaut (signalé par Akileuss : jet < 80 % + sous le niveau 190 brisait des objets 200). Nouveau réglage S.settings.auto.mode (« et » par défaut, « ou » = chaque condition brise seule). Les réglages déjà enregistrés restent valides (sans mode = « et »). Tests : tests/sac.test.js.
+
 ## 2.1.29.1 « Envois plus rapides »
 
 - Délai entre deux envois réduit : « Signaler un bug » 2 min → 30 s (supabase/bugs.sql, bug_send), « Proposer une idée » 10 min → 1 min (supabase/idees.sql, idea_send, et WAIT dans js/idees.js). Limites par jour inchangées (15 bugs, 10 idées ; 40 bugs/h et 30 idées/h pour l'ensemble des joueurs sans compte). Demandé par Mathis.

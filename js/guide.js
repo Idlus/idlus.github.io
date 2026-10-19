@@ -425,7 +425,7 @@
         "Sac plein : les nouveaux objets vont dans le **trop-plein**. Quand lui aussi est plein, l'objet le plus ancien est brisé en runes.",
         "Les Dofus ne quittent jamais le sac.",
         "Le Grenier du Havre-Sac et certains meubles agrandissent le sac et le trop-plein.",
-        "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup. « Sous le niveau » brise les objets lâchés plus bas que le niveau choisi, quel que soit le niveau de tes héros (panoplies, Rayonnants et exo gardés).",
+        "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup. « Sous le niveau » brise les objets lâchés plus bas que le niveau choisi, quel que soit le niveau de tes héros (panoplies, Rayonnants et exo gardés). Si tu règles à la fois le jet et un niveau, l'objet doit remplir toutes les conditions pour être brisé ; choisis « une seule suffit » pour briser selon le niveau quel que soit le jet.",
         "**Coffres** : « Tout ouvrir » (onglet Consommables ou tuile de l'accueil) les ouvre tous d'un coup, les plus précieux d'abord. Mode **Auto** : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal. Les kamas dépendent du niveau de ton meilleur héros au moment de l'ouverture.",
       ]],
     ] });

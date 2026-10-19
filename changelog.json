@@ -1,6 +1,15 @@
 {
-  "version": "2.1.29.1",
+  "version": "2.1.29.2",
   "versions": [
+    {
+      "v": "2.1.29.2",
+      "name": "Brisage auto plus précis",
+      "guide": "inventaire",
+      "items": [
+        "Règles automatiques du sac : quand « jet inférieur à X % » et une règle de niveau sont réglés ensemble, un objet n'est brisé que s'il remplit toutes les conditions (avant, une seule suffisait : « jet < 80 % » et « sous le niveau 190 » brisait aussi des objets 200). Signalé par Akileuss",
+        "Nouveau choix « Briser si : toutes les conditions / une seule suffit » : avec « une seule suffit », la règle de niveau brise quel que soit le jet. Tes réglages actuels sont gardés"
+      ]
+    },
     {
       "v": "2.1.29.1",
       "name": "Envois plus rapides",

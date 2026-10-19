@@ -2625,6 +2625,7 @@
     const team = E.team(S); if (!team.length) return false;
     return T.lvl < Math.min(...team.map((c) => c.lvl)) - gap;
   };
+  E.autoNConds = (A) => (A && A.action !== "none" ? 1 : 0) + (A && A.low > 0 ? 1 : 0) + (A && A.lowLvl > 1 ? 1 : 0);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
     const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
@@ -2633,13 +2634,16 @@
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
       if (better) { E.breakItem(S, it.uid, null); return "recycle"; }
     }
-    if (A.low > 0 && E.lowItem(S, it, A.low)) { E.breakItem(S, it.uid, null); return "low"; }
-    if (A.lowLvl > 1 && E.lowItem(S, it, A.lowLvl, true)) { E.breakItem(S, it.uid, null); return "low"; }
-    if (A.action === "none") return null;
-    const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
-    if (E.itemQuality(it) * 100 >= A.q) return null;
-    if (A.action === "break" || A.action === "sell") { E.breakItem(S, it.uid, null); return "break"; }
-    return null;
+    /* 2.1.29.2 (signalé par Akileuss) : avec « jet < X % » et une règle de niveau, l'objet n'est brisé que si TOUTES les conditions
+       sont remplies (avant, chacune brisait seule : « jet < 80 % » + « sous le niveau 190 » brisait des objets 200).
+       A.mode === "ou" : chaque condition brise seule (l'ancien comportement, pour briser selon le niveau quel que soit le jet).
+       Sans A.mode (sauvegardes existantes) : « toutes ». */
+    const conds = [];
+    if (A.action === "break" || A.action === "sell") { const T = ITEMS[it.tpl]; conds.push(!(A.keepSets && T.set) && E.itemQuality(it) * 100 < A.q); }
+    if (A.low > 0) conds.push(E.lowItem(S, it, A.low));
+    if (A.lowLvl > 1) conds.push(E.lowItem(S, it, A.lowLvl, true));
+    if (!conds.length || !(A.mode === "ou" ? conds.some(Boolean) : conds.every(Boolean))) return null;
+    E.breakItem(S, it.uid, null); return A.action === "break" || A.action === "sell" ? "break" : "low";
   };
   E.ITEM_DROP_SCALE = 1; // 1.0.15 : les taux de js/drops.js sont déjà les vraies chances par héros (avant : taux DofusDB × 0,04)
   E.bossDropMult = (k) => 1 + 0.25 * (Math.min(10, Math.max(1, k)) - 1); // 1.1 : plafonné à la stasis 10
