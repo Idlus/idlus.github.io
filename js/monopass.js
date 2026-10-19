@@ -82,6 +82,7 @@
     { id: "harv", n: "Récolter 300 ressources", ev: "harvest", v: (d) => d.n || 0, need: 300 },
     { id: "craft", n: "Fabriquer 5 objets", ev: "craft", need: 5 },
     { id: "fm", n: "Tenter 20 runes de forgemagie", ev: "fm", need: 20 },
+    { id: "sb", n: "Participer au Boss de saison (21 h)", ev: "sboss", need: 1 },
   ];
   const QW = [
     { id: "wdj", n: "Finir 20 donjons", ev: "dungeon", need: 20 },
@@ -140,9 +141,9 @@
     { id: "a_exo", fam: "artisan", n: "Exotique", d: "Runes exotiques passées", m: [1, 3, 10], v: C("exo") },
     { id: "c_align", fam: "camp", n: "Fidèle à son camp", d: "Niveau d'alignement", m: [20, 50, 100], v: (B, S) => (S.align && S.align.lvl) || 0 },
     { id: "c_bounty", fam: "camp", n: "Chasseur de primes", d: "Avis de recherche remplis", m: [5, 20, 50], v: C("bounty") },
-    { id: "c_war", fam: "camp", n: "Soldat de la guerre", d: "Zones prises pour ton camp", m: [1, 10, 40], v: C("war"), soon: 1 },
+    { id: "c_war", fam: "camp", n: "Soldat de la guerre", d: "Combats gagnés pour ton camp", m: [200, 1000, 4000], v: (B) => Object.values(B.war || {}).reduce((a, w) => a + (w.tot || 0), 0) },
     { id: "c_hold", fam: "camp", n: "Gardien de zone", d: "Jours où ton camp tient une zone", m: [3, 10, 30], v: C("hold"), soon: 1 },
-    { id: "c_live", fam: "camp", n: "Rendez-vous de 21 h", d: "Soirées de Boss de saison", m: [1, 5, 15], v: C("live"), soon: 1 },
+    { id: "c_live", fam: "camp", n: "Rendez-vous de 21 h", d: "Soirées de Boss de saison", m: [1, 5, 15], v: C("live") },
     { id: "c_top", fam: "camp", n: "Fer de lance", d: "Semaines dans le top 10 de ton camp", m: [1, 3, 6], v: C("top"), soon: 1 },
     { id: "x_ten", fam: "secret", secret: 1, n: "Au-delà du possible", d: "Finir un donjon seul en stasis 10", m: [1, 1, 1], v: (B) => ((B.cnt.soloSt || 0) >= 10 ? 1 : 0) },
     { id: "x_day", fam: "secret", secret: 1, n: "Infatigable", d: "Finir 30 donjons dans la même journée", m: [1, 1, 1], v: (B) => (B.cnt.bestDay || 0) >= 30 ? 1 : 0 },
@@ -192,6 +193,41 @@
   E.tick = function (S) { const r = tickMd.apply(this, arguments);
     if (S && S.mono && S.mono.mdRun && (!S.dungeon || S.dungeon.id !== S.mono.mdRun.did)) { const run = S.mono.mdRun; delete S.mono.mdRun; const SI = E.stasisInfo(S, run.did); if ((SI.max || 0) < run.k) SI.max = run.max0; }
     return r; };
+
+  /* ---------- Guerre Bonta / Brâkmar (partie du jeu ; les totaux du serveur arriveront avec le serveur Monocompte) ----------
+     Le camp (l'alignement) se choisit une fois par saison. Chaque combat gagné en chasse donne 1 point à ton camp dans
+     cette zone pour la manche ; le serveur additionnera les points de tous les joueurs pour savoir qui tient la zone. */
+  const choose1 = E.chooseAlign;
+  E.chooseAlign = function (S, side) {
+    if (S && E.isMono(S) && S.align && S.align.side && S.align.side !== side) return "Monocompte : un seul camp par saison. Tu pourras changer à la saison suivante.";
+    return choose1.apply(this, arguments);
+  };
+  E.warState = (S) => { const B = E.bpState(S); if (!B) return null; const m = Math.min(4, E.monoManche(S)); B.war = B.war || {}; return (B.war[m] = B.war[m] || { z: {}, tot: 0 }); };
+  const warWin = (S, d) => { if (!S.align || !S.align.side || !d.sub || d.dungeon) return; const W = E.warState(S); W.z[d.sub] = (W.z[d.sub] || 0) + 1; W.tot++; };
+
+  /* ---------- Boss de saison : Comte Harebourg, tous les soirs de 21 h à 22 h (heure de Paris), 3 essais ----------
+     Le combat est celui du Boss des mondes (js/wboss.js) ; ici seul ou avec un mercenaire, en groupe avec le serveur.
+     Les dégâts de tous les joueurs d'un camp s'additionneront sur le serveur (le camp en tête : +10 % d'XP pour la manche). */
+  const SB = (E.MONO.sb = { did: "donjon_harebourg", hour: 21, tries: 3, evenings: 5 });
+  E.sbDef = () => { if (!E.WB_ROT || !E.wbDef) return null; const i = E.WB_ROT.findIndex((r) => r.did === SB.did); return i < 0 ? null : E.wbDef(i + 1); };
+  E.sbOpen = (t = E.now()) => { const p = paris(t); const h = Math.floor((p % 86400000) / 3600000); return h === SB.hour; };
+  E.sbNext = (t = E.now()) => { const p = paris(t), day = 86400000; const today = Math.floor(p / day) * day + SB.hour * 3600000; return E.sbOpen(t) ? 0 : (p < today ? today : today + day) - p; };
+  E.sbState = (S) => { const B = E.bpState(S); if (!B) return null; B.sb = B.sb || { days: {}, best: 0, tot: 0 }; const k = E.bpDay(); return { B: B.sb, day: (B.sb.days[k] = B.sb.days[k] || { tries: 0, pts: 0 }) }; };
+  E.sbTry = (S) => {
+    if (!E.isMono(S)) return { err: "Réservé au Monocompte." };
+    if (!E.sbOpen()) return { err: "Le Boss de saison n'est là que de 21 h à 22 h (heure de Paris)." };
+    if (S.dungeon) return { err: "Termine d'abord ton donjon." };
+    const def = E.sbDef(); if (!def) return { err: "Boss introuvable." };
+    const st = E.sbState(S); if (st.day.tries >= SB.tries) return { err: `${SB.tries} essais par soir : reviens demain à 21 h.` };
+    const r = E.wbSim(S, def, 1, hash(`sb|${S.mono.s}|${E.bpDay()}|${st.day.tries}|${(S.chars[0] || {}).name}`)); if (r.err) return r;
+    st.day.tries++; st.day.pts += r.points; st.B.tot += r.points; st.B.best = Math.max(st.B.best, r.points);
+    const G = E.wbGrade(r.points); Object.entries(G.cons || {}).forEach(([id, q]) => E.addCons(S, id, q));
+    const evenings = Object.values(st.B.days).filter((x) => x.tries > 0).length; inc(E.bpState(S), "live", 0); E.bpState(S).cnt.live = evenings;
+    if (evenings >= SB.evenings) { S.unlocks = S.unlocks || {}; if (!S.unlocks.gift_o_mono_sb) { S.unlocks.gift_o_mono_sb = 1; E.note(S, "Boss de saison : 5 soirées, ornement « Horloge du Comte » débloqué.", "rare"); } }
+    E.note(S, `Boss de saison : ${r.points} points (grade ${r.grade}).`, "info"); E.emit(S, "sboss", { pts: r.points });
+    return Object.assign({}, r, { grade: G });
+  };
+  if (E.ORN) E.ORN.mono_sb = { name: () => "Horloge du Comte", req: "Monocompte : Boss de saison 5 soirs", ok: (S) => !!(S.unlocks && S.unlocks.gift_o_mono_sb) };
   /* ---------- écoute du moteur ---------- */
   const inc = (B, k, n = 1) => (B.cnt[k] = (B.cnt[k] || 0) + n);
   const emit0 = E.emit;
@@ -203,14 +239,14 @@
         const day = E.bpDay(); if (B.cnt.dayK !== day) { B.cnt.dayK = day; B.cnt.dayN = 0; } B.cnt.dayN++; B.cnt.bestDay = Math.max(B.cnt.bestDay || 0, B.cnt.dayN);
         if (d.group) { inc(B, "grp"); B.cnt.grpSt = Math.max(B.cnt.grpSt || 0, d.stasis || 1); if (d.players >= 4) inc(B, "grp4"); }
         else { if (S.mono.merc) inc(B, "merc"); else B.cnt.soloSt = Math.max(B.cnt.soloSt || 0, d.stasis || 1); } }
-      if (t === "win") (d.mons || []).forEach((m) => { if (m.archi) inc(B, "arch"); });
+      if (t === "win") { (d.mons || []).forEach((m) => { if (m.archi) inc(B, "arch"); }); warWin(S, d); }
       if (t === "harvest") inc(B, "harv", d.n || 0);
       if (t === "craft") inc(B, "craft");
       if (t === "fm") inc(B, "fm");
       if (t === "exo") inc(B, "exo");
       if (t === "bounty") inc(B, "bounty");
       onQuest(S, t, d);
-      if (/^(dungeon|win|harvest|craft|fm|exo|bounty|level|joblvl|align)$/.test(t)) E.hfCheck(S);
+      if (/^(dungeon|win|harvest|craft|fm|exo|bounty|level|joblvl|align|sboss)$/.test(t)) E.hfCheck(S);
     } catch (e) {}
     return r;
   };

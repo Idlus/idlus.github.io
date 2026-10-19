@@ -2334,7 +2334,8 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "eclat") ornHtml = `<span class="orn seal">💠</span>`;
   else if (orn === "mono_s1") ornHtml = `<span class="orn seal">⭐</span>`; // Monocompte : pass de saison
   else if (orn === "mono_pres") ornHtml = `<span class="orn crown">✨</span>`;
-  else if (orn === "mono_solo") ornHtml = `<span class="orn seal">⚔️</span>`; // 2.1.x : Comptoir des Éclats
+  else if (orn === "mono_solo") ornHtml = `<span class="orn seal">⚔️</span>`;
+  else if (orn === "mono_sb") ornHtml = `<span class="orn seal">🕰️</span>`; // 2.1.x : Comptoir des Éclats
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
   else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
   else if (orn === "classes19") ornHtml = `<span class="orn crown c19">🏆</span>`; // 1.0.34 : les 19 classes au niveau 200
@@ -2481,7 +2482,7 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
-function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"]); NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
+function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes

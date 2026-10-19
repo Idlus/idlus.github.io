@@ -118,6 +118,32 @@
       <div class="panel" style="margin-top:14px"><div class="pad stack"><h2 style="margin:0">Coffres de fin de manche</h2>${rows}</div></div>`;
   }
   window.DX.pages.manche = mdPage;
+  /* ---------- Guerre des camps et Boss de saison ---------- */
+  function warPage(main) {
+    const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
+    const m = Math.min(4, E.monoManche(s)); const end = (s.mono.t0 || E.now()) + m * E.MONO.jobs.manche - E.now();
+    const side = s.align && s.align.side; const AL = side ? E.ALIGN[side] : null; const W = E.warState(s);
+    const zones = Object.entries(W.z).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const zn = (k) => { const z = E.SUBS[k]; return z ? z.name : k; };
+    const def = E.sbDef(); const st = E.sbState(s); const open = E.sbOpen(); const nx = E.sbNext();
+    const last = UI().sbLast;
+    main.innerHTML = `<div class="pagehead"><h1>Guerre et Boss de saison</h1></div>
+      <div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">⚔ Guerre des alignements · manche ${m}</h2><span class="pill">fin dans ${dur(Math.max(0, end))}</span></div>
+        ${side ? `<p class="small" style="margin:0">Ton camp : <b style="color:${side === "bonta" ? "#7fb2ff" : "#ff8a6e"}">${h(AL.name)}</b>, pour toute la saison. Chaque combat gagné en chasse donne 1 point à ton camp dans sa zone.</p>`
+          : `<p class="small" style="margin:0">Choisis ton camp, une fois pour toute la saison. Chaque combat gagné en chasse donnera alors un point à ton camp dans la zone.</p><div class="row" style="gap:8px"><button class="btn sm" data-act="bp-camp" data-v="bonta">Rejoindre Bonta</button><button class="btn sm" data-act="bp-camp" data-v="brakmar">Rejoindre Brâkmar</button></div>`}
+        <div class="bp-q"><div class="row between"><span>Tes points cette manche</span><b>${fmt(W.tot)}</b></div><span class="small muted">${zones.length ? zones.map(([k, n]) => `${h(zn(k))} ${fmt(n)}`).join(" · ") : "aucun combat gagné en chasse pour l'instant"}</span></div>
+        <span class="xs muted">Avec le serveur Monocompte : les points de tous les joueurs s'additionnent, le camp en tête tient la zone jusqu'à la fin de la manche (+10 % de butin pour lui dans la zone).</span></div></div>
+      <div class="panel" style="margin-top:14px"><div class="pad stack" style="text-align:center;align-items:center">
+        <span class="pill">BOSS DE SAISON${open ? " · EN DIRECT" : ""}</span>
+        <h2 style="margin:0">${def ? `${h(def.name)} ${h(def.line)}` : "Boss de saison"}</h2>
+        <p class="small muted" style="margin:0;max-width:60ch">${def ? h(def.story) : ""} Tous les soirs de 21 h à 22 h, ${E.MONO.sb.tries} essais. Chaque essai donne un coffre selon son grade ; 5 soirées donnent l'ornement « Horloge du Comte ».</p>
+        <div class="row" style="gap:14px;flex-wrap:wrap;justify-content:center"><span class="small">Ce soir : <b>${st.day.tries} / ${E.MONO.sb.tries}</b> essais · <b>${fmt(st.day.pts)}</b> points</span><span class="small">Meilleur essai : <b>${fmt(st.B.best)}</b></span><span class="small">Soirées : <b>${s.mono.bp.cnt.live || 0} / ${E.MONO.sb.evenings}</b></span></div>
+        ${last ? `<div class="bp-q" style="min-width:min(100%,360px)"><div class="row between"><span>Dernier essai</span><b>${fmt(last.points)} points · grade ${h(last.grade.g || last.grade)}</b></div></div>` : ""}
+        ${open ? (st.day.tries < E.MONO.sb.tries ? `<button class="btn primary" data-act="bp-sb">⚔ Affronter le boss (seul)</button>` : `<b>Tes 3 essais sont faits : reviens demain à 21 h.</b>`) : `<button class="btn" disabled>Ouvre dans ${dur(nx)}</button>`}
+        <span class="xs muted">Les groupes en direct et les dégâts des camps (le camp en tête : +10 % d'XP pour la manche) arrivent avec le serveur Monocompte.</span></div></div>`;
+  }
+  window.DX.pages.guerre = warPage;
+
 
 
   document.addEventListener("click", (ev) => {
@@ -128,6 +154,8 @@
     if (a === "bp-all") { const sl = keep(); const n = E.bpClaimAll(S()); X().toast(`${n} récompense${n > 1 ? "s" : ""} récupérée${n > 1 ? "s" : ""}.`); X().markDirty(); redraw(sl); return; }
     if (a === "bp-mdgo") { const r = E.mdEnter(S()); if (r) { X().toast(r); return; } X().markDirty(); UI().tab = "combat"; X().render(); window.scrollTo(0, 0); return; }
     if (a === "bp-mdgot") { const r = E.mdClaim(S(), +t.dataset.m); if (r) X().toast(r); X().markDirty(); mdPage(document.getElementById("main")); return; }
+    if (a === "bp-sb") { const r = E.sbTry(S()); if (r.err) { X().toast(r.err); return; } UI().sbLast = r; X().markDirty(); warPage(document.getElementById("main")); return; }
+    if (a === "bp-camp") { const r = E.chooseAlign(S(), t.dataset.v, Object.keys(E.ALIGN[t.dataset.v].orders)[0]); if (r) X().toast(r); X().markDirty(); warPage(document.getElementById("main")); return; }
     if (a === "bp-fam") { const sl = keep(); UI().bpFam = t.dataset.v; redraw(sl); return; }
   });
 })();

@@ -5,7 +5,7 @@
 const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
-require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/mono.js"); require("../js/monopass.js");
+require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/alignement.js"); require("../js/wboss.js"); require("../js/mono.js"); require("../js/monopass.js");
 const D = require("../js/data.js");
 
 let seed = 4242;
@@ -183,5 +183,21 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   assert.strictEqual(E.mdClaim(S, 1), null); assert.strictEqual(S.cons.coffre_or >= 1, true); assert.ok(E.mdClaim(S, 1));
   assert.notStrictEqual(E.mdState(S), R, "nouvelle manche, nouveau défi");
   console.log(`ok - défi de la manche (${dg.name})`);
+}
+// 10. Guerre des camps et Boss de saison.
+{
+  now = Date.UTC(2030, 0, 9, 12, 0);
+  const S = E.monoStart(E.newState("Camp", "iop")); const c = S.chars[0]; c.lvl = 200; c.inTeam = true;
+  assert.strictEqual(E.chooseAlign(S, "bonta", "coeur"), null);
+  assert.ok(/un seul camp par saison/.test(E.chooseAlign(S, "brakmar", "coeur")), "un camp par saison");
+  E.emit(S, "win", { mons: [{ key: "x" }], sub: "ast_cite" }); E.emit(S, "win", { mons: [{ key: "x" }], sub: "ast_cite", dungeon: "d" });
+  assert.strictEqual(E.warState(S).z.ast_cite, 1, "1 point par combat de chasse gagné");
+  assert.ok(E.sbTry(S).err, "fermé hors de 21 h");
+  now = Date.UTC(2030, 0, 9, 20, 30); assert.ok(E.sbOpen(), "21 h 30 à Paris (hiver)");
+  const r = E.sbTry(S); assert.ok(!r.err, r.err); assert.ok(r.points >= 0 && r.grade);
+  E.sbTry(S); E.sbTry(S); assert.ok(/3 essais/.test(E.sbTry(S).err), "3 essais par soir");
+  assert.strictEqual(E.bpState(S).cnt.live, 1, "une soirée comptée");
+  const C = E.newState("Classique", "iop"); C.chars[0].lvl = 200; assert.strictEqual(E.chooseAlign(C, "bonta", "coeur"), null); assert.strictEqual(E.chooseAlign(C, "brakmar", "coeur"), null, "le Classique peut toujours changer");
+  console.log(`ok - guerre et Boss de saison (${r.points} points, ${r.grade.g})`);
 }
 console.log("Monocompte : tout est bon");
