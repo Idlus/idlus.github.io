@@ -568,7 +568,7 @@
   /* B (2.1.3 « Tout ouvrir ») : ouverture en série, le butin s'ajoute à B et un seul message est écrit à la fin (E.openAllChests) */
   E.openChest = (S, id, B) => {
     const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = B ? B.loot : []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
-    const k = T.k * top; S.kamas += k; got.push(`${k.toLocaleString("fr-FR")} kamas`);
+    const k = T.k * top; S.kamas += k; if (E.carnetGain) E.carnetGain(S, k, "coffre"); got.push(`${k.toLocaleString("fr-FR")} kamas`);
     addRes(S, E.POUSSIERE, T.dust); got.push(`${T.dust} ${E.POUSSIERE}`); loot.push(["res", E.POUSSIERE, T.dust]);
     got.push(...resLot(S, T.lots, T.q[0], T.q[1], loot));
     const give = (pool, n) => { for (let i = 0; i < n; i++) { const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); got.push(D.CONSUMABLES[g].name); loot.push(["cons", g, 1]); } };

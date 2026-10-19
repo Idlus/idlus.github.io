@@ -178,7 +178,7 @@
     if (r.win) Q.win++; else Q.loss++;
     const lvl = E.koliLvl(S); const kam = r.win ? K.purseK * lvl : 0; let kz = r.win ? K.kzWin : K.kzLoss;
     if (auto) { Q.kzf = (Q.kzf || 0) + kz * K.autoKz; kz = Math.floor(Q.kzf + 1e-9); Q.kzf -= kz; } // 1.0.7 : mode auto, 25 % de Kolizetons en moins (les fractions s'accumulent)
-    S.kamas += kam; if (r.win) E.addRes(S, E.POUSSIERE, K.dust); S.tokens[E.KOLI_CUR] = (S.tokens[E.KOLI_CUR] || 0) + kz;
+    S.kamas += kam; if (E.carnetGain) E.carnetGain(S, kam, "koli"); if (r.win) E.addRes(S, E.POUSSIERE, K.dust); S.tokens[E.KOLI_CUR] = (S.tokens[E.KOLI_CUR] || 0) + kz;
     if (!srv) { Q.log.unshift({ t: E.now(), name: o.name, ghost: !!o.ghost, win: r.win, d: delta, seed, cote: o.cote, gs: o.seed, gl: o.lvl, gz: o.size, rounds: r.rounds });
       if (Q.log.length > K.logMax) Q.log.length = K.logMax; }
     S.cnt = S.cnt || {}; S.cnt.koliFights = (S.cnt.koliFights || 0) + 1; if (r.win) S.cnt.koliWins = (S.cnt.koliWins || 0) + 1;

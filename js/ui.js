@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30";
+const GAME_VERSION = "2.1.30.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.1", name: "Carnet des kamas", guide: "carnet", items: [
+    "Journal › Carnet › bilan des kamas : les kamas des combats du Songe infini et de sa validation vont enfin dans « Songe infini » (avant, ils étaient comptés dans « Chasse » et « Quêtes et succès ») ; merci Akileuss",
+    "Nouvelles cases : Kolizéum, Vente directe et marchand (avant dans « Hôtel de vente » ou « Quêtes »), Coffres, Ascension, Missions, Élevage, Guilde et Percepteurs, Champions et Éclats, Pluie de kamas",
+    "Le comptage est juste à partir de cette version : les jours passés gardent leur ancien classement",
+  ] },
   { v: "2.1.30", name: "Marché des bêtes", guide: "hdv", items: [
     "Hôtel de vente : nouvelles catégories Montures et Familiers. Chaque couleur a sa ligne, qui s'ouvre sur chaque bête en vente avec ses étoiles, son niveau, sa capacité et les petits qui lui restent, avec des filtres",
     "Vendre : ton écurie et ta ménagerie apparaissent dans « Vendre », et un bouton « Vendre à l'HdV » est sur la fiche de chaque monture et familier. La bête garde tout (niveau, étoiles, capacité, petits), seul son surnom est effacé",

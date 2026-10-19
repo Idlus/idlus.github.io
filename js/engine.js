@@ -600,7 +600,9 @@
   E.merchantPrice = (name, n = 1) => Math.floor(E.resPrice(name) * n * E.MERCHANT);
   E.merchantRes = (S, name, qty) => {
     const have = S.res[name] || 0; const n = Math.min(have, qty); if (n <= 0) return 0;
-    const p = E.merchantPrice(name, n); S.res[name] -= n; if (!S.res[name]) delete S.res[name]; S.kamas += p; return p;
+    const p = E.merchantPrice(name, n); S.res[name] -= n; if (!S.res[name]) delete S.res[name]; S.kamas += p;
+    if (E.carnetGain) E.carnetGain(S, p, "vented"); // 2.1.29.6 : case « Vente directe et marchand » du carnet
+    return p;
   };
   const addRes = (S, name, n = 1) => { S.res[name] = (S.res[name] || 0) + n; };
   E.addRes = addRes;
@@ -2764,6 +2766,7 @@
     const nres = Object.values(r.res).reduce((a, b) => a + b, 0);
     const fst = E.fightStats(F);
     S.history.unshift({ t: E.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length, s: fst });
+    if (F.exp) S.history[0].x = 1; // 2.1.29.6 : combat du Songe infini (carnet de bord, js/suivi.js)
     E.addFightStats(S, fst);
     if (F.loss) F.loss.t = S.history[0].t; // même horodatage : le rapport s'ouvre depuis « Derniers combats »
     if (S.history.length > 30) S.history.length = 30;

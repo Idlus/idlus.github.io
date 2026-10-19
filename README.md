@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.1 « Carnet des kamas »
+
+- Bilan des kamas du carnet (js/suivi.js) : combats du Songe marqués `x: 1` dans S.history (js/engine.js) et rangés dans « Songe infini », comme le reste du tic pendant un songe (validation). `E.carnetGain(S, k, cat)` range un gain là où il naît (marchand de secours, Kolizéum, coffres, Ascension, missions) sans double compte ; `E.carnetOp` classe les opérations du serveur (js/market.js) : vente directe, guilde, Foire, pluie, Ascension, sinon Hôtel de vente. Nouvelles cases du bilan, actions de l'Ascension enveloppées. Test tests/carnet.test.js. Pas de valeur inventée pour le passé.
+
 ## 2.1.30 « Marché des bêtes »
 
 - Montures et familiers à l'hôtel de vente et en échange direct (choix de Mathis 1A 2A 3A 4A 5B 6A) : catégories `mt` (clé « espèce:couleur ») et `pet` dans supabase/hdv.sql, contrôle de la bête dans la partie validée (hdv_beast : ni montée, ni à l'enclos, ni en balade, ni portée, ni Chacha Doré ; une bête sortie par `rmM`/`rmP` ne revient jamais), livraison `addM`/`addP` marquée `b:1` (achetée : hors carnet, classement d'élevage et album), offres d'échange dédoublonnées (hdv_uniq). Client : js/market.js, E.mountIn/mountGone (js/elevage.js), E.petIn/petGone/petMine (js/pets.js). Bouclier : bilan mn/ms/pn et bornes V.BEAST_* (js/verify.js), dons gift.mt/ms/pt dans la fonction record. Tests : tests/betes.test.js, tests/online.test.js.

@@ -21,19 +21,23 @@
   const live = (S) => !!(S && Array.isArray(S.chars) && S.stats);
 
   /* ======================= CARNET DE BORD ======================= */
-  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Commandes du jour", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", commande: "Commandes d'artisans", tresor: "Chasse au trésor", expedition: "Songe infini", autre: "Autres" };
-  E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", autre: "Autres" };
+  /* 2.1.29.6 : nouvelles cases (Kolizéum, vente directe et marchand, coffres, Ascension, missions, Foire, élevage, guilde, Éclats, pluie) */
+  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", expedition: "Songe infini", vented: "Vente directe et marchand", hdv: "Hôtel de vente", vente: "Commandes du jour", defi: "Défi du jour", koli: "Kolizéum", ascension: "Ascension", quete: "Quêtes et succès", commande: "Commandes d'artisans", tresor: "Chasse au trésor", mission: "Missions", coffre: "Coffres", foire: "Foire du Trool", monture: "Élevage", guilde: "Guilde et Percepteurs", champion: "Champions et Éclats", pluie: "Pluie de kamas", autre: "Autres" };
+  E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", expedition: "Songe infini", ascension: "Ascension", foire: "Foire du Trool", guilde: "Guilde et Percepteurs", mission: "Missions", champion: "Champions et Éclats", pluie: "Pluie de kamas", autre: "Autres" };
   const ACT_CAT = {
     gameBuySell: "vente", gameBuyAll: "vente",
     forgemage: "fm", transForge: "fm", signItem: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
     buyHavre: "havre", growRoom: "havre", buyFurn: "havre", placeFurn: "havre", buildAtelier: "havre", setAtelier: "havre",
     craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
     buildEnclos: "monture", startBreed: "monture", releaseMount: "monture", equipMount: "monture", setMountShare: "monture",
-    buyShop: "boutique", buyNets: "boutique", useConsumable: "boutique",
+    buyShop: "boutique", buyNets: "boutique",
     enterDungeon: "donjon", leaveDungeon: "donjon", stopChain: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",
     defiPlay: "defi", tresorClaim: "tresor", tresorLegClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
-    expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition", expBuy: "expedition", sgBuy: "expedition", legFuse: "expedition",
+    expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition", expBuy: "expedition", sgBuy: "expedition", sgBuyWeek: "expedition", legFuse: "expedition",
+    koliFight: "koli", koliRefresh: "koli", useConsumable: "coffre", shardBuy: "champion", sealShard: "champion", sealFuse: "champion", sealEveil: "champion",
+    ascStart: "ascension", ascReroll: "ascension", ascChoose: "ascension", ascQuit: "ascension", ascDrink: "ascension", ascUnlock: "ascension", ascBuy: "ascension", ascBrew: "ascension",
+    misSend: "mission", misRecall: "mission", misBuildRoom: "mission",
   };
   const catOf = (cat, amount) => (amount > 0 ? (E.CARNET_IN[cat] ? cat : "autre") : (E.CARNET_OUT[cat] ? cat : "autre"));
 
@@ -97,6 +101,20 @@
   };
   /* gains marqués pendant le temps qui passe (coffre du trésor…) : pas comptés deux fois */
   const tag = (S, amount, cat) => { const C = E.carnet(S); ledger(S, E.now(), amount, cat); C.tag = (C.tag || 0) + amount; };
+  /* 2.1.29.6 : un gain (ou une dépense) rangé dans sa case par le module qui le donne (Songe, Kolizéum, marchand, coffres…) ;
+     pendant une action ou le temps qui passe, il n'est pas recompté ; ailleurs (réponses du serveur), la case est remplie tout de suite */
+  E.carnetGain = (S, amount, cat) => {
+    amount = Math.round(+amount || 0); if (!amount || !live(S)) return;
+    const C = E.carnet(S); ledger(S, E.now(), amount, cat);
+    if (depth) C.tag = (C.tag || 0) + amount; else if (typeof C.kLast === "number") C.kLast += amount;
+  };
+  /* opérations du serveur (js/market.js) : vente directe, guilde, Foire, pluie de kamas, classement de l'Ascension, sinon Hôtel de vente */
+  E.carnetOpCat = (p, t) => (p.vd ? "vented" : p.rain ? "pluie" : p.jack || p.jt ? "foire" : /Percepteur|guilde|Guildalogemme/i.test(t || "") ? "guilde" : /Ascension/.test(t || "") ? "ascension" : "hdv");
+  E.carnetOp = (S, p, t) => {
+    if (!live(S) || !p) return;
+    if (p.k) E.carnetGain(S, Number(p.k), E.carnetOpCat(p, t));
+    E.carnet(S).hop = (S.hdv && S.hdv.op) || 0;
+  };
   /* 0.1.23.2 : les autres modules (js/vie.js) ajoutent leurs actions au bilan des kamas */
   E.carnetCat = (o) => Object.assign(ACT_CAT, o);
 
@@ -104,17 +122,18 @@
   E.tick = (S, dtMs, realMs) => {
     if (!live(S)) return tick0(S, dtMs, realMs);
     const C = pre(S); tresorPending(S);
-    const h0 = S.history[0], k0 = S.kamas, inDg = !!S.dungeon;
+    const h0 = S.history[0], k0 = S.kamas, inDg = !!S.dungeon, inSg = !!S.exp;
     let r; depth++; try { r = tick0(S, dtMs, realMs); } finally { depth--; }
-    const now = E.now(); let fk = 0, dg = inDg; const v = { on: (realMs == null ? dtMs : realMs) / 1000, xp: 0, k: 0, f: 0, w: 0 };
+    const now = E.now(); let fk = 0, dg = inDg, sg = inSg; const v = { on: (realMs == null ? dtMs : realMs) / 1000, xp: 0, k: 0, f: 0, w: 0 };
     for (let i = 0; i < S.history.length && S.history[i] !== h0 && i < 30; i++) {
       const h = S.history[i]; v.xp += h.xp || 0; v.f++; v.w += h.w ? 1 : 0; v.k += h.k || 0; fk += h.k || 0;
       const isDg = typeof h.z === "string" && h.z.startsWith("dg:"); if (isDg) dg = true;
-      ledger(S, now, h.k || 0, isDg ? "donjon" : "chasse");
+      if (h.x) sg = true; // 2.1.29.6 : combats du Songe infini (avant, comptés dans la Chasse)
+      ledger(S, now, h.k || 0, h.x ? "expedition" : isDg ? "donjon" : "chasse");
     }
     add(S, now, v);
     const rest = S.kamas - k0 - fk - (C.tag || 0);
-    if (rest) ledger(S, now, rest, rest > 0 ? (dg ? "donjon" : "quete") : "fm");
+    if (rest) ledger(S, now, rest, rest > 0 ? (sg ? "expedition" : dg ? "donjon" : "quete") : "fm");
     C.kLast = S.kamas; C.tag = 0; C.hop = (S.hdv && S.hdv.op) || 0;
     return r;
   };

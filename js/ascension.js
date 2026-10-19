@@ -553,7 +553,7 @@
   /* coffre du mois : Kamas, Poussière, Sablier, Cristal de Forgemagie (petites quantités) */
   E.ascChest = (S, mode, f) => {
     const k = mode === "d" ? 2 : 1; const q = f / 25; const got = [];
-    const kam = Math.round(20000 * q * q * k); S.kamas += kam; got.push(`${kam.toLocaleString("fr-FR")} kamas`);
+    const kam = Math.round(20000 * q * q * k); S.kamas += kam; if (E.carnetGain) E.carnetGain(S, kam, "ascension"); got.push(`${kam.toLocaleString("fr-FR")} kamas`);
     if (E.POUSSIERE) { E.addRes(S, E.POUSSIERE, 10 * q * k); got.push(`${10 * q * k} ${E.POUSSIERE}`); }
     if (f >= 50 && E.sabGift) { E.sabGift(S, k); got.push(`${k} h de Sablier`); }
     if (f >= 75 && D.CONSUMABLES.cristal_fm) { E.addCons(S, "cristal_fm", k); got.push(`${k} Cristal de Forgemagie`); }
@@ -669,6 +669,7 @@
       if (Q.sgDay === d) return "1 Fiole de Volonté par jour au Marché onirique : reviens demain."; const r = sb0(S, id); if (!r) Q.sgDay = d; return r; };
   }
 
+  if (E.carnetWrap) E.carnetWrap(); // 2.1.29.6 : actions de l'Ascension (et des modules chargés après js/suivi.js) dans le bilan des kamas
   root.ENGINE = E;
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

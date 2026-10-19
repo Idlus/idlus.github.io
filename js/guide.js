@@ -826,7 +826,7 @@
   add({ id: "carnet", f: "Journal", n: "Carnet de bord", ic: "parchemin_or", page: "carnet", k: "carnet courbes kamas statistiques moments",
     ou: "Journal › Carnet", de: "dès le début",
     b: () => [
-      ["p", "XP, kamas, combats et niveaux heure par heure sur 7 jours et jour par jour sur 30 jours ; le bilan des kamas (gagnés et dépensés, par catégorie), tes meilleures zones et les grands moments de ta partie."],
+      ["p", "XP, kamas, combats et niveaux heure par heure sur 7 jours et jour par jour sur 30 jours ; le bilan des kamas (gagnés et dépensés, par catégorie : Chasse, Donjons, Songe infini, Kolizéum, vente directe et marchand, Hôtel de vente, coffres, Ascension, missions, guilde…), tes meilleures zones et les grands moments de ta partie."],
     ] });
 
   /* ======================= Communauté ======================= */

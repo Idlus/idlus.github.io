@@ -102,6 +102,7 @@
       (p.addM || []).forEach((m) => { if (E.mountIn) E.mountIn(s, m); }); (p.addP || []).forEach((x) => { if (E.petIn) E.petIn(s, x); });
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
+      if (E.carnetOp) E.carnetOp(s, p, o.t); // 2.1.29.6 : chaque opération dans sa case du carnet (vente directe, guilde, Foire…)
       // 1.0.30 : la vente directe (p.vd, js/venteui.js) a son propre journal (le surplus part toutes les 10 minutes) ; le Jackpot du Trool (p.jack) s'annonce
       if (o.t && p.vd) { s.venteLog = (Array.isArray(s.venteLog) ? s.venteLog : []); s.venteLog.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); s.venteLog = s.venteLog.slice(0, 20); }
       else if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got || p.jack || p.rain)) X().toast(o.t, "rare"); }
