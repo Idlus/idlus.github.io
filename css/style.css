@@ -4562,6 +4562,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 [data-fr="koli"]{--m1:#a8761a;--m2:#ffd36a;--m3:#7a1a12;--gem:#e8304a;--glow:rgba(255,190,80,.45);--ring:repeating-conic-gradient(#ffd36a 0 15deg,#7a1a12 0 30deg)}
 [data-fr="songe"]{--m1:#2a2f7a;--m2:#ffb8e8;--m3:#0e1030;--gem:#5fd8d0;--glow:rgba(255,160,230,.5);--ring:conic-gradient(from var(--ang),#5fd8d0,#2a2f7a,#ffb8e8,#0e1030,#5fd8d0)}
 [data-fr="guilde"]{--gcol:#c9962e;--m1:color-mix(in srgb,var(--gcol) 70%,#000);--m2:color-mix(in srgb,var(--gcol) 45%,#fff);--m3:#1a1206;--gem:#ffd36a;--glow:color-mix(in srgb,var(--gcol) 55%,transparent);--ring:conic-gradient(var(--gcol),#ffd36a 15%,var(--gcol) 30%,#1a1206 45%,var(--gcol) 60%,#ffd36a 75%,var(--gcol))}
+[data-fr="mono_pres"]{--m1:#7a4ad8;--m2:#ffe08a;--m3:#1a0f33;--gem:#ffe08a;--glow:rgba(255,224,138,.6);--ring:conic-gradient(from var(--ang),#ffe08a,#7a4ad8,#fff6d0,#3a2378,#ffe08a)} /* Monocompte : cadre Prestige */
 [data-fr="halouine"]{--m1:#e0761a;--m2:#ffb347;--m3:#140a04;--gem:#ff7a1a;--glow:rgba(255,130,30,.55);--ring:repeating-conic-gradient(#ff8a1a 0 22.5deg,#1a0d04 0 45deg)}
 /* anneau du portrait */
 .head[data-fr]{border:3px solid transparent;background:linear-gradient(var(--cc),var(--cc)) padding-box,var(--ring,conic-gradient(from 210deg,var(--m2),var(--m1) 25%,var(--m3) 50%,var(--m1) 75%,var(--m2))) border-box;box-shadow:0 0 0 1px #000a}
@@ -4569,6 +4570,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .head[data-fr$="2"]{box-shadow:0 0 0 1px #000a,0 0 0 2.5px var(--m2),0 0 0 3.5px #000a}
 .head[data-fr="krosmoz"]{--ring:conic-gradient(from var(--ang),#c77dff,#4fd1e0,#f0c35a,#ff7ac8,#c77dff);box-shadow:0 0 0 1px #000a,0 0 8px rgba(199,125,255,.7);animation:spin 6s linear infinite}
 .head[data-fr="feu"]{--ring:conic-gradient(from var(--ang),#ffc35a,#d9541e,#7a2a0e,#ff9a3d,#ffc35a);box-shadow:0 0 0 1px #000a,0 0 8px rgba(255,140,60,.7);animation:spin 5s linear infinite}
+.head[data-fr="mono_pres"]{box-shadow:0 0 0 1px #000a,0 0 9px var(--glow);animation:spin 7s linear infinite}
 .head:is([data-fr="pionnier"],[data-fr="stasis"],[data-fr="ames"],[data-fr="dofus"],[data-fr="align"],[data-fr="koli"],[data-fr="songe"],[data-fr="guilde"],[data-fr="halouine"]){box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
 .head:is([data-fr="stasis"],[data-fr="songe"]){animation:spin 8s linear infinite}
 .hb-por .head.lg[data-fr]{box-shadow:0 0 0 1px #000c,0 0 16px var(--glow,color-mix(in srgb,var(--cc) 45%,transparent))}

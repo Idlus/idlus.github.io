@@ -2331,7 +2331,10 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn && orn.startsWith("bt_") && window.MAITUI) ornHtml = window.MAITUI.ornHtml(orn); // 2.0 : ornements du Bestiaire
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
-  else if (orn === "eclat") ornHtml = `<span class="orn seal">💠</span>`; // 2.1.x : Comptoir des Éclats
+  else if (orn === "eclat") ornHtml = `<span class="orn seal">💠</span>`;
+  else if (orn === "mono_s1") ornHtml = `<span class="orn seal">⭐</span>`; // Monocompte : pass de saison
+  else if (orn === "mono_pres") ornHtml = `<span class="orn crown">✨</span>`;
+  else if (orn === "mono_solo") ornHtml = `<span class="orn seal">⚔️</span>`; // 2.1.x : Comptoir des Éclats
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
   else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
   else if (orn === "classes19") ornHtml = `<span class="orn crown c19">🏆</span>`; // 1.0.34 : les 19 classes au niveau 200
@@ -2477,6 +2480,8 @@ const NAV = [
   { id: "co", n: "Communauté", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) },
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
+/* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
+function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["pass", "Pass de saison", "ailes"]); NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; }
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
@@ -9750,7 +9755,7 @@ document.addEventListener("click", (ev) => {
     case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); monoNav(); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -11390,6 +11395,7 @@ function bootGame(pushNow) {
   if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
   if (S) {
     if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
+    if (S.mono) monoNav();
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
     const gap = (E.now() - (S.lastTick || E.now())) / 1000;

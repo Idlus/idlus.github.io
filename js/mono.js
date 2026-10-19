@@ -162,7 +162,7 @@
     try { const G = E.monoGroupSetup(snaps, did, stasis); if (G.err) return G; S2 = G.S2;
       for (let t = 0; S2.dungeon && t < 3 * 3600 * 1000; t += 1000) { E.tick(S2, 1000); if (S2.fight && S2.fight.over && S2.fight.result === "lose") break; } }
     finally { E.setRng(rng0); E.events.length = evLen; E.TEAM_MAX = tm; }
-    const R = S2.monoRun; R.win = R.done; return R;
+    const R = S2.monoRun; R.win = R.done; R.players = snaps.filter((h) => !h.merc).length; return R;
   };
   /* butin individuel : chaque joueur reçoit dans sa partie l'XP, les kamas et le butin des salles gagnées */
   E.monoGroupLoot = (S, R) => {
@@ -177,7 +177,7 @@
       });
     } finally { S.dungeon = sd; }
     if (R.done) { const SI = E.stasisInfo(S, R.did); SI.max = Math.max(SI.max || 0, k); S.progress.bossKills[R.did] = (S.progress.bossKills[R.did] || 0) + 1;
-      S.mono.grp = (S.mono.grp || 0) + 1; E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true }); }
+      S.mono.grp = (S.mono.grp || 0) + 1; E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true, players: R.players || 1 }); }
     return tot;
   };
 

@@ -5,7 +5,7 @@
 const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
-require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/mono.js");
+require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/mono.js"); require("../js/monopass.js");
 const D = require("../js/data.js");
 
 let seed = 4242;
@@ -136,5 +136,34 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   const c = S.chars[0], c2 = C.chars[0]; c.job = { job: "paysan", res: E.jobRes("paysan")[0][0] }; c2.job = { job: "paysan", res: c.job.res };
   assert.ok(Math.abs(E.gatherSpeed(S, "paysan", c) / E.gatherSpeed(C, "paysan", c2) - 2) < 1e-9, "récolte ×2");
   console.log("ok - métiers et spécialités");
+}
+// 8. Pass de saison et hauts faits.
+{
+  now = Date.UTC(2030, 0, 9, 12, 0);
+  const S = E.monoStart(E.newState("Pass", "iop")); const B = E.bpState(S);
+  assert.strictEqual(E.bpTier(S), 0); assert.ok(/pas encore atteint/.test(E.bpClaim(S, "free", 1)));
+  const Q = E.bpQuests(S); assert.strictEqual(Q.day.length, 3); assert.strictEqual(Q.week.length, 3);
+  const T = E.monoStart(E.newState("Autre", "cra")); assert.deepStrictEqual(E.bpQuests(T).day.map((x) => x.id), Q.day.map((x) => x.id), "mêmes quêtes pour tout le serveur");
+  // finir une quête du jour rapporte des points
+  const qd = E.MONO_QUESTS.day.find((q) => q.id === Q.day[0].id);
+  const evs = { dungeon: { id: Object.keys(D.DUNGEONS)[0], stasis: 5, down: 0 }, win: { mons: [{ key: "x", archi: 1 }] }, harvest: { n: 1000 }, craft: {}, fm: {} };
+  for (let i = 0; i < qd.need && Q.day[0].p < qd.need; i++) E.emit(S, qd.ev, evs[qd.ev]);
+  assert.ok(B.pts >= E.MONO.bp.day, `quête du jour : +${E.MONO.bp.day} points (${B.pts})`);
+  // palier 1 : gratuit oui, Prestige seulement avec 1 point de haut fait
+  B.pts = 500; const k0 = S.kamas;
+  assert.strictEqual(E.bpClaim(S, "free", 1), null); assert.ok(S.kamas > k0 || Object.keys(S.cons).length, "récompense donnée");
+  assert.ok(/Déjà/.test(E.bpClaim(S, "free", 1)));
+  B.hf = {}; assert.ok(/Prestige/.test(E.bpClaim(S, "pres", 1)), "Prestige fermé sans haut fait");
+  for (let i = 0; i < 25; i++) E.emit(S, "dungeon", { id: "d" + i, stasis: 1, down: 0 });
+  assert.ok((B.hf.s_boss || 0) >= 1, "haut fait Chasseur de boss en bronze"); assert.ok(E.bpPrestigePts(S) >= 1);
+  assert.strictEqual(E.bpClaim(S, "pres", 1), null, "Prestige ouvert par un haut fait");
+  // grand palier 25 : ornement de saison ; 50 : titre
+  B.pts = 50 * 500; assert.strictEqual(E.bpClaim(S, "free", 25), null); assert.ok(E.ornUnlocked(S, "mono_s1"), "ornement de saison");
+  assert.strictEqual(E.bpClaim(S, "free", 50), null); assert.ok(S.titlesExtra.includes(E.MONO_TITLES.vet));
+  // le Classique n'a pas de pass
+  const C = E.newState("Classique", "iop"); assert.ok(/Monocompte/.test(E.bpClaim(C, "free", 1)));
+  // une nouvelle saison repart de zéro
+  S.mono.s = 2; assert.strictEqual(E.bpState(S).pts, 0);
+  console.log("ok - pass de saison et hauts faits");
 }
 console.log("Monocompte : tout est bon");
