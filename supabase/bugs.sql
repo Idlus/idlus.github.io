@@ -60,8 +60,8 @@ begin
   end if;
   if coalesce(nm, '') = '' then nm := 'Joueur'; end if;
   k := coalesce(u::text, 'g:' || g);
-  if exists (select 1 from bugs where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '2 minutes') then
-    return jsonb_build_object('err', 'Un signalement toutes les 2 minutes : réessaie un peu plus tard.');
+  if exists (select 1 from bugs where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '30 seconds') then
+    return jsonb_build_object('err', 'Un signalement toutes les 30 secondes : réessaie un peu plus tard.');
   end if;
   if (select count(*) from bugs where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '1 day') >= 15 then
     return jsonb_build_object('err', 'Tu as déjà signalé 15 bugs aujourd''hui : merci beaucoup ! Reviens demain.');

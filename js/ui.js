@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29";
+const GAME_VERSION = "2.1.29.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29.1", name: "Envois plus rapides", guide: "communaute", items: [
+    "Signaler un bug : un envoi toutes les 30 secondes (au lieu de 2 minutes)",
+    "Proposer une idée : une idée par minute (au lieu de 10 minutes). Les limites par jour restent les mêmes (15 bugs, 10 idées)",
+  ] },
   { v: "2.1.29", name: "Classes et donjons 200", guide: "classes", items: [
     "Sadida : la sève de l'arbre soigne toute l'équipe de 4 % de ses PV à chaque tour du Sadida, et l'arbre attire 65 % des attaques (au lieu de 50 %)",
     "Enutrof : butin de guerre, chaque monstre qu'il achève donne à toute l'équipe un bouclier de 8 % de ses PV ; la clé de voûte « Pelle Fantomatique » renforce son passif (+35 %) au lieu de donner de la Prospection",

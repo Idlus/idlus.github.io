@@ -55,8 +55,8 @@ begin
   if coalesce(nm, '') = '' then nm := 'Joueur'; end if;
   inf := nullif(left(btrim(coalesce(p_info, '')), 40), ''); -- « niv. 42 · Iop », envoyé par le jeu
   k := coalesce(u::text, 'g:' || g);
-  if exists (select 1 from ideas where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '10 minutes') then
-    return 'Une idée toutes les 10 minutes : réessaie un peu plus tard.';
+  if exists (select 1 from ideas where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '1 minute') then
+    return 'Une idée par minute : réessaie un peu plus tard.';
   end if;
   if (select count(*) from ideas where coalesce(user_id::text, 'g:' || guest) = k and created_at > now() - interval '1 day') >= 10 then
     return 'Tu as déjà envoyé 10 idées aujourd''hui : merci ! Reviens demain.';

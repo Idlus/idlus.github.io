@@ -14,7 +14,7 @@
   const h = (s) => X().h(s); // même échappement que le jeu (ui.js)
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
   const TAGS = [["Combat", "⚔️"], ["Équipement", "🛡️"], ["Contenu", "🗺️"], ["Interface", "🖥️"]];
-  const MAXT = 80, MAXB = 500, WAIT = 10 * 60000;
+  const MAXT = 80, MAXB = 500, WAIT = 60000; // 2.1.29.1 : une idée par minute (au lieu de 10 min), la limite de 10 par jour reste
   const F = { tag: "", title: "", body: "", busy: false, err: "" };
 
   const S = () => window.DX.S;
@@ -42,7 +42,7 @@
         <span class="xs muted id-meta"><span>Signé <b>${h(author())}</b>${info() ? ` · ${h(info())}` : ""}${on && !(ON && ON.user) ? " · sans compte" : ""}</span><span id="idCnt">${F.body.length} / ${MAXB}</span></span></label>
       ${F.err ? `<div class="small bad">${h(F.err)}</div>` : ""}
       <div class="row id-send"><button class="btn primary" data-act="id-send" ${F.busy || (on && left) ? "disabled" : ""}>${F.busy ? "Envoi…" : on ? "Envoyer l'idée" : "Copier et ouvrir Discord"}</button>
-        <span class="grow"></span><span class="xs muted">${on ? (left ? `Prochaine idée dans ${Math.ceil(left / 60000)} min` : "Une idée toutes les 10 min") : ""}${on ? " · " : ""}<a href="${DISCORD}" target="_blank" rel="noopener">${on ? "ou poster sur Discord" : "Ouvrir le Discord"}</a></span></div>
+        <span class="grow"></span><span class="xs muted">${on ? (left ? `Prochaine idée dans ${Math.ceil(left / 60000)} min` : "Une idée par minute") : ""}${on ? " · " : ""}<a href="${DISCORD}" target="_blank" rel="noopener">${on ? "ou poster sur Discord" : "Ouvrir le Discord"}</a></span></div>
     </div>`;
     const list = `<div class="box"><h2>Tes idées envoyées</h2>${mine.length ? `<div class="list">${mine.map((x) => `<div class="li"><span class="grow"><b>${h(x.t)}</b><br><span class="xs muted">${h(x.g)} · ${date(x.d)}</span></span></div>`).join("")}</div>` : `<div class="empty">Aucune idée pour l'instant. La première sera peut-être dans le jeu !</div>`}
       <p class="xs muted" style="margin:8px 0 0">Les idées retenues sont marquées « Retenue » sur le Discord, et les plus votées sont regardées chaque semaine.</p></div>
@@ -74,7 +74,7 @@
       try { navigator.clipboard.writeText(txt).then(() => { X().toast("Idée copiée : ouvre un fil dans le forum Idées et colle-la."); open(); }, open); } catch (e) { open(); }
       return { copied: true };
     }
-    const left = waitLeft(); if (left) return { err: `Une idée toutes les 10 minutes : la prochaine dans ${Math.ceil(left / 60000)} min.` };
+    const left = waitLeft(); if (left) return { err: `Une idée par minute : la prochaine dans ${Math.ceil(left / 60000)} min.` };
     const s = S(); if (s && !s.gid) s.gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); // identifiant de la partie pour les joueurs sans compte
     const r = await ON.rpc("idea_send", { p_tag: tag, p_title: t, p_body: b, p_info: info(), p_guest: ON.user ? null : s.gid, p_name: author() });
     if (r.err) return { err: /fetch|connexion|network/i.test(r.err) ? "Pas de connexion au serveur. Réessaie dans un moment." : "Impossible d'envoyer l'idée pour le moment." };
@@ -84,7 +84,7 @@
   }
   const thanks = (t) => `<h2>✅ Merci, ton idée est partie !</h2>
       <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord dans la demi-heure. Les autres joueurs pourront voter pour elle avec 👍.</p>
-      <p class="xs muted" style="margin:0">Tu pourras en proposer une autre dans 10 minutes.</p>
+      <p class="xs muted" style="margin:0">Tu pourras en proposer une autre dans une minute.</p>
       <div class="row"><a class="btn" href="${DISCORD}" target="_blank" rel="noopener">Voir le Discord</a><button class="btn primary sm" data-act="closesheet">Fermer</button></div>`;
 
   async function send() {

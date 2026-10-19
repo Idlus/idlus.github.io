@@ -335,7 +335,7 @@ const MOCK = () => {
       if (/^(guild_|perco_|gboss_|ally_|prism_)/.test(name) || name === "gift_redeem") { const r = guildMock(name, a, d, u, me); if (r) return r; } // 1.0.30 : refonte des guildes
       if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
       // 0.1.36 : boîte à idées
-      if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
+      if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 60000)) return { data: "Une idée par minute : réessaie un peu plus tard.", error: null };
         L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, info: a.p_info, tag: a.p_tag, title: a.p_title, body: a.p_body, hidden: false, url: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: null, error: null }; }
       // 1.1.1.3 : signaler un bug
       if (name === "bug_send") { const L = (d.bugs = d.bugs || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 120000)) return { data: { err: "Un signalement toutes les 2 minutes : réessaie un peu plus tard." }, error: null };
@@ -823,7 +823,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('.sheet [data-act="closesheet"]');
     m = await mock(); const idea = (m.ideas || [])[0];
     if (!idea || idea.tag !== "Contenu" || idea.title !== "Un donjon pour le Bouftou Royal" || !/niv\. \d+ · /.test(idea.info || "")) fail("idées : idée mal envoyée " + JSON.stringify(idea));
-    if (!(await page.$('[data-act="id-send"][disabled]')) || !/Prochaine idée dans 10 min/.test(await page.textContent("#main"))) fail("idées : attente de 10 minutes absente");
+    if (!(await page.$('[data-act="id-send"][disabled]')) || !/Prochaine idée dans 1 min/.test(await page.textContent("#main"))) fail("idées : attente d'une minute absente");
     if (!/Un donjon pour le Bouftou Royal/.test(await page.textContent("#main"))) fail("idées : absente de « Tes idées envoyées »");
     // 7d bis (1.1.1.3). signaler un bug : fenêtre depuis la page Suggestions, diagnostic joint, suivi « Corrigé dans la … », panel admin
     await page.waitForSelector('#main [data-act="reportbug"]', { timeout: 5000 }); await page.click('#main [data-act="reportbug"]'); await page.waitForSelector("#bgWhat", { timeout: 5000 });
@@ -835,9 +835,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!bug || bug.what !== "Ma cape a disparu de l'équipement de mon héros." || bug.expected !== "La cape reste équipée." || !/Diagnostic idlus/.test(bug.diag || "") || !/Suggestions/.test(bug.page || "") || !bug.version) fail("bugs : signalement mal envoyé " + JSON.stringify(bug && Object.assign({}, bug, { diag: (bug.diag || "").slice(0, 80) })));
     await page.click('.sheet [data-act="closesheet"]'); await page.click('#main [data-act="reportbug"]');
     await page.waitForFunction(() => /Corrigé dans la 1\.1\.0\.9/.test((document.querySelector(".sheet") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : suivi « Corrigé dans la … » absent"));
-    // 1.2.3.2 : onglet « Idée » de la même fenêtre (Boîte à idées : ici l'attente de 10 minutes après l'idée envoyée plus haut)
+    // 1.2.3.2 : onglet « Idée » de la même fenêtre (Boîte à idées : ici l'attente d'une minute après l'idée envoyée plus haut)
     await page.click('.sheet [data-act="bg-mode"][data-v="idee"]'); await page.waitForSelector("#bgTitle", { timeout: 5000 });
-    if (!(await page.$('.sheet [data-act="bg-idea"][disabled]')) || !/Prochaine idée dans 10 min/.test(await page.textContent(".sheet"))) fail("bugs : onglet Idée sans l'attente de 10 minutes");
+    if (!(await page.$('.sheet [data-act="bg-idea"][disabled]')) || !/Prochaine idée dans 1 min/.test(await page.textContent(".sheet"))) fail("bugs : onglet Idée sans l'attente d'une minute");
     await page.click('.sheet [data-act="closesheet"]');
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });

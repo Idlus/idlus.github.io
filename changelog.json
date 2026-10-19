@@ -1,6 +1,15 @@
 {
-  "version": "2.1.29",
+  "version": "2.1.29.1",
   "versions": [
+    {
+      "v": "2.1.29.1",
+      "name": "Envois plus rapides",
+      "guide": "communaute",
+      "items": [
+        "Signaler un bug : un envoi toutes les 30 secondes (au lieu de 2 minutes)",
+        "Proposer une idée : une idée par minute (au lieu de 10 minutes). Les limites par jour restent les mêmes (15 bugs, 10 idées)"
+      ]
+    },
     {
       "v": "2.1.29",
       "name": "Classes et donjons 200",
