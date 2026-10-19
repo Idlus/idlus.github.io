@@ -166,4 +166,22 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   S.mono.s = 2; assert.strictEqual(E.bpState(S).pts, 0);
   console.log("ok - pass de saison et hauts faits");
 }
+// 9. Défi de la manche.
+{
+  now = Date.UTC(2030, 0, 9, 12, 0);
+  const S = E.monoStart(E.newState("Defi", "iop")); const T = E.monoStart(E.newState("Autre", "cra"));
+  const R = E.mdState(S); assert.strictEqual(R.did, E.mdState(T).did, "le même donjon pour tout le serveur");
+  const dg = D.DUNGEONS[R.did]; assert.ok(dg.lvl >= 50 && dg.lvl <= 100, "manche 1 : donjon de niveau 50 à 100");
+  const c = S.chars[0]; c.lvl = 200; c.inTeam = true; const keys = S.res[dg.key] || 0;
+  assert.strictEqual(E.mdEnter(S), null); assert.strictEqual(S.dungeon.stasis, 1); assert.strictEqual(S.res[dg.key] || 0, keys, "pas de clé dépensée");
+  const p0 = E.bpState(S).pts; for (let i = 0; i < 4000 && S.dungeon; i++) E.tick(S, 1000);
+  assert.ok(R.best >= 1 && E.bpState(S).pts >= p0 + E.MONO.md.pts, `stasis gagnée : points de pass (${R.best})`);
+  assert.strictEqual(E.mdEnter(S), null); assert.strictEqual(S.dungeon.stasis, R.best + 1, "essai suivant à la stasis d'après"); S.dungeon = null; E.tick(S, 1000);
+  assert.ok(!S.mono.mdRun, "essai abandonné effacé");
+  // fin de manche : coffre selon la meilleure stasis
+  R.best = 6; now += 14 * 86400000; const P = E.mdPending(S); assert.strictEqual(P.length, 1); assert.strictEqual(P[0].chest, "coffre_or");
+  assert.strictEqual(E.mdClaim(S, 1), null); assert.strictEqual(S.cons.coffre_or >= 1, true); assert.ok(E.mdClaim(S, 1));
+  assert.notStrictEqual(E.mdState(S), R, "nouvelle manche, nouveau défi");
+  console.log(`ok - défi de la manche (${dg.name})`);
+}
 console.log("Monocompte : tout est bon");

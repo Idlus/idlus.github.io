@@ -90,6 +90,7 @@
     { id: "wharv", n: "Récolter 3 000 ressources", ev: "harvest", v: (d) => d.n || 0, need: 3000 },
     { id: "wcraft", n: "Fabriquer 40 objets", ev: "craft", need: 40 },
     { id: "wnod", n: "Finir 5 donjons sans qu'aucun héros tombe", ev: "dungeon", f: (d) => !d.down, need: 5 },
+    { id: "wmd", n: "Défi de la manche : 3 essais", ev: "mdefi", need: 3 },
   ];
   E.MONO_QUESTS = { day: QD, week: QW };
   const hash = (s) => { let x = 2166136261; for (let i = 0; i < s.length; i++) x = Math.imul(x ^ s.charCodeAt(i), 16777619); return x >>> 0; };
@@ -160,6 +161,37 @@
       if (L.every((H) => (B.hf[H.id] || 0) >= 1)) { (B.fam = B.fam || {})[f] = E.now(); giveR(S, E.MONO_FAM[f].gift); E.note(S, `Famille ${E.MONO_FAM[f].n} complète : ${E.MONO_FAM[f].txt}.`, "rare"); } });
   };
 
+
+  /* ---------- Défi de la manche : un donjon imposé pendant 2 semaines, le même pour tout le serveur ----------
+     On monte la stasis une par une (pas besoin de clé, essais libres). Chaque nouvelle stasis du défi donne des points
+     de pass ; la meilleure stasis de la manche donne un coffre, à récupérer à la manche suivante. Les classements
+     (seul et en groupe) arriveront avec le serveur Monocompte. */
+  const MD = (E.MONO.md = { band: [[50, 100], [120, 170], [180, 200], [200, 200]], pts: 60, chest: [[10, "coffre_douze"], [8, "coffre_obsidienne"], [6, "coffre_or"], [3, "coffre_argent"]] });
+  E.mdDungeon = (S, m) => { const s = (S.mono && S.mono.s) || 1; m = m || Math.min(4, E.monoManche(S)); const [a, b] = MD.band[(m - 1) % 4];
+    const L = Object.keys(D.DUNGEONS).filter((k) => D.DUNGEONS[k].lvl >= a && D.DUNGEONS[k].lvl <= b).sort(); return L[hash(`md:${s}:${m}`) % L.length]; };
+  E.mdState = (S) => { const B = E.bpState(S); if (!B) return null; const m = Math.min(4, E.monoManche(S)); B.md = B.md || {}; return (B.md[m] = B.md[m] || { did: E.mdDungeon(S, m), best: 0, tries: 0 }); };
+  E.mdChest = (best) => { const r = MD.chest.find(([k]) => best >= k); return r ? r[1] : null; };
+  // coffres des manches passées pas encore récupérés
+  E.mdPending = (S) => { const B = E.bpState(S); if (!B || !B.md) return []; const m = Math.min(4, E.monoManche(S));
+    return Object.keys(B.md).map(Number).filter((k) => k < m && !B.md[k].got && E.mdChest(B.md[k].best)).map((k) => ({ m: k, best: B.md[k].best, chest: E.mdChest(B.md[k].best) })); };
+  E.mdClaim = (S, m) => { const B = E.bpState(S); const R = B && B.md && B.md[m]; if (!R || R.got) return "Rien à récupérer."; if (m >= Math.min(4, E.monoManche(S))) return "La manche n'est pas finie.";
+    const c = E.mdChest(R.best); if (!c) return "Pas de coffre pour cette manche."; R.got = E.now(); E.addCons(S, c, 1);
+    E.note(S, `Défi de la manche ${m} : ${(D.CONSUMABLES[c] || {}).name} (stasis ${R.best}).`, "rare"); return null; };
+  E.mdEnter = (S) => {
+    if (!E.isMono(S)) return "Réservé au Monocompte."; if (S.dungeon) return "Vous êtes déjà en donjon.";
+    const R = E.mdState(S); const dg = D.DUNGEONS[R.did]; const k = Math.min(E.STASIS_MAX, R.best + 1);
+    const SI = E.stasisInfo(S, R.did); const max0 = SI.max || 0; SI.max = Math.max(max0, k - 1);
+    const du = E.dungeonUnlocked; E.dungeonUnlocked = () => true; S.res[dg.key] = (S.res[dg.key] || 0) + 1; let err;
+    try { err = E.enterDungeon(S, R.did, k); } finally { E.dungeonUnlocked = du; }
+    if (err) { SI.max = max0; S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key]; return err; }
+    R.tries++; S.mono.mdRun = { did: R.did, k, max0 }; onQuest(S, "mdefi", {}); return null;
+  };
+  const mdDone = (S, d) => { const run = S.mono.mdRun; if (!run || d.id !== run.did) return; const R = E.mdState(S); delete S.mono.mdRun;
+    if ((d.stasis || 1) > R.best) { const n = (d.stasis || 1) - R.best; R.best = d.stasis || 1; addPts(S, MD.pts * n, `Défi de la manche, stasis ${R.best}`); } };
+  const tickMd = E.tick;
+  E.tick = function (S) { const r = tickMd.apply(this, arguments);
+    if (S && S.mono && S.mono.mdRun && (!S.dungeon || S.dungeon.id !== S.mono.mdRun.did)) { const run = S.mono.mdRun; delete S.mono.mdRun; const SI = E.stasisInfo(S, run.did); if ((SI.max || 0) < run.k) SI.max = run.max0; }
+    return r; };
   /* ---------- écoute du moteur ---------- */
   const inc = (B, k, n = 1) => (B.cnt[k] = (B.cnt[k] || 0) + n);
   const emit0 = E.emit;
@@ -167,7 +199,7 @@
     const r = emit0.apply(this, arguments);
     if (S && S.mono && !S.monoRun && !(d && d.offline && t === "win")) try {
       const B = E.bpState(S); d = d || {};
-      if (t === "dungeon") { inc(B, "dj"); (B.cnt.djs = B.cnt.djs || {})[d.id] = 1; if (!d.down) inc(B, "clean");
+      if (t === "dungeon") { mdDone(S, d); inc(B, "dj"); (B.cnt.djs = B.cnt.djs || {})[d.id] = 1; if (!d.down) inc(B, "clean");
         const day = E.bpDay(); if (B.cnt.dayK !== day) { B.cnt.dayK = day; B.cnt.dayN = 0; } B.cnt.dayN++; B.cnt.bestDay = Math.max(B.cnt.bestDay || 0, B.cnt.dayN);
         if (d.group) { inc(B, "grp"); B.cnt.grpSt = Math.max(B.cnt.grpSt || 0, d.stasis || 1); if (d.players >= 4) inc(B, "grp4"); }
         else { if (S.mono.merc) inc(B, "merc"); else B.cnt.soloSt = Math.max(B.cnt.soloSt || 0, d.stasis || 1); } }

@@ -98,6 +98,27 @@
     if (tr && cur) tr.scrollLeft = Math.max(0, cur.offsetLeft - tr.offsetLeft - 3 * cur.offsetWidth);
   }
   window.DX.pages.pass = page;
+  /* ---------- Défi de la manche ---------- */
+  function mdPage(main) {
+    const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
+    const R = E.mdState(s); const dg = D.DUNGEONS[R.did]; const m = Math.min(4, E.monoManche(s));
+    const end = (s.mono.t0 || E.now()) + m * E.MONO.jobs.manche - E.now(); const k = Math.min(E.STASIS_MAX, R.best + 1);
+    const me = s.chars.find((c) => !c.merc) || s.chars[0]; const run = s.mono.mdRun;
+    const pend = E.mdPending(s); const ch = E.mdChest(R.best);
+    const rows = E.MONO.md.chest.slice().reverse().map(([st, c]) => `<div class="bp-hf${R.best >= st ? "" : " soon"}"><img src="assets/ui/coffres/${(D.CONSUMABLES[c] || {}).img}.svg" alt="" style="width:34px;height:34px"><span class="grow"><b>${h(D.CONSUMABLES[c].name)}</b><br><span class="small muted">meilleure stasis ${st} ou plus</span></span>${R.best >= st ? '<span class="bp-ok">✓</span>' : ""}</div>`).join("");
+    main.innerHTML = `<div class="pagehead"><h1>Défi de la manche</h1></div>
+      <div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">🏁 ${h(dg.name)} <span class="small muted">niv. ${dg.lvl}</span></h2><span class="pill">fin dans ${dur(Math.max(0, end))}</span></div>
+        <p class="small muted" style="margin:0">Un donjon imposé pendant 2 semaines, le même pour tout le serveur. Pas besoin de clé, essais libres : tu montes la stasis une par une. Chaque nouvelle stasis donne ${E.MONO.md.pts} points de pass ; ta meilleure stasis donne un coffre à la fin de la manche.</p>
+        ${pend.map((x) => `<div class="smallbox monobox"><span>🎁 <b>Manche ${x.m}</b> : stasis ${x.best}, ${h(D.CONSUMABLES[x.chest].name)} à récupérer.</span><button class="btn sm primary" data-act="bp-mdgot" data-m="${x.m}">Récupérer</button></div>`).join("")}
+        <div class="bp-two" style="margin-top:0"><div class="stack"><b>Seul</b><div class="bp-q"><div class="row between"><span>${h(me.name)} · ${h(D.CLASSES[me.cls].name)}</span><b>${R.best ? `stasis ${R.best}` : "pas encore"}</b></div><span class="small muted">${R.tries} essai${R.tries > 1 ? "s" : ""}${ch ? ` · coffre visé : ${h(D.CONSUMABLES[ch].name)}` : ""}</span></div>
+          <span class="xs muted">Le classement de tous les joueurs arrive avec le serveur Monocompte.</span></div>
+          <div class="stack"><b>En groupe</b><div class="bp-q soon" style="opacity:.6"><span>Classement des groupes</span><span class="small muted">avec les groupes en direct (serveur Monocompte)</span></div></div></div>
+        ${run ? `<button class="btn primary" data-act="bp-mdgo" disabled>Essai en cours : stasis ${run.k}</button>` : R.best >= E.STASIS_MAX ? `<b>Stasis ${E.STASIS_MAX} atteinte : défi terminé !</b>` : `<button class="btn primary" data-act="bp-mdgo">⚔ Tenter la stasis ${k}</button>`}
+      </div></div>
+      <div class="panel" style="margin-top:14px"><div class="pad stack"><h2 style="margin:0">Coffres de fin de manche</h2>${rows}</div></div>`;
+  }
+  window.DX.pages.manche = mdPage;
+
 
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act; if (!/^bp-/.test(a) || !S()) return;
@@ -105,6 +126,8 @@
     const redraw = (sl) => { page(document.getElementById("main")); const tr = document.getElementById("bpTrack"); if (tr && sl != null) tr.scrollLeft = sl; };
     if (a === "bp-claim") { const sl = keep(); const r = E.bpClaim(S(), t.dataset.l, +t.dataset.t); if (r) X().toast(r); X().markDirty(); redraw(sl); X().renderStatus && X().renderStatus(); return; }
     if (a === "bp-all") { const sl = keep(); const n = E.bpClaimAll(S()); X().toast(`${n} récompense${n > 1 ? "s" : ""} récupérée${n > 1 ? "s" : ""}.`); X().markDirty(); redraw(sl); return; }
+    if (a === "bp-mdgo") { const r = E.mdEnter(S()); if (r) { X().toast(r); return; } X().markDirty(); UI().tab = "combat"; X().render(); window.scrollTo(0, 0); return; }
+    if (a === "bp-mdgot") { const r = E.mdClaim(S(), +t.dataset.m); if (r) X().toast(r); X().markDirty(); mdPage(document.getElementById("main")); return; }
     if (a === "bp-fam") { const sl = keep(); UI().bpFam = t.dataset.v; redraw(sl); return; }
   });
 })();
