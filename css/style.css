@@ -5913,3 +5913,18 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .mdt .pal div.ok{background:color-mix(in srgb, var(--good, #8ccf72) 18%, transparent)}
 .mdt .pal b{display:block}
 @media (max-width:500px){.mdt .pal{grid-template-columns:1fr 1fr}}
+/* 2.1.30 : recherche dans le choix d'un objet et détail des panoplies sur place */
+.eqsrch{padding:8px 14px 0}
+.eqsrch input{width:100%;box-sizing:border-box}
+button.pset{border:0;cursor:pointer;font-family:inherit;line-height:1.5}
+button.pset:hover{filter:brightness(1.15)}
+button.pset.open{outline:1px solid var(--action)}
+.psetd{margin-top:6px;max-width:640px}
+.psetp{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.psetpc{display:flex;align-items:center;gap:6px;background:var(--panel2);border-radius:8px;padding:3px 8px 3px 4px;min-width:0}
+.psetpc img{width:28px;height:28px;object-fit:contain;flex:none}
+.psetpc>span{display:flex;flex-direction:column;min-width:0}
+.psetpc b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.psetpc .xs{opacity:.75}
+.psetpc.on .xs{color:var(--good);opacity:1}
+.psetpc.no{opacity:.55}

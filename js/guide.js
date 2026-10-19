@@ -243,6 +243,7 @@
         "Un seul exo PA, un seul exo PM et un seul exo PO par héros ; un seul objet légendaire.",
         "Sur la fiche, un objet exo porte une pastille violette avec l'icône de sa caractéristique, et un objet Parfait (toutes ses caractéristiques au jet maximum) un contour doré avec une étoile.",
         "**Équiper au mieux** choisit les meilleures pièces selon la vraie répartition de caractéristiques du héros, en testant les panoplies entières ; « Privilégier » fait compter une caractéristique beaucoup plus.",
+        "**Rechercher** : quand on clique un emplacement, le champ en haut de la liste filtre les objets par nom, par panoplie ou par caractéristique (« PA », « Vitalité »…). Un clic sur l'étiquette « Pano. … » montre les pièces de la panoplie (portées, dans le sac ou pas encore obtenues) et ses bonus, sans passer par l'encyclopédie ; même chose dans la fiche d'un objet de l'inventaire.",
         "**Verrouiller** (bouton du cadenas quand on clique un emplacement) : l'objet porté reste en place, « Équiper au mieux » et « Tout équiper au mieux » n'y touchent plus.",
         `**Tenues** : ${N(() => E.MAX_GEAR)} équipements complets enregistrés par héros (un de plus avec la Collection de panoplies).`,
       ]],

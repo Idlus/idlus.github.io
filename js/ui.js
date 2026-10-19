@@ -6113,6 +6113,13 @@ function setBlock(setId, worn) {
     ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
     ${off.length ? `<div class="st off"><b>${setOffTxt(off)}</b><span>inaccessible : des pièces de cette panoplie ne sont pas dans le jeu</span></div>` : ""}</div>`;
 }
+/* 2.1.30 : détail d'une panoplie sans passer par l'encyclopédie (choix d'un objet et fiche de l'inventaire) : pièces, où elles sont, bonus */
+function setDetailHtml(z, c) {
+  const own = E.ownedTpls(S); const on = c ? new Set(Object.values(c.equip).filter((u) => u && S.items[u]).map((u) => S.items[u].tpl)) : new Set();
+  const P = E.setPieces(z).slice().sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl);
+  return `<div class="psetp">${P.map((t) => { const T = ITEMS[t]; const k = on.has(t) ? "on" : own[t] ? "bag" : "no";
+    return `<span class="psetpc ${k}" title="${h(T.name)}">${im(itemImg(t), "", T.name)}<span><b>${h(T.name)}</b><span class="xs">${k === "on" ? `✓ portée${c ? " par " + h(c.name) : ""}` : k === "bag" ? "dans le sac" : "pas encore obtenue"}</span></span></span>`; }).join("")}</div>${setBlock(z, c ? E.setCounts(S, c)[z] || 0 : undefined)}`;
+}
 /* 1.0.30 : menu des caractéristiques refait, avec un vrai mode automatique (profils, plan par étapes, aperçu au niveau 200) */
 const EL_PAIRS = [["fo", "age"], ["fo", "ine"], ["fo", "cha"], ["ine", "cha"], ["ine", "age"], ["cha", "age"]];
 const planName = (k) => { const a = E.planStats(k); return a.length === 4 && a.every((x) => E.ELEM_STATS.includes(x)) ? "Les 4 éléments" : a.map((x) => STATS[x].name).join(" + "); };
@@ -6371,7 +6378,10 @@ function charEquipView(c, st) {
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
-    const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid);
+    /* 2.1.30 : recherche par nom, panoplie ou caractéristique (idée de SegFault), combinée avec le tri et les groupes repliés */
+    const q = E.searchNorm(ui.eqSearch || ""); const qk = statOfQ(q);
+    const eqHit = (it) => { const T = ITEMS[it.tpl]; return txtHas(T.name, q) || (T.set && SETS[T.set] && txtHas(SETS[T.set].name.replace(/^Panoplie (de la |du |des |de l.|d.)?/, ""), q)) || (qk && it.stats[qk] > 0); };
+    const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid && (!q || eqHit(it)));
     const g = {}; const g0 = gearScore(c, c.equip); all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid, g0)));
     const byGain = (a, b) => g[b.uid] - g[a.uid] || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl;
     const pu = bestFor(c, ui.slot); const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort((a, b) => (b.uid === pu) - (a.uid === pu) || equipBlocked(c, c.equip, ui.slot, a) - equipBlocked(c, c.equip, ui.slot, b) || byGain(a, b)); // le choix du plan (panoplie entière comprise) en tête
@@ -6379,9 +6389,11 @@ function charEquipView(c, st) {
     const high = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl > c.lvl).sort((a, b) => ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
     const curSet = c.equip[ui.slot] && S.items[c.equip[ui.slot]] && ITEMS[S.items[c.equip[ui.slot]].tpl].set; const counts = E.setCounts(S, c);
     const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
-      return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
+      return `<button class="pset ${on ? "on" : ""} ${ui.psetOpen === it.uid ? "open" : ""}" data-act="psetopen" data-uid="${it.uid}" aria-expanded="${ui.psetOpen === it.uid}" title="Voir les pièces et les bonus de la panoplie">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""} ${ui.psetOpen === it.uid ? "▾" : "▸"}</button>`; };
+    const setOpen = (it) => ui.psetOpen === it.uid && ITEMS[it.tpl].set && SETS[ITEMS[it.tpl].set] ? `<div class="psetd">${setDetailHtml(ITEMS[it.tpl].set, c)}</div>` : "";
+    const qVal = (it) => qk && it.stats[qk] ? ` <span class="tag soft">${statIc(qk, it.stats[qk])}</span>` : "";
     const row = (it, mode, i, n, tog, sub) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0) && !equipBlocked(c, c.equip, ui.slot, it);
-      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""} ${sub ? "psub" : ""}" data-tipitem="${it.uid}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)}${grpN(n)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}${tog || ""}</span>
+      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""} ${sub ? "psub" : ""}" data-tipitem="${it.uid}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)}${grpN(n)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span>${qVal(it)} ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}${tog || ""}${setOpen(it)}</span>
         <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
     /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
     /* 1.0.8.8 : une ligne par objet (×N) ; si les exemplaires ont des jets différents, la ligne montre le meilleur et se déplie (ui.pgrp garde l'état ouvert malgré le redessin) */
@@ -6392,12 +6404,13 @@ function charEquipView(c, st) {
     const freeG = grpItems(free, true), highG = grpItems(high, true);
     const pmore = (k, t, n, inner) => !n ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${n})</button>${(ui.pmore || {})[k] ? `<div class="list">${inner()}</div>` : ""}</div>`;
     pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm ${eqLocked(c, ui.slot) ? "primary" : ""}" data-act="eqlock" data-slot="${ui.slot}" aria-pressed="${eqLocked(c, ui.slot)}" data-tip="${h(eqLocked(c, ui.slot) ? "Verrouillé : « Équiper au mieux » et « Tout équiper au mieux » laissent cet objet en place. Cliquez pour déverrouiller." : "Verrouiller : « Équiper au mieux » et « Tout équiper au mieux » laisseront cet objet en place")}">${G("lock")} ${eqLocked(c, ui.slot) ? "Verrouillé" : "Verrouiller"}</button><button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
-      ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}</span></div>`; })() : ""}
-      <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
-      <div class="list">${freeG.slice(0, 40).map((gr, i) => grow(gr, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Rien de libre ici. Les trophées viennent des paliers de chasse des sous-zones." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
+      ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}${setOpen(it)}</span></div>`; })() : ""}
+      <div class="eqsrch"><input type="search" id="eqSearch" data-act="eqsearch" placeholder="Rechercher : nom, panoplie ou caractéristique (PA, Vitalité…)" value="${h(ui.eqSearch || "")}" autocomplete="off" aria-label="Rechercher un objet"></div>
+      <div id="eqPick"><div class="xs muted" style="padding:6px 14px 0">${q ? `${all.length} objet${all.length > 1 ? "s" : ""} pour « ${h(ui.eqSearch.trim())} »${qk ? ` (objets avec ${h(STATS[qk].name)} compris)` : ""}, rangés du plus utile au moins utile.` : `Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.`}</div>
+      <div class="list">${freeG.slice(0, 40).map((gr, i) => grow(gr, "free", i)).join("") || (q ? `<div class="empty">Aucun objet libre ne correspond à « ${h(ui.eqSearch.trim())} ».</div>` : "") || `<div class="empty">${want === "dofus" ? "Rien de libre ici. Les trophées viennent des paliers de chasse des sous-zones." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
       ${want === "dofus" ? `<div class="row xs muted" style="padding:6px 14px;gap:8px">${im(dofusImg("emeraude"), "dfico", "")}<span class="grow">Un Dofus s'obtient par sa quête ou, très rarement, sur le boss de son donjon.</span><button class="btn xs" data-act="pagego" data-v="dofusq">Où trouver les Dofus</button></div>` : ""}
       ${pmore("w", worn.some((it) => E.equippedBy(S, it.uid) !== c) ? "Déjà portés par d'autres héros" : "Déjà portés", worn.length, () => worn.slice(0, 20).map((it) => row(it, "worn")).join(""))}
-      ${pmore("h", "Niveau trop haut pour l'instant", highG.length, () => highG.slice(0, 20).map((gr) => grow(gr, "high")).join(""))}</div>`;
+      ${pmore("h", "Niveau trop haut pour l'instant", highG.length, () => highG.slice(0, 20).map((gr) => grow(gr, "high")).join(""))}</div></div>`;
   }
   if (ui.slot && ui.slot.startsWith("dofus") && E.DOFP_LIST) { const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === "dofus" && c.equip[ui.slot] !== it.uid); const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid))); pick = dofpPickHtml(c, all, g); } // 1.0.16 : choix du Dofus avec les passifs
   const mainK = buildMain(c);
@@ -6904,7 +6917,7 @@ function invDetail(tpl) {
     ${E.team(S).length > 1 ? `<div class="invcmpl"><span class="xs muted">Comparer avec</span>${E.team(S).map((c) => `<button class="invcmp ${ui.cid === c.id ? "on" : ""}" data-act="invcmp" data-cid="${c.id}" title="${h(c.name)}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}${copies.some((x) => ups.get(x.uid) === c) ? "<i>▲</i>" : ""}</button>`).join("")}</div>` : ""}
     ${acts}${rows}
     <div class="pad xs">${window.FORGEUI ? tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)) : tplStatsHtml(T)}
-      ${T.set ? `<details class="invsetd"><summary>Bonus de la ${h(SETS[T.set].name)}</summary>${setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined)}</details>` : ""}</div></div>`;
+      ${T.set ? `<details class="invsetd" ${ui.invSetOpen ? "open" : ""}><summary>${h(SETS[T.set].name)} : pièces et bonus</summary>${setDetailHtml(T.set, ui.cid && char(ui.cid) ? char(ui.cid) : null)}</details>` : ""}</div></div>`;
 }
 /* ---------- Sac : ressources (v2.7) ---------- */
 function resRarity(n) { const L = (resIndex().src[n] || []).filter((x) => x.m); if (!L.length) return n === E.RARE_COMPONENT ? "epique" : ""; const best = Math.max(...L.map((x) => (MONSTERS[x.m].boss || MONSTERS[x.m].archiOf ? 0 : x.p))); return best === 0 ? "epique" : best < 1 ? "epique" : best < 5 ? "rare" : ""; }
@@ -7042,6 +7055,9 @@ function invItemsHtml(groups) {
     return `<section class="invsec"><button class="invsech" data-act="invshut" data-v="${k}" aria-expanded="${!shut}"><b>${n}</b><span class="xs muted">${L.length} modèle${L.length > 1 ? "s" : ""} · ${nb} objet${nb > 1 ? "s" : ""}</span>${up ? `<span class="tag good">▲ ${up} mieux</span>` : ""}<span class="grow"></span><span class="muted">${shut ? "▾" : "▴"}</span></button>${shut ? "" : `<div class="invgrid">${L.map(invTile).join("")}</div>`}</section>`; }).join("") || empty;
 }
 let invSearchT = 0;
+/* 2.1.30 : recherche du choix d'objet : seule la liste se redessine (le champ garde le focus et le curseur) */
+let eqSearchT = 0;
+function eqSearchGo() { const p = $("#eqPick"); if (!S || ui.tab !== "team" || !p) return; const t = document.createElement("template"); t.innerHTML = heroesHtml(); const n = t.content.querySelector("#eqPick"); if (n) morphTo(p, n.innerHTML); }
 function invSearchGo() { const g = $("#invItems"); if (!S || ui.tab !== "inv" || ui.inv !== "items" || !g) return; const groups = invGroups(); g.innerHTML = invItemsHtml(groups); const n = $("#invCount"); if (n) n.textContent = invCountTxt(groups); }
 function renderInventory() {
   if (ui.inv === "sets" && window.COLL) { // 1.0.30 : l'ancien onglet Panoplies renvoie à la Collection de panoplies (Encyclopédie)
@@ -9991,7 +10007,7 @@ document.addEventListener("click", (ev) => {
     case "hjtab": ui.hj = d.v; ui.hjAll = false; break;
     case "hjall": ui.hjAll = !ui.hjAll; break;
     case "hgo": ui.tab = "inv"; if (d.v === "cons") ui.inv = "cons"; if (d.v === "gbuy") ui.inv = "res"; window.scrollTo(0, 0); break;
-    case "selchar": ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
+    case "selchar": ui.cid = +d.id; ui.slot = null; ui.eqSearch = ""; ui.psetOpen = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
     case "teamlist": ui.tview = "list"; ui.heroMore = false; break;
     case "heromore": ui.heroMore = !ui.heroMore; break;
     case "renhero": ui.renaming = +d.id; ui.renVal = null; ui.renErr = null; ui.heroMore = false; render(); setTimeout(() => { const i = $("#renName"); if (i) { i.focus(); i.select(); } }, 30); return;
@@ -10053,7 +10069,8 @@ document.addEventListener("click", (ev) => {
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
-    case "slot": ui.slot = d.slot || null; if (ficheOnly()) return; break; // 1.0.27 : seule la fiche du héros se redessine
+    case "slot": if ((d.slot || null) !== ui.slot) { ui.eqSearch = ""; ui.psetOpen = null; } ui.slot = d.slot || null; if (ficheOnly()) return; break;
+    case "psetopen": ui.psetOpen = ui.psetOpen === +d.uid ? null : +d.uid; if (ficheOnly()) return; break; // 1.0.27 : seule la fiche du héros se redessine
     case "pmore": ui.pmore = ui.pmore || {}; ui.pmore[d.v] = !ui.pmore[d.v]; if (ficheOnly()) return; break;
     case "dpfam": ui.dpFam = d.v; break; // 1.0.16 : choix du Dofus, filtre par famille
     case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; if (ficheOnly()) return; break;
@@ -10276,7 +10293,7 @@ document.addEventListener("change", (ev) => {
   else return;
   dirty = true; render();
 });
-document.addEventListener("toggle", (ev) => { const d = ev.target; if (d.classList && d.classList.contains("ptool")) { ui.toolOpen = ui.toolOpen || {}; ui.toolOpen[d.dataset.job] = d.open; } }, true); // 1.0.7.6 : le menu d'outil de la Récolte reste ouvert malgré le rafraîchissement
+document.addEventListener("toggle", (ev) => { const d = ev.target; if (d.classList && d.classList.contains("invsetd")) { ui.invSetOpen = d.open; return; } if (d.classList && d.classList.contains("ptool")) { ui.toolOpen = ui.toolOpen || {}; ui.toolOpen[d.dataset.job] = d.open; } }, true); // 1.0.7.6 : le menu d'outil de la Récolte reste ouvert malgré le rafraîchissement
 document.addEventListener("input", (ev) => {
   if (ev.target.id === "wsq") { searchRender(); return; }
   if (ev.target.id === "navq" || ev.target.id === "navqm") { ui.navQ = ev.target.value.slice(0, 40); const pos = ev.target.selectionStart; const id = ev.target.id; if (id === "navqm") navMenuSheet(); else renderNav(); const n = $("#" + id); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; } // 1.2 (7A) : « Aller à une page »
@@ -10285,6 +10302,7 @@ document.addEventListener("input", (ev) => {
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "dgq") { dgF().q = t.value.slice(0, 40); dirty = true; const pos = t.selectionStart; renderWorld(); const n = $("#dgq"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "encsearch") { ui.enc.q = t.value.slice(0, 40); ui.encEqMore = 0; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "eqsearch") { ui.eqSearch = t.value.slice(0, 40); clearTimeout(eqSearchT); eqSearchT = setTimeout(eqSearchGo, 150); return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; clearTimeout(invSearchT); invSearchT = setTimeout(invSearchGo, 150); return; } // 1.0.12.8 : sac plein, la saisie ne fige plus la page
   if (t.id === "recqtyn") { if (t.value !== "") recQtyLive(t, false); return; }
   if (t.dataset.act !== "fltq") return;
