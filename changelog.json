@@ -1,6 +1,16 @@
 {
-  "version": "2.1.30.2",
+  "version": "2.1.30.3",
   "versions": [
+    {
+      "v": "2.1.30.3",
+      "name": "Retour sans attente",
+      "items": [
+        "Retour d'absence : le jeu ne fige plus pendant le calcul de ta progression hors ligne ; une barre montre les combats calculés, puis le compte rendu s'affiche comme avant. Gains identiques",
+        "Calcul de l'absence environ deux fois plus rapide",
+        "Hors ligne : après une mise à jour, le jeu ne mélange plus d'anciens fichiers avec les nouveaux",
+        "Sauvegarde en ligne plus sûre quand deux envois se croisent ou quand on change de partie pendant un envoi"
+      ]
+    },
     {
       "v": "2.1.30.2",
       "name": "Ailes dans le chat",

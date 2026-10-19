@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.2";
+const GAME_VERSION = "2.1.30.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.3", name: "Retour sans attente", items: [
+    "Retour d'absence : le jeu ne fige plus pendant le calcul de ta progression hors ligne ; une barre montre les combats calculés, puis le compte rendu s'affiche comme avant. Gains identiques",
+    "Calcul de l'absence environ deux fois plus rapide",
+    "Hors ligne : après une mise à jour, le jeu ne mélange plus d'anciens fichiers avec les nouveaux",
+    "Sauvegarde en ligne plus sûre quand deux envois se croisent ou quand on change de partie pendant un envoi",
+  ] },
   { v: "2.1.30.2", name: "Ailes dans le chat", guide: "alignement", items: [
     "Chat : les ailes de son camp entourent le portrait des joueurs de Bonta et de Brâkmar, à partir du rang 1 d'alignement",
     "Elles battent doucement et grandissent à chaque rang ; au rang 5, elles brillent (idée de Mathis). Rien ne bouge avec les animations sobres ou coupées",
@@ -8051,6 +8057,33 @@ function optionsSheet() {
   if (keepTop) $(".sheet").scrollTop = keepTop;
 }
 /* 1.0.30 : donjon pendant l'absence et retours d'expédition comptent aussi pour ouvrir la fenêtre */
+/* audit 19/10/2026 (choix 1A + 2C de Mathis) : le calcul de l'absence se fait par tranches (E.catchUpAsync) au lieu de figer la page.
+   Pendant le calcul : fenêtre « Pendant votre absence » avec une barre et le nombre de combats calculés, jeu en pause (aucun tick,
+   aucune sauvegarde, aucun envoi : un rechargement en plein calcul repart de la partie d'avant, sans gain en double ni perte),
+   puis le résumé habituel avec les récompenses définitives. Une absence courte (moins de 0,3 s de calcul) ne montre pas la barre. */
+let offRun = null;
+function offCatch(gap, done) {
+  if (offRun && offRun.S === S) return; // déjà en cours pour cette partie
+  if (offRun) { const el = $("#offc"); if (el) el.remove(); offRun = null; } // une autre partie a été chargée (partie en ligne reprise) : l'ancien calcul s'arrête
+  if (!(gap > 60)) return done(null);
+  if (!E.catchUpAsync) return done(E.catchUp(S, gap));
+  const S0 = S, t0 = Date.now(), run = (offRun = { S: S0 });
+  const counted = Math.min(gap, E.OFFLINE_MAX_S + E.bonus(S0, "offtime") * 3600);
+  const paint = (p) => {
+    if (Date.now() - t0 < 300 && !$("#offc")) return;
+    let el = $("#offc");
+    if (!el) { el = document.createElement("div"); el.id = "offc"; el.className = "sheet-bg offc"; el.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-live="polite"><h2>Pendant votre absence</h2>
+      <p class="small muted">Calcul de ta progression hors ligne…</p>
+      <p class="small">Absent ${dur(gap)}${counted < gap ? ` (${dur(counted)} comptées)` : ""}. Ton équipe continue à ${Math.round(E.offRate(S0) * 100)} % de son efficacité.</p>
+      <div class="offc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="offc-row"><span class="offc-n"></span><span class="muted offc-p"></span></div>
+      <p class="xs muted">Le jeu reprend tout seul à la fin et affiche tes gains.</p></div>`; document.body.appendChild(el); }
+    const f = p && p.n ? Math.min(0.99, p.i / p.n) : 0;
+    el.querySelector(".offc-bar i").style.width = Math.round(f * 100) + "%"; el.querySelector(".offc-bar").setAttribute("aria-valuenow", Math.round(f * 100));
+    setTxt(el.querySelector(".offc-n"), p && p.n ? `${fmt(p.i)} combats sur ${fmt(p.n)}` : "Préparation…"); setTxt(el.querySelector(".offc-p"), Math.round(f * 100) + " %");
+  };
+  const end = (r) => { if (offRun !== run) return; offRun = null; last = performance.now(); const el = $("#offc"); if (el) el.remove(); if (S === S0) done(r); };
+  E.catchUpAsync(S0, gap, (p) => { if (offRun === run) paint(p); }, () => (document.hidden ? 250 : 12), () => offRun === run).then(end, (e) => { console.error(e); end(null); });
+}
 const offWorth = (r) => !!r && !!(r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length) || (r.dg && r.dg.runs) || (r.mis && r.mis.length));
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
@@ -9583,7 +9616,7 @@ function sndText(txt, kind) {
     else if (type === "craft") sndPlay("evt:craft"); else if (type === "chest") sndPlay("evt:coffre"); // 1.3 (4A) : les moments qui étaient muets
     else if (type === "fm") setTimeout(() => sndPlay(E.fmLastK === "ec" ? "evt:fm_ko" : "evt:fm_ok"), 0); } return r; };
   const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S) sndText(txt, kind); return r; };
-  const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
+  const cu0 = E.catchUpGen; E.catchUpGen = function* (...a) { SND.live = false; try { return yield* cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
 })();
 /* 1.3 (5A) : table de mixage : un volume général, puis un volume et une case par famille ; le haut-parleur du haut coupe tout et garde les réglages */
 function soundOptionsHtml() {
@@ -10346,7 +10379,8 @@ let dirty = false, lastSaveOk = 0, sinceTip = 0, saveWarnAt = 0;
 /* La lecture et l'écriture de la partie sont dans js/save.js (support interchangeable : navigateur aujourd'hui, serveur demain). */
 SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
 function saveNow(manual) {
-  if (!S) return; S.savedAt = E.now(); S.lastTick = E.now();
+  if (!S || offRun) return; // calcul de l'absence en cours : la partie d'avant reste sauvegardée
+  S.savedAt = E.now(); S.lastTick = E.now();
   let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
   if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); if (SV.freed) { SV.freed = null; toast("Stockage du navigateur plein : de vieilles copies de secours ont été effacées pour garder ta partie à jour.", "warn", 10000); } }
   else if (manual || Date.now() - saveWarnAt > 120000) { saveWarnAt = Date.now(); toast(`Impossible de sauvegarder dans ce navigateur (stockage plein) : exporte ta partie (Options) pour ne rien perdre.`, "warn", 15000); } // 1.0.32.8 : avant, l'échec d'une sauvegarde automatique ne disait rien
@@ -10633,11 +10667,11 @@ async function takeRemote(info) {
   SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
   if (!booted) return bootGame();
   closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
-  const gap = (E.now() - (S.lastTick || E.now())) / 1000; const r = gap > 60 ? E.catchUp(S, gap) : null; render();
-  if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée.");
+  const gap = (E.now() - (S.lastTick || E.now())) / 1000; render();
+  offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée."); });
 }
 function onPush(force) {
-  if (!onLive()) return Promise.resolve(null);
+  if (!onLive() || offRun) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
   return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
@@ -11335,6 +11369,7 @@ let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRe
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
+  if (offRun) { last = performance.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
     if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
@@ -11384,7 +11419,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (offWorth(r)) offlineSheet(r); } last = performance.now(); }
+  else if (S && !offRun) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -11400,11 +11435,10 @@ function bootGame(pushNow) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
     const gap = (E.now() - (S.lastTick || E.now())) / 1000;
-    const r = gap > 60 ? E.catchUp(S, gap) : null;
     render();
     if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
-    if (S.migration) { migrationSheet(S.migration); S.migration = null; }
-    else if (offWorth(r)) offlineSheet(r);
+    const mig = S.migration; if (mig) { migrationSheet(mig); S.migration = null; }
+    offCatch(gap, (r) => { render(); if (!mig && offWorth(r)) offlineSheet(r); });
     S.sessions = (S.sessions || 0) + 1; dirty = true;
     if (window.FORGEUI) window.FORGEUI.boot(S); // 1.0.30 : soft reset des jets, seulement si E.SOFT_RESET_ON (js/forge.js)
   } else render();

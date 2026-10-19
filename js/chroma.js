@@ -190,9 +190,9 @@
   }
 
   /* ---------- hors ligne (8A) : les chromatiques trouvés pendant l'absence vont dans le résumé ---------- */
-  { const prev = E.catchUp;
-    E.catchUp = (S, seconds) => { const X = C(S); const t0 = X.rec.tot || 0; const before = new Set(Object.keys(X.dex));
-      E._chromaOff = []; const r = prev(S, seconds); const got = E._chromaOff; E._chromaOff = null;
+  { const prev = E.catchUpGen;
+    E.catchUpGen = function* (S, seconds) { const X = C(S); const t0 = X.rec.tot || 0; const before = new Set(Object.keys(X.dex));
+      E._chromaOff = []; const r = yield* prev(S, seconds); const got = E._chromaOff; E._chromaOff = null;
       if (r && (X.rec.tot || 0) > t0) { const by = {}; // une ligne par espèce : combien, prismatique ou non, nouvelle dans l'album ou non
         got.forEach((x) => { const o = by[x.k] || (by[x.k] = { k: x.k, p: 0, n: 0, neu: !before.has(x.k) }); o.n++; if (x.p) o.p = 1; });
         r.chroma = Object.values(by).sort((a, b) => b.p - a.p || b.neu - a.neu || b.n - a.n); }

@@ -1163,7 +1163,11 @@
     return out;
   };
   /* 1.0.8.3 : équipements déjà obtenus au moins une fois (Encyclopédie › Équipements) ; au premier appel, on compte le sac, le surplus et la garde-robe */
-  E.itemDexAdd = (S, tpl) => { const T = ITEMS[tpl]; if (!T || T.slot === "dofus") return; (S.itemDex = S.itemDex || {})[tpl] = 1; };
+  /* audit 19/10/2026 : numéro de version de l'Encyclopédie (+1 à chaque modèle nouveau), pour que la collection de panoplies
+     (js/collections.js) ne recompte plus toute l'Encyclopédie après chaque combat ; gardé hors de la sauvegarde */
+  const DEXV = typeof WeakMap !== "undefined" ? new WeakMap() : null;
+  E.dexVer = (d) => (DEXV && d ? DEXV.get(d) || 0 : -1);
+  E.itemDexAdd = (S, tpl) => { const T = ITEMS[tpl]; if (!T || T.slot === "dofus") return; const d = (S.itemDex = S.itemDex || {}); if (!d[tpl] && DEXV) DEXV.set(d, (DEXV.get(d) || 0) + 1); d[tpl] = 1; };
   E.itemDex = (S) => {
     if (!S.itemDexInit) { S.itemDex = S.itemDex || {};
       for (const u in S.items || {}) E.itemDexAdd(S, S.items[u].tpl);

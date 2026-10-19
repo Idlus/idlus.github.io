@@ -572,12 +572,12 @@
     add({ id: "elvst100", name: "Écurie étoilée", desc: "Avoir 100 étoiles en tout dans l'écurie.", test: (S) => Object.values(S.mounts || {}).reduce((a, M) => a + (M.st || 1), 0) >= 100, prog: (S) => [Object.values(S.mounts || {}).reduce((a, M) => a + (M.st || 1), 0), 100], kamas: 40000 });
   }
   /* 19A : « Pendant ton absence » : ce que l'élevage a fait hors ligne (affiché en haut de la page Élevage) */
-  if (E.catchUp && !E.catchUp.__elev) {
-    const c0 = E.catchUp;
-    E.catchUp = (S, seconds) => {
-      const v = S && S.mounts ? EV(S) : null; if (!v) return c0(S, seconds);
+  if (E.catchUpGen && !E.catchUpGen.__elev) {
+    const c0 = E.catchUpGen;
+    E.catchUpGen = function* (S, seconds) {
+      const v = S && S.mounts ? EV(S) : null; if (!v) return yield* c0(S, seconds);
       const b = { uid: S.mountUid, births: v.n.births, bal: v.n.bal, ess: v.ess, worn: v.worn || 0, seen: E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).length, 0) };
-      const r = c0(S, seconds);
+      const r = yield* c0(S, seconds);
       try {
         const kids = Object.values(S.mounts).filter((M) => M.uid >= b.uid).map((M) => M.uid);
         const A = { at: E.now(), sec: Math.round(seconds), births: v.n.births - b.births, bal: v.n.bal - b.bal, ess: Math.max(0, v.ess - b.ess), worn: (v.worn || 0) - b.worn, neu: E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).length, 0) - b.seen, kids: kids.slice(-6) };
@@ -585,7 +585,7 @@
       } catch (e) { /* résumé facultatif */ }
       return r;
     };
-    E.catchUp.__elev = 1;
+    E.catchUpGen.__elev = 1;
   }
   E.awayOk = (S) => { delete EV(S).away; return null; };
   E.elevTodo = (S) => {

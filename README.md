@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.3 « Retour sans attente »
+
+- Audit technique (avec ChatGPT) : E.catchUp devient le générateur E.catchUpGen (les modules l'enveloppent avec yield*), E.catchUpAsync le déroule par tranches (fenêtre #offc avec barre, jeu en pause, rien sauvegardé avant la fin) ; mêmes tirages et mêmes gains (tests/absence.test.js). Collection de panoplies recalculée seulement quand l'Encyclopédie grandit (E.dexVer). sw.js : précache en cache: "reload", recherche hors ligne dans le cache de la version. online.js : envoi demandé pendant un autre relancé une fois (SYNC-04), partie fixée pendant l'envoi (SYNC-06). CI : test:online. Aucun changement SQL.
+
 ## 2.1.30.2 « Ailes dans le chat »
 
 - Chat : ALIGNUI.wings entoure le portrait (cmed) des ailes du camp (wingSVG de ui.js, exporté dans DX.social ; aile droite retournée dans le SVG), taille par rang 1 à 5 (CAMP.r lu dans lb_align, son propre rang depuis la partie), rien au rang 0 ni sans camp. Battement en CSS (classe .fly seulement avec les animations complètes, coupé par prefers-reduced-motion). Aucun changement serveur.

@@ -101,7 +101,7 @@
   E.dofpTeamBonus = (S, kind) => { if (!S || !S.chars || !E.team) return 0; const id = kind === "kamas" ? "argent" : kind === "drop" ? "dokille" : null;
     return (id && E.team(S).some((c) => wears(S, c, id)) ? E.dofpVal(id, false, false, E.dpotRank(S, id)) : 0) + (id ? idlusOff(S) : 0); };
   E.dofpXpBonus = (S, c) => { const b = E.bonusRaw(S, "xp") + (c && wears(S, c, "jyfus") ? E.dofpVal("jyfus", false, false, E.dpotRank(S, "jyfus")) : 0) + (S && S.chars && E.team ? idlusOff(S) : 0); return Math.min(b, E.capOf(S, "xp")); };
-  { const cu = E.catchUp; if (cu) E.catchUp = (S, seconds) => { E.dpOffline = true; try { return cu(S, seconds); } finally { E.dpOffline = false; } }; }
+  { const cu = E.catchUpGen; if (cu) E.catchUpGen = function* (S, seconds) { E.dpOffline = true; try { return yield* cu(S, seconds); } finally { E.dpOffline = false; } }; }
 
   const has = (e, id) => !!(e && e.dp && e.dp.includes(id));
   const V = (F, id, e) => E.dofpVal(id, !!(e && e.dpBoost), !!(F && F.pvp), e && e.dpP ? e.dpP[id] || 0 : 0);

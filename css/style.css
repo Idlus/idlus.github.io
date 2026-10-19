@@ -5956,3 +5956,10 @@ button.pset.open{outline:1px solid var(--action)}
 .chat .msg .chw.fly.r5 .chw-w{animation-name:chwL,chwGlow}.chat .msg .chw.fly.r5 .chw-w.r{animation-name:chwR,chwGlow}
 @keyframes chwGlow{0%,100%{filter:drop-shadow(0 0 2px var(--gold2))}50%{filter:drop-shadow(0 0 6px var(--gold2))}}
 @media (prefers-reduced-motion:reduce){.chat .msg .chw .chw-w{animation:none!important}}
+
+/* audit 19/10/2026 : calcul de l'absence par tranches (js/ui.js offCatch) */
+.offc{z-index:95}
+.offc-bar{height:12px;border-radius:999px;background:var(--panel3);border:1px solid var(--line);overflow:hidden;margin:10px 0 6px}
+.offc-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:999px;box-shadow:0 0 10px var(--glow);transition:width .25s}
+.offc-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.offc-bar i{transition:none}}
