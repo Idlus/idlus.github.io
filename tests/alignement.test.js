@@ -3,7 +3,7 @@
 "use strict";
 const assert = require("assert");
 const E = require("../js/engine.js");
-["systems", "pets", "mounts", "idols", "renaissance", "archis", "welcome", "defi", "quetes", "verify", "alignement"].forEach((f) => require("../js/" + f + ".js"));
+["systems", "pets", "mounts", "idols", "renaissance", "archis", "welcome", "defi", "quetes", "verify", "koli", "alignement", "honneur"].forEach((f) => require("../js/" + f + ".js"));
 const D = require("../js/data.js");
 const V = globalThis.VERIFY;
 
@@ -27,7 +27,7 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
         if (st.t === "res") assert.ok(D.RES[st.res], "ressource " + st.res);
         assert.ok(st.name && st.txt && !st.txt.includes("—"), "textes de l'étape");
       }); });
-    assert.strictEqual(L[4].steps[4].t, "rank", "le dernier chapitre finit par le rang 5");
+    assert.strictEqual(L[4].steps[4].t, "rank", "le dernier chapitre finit par le rang 10");
   }
   assert.deepStrictEqual(E.ALIGN_CH_LVL, [30, 60, 100, 140, 180]);
   console.log("ok - alignement : 2 × 5 chapitres de 5 étapes");
@@ -46,8 +46,8 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
   S.progress.bossKills.donjon_bworks = 1; E.emit(S, "dungeon", { id: "donjon_bworks", stasis: 1 }); assert.strictEqual(S.align.q.i, 4, "donjon : étape 4 faite");
   assert.ok(S.kamas > k0 && S.tokens.insignes > i0, "kamas et insignes des étapes");
   const c0 = S.cons.coffre_argent || 0;
-  E.giveAlignXp(S, 5000); E.emit(S, "harvest", { n: 0 }); E.alCheck(S);
-  assert.ok(E.alignRankIdx(S) >= 1 && S.align.q.c === 1 && S.align.q.done === 1, "rang 1 : chapitre 1 terminé");
+  E.giveAlignXp(S, 20000); E.emit(S, "harvest", { n: 0 }); E.alCheck(S);
+  assert.ok(E.alignRankIdx(S) >= 1 && S.align.q.c === 1 && S.align.q.done === 1, "rang 2 : chapitre 1 terminé");
   assert.strictEqual(S.cons.coffre_argent, c0 + 1, "coffre du chapitre");
   console.log("ok - alignement : chapitre 1 de Bonta,", E.alWarPts(S), "points de guerre");
 }
@@ -79,26 +79,20 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
   const N = E.deserialize(E.serialize(S)); assert.ok(N.align.pend && N.align.pend.side === "brakmar", "attente gardée dans la sauvegarde");
   now += 4 * 86400000 + 1000; E.tick(S, 1000);
   assert.ok(S.align.side === "brakmar" && !S.align.pend, "Brâkmar après 7 jours");
-  assert.ok(S.align.lvl <= E.ALIGN_SWITCH_LVL && E.alignRankIdx(S) === 1, "retour au rang 1");
+  assert.ok(S.align.lvl <= E.ALIGN_SWITCH_LVL && E.alignRankIdx(S) <= 2 && S.align.pur === 0, "retour au rang 2 au plus, bourse vidée");
   assert.ok(S.align.q.side === "brakmar" && S.align.q.c === 0, "quêtes de Brâkmar au chapitre 1");
   const M = E.deserialize(E.serialize(N)); assert.strictEqual(M.align.side, "brakmar", "le changement se fait aussi au chargement");
   console.log("ok - alignement : changement de camp en 7 jours, rang 1");
 }
 
-// 5. Guerre des cités : points plafonnés, nouvelle semaine, résumé envoyé au serveur, bonus du camp gagnant.
+// 5. Points de guerre : plafonnés, nouvelle semaine, résumé envoyé au serveur.
 {
   const S = team(60); E.chooseAlign(S, "bonta", "coeur");
   for (let i = 0; i < 100; i++) E.alWarAdd(S, 10); assert.strictEqual(E.alWarPts(S), E.ALIGN_WAR.cap, "plafond de la semaine");
   const m = V.summary(E, S).align; assert.ok(m && m.s === "bonta" && m.o === "coeur" && m.p === E.ALIGN_WAR.cap && m.w === E.weekIdx() && m.ps === null, "camp et points dans le résumé");
   now += 7 * 86400000; assert.strictEqual(E.alWarPts(S), 0, "nouvelle semaine, nouveaux points");
   assert.strictEqual(V.summary(E, team(10)).align, null, "pas de camp : rien");
-  const xp0 = E.evMult("xp"), k0 = E.evMult("kamas");
-  E.alignWarSet({ w: E.weekIdx(), win: "bonta", side: "bonta" });
-  assert.ok(Math.abs(E.evMult("xp") / xp0 - 1.05) < 1e-9 && Math.abs(E.evMult("drop") / xp0 - 1.05) < 0.2, "+5 % d'XP et de butin");
-  assert.strictEqual(E.evMult("kamas"), k0, "pas les kamas");
-  E.alignWarSet({ side: "brakmar" }); assert.strictEqual(E.evMult("xp"), xp0, "rien pour le camp perdant");
-  E.alignWarSet({ side: "bonta", w: E.weekIdx() - 1 }); assert.strictEqual(E.evMult("xp"), xp0, "seulement la semaine suivante");
-  E.alignWarSet({ w: -1, win: null, side: null });
+  assert.strictEqual(E.alignWarOn(), false, "la guerre de la semaine est remplacée par les régions (tests/alignement2.test.js)");
   const P = team(60); E.chooseAlign(P, "bonta", "coeur"); E.chooseAlign(P, "brakmar", "coeur"); assert.strictEqual(E.alWarAdd(P, 10), 0, "pas de points pendant un changement de camp");
   console.log("ok - alignement : guerre des cités");
 }
@@ -108,7 +102,7 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
   const S = team(120); S.align = { side: "brakmar", order: "esprit", lvl: 45, xp: 12 }; S.alignQuest = null; S.cnt.alignq = 17;
   const txt = JSON.stringify(JSON.parse(E.serialize(S)));
   const N = E.deserialize(txt);
-  assert.ok(N.align.q && N.align.q.side === "brakmar" && N.align.q.mq === 17 && N.align.war && N.align.lvl === 45 && N.align.xp === 12, "quêtes ajoutées, rang gardé");
+  assert.ok(N.align.q && N.align.q.side === "brakmar" && N.align.q.mq === 17 && N.align.war && N.align.hon === E.honFromLvl(45) && E.alignRankIdx(N) === 4, "quêtes ajoutées, niveau 45 devenu de l'honneur (rang 4)");
   N.align.q.p = 1; const N2 = E.deserialize(E.serialize(N)); assert.strictEqual(N2.align.q.p, 1, "la migration ne repart pas de zéro");
   const T = team(20); const T2 = E.deserialize(E.serialize(T)); assert.strictEqual(T2.align, null, "sans camp : rien");
   console.log("ok - alignement : migration des anciennes parties");

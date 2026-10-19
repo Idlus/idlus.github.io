@@ -2345,7 +2345,7 @@ function heroCard(c, size = "", opts = {}) {
   const need = E.heroXpNeed(c);
   const stats3 = size === "big" ? [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa]];
   let ornHtml = "", ornCls = "";
-  if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}${c.wing ? " wing-" + c.wing : ""}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
+  if (orn === "ailes" && S.align) { const r = Math.min(5, Math.ceil(E.alignRankIdx(S) / 4)); /* 20 rangs : la taille suit les 5 paliers */ ornCls = `o-ailes side-${S.align.side}${c.wing ? " wing-" + c.wing : ""}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
   else if (orn === "couronne") ornHtml = `<span class="orn crown">👑</span>`;
   else if (orn === "lauriers") ornHtml = `<span class="orn laurel l">🌿</span><span class="orn laurel r">🌿</span>`;
   else if (orn === "heros") ornHtml = `<span class="orn crown">🎖</span>`;
@@ -7792,7 +7792,7 @@ function alignHtml() {
     return `<section class="panel"><div class="phead"><h2>Alignement</h2>${can ? "" : `<span class="tag soft">${G("lock")} niveau ${E.ALIGN_MIN_LVL}</span>`}</div><div class="pad stack">
       <p class="small">Choisissez votre camp : Bonta, la cité blanche, ou Brâkmar, la cité sombre. Puis un ordre. Les missions d'alignement, les avis de recherche et les boss de donjon vous feront monter en rang : vos ailes grandissent et vos bonus augmentent.${can ? "" : ` Atteignez le niveau ${E.ALIGN_MIN_LVL} pour choisir (votre meilleur héros est niveau ${top}).`}</p>
       <div class="alignpick">${Object.entries(E.ALIGN).map(([sid, A]) => `<div class="alignside" style="--c:${A.color}"><img class="badge" src="assets/i/${A.badge}.png" alt=""><h2 style="text-align:center">${A.name}</h2>
-        <div class="xs muted" style="text-align:center">Camp : +2 % de ${A.bonusName} par rang</div>
+        <div class="xs muted" style="text-align:center">Camp : +1 % de ${A.bonusName} par rang (jusqu'au rang 10)</div>
         ${Object.entries(A.orders).map(([oid, O]) => `<div class="row between"><span><b>${h(O.name)}</b><br><span class="xs muted">${h(E.ORDER_BONUS[oid].txt)}</span></span><button class="btn sm ${can ? "primary" : ""}" data-act="align" data-side="${sid}" data-order="${oid}" ${can ? "" : "disabled"}>Rejoindre</button></div>`).join("")}</div>`).join("")}</div></div></section>`;
   }
   const A = S.align; const side = E.ALIGN[A.side]; const O = side.orders[A.order]; const r = E.alignRankIdx(S); const q = S.alignQuest;

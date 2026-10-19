@@ -359,6 +359,7 @@ const MOCK = () => {
       // 1.0.30 : guerre des cités (supabase/alignement.sql) et lots du Songe infini (supabase/songe.sql)
       if (name === "align_war_state") { const w = d.war || {}; return { data: { w: a.p_w, b: w.b || 0, k: w.k || 0, nb: 3, nk: 2, cb: 5, ck: 4, prev: { w: a.p_w - 1, b: 900, k: 1100, win: "brakmar" } }, error: null }; }
       if (name === "align_me") return { data: {}, error: null };
+      if (name === "align_regions") { const regs = {}; ["astrub", "amakna", "cania", "sidimote", "frigost"].forEach((k, i) => (regs[k] = { b: 100 * (i + 1), k: 60 * (5 - i), h: i % 2 ? "brakmar" : "bonta", since: "2030-01-08T10:00:00Z" })); regs.amakna = { b: 600, k: 400, h: "brakmar", since: "2030-01-07T10:00:00Z" }; return { data: { w: 0, regs, cb: 5, ck: 4 }, error: null }; } // refonte des alignements (supabase/alignement2.sql)
       if (name === "songe_claim") { d.claims = (d.claims || 0) + 1; put(d); return { data: { ok: 1, bribes: 0, top: false, ops: [] }, error: null }; } // ops vides : les numéros d'opération de l'HdV restent ceux du test
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "gift_mine") return d.giftMine ? { data: d.giftMine, error: null } : { data: null, error: { message: "pas encore" } }; // 1.0.6.2
@@ -1238,10 +1239,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       d.views.lb_align = [{ user_id: "u9", pseudo: "Kralamour", side: "brakmar", ord: "coeur", lvl: 80, chap: 3, main: "iop", main_lvl: 200 }, { user_id: "u8", pseudo: "Tofuline", side: "bonta", ord: "coeur", lvl: 41, chap: 2, main: "eni", main_lvl: 180 }];
       d.views.lb_songe = [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, w: W, ii: 4, waves: 30, r: 1 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, w: W, ii: 3, waves: 22, r: 2 }];
       d.war = { b: 1200, k: 800 }; localStorage.setItem("__mock", JSON.stringify(d)); });
-    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; S.chars[0].lvl = Math.max(S.chars[0].lvl, E.ALIGN_MIN_LVL); E.chooseAlign(S, "brakmar", "coeur"); window.DX.ui.tab = "quests"; window.DX.ui.qt = "align"; window.DX.render(); });
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; S.chars[0].lvl = Math.max(S.chars[0].lvl, E.ALIGN_MIN_LVL); E.chooseAlign(S, "brakmar", "coeur"); window.DX.ui.alReg = "amakna"; window.DX.ui.tab = "quests"; window.DX.ui.qt = "align"; window.DX.render(); });
     await page.evaluate(() => Promise.all([window.ALIGNUI.warLoad(true), window.ALIGNUI.campLoad(true)])); await page.waitForTimeout(300);
-    { const tx = await page.textContent("#main"); ["Guerre des cités", "Bonta 60 %", "Kralamour", "victoire de Brâkmar", "Quêtes de Brâkmar"].forEach((x) => { if (!tx.includes(x)) fail("alignement : « " + x + " » absent de la page"); }); if (/—/.test(tx)) fail("alignement : tiret long dans la page"); }
-    if (!(await page.evaluate(() => window.ENGINE.alignWarOn()))) fail("alignement : le camp gagnant de la semaine passée n'a pas son bonus");
+    { const tx = await page.textContent("#main"); ["Guerre des régions", "Bonta 60 %", "Kralamour", "Tenue par Brâkmar", "Quêtes de Brâkmar", "Arsenal de Brâkmar", "Agressions", "Serment de Djaul"].forEach((x) => { if (!tx.includes(x)) fail("alignement : « " + x + " » absent de la page"); }); if (/—/.test(tx)) fail("alignement : tiret long dans la page"); }
+    if (!(await page.evaluate(() => { const S = window.DX.S; S.sub = "ama_bworks"; return window.ENGINE.regBonusOn(S); }))) fail("alignement : la région tenue par le camp du compte ne donne pas son bonus");
     if (!(await page.evaluate(() => /al-w k/.test(window.DX.social.pname("Kralamour", "u9")) && /al-w b/.test(window.DX.social.pname("Tofuline", "u8"))))) fail("alignement : le camp du serveur n'est pas affiché à côté du pseudo");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/alignement.png", fullPage: true });
     // Songe infini : classement de la semaine, record envoyé au serveur (rejoué là-bas), lots récupérés

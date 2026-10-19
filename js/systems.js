@@ -259,9 +259,11 @@
   };
   const alignBonus = (S, kind) => {
     const A = S.align; if (!A) return 0; const r = E.alignRankIdx(S); let b = 0;
-    if (kind === "hp" && A.side === "bonta") b += 2 * r;
-    if (kind === "dmg" && A.side === "brakmar") b += 2 * r;
-    const ob = ORDER_BONUS[A.order]; if (ob && ob.kind === kind) b += ob.per * r;
+    const e = E.honRankOf ? Math.min(5, r / 2) : r; // refonte (20 rangs, js/honneur.js) : le bonus de camp et d'ordre est complet au rang 10, comme l'ancien rang 5
+    if (kind === "hp" && A.side === "bonta") b += 2 * e;
+    if (kind === "dmg" && A.side === "brakmar") b += 2 * e;
+    const ob = ORDER_BONUS[A.order]; if (ob && ob.kind === kind) b += ob.per * e;
+    if (E.honBonus) b += E.honBonus(S, kind); // talents d'ordre (js/honneur.js)
     return b;
   };
 
@@ -1610,7 +1612,7 @@
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
   add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= (E.MAIN_CH1 || Q.length), 8000, { title: "Héros d'Amakna" });
   add("align", "Alignement", "Le choix d'un camp", "Choisir Bonta ou Brâkmar.", (S) => !!S.align, 500);
-  [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r}`, `Atteindre le niveau d'alignement ${r * 20}.`, (S) => E.alignRankIdx(S) >= r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
+  [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r * 2}`, `Atteindre le rang d'alignement ${r * 2}.`, (S) => E.alignRankIdx(S) >= 2 * r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
   [[10, ""], [50, ""]].forEach(([n]) => add("havre" + n, "Havre-Sac", `Havre-Sac ×${n}`, `Acheter ${n} améliorations du Havre-Sac.`, (S) => E.havreTotal(S) >= n, 100 * n));
   [2, 4, 8].forEach((n) => add("team" + n, "Progression", `${n} héros`, `Avoir ${n} héros.`, (S) => S.chars.length >= n, 250 * n));
   /* 0.1.10 : idoles */

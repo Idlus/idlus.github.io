@@ -762,18 +762,33 @@
       ["kv", [["Parchemin court gratuit", "1 par jour"], ["Parchemin normal (par victoire)", "1 / " + N(() => Math.round(1 / E.TRESOR_DROP))], ["Parchemin légendaire", "1 par semaine dès le niveau 50"], ["Parchemins en réserve", N(() => E.TRESOR_STOCK)], ["Victoires pour révéler un indice", N(() => E.TRESOR_NEED)]]],
     ] });
 
-  add({ id: "alignement", f: "Journal", n: "Alignement", ic: "ailes", page: "quests", pages: ["align"], k: "alignement bonta brakmar ordre rang ailes insignes guerre des cites mission",
+  add({ id: "alignement", f: "Journal", n: "Alignement", ic: "ailes", page: "quests", pages: ["align"], k: "alignement bonta brakmar ordre rang ailes insignes guerre regions honneur agression arsenal talents mission",
     ou: "Journal › Quêtes › Aventures › Alignement", de: `un héros niveau ${N(() => E.ALIGN_MIN_LVL)}`,
     voir: ["comptoirs"],
     b: () => [
-      ["p", "Choisis Bonta ou Brâkmar, puis un des 3 ordres de ta cité. Les missions et quêtes de cité font monter ton niveau d'alignement (0 à 100) et rapportent des insignes pour le Comptoir de la cité."],
+      ["p", "Choisis Bonta ou Brâkmar, puis un des 3 ordres de ta cité. Les agressions, missions, quêtes de cité et régions défendues rapportent des points d'honneur : ils font ton rang, de 1 à 20, et se dépensent à l'Arsenal de ta cité sans jamais faire baisser ton rang."],
+      ["h", "Honneur et rangs"],
       ["ul", [
-        "Un rang tous les 20 niveaux d'alignement (5 au plus).",
-        "Par rang : Bonta +2 % de vie, Brâkmar +2 % de dégâts ; Ordre du Cœur +1 % de dégâts, de l'Esprit +3 % d'XP, de l'Œil +3 % de butin.",
+        `Rang 1 : ${N(() => E.honStep(1))} points d'honneur, puis +15 % par rang ; rang 20 à ${N(() => E.honCum(20))} points.`,
+        `Agression gagnée : +${N(() => E.ALIGN_HON.agrMin)} à +${N(() => E.ALIGN_HON.agrMax)} ; agression lancée et perdue : −${N(() => E.ALIGN_HON.agrLoss)}, sans jamais perdre de rang. Être agressé ne coûte rien (défense gagnée : +${N(() => E.ALIGN_HON.def)}).`,
+        `Région tenue par ton camp où tu marques des points : +${N(() => E.ALIGN_HON.regDay)} une fois par jour.`,
+        "Bonus de camp (Bonta +1 % de vie, Brâkmar +1 % de dégâts par rang) et d'ordre (Cœur dégâts, Esprit XP, Œil butin), au complet au rang 10.",
+        "Talents d'ordre, un par rang de 1 à 5 : bonus de l'ordre (+4 %), +6 % de dégâts en agression, +5 % d'honneur, −8 % de dégâts reçus en défense, puis le Serment de Menalt (Bonta) ou de Djaul (Brâkmar) : +10 % d'honneur et de points de guerre dans les régions tenues par ton camp.",
+        `Arsenal de la cité : coiffe, cape, anneau, amulette et bottes niveau 200, une par rang de 6 à 10 (${V(() => E.HON_GEAR_COST.map((c) => c.toLocaleString("fr-FR")).join(", "))} honneur), liées au compte. Panoplie complète : +10 % d'honneur.`,
+        "Titres : « Commandeur » au rang 16, « Grand Maître » au rang 18, « Héros de Bonta » ou « Héros de Brâkmar » au rang 20.",
+      ]],
+      ["h", "Guerre des régions"],
+      ["ul", [
+        "Les régions de la carte appartiennent à Bonta, à Brâkmar ou à personne ; les cités ne se conquièrent pas.",
+        `Missions, quêtes, donjons, avis et agressions donnent des points à la région où chassent tes héros, sinon à ton front (au plus ${N(() => E.ALIGN_WAR.cap)} par semaine).`,
+        `Une région change de camp quand un camp fait ${N(() => E.ALIGN_REG_FLIP)} % de ses points de la semaine. Le camp qui la tient y gagne +${N(() => E.ALIGN_REG_BONUS)} % d'XP et de butin.`,
+        `Agressions : ${N(() => E.ALIGN_HON.agrDay)} par jour contre des équipes fantômes du camp adverse, avec ton équipe d'arène.`,
+      ]],
+      ["h", "Quêtes et camp"],
+      ["ul", [
         `Quêtes de cité : 5 chapitres de 5 étapes, aux niveaux ${V(() => E.ALIGN_CH_LVL.join(", "))}.`,
-        `Changer de camp : ${N(() => E.ALIGN_SWITCH_MS / 86400000)} jours d'attente, puis le niveau d'alignement est ramené à ${N(() => E.ALIGN_SWITCH_LVL)} au plus.`,
-        `**Guerre des cités** (en ligne) : missions, quêtes, donjons et avis donnent des points à ton camp ; le camp gagnant a +${N(() => E.ALIGN_WAR_BONUS * (E.ALIGN_WAR_BONUS < 1 ? 100 : 1))} % d'XP et de butin la semaine suivante.`,
-        "Les ailes d'alignement grandissent avec le rang. Dans le chat, elles entourent aussi le portrait des joueurs de Bonta et de Brâkmar dès le rang 1, et brillent au rang 5.",
+        `Changer de camp : ${N(() => E.ALIGN_SWITCH_MS / 86400000)} jours d'attente, puis retour au rang 2 au plus et bourse d'honneur vidée.`,
+        "Les ailes d'alignement grandissent tous les 4 rangs. Dans le chat, elles entourent le portrait des joueurs de Bonta et de Brâkmar dès le rang 1, et deviennent dorées au rang 16.",
       ]],
     ] });
 
@@ -1161,7 +1176,7 @@
     koli: "Kolizéum en 3 contre 3 contre l'équipe enregistrée d'un autre joueur (ou un Fantôme), pas en direct. Les Sceaux sont coupés.",
     hdv: "Taxe de 2 % à la mise en vente, comme dans DOFUS. La vente directe au jeu (Cours des ressources) est propre à Idlus.",
     montures: "Pas de jauges d'endurance ou de maturité à remplir : la monture prend une part de l'XP de son héros et lui donne ses caractéristiques.",
-    alignement: "Bonta et Brâkmar comme dans DOFUS, avec leurs ordres ; le niveau monte avec les missions et quêtes de cité, sans agression entre joueurs.",
+    alignement: "Bonta et Brâkmar comme dans DOFUS : honneur et 20 rangs, agressions, talents d'ordre, Arsenal de la cité et guerre des régions sur la carte.",
     maitrise: "Il n'y a pas de Maîtrise dans DOFUS : c'est un ajout d'Idlus pour aller plus loin que le niveau 200 (elle remplace l'ancienne Renaissance).",
     metiers: "Le niveau de métier demandé est celui de l'objet, comme dans DOFUS. Les métiers sont partagés par tout le compte.",
   };
@@ -1184,7 +1199,7 @@
     sablier: () => { const s = sv(); if (!V(() => E.sabUnlocked(s), false)) return ["Pas encore débloqué.", `Atteindre l'étape ${N(() => E.SAB_UNLOCK_STEP)} de la quête principale.`]; const r = (s.sablier || {}).r || 0; return [`Réserve : ${dur(r)} sur ${dur(V(() => E.sabMaxOf(s), 0))}.`, null]; },
     succes: () => { const s = sv(); const n = cnt(s.ach), t = V(() => E.ACH.length, 0); return [`${fr(n)} succès sur ${fr(t)}.`, null]; },
     archis: () => { const n = cnt(sv().souls); return [`${fr(n)} âme${n > 1 ? "s" : ""} capturée${n > 1 ? "s" : ""} sur ${N(() => E.ARCHI_TOTAL)}.`, null]; },
-    alignement: () => { const s = sv(); const req = V(() => E.ALIGN_MIN_LVL, 30); return s.align ? [`Niveau d'alignement ${N(() => E.alignLvl(s))}.`, null] : ["Pas encore d'alignement.", best() < req ? `Monter un héros niveau ${req}.` : "Choisir Bonta ou Brâkmar."]; },
+    alignement: () => { const s = sv(); const req = V(() => E.ALIGN_MIN_LVL, 30); return s.align ? [`Rang d'alignement ${N(() => E.alignRankIdx(s))} sur 20.`, null] : ["Pas encore d'alignement.", best() < req ? `Monter un héros niveau ${req}.` : "Choisir Bonta ou Brâkmar."]; },
   };
 
   /* ---------- chapitres lus (14A) : gardés dans la sauvegarde, succès « Érudit d'Idlus » quand tout est lu ---------- */

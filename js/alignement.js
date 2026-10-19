@@ -46,31 +46,31 @@
         K("ama_bworks", 40, "Des Bworks aux portes", "Repousser 40 monstres du Campement des Bworks"),
         K("ama_passage_brakmar", 40, "L'espion de Brâkmar", "Traquer 40 monstres dans le Passage vers Brâkmar"),
         B("donjon_bworks", 1, "La relique d'Amayiro", "Reprendre la relique à la Bworkette (Donjon des Bworks)"),
-        R(1, "Milicien de Bonta")] },
+        R(2, "Milicien de Bonta")] },
       { name: "Le Cimetière des Héros", where: "Bonta", steps: [
         K("bon_cimetiere_heros", 50, "Les tombes profanées", "Chasser 50 Chafers du Cimetière des Héros"),
         G("Slip en cuir du Chafer Lancier", 15, "Les reliques des héros"),
         B("pitons_craqueleur", 2, "Les pitons rocheux"),
         M(3, "Patrouilles de nuit"),
-        R(2, "Gardien des remparts")] },
+        R(4, "Gardien des remparts")] },
       { name: "Les Canaux méphitiques", where: "Bonta", steps: [
         K("bon_canaux", 60, "La puanteur des canaux", "Chasser 60 monstres des Canaux méphitiques"),
         G("Poil de Rat Bontarien", 20, "Des preuves pour le Conseil"),
         B("garde_manger_rat_blanc", 3, "Le Rat Blanc"),
         M(4, "Les ordres d'Amayiro"),
-        R(3, "Chevalier de Bonta")] },
+        R(6, "Chevalier de Bonta")] },
       { name: "Le Dédale du Dark Vlad", where: "Amakna", steps: [
         K("ama_dark_vlad", 70, "La forêt maudite", "Chasser 70 monstres du Dédale du Dark Vlad"),
         B("tertre_long_sommeil", 4, "Le long sommeil"),
         G("Sachet de Poudre Temporelle", 20, "Le sablier brisé"),
         M(5, "L'avant-garde"),
-        R(4, "Le grand serment")] },
+        R(8, "Le grand serment")] },
       { name: "Le jugement de Jiva", where: "Landes de Sidimote", steps: [
         K("sid_gisgoul", 80, "Les terres de Gisgoul", "Chasser 80 monstres à Gisgoul"),
         B("grotte_bworker", 6, "Le Bworker"),
         G("Furoncle de la Mama Bwork", 25, "Le dernier trophée"),
         M(6, "La dernière croisade"),
-        R(5, "Le jugement de Jiva", "Atteindre le rang 5 d'alignement : titre « Héros de Bonta »")] },
+        R(10, "Le jugement de Jiva", "Atteindre le rang 10 d'alignement : titre « Héros de Bonta »")] },
     ],
     brakmar: [
       { name: "Le pacte des Ombres", where: "Amakna", steps: [
@@ -78,31 +78,31 @@
         K("ama_bandits", 40, "Des alliés peu recommandables", "Mettre au pas 40 monstres du Territoire des Bandits"),
         K("ama_passage_brakmar", 40, "Le passage gardé", "Tenir le Passage vers Brâkmar : 40 monstres"),
         B("donjon_bworks", 1, "Le pacte des Bworks", "Soumettre la Bworkette (Donjon des Bworks)"),
-        R(1, "Milicien de Brâkmar")] },
+        R(2, "Milicien de Brâkmar")] },
       { name: "La Bordure de Brâkmar", where: "Brâkmar", steps: [
         K("bra_bordure", 50, "Les fantômes de la Bordure", "Chasser 50 fantômes de la Bordure de Brâkmar"),
         G("Makroute Déchiqueté", 15, "Les offrandes à Djaul"),
         B("pitons_craqueleur", 2, "Les pitons rocheux"),
         M(3, "Raids de nuit"),
-        R(2, "Sentinelle des ténèbres")] },
+        R(4, "Sentinelle des ténèbres")] },
       { name: "Les Entrailles de Brâkmar", where: "Brâkmar", steps: [
         K("bra_entrailles", 60, "Sous la cité sombre", "Chasser 60 monstres des Entrailles de Brâkmar"),
         G("Poil de Rat Brâkmarien", 20, "Le tribut des rats"),
         B("sousouriciere_rat_noir", 3, "Le Rat Noir"),
         M(4, "Les ordres du Conseil"),
-        R(3, "Chevalier de Brâkmar")] },
+        R(6, "Chevalier de Brâkmar")] },
       { name: "Le Dédale du Dark Vlad", where: "Amakna", steps: [
         K("ama_dark_vlad", 70, "Les serviteurs du Dark Vlad", "Chasser 70 monstres du Dédale du Dark Vlad"),
         B("tertre_long_sommeil", 4, "Le réveil de Hell Mina"),
         G("Sachet de Poudre Temporelle", 20, "Le temps volé"),
         M(5, "La nuit des longs couteaux"),
-        R(4, "Le grand pacte")] },
+        R(8, "Le grand pacte")] },
       { name: "Le jugement de Djaul", where: "Landes de Sidimote", steps: [
         K("sid_gisgoul", 80, "Les Bworks de Gisgoul", "Chasser 80 monstres à Gisgoul"),
         B("grotte_bworker", 6, "Le Bworker"),
         G("Furoncle de la Mama Bwork", 25, "Le dernier trophée"),
         M(6, "La nuit éternelle"),
-        R(5, "Le jugement de Djaul", "Atteindre le rang 5 d'alignement : titre « Héros de Brâkmar »")] },
+        R(10, "Le jugement de Djaul", "Atteindre le rang 10 d'alignement : titre « Héros de Brâkmar »")] },
     ],
   };
   E.ALIGN_CH_LVL = CH_LVL;

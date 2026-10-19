@@ -46,7 +46,7 @@
     return `<span class="icobox mkcons">${X().consIco(CONSUMABLES[key], true)}</span>`;
   };
   const kk = (n) => `<span class="mkpx"><span class="coin"></span> ${fmt(Math.round(n))}</span>`;
-  const blocked = (cat, key) => (cat === "eq" && ITEMS[key] && ITEMS[key].slot === "dofus") || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
+  const blocked = (cat, key) => (cat === "eq" && ITEMS[key] && (ITEMS[key].slot === "dofus" || ITEMS[key].bound)) || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
   /* 0.1.38 : plus de prix minimum (on ne vend plus au jeu). Le seul plancher est 1 kama par unité.
      La « valeur de base » (l'ancienne revente au jeu) sert de repère et de garde-fou : sous la moitié du prix moyen
      (ou de cette valeur quand rien ne s'est encore vendu), le jeu demande une confirmation. */
