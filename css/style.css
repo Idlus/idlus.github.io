@@ -5937,3 +5937,22 @@ button.pset.open{outline:1px solid var(--action)}
 .psetpc .xs{opacity:.75}
 .psetpc.on .xs{color:var(--good);opacity:1}
 .psetpc.no{opacity:.55}
+/* ailes d'alignement autour du portrait dans le chat (js/alignui.js wings) : taille selon le rang */
+.chat .msg .chw{position:relative;display:block;width:26px;height:26px;--ws:.35}
+.chat .msg .chw .cm{position:relative;z-index:1}
+.chat .msg .chw .chw-w{position:absolute;top:calc(2px - 14px * var(--ws));width:calc(30px * var(--ws) + 4px);height:calc(46px * var(--ws) + 6px);z-index:0;pointer-events:none}
+.chat .msg .chw .chw-w.l{right:15px}
+.chat .msg .chw .chw-w.r{left:15px}
+.chat .msg .chw.r2{--ws:.45}.chat .msg .chw.r3{--ws:.55}.chat .msg .chw.r4{--ws:.65}
+.chat .msg .chw.r5{--ws:.75}.chat .msg .chw.r5 .chw-w{filter:drop-shadow(0 0 3px var(--gold2))}
+.chat .msg{padding-left:10px;column-gap:14px}
+/* battement d'ailes (transformations seules : léger), un peu décalé d'un joueur à l'autre ; lueur qui respire au rang 5 */
+.chat .msg .chw.fly .chw-w.l{transform-origin:100% 30%;animation:chwL 2.6s ease-in-out infinite}
+.chat .msg .chw.fly .chw-w.r{transform-origin:0% 30%;animation:chwR 2.6s ease-in-out infinite}
+.chat .msg:nth-child(odd) .chw.fly .chw-w{animation-delay:-1.3s}
+.chat .msg:nth-child(3n) .chw.fly .chw-w{animation-duration:3.1s}
+@keyframes chwL{0%,100%{rotate:0deg}50%{rotate:14deg}}
+@keyframes chwR{0%,100%{rotate:0deg}50%{rotate:-14deg}}
+.chat .msg .chw.fly.r5 .chw-w{animation-name:chwL,chwGlow}.chat .msg .chw.fly.r5 .chw-w.r{animation-name:chwR,chwGlow}
+@keyframes chwGlow{0%,100%{filter:drop-shadow(0 0 2px var(--gold2))}50%{filter:drop-shadow(0 0 6px var(--gold2))}}
+@media (prefers-reduced-motion:reduce){.chat .msg .chw .chw-w{animation:none!important}}

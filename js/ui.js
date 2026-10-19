@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.1";
+const GAME_VERSION = "2.1.30.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.2", name: "Ailes dans le chat", guide: "alignement", items: [
+    "Chat : les ailes de son camp entourent le portrait des joueurs de Bonta et de Brâkmar, à partir du rang 1 d'alignement",
+    "Elles battent doucement et grandissent à chaque rang ; au rang 5, elles brillent (idée de Mathis). Rien ne bouge avec les animations sobres ou coupées",
+  ] },
   { v: "2.1.30.1", name: "Carnet des kamas", guide: "carnet", items: [
     "Journal › Carnet › bilan des kamas : les kamas des combats du Songe infini et de sa validation vont enfin dans « Songe infini » (avant, ils étaient comptés dans « Chasse » et « Quêtes et succès ») ; merci Akileuss",
     "Nouvelles cases : Kolizéum, Vente directe et marchand (avant dans « Hôtel de vente » ou « Quêtes »), Coffres, Ascension, Missions, Élevage, Guilde et Percepteurs, Champions et Éclats, Pluie de kamas",
@@ -11484,7 +11488,7 @@ function morphEl(o, n) {
 }
 window.DX = { get S() { return S; }, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
+window.DX.social = { soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });

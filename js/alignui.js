@@ -35,7 +35,7 @@
 
   /* ---------- données du serveur ---------- */
   const WARS = { w: -1, data: null, at: 0, busy: false, err: false };
-  const CAMP = { u: {}, p: {}, list: null, at: 0, busy: false };
+  const CAMP = { u: {}, p: {}, r: {}, list: null, at: 0, busy: false };
   function syncSide() { const s = S(); E.alignWarSet({ side: s && s.align ? s.align.side : null }); }
   async function warLoad(force) {
     const o = ONL(); if (!online() || !o.rpc || WARS.busy) return;
@@ -55,8 +55,8 @@
     try {
       const r = await db.from("lb_align").select("user_id,pseudo,side,ord,lvl,chap,main,main_lvl").order("lvl", { ascending: false }).limit(3000);
       if (r && !r.error && Array.isArray(r.data)) {
-        CAMP.u = {}; CAMP.p = {}; CAMP.list = r.data;
-        r.data.forEach((x) => { if (!SIDES.includes(x.side)) return; CAMP.u[x.user_id] = x.side; if (x.pseudo) CAMP.p[String(x.pseudo).toLowerCase()] = x.side; });
+        CAMP.u = {}; CAMP.p = {}; CAMP.r = {}; CAMP.list = r.data;
+        r.data.forEach((x) => { if (!SIDES.includes(x.side)) return; CAMP.u[x.user_id] = x.side; CAMP.r[x.user_id] = Math.min(5, Math.floor((+x.lvl || 0) / 20)); if (x.pseudo) CAMP.p[String(x.pseudo).toLowerCase()] = x.side; });
         if (window.CHAT && window.CHAT.repaint) window.CHAT.repaint();
         const ui = UI(); if (S() && ["ladder", "guild", "exp", "builds"].includes(ui.tab) && !document.querySelector("#sheet .sheet")) X().render();
       }
@@ -81,6 +81,18 @@
   function tag(u, p) {
     const side = sideOf(u, p); const A = side && E.ALIGN[side]; if (!A) return "";
     return `<i class="al-w ${short[side]}" data-tip="${A.adj}" data-n="${A.name}"><img src="assets/i/${A.badge}.png" alt="${A.name}"></i>`;
+  }
+
+  /* les ailes d'alignement autour du portrait, dans le chat : elles grandissent avec le rang (rien au rang 0, Néophyte) */
+  function rankIdx(u) {
+    const o = ONL(); const s = S(); if (o && o.user && u && u === o.user.id && s && s.align) return E.alignRankIdx(s);
+    return (u && CAMP.r[u]) || 0;
+  }
+  function wings(u, p, inner) {
+    const side = sideOf(u, p); const r = side ? rankIdx(u) : 0; const W = window.DX.social.wingSVG; if (!r || !W) return inner;
+    const w = W(side);
+    const st = (S() && S().settings) || {}; const fly = !st.reduced && (st.anim || "full") === "full" ? " fly" : ""; // battement d'ailes seulement avec les animations complètes
+    return `<span class="chw ${short[side]} r${r}${fly}" data-tip="${E.ALIGN[side].adj} · rang ${r}">${w.replace('class="orn wing"', 'class="chw-w l"')}${inner}${w.replace('class="orn wing"', 'class="chw-w r"').replace(/(<svg[^>]*>)([\s\S]*)<\/svg>/, '$1<g transform="translate(64 0) scale(-1 1)">$2</g></svg>')}</span>`;
   }
 
   /* ---------- morceaux de page ---------- */
@@ -198,5 +210,5 @@
   /* Panel Xener › Test › Essayer une nouveauté : voir le bonus du camp gagnant sans attendre la fin de la semaine */
   if (window.PANEL && window.PANEL.register) window.PANEL.register({ toggle: { id: "alwar", n: `Guerre des cités : ton camp a gagné (+${E.ALIGN_WAR_BONUS} % d'XP et de butin)`, ok: () => !!(S() && S().align), on: () => E.alignWarOn(),
     set: (v) => { const s = S(); if (v && s && s.align) E.alignWarSet({ w: E.weekIdx(), win: s.align.side, side: s.align.side }); else E.alignWarSet({ win: null }); } } });
-  window.ALIGNUI = { tag, sideOf, act, warLoad, campLoad, WARS, CAMP, html: alignHtml, isoWeek };
+  window.ALIGNUI = { tag, wings, sideOf, act, warLoad, campLoad, WARS, CAMP, html: alignHtml, isoWeek };
 })();

@@ -251,7 +251,7 @@
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
-    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${X().staffCls(m.user_id)}">${X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${X().staffCls(m.user_id)}">${window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, X().cmed(m.cls, m.lvl)) : X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {

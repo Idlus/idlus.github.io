@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.2 « Ailes dans le chat »
+
+- Chat : ALIGNUI.wings entoure le portrait (cmed) des ailes du camp (wingSVG de ui.js, exporté dans DX.social ; aile droite retournée dans le SVG), taille par rang 1 à 5 (CAMP.r lu dans lb_align, son propre rang depuis la partie), rien au rang 0 ni sans camp. Battement en CSS (classe .fly seulement avec les animations complètes, coupé par prefers-reduced-motion). Aucun changement serveur.
+
 ## 2.1.30.1 « Carnet des kamas »
 
 - Bilan des kamas du carnet (js/suivi.js) : combats du Songe marqués `x: 1` dans S.history (js/engine.js) et rangés dans « Songe infini », comme le reste du tic pendant un songe (validation). `E.carnetGain(S, k, cat)` range un gain là où il naît (marchand de secours, Kolizéum, coffres, Ascension, missions) sans double compte ; `E.carnetOp` classe les opérations du serveur (js/market.js) : vente directe, guilde, Foire, pluie, Ascension, sinon Hôtel de vente. Nouvelles cases du bilan, actions de l'Ascension enveloppées. Test tests/carnet.test.js. Pas de valeur inventée pour le passé.

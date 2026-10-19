@@ -773,7 +773,7 @@
         `Quêtes de cité : 5 chapitres de 5 étapes, aux niveaux ${V(() => E.ALIGN_CH_LVL.join(", "))}.`,
         `Changer de camp : ${N(() => E.ALIGN_SWITCH_MS / 86400000)} jours d'attente, puis le niveau d'alignement est ramené à ${N(() => E.ALIGN_SWITCH_LVL)} au plus.`,
         `**Guerre des cités** (en ligne) : missions, quêtes, donjons et avis donnent des points à ton camp ; le camp gagnant a +${N(() => E.ALIGN_WAR_BONUS * (E.ALIGN_WAR_BONUS < 1 ? 100 : 1))} % d'XP et de butin la semaine suivante.`,
-        "Les ailes d'alignement grandissent avec le rang.",
+        "Les ailes d'alignement grandissent avec le rang. Dans le chat, elles entourent aussi le portrait des joueurs de Bonta et de Brâkmar dès le rang 1, et brillent au rang 5.",
       ]],
     ] });
 
