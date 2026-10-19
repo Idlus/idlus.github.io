@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.29.3";
+const GAME_VERSION = "2.1.29.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.29.4", name: "Infobulle des runes", guide: "forgemagie", items: [
+    "Établi de forgemagie : l'infobulle d'une rune s'affiche maintenant sous la rune, pour ne plus cacher le jet actuel de la caractéristique qu'on modifie",
+  ] },
   { v: "2.1.29.3", name: "Recherche d'objet", guide: "equipement", items: [
     "Équipe et héros : en cliquant un emplacement, un champ de recherche filtre les objets par nom, par panoplie ou par caractéristique (« PA », « Vitalité »…), idée de SegFault",
     "Un clic sur l'étiquette « Pano. … » d'un objet montre sur place les pièces de la panoplie (portées, dans le sac ou pas encore obtenues) et ses bonus, sans passer par l'encyclopédie",
@@ -7194,6 +7197,7 @@ function showTip(target) {
   const r = target.getBoundingClientRect(); const w = tipEl.offsetWidth, hh = tipEl.offsetHeight;
   let x = r.left + r.width / 2 - w / 2; x = Math.max(8, Math.min(window.innerWidth - w - 8, x));
   let y = r.top - hh - 8; if (y < 8) y = r.bottom + 8;
+  if (target.dataset.tippos === "below") { y = r.bottom + 8; if (y + hh > window.innerHeight - 8 && r.top - hh - 8 >= 8) y = r.top - hh - 8; } // 2.1.29.4 : sous la rune, pour laisser voir le jet de la stat
   tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
 }
 function hideTip() { if (tipEl) tipEl.style.display = "none"; }
@@ -7503,7 +7507,7 @@ const runeW = (w) => (Math.round(w * 10) / 10).toLocaleString("fr-FR");
 function runeBtn(it, rk, q) {
   const f = E.fmInfo(S, it.uid, rk); const nm = E.runeName(rk).replace(/^Rune /, "");
   if (!f || !f.ok) return `<span class="prune off" data-tip="${h(f ? f.why : "")}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)}</span></span><span class="rv xs muted">${h(f ? f.why : "")}</span></span>`;
-  return `<button class="prune ${f.over || f.exoStat ? "risk" : ""}" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} (poids ${runeW(f.w)}) : +${f.add} → ${f.nv}. Succès critique ${ppc(f.sc)} % · succès neutre ${ppc(f.sn)} % · échec critique ${ppc(f.ec)} %${window.FORGEUI ? window.FORGEUI.hardTip(f) : ""}`)}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)} · poids ${runeW(f.w)}</span></span><span class="rv">+${f.add} → <b>${f.nv}</b></span><span class="rodd">${oddBar(f)}</span></button>`;
+  return `<button class="prune ${f.over || f.exoStat ? "risk" : ""}" data-act="fm" data-k="${rk}" data-tippos="below" data-tip="${h(`${E.runeName(rk)} (poids ${runeW(f.w)}) : +${f.add} → ${f.nv}. Succès critique ${ppc(f.sc)} % · succès neutre ${ppc(f.sn)} % · échec critique ${ppc(f.ec)} %${window.FORGEUI ? window.FORGEUI.hardTip(f) : ""}`)}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)} · poids ${runeW(f.w)}</span></span><span class="rv">+${f.add} → <b>${f.nv}</b></span><span class="rodd">${oddBar(f)}</span></button>`;
 }
 function fmStatLine(it, k) {
   const T = ITEMS[it.tpl]; const has = !!T.stats[k]; const [mn, mx] = has ? T.stats[k] : [0, 0]; const cur = it.stats[k] || 0;

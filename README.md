@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.29.4 « Infobulle des runes »
+
+- Établi de forgemagie : l'infobulle d'une rune s'affiche sous la rune (data-tippos="below" dans showTip, js/ui.js) et ne cache plus le jet actuel de la caractéristique. Demandé par Mathis.
+
 ## 2.1.29.3 « Recherche d'objet »
 
 - Choix d'un objet (Équipe et héros › clic sur un emplacement) : champ de recherche (nom, panoplie sans le mot « Panoplie », caractéristique via statOfQ) ; seule la liste #eqPick se redessine pendant la frappe (morphTo, le champ garde le focus). Idée de SegFault, précisée par Mathis.

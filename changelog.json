@@ -1,6 +1,14 @@
 {
-  "version": "2.1.29.3",
+  "version": "2.1.29.4",
   "versions": [
+    {
+      "v": "2.1.29.4",
+      "name": "Infobulle des runes",
+      "guide": "forgemagie",
+      "items": [
+        "Établi de forgemagie : l'infobulle d'une rune s'affiche maintenant sous la rune, pour ne plus cacher le jet actuel de la caractéristique qu'on modifie"
+      ]
+    },
     {
       "v": "2.1.29.3",
       "name": "Recherche d'objet",
