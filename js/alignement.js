@@ -140,9 +140,10 @@
     const A = S.align, Q = A.q, c = Q.c; const r = E.alStepRew(c); const C = E.ALIGN_CH[A.side][c];
     const st = C.steps[Q.i];
     S.kamas += r.kamas; S.tokens = S.tokens || {}; S.tokens.insignes = (S.tokens.insignes || 0) + r.ins;
-    Q.i++; Q.p = 0; E.alWarAdd(S, E.ALIGN_WAR.step);
+    const ht = st.t === "kill" || st.t === "mis" ? Math.min(1, (Q.ht || 0) / (st.n || 1)) : st.t === "boss" ? Math.min(1, Q.ht || 0) : 0; // part de l'étape faite en région tenue (Serment)
+    Q.i++; Q.p = 0; Q.ht = 0; E.alWarAdd(S, E.ALIGN_WAR.step);
     if (!quiet) note(S, `Quête de ${E.ALIGN[A.side].name} · ${st.name} : étape terminée (+${fmtK(r.kamas)} kamas, +${r.ins} insignes).`, "up");
-    E.giveAlignXp(S, r.axp);
+    E.giveAlignXp(S, r.axp, ht);
     if (Q.i >= C.steps.length) {
       const R2 = E.alChapRew(c); Q.c++; Q.i = 0; Q.p = 0; Q.done = Math.max(Q.done || 0, Q.c);
       S.kamas += R2.kamas; S.tokens.insignes += R2.ins; if (R2.chest && D.CONSUMABLES[R2.chest]) E.addCons(S, R2.chest);
@@ -209,9 +210,12 @@
     if (!S || !S.align || !S.cnt || !data) return;
     try {
       const A = E.alInit(S); const Q = A.q; const st = E.alStep(S); const open = E.alOpen(S);
-      if (type === "win" && data.sub && !data.dungeon && open && st && st.t === "kill" && st.sub === data.sub) Q.p += (data.mons || []).length;
+      const held = (sub) => (E.honHeldSub ? E.honHeldSub(S, sub) : 0);
+      if (type === "win" && data.sub && !data.dungeon && open && st && st.t === "kill" && st.sub === data.sub) { const k = (data.mons || []).length; Q.p += k; Q.ht = (Q.ht || 0) + k * held(data.sub); }
+      if (type === "dungeon" && !data.down && open && st && st.t === "boss" && st.dg === data.id) Q.ht = E.honHeldDg ? E.honHeldDg(S, data.id) : 0;
       const mq = S.cnt.alignq || 0;
-      if (mq > Q.mq) { const d = mq - Q.mq; Q.mq = mq; if (open && st && st.t === "mis") Q.p += d; E.alWarAdd(S, d * E.ALIGN_WAR.mis); }
+      if (mq > Q.mq) { const d = mq - Q.mq; Q.mq = mq; if (open && st && st.t === "mis") { Q.p += d; Q.ht = (Q.ht || 0) + (A.misHt || 0); } E.alWarAdd(S, d * E.ALIGN_WAR.mis); }
+      A.misHt = 0;
       if (type === "dungeon" && !data.down) E.alWarAdd(S, E.ALIGN_WAR.dg);
       if (type === "bounty") E.alWarAdd(S, E.ALIGN_WAR.bounty);
       if (type !== "harvest") E.alCheck(S);

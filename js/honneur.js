@@ -178,8 +178,9 @@
   E.regBonusOn = (S) => { const r = E.regOfSub(S && S.sub); return !!(r && S.align && REG.side === S.align.side && REG.held[r] === S.align.side); };
 
   /* ---------- donner ou retirer de l'honneur ---------- */
-  /* terr : honneur gagné dans une région tenue par ton camp (seul cas où le Serment compte) */
-  E.honMult = (S, terr) => 1 + (E.honTal(S, "hon") + E.honGearWar(S, "hon") + (E.honFullSet(S) ? 10 : 0) + (terr ? E.honTal(S, "oath") : 0)) / 100;
+  /* terr : part (0 à 1, ou vrai/faux) de l'activité récompensée faite dans une région tenue par ton camp, au moment où elle
+     a été faite (chaque monstre, donjon ou mission compte là où il a eu lieu, pas là où la récompense est reçue) : seul cas où le Serment compte */
+  E.honMult = (S, terr) => 1 + (E.honTal(S, "hon") + E.honGearWar(S, "hon") + (E.honFullSet(S) ? 10 : 0) + Math.max(0, Math.min(1, +terr || 0)) * E.honTal(S, "oath")) / 100;
   E.honGive = (S, n, why, raw, terr) => {
     const A = E.honInit(S); if (!A || A.pend) return 0;
     const before = E.honRankOf(A.hon);
@@ -195,8 +196,10 @@
     return v;
   };
   /* l'ancienne XP d'alignement (missions, quêtes) devient de l'honneur : 1 point pour 10 */
-  E.honHere = (S) => E.regMine(S, E.regOfSub(S && S.sub)); // tes héros chassent dans une région tenue par ton camp
-  E.giveAlignXp = (S, x) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / 10)), "alignement", false, E.honHere(S)); };
+  E.honHeldSub = (S, sub) => (E.regMine(S, E.regOfSub(sub)) ? 1 : 0);             // sous-zone dans une région tenue par ton camp
+  E.honHeldDg = (S, id) => E.honHeldSub(S, E.DUNGEON_SUB && E.DUNGEON_SUB[id]);    // donjon : la région de sa sous-zone
+  /* terr : part faite en région tenue, notée par l'appelant au moment de l'activité (avis, missions, étapes, donjons) ; 0 sinon */
+  E.giveAlignXp = (S, x, terr) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / 10)), "alignement", false, terr || 0); };
 
   /* ---------- agressions ---------- */
   E.agrTeam = (S) => {
@@ -277,7 +280,7 @@
   E.emit = (S, type, data) => {
     if (emit0) emit0(S, type, data);
     if (!S || !S.align || type !== "dungeon" || !data || data.down) return;
-    try { E.honGive(S, E.ALIGN_HON.dg, "donjon", false, E.honHere(S)); } catch (e) {}
+    try { E.honGive(S, E.ALIGN_HON.dg, "donjon", false, E.honHeldDg(S, data.id)); } catch (e) {}
   };
   const choose0 = E.chooseAlign;
   E.chooseAlign = (S, side, order) => { const had = S.align; const r = choose0(S, side, order); if (!r && S.align && !had) { S.align.hon = 0; S.align.pur = 0; E.honInit(S); } return r; };

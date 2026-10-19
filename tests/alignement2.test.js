@@ -136,9 +136,19 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
   const B = team(200); E.chooseAlign(B, "bonta", "coeur"); E.honGive(B, E.honCum(5), "", true);
   E.alignRegSet({ held: { amakna: "bonta" }, side: "bonta" }); B.sub = "ama_bworks";
   let h = B.align.hon; E.honGive(B, 100, "agression"); assert.strictEqual(B.align.hon - h, 105, "agression : talent +5 % seulement");
-  h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 115, "honneur gagné en chassant dans une région tenue : Serment");
-  B.sub = null; B.align.front = "amakna"; h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 105, "hors de la région (front seulement) : pas de Serment"); B.sub = "ama_bworks";
-  h = B.align.hon; E.alWarAdd(B, 10); assert.strictEqual(B.align.hon - h, Math.round(E.ALIGN_HON.regDay * 1.15), "région défendue : Serment");
+  h = B.align.hon; E.giveAlignXp(B, 1000, 1); assert.strictEqual(B.align.hon - h, 115, "activité faite en région tenue : Serment");
+  h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 105, "sans lieu (remise, rang) : pas de Serment, même en chassant en région tenue");
+  // le lieu de l'activité compte, pas celui où l'on reçoit la récompense (repro : scratchpad serment/repro.js)
+  const sub = (r) => Object.keys(E.SUBS).find((k) => E.regOfSub(k) === r), dgAt = (inR) => Object.keys(D.DUNGEONS).find((d) => (E.regOfSub(E.DUNGEON_SUB[d]) === "amakna") === inR && E.regOfSub(E.DUNGEON_SUB[d]));
+  const terrOf = (f) => { const g0 = E.honGive, L = []; E.honGive = (S2, n, why, raw, terr) => { if (/alignement|donjon/.test(why) && n > 0 && !raw) L.push(+terr || 0); return g0(S2, n, why, raw, terr); }; try { f(); } finally { E.honGive = g0; } return L; };
+  B.sub = sub("amakna"); assert.deepStrictEqual(terrOf(() => E.emit(B, "dungeon", { id: dgAt(false), stasis: 1, chals: [], down: 0 })), [0, 0], "donjon hors région, chasse en région tenue : pas de Serment");
+  B.sub = sub("astrub"); assert.deepStrictEqual(terrOf(() => E.emit(B, "dungeon", { id: dgAt(true), stasis: 1, chals: [], down: 0 })).sort(), [1, 1], "donjon en région tenue : Serment");
+  const key = Object.keys(D.MONSTERS)[0]; B.bounties = [{ id: "bx", key, n: 10, prog: 0, xp: 0, kamas: 0, axp: 1000 }];
+  for (let k = 0; k < 9; k++) E.emit(B, "win", { sub: sub("astrub"), mons: [{ key }] });
+  B.sub = sub("amakna"); assert.deepStrictEqual(terrOf(() => E.emit(B, "win", { sub: sub("amakna"), mons: [{ key }] })), [0.1], "avis : au prorata des monstres vaincus en région tenue");
+  { const Q = B.align.q; const ci = E.ALIGN_CH.bonta.findIndex((C) => C.steps.some((st) => st.t === "res")); Q.c = ci; Q.i = E.ALIGN_CH.bonta[ci].steps.findIndex((st) => st.t === "res"); const st = E.alStep(B); B.res[st.res] = st.n;
+    assert.deepStrictEqual(terrOf(() => E.act(B, "alGive")), [0], "remise de ressources : pas de Serment, où que l'on soit"); }
+  B.align.ag.reg = -1; h = B.align.hon; E.alWarAdd(B, 10); assert.strictEqual(B.align.hon - h, Math.round(E.ALIGN_HON.regDay * 1.15), "région défendue : Serment");
   E.alignRegSet({ held: {}, side: null });
   console.log("ok - étude PvP n° 2");
 }
