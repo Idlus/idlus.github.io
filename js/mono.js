@@ -42,7 +42,10 @@
   E.monoEnd = (S) => E.monoT0(S) + M.len;
   E.monoEternal = (S) => !!(S && S.mono && S.mono.eternel);
   E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && E.now() >= E.monoEnd(S));
-  E.monoStart = (S) => { const s = E.monoCurrent() || M.saison; S.mono = { s, t0: E.now() }; return S; };
+  /* Petites règles de saison : la Maîtrise du temps et le Dofus de quête vont avec la partie, donc repartent à chaque saison
+     (et restent dans l'Éternel) ; la réserve du Sablier commence à 3 h au lieu d'être pleine. */
+  M.sabStart = 3 * 3600;
+  E.monoStart = (S) => { const s = E.monoCurrent() || M.saison; S.mono = { s, t0: E.now() }; S.sablier = { r: M.sabStart, at: E.now(), spd: 1, open: false }; return S; };
   /* Fin de saison : les récompenses de pass et les coffres du Défi de la manche pas encore pris sont donnés, puis la partie
      passe dans l'Éternel. Renvoie ce qui a été donné (pour le message). */
   E.monoToEternal = (S) => {
@@ -86,7 +89,7 @@
   E.monoItem = (S, T) => (T && T.lvl > M.lootLvl ? M.lootHigh : M.lootLow);
 
   /* dans le jeu (une partie par page) : la partie Monocompte limite l'équipe à 1 héros et les emplacements de Dofus à 3 */
-  E.monoBoot = (S) => { if (!E.isMono(S)) return; E.HERO_MAX = 1; E.TEAM_MAX = 1; if (DOFUS_SLOTS.length > M.dofus) DOFUS_SLOTS.splice(M.dofus); };
+  E.monoBoot = (S) => { if (!E.isMono(S)) return; E.HERO_MAX = 1; E.TEAM_MAX = 1; if (E.KOLI) E.KOLI.size = 1; /* Kolizéum en 1 contre 1 */ if (DOFUS_SLOTS.length > M.dofus) DOFUS_SLOTS.splice(M.dofus); };
   /* le héros unique : pas de recrutement */
   const recruit0 = E.recruit;
   E.recruit = function (S) { if (E.isMono(S)) return "Monocompte : un seul héros par saison."; return recruit0.apply(this, arguments); };
@@ -95,6 +98,7 @@
   const equip0 = E.equip;
   E.equip = function (S, cid, uid, slot) {
     const it = E.isMono(S) && S.items[uid];
+    if (it && it.merc && !quiet) { const c = S.chars.find((x) => x.id === cid); if (c && !c.merc) return "Cet objet appartient au mercenaire."; }
     if (it && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus") {
       const c = S.chars.find((x) => x.id === cid);
       const ok = E.monoDofusSlots(S);
@@ -164,7 +168,8 @@
     return E.enterDungeon(S, did, stasis);
   };
   E.monoMercClear = (S) => {
-    S.chars.filter((c) => c.merc).forEach((c) => { Object.values(c.equip || {}).forEach((u) => { if (S.items[u] && S.items[u].merc) delete S.items[u]; }); });
+    Object.keys(S.items || {}).forEach((u) => { if (S.items[u].merc) delete S.items[u]; }); // même un objet du mercenaire déséquipé en route
+    S.chars.forEach((c) => { if (!c.merc) Object.keys(c.equip || {}).forEach((sl) => { if (!S.items[c.equip[sl]]) delete c.equip[sl]; }); });
     S.chars = S.chars.filter((c) => !c.merc); if (S.mono) delete S.mono.merc;
   };
   /* le mercenaire repart dès que le donjon est fini (ou quitté) */
@@ -257,5 +262,20 @@
     return null;
   };
   const gs0 = E.gatherSpeed;
+  /* Kolizéum en 1 contre 1 (E.KOLI.size = 1 au démarrage d'une partie Monocompte) : réglage par classe, en % de PV et de dégâts,
+     pour que chaque classe gagne à peu près un combat sur deux (tools/sweep_koli_mono.js). */
+  /* tools/sweep_koli_mono.js du 19/10 (niveau 200, 19 classes, 20 fantômes par classe) : 46 à 53 % de victoires selon la classe, 34 à 61 %
+     sur d'autres fantômes (l'équipement tiré compte beaucoup), contre 6 à 93 % sans réglage. À revoir avec les vrais combats du serveur. */
+  M.koli = { cls: { iop: -29, cra: -17, eni: 10, feca: -26, osa: -21, enu: -1, sram: 53, xelor: 63, eca: -3, sadi: 4, sacri: -32, panda: -28, roub: 97, zobal: -37, steam: -6, elio: -15, hupper: 50, ougi: -30, forge: -19 } };
+  const ks0 = E.koliSetup;
+  E.koliSetup = function (A, B) {
+    const S2 = ks0.apply(this, arguments);
+    if (E.KOLI && E.KOLI.size === 1 && A && B && A.length === 1 && B.length === 1 && S2 && S2.fight) S2.fight.ents.forEach((e) => { if (e.summon) return;
+      const k = M.koli.cls[e.cls] || 0; if (!k) return; e.hpMax = e.hp = e.hpBase = Math.round(e.hpBase * (1 + k / 100)); e.dmgBonus = (e.dmgBonus || 0) + k; });
+    return S2;
+  };
+  // Sablier coupé en groupe en direct (S.mono.live, posé par le serveur Monocompte) : tout le groupe joue à la même vitesse
+  const spend0 = E.sabSpend;
+  E.sabSpend = function (S) { if (S && S.mono && S.mono.live) return 1; return spend0.apply(this, arguments); };
   E.gatherSpeed = function (S) { return gs0.apply(this, arguments) * (E.isMono(S) ? M.jobs.gather : 1); };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -5,7 +5,7 @@
 const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
-require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/alignement.js"); require("../js/wboss.js"); require("../js/mono.js"); require("../js/monopass.js");
+require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/alignement.js"); require("../js/wboss.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/mono.js"); require("../js/monopass.js");
 const D = require("../js/data.js");
 
 let seed = 4242;
@@ -225,5 +225,19 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   now += 57 * 86400000; assert.strictEqual(E.monoCurrent(), null, "entre deux saisons"); assert.ok(E.monoOver(N));
   E.MONO.saisons[1].debut = null;
   console.log("ok - fin de saison et Éternel");
+}
+// 12. Petites règles de saison.
+{
+  now = Date.UTC(2030, 4, 1, 12, 0);
+  const S = E.monoStart(E.newState("Regles", "iop")); E.monoBoot(S);
+  assert.strictEqual(Math.round(E.sab(S).r), 3 * 3600, "réserve du Sablier à 3 h"); assert.strictEqual(E.sabMtLvl(S), 1, "Maîtrise du temps au niveau 1");
+  assert.strictEqual(E.KOLI.size, 1, "Kolizéum en 1 contre 1");
+  S.sablier.open = true; S.sablier.spd = 3; S.hunting = true; S.dungeon = { id: "x" }; assert.strictEqual(E.sabSpend(S, 1000), 3);
+  S.mono.live = 1; assert.strictEqual(E.sabSpend(S, 1000), 1, "pas de Sablier en groupe en direct"); S.dungeon = null; S.mono.live = 0;
+  const A = E.koliGhost(11, 200, 1), B = E.koliGhost(29, 200, 1); const W = E.koliWatch(A, B, 3);
+  const k = E.MONO.koli.cls[A[0].cls] || 0; assert.strictEqual(W.S2.fight.ents.filter((e) => e.tm === 0 && !e.summon)[0].dmgBonus || 0, k, "réglage 1 contre 1 appliqué");
+  const r = E.koliSim(A, B, 5); assert.ok(r && typeof r.win === "boolean");
+  E.KOLI.size = 3; E.HERO_MAX = 19; E.TEAM_MAX = 8;
+  console.log("ok - petites règles de saison");
 }
 console.log("Monocompte : tout est bon");
