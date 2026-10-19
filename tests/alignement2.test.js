@@ -75,7 +75,7 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
   assert.ok(/déjà/.test(E.act(S, "honBuy", "cape")));
   const its = Object.values(S.items).filter((it) => D.ITEMS[it.tpl].bound); assert.strictEqual(its.length, 5); assert.ok(its.every((it) => it.locked), "verrouillées (pas de vente)");
   const c = S.chars[0]; its.forEach((it) => E.equip(S, c.id, it.uid, D.ITEMS[it.tpl].slot === "anneau" ? "anneau1" : D.ITEMS[it.tpl].slot));
-  assert.ok(E.honFullSet(S), "panoplie complète"); assert.strictEqual(E.honGearWar(S, "agr"), 8); assert.strictEqual(E.honGearWar(S, "def"), 8); assert.strictEqual(E.honGearWar(S, "hon"), 3);
+  assert.ok(E.honFullSet(S), "panoplie complète"); assert.strictEqual(E.honGearWar(S, "agr"), 4); assert.strictEqual(E.honGearWar(S, "def"), 4); assert.strictEqual(E.honGearWar(S, "hon"), 3);
   const m = E.honMult(S); assert.ok(Math.abs(m - (1 + (5 + 3 + 10) / 100)) < 1e-9, "talent 5 % + coiffe 3 % + panoplie 10 %");
   console.log("ok - Arsenal de la cité");
 }
@@ -111,12 +111,36 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
   assert.ok(S.align.hon >= h0 + L[1].hon - E.ALIGN_HON.agrLoss);
   assert.ok(E.agrFight(S, 1).err, "une seule fois par équipe et par jour");
   const r = E.agrFight(S, 2); assert.ok(!r.err && typeof r.win === "boolean", "un vrai combat");
-  S.align.ag.n = E.ALIGN_HON.agrDay; assert.ok(E.agrFight(S, 3).err, "10 par jour");
+  S.align.ag.n = E.ALIGN_HON.agrDay; assert.strictEqual(E.ALIGN_HON.agrDay, 5); assert.ok(E.agrFight(S, 3).err, "5 par jour");
   now += 86400000; assert.ok(!E.agrFight(S, 3).err, "le lendemain, on recommence");
   // défenses : perdre ne coûte rien
   const T = team(200); E.chooseAlign(T, "brakmar", "coeur"); E.honInit(T); E.honDefTick(T); const hh = T.align.hon;
   now += E.ALIGN_HON.defEvery + 1; const d = E.honDefTick(T); assert.ok(d && (d.won ? T.align.hon > hh : T.align.hon === hh), "défense : gain ou rien");
   console.log("ok - agressions et défenses");
+}
+
+// 8. Étude PvP n° 2 (1A 2A 3A 4A 5A) : fantômes modérés, panoplies V5, lignes de guerre à 2 %, 5 agressions, Serment sur place.
+{
+  const S = team(200); E.chooseAlign(S, "bonta", "coeur");
+  assert.deepStrictEqual(E.agrTargets(S).map((t) => t.m), [-0.3, -0.2, -0.1, 0, 0.15], "niveau 200 : renfort −30 % à +15 %");
+  for (const L of [50, 100, 150, 199]) { const T = team(L); E.chooseAlign(T, "bonta", "coeur"); assert.deepStrictEqual(E.agrTargets(T).map((t) => t.m), [-0.3, -0.2, -0.1, 0, 0], `niveau ${L} : pas de renfort positif`); }
+  const T4 = E.agrTargets(S)[4], g0 = E.koliGhost(T4.seed, T4.lvl, T4.n), g1 = E.agrGhost(T4);
+  g0.forEach((h, k) => { assert.strictEqual(g1[k].st.hpMax, Math.round(h.st.hpMax * 1.15)); assert.ok(Math.abs(g1[k].st.dsort - ((h.st.dsort || 0) + 15)) < 1e-9); });
+  const T0 = E.agrTargets(S)[0]; assert.strictEqual(E.agrGhost(T0)[0].st.hpMax, Math.round(E.koliGhost(T0.seed, T0.lvl, T0.n)[0].st.hpMax * 0.7));
+  assert.deepStrictEqual(D.SETS.milice_b.bonus[5], { vit: 400, pui: 40, do: 5, rn: 7, rt: 7, rf: 7, re: 7, ra: 7 });
+  assert.deepStrictEqual(D.SETS.milice_k.bonus[5], { pui: 50, do: 8, cri: 3 }); assert.deepStrictEqual(D.SETS.milice_k.bonus[3], { pui: 30, cri: 3 });
+  E.HON_GEAR.bonta.forEach((id) => { assert.deepStrictEqual(D.ITEMS[id].stats.pui, [12, 18]); assert.deepStrictEqual(D.ITEMS[id].stats.do, [3, 5]); });
+  assert.deepStrictEqual(D.ITEMS.hon_brakmar_anneau.stats.do, [7, 11], "Brâkmar : dommages ×1,5 puis ×0,75");
+  E.HON_GEAR_SLOTS.forEach((sl, i) => { const w = D.ITEMS[E.HON_GEAR.bonta[i]].war; assert.strictEqual(w.v, w.k === "hon" ? 3 : 2); });
+  // Serment : seulement l'honneur gagné dans une région tenue (région défendue, donjons), pas les agressions
+  const B = team(200); E.chooseAlign(B, "bonta", "coeur"); E.honGive(B, E.honCum(5), "", true);
+  E.alignRegSet({ held: { amakna: "bonta" }, side: "bonta" }); B.sub = "ama_bworks";
+  let h = B.align.hon; E.honGive(B, 100, "agression"); assert.strictEqual(B.align.hon - h, 105, "agression : talent +5 % seulement");
+  h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 115, "honneur gagné en chassant dans une région tenue : Serment");
+  B.sub = null; B.align.front = "amakna"; h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 105, "hors de la région (front seulement) : pas de Serment"); B.sub = "ama_bworks";
+  h = B.align.hon; E.alWarAdd(B, 10); assert.strictEqual(B.align.hon - h, Math.round(E.ALIGN_HON.regDay * 1.15), "région défendue : Serment");
+  E.alignRegSet({ held: {}, side: null });
+  console.log("ok - étude PvP n° 2");
 }
 
 console.log("alignement2.test.js : tout est bon");

@@ -5,7 +5,8 @@
      l'Arsenal de la cité). 20 rangs : 300 points pour le rang 1, puis +15 % par rang.
      L'ancien niveau d'alignement (0 à 100, 5 rangs) devient de l'honneur : niveau 100 = rang 10 (migration E.VERSION 14).
    - 5 talents par ordre, un par rang de 1 à 5. Le 5e, « Serment de Menalt » (Bonta) ou « Serment de Djaul » (Brâkmar) :
-     +10 % d'honneur et de points de guerre dans les régions tenues par ton camp.
+     +10 % de points de guerre dans les régions tenues par ton camp, et d'honneur gagné en y chassant (hors agressions et défenses) ;
+     l'honneur des agressions et des défenses n'est pas concerné, ni celui gagné hors d'une région tenue (étude PvP n° 2, choix 5A).
    - Arsenal de la cité : 5 équipements de rang niveau 200 (coiffe, cape, anneau, amulette, bottes), un par rang de 6 à 10,
      payés en honneur, liés au compte (ni HdV ni échange). Panoplie « Milice de Bonta » / « Milice de Brâkmar ».
    - Régions de la carte (remplacent la guerre de la semaine) : les points de guerre vont à la région où chassent tes héros
@@ -61,19 +62,19 @@
       { n: { bonta: "Riposte bénie", brakmar: "Lame impie" }, d: "+6 % de dégâts en agression", k: "agr", v: 6 },
       { n: { bonta: "Bannière de Bonta", brakmar: "Étendard de Brâkmar" }, d: "+5 % d'honneur gagné", k: "hon", v: 5 },
       { n: { bonta: "Rempart", brakmar: "Peau de Djaul" }, d: "−8 % de dégâts reçus en défense", k: "def", v: 8 },
-      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % d'honneur et de points de guerre dans les régions tenues par ton camp", k: "oath", v: 10 } ],
+      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % de points de guerre dans les régions tenues par ton camp, et d'honneur gagné en y chassant (hors agressions et défenses)", k: "oath", v: 10 } ],
     esprit: [
       { n: { bonta: "Sagesse de Jiva", brakmar: "Savoir d'Hécate" }, d: "+4 % d'expérience", k: "xp", v: 4 },
       { n: { bonta: "Parchemin de lumière", brakmar: "Grimoire des douleurs" }, d: "+6 % de dégâts en agression", k: "agr", v: 6 },
       { n: { bonta: "Bannière de Bonta", brakmar: "Étendard de Brâkmar" }, d: "+5 % d'honneur gagné", k: "hon", v: 5 },
       { n: { bonta: "Sceau protecteur", brakmar: "Sceau des tortures" }, d: "−8 % de dégâts reçus en défense", k: "def", v: 8 },
-      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % d'honneur et de points de guerre dans les régions tenues par ton camp", k: "oath", v: 10 } ],
+      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % de points de guerre dans les régions tenues par ton camp, et d'honneur gagné en y chassant (hors agressions et défenses)", k: "oath", v: 10 } ],
     oeil: [
       { n: { bonta: "Regard de Silvosse", brakmar: "Œil de Brumaire" }, d: "+4 % de butin", k: "drop", v: 4 },
       { n: { bonta: "Coup de l'ombre", brakmar: "Frappe sournoise" }, d: "+6 % de dégâts en agression", k: "agr", v: 6 },
       { n: { bonta: "Bannière de Bonta", brakmar: "Étendard de Brâkmar" }, d: "+5 % d'honneur gagné", k: "hon", v: 5 },
       { n: { bonta: "Leurre", brakmar: "Voile des ombres" }, d: "−8 % de dégâts reçus en défense", k: "def", v: 8 },
-      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % d'honneur et de points de guerre dans les régions tenues par ton camp", k: "oath", v: 10 } ],
+      { n: { bonta: "Serment de Menalt", brakmar: "Serment de Djaul" }, d: "+10 % de points de guerre dans les régions tenues par ton camp, et d'honneur gagné en y chassant (hors agressions et défenses)", k: "oath", v: 10 } ],
   };
   E.honTalents = (S) => { const A = S && S.align; if (!A) return []; const r = E.alignRankIdx(S); return (E.ALIGN_TAL[A.order] || E.ALIGN_TAL.coeur).slice(0, Math.min(5, r)); };
   E.honTal = (S, k) => E.honTalents(S).filter((t) => t.k === k).reduce((a, t) => a + t.v, 0);
@@ -81,17 +82,19 @@
   /* ---------- équipements de rang (Arsenal de la cité) ---------- */
   E.HON_GEAR_SLOTS = ["coiffe", "cape", "anneau", "amulette", "bottes"];
   E.HON_GEAR_COST = [1500, 2000, 2500, 3000, 4000];
-  const WAR_LINE = { coiffe: { k: "hon", v: 3, d: "+3 % d'honneur gagné" }, cape: { k: "def", v: 4, d: "−4 % de dégâts reçus en défense" },
-    anneau: { k: "agr", v: 4, d: "+4 % de dégâts en agression" }, amulette: { k: "agr", v: 4, d: "+4 % de dégâts en agression" }, bottes: { k: "def", v: 4, d: "−4 % de dégâts reçus en défense" } };
+  const WAR_LINE = { coiffe: { k: "hon", v: 3, d: "+3 % d'honneur gagné" }, cape: { k: "def", v: 2, d: "−2 % de dégâts reçus en défense" },
+    anneau: { k: "agr", v: 2, d: "+2 % de dégâts en agression" }, amulette: { k: "agr", v: 2, d: "+2 % de dégâts en agression" }, bottes: { k: "def", v: 2, d: "−2 % de dégâts reçus en défense" } };
+  // 3A : +2 % / −2 % par pièce, sans plafond (étude PvP n° 2)
   const GEAR = {
     bonta: { set: "milice_b", names: ["Heaume de la Milice de Bonta", "Cape de la Milice de Bonta", "Anneau de la Milice de Bonta", "Amulette de la Milice de Bonta", "Bottes de la Milice de Bonta"],
       icons: [16693, 17214, 9211, 1181, 11180],
-      st: [{ vit: [281, 330], fo: [36, 50], ine: [36, 50], cha: [36, 50], age: [36, 50], sa: [26, 35], cri: [2, 3], re: [6, 8], ra: [6, 8], rn: [6, 8] },
-           { vit: [231, 280], fo: [31, 40], ine: [31, 40], cha: [31, 40], age: [31, 40], sa: [26, 35], cri: [2, 3], rt: [6, 8], rf: [6, 8] },
-           { vit: [181, 230], sa: [26, 35], pui: [21, 30], cri: [2, 3], so: [5, 7], rn: [5, 7], re: [5, 7] },
-           { vit: [231, 280], fo: [26, 35], ine: [26, 35], cha: [26, 35], age: [26, 35], sa: [26, 35], pa: [1, 1], so: [5, 7], ra: [5, 7] },
-           { vit: [231, 280], fo: [26, 35], ine: [26, 35], cha: [26, 35], age: [26, 35], sa: [26, 35], pm: [1, 1], rt: [5, 7], rf: [5, 7] }] },
-    brakmar: { set: "milice_k", names: ["Heaume de la Milice de Brâkmar", "Cape de la Milice de Brâkmar", "Anneau de la Milice de Brâkmar", "Amulette de la Milice de Brâkmar", "Bottes de la Milice de Brâkmar"],
+      st: [{ vit: [281, 330], fo: [36, 50], ine: [36, 50], cha: [36, 50], age: [36, 50], sa: [26, 35], cri: [2, 3], re: [6, 8], ra: [6, 8], rn: [6, 8], pui: [8, 12], do: [2, 3] },
+           { vit: [231, 280], fo: [31, 40], ine: [31, 40], cha: [31, 40], age: [31, 40], sa: [26, 35], cri: [2, 3], rt: [6, 8], rf: [6, 8], pui: [8, 12], do: [2, 3] },
+           { vit: [181, 230], sa: [26, 35], pui: [8, 12], cri: [2, 3], so: [5, 7], rn: [5, 7], re: [5, 7], do: [2, 3] },
+           { vit: [231, 280], fo: [26, 35], ine: [26, 35], cha: [26, 35], age: [26, 35], sa: [26, 35], pa: [1, 1], so: [5, 7], ra: [5, 7], pui: [8, 12], do: [2, 3] },
+           { vit: [231, 280], fo: [26, 35], ine: [26, 35], cha: [26, 35], age: [26, 35], sa: [26, 35], pm: [1, 1], rt: [5, 7], rf: [5, 7], pui: [8, 12], do: [2, 3] }] },
+    brakmar: { set: "milice_k", doMul: 0.75, // 2A, variante V5 : dommages des pièces ×0,75 (après le ×1,5)
+      names: ["Heaume de la Milice de Brâkmar", "Cape de la Milice de Brâkmar", "Anneau de la Milice de Brâkmar", "Amulette de la Milice de Brâkmar", "Bottes de la Milice de Brâkmar"],
       icons: [16292, 17259, 9212, 1225, 11215],
       st: [{ vit: [251, 300], fo: [36, 50], ine: [36, 50], cha: [36, 50], age: [36, 50], sa: [26, 35], cri: [3, 4], dn: [6, 9], dt: [6, 9], df: [6, 9], de: [6, 9], da: [6, 9] },
            { vit: [201, 250], fo: [31, 40], ine: [31, 40], cha: [31, 40], age: [31, 40], sa: [26, 35], cri: [2, 3], do: [5, 7], pp: [8, 12] },
@@ -102,10 +105,11 @@
   E.HON_GEAR = {}; E.HON_GEAR_POW = 1.5;
   for (const side in GEAR) {
     const G = GEAR[side];
-    SETS[G.set] = { name: side === "bonta" ? "Milice de Bonta" : "Milice de Brâkmar", bonus: side === "bonta" ? { 3: { vit: 150, ra: 5 }, 5: { vit: 300, pui: 30, rn: 5, rt: 5 } } : { 3: { pui: 30, cri: 3 }, 5: { pui: 60, do: 10, cri: 3 } }, size: 5 };
+    SETS[G.set] = { name: side === "bonta" ? "Milice de Bonta" : "Milice de Brâkmar", bonus: side === "bonta" ? { 3: { vit: 200, ra: 5, pui: 30 }, 5: { vit: 400, pui: 40, do: 5, rn: 7, rt: 7, rf: 7, re: 7, ra: 7 } } : { 3: { pui: 30, cri: 3 }, 5: { pui: 50, do: 8, cri: 3 } }, size: 5 }; // 2A : V5
     E.HON_GEAR[side] = E.HON_GEAR_SLOTS.map((slot, i) => {
       const id = `hon_${side}_${slot}`;
-      const st = {}; for (const k in G.st[i]) st[k] = k === "pa" || k === "pm" ? G.st[i][k] : G.st[i][k].map((v) => Math.round(v * E.HON_GEAR_POW)); // réglé par simulation : un peu sous le meilleur butin de donjon
+      const st = {}; for (const k in G.st[i]) st[k] = k === "pa" || k === "pm" ? G.st[i][k] : G.st[i][k].map((v) => Math.round(v * E.HON_GEAR_POW));
+      if (G.doMul && st.do) st.do = st.do.map((v) => Math.round(v * G.doMul)); // réglé par simulation : un peu sous le meilleur butin de donjon
       ITEMS[id] = { name: G.names[i], icon: G.icons[i], slot, lvl: 200, stats: st, set: G.set, hidden: true, noDrop: true, bound: true, rarity: "epique", war: WAR_LINE[slot], src: `Arsenal de ${E.ALIGN[side].name} (rang ${6 + i}, ${fmtK(E.HON_GEAR_COST[i])} honneur)` };
       return id;
     });
@@ -147,7 +151,7 @@
   E.ALIGN_REG_FLIP = 70;      // % des points de la semaine pour faire changer une région de camp
   E.ALIGN_REG_BONUS = 5;      // +5 % d'XP et de butin dans une région tenue par ton camp
   E.ALIGN_WAR = Object.assign(E.ALIGN_WAR || {}, { agr: 20, def: 5 });
-  E.ALIGN_HON = { mis: 15, step: 30, chap: 80, dg: 2, regDay: 25, agrMin: 40, agrMax: 120, agrLoss: 20, def: 20, agrDay: 10, defDay: 3, defEvery: 4 * 3600000 };
+  E.ALIGN_HON = { mis: 15, step: 30, chap: 80, dg: 2, regDay: 25, agrMin: 40, agrMax: 120, agrLoss: 20, def: 20, agrDay: 5, defDay: 3, defEvery: 4 * 3600000 };
   const REG = { held: {}, gauge: {}, side: null, at: 0 };
   E.alignRegSet = (o) => { if (o && o.held) REG.held = o.held; if (o && o.gauge) REG.gauge = o.gauge; if (o && "side" in o) REG.side = o.side; REG.at = E.now(); };
   E.alignRegState = () => REG;
@@ -164,7 +168,7 @@
     reg = reg || E.regNow(S); if (E.regMine(S, reg)) n *= 1 + E.honTal(S, "oath") / 100;
     const v = Math.max(0, Math.min(E.ALIGN_WAR.cap - A.war.p, Math.round(n))); if (!v) return 0;
     A.war.p += v; A.war.rg = A.war.rg || {}; A.war.rg[reg] = (A.war.rg[reg] || 0) + v;
-    if (E.regMine(S, reg) && A.ag.reg !== A.ag.d) { A.ag.reg = A.ag.d; E.honGive(S, E.ALIGN_HON.regDay, `région défendue (${E.ALIGN_REG[reg]})`); }
+    if (E.regMine(S, reg) && A.ag.reg !== A.ag.d) { A.ag.reg = A.ag.d; E.honGive(S, E.ALIGN_HON.regDay, `région défendue (${E.ALIGN_REG[reg]})`, false, true); }
     return v;
   };
   E.alignWarOn = () => false; // l'ancien bonus de la semaine est remplacé par celui des régions
@@ -174,11 +178,12 @@
   E.regBonusOn = (S) => { const r = E.regOfSub(S && S.sub); return !!(r && S.align && REG.side === S.align.side && REG.held[r] === S.align.side); };
 
   /* ---------- donner ou retirer de l'honneur ---------- */
-  E.honMult = (S) => 1 + (E.honTal(S, "hon") + E.honGearWar(S, "hon") + (E.honFullSet(S) ? 10 : 0) + (E.regMine(S, E.regNow(S)) ? E.honTal(S, "oath") : 0)) / 100;
-  E.honGive = (S, n, why, raw) => {
+  /* terr : honneur gagné dans une région tenue par ton camp (seul cas où le Serment compte) */
+  E.honMult = (S, terr) => 1 + (E.honTal(S, "hon") + E.honGearWar(S, "hon") + (E.honFullSet(S) ? 10 : 0) + (terr ? E.honTal(S, "oath") : 0)) / 100;
+  E.honGive = (S, n, why, raw, terr) => {
     const A = E.honInit(S); if (!A || A.pend) return 0;
     const before = E.honRankOf(A.hon);
-    let v = n > 0 && !raw ? Math.round(n * E.honMult(S)) : Math.round(n);
+    let v = n > 0 && !raw ? Math.round(n * E.honMult(S, terr)) : Math.round(n);
     if (v < 0) v = -Math.min(A.hon - E.honCum(before), -v); // une défaite ne fait jamais perdre un rang
     A.hon += v; if (v > 0) A.pur += v; else A.pur = Math.max(0, A.pur + v);
     const after = E.honRankOf(A.hon); A.lvl = Math.min(100, after * 5);
@@ -190,7 +195,8 @@
     return v;
   };
   /* l'ancienne XP d'alignement (missions, quêtes) devient de l'honneur : 1 point pour 10 */
-  E.giveAlignXp = (S, x) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / 10)), "alignement"); };
+  E.honHere = (S) => E.regMine(S, E.regOfSub(S && S.sub)); // tes héros chassent dans une région tenue par ton camp
+  E.giveAlignXp = (S, x) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / 10)), "alignement", false, E.honHere(S)); };
 
   /* ---------- agressions ---------- */
   E.agrTeam = (S) => {
@@ -200,11 +206,17 @@
   const teamLvl = (S) => { const ids = E.agrTeam(S); const L = ids.map((id) => S.chars.find((c) => c.id === id).lvl); return L.length ? Math.round(L.reduce((a, b) => a + b, 0) / L.length) : 1; };
   const GH = ["Sombrelune", "Rubis", "Krâne-Noir", "Vespera", "Ombrage", "Lamebrune", "Aube-Claire", "Clairon", "Fiel", "Brasier", "Pâle-Lys", "Givrelame"];
   /* les cibles du jour : 5 équipes fantômes du camp adverse, niveau proche du tien */
+  /* 1A, fantômes « modéré » : renfort m par cible (PV ×(1+m), dommages +100 m %, comme boosted() dans alliance.js) ;
+     le renfort positif de la Difficile ne s'ajoute qu'au niveau 200, quand le décalage de niveau ne joue plus. Défenses : aucun. */
+  E.AGR_BOOST = [-0.3, -0.2, -0.1, 0, 0.15];
+  E.agrBoostOf = (i, lvl) => { const m = E.AGR_BOOST[i] || 0; return m > 0 && lvl < 200 ? 0 : m; };
+  E.agrGhost = (T) => { const G = E.koliGhost(T.seed, T.lvl, T.n); const m = T.m || 0; if (!m) return G;
+    return G.map((h) => { const st = Object.assign({}, h.st); st.hpMax = Math.round(st.hpMax * (1 + m)); st.dsort = (st.dsort || 0) + m * 100; return Object.assign({}, h, { st }); }); };
   E.agrTargets = (S) => {
     const A = E.honInit(S); if (!A) return []; const d = A.ag.d; const L = teamLvl(S); const foe = A.side === "bonta" ? "brakmar" : "bonta";
     return [[-6, 2, 0.6], [-2, 3, 0.8], [0, 3, 1], [3, 3, 1.2], [6, 3, 1.5]].map(([dl, n, m], i) => {
       const seed = (d * 97 + i * 13 + (A.side === "bonta" ? 1 : 2)) >>> 0;
-      return { i, seed, lvl: Math.max(30, Math.min(200, L + dl)), n, side: foe, name: GH[(d + i * 5) % GH.length], rank: 1 + ((d + i * 7) % 19),
+      return { i, seed, lvl: Math.max(30, Math.min(200, L + dl)), n, m: E.agrBoostOf(i, L), side: foe, name: GH[(d + i * 5) % GH.length], rank: 1 + ((d + i * 7) % 19),
         hon: Math.round(E.ALIGN_HON.agrMin + (E.ALIGN_HON.agrMax - E.ALIGN_HON.agrMin) * (m - 0.6) / 0.9), diff: ["Facile", "Facile", "Serré", "Serré", "Difficile"][i] };
     });
   };
@@ -217,7 +229,7 @@
     const T = E.agrTargets(S)[i]; if (!T) return { err: "Cible inconnue." };
     if ((A.ag.done || []).includes(i) && A.ag.dd === A.ag.d) return { err: "Cette équipe a déjà été combattue aujourd'hui." };
     const ids = E.agrTeam(S); if (!ids.length) return { err: "Il te faut une équipe." };
-    const me = E.koliSnap(S, ids); const foe = E.koliGhost(T.seed, T.lvl, T.n);
+    const me = E.koliSnap(S, ids); const foe = E.agrGhost(T);
     const dmg = E.honTal(S, "agr") + E.honGearWar(S, "agr");
     const seed = (T.seed * 31 + A.ag.n * 7 + 5) >>> 0;
     const W = E.koliWatch(me, foe, seed, { label: "Agression" }); boost(W.S2, 0, dmg, 0);
@@ -265,7 +277,7 @@
   E.emit = (S, type, data) => {
     if (emit0) emit0(S, type, data);
     if (!S || !S.align || type !== "dungeon" || !data || data.down) return;
-    try { E.honGive(S, E.ALIGN_HON.dg, "donjon"); } catch (e) {}
+    try { E.honGive(S, E.ALIGN_HON.dg, "donjon", false, E.honHere(S)); } catch (e) {}
   };
   const choose0 = E.chooseAlign;
   E.chooseAlign = (S, side, order) => { const had = S.align; const r = choose0(S, side, order); if (!r && S.align && !had) { S.align.hon = 0; S.align.pur = 0; E.honInit(S); } return r; };
