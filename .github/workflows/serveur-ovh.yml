@@ -238,6 +238,7 @@ jobs:
             (select coalesce(json_agg(x), '[]') from (select j.day, j.at, j.data from public.saves_jour j where j.user_id = p.id) x) as jours
             from public.profiles p left join public.saves s on s.user_id = p.id where lower(p.pseudo) = lower('$p')" > "$f"
           node tools/enquete_joueur.js "$f"
+          node tools/enquete_dofus.js "$f"
           rm -f "$f"
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
