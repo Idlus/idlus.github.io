@@ -517,6 +517,7 @@ nav.main button[aria-current="page"],:root[data-theme="dark"] nav.main button[ar
 .setbox .st b{min-width:54px}
 .setbox .st.off{opacity:.45;font-style:italic} /* 1.0.12.8 : paliers impossibles (pièces absentes du jeu) */
 .setbox .st.fine{opacity:1;color:#7cc8ff}.setbox .cfine{font-size:10px;font-weight:700;color:#7cc8ff;border:1px solid rgba(124,200,255,.5);border-radius:6px;padding:0 5px;white-space:nowrap} /* 2.1.30.10 : palier débloqué par la Couture fine */
+.cfine-t{color:#7cc8ff}
 
 /* métiers */
 .joblogo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid var(--gold);flex:none}
@@ -3527,7 +3528,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .kzw .chalbar,.kzw #await{display:none}
 
 .pset{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--panel3);color:var(--ink);margin-left:4px}
-.pset.on{background:var(--action);color:var(--action-ink)}
+.pset.on{background:var(--action);color:var(--action-ink)}.pset.on.cf{background:#7cc8ff;color:#0d1a26} /* 2.1.30.11 : bonus débloqué grâce à la Couture fine */
 .li.pbest{background:color-mix(in srgb,var(--action) 12%,transparent)}
 .li.plow{opacity:.6}
 .pmore{border-top:1px solid var(--line)}
