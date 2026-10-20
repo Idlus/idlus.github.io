@@ -516,6 +516,7 @@ nav.main button[aria-current="page"],:root[data-theme="dark"] nav.main button[ar
 .setbox .st{display:flex;gap:6px;align-items:baseline;opacity:.55}.setbox .st.on{opacity:1;color:var(--good)}
 .setbox .st b{min-width:54px}
 .setbox .st.off{opacity:.45;font-style:italic} /* 1.0.12.8 : paliers impossibles (pièces absentes du jeu) */
+.setbox .st.fine{opacity:1;color:#7cc8ff}.setbox .cfine{font-size:10px;font-weight:700;color:#7cc8ff;border:1px solid rgba(124,200,255,.5);border-radius:6px;padding:0 5px;white-space:nowrap} /* 2.1.30.10 : palier débloqué par la Couture fine */
 
 /* métiers */
 .joblogo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid var(--gold);flex:none}

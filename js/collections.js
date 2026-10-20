@@ -29,7 +29,7 @@
     { n: 40, k: "retouche", u: 1, name: "Retouche", txt: "Retouche : changer de tenue sans rien perdre, une pièce vendue ou brisée est remplacée par une autre copie du sac" },
     { n: 60, k: "drop", v: 2, txt: "+2 % de butin" },
     { n: 80, k: "kamas", v: 3, txt: "+3 % de kamas en chasse" },
-    { n: 100, k: "fine", u: 1, name: "Couture fine", txt: "Couture fine : il manque 1 pièce, le bonus complet reste (panoplies de 3 pièces et plus)" },
+    { n: 100, k: "fine", u: 1, name: "Couture fine", txt: "Couture fine : une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce (ex. 5 pièces sur 6 = bonus des 6 pièces)" },
     { n: 150, k: "aura", u: 1, name: "Grand Couturier", title: "Grand Couturier", txt: "Titre « Grand Couturier » et aura dorée en combat" },
   ];
   E.COLL_REGION = 5; // % de butin et de kamas en chasse dans une région complète

@@ -6168,11 +6168,15 @@ function dollSlot(c, s) {
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
 const setTiers = (setId) => { const Z = SETS[setId]; const all = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]); const n = Z.size || 0; return { ok: all.filter(([k]) => +k <= n), off: all.filter(([k]) => +k > n).map(([k]) => +k) }; };
 const setOffTxt = (off) => !off.length ? "" : `${off[0]}${off.length > 1 ? ` à ${off[off.length - 1]}` : ""} pièces`;
-function setBlock(setId, worn) {
+/* 2.1.30.10 : fine = panoplie portée par le héros affiché : le palier débloqué par la Couture fine (1 pièce en moins) est en bleu */
+function setBlock(setId, worn, fine) {
   const Z = SETS[setId]; if (!Z) return "";
   const { ok: tiers, off } = setTiers(setId);
-  return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>
-    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
+  const eff = fine && worn !== undefined && E.setCountFx ? E.setCountFx(S, setId, worn) : worn;
+  const cf = eff !== worn && E.setBonus(setId, eff) && JSON.stringify(E.setBonus(setId, eff)) !== JSON.stringify(E.setBonus(setId, worn));
+  return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>${cf ? ` <span class="cfine">✂ Couture fine : bonus des ${eff} pièces</span>` : ""}
+    ${tiers.map(([n, b]) => { const k = worn !== undefined && worn >= +n ? "on" : cf && eff >= +n ? "fine" : "";
+      return `<div class="st ${k}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span>${k === "fine" ? `<span class="cfine">Couture fine</span>` : ""}</div>`; }).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
     ${off.length ? `<div class="st off"><b>${setOffTxt(off)}</b><span>inaccessible : des pièces de cette panoplie ne sont pas dans le jeu</span></div>` : ""}</div>`;
 }
 /* 2.1.30 : détail d'une panoplie sans passer par l'encyclopédie (choix d'un objet et fiche de l'inventaire) : pièces, où elles sont, bonus */
@@ -6180,7 +6184,7 @@ function setDetailHtml(z, c) {
   const own = E.ownedTpls(S); const on = c ? new Set(Object.values(c.equip).filter((u) => u && S.items[u]).map((u) => S.items[u].tpl)) : new Set();
   const P = E.setPieces(z).slice().sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl);
   return `<div class="psetp">${P.map((t) => { const T = ITEMS[t]; const k = on.has(t) ? "on" : own[t] ? "bag" : "no";
-    return `<span class="psetpc ${k}" title="${h(T.name)}">${im(itemImg(t), "", T.name)}<span><b>${h(T.name)}</b><span class="xs">${k === "on" ? `✓ portée${c ? " par " + h(c.name) : ""}` : k === "bag" ? "dans le sac" : "pas encore obtenue"}</span></span></span>`; }).join("")}</div>${setBlock(z, c ? E.setCounts(S, c)[z] || 0 : undefined)}`;
+    return `<span class="psetpc ${k}" title="${h(T.name)}">${im(itemImg(t), "", T.name)}<span><b>${h(T.name)}</b><span class="xs">${k === "on" ? `✓ portée${c ? " par " + h(c.name) : ""}` : k === "bag" ? "dans le sac" : "pas encore obtenue"}</span></span></span>`; }).join("")}</div>${setBlock(z, c ? E.setCounts(S, c)[z] || 0 : undefined, 1)}`;
 }
 /* 1.0.30 : menu des caractéristiques refait, avec un vrai mode automatique (profils, plan par étapes, aperçu au niveau 200) */
 const EL_PAIRS = [["fo", "age"], ["fo", "ine"], ["fo", "cha"], ["ine", "cha"], ["ine", "age"], ["cha", "age"]];
@@ -6436,7 +6440,7 @@ function drawTree() {
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
-  const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, n)).map(([id, n]) => setBlock(id, n)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint
+  const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, setFx(id, n))).map(([id, n]) => setBlock(id, n, 1)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint (Couture fine comprise)
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
@@ -7242,7 +7246,7 @@ function tipItemHtml(uid) {
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
-  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
+  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn, 1) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {
