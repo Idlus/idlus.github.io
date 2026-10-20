@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.6";
+const GAME_VERSION = "2.1.30.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.7", name: "Coffres de l'Ascension", items: [
+    "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
+    "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)",
+  ] },
   { v: "2.1.30.6", name: "Fenêtres qui restent en place", items: [
     "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
     "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position",

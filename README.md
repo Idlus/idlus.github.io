@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.7 « Coffres de l'Ascension »
+
+- Coffres du mois visibles (signalé par Akileuss) : shopHtml (js/ascensionui.js) liste `Q.chest` par mode avec ✓ ; `E.ascChest` (js/ascension.js) compare la réserve avant et après `E.sabGift` et écrit les heures vraiment reçues (« réserve pleine »). Règle inchangée : un coffre par étage, par mode et par mois.
+
 ## 2.1.30.6 « Fenêtres qui restent en place »
 
 - openSheet (js/ui.js) : quand la fenêtre redessinée est la même (même titre h2, sinon même premier bloc), la position de défilement de .sheet et de ses listes internes est remise après le rendu. Options : changer d'onglet repart du haut.
