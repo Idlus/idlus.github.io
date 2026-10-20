@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.7";
+const GAME_VERSION = "2.1.30.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.8", name: "Hauts faits sans doublons", items: [
+    "Chat › Hauts faits : se connecter sur un autre appareil (téléphone ou PC) ne renvoie plus tes anciens records de stasis au serveur. Avant, ils pouvaient ressortir en rafale dans les Hauts faits ; merci Gagou",
+    "Les records déjà envoyés sont maintenant notés dans ta partie, donc partagés entre tous tes appareils. Un vrai nouveau record s'envoie toujours comme avant",
+  ] },
   { v: "2.1.30.7", name: "Coffres de l'Ascension", items: [
     "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
     "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)",
@@ -11279,8 +11283,18 @@ function lbGearHtml(x) {
 let recBusy = false, recBoot = null;
 const recOf = (did) => E.stasisSaison(S, did);
 const recSnap = () => { const o = {}; for (const did in (S && S.stasis) || {}) { const r = recOf(did); o[did] = { k: r.k, ct: r.t }; } return o; };
+/* 2.1.30.8 : les envois déjà faits sont aussi gardés dans la partie (S.recSent), donc partagés entre appareils. Avant, ils
+   n'étaient notés que sur l'appareil (rec2) : un téléphone renvoyait au serveur toutes les anciennes stasis faites sur PC,
+   et chaque temps rejoué un peu meilleur ressortait en « haut fait » dans le chat (bug n°27, Gagou). */
+function recSent() {
+  const a = (S && S.recSent) || {}, b = ON.link().rec2 || {}, o = {};
+  for (const did of new Set(Object.keys(a).concat(Object.keys(b)))) {
+    const x = a[did], y = b[did]; o[did] = !x ? y : !y ? x : x.k !== y.k ? (x.k > y.k ? x : y) : (x.ct || Infinity) <= (y.ct || Infinity) ? x : y;
+  }
+  return o;
+}
 function recQueue() {
-  const sent = ON.link().rec2 || {}, out = [];
+  const sent = recSent(), out = [];
   for (const did in S.stasis || {}) {
     const { k, t: ct } = recOf(did); if (!k || !DUNGEONS[did]) continue;
     const s = sent[did];
@@ -11290,11 +11304,13 @@ function recQueue() {
   return out.sort((a, b) => fresh(b) - fresh(a));
 }
 async function recSubmit() {
-  if (!ranked() || recBusy || S.panelUsed) return; const q = recQueue(); if (!q.length) return;
+  if (!ranked() || recBusy || S.panelUsed) return;
+  { const m = recSent(); if (JSON.stringify(m) !== JSON.stringify(S.recSent || {})) { S.recSent = m; dirty = true; } } // les envois notés sur cet appareil passent dans la partie
+  const q = recQueue(); if (!q.length) return;
   const did = q[0], b = (recBoot || {})[did], cur = recOf(did), isFresh = !b || cur.k > b.k || cur.t < b.ct;
   recBusy = true; const r = await ON.submitRecord(did); recBusy = false;
   if (!r || r.net || r.err === "trop tôt") return;
-  const l = ON.link(); const rec = l.rec2 || {}; rec[did] = { k: cur.k, ct: cur.t }; ON.setLink({ rec2: rec });
+  const rec = recSent(); rec[did] = { k: cur.k, ct: cur.t }; ON.setLink({ rec2: rec }); S.recSent = rec; dirty = true;
   if (recBoot) recBoot[did] = rec[did];
   Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
   if (window.DGRANK) window.DGRANK.reset(did); // 1.0.30 : classement dans la fiche du donjon (js/dgrank.js)
