@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.8";
+const GAME_VERSION = "2.1.30.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.9", name: "Infobulle de Maîtrise", guide: "maitrise", items: [
+    "Maîtrise : à la souris, l’infobulle d’une étoile se ferme quand on ne la survole plus, même après un clic ; sur téléphone, l’aperçu au toucher est conservé (signalement n°23)",
+  ] },
   { v: "2.1.30.8", name: "Hauts faits sans doublons", items: [
     "Chat › Hauts faits : se connecter sur un autre appareil (téléphone ou PC) ne renvoie plus tes anciens records de stasis au serveur. Avant, ils pouvaient ressortir en rafale dans les Hauts faits ; merci Gagou",
     "Les records déjà envoyés sont maintenant notés dans ta partie, donc partagés entre tous tes appareils. Un vrai nouveau record s'envoie toujours comme avant",

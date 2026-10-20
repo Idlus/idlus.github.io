@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.9 « Infobulle de Maîtrise »
+
+- Corrige l’infobulle persistante à la souris dans `js/maitrise.js` (issue #132, PR #137). La sélection de l’étoile et l’aperçu tactile sur téléphone sont conservés. Correctif relu par Claude.
+
 ## 2.1.30.8 « Hauts faits sans doublons »
 
 - Records de donjon (js/ui.js, recQueue/recSubmit) : les envois déjà faits sont gardés dans la partie (`S.recSent`, synchronisée) en plus du lien de l'appareil (`rec2`), fusionnés par recSent() (stasis la plus haute, puis meilleur temps). Avant, un autre appareil, au rec2 vide ou ancien, renvoyait toutes les stasis déjà classées ; chaque temps rejoué un peu meilleur ressortait en annonce dans les Hauts faits (bug n°27, Gagou). Aucun changement serveur.
