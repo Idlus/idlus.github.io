@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.9";
+const GAME_VERSION = "2.1.30.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.10", name: "Couture fine plus claire", items: [
+    "Collection de panoplies : la description de la Couture fine est plus claire (une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce)",
+    "Héros › Équipement : quand la Couture fine joue, le palier qu'elle débloque s'affiche en bleu avec l'étiquette « Couture fine » (aussi dans l'infobulle des objets et le détail d'une panoplie)",
+    "Une panoplie dont seul le bonus de la Couture fine est atteint apparaît maintenant dans « Panoplies actives »",
+  ] },
   { v: "2.1.30.9", name: "Infobulle de Maîtrise", guide: "maitrise", items: [
     "Maîtrise : à la souris, l’infobulle d’une étoile se ferme quand on ne la survole plus, même après un clic ; sur téléphone, l’aperçu au toucher est conservé (signalement n°23)",
   ] },
