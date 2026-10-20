@@ -1,6 +1,14 @@
 {
-  "version": "2.1.30.7",
+  "version": "2.1.30.8",
   "versions": [
+    {
+      "v": "2.1.30.8",
+      "name": "Hauts faits sans doublons",
+      "items": [
+        "Chat › Hauts faits : se connecter sur un autre appareil (téléphone ou PC) ne renvoie plus tes anciens records de stasis au serveur. Avant, ils pouvaient ressortir en rafale dans les Hauts faits ; merci Gagou",
+        "Les records déjà envoyés sont maintenant notés dans ta partie, donc partagés entre tous tes appareils. Un vrai nouveau record s'envoie toujours comme avant"
+      ]
+    },
     {
       "v": "2.1.30.7",
       "name": "Coffres de l'Ascension",
