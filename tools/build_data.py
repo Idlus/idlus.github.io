@@ -575,7 +575,7 @@ for o in ITEMS.values():
         b = {}
         for e in effs or []:
             if e.get('effectId') in STAT:
-                k, sign = STAT[e['effectId']]; b[k] = b.get(k, 0) + sign * (e.get('from') or 0)
+                k, sign = STAT[e['effectId']]; b[k] = b.get(k, 0) + sign * abs(e.get('from') or 0)  # 2.1.30.5 : DOFUS écrit souvent les malus de panoplie en négatif (171 à -40 = -40 % Critique, pas +40)
         if b: bonus[n + 1] = b  # effects[0] = 1 objet porté
     SETS[sid] = {'name': fr(s), 'bonus': bonus}
 log(f"Objets retenus : {len(ITEMS)} ; panoplies : {len(SETS)}")

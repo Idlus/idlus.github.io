@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 13; // 13 : reset des Maîtrises (Maîtrise lente, choix de Mathis 16/10) ; 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
+  E.VERSION = 14; // 14 : refonte des alignements, le niveau d'alignement devient de l'honneur (20 rangs, js/honneur.js) ; // 13 : reset des Maîtrises (Maîtrise lente, choix de Mathis 16/10) ; 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -2396,7 +2396,7 @@
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
     const best = [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
-    let mn = 0, mx = 0, heal = 0; const cc = Math.min(60, 5 + st.cri) / 100; let tgts = 1;
+    let mn = 0, mx = 0, heal = 0; const cc = Math.max(0, Math.min(60, 5 + st.cri)) / 100; /* 2.1.30.5 : un malus de Critique ne descend pas sous 0 % */ let tgts = 1;
     g.fx.forEach((f) => {
       if (["dmg", "drain", "dot"].includes(f.k)) {
         const el = f.el === "best" ? best : f.el || "n"; const E2 = ELEMENTS[el];
@@ -4027,6 +4027,8 @@
       if (best >= 100 && !S.titlesExtra.includes(E.MT_PIONNIER)) S.titlesExtra.push(E.MT_PIONNIER);
       if (n) report.push(`Maîtrise lente : les Maîtrises repartent de 0 pour tout le monde${best >= 100 ? ` (titre « ${E.MT_PIONNIER} » en souvenir)` : ""}. Les joyaux sertis sont rendus dans ton sac. Chaque point coûte maintenant un peu plus que le précédent.`); S.migration = report;
     }
+    if (S.v < 14 && S.align && E.honMigrate) { const m = E.honMigrate(S); // refonte des alignements : niveau d'alignement (0-100) → honneur, niveau 100 = rang 10 sur 20
+      if (m) report.push(`Refonte des alignements : ton niveau d'alignement ${m.from} devient ${E.honCum ? E.honCum(m.rank).toLocaleString("fr-FR") : ""} points d'honneur, rang ${m.rank} sur 20. Nouveaux talents d'ordre, Arsenal de la cité, régions de la carte et agressions dans Journal › Quêtes › Alignement.`); }
     S.v = E.VERSION;
     if (E.mtGateSync) { S.mtGates = E.mtGatesOpen(S); E.mtGateSync(S); } // 2.1 : Portes des étoiles déjà méritées, sans message
     if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); if (E.mtBrSync) E.mtBrSync(S); // 2.0 : ornements du Bestiaire déjà gagnés

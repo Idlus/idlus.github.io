@@ -58,7 +58,7 @@
     const jobs = Object.entries(S.jobs || {}).map(([k, j]) => [((D.GATHER_JOBS || {})[k] || {}).name || k, j.lvl || 1])
       .concat(Object.entries(crafts).map(([k, j]) => [((D.CRAFT_JOBS || {})[k] || {}).name || k, j.lvl || 1]))
       .concat(S.fmJob ? [["Forgemage", S.fmJob.lvl || 1]] : []).sort((a, b) => b[1] - a[1]);
-    const al = S.align && S.align.side ? `${S.align.side === "bonta" ? "Bonta" : S.align.side === "brakmar" ? "Brâkmar" : h(S.align.side)} niv. ${S.align.lvl || 0}` : "aucun";
+    const al = S.align && S.align.side ? `${S.align.side === "bonta" ? "Bonta" : S.align.side === "brakmar" ? "Brâkmar" : h(S.align.side)} rang ${window.ENGINE && window.ENGINE.alignRankIdx ? window.ENGINE.alignRankIdx(S) : 0}` : "aucun";
     return {
       heroes, kamas: S.kamas || 0, playtime: (S.stats && S.stats.playtime) || 0, fights: (S.stats && S.stats.fights) || 0, wins: (S.stats && S.stats.wins) || 0, created: S.created,
       items: Object.keys(items).length, res: sum(S.res), resN: Object.keys(S.res || {}).length, runes: sum(S.runes), cons: sum(S.cons),

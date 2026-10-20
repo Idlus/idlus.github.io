@@ -5,7 +5,7 @@
 const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
-require("../js/maitrise_moteur.js"); require("../js/dofusp.js"); require("../js/collections.js"); require("../js/chroma.js"); require("../js/alignement.js");
+require("../js/maitrise_moteur.js"); require("../js/dofusp.js"); require("../js/collections.js"); require("../js/chroma.js"); require("../js/alignement.js"); require("../js/koli.js"); require("../js/honneur.js"); // refonte des alignements : le serveur charge aussi js/honneur.js (tools/build_server.js)
 const D = require("../js/data.js");
 const V = require("../js/verify.js");
 
@@ -26,6 +26,17 @@ const sum = V.fullSummary(E, X);
 assert.strictEqual(sum.level, V.summary(E, X).level);
 assert.ok("align" in sum, "le résumé du serveur porte aussi l'alignement");
 console.log("ok - résumé calculé par le serveur, partie honnête acceptée");
+/* refonte des alignements : une partie v13 (niveau d'alignement 100) est convertie (rang 10), son résumé porte l'honneur ; les 5 pièces de rang sont possibles */
+{ const P = E.newState("Milicien", "iop"); P.chars[0].lvl = 200; E.chooseAlign(P, "brakmar", "coeur");
+  const o = JSON.parse(E.serialize(P)); o.v = 13; o.align = { side: "brakmar", order: "coeur", lvl: 100, xp: 0, q: o.align.q, war: o.align.war };
+  const M = E.deserialize(JSON.stringify(o)); const a = V.fullSummary(E, M).align;
+  assert.ok(a && a.h === E.honCum(10) && a.r === 10, "résumé : honneur et rang convertis " + JSON.stringify(a));
+  M.align.pur = 20000; E.HON_GEAR_SLOTS.forEach((sl) => assert.strictEqual(E.honBuy(M, sl), null));
+  Object.values(M.items).filter((x) => /^hon_/.test(x.tpl)).forEach((x) => E.equip(M, M.chars[0].id, x.uid, D.ITEMS[x.tpl].slot === "anneau" ? "anneau1" : D.ITEMS[x.tpl].slot));
+  const M2 = E.deserialize(E.serialize(M)); assert.strictEqual(V.impossible(E, M2, 0), null, "pièces de rang possibles");
+  assert.strictEqual(Object.values(M2.items).filter((x) => /^hon_/.test(x.tpl)).length, 5); assert.strictEqual(E.alignRankIdx(M2), 10, "rang gardé");
+  assert.strictEqual(M2.align.pur, 20000 - E.HON_GEAR_COST.reduce((x, y) => x + y, 0)); }
+console.log("ok - alignements : partie v13 convertie, honneur dans le résumé, pièces de rang possibles");
 
 /* tous les objets du jeu, au jet maximum, Rayonnants à +50 %, parfaits et forgemagés au plafond : jamais refusés */
 let n = 0;

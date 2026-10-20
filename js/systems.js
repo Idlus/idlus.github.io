@@ -259,9 +259,11 @@
   };
   const alignBonus = (S, kind) => {
     const A = S.align; if (!A) return 0; const r = E.alignRankIdx(S); let b = 0;
-    if (kind === "hp" && A.side === "bonta") b += 2 * r;
-    if (kind === "dmg" && A.side === "brakmar") b += 2 * r;
-    const ob = ORDER_BONUS[A.order]; if (ob && ob.kind === kind) b += ob.per * r;
+    const e = E.honRankOf ? Math.min(5, r / 2) : r; // refonte (20 rangs, js/honneur.js) : le bonus de camp et d'ordre est complet au rang 10, comme l'ancien rang 5
+    if (kind === "hp" && A.side === "bonta") b += 2 * e;
+    if (kind === "dmg" && A.side === "brakmar") b += 2 * e;
+    const ob = ORDER_BONUS[A.order]; if (ob && ob.kind === kind) b += ob.per * e;
+    if (E.honBonus) b += E.honBonus(S, kind); // talents d'ordre (js/honneur.js)
     return b;
   };
 
@@ -1447,7 +1449,7 @@
   };
   const completeBounty = (S, b) => {
     const kam = Math.round(b.kamas * (E.huntBonus ? E.huntBonus(S) : 1)); // 0.1.49 : +10 % par rang de chasseur
-    S.kamas += kam; giveTeamXp(S, b.xp); if (S.align) E.giveAlignXp(S, b.axp);
+    S.kamas += kam; giveTeamXp(S, b.xp); if (S.align) E.giveAlignXp(S, b.axp, Math.min(1, (b.ht || 0) / (b.n || 1)));
     S.cnt.bounty = (S.cnt.bounty || 0) + 1; if (b.dg) S.cnt.bboss = (S.cnt.bboss || 0) + 1;
     const tk = b.dg ? 2 : 1; S.tokens.jetons = (S.tokens.jetons || 0) + tk;
     let extra = ""; const r = rnd(); if (r < 0.05) { E.addCons(S, "coffre_argent"); extra = ", Coffre en argent"; } else if (r < 0.25) { E.addCons(S, "coffre_bois"); extra = ", Coffre en bois"; }
@@ -1573,7 +1575,8 @@
     const ins = q.t === "boss" ? 5 : 3; S.tokens.insignes = (S.tokens.insignes || 0) + ins;
     let extra = ""; if (rnd() < 0.25) { E.addCons(S, "coffre_bois"); extra = ", Coffre en bois"; }
     note(S, `Mission d'alignement accomplie : ${q.title} (+${q.kamas} kamas, +${ins} insignes${extra}).`, "up");
-    E.giveAlignXp(S, q.axp);
+    const ht = Math.min(1, (q.ht || 0) / (q.n || 1)); if (S.align) S.align.misHt = (S.align.misHt || 0) + ht; // pour l'étape « missions » des quêtes de cité
+    E.giveAlignXp(S, q.axp, ht);
   };
 
   /* ---------------- Succès ---------------- */
@@ -1616,7 +1619,7 @@
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
   add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= (E.MAIN_CH1 || Q.length), 8000, { title: "Héros d'Amakna" });
   add("align", "Alignement", "Le choix d'un camp", "Choisir Bonta ou Brâkmar.", (S) => !!S.align, 500);
-  [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r}`, `Atteindre le niveau d'alignement ${r * 20}.`, (S) => E.alignRankIdx(S) >= r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
+  [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r * 2}`, `Atteindre le rang d'alignement ${r * 2}.`, (S) => E.alignRankIdx(S) >= 2 * r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
   [[10, ""], [50, ""]].forEach(([n]) => add("havre" + n, "Havre-Sac", `Havre-Sac ×${n}`, `Acheter ${n} améliorations du Havre-Sac.`, (S) => E.havreTotal(S) >= n, 100 * n));
   [2, 4, 8].forEach((n) => add("team" + n, "Progression", `${n} héros`, `Avoir ${n} héros.`, (S) => S.chars.length >= n, 250 * n));
   /* 0.1.10 : idoles */
@@ -1662,15 +1665,17 @@
     if (type === "win") {
       data.mons.forEach((m) => {
         if (q && q.t === "kill" && data.sub === q.sub) S.quest.prog++;
-        (S.bounties || []).forEach((b) => { if (!b.dg && b.key === m.key && b.prog < b.n) b.prog++; });
-        const aq = S.alignQuest; if (aq && aq.t === "kill" && data.sub === aq.sub && aq.prog < aq.n) aq.prog++;
+        const ht = !E.honHeldSub ? 0 : data.sub ? E.honHeldSub(S, data.sub) : data.dungeon ? E.honHeldDg(S, data.dungeon) : 0; // Serment : chaque monstre compte là où il est vaincu
+        (S.bounties || []).forEach((b) => { if (!b.dg && b.key === m.key && b.prog < b.n) { b.prog++; b.ht = (b.ht || 0) + ht; } });
+        const aq = S.alignQuest; if (aq && aq.t === "kill" && data.sub === aq.sub && aq.prog < aq.n) { aq.prog++; aq.ht = (aq.ht || 0) + ht; }
       });
     }
     if (type === "dungeon") {
       const dg = DUNGEONS[data.id];
-      (S.bounties || []).forEach((b) => { if (b.dg === data.id && b.prog < b.n) b.prog++; });
-      const aq = S.alignQuest; if (aq && aq.t === "boss" && aq.dg === data.id) aq.prog = 1;
-      if (S.align) E.giveAlignXp(S, Math.round(dg.lvl * 2));
+      const ht = E.honHeldDg ? E.honHeldDg(S, data.id) : 0; // Serment : la région du donjon, pas celle de la chasse
+      (S.bounties || []).forEach((b) => { if (b.dg === data.id && b.prog < b.n) { b.prog++; b.ht = (b.ht || 0) + ht; } });
+      const aq = S.alignQuest; if (aq && aq.t === "boss" && aq.dg === data.id) { aq.prog = 1; aq.ht = ht; }
+      if (S.align) E.giveAlignXp(S, Math.round(dg.lvl * 2), ht);
     }
     if (type === "harvest") { S.cnt.harvest = (S.cnt.harvest || 0) + data.n; if (q && q.t === "harvest") S.quest.prog += data.n; }
     if (type === "craft") { S.cnt.craft = (S.cnt.craft || 0) + 1; if (q && q.t === "craft") S.quest.prog++; }
