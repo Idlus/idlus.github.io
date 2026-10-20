@@ -1,6 +1,14 @@
 {
-  "version": "2.1.30.8",
+  "version": "2.1.30.9",
   "versions": [
+    {
+      "v": "2.1.30.9",
+      "name": "Infobulle de Maîtrise",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : à la souris, l’infobulle d’une étoile se ferme quand on ne la survole plus, même après un clic ; sur téléphone, l’aperçu au toucher est conservé (signalement n°23)"
+      ]
+    },
     {
       "v": "2.1.30.8",
       "name": "Hauts faits sans doublons",

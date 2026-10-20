@@ -69,7 +69,7 @@
       const g0 = g, d0 = dpr; g = OFF.getContext("2d"); if (lo) dpr = 1; st.hov = null; try { drawBase(); } finally { g = g0; dpr = d0; st.hov = hv; } BK = key; }
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(OFF, 0, 0, cv.width, cv.height); g.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (hv != null && hv !== st.sel) hoverLayer(hv);
-    tip(hv != null ? hv : st.sel);
+    tip(hv != null ? hv : matchMedia("(hover: hover)").matches ? null : st.sel);
   }
   function hoverLayer(id) {
     const N = T().N; if (!canEdit() || (N[id].neb && !nebOpen())) return;
