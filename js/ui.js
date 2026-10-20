@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.31.1";
+const GAME_VERSION = "2.1.31.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.31.2", name: "La tournée des temples", items: [
+    "Quêtes › Temples : un bouton enchaîne les Dopeuls des classes que tu possèdes et qui restent disponibles aujourd'hui, avec la progression combat par combat",
+    "Tu peux arrêter la tournée après le combat en cours. Une défaite, une erreur ou un changement de situation interrompt l'enchaînement",
+    "Les règles des temples et les récompenses restent identiques. La tournée ne reprend pas automatiquement après une absence ou un rechargement",
+  ] },
   { v: "2.1.31.1", name: "L'Alignement dans le menu", guide: "alignement", items: [
     "Menu : l'Alignement a sa propre page dans la famille Défis (et dans la recherche « Aller à une page »). Elle ouvre Quêtes › Alignement",
   ] },
@@ -9438,14 +9443,16 @@ function commandesHtml() {
     <p class="small muted">Commandes livrées : <b>${fmt(C.n || 0)}</b> · aujourd'hui ${C.dn || 0}/${E.CMD_DAY_MAX}${C.bonus === C.day ? ` · <span class="plus">prime reçue ✓</span>` : ""}${C.bonus2 === C.day ? ` · <span class="plus">grande prime reçue ✓</span>` : ""}. Les ressources de récolte viennent de tes métiers, celles des artisans des monstres de tes zones.</p>`;
 }
 function templesHtml() {
+  const batch = E.templeRun(S), reason = E.templeRunReason(S);
   const T = E.templeState(S); const own = new Set(E.templeClasses(S)); const beat = Object.keys(T.beat).length;
   const pend = T.pend || T.fighting;
   return `<p class="note">Dans chaque temple t'attend le Dopeul de ta classe : un reflet de ton héros, à son niveau. Un combat par classe et par jour, pour chaque classe de ton équipe ou de ta réserve. Le Dopeul vient défier l'équipe là où elle chasse. Une victoire rapporte des Doplons (plus le héros est haut niveau, plus il y en a), et 7 jours d'affilée donnent +3 Doplons.</p>
+    <div class="row" style="flex-wrap:wrap">${batch ? `<span class="tag" role="status">Combat ${batch.current}/${batch.total}</span><button class="btn sm" data-act="vi-tstop">Arrêter après ce combat</button>` : `<button class="btn primary" data-act="vi-tall" ${reason ? "disabled" : ""}>Combattre les ${D.CLASS_ORDER.length} Dopeuls</button><span class="xs muted">${h(reason || "Seuls les temples possédés et encore disponibles seront enchaînés.")}</span>`}</div>
     ${pend ? `<div class="vi-pend">${IC("combat")} <span class="grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>${T.fighting ? `<button class="btn sm" data-act="vi-view">Voir le combat</button>` : `<button class="btn sm" data-act="vi-tcancel">Annuler</button>`}</div>` : ""}
     <div class="vi-temples">${D.CLASS_ORDER.map((k) => { const c = E.templeHero(S, k); const CL = CLASSES[k]; const done = T.done[k]; const n = T.beat[k] || 0;
       return `<div class="vi-temple ${c ? "" : "off"} ${done ? "done" : ""}" style="--cc:${CL.color}"><i class="med halo" style="--cc:${CL.color}"><img src="${symImg(k)}" alt=""></i>
         <b>${h(CL.name)}</b><span class="xs muted">${c ? `Dopeul niv. ${c.lvl} · ${E.doplons(c.lvl)} 🪙` : "aucun héros"}</span>${n ? `<span class="xs">vaincu ${n}×</span>` : ""}
-        ${c ? (done ? `<span class="tag good">Vaincu ✓</span>` : `<button class="btn sm ${pend ? "" : "primary"}" data-act="vi-tfight" data-v="${k}" ${pend ? "disabled" : ""}>Défier</button>`) : ""}</div>`; }).join("")}</div>
+        ${c ? (done ? `<span class="tag good">Vaincu ✓</span>` : `<button class="btn sm ${pend ? "" : "primary"}" data-act="vi-tfight" data-v="${k}" ${pend || batch ? "disabled" : ""}>Défier</button>`) : ""}</div>`; }).join("")}</div>
     <p class="small muted">Temples conquis : <b>${beat}</b> / ${D.CLASS_ORDER.length} · ${E.TEMPLE_TITLE_N} classes différentes donnent le titre « ${h(E.TEMPLE_TITLE)} » · série : ${T.streak.n || 0} jour${(T.streak.n || 0) > 1 ? "s" : ""}.</p>
     ${shopLink("temple")}`;
 }
@@ -9751,6 +9758,8 @@ function viAct(a, t) {
     case "vi-deliver": if (run("cmdDeliver", +d.id)) render(); return;
     case "vi-deliverall": { let n = 0; E.cmdState(S).list.filter((o) => o.got < o.n && (S.res[o.res] || 0) >= o.n - o.got).forEach((o) => { if (run("cmdDeliver", o.id)) n++; }); if (n) render(); return; } // 1.0.23.1 : « Tout livrer »
     case "vi-swap": if (run("cmdSwap", +d.id)) { toast("Nouvelle commande."); render(); } return;
+    case "vi-tall": if (run("templeRunStart")) render(); return;
+    case "vi-tstop": if (run("templeRunStop")) render(); return;
     case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
     case "vi-tcancel": if (run("templeCancel")) render(); return;
     case "vi-view": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;

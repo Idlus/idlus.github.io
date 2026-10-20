@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.31.2 « La tournée des temples »
+
+- Quêtes › Temples : enchaînement des Dopeuls possédés et encore disponibles, progression i/N et arrêt après le combat courant. Les 19 classes restent accessibles selon les règles existantes.
+- Arrêt sur défaite, erreur, interruption, changement de jour ou de contexte, et absence. Série conservée uniquement en mémoire ; aucun changement de format de sauvegarde, de récompenses, de serveur ou de base.
+- Tests moteur et interface dédiés : parité avec les défis individuels, disponibilité, arrêts, erreurs, chargement, absence et affichage PC/mobile.
+
 ## 2.1.31.1 « L'Alignement dans le menu »
 
 - Menu : page « align » dans la famille Défis (NAV, NAV_DESC, étiquette « nouveau » jusqu'au 22/10) ; navGo l'ouvre sur Quêtes › Alignement et navKey la surligne. Aucun changement serveur.

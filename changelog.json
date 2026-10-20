@@ -1,6 +1,15 @@
 {
-  "version": "2.1.31.1",
+  "version": "2.1.31.2",
   "versions": [
+    {
+      "v": "2.1.31.2",
+      "name": "La tournée des temples",
+      "items": [
+        "Quêtes › Temples : un bouton enchaîne les Dopeuls des classes que tu possèdes et qui restent disponibles aujourd'hui, avec la progression combat par combat",
+        "Tu peux arrêter la tournée après le combat en cours. Une défaite, une erreur ou un changement de situation interrompt l'enchaînement",
+        "Les règles des temples et les récompenses restent identiques. La tournée ne reprend pas automatiquement après une absence ou un rechargement"
+      ]
+    },
     {
       "v": "2.1.31.1",
       "name": "L'Alignement dans le menu",
