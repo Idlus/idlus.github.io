@@ -349,7 +349,7 @@
   const ownedTpl = (S) => { const o = new Set(); for (const u in S.items || {}) { const it = S.items[u]; if (it && it.tpl) o.add(it.tpl); } return o; };
   let setCache = { t: 0, v: 0, u: 0, S: null };
   const collect = (S) => { const now = E.now(); if (setCache.S === S && now - setCache.t < 5000) return setCache;
-    const o = ownedTpl(S); let v = 0; for (const k in SETS || {}) { const its = (SETS[k].items || []); if (its.length && its.every((t) => o.has(t))) v++; }
+    const o = ownedTpl(S); let v = 0; for (const k in SETS || {}) { const its = E.setPieces(k); if (its.length && its.every((t) => o.has(t))) v++; }
     setCache = { t: now, v, u: o.size, S }; return setCache; };
   [1, 5, 10, 25, 50, 100].forEach((n) => addA({ id: "setc" + n, cat: "Collection", grp: "Panoplies", name: n === 1 ? "Première panoplie" : `${n} panoplies`, desc: `Posséder toutes les pièces de ${n} panoplie${n > 1 ? "s" : ""}.`, test: (S) => collect(S).v >= n, prog: (S) => [collect(S).v, n], kamas: n * 1500, title: n === 100 ? "le Collectionneur de panoplies" : undefined }));
   [100, 250, 500, 1000, 1500].forEach((n) => addA({ id: "itemu" + n, cat: "Collection", grp: "Objets", name: `${n} objets différents`, desc: `Posséder ${n} objets différents.`, test: (S) => collect(S).u >= n, prog: (S) => [collect(S).u, n], kamas: n * 20 }));

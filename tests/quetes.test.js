@@ -137,4 +137,40 @@ ok("Dofus dès la stasis 1 : une chance par héros");
   const io = E.pinInfo(S, { k: "dof", id: "ocre" }); assert.ok(io && /^Étape 1 sur /.test(io.step));
   assert.strictEqual(E.pinInfo(S, { k: "dof", id: "inconnu" }), null); }
 ok("quêtes de Dofus épinglées");
+// 2.1.31.4 : les succès lisent les pièces réelles, pas SETS[sid].items (absent).
+{
+  const ids = Object.keys(D.SETS).filter((id) => E.setPieces(id).length);
+  const ach = (n) => E.ACH.find((a) => a.id === "setc" + n);
+  const fresh = () => { const S = team(200); S.items = {}; return S; };
+  const give = (S, tpl, uid = tpl) => { S.items[uid] = { uid, tpl, stats: {} }; };
+  const S = fresh(), P = E.setPieces(ids.find((id) => E.setPieces(id).length >= 3));
+  P.slice(0, -1).forEach((p) => give(S, p)); give(S, P[0], "duplicate");
+  assert.deepStrictEqual(ach(1).prog(S), [0, 1], "doublon et pièce manquante");
+  give(S, P[P.length - 1]);
+  S.chars[0].equip[D.ITEMS[P[0]].slot] = P[0];
+  assert.strictEqual(ach(1).test(S), false, "cache de cinq secondes conservé");
+  t += 5001;
+  assert.deepStrictEqual(ach(1).prog(S), [1, 1], "pièces équipées comprises");
+  E.checkAch(S); assert.ok(S.ach.setc1);
+  const paid = S.kamas; E.checkAch(S); assert.strictEqual(S.kamas, paid, "récompense unique");
+  const Q = fresh();
+  for (const n of [1, 5, 10, 25, 50, 100]) {
+    ids.slice(0, n).forEach((id) => E.setPieces(id).forEach((p) => give(Q, p)));
+    t += 5001;
+    assert.deepStrictEqual(ach(n).prog(Q), [n, n], "seuil " + n);
+    assert.ok(ach(n).test(Q));
+    if (n < 100) assert.strictEqual(ach([5, 10, 25, 50, 100].find((x) => x > n)).test(Q), false);
+  }
+  // Isoler les succès de panoplies pour vérifier exactement leurs récompenses.
+  E.ACH.filter((a) => !/^setc\d+$/.test(a.id)).forEach((a) => { Q.ach[a.id] = t; });
+  const before = Q.kamas; E.checkAch(Q);
+  assert.strictEqual(Q.kamas - before, [1, 5, 10, 25, 50, 100].reduce((k, n) => k + ach(n).kamas, 0));
+  assert.ok(E.titles(Q).includes("le Collectionneur de panoplies"));
+  const item = E.ACH.find((a) => a.id === "itemu100");
+  assert.strictEqual(item.prog(Q)[0], new Set(Object.values(Q.items).map((i) => i.tpl)).size);
+  Q.items = {}; t += 5001;
+  assert.strictEqual(ach(1).test(Q), false, "la possession actuelle reste requise");
+  assert.ok(Q.ach.setc100, "un succès acquis reste acquis");
+}
+ok("succès de panoplies : pièces, doublons, équipement, cache, six seuils et récompenses");
 console.log("quetes.test.js : tout est bon");
