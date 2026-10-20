@@ -1,6 +1,14 @@
 {
-  "version": "2.1.30.5",
+  "version": "2.1.30.6",
   "versions": [
+    {
+      "v": "2.1.30.6",
+      "name": "Fenêtres qui restent en place",
+      "items": [
+        "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+        "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position"
+      ]
+    },
     {
       "v": "2.1.30.5",
       "name": "Malus de panoplie",

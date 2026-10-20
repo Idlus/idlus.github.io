@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.5";
+const GAME_VERSION = "2.1.30.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.6", name: "Fenêtres qui restent en place", items: [
+    "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+    "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position",
+  ] },
   { v: "2.1.30.5", name: "Malus de panoplie", guide: "equipement", items: [
     "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
     "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
@@ -7884,7 +7888,17 @@ function renderQuests(soft) {
     <section class="stack">${body}</section>`;
 }
 /* ---------- feuilles ---------- */
-function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+/* 2.1.30.6 (Mathis) : une fenêtre redessinée après un clic (stasis d'un donjon, réglages…) garde sa position de défilement, ainsi que ses listes internes */
+const sheetId = (box) => { const t = box && box.querySelector("h2"), f = box && box.firstElementChild; return t ? "h|" + t.textContent.trim() : f ? "c|" + f.className + "|" + f.textContent.trim().slice(0, 40) : ""; };
+function sheetScrolls(box) { const out = [], seen = {}; if (!box) return out; for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); if (el.scrollTop > 0) out.push([k, i, el.scrollTop]); } return out; }
+function openSheet(html) {
+  const old = $("#sheet .sheet"); if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre");
+  const id = sheetId(old), keep = old ? sheetScrolls(old) : [];
+  $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const box = $("#sheet .sheet"); if (!keep.length || !id || sheetId(box) !== id) return;
+  const seen = {}, want = new Map(keep.map(([k, i, y]) => [k + "#" + i, y]));
+  for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); const y = want.get(k + "#" + i); if (y) el.scrollTop = y; }
+}
 /* 2.1.4 (Mathis) : l'album des archimonstres et la fiche d'un monstre se mettent à jour toutes seules après chaque combat (mise à jour ciblée, la position de lecture reste) */
 const SHEET_LIVE = [[".archisheet", () => archiSheetHtml()], [".encsheet[data-mk]", (el) => (MONSTERS[el.dataset.mk] ? encMonSheet(el.dataset.mk) : "")]];
 let sheetLiveSig = "";
@@ -8067,7 +8081,7 @@ function optionsSheet() {
     <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
     <div class="optbody small">${body}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
-  if (keepTop) $(".sheet").scrollTop = keepTop;
+  $(".sheet").scrollTop = keepTop; // autre onglet : on repart du haut
 }
 /* 1.0.30 : donjon pendant l'absence et retours d'expédition comptent aussi pour ouvrir la fenêtre */
 /* audit 19/10/2026 (choix 1A + 2C de Mathis) : le calcul de l'absence se fait par tranches (E.catchUpAsync) au lieu de figer la page.
