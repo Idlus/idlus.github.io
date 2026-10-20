@@ -5603,11 +5603,14 @@ function dofpChips(id, c) {
   const fit = c ? E.dofpFits(S, c, id) : null;
   return `<span class="dofp-chips"><span class="dofp-chip">${G("bolt")}${h(E.dofpTrig(id))}</span>${c && E.dofpForKey(id) !== "all" ? `<span class="dofp-chip ${fit ? "ok" : "dim"}">${fit ? "✓ Idéal pour " + h(c.name) : "Plutôt pour : " + h(E.dofpFor(id))}</span>` : `<span class="dofp-chip">${G("target")}Idéal : ${h(E.dofpFor(id))}</span>`}</span>`;
 }
+/* 2.1.30.4 : rang de Potentiel du Dofus (le bonus était déjà compté en combat et dans les caractéristiques, pas affiché) */
+const dofpRank = (id) => (E.dpotRank && S && E.dofusOwned(S, id) ? E.dpotRank(S, id) : 0);
+const dofpPotTag = (r) => (r ? ` <span class="dofp-eveil">${r >= (E.DPOT_MAX || 10) ? "Sublimé" : "Potentiel " + (E.roman ? E.roman(r) : r)} +${E.dpotPct(r)} %</span>` : "");
 function dofpBlock(id, opt = {}) {
   if (!E.DOFP_LIST || !E.DOFP_LIST[id]) return "";
-  const boost = !!opt.boost;
+  const boost = !!opt.boost; const r = opt.r != null ? opt.r : dofpRank(id);
   return `<div class="dofp fam-${dofpFc(id)}${opt.mini ? " mini" : ""}"><div class="dofp-h">${dofpIco(id)}<span class="dofp-nm"><small>Passif du Dofus</small><b>${h(E.dofpName(id))}</b></span><span class="dofp-f">${h(E.dofpFam(id))}</span></div>
-    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
+    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost, false, r))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}${dofpPotTag(r)}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
 }
 /* panneau sous l'équipement : une carte par emplacement Dofus, compteur du combat en cours, Éveil des Dragons */
 function dofpHeroPanel(c) {
@@ -5621,7 +5624,7 @@ function dofpHeroPanel(c) {
   const cards = slots.map(({ sl, id, tro }) => {
     if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;
     return `<button class="dofp-card fam-${dofpFc(id)} ${ui.slot === sl ? "on" : ""}" data-act="slot" data-slot="${sl}"><span class="dofp-ch">${im(dofusImg(id), "dofp-img", E.DOFUS[id].name)}<span class="dofp-nm"><small>${h(E.DOFUS[id].name)}</small><b>${h(E.dofpName(id))}</b></span>${dofpIco(id)}</span>
-      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
+      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost, false, dofpRank(id)))}${dofpPotTag(dofpRank(id))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
   const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
     : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
   return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / 6 actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
@@ -5636,7 +5639,7 @@ function dofpPickHtml(c, all, g) {
     .sort((a, b) => (b.n > 0) - (a.n > 0) || a.dup - b.dup || b.fit - a.fit || (g[b.it.uid] || 0) - (g[a.it.uid] || 0));
   const row = (r) => { const T = ITEMS[r.it.tpl]; const high = T.lvl > c.lvl;
     return `<div class="li dofp-pr fam-${dofpFc(r.id)} ${r.n ? "" : "plow"}"><span class="dofp-primg">${im(dofusImg(r.id), "", T.name)}</span><span class="grow"><span class="dofp-prn"><b>${h(T.name)}</b>${r.n > 1 ? ` <span class="tag soft gcount">×${r.n}</span>` : ""} <span class="xs muted">niv. ${T.lvl}${r.by ? ` · porté par ${h(r.by === c ? "ce héros" : r.by.name)}` : ""}</span></span>
-      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
+      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id, false, false, dofpRank(r.id)))}${dofpPotTag(dofpRank(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
       <button class="btn sm ${r.n && !r.dup ? "primary" : ""}" data-act="equip" data-uid="${r.it.uid}" ${high || r.dup ? "disabled" : ""}>${high ? "Niv. " + T.lvl : r.n ? "Équiper" : "Prendre"}</button></div>`; };
   const fams = [["all", "Tous"]].concat(E.DOFP_FAMS.map((f) => [f, f]));
   const cnt = (f) => Object.values(byTpl).filter((L) => f === "all" || E.dofpFam(ITEMS[L[0].tpl].dofus) === f).length;
@@ -5654,8 +5657,9 @@ function dofpPickHtml(c, all, g) {
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
-  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
+  const pr = T.dofus && S.items[it.uid] === it ? dofpRank(T.dofus) : 0, pot = pr && E.dpotStatsOf ? E.dpotStatsOf(T.dofus, pr) : {}; // 2.1.30.4 : caractéristiques du Potentiel
+  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true, r: pr }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""}${pot[k] ? ` <span class="bonus">(+${pot[k]} Potentiel)</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 /* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
 const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
