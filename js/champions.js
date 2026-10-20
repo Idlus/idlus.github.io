@@ -200,7 +200,7 @@
     s.list.forEach((x) => {
       if (x.k === "enrage" && e.hp < e.hpMax * 0.5) v *= 1 + x.v * mul / 100;
       if (x.k === "traqueur" && tgt && tgt.hp < tgt.hpMax * 0.5) v *= 1 + x.v * mul / 100;
-      if (x.k === "veloce" && x.w && F && F.round <= 1) v *= 1 + E.SEAL_EV_VELOCE * x.w / 100; // Véloce éveillé : +4 % de dégâts au premier tour par Éveil
+      if (x.k === "veloce" && x.w && F && F.round <= 1) v *= 1 + E.SEAL_EV_VELOCE * x.w * (s.key.includes("+") ? E.SEAL_FUSE_PCT : 1) / 100; // Véloce éveillé : +4 % de dégâts au premier tour par Éveil (70 % dans une fusion, comme les autres pouvoirs)
     });
     if (e.criOn && F && F.round !== e.criRound) { e.criRound = F.round; e.criOn--; if (!e.criOn) { const vp = s.list.find((x) => x.k === "vampire"); if (vp) e.vamp = vp.v / 100; } }
     return v;
@@ -208,7 +208,7 @@
 
   /* ---------- 2.1.x « Les Éclats du Traqueur » (Sky, choix 2C de Mathis) ----------
      Éveil : un Sceau au rang 5 s'éveille 5 fois avec des Éclats (100, 200, 350, 550, 800 : 12 000 pour les 6 Sceaux),
-     chaque Éveil ajoute 10 % à son effet ; Véloce, qui joue déjà en premier, gagne 4 % de dégâts au premier tour par Éveil.
+     chaque Éveil ajoute 10 % à son effet ; Véloce, qui joue déjà en premier, gagne 4 % de dégâts au premier tour par Éveil (70 % dans une fusion).
      Simulation (équipes de 8, bon équipement et optimisé) : +0,1 stasis entre les Sceaux au rang 5 et l'Éveil complet.
      Comptoir des Éclats : appât, piste, coffre, ornement, titre et revente (10 000 kamas l'Éclat, environ +10 % de kamas en chasse).
      État : S.ch.ev = { pouvoir: Éveil 0-5 }, S.ch.bait = pouvoir de l'appât (prochain combat de chasse). */

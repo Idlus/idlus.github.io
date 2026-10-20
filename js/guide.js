@@ -292,7 +292,7 @@
       ["kv", V(() => E.SEAL_RANKS.map((x, i) => [`Rang ${i + 1}`, `${fr(x)} Champion${x > 1 ? "s" : ""}`]), [])],
       ["ul", V(() => (E.SEAL_ORDER || Object.keys(E.SEALS)).map((k) => { const s = E.SEALS[k]; return `**${s.name}** au rang max : ${s.txt(s.max)}`; }), [])],
       ["ul", [
-        `**Fusion** : deux Sceaux au rang max donnent un Sceau double avec les deux pouvoirs à ${pc(V(() => E.SEAL_FUSE_PCT, 0))}.`,
+        `**Fusion** : deux Sceaux au rang max donnent un Sceau double avec les deux pouvoirs à ${pc(V(() => E.SEAL_FUSE_PCT, 0))} (Éveil compris, y compris le bonus de Véloce au premier tour).`,
         `**Cri du Champion** : une fois par combat, sous ${pc(V(() => E.SEAL_CRI_HP, 0))} de vie, les pouvoirs du Sceau doublent pendant ${N(() => E.SEAL_CRI_TURNS)} tours (rang max ou Sceau fusionné).`,
         `**Conclave** : 4 héros portant 4 pouvoirs différents donnent +${N(() => E.SEAL_RESO * (E.SEAL_RESO < 1 ? 100 : 1))} % de dégâts et de vie.`,
         "Les Sceaux sont coupés au Kolizéum.",

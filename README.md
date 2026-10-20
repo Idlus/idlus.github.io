@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.31.2 « Véloce fusionné à 70 % »
+
+- Sceaux de champion (js/champions.js, sealDmg) : le bonus d'Éveil de Véloce est multiplié par E.SEAL_FUSE_PCT dans un Sceau fusionné (5★ : +14 % au premier tour au lieu de +20 %). Test dans tests/champions.test.js. Le serveur rejoue les combats avec champions.js : « Serveur en ligne » se relance.
+
 ## 2.1.31.1 « L'Alignement dans le menu »
 
 - Menu : page « align » dans la famille Défis (NAV, NAV_DESC, étiquette « nouveau » jusqu'au 22/10) ; navGo l'ouvre sur Quêtes › Alignement et navKey la surligne. Aucun changement serveur.
