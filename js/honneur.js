@@ -195,11 +195,12 @@
     }
     return v;
   };
-  /* l'ancienne XP d'alignement (missions, quêtes) devient de l'honneur : 1 point pour 10 */
+  /* l'ancienne XP d'alignement (missions, quêtes, donjons) devient de l'honneur : 1 point pour 100 (choix A2, étude de la conversion) */
+  E.HON_XP_DIV = 100;
   E.honHeldSub = (S, sub) => (E.regMine(S, E.regOfSub(sub)) ? 1 : 0);             // sous-zone dans une région tenue par ton camp
   E.honHeldDg = (S, id) => E.honHeldSub(S, E.DUNGEON_SUB && E.DUNGEON_SUB[id]);    // donjon : la région de sa sous-zone
   /* terr : part faite en région tenue, notée par l'appelant au moment de l'activité (avis, missions, étapes, donjons) ; 0 sinon */
-  E.giveAlignXp = (S, x, terr) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / 10)), "alignement", false, terr || 0); };
+  E.giveAlignXp = (S, x, terr) => { if (S && S.align) E.honGive(S, Math.max(1, Math.round(x / E.HON_XP_DIV)), "alignement", false, terr || 0); };
 
   /* ---------- agressions ---------- */
   E.agrTeam = (S) => {

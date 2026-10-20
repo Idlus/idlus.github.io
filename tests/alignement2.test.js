@@ -136,8 +136,9 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
   const B = team(200); E.chooseAlign(B, "bonta", "coeur"); E.honGive(B, E.honCum(5), "", true);
   E.alignRegSet({ held: { amakna: "bonta" }, side: "bonta" }); B.sub = "ama_bworks";
   let h = B.align.hon; E.honGive(B, 100, "agression"); assert.strictEqual(B.align.hon - h, 105, "agression : talent +5 % seulement");
-  h = B.align.hon; E.giveAlignXp(B, 1000, 1); assert.strictEqual(B.align.hon - h, 115, "activité faite en région tenue : Serment");
-  h = B.align.hon; E.giveAlignXp(B, 1000); assert.strictEqual(B.align.hon - h, 105, "sans lieu (remise, rang) : pas de Serment, même en chassant en région tenue");
+  assert.strictEqual(E.HON_XP_DIV, 100, "XP d'alignement → honneur : 1 pour 100 (A2)");
+  h = B.align.hon; E.giveAlignXp(B, 10000, 1); assert.strictEqual(B.align.hon - h, 115, "activité faite en région tenue : Serment");
+  h = B.align.hon; E.giveAlignXp(B, 10000); assert.strictEqual(B.align.hon - h, 105, "sans lieu (remise, rang) : pas de Serment, même en chassant en région tenue");
   // le lieu de l'activité compte, pas celui où l'on reçoit la récompense (repro : scratchpad serment/repro.js)
   const sub = (r) => Object.keys(E.SUBS).find((k) => E.regOfSub(k) === r), dgAt = (inR) => Object.keys(D.DUNGEONS).find((d) => (E.regOfSub(E.DUNGEON_SUB[d]) === "amakna") === inR && E.regOfSub(E.DUNGEON_SUB[d]));
   const terrOf = (f) => { const g0 = E.honGive, L = []; E.honGive = (S2, n, why, raw, terr) => { if (/alignement|donjon/.test(why) && n > 0 && !raw) L.push(+terr || 0); return g0(S2, n, why, raw, terr); }; try { f(); } finally { E.honGive = g0; } return L; };

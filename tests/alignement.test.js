@@ -46,7 +46,7 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
   S.progress.bossKills.donjon_bworks = 1; E.emit(S, "dungeon", { id: "donjon_bworks", stasis: 1 }); assert.strictEqual(S.align.q.i, 4, "donjon : étape 4 faite");
   assert.ok(S.kamas > k0 && S.tokens.insignes > i0, "kamas et insignes des étapes");
   const c0 = S.cons.coffre_argent || 0;
-  E.giveAlignXp(S, 20000); E.emit(S, "harvest", { n: 0 }); E.alCheck(S);
+  E.giveAlignXp(S, 200000); // 2 000 honneur (1 pour 100) E.emit(S, "harvest", { n: 0 }); E.alCheck(S);
   assert.ok(E.alignRankIdx(S) >= 1 && S.align.q.c === 1 && S.align.q.done === 1, "rang 2 : chapitre 1 terminé");
   assert.strictEqual(S.cons.coffre_argent, c0 + 1, "coffre du chapitre");
   console.log("ok - alignement : chapitre 1 de Bonta,", E.alWarPts(S), "points de guerre");
@@ -61,7 +61,7 @@ const missions = (S, n) => { S.cnt.alignq = (S.cnt.alignq || 0) + n; E.emit(S, "
   S.res[st.res] = st.n + 2; assert.strictEqual(E.act(S, "alGive"), null, "ressources remises"); assert.strictEqual(S.res[st.res], 2, "ressources prises"); assert.strictEqual(Q.i, 2);
   Q.c = 2; Q.i = 0; assert.ok(!E.alOpen(S), "chapitre 3 fermé au niveau 60");
   win(S, "bra_entrailles", 80); assert.strictEqual(Q.i, 0, "rien ne compte avant le niveau du chapitre");
-  const T = team(200); E.chooseAlign(T, "brakmar", "coeur"); T.align.q.c = 4; T.align.q.i = 4; T.align.lvl = 99; E.giveAlignXp(T, 100000); E.alCheck(T);
+  const T = team(200); E.chooseAlign(T, "brakmar", "coeur"); T.align.q.c = 4; T.align.q.i = 4; T.align.lvl = 99; E.giveAlignXp(T, 1000000); E.alCheck(T);
   assert.ok(T.titlesExtra.includes("Héros de Brâkmar") && T.align.q.done === 5, "titre « Héros de Brâkmar »");
   assert.strictEqual(E.alStep(T), null, "toutes les quêtes finies");
   console.log("ok - alignement : remises, niveaux des chapitres, titre final");
