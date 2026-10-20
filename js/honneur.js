@@ -211,9 +211,11 @@
   const GH = ["Sombrelune", "Rubis", "Krâne-Noir", "Vespera", "Ombrage", "Lamebrune", "Aube-Claire", "Clairon", "Fiel", "Brasier", "Pâle-Lys", "Givrelame"];
   /* les cibles du jour : 5 équipes fantômes du camp adverse, niveau proche du tien */
   /* 1A, fantômes « modéré » : renfort m par cible (PV ×(1+m), dommages +100 m %, comme boosted() dans alliance.js) ;
-     le renfort positif de la Difficile ne s'ajoute qu'au niveau 200, quand le décalage de niveau ne joue plus. Défenses : aucun. */
+     le renfort positif de la Difficile ne s'ajoute qu'au niveau 200, quand le décalage de niveau ne joue plus ;
+     sous 200, la seconde Serrée est allégée (−10 %) pour rester nettement plus facile que la Difficile. Défenses : aucun. */
   E.AGR_BOOST = [-0.3, -0.2, -0.1, 0, 0.15];
-  E.agrBoostOf = (i, lvl) => { const m = E.AGR_BOOST[i] || 0; return m > 0 && lvl < 200 ? 0 : m; };
+  E.AGR_BOOST_LOW = [-0.3, -0.2, -0.1, -0.1, 0]; // sous le niveau 200 : Serrée allégée pour que la Difficile reste la plus dure (point A)
+  E.agrBoostOf = (i, lvl) => (lvl < 200 ? E.AGR_BOOST_LOW : E.AGR_BOOST)[i] || 0;
   E.agrGhost = (T) => { const G = E.koliGhost(T.seed, T.lvl, T.n); const m = T.m || 0; if (!m) return G;
     return G.map((h) => { const st = Object.assign({}, h.st); st.hpMax = Math.round(st.hpMax * (1 + m)); st.dsort = (st.dsort || 0) + m * 100; return Object.assign({}, h, { st }); }); };
   E.agrTargets = (S) => {

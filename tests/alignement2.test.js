@@ -123,7 +123,7 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
 {
   const S = team(200); E.chooseAlign(S, "bonta", "coeur");
   assert.deepStrictEqual(E.agrTargets(S).map((t) => t.m), [-0.3, -0.2, -0.1, 0, 0.15], "niveau 200 : renfort −30 % à +15 %");
-  for (const L of [50, 100, 150, 199]) { const T = team(L); E.chooseAlign(T, "bonta", "coeur"); assert.deepStrictEqual(E.agrTargets(T).map((t) => t.m), [-0.3, -0.2, -0.1, 0, 0], `niveau ${L} : pas de renfort positif`); }
+  for (const L of [50, 100, 150, 199]) { const T = team(L); E.chooseAlign(T, "bonta", "coeur"); assert.deepStrictEqual(E.agrTargets(T).map((t) => t.m), [-0.3, -0.2, -0.1, -0.1, 0], `niveau ${L} : Serrée allégée, pas de renfort positif`); }
   const T4 = E.agrTargets(S)[4], g0 = E.koliGhost(T4.seed, T4.lvl, T4.n), g1 = E.agrGhost(T4);
   g0.forEach((h, k) => { assert.strictEqual(g1[k].st.hpMax, Math.round(h.st.hpMax * 1.15)); assert.ok(Math.abs(g1[k].st.dsort - ((h.st.dsort || 0) + 15)) < 1e-9); });
   const T0 = E.agrTargets(S)[0]; assert.strictEqual(E.agrGhost(T0)[0].st.hpMax, Math.round(E.koliGhost(T0.seed, T0.lvl, T0.n)[0].st.hpMax * 0.7));
