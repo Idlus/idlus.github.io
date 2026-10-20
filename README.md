@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.31.1 « L'Alignement dans le menu »
+
+- Menu : page « align » dans la famille Défis (NAV, NAV_DESC, étiquette « nouveau » jusqu'au 22/10) ; navGo l'ouvre sur Quêtes › Alignement et navKey la surligne. Aucun changement serveur.
+
 ## 2.1.31 « La refonte des alignements »
 
 - Honneur et 20 rangs à la place du niveau d'alignement (`js/honneur.js`, migration `E.VERSION` 14 : niveau 100 = rang 10, bourse à 0), talents d'ordre, Arsenal (5 pièces de grade, rangs 6 à 10), guerre des régions, agressions, page dans `js/alignui.js`. Classement des camps par rang (vue `lb_hon`), ailes dans le chat.

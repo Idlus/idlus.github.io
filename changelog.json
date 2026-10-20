@@ -1,6 +1,14 @@
 {
-  "version": "2.1.31",
+  "version": "2.1.31.1",
   "versions": [
+    {
+      "v": "2.1.31.1",
+      "name": "L'Alignement dans le menu",
+      "guide": "alignement",
+      "items": [
+        "Menu : l'Alignement a sa propre page dans la famille Défis (et dans la recherche « Aller à une page »). Elle ouvre Quêtes › Alignement"
+      ]
+    },
     {
       "v": "2.1.31",
       "name": "La refonte des alignements",

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.31";
+const GAME_VERSION = "2.1.31.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.31.1", name: "L'Alignement dans le menu", guide: "alignement", items: [
+    "Menu : l'Alignement a sa propre page dans la famille Défis (et dans la recherche « Aller à une page »). Elle ouvre Quêtes › Alignement",
+  ] },
   { v: "2.1.31", name: "La refonte des alignements", guide: "alignement", items: [
     "Alignement : le niveau d'alignement est remplacé par l'honneur et 20 rangs. Tes anciens niveaux sont convertis (niveau 100 = rang 10) et ta bourse d'honneur démarre à 0",
     "Chaque rang débloque des talents de ton ordre, et les rangs 6 à 10 ouvrent l'Arsenal : 5 pièces de grade à acheter avec ton honneur",
@@ -2559,7 +2562,7 @@ const ICONS = {
 const navOnline = () => !!(window.ONLINE && window.ONLINE.enabled);
 const NAV = [
   { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"]] },
-  { id: "df", n: "Défis", ic: "ailes", pages: [["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
+  { id: "df", n: "Défis", ic: "ailes", pages: [["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["align", "Alignement", "ailes"], ["wb", "Boss des mondes", "couronne"]] }, // 2.1.31.1 (Mathis) : l'Alignement dans le menu principal, il ouvre l'onglet Quêtes › Alignement
   { id: "he", n: "Héros", ic: null, pages: [["team", "Équipe et héros", null], ["maitrise", "Maîtrise", "cristal"], ["inv", "Inventaire", "sac"], ["dofus", "Dofus", "dofus"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["chasse", "Chasse", "trophee"]] }, // 2.0 : la Renaissance est devenue la Maîtrise
   { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
@@ -2569,13 +2572,13 @@ const NAV = [
 /* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
 function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["fragments", "Carnet des Fragments", "cristal"], ["boutique", "Boutique temporelle", "bourse"], ["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
 /* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
 const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
-const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
+const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide", "align"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
 const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
@@ -2590,7 +2593,7 @@ function navKey() {
   if (t === "home") return "home"; // 1.0.21 : le Havre-Sac est l'accueil, sa page détaillée (ui.home = "havre") reste sous le même onglet
   if (t === "world") return ui.zoneView ? "world" : ui.world === "dungeons" || ui.world === "enc" ? ui.world : "world";
   if (t === "heroes") return "team";
-  if (t === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quests";
+  if (t === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : ui.qt === "align" ? "align" : "quests";
   return t;
 }
 /* 1.2.5.5 (demande de Mathis) : plusieurs familles du menu ouvertes à la fois, gardées sur l'appareil ; la famille de la page affichée s'ouvre, rien ne se referme tout seul */
@@ -2605,6 +2608,7 @@ function navGo(k) {
   else if (k === "dungeons" || k === "enc") { ui.tab = "world"; ui.zoneView = null; ui.world = k; }
   else if (k === "quests") { ui.tab = "quests"; ui.qt = "jour"; }
   else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
+  else if (k === "align") { ui.tab = "quests"; ui.qt = "align"; }
   else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
 const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0][1] : k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
