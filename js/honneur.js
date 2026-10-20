@@ -276,7 +276,13 @@
   const tick0 = E.tick;
   E.tick = (S, dt, realMs) => { const r = tick0(S, dt, realMs); if (S) { CUR = E.regOfSub(S.sub); if (S.align) { try { E.honDefTick(S); } catch (e) {} } } return r; };
   const des0 = E.deserialize;
-  E.deserialize = (txt) => { const S = des0(txt); try { if (S.align) E.honInit(S); } catch (e) {} return S; };
+  // Transition v13 -> v14 : un vieil onglet (service worker) supprime les objets hon_* inconnus mais garde S.honGear. On les rend (verrouillés).
+  E.honGearRestore = (S) => {
+    if (!S || !S.honGear || !S.items) return 0; let n = 0;
+    for (const id in S.honGear) { if (!S.honGear[id] || !ITEMS[id] || Object.values(S.items).some((it) => it.tpl === id)) continue; const it = E.rollItem(S, id, { radiant: false }); it.locked = true; S.items[it.uid] = it; n++; }
+    return n;
+  };
+  E.deserialize = (txt) => { const S = des0(txt); try { if (S.align) E.honInit(S); E.honGearRestore(S); } catch (e) {} return S; };
   E.honMigrate = (S) => { if (S && S.align && !(S.align.hon >= 0)) { const l = S.align.lvl || 0; E.honInit(S); return { from: l, rank: E.alignRankIdx(S) }; } return null; };
   /* honneur des missions, quêtes et donjons (à la place de l'XP d'alignement) */
   const emit0 = E.emit;

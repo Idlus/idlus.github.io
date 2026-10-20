@@ -27,7 +27,6 @@
   const pct = (a, b) => (b > 0 ? Math.max(0, Math.min(100, Math.round((a / b) * 100))) : 0);
   const SIDES = ["bonta", "brakmar"];
   const short = { bonta: "b", brakmar: "k" };
-  const rankOf = (side, ord, lvl) => E.honRankName(side, ord, Math.min(20, Math.floor((lvl || 0) / 5)));
   const left = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); const j = Math.floor(m / 1440), hh = Math.floor((m % 1440) / 60); return j ? `${j} j ${hh} h` : hh ? `${hh} h ${m % 60} min` : `${m % 60} min`; };
   /* numéro de semaine du calendrier (lundi) et fin de la semaine de jeu (lundi 0 h UTC, comme E.weekIdx) */
   const isoWeek = (t) => { const d = new Date(t); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day + 3); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round((d - y0) / 864e5 / 7 - ((y0.getUTCDay() + 6) % 7 - 3) / 7); };
@@ -59,7 +58,11 @@
       const r = await db.from("lb_align").select("user_id,pseudo,side,ord,lvl,chap,main,main_lvl").order("lvl", { ascending: false }).limit(3000);
       if (r && !r.error && Array.isArray(r.data)) {
         CAMP.u = {}; CAMP.p = {}; CAMP.r = {}; CAMP.list = r.data;
-        r.data.forEach((x) => { if (!SIDES.includes(x.side)) return; CAMP.u[x.user_id] = x.side; CAMP.r[x.user_id] = Math.min(20, Math.floor((+x.lvl || 0) / 5)); /* niveau envoyé = 5 par rang (js/honneur.js) */ if (x.pseudo) CAMP.p[String(x.pseudo).toLowerCase()] = x.side; });
+        /* 2A : le rang d'honneur tenu par le serveur (lb_hon, supabase/alignement2.sql) ; à défaut, le niveau envoyé (5 par rang, js/honneur.js) */
+        let hr = null; try { const q = await db.from("lb_hon").select("user_id,side,rank").limit(5000); if (q && !q.error && Array.isArray(q.data)) { hr = {}; q.data.forEach((y) => { hr[y.user_id + "|" + y.side] = Math.max(0, Math.min(20, +y.rank || 0)); }); } } catch (e) { hr = null; }
+        r.data.forEach((x) => { x.rank = hr && (x.user_id + "|" + x.side) in hr ? hr[x.user_id + "|" + x.side] : Math.min(20, Math.floor((+x.lvl || 0) / 5)); });
+        r.data.sort((a, b) => b.rank - a.rank || (b.main_lvl || 0) - (a.main_lvl || 0));
+        r.data.forEach((x) => { if (!SIDES.includes(x.side)) return; CAMP.u[x.user_id] = x.side; CAMP.r[x.user_id] = x.rank; if (x.pseudo) CAMP.p[String(x.pseudo).toLowerCase()] = x.side; });
         if (window.CHAT && window.CHAT.repaint) window.CHAT.repaint();
         const ui = UI(); if (S() && ["ladder", "guild", "exp", "builds"].includes(ui.tab) && !document.querySelector("#sheet .sheet")) X().render();
       }
@@ -204,7 +207,7 @@
   }
   function whoHtml(s) {
     const L = CAMP.list; const o = ONL();
-    const rows = (L || []).slice(0, 8).map((x) => `<div class="li small">${X().cmed(x.main, x.main_lvl)}<span class="al-wing ${short[x.side] || ""}">${h((E.ALIGN[x.side] || {}).name || "")}</span><b class="grow al-nm">${h(x.pseudo || "?")}${o && o.user && x.user_id === o.user.id ? ` <span class="xs muted">(toi)</span>` : ""}</b><span class="xs muted">${h(rankOf(x.side, x.ord, x.lvl))} · niv. ${fmt(x.lvl)}</span></div>`).join("");
+    const rows = (L || []).slice(0, 8).map((x) => `<div class="li small">${X().cmed(x.main, x.main_lvl)}<span class="al-wing ${short[x.side] || ""}">${h((E.ALIGN[x.side] || {}).name || "")}</span><b class="grow al-nm">${h(x.pseudo || "?")}${o && o.user && x.user_id === o.user.id ? ` <span class="xs muted">(toi)</span>` : ""}</b><span class="xs muted">${h(E.honRankName(x.side, x.ord, x.rank || 0))} · rang ${fmt(x.rank || 0)}</span></div>`).join("");
     const body = !online() ? `<div class="pad small muted">Hors ligne : connecte-toi à ton compte pour voir le camp des autres joueurs.</div>`
       : L === null ? `<div class="pad small muted">Chargement…</div>` : rows ? `<div class="list">${rows}</div>` : `<div class="pad small muted">Personne n'a encore choisi son camp sur le serveur.</div>`;
     return `<section class="panel"><div class="phead"><h2>Qui est de quel camp</h2>${L && L.length ? `<span class="xs muted">${fmt(L.length)} joueur${L.length > 1 ? "s" : ""}</span>` : ""}</div>${body}<div class="pad xs muted">Le camp s'affiche aussi dans le chat, les profils et les classements.</div></section>`;

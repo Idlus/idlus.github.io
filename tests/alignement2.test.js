@@ -154,4 +154,29 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
   console.log("ok - étude PvP n° 2");
 }
 
+// 9. Le serveur (fonction « record ») charge js/honneur.js : honneur, rang et pièces de rang ; supabase/alignement2.sql tolère les anciens envois
+{
+  const fs = require("fs"), path = require("path"); const R = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
+  assert.ok(/"alignement", "honneur"\]/.test(R("tools/build_server.js")), "honneur.js dans le code du serveur, après alignement.js");
+  const q = R("supabase/alignement2.sql");
+  assert.ok(/jsonb_typeof\(a->'h'\) = 'number'/.test(q), "SQL : honneur seulement s'il est envoyé et numérique");
+  assert.ok(/h := least\(h, o\.hon \+ 100\)/.test(q), "SQL : honneur plafonné après un changement de camp");
+  assert.ok(/align_regions_cache/.test(q) && /align_regions_ttl\(\) returns interval language sql immutable as \$\$ select interval '3 minutes'/.test(q), "SQL : état des régions gardé 3 minutes");
+  console.log("ok - serveur et SQL de la refonte");
+}
+
 console.log("alignement2.test.js : tout est bon");
+
+// 10. Rendu de l'équipement de rang supprimé par un vieil onglet v13
+{
+  const S10 = team(200);
+  if (S10) {
+    E.chooseAlign(S10, "bonta", "coeur"); S10.honGear = { hon_bonta_coiffe: 1 };
+    const S2 = E.deserialize(E.serialize(S10));
+    const n = Object.values(S2.items).filter((it) => it.tpl === "hon_bonta_coiffe");
+    if (n.length !== 1 || !n[0].locked) throw new Error("équipement de rang non rendu");
+    const S3 = E.deserialize(E.serialize(S2));
+    if (Object.values(S3.items).filter((it) => it.tpl === "hon_bonta_coiffe").length !== 1) throw new Error("équipement de rang dupliqué");
+    console.log("ok 10 équipement de rang rendu après vieil onglet");
+  }
+}

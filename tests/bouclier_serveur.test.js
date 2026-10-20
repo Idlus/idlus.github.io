@@ -96,6 +96,21 @@ console.log("ok - compte vérifié : marge plus large, temps de jeu et impossibl
 // 6. combats rejoués : ils partent de la partie validée (un record de donjon sur une partie retenue ne voit pas les retouches)
 if (!/okSave\\(db, uid\\)/.test(${JSON.stringify(src)})) fail("les combats ne lisent pas la partie validée");
 console.log("ok - les combats rejoués lisent la partie validée");
+// 7. refonte des alignements : le serveur charge js/honneur.js (honneur et rang dans le résumé, partie v13 convertie, pièces de rang connues)
+{ const P = E.newState("Milicien", "iop"); P.chars[0].lvl = 200; E.chooseAlign(P, "bonta", "coeur");
+  const o13 = JSON.parse(E.serialize(P)); o13.v = 13; o13.align = { side: "bonta", order: "coeur", lvl: 100, xp: 0, q: o13.align.q, war: o13.align.war }; // partie d'avant la refonte
+  T.saves.push({ user_id: "u2", data: JSON.stringify(o13), meta: {}, updated_at: iso(t0) });
+  r = await call("u2", { verif: 1 }); if (!r.ok) fail("partie v13 refusée : " + JSON.stringify(r));
+  const k2 = T.saves_ok.find((x) => x.user_id === "u2"); const a2 = k2.meta.align || {};
+  if (a2.h !== E.honCum(10) || a2.r !== 10) fail("résumé du serveur sans l'honneur converti : " + JSON.stringify(a2));
+  if (k2.data !== JSON.stringify(o13)) fail("la partie validée n'est pas celle envoyée");
+  const P2 = E.deserialize(JSON.stringify(o13)); P2.align.pur = 20000; E.HON_GEAR_SLOTS.forEach((sl) => E.honBuy(P2, sl));
+  Object.values(P2.items).filter((x) => /^hon_/.test(x.tpl)).forEach((x) => E.equip(P2, P2.chars[0].id, x.uid, D.ITEMS[x.tpl].slot === "anneau" ? "anneau1" : D.ITEMS[x.tpl].slot));
+  Object.assign(T.saves.find((x) => x.user_id === "u2"), { data: E.serialize(P2), updated_at: iso(t0 + 3600e3) }); k2.at = iso(Date.now() - 60e3);
+  r = await call("u2", { verif: 1 }); if (!r.ok) fail("partie avec les pièces de rang refusée : " + JSON.stringify(r));
+  const back = E.deserialize(T.saves_ok.find((x) => x.user_id === "u2").data); if (Object.values(back.items).filter((x) => /^hon_/.test(x.tpl)).length !== 5) fail("pièces de rang perdues");
+  if (T.saves_ok.find((x) => x.user_id === "u2").meta.align.r !== 10) fail("rang perdu"); }
+console.log("ok - alignements : honneur et rang calculés par le serveur, partie v13 convertie, pièces de rang acceptées");
 process.exit(0);
 `);
 try { const out = execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", tmp], { stdio: "pipe" }); process.stdout.write(out.toString()); }
