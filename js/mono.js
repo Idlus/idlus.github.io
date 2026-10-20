@@ -32,7 +32,7 @@
   /* Saisons : 2 mois = 4 manches de 2 semaines, puis le héros part dans l'Éternel (avec ses kamas et ses objets, sans contenu
      de saison) et une nouvelle saison repart du niveau 1. « debut » est la date d'ouverture, la même pour tous ; tant qu'elle
      n'est pas fixée (avant l'ouverture), chaque partie compte sa saison depuis son propre départ. */
-  M.saisons = { 1: { nom: "Saison 1", theme: "Guerre de Bonta et Brâkmar", debut: null } };
+  M.saisons = { 1: { nom: "Saison 1", theme: "Les Fragments du Temps", debut: null } }; // avec les alignements, le Boss de saison et les classements (Mathis, 20/10)
   M.len = 56 * 86400000;
   E.monoSeasonDef = (s) => M.saisons[s] || { nom: `Saison ${s}`, debut: null };
   // la saison ouverte maintenant (null entre deux saisons)
@@ -61,7 +61,7 @@
     return got;
   };
   /* Ce que la nouvelle saison garde du compte : titres et apparences (ornements, cadres, ailes, palettes, aura). */
-  E.monoLegacy = (S) => ({ t: (S.titlesExtra || []).slice(), u: Object.keys(S.unlocks || {}).filter((k) => /^(gift_o_|gift_f_|wing_|teint_)/.test(k)),
+  E.monoLegacy = (S) => ({ t: (S.titlesExtra || []).slice(), u: Object.keys(S.unlocks || {}).filter((k) => /^(gift_o_|gift_f_|wing_|teint_|tf_)/.test(k)),
     aura: !!(S.chroma && S.chroma.shop && S.chroma.shop.aura) });
   E.monoLegacyMerge = (a, b) => ({ t: [...new Set([...(a && a.t) || [], ...(b && b.t) || []])], u: [...new Set([...(a && a.u) || [], ...(b && b.u) || []])], aura: !!((a && a.aura) || (b && b.aura)) });
   E.monoApplyLegacy = (S, L) => {

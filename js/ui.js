@@ -2377,18 +2377,20 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "mono_s1") ornHtml = `<span class="orn seal">⭐</span>`; // Monocompte : pass de saison
   else if (orn === "mono_pres") ornHtml = `<span class="orn crown">✨</span>`;
   else if (orn === "mono_solo") ornHtml = `<span class="orn seal">⚔️</span>`;
-  else if (orn === "mono_sb") ornHtml = `<span class="orn seal">🕰️</span>`; // 2.1.x : Comptoir des Éclats
+  else if (orn === "mono_sb") ornHtml = `<span class="orn seal">🕰️</span>`;
+  else if (orn === "tf_orn") ornHtml = `<img class="orn regorn" src="assets/i/995008.png" alt="">`; // Monocompte, Saison 1 : Boutique temporelle // 2.1.x : Comptoir des Éclats
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
   else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
   else if (orn === "classes19") ornHtml = `<span class="orn crown c19">🏆</span>`; // 1.0.34 : les 19 classes au niveau 200
   else if (orn === "koli_ecu") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/kolizeton.svg" alt="">`; // 1.0.24 : boutique du Kolizéum
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
+  if (E.tfWorn && E.tfWorn(S, "aura")) ornCls += " tf-aura"; // Monocompte, Saison 1 : Aura « Distorsion temporelle »
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   if (S.settings.cadreSonge) ornCls += " fsg"; // 0.1.48 : Cadre des Songes (Marché onirique)
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button data-fr="${E.heroFrame(S, c)}" class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}`)}">
     ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span>${c.ren ? `<span class="renm" title="Renaissance ${E.roman(c.ren)}">${E.roman(c.ren)}</span><span class="rembers"><i></i><i></i><i></i><i></i></span>` : ""}<span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
-    <div class="nm"><b class="${c.ren ? "rname" : ""}">${h(c.name)}</b>${c.ren ? `<span class="rstar">✦ ${E.roman(c.ren)}</span>` : ""}<span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</div>
+    <div class="nm"><b class="${c.ren ? "rname" : ""}">${E.tfWorn && E.tfWorn(S, "emb") ? `<img class="tf-emb" src="assets/i/995004.png" alt="" title="Emblème « Boucle du temps »">` : ""}${h(c.name)}</b>${c.ren ? `<span class="rstar">✦ ${E.roman(c.ren)}</span>` : ""}<span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</div>
     <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
     <div class="st3">${stats3.map(([k, v]) => `<span>${sIco(k)}${typeof v === "number" ? fmt(v) : v}</span>`).join("")}</div></div><span class="tier">${E.FRAMES[fi]}</span></button>`;
 }
@@ -2524,7 +2526,7 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
-function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
+function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["fragments", "Carnet des Fragments", "cristal"], ["boutique", "Boutique temporelle", "bourse"], ["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
@@ -7078,6 +7080,7 @@ function gameBuysHtml() {
   </section>`;
 }
 function resDetail(n) {
+  if (n === E.TF_RES && window.TFUI) return window.TFUI.resDetail(n); // Monocompte, Saison 1 : ni vente directe, ni marchand, ni « Garder au maximum »
   const IX = resIndex(); const qq = S.res[n] || 0; const r = resRarity(n); const src = IX.src[n] || []; const use = IX.use[n] || [];
   const A = E.almanax(S);
   const srcHtml = src.slice(0, 8).map((x) => x.job ? `<div class="li">${im(jobImg(x.job), "joblogo sm", GATHER_JOBS[x.job].name)}<span class="grow">${GATHER_JOBS[x.job].name} niv. ${x.lvl}</span><button class="btn sm" data-act="gathersheet" data-job="${x.job}">${IC("pioche")} Récolter</button></div>`

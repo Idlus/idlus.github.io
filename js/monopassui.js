@@ -82,7 +82,7 @@
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
     const B = E.bpState(s); E.bpQuests(s); E.hfCheck(s);
     const t = E.bpTier(s), into = B.pts - t * BP.step, pp = E.bpPrestigePts(s);
-    const man = E.monoManche ? Math.min(4, E.monoManche(s)) : 1; const left = Math.max(0, E.monoEnd(s) - E.now());
+    const man = E.monoManche ? Math.min(4, E.monoManche(s)) : 1; const left = Math.max(0, E.monoEnd(s) - (E.monoDate ? E.monoDate(s) : E.now()));
     const nextBig = [...Array(BP.tiers).keys()].map((i) => i + 1).find((x) => x > t && x % 5 === 0) || BP.tiers; const prize = E.MONO_PASS.free[nextBig];
     const ready = [...Array(BP.tiers).keys()].reduce((n, i) => n + (E.bpCanClaim(s, "free", i + 1) ? 1 : 0) + (E.bpCanClaim(s, "pres", i + 1) ? 1 : 0), 0);
     main.innerHTML = `<div class="pagehead"><h1>Pass de saison</h1></div>
@@ -102,7 +102,7 @@
   function mdPage(main) {
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
     const R = E.mdState(s); const dg = D.DUNGEONS[R.did]; const m = Math.min(4, E.monoManche(s));
-    const end = E.monoT0(s) + m * E.MONO.jobs.manche - E.now(); const k = Math.min(E.STASIS_MAX, R.best + 1);
+    const end = E.monoT0(s) + m * E.MONO.jobs.manche - (E.monoDate ? E.monoDate(s) : E.now()); const k = Math.min(E.STASIS_MAX, R.best + 1);
     const me = s.chars.find((c) => !c.merc) || s.chars[0]; const run = s.mono.mdRun;
     const pend = E.mdPending(s); const ch = E.mdChest(R.best);
     const rows = E.MONO.md.chest.slice().reverse().map(([st, c]) => `<div class="bp-hf${R.best >= st ? "" : " soon"}"><img src="assets/ui/coffres/${(D.CONSUMABLES[c] || {}).img}.svg" alt="" style="width:34px;height:34px"><span class="grow"><b>${h(D.CONSUMABLES[c].name)}</b><br><span class="small muted">meilleure stasis ${st} ou plus</span></span>${R.best >= st ? '<span class="bp-ok">✓</span>' : ""}</div>`).join("");
@@ -121,7 +121,7 @@
   /* ---------- Guerre des camps et Boss de saison ---------- */
   function warPage(main) {
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
-    const m = Math.min(4, E.monoManche(s)); const end = E.monoT0(s) + m * E.MONO.jobs.manche - E.now();
+    const m = Math.min(4, E.monoManche(s)); const end = E.monoT0(s) + m * E.MONO.jobs.manche - (E.monoDate ? E.monoDate(s) : E.now());
     const side = s.align && s.align.side; const AL = side ? E.ALIGN[side] : null; const W = E.warState(s);
     const zones = Object.entries(W.z).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const zn = (k) => { const z = E.SUBS[k]; return z ? z.name : k; };
