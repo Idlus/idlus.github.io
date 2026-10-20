@@ -1,6 +1,19 @@
 {
-  "version": "2.1.30.11",
+  "version": "2.1.31",
   "versions": [
+    {
+      "v": "2.1.31",
+      "name": "La refonte des alignements",
+      "guide": "alignement",
+      "items": [
+        "Alignement : le niveau d'alignement est remplacé par l'honneur et 20 rangs. Tes anciens niveaux sont convertis (niveau 100 = rang 10) et ta bourse d'honneur démarre à 0",
+        "Chaque rang débloque des talents de ton ordre, et les rangs 6 à 10 ouvrent l'Arsenal : 5 pièces de grade à acheter avec ton honneur",
+        "Guerre des régions : choisis un front, gagne de l'honneur en combattant et fais basculer les régions vers ton camp chaque semaine",
+        "Agressions : affronte chaque jour 5 équipes du camp adverse, de la plus facile à la plus difficile, pour gagner de l'honneur",
+        "Classement des camps : il affiche maintenant le rang d'honneur (1 à 20) de chaque joueur, et tes ailes apparaissent dans le chat",
+        "Changer de camp ramène au rang 2 au plus et vide la bourse d'honneur"
+      ]
+    },
     {
       "v": "2.1.30.11",
       "name": "Couture fine partout",

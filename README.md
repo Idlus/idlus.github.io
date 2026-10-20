@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.31 « La refonte des alignements »
+
+- Honneur et 20 rangs à la place du niveau d'alignement (`js/honneur.js`, migration `E.VERSION` 14 : niveau 100 = rang 10, bourse à 0), talents d'ordre, Arsenal (5 pièces de grade, rangs 6 à 10), guerre des régions, agressions, page dans `js/alignui.js`. Classement des camps par rang (vue `lb_hon`), ailes dans le chat.
+- Serveur : `honneur.js` dans le Bouclier (`tools/build_server.js`). Base : `supabase/alignement2.sql` (honneur plafonné, +100 au plus après un changement de camp, envois sans honneur ignorés, état des régions en cache 3 minutes). Ordre de déploiement : fonction `record`, puis `alignement2.sql`, puis le jeu.
+- Un vieil onglet resté en cache qui supprime une pièce de grade : elle est rendue au chargement suivant.
+
 ## 2.1.30.11 « Couture fine partout »
 
 - La Couture fine est aussi affichée dans le choix d'un objet (étiquette de panoplie bleue) et dans le détail des bonus de l'Encyclopédie (`js/ui.js`, `js/collui.js`). Aucun changement de calcul.

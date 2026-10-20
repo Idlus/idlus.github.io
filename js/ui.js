@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.11";
+const GAME_VERSION = "2.1.31";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.31", name: "La refonte des alignements", guide: "alignement", items: [
+    "Alignement : le niveau d'alignement est remplacé par l'honneur et 20 rangs. Tes anciens niveaux sont convertis (niveau 100 = rang 10) et ta bourse d'honneur démarre à 0",
+    "Chaque rang débloque des talents de ton ordre, et les rangs 6 à 10 ouvrent l'Arsenal : 5 pièces de grade à acheter avec ton honneur",
+    "Guerre des régions : choisis un front, gagne de l'honneur en combattant et fais basculer les régions vers ton camp chaque semaine",
+    "Agressions : affronte chaque jour 5 équipes du camp adverse, de la plus facile à la plus difficile, pour gagner de l'honneur",
+    "Classement des camps : il affiche maintenant le rang d'honneur (1 à 20) de chaque joueur, et tes ailes apparaissent dans le chat",
+    "Changer de camp ramène au rang 2 au plus et vide la bourse d'honneur",
+  ] },
   { v: "2.1.30.11", name: "Couture fine partout", items: [
     "Héros › choix d'un objet : l'étiquette de panoplie passe en bleu avec « bonus débloqué (Couture fine) » quand la pièce manquante suffit grâce à la Couture fine",
     "Encyclopédie › Panoplies › Bonus : le palier débloqué par la Couture fine s'affiche en bleu, comme dans l'onglet Équipement",
