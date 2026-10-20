@@ -1,6 +1,14 @@
 {
-  "version": "2.1.31.1",
+  "version": "2.1.31.2",
   "versions": [
+    {
+      "v": "2.1.31.2",
+      "name": "Véloce fusionné à 70 %",
+      "guide": "chasse",
+      "items": [
+        "Sceaux : dans une fusion, le bonus d'Éveil de Véloce (dégâts au premier tour) passe à 70 %, comme les autres pouvoirs. À 5★ : +14 % au lieu de +20 %. Véloce seul ne change pas"
+      ]
+    },
     {
       "v": "2.1.31.1",
       "name": "L'Alignement dans le menu",
