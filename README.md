@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.11 « Couture fine partout »
+
+- La Couture fine est aussi affichée dans le choix d'un objet (étiquette de panoplie bleue) et dans le détail des bonus de l'Encyclopédie (`js/ui.js`, `js/collui.js`). Aucun changement de calcul.
+
 ## 2.1.30.10 « Couture fine plus claire »
 
 - Description de la Couture fine réécrite (`js/collections.js`) ; palier débloqué par la Couture fine affiché en bleu dans Héros › Équipement, l'infobulle des objets et le détail d'une panoplie (`setBlock` dans `js/ui.js`). Une panoplie active seulement grâce à la Couture fine apparaît dans « Panoplies actives ». Aucun changement de calcul.

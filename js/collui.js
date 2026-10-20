@@ -249,7 +249,7 @@
     const s = S(); const c = scHero(s); const worn = E.setCounts(s, c)[sid] || 0; const dex = E.itemDex(s); const owned = E.ownedTpls(s);
     const rows = E.setPieces(sid).map((t) => { const T = ITEMS[t]; const src = E.itemSources(t).slice(0, 2).map((x) => x.k === "craft" ? `Recette niv. ${x.lvl}` : `${x.k === "boss" ? "Boss" : "Butin"} : ${MONSTERS[x.mon] ? MONSTERS[x.mon].name : "?"}`).join(" · ");
       return `<div class="li"><span class="icobox">${im(itemImg(t), "", T.name)}</span><span class="grow"><b>${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl}</span><br><span class="xs ${owned[t] ? "plus" : "muted"}">${owned[t] ? "✓ dans le sac" : dex[t] ? "obtenue, plus dans le sac" : h(src || "source inconnue")}</span></span></div>`; }).join("");
-    X().openSheet(`<div class="co-sheet"><h2>${h(SETS[sid].name)}</h2><div class="list">${rows}</div>${X().setBlock ? X().setBlock(sid, worn) : ""}<div class="row" style="margin-top:10px"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+    X().openSheet(`<div class="co-sheet"><h2>${h(SETS[sid].name)}</h2><div class="list">${rows}</div>${X().setBlock ? X().setBlock(sid, worn, 1) : ""}<div class="row" style="margin-top:10px"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
   }
 
   /* ======================= QUÊTES › DOFUS › POTENTIEL (42A) ======================= */

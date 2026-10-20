@@ -1,6 +1,14 @@
 {
-  "version": "2.1.30.10",
+  "version": "2.1.30.11",
   "versions": [
+    {
+      "v": "2.1.30.11",
+      "name": "Couture fine partout",
+      "items": [
+        "Héros › choix d'un objet : l'étiquette de panoplie passe en bleu avec « bonus débloqué (Couture fine) » quand la pièce manquante suffit grâce à la Couture fine",
+        "Encyclopédie › Panoplies › Bonus : le palier débloqué par la Couture fine s'affiche en bleu, comme dans l'onglet Équipement"
+      ]
+    },
     {
       "v": "2.1.30.10",
       "name": "Couture fine plus claire",

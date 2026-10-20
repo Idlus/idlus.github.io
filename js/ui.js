@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.10";
+const GAME_VERSION = "2.1.30.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.11", name: "Couture fine partout", items: [
+    "Héros › choix d'un objet : l'étiquette de panoplie passe en bleu avec « bonus débloqué (Couture fine) » quand la pièce manquante suffit grâce à la Couture fine",
+    "Encyclopédie › Panoplies › Bonus : le palier débloqué par la Couture fine s'affiche en bleu, comme dans l'onglet Équipement",
+  ] },
   { v: "2.1.30.10", name: "Couture fine plus claire", items: [
     "Collection de panoplies : la description de la Couture fine est plus claire (une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce)",
     "Héros › Équipement : quand la Couture fine joue, le palier qu'elle débloque s'affiche en bleu avec l'étiquette « Couture fine » (aussi dans l'infobulle des objets et le détail d'une panoplie)",
@@ -6459,8 +6463,8 @@ function charEquipView(c, st) {
     const worn = all.filter((it) => E.equippedBy(S, it.uid)).sort(byGain);
     const high = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl > c.lvl).sort((a, b) => ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
     const curSet = c.equip[ui.slot] && S.items[c.equip[ui.slot]] && ITEMS[S.items[c.equip[ui.slot]].tpl].set; const counts = E.setCounts(S, c);
-    const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
-      return `<button class="pset ${on ? "on" : ""} ${ui.psetOpen === it.uid ? "open" : ""}" data-act="psetopen" data-uid="${it.uid}" aria-expanded="${ui.psetOpen === it.uid}" title="Voir les pièces et les bonus de la panoplie">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""} ${ui.psetOpen === it.uid ? "▾" : "▸"}</button>`; };
+    const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const f0 = setFx(z, n0), f1 = setFx(z, n1); const on = E.setBonus(z, f1) && JSON.stringify(E.setBonus(z, f1)) !== JSON.stringify(E.setBonus(z, f0)); const cfOn = on && f1 !== n1; // 2.1.30.11 : Couture fine comprise
+      return `<button class="pset ${on ? "on" : ""}${cfOn ? " cf" : ""} ${ui.psetOpen === it.uid ? "open" : ""}" data-act="psetopen" data-uid="${it.uid}" aria-expanded="${ui.psetOpen === it.uid}" title="Voir les pièces et les bonus de la panoplie">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? cfOn ? " · bonus débloqué (Couture fine)" : " · bonus débloqué" : ""} ${ui.psetOpen === it.uid ? "▾" : "▸"}</button>`; };
     const setOpen = (it) => ui.psetOpen === it.uid && ITEMS[it.tpl].set && SETS[ITEMS[it.tpl].set] ? `<div class="psetd">${setDetailHtml(ITEMS[it.tpl].set, c)}</div>` : "";
     const qVal = (it) => qk && it.stats[qk] ? ` <span class="tag soft">${statIc(qk, it.stats[qk])}</span>` : "";
     const row = (it, mode, i, n, tog, sub) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0) && !equipBlocked(c, c.equip, ui.slot, it);
@@ -7236,7 +7240,8 @@ function setsBookHtml() {
         return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarName(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
           <div class="xs ${ok ? "plus" : "muted"}">${ok ? `✓ dans le sac${owned[t] > 1 ? ` (×${owned[t]})` : ""}` : src.map(srcTxt).join("<br>") || "Source inconnue"}</div></span>
           ${!ok && T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${t}" data-tip="Ajouter à la liste de courses">${G("cart")}${S.shop.some((e) => e.id === t) ? " ✓" : ""}</button>` : ""}</div>`; }).join("")}</div>
-      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statIc(sk, v)).join(" ")}</div>`).join("") || (off.length ? "" : `<span class="muted">Aucun bonus de panoplie.</span>`)}${off.length ? `<div class="muted"><b>${setOffTxt(off)}</b> : inaccessible, des pièces de cette panoplie ne sont pas dans le jeu</div>` : ""}</div></section>`; };
+      <div class="pad xs">${tiers.map(([k, b]) => { const w = worn[id] || 0; const cls = w >= +k ? "plus" : w && setFx(id, w) >= +k ? "cfine-t" : ""; // 2.1.30.11 : palier de la Couture fine en bleu
+        return `<div class="${cls}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statIc(sk, v)).join(" ")}${cls === "cfine-t" ? ` <span class="cfine">Couture fine</span>` : ""}</div>`; }).join("") || (off.length ? "" : `<span class="muted">Aucun bonus de panoplie.</span>`)}${off.length ? `<div class="muted"><b>${setOffTxt(off)}</b> : inaccessible, des pièces de cette panoplie ne sont pas dans le jeu</div>` : ""}</div></section>`; };
   return `<p class="note">Chaque panoplie avec ses pièces : celles que vous avez, celles qui manquent et où les obtenir. Les pièces fabricables peuvent aller dans la liste de courses de l'Accueil.</p>
     <div class="row invbar"><input type="text" id="setSearch" data-act="setsearch" placeholder="Rechercher une panoplie ou une pièce…" value="${h(F.q)}">
       <select data-act="setmode" aria-label="Filtre">${[["known", "Panoplies connues"], ["hero", "Adaptées au héros"], ["all", "Toutes"]].map(([v, n]) => `<option value="${v}" ${F.mode === v ? "selected" : ""}>${n}</option>`).join("")}</select>
