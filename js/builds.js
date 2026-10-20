@@ -259,7 +259,7 @@
     const ids = DOF.map((sl) => x.b.eq[sl] && ITEMS[x.b.eq[sl]].dofus).filter((id) => id && E().DOFP_LIST && E().DOFP_LIST[id]);
     if (!ids.length || !X().dofpBlock) return "";
     const prim = (E().DOFP_PRIM || []).filter((id) => ids.includes(id)).length;
-    return `<section class="panel pad stack bd-dofp" style="gap:8px"><h3>Passifs des Dofus</h3>${ids.map((id) => X().dofpBlock(id, { mini: true, boost: prim >= 6 })).join("")}
+    return `<section class="panel pad stack bd-dofp" style="gap:8px"><h3>Passifs des Dofus</h3>${ids.map((id) => X().dofpBlock(id, { mini: true, boost: prim >= 6, r: 0 })).join("")}
       ${prim >= 6 ? `<p class="xs plus" style="margin:0">Les 6 Dofus primordiaux : Éveil des Dragons, passifs +${E().DOFP_RESO} %.</p>` : ""}</section>`;
   }
   function detailHtml(x) {

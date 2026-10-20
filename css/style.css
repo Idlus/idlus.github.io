@@ -516,6 +516,7 @@ nav.main button[aria-current="page"],:root[data-theme="dark"] nav.main button[ar
 .setbox .st{display:flex;gap:6px;align-items:baseline;opacity:.55}.setbox .st.on{opacity:1;color:var(--good)}
 .setbox .st b{min-width:54px}
 .setbox .st.off{opacity:.45;font-style:italic} /* 1.0.12.8 : paliers impossibles (pièces absentes du jeu) */
+.setbox .st.fine{opacity:1;color:#7cc8ff}.setbox .cfine{font-size:10px;font-weight:700;color:#7cc8ff;border:1px solid rgba(124,200,255,.5);border-radius:6px;padding:0 5px;white-space:nowrap} /* 2.1.30.10 : palier débloqué par la Couture fine */
 
 /* métiers */
 .joblogo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid var(--gold);flex:none}
@@ -5980,3 +5981,9 @@ button.pset.open{outline:1px solid var(--action)}
 .alh-lad{display:flex;flex-direction:column;gap:6px}.alh-step{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;background:var(--panel2)}
 .alh-step.done{border-left:5px solid var(--good)}.alh-step.cur{border-left:5px solid var(--gold)}.alh-rr{min-width:52px;text-align:center;font-weight:900;font-size:18px;color:var(--gold2)}
 @media (max-width:700px){.alr-map{grid-template-columns:1fr}.alh-tal{grid-template-columns:1fr 1fr}.alh-ag{grid-template-columns:minmax(0,1fr) auto auto}.alh-ag .small{display:none}.alh-head{flex-wrap:wrap}}
+/* audit 19/10/2026 : calcul de l'absence par tranches (js/ui.js offCatch) */
+.offc{z-index:95}
+.offc-bar{height:12px;border-radius:999px;background:var(--panel3);border:1px solid var(--line);overflow:hidden;margin:10px 0 6px}
+.offc-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:999px;box-shadow:0 0 10px var(--glow);transition:width .25s}
+.offc-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.offc-bar i{transition:none}}

@@ -553,6 +553,13 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-first-sb.png", fullPage: true });
     await page.click('[data-act="lb-fview"][data-v="all"]'); await page.waitForTimeout(300);
     m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
+    { // 2.1.30.8 (bug n°27) : un autre appareil (lien sans rec2) ne renvoie pas les records déjà envoyés : ils sont notés dans la partie
+      const n0 = m.invoked.length;
+      const rs = await page.evaluate(() => { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); try { const v = JSON.parse(localStorage.getItem(k)); if (v && v.rec2) { delete v.rec2; localStorage.setItem(k, JSON.stringify(v)); } } catch (e) {} } return window.DX.S.recSent || null; });
+      if (!rs || !Object.keys(rs).length) fail("2.1.30.8 : records envoyés absents de la partie (S.recSent)");
+      await page.evaluate(() => window.DX.saveNow()); await page.click("#onPill"); await page.waitForTimeout(2500);
+      m = await mock(); if (m.invoked.length !== n0) fail("2.1.30.8 : record déjà envoyé renvoyé depuis un autre appareil");
+    }
     if (!m.verifs) fail("2.1.4 : la partie envoyée n'a pas été vérifiée par le serveur (bouclier)");
     // 1.0.30 : classement du donjon dans sa fiche : top 5 et ma place, équipe de chaque record, Records / Cette semaine, « Classement complet »
     const dgW = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const V = window.VERIFY; const W = V.weekIdx(Date.now()); const did = V.weeklyDungeons(window.DATA.DUNGEONS, W)[0].did;

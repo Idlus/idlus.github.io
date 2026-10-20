@@ -207,39 +207,48 @@
     try { const { error } = await withTimeout(sb.rpc("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
   };
   /* Envoie la partie. Résultat : "ok", "conflict" (une autre version est en ligne) ou "offline". */
-  let pushing = null;
+  let pushing = null, again = null, againP = null;
   /* 1.0.10.2 : faux conflits. Quand le serveur est lent, un envoi peut être enregistré en ligne sans que la réponse
      revienne (délai dépassé) : l'appareil gardait l'ancienne date et l'envoi suivant croyait qu'un autre appareil avait
      joué (« Deux versions de ta partie »). Chaque envoi porte maintenant un numéro (meta.pid) gardé sur l'appareil :
      si la version en ligne est l'un de nos propres envois, ce n'est pas un conflit. */
   ON.ownPush = (info, l) => { l = l || ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
+  const setLinkOf = (key, p) => { const l = Object.assign(ON.linkOf(key), p); try { root.localStorage.setItem(key + "-online", JSON.stringify(l)); } catch (e) {} return l; };
   ON.push = (txt, meta, savedAt, force) => {
     if (!sb || !ON.user || !ON.slotOnline()) return Promise.resolve("offline");
-    if (pushing && !force) return pushing;
+    /* audit 19/10 (SYNC-04) : un envoi demandé pendant un autre n'est plus perdu : le dernier état demandé repart dès la fin
+       du premier (un seul envoi de plus, quel que soit le nombre de demandes) et l'appelant attend celui-là */
+    if (pushing && !force) {
+      again = { txt, meta, savedAt };
+      if (!againP) againP = pushing.then((r) => { const a = again; again = null; againP = null; return r === "ok" && a ? ON.push(a.txt, a.meta, a.savedAt) : r; });
+      return againP;
+    }
     setState("sync");
+    /* audit 19/10 (SYNC-06) : partie et clé fixées au départ : un changement de partie pendant l'envoi ne mélange plus les liens */
+    const slot = SLOT, key = KEY, link = () => ON.linkOf(key);
     const pid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-    ON.setLink({ pids: [pid].concat(ON.link().pids || []).slice(0, 10) });
+    setLinkOf(key, { pids: [pid].concat(link().pids || []).slice(0, 10) });
     const m = Object.assign({}, meta || {}, { pid, sa: savedAt || 0 });
     const p = (async () => {
       try {
         let data = null;
         for (let i = 0; i < 2; i++) {
-          const l = ON.link();
+          const l = link();
           const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
-          const r = await withTimeout(SLOT === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: SLOT }, args)), 20000);
+          const r = await withTimeout(slot === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
-          const info = await ON.remoteInfo(); // envoi refusé : la version en ligne est-elle un de nos envois ?
-          if (!ON.ownPush(info)) break;
-          ON.setLink({ uid: ON.user.id, base: info.updated_at });
+          const info = await ON.remoteInfo(slot); // envoi refusé : la version en ligne est-elle un de nos envois ?
+          if (!ON.ownPush(info, link())) break;
+          setLinkOf(key, { uid: ON.user.id, base: info.updated_at });
         }
         if (!data) { setState("conflict"); return "conflict"; }
-        ON.setLink({ uid: ON.user.id, base: data, savedAt });
+        setLinkOf(key, { uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok");
-        if (SLOT === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
+        if (slot === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
       } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
-      finally { pushing = null; }
+      finally { if (pushing === p) pushing = null; }
     })();
     pushing = p; return p;
   };

@@ -2391,7 +2391,7 @@
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
     const best = [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
-    let mn = 0, mx = 0, heal = 0; const cc = Math.min(60, 5 + st.cri) / 100; let tgts = 1;
+    let mn = 0, mx = 0, heal = 0; const cc = Math.max(0, Math.min(60, 5 + st.cri)) / 100; /* 2.1.30.5 : un malus de Critique ne descend pas sous 0 % */ let tgts = 1;
     g.fx.forEach((f) => {
       if (["dmg", "drain", "dot"].includes(f.k)) {
         const el = f.el === "best" ? best : f.el || "n"; const E2 = ELEMENTS[el];
@@ -3751,7 +3751,12 @@
   E.OFFLINE_RATE = 0.25;
   E.OFFLINE_MAX_S = 8 * 3600;
   E.offRate = (S) => E.OFFLINE_RATE + E.bonus(S, "offrate") / 100; // 1.0.30 : rendement hors ligne (plafond 80 %)
-  E.catchUp = (S, seconds) => {
+  /* audit 19/10/2026 (choix 2C) : le calcul est un générateur qui rend la main tous les quelques combats (E.CATCHUP_STEP).
+     E.catchUp le déroule d'un coup (comme avant) ; E.catchUpAsync le déroule par tranches de quelques millisecondes pour que la page
+     ne gèle plus. Les deux font exactement les mêmes opérations dans le même ordre : mêmes tirages, mêmes gains.
+     Les modules qui complètent le calcul (archis, chroma, élevage, suivi, vie…) enveloppent E.catchUpGen avec yield*. */
+  E.CATCHUP_STEP = 10;
+  E.catchUpGen = function* (S, seconds) {
     seconds = Math.min(seconds, E.OFFLINE_MAX_S + E.bonus(S, "offtime") * 3600);
     if (seconds < 60) return null;
     const eff = seconds * E.offRate(S);
@@ -3776,6 +3781,7 @@
     if (dgUsed) fights = Math.min(5000, Math.floor((seconds - dgUsed) * eff / seconds / cycle));
     E.catchingUp = true; // 1.1.0.1 : le Champion légendaire appelé attend le retour du joueur (js/champions.js)
     for (let i = 0; hunting && i < fights; i++) {
+      if (i && i % E.CATCHUP_STEP === 0) yield { i, n: fights };
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
@@ -3811,6 +3817,24 @@
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };
+  E.catchUp = (S, seconds) => { const g = E.catchUpGen(S, seconds); let x; do x = g.next(); while (!x.done); return x.value; };
+  /* déroulé par tranches : onStep({ i, n }) après chaque tranche (barre de progression), budget en ms par tranche (nombre ou fonction) ;
+     un calcul abandonné laisse sa partie à moitié calculée : elle ne doit plus servir (l'interface en recharge une autre) */
+  E.catchUpAsync = (S, seconds, onStep, budget, alive) => new Promise((ok, ko) => { // alive() faux : calcul abandonné (autre partie chargée), résultat null
+    const g = E.catchUpGen(S, seconds); const ms = typeof budget === "function" ? budget : () => budget || 12; let last = null;
+    E.offBusy = true;
+    const slice = () => {
+      try {
+        if (alive && !alive()) { E.offBusy = false; return ok(null); }
+        const t = Date.now(); let x;
+        do { x = g.next(); if (!x.done) last = x.value; } while (!x.done && Date.now() - t < ms());
+        if (x.done) { E.offBusy = false; return ok(x.value); }
+        if (onStep) { try { onStep(last); } catch (e) {} }
+        setTimeout(slice, 0);
+      } catch (e) { E.offBusy = false; ko(e); }
+    };
+    slice();
+  });
 
   /* 1.0.19 « Métiers comme dans DOFUS » : chaque métier d'objets passe au niveau qui donne exactement les mêmes recettes qu'avant
      (au métier L on fabriquait jusqu'aux objets 3 × L + 2), au plus 200, avec la même part de la barre d'XP. Un métier jamais monté reste au niveau 1.

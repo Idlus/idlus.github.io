@@ -31,3 +31,6 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Démarrage du jeu dans le navigateur
         run: npm run test:smoke
+      # audit 19/10/2026 : compte et sauvegarde en ligne avec le faux serveur des tests (aucun accès au vrai serveur)
+      - name: Compte et sauvegarde en ligne (faux serveur)
+        run: npm run test:online

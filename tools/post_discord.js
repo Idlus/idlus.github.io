@@ -2,9 +2,13 @@
    Usage : DISCORD_WEBHOOK=... node tools/post_discord.js [version] */
 const fs = require("fs"); const https = require("https");
 const DRY = process.argv.includes("--print");
-const hook = process.env.DISCORD_WEBHOOK; if (!hook && !DRY) { console.log("DISCORD_WEBHOOK absent : rien à publier."); process.exit(0); }
+const hook = process.env.DISCORD_WEBHOOK; if (!hook && !DRY) { console.log("DISCORD_WEBHOOK absent : rien à publier."); process.exit(process.argv.includes("--strict") ? 1 : 0); }
 const data = JSON.parse(fs.readFileSync(__dirname + "/../changelog.json", "utf8"));
-const v = process.argv.slice(2).find((a) => !a.startsWith("--")) || data.version; const c = data.versions.find((x) => x.v === v);
+/* 2.1.30.4 : --strict (workflow « Annonce Discord », lancé à la main) : version obligatoire, et refus d'envoyer si cette version est déjà
+   dans les 50 derniers messages de #note-de-mise-a-jour ou si cette vérification échoue (RENVOYER=true pour renvoyer quand même) */
+const STRICT = process.argv.includes("--strict"), arg = process.argv.slice(2).find((a) => !a.startsWith("--"));
+if (STRICT && !arg) { console.log("Version à annoncer manquante : rien envoyé."); process.exit(1); }
+const v = arg || data.version; const c = data.versions.find((x) => x.v === v);
 if (!c) { console.log("Version introuvable :", v); process.exit(1); }
 const URL_GAME = "https://idlus.github.io/";
 /* 1.0.30 : Discord refuse une description de plus de 4 096 caractères (erreur 400 « embeds ») : une longue liste de
@@ -20,6 +24,15 @@ const payload = {
     i === parts.length - 1 ? { footer: { text: "idlus · projet de fan non officiel" }, timestamp: new Date().toISOString() } : {})),
 };
 (async () => {
+if (STRICT && !DRY) {
+  let last;
+  try { if (!process.env.DISCORD_BOT_TOKEN) throw new Error("DISCORD_BOT_TOKEN absent");
+    const D = require("./discord_api.js"); const gid = await D.guildId(); last = await D.api("GET", `/channels/${await D.channelId(gid, "note-de-mise-a-jour")}/messages?limit=50`);
+  } catch (e) { console.log("Vérification des annonces déjà publiées impossible (" + e.message + ") : rien envoyé."); process.exit(1); }
+  const dup = (last || []).find((m) => (m.embeds || []).some((e) => (e.title || "").includes(`Mise à jour ${c.v} «`)));
+  if (dup && process.env.RENVOYER !== "true") { console.log(`La ${c.v} est déjà annoncée (${dup.timestamp || "date inconnue"}) : rien envoyé.`); process.exit(1); }
+  if (dup) console.log(`La ${c.v} est déjà annoncée (${dup.timestamp || "date inconnue"}) : renvoi demandé.`);
+}
 // mentionne le rôle « Notif mises à jour » si le robot (DISCORD_BOT_TOKEN) peut retrouver son identifiant
 if (process.env.DISCORD_BOT_TOKEN && !DRY) try { const D = require("./discord_api.js"); const r = await D.roleId(await D.guildId(), "Notif mises à jour");
   if (r) Object.assign(payload, { content: `<@&${r}>`, allowed_mentions: { roles: [r] } }); } catch (e) { console.log("Rôle de notification introuvable :", e.message); }

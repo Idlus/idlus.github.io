@@ -225,11 +225,11 @@
     const C = E.consigne(S); if (!(k in E.CONSIGNE_DEF)) return "Consigne inconnue.";
     C[k] = k === "cap" ? clamp(Math.round(+v || 0), 0, 1e6) : !!v; return null;
   };
-  const catch0 = E.catchUp;
-  E.catchUp = (S, seconds) => {
+  const catch0 = E.catchUpGen;
+  E.catchUpGen = function* (S, seconds) {
     const C = E.consigne(S); const from = S.sub; const tmpRoam = C.roam && !S.settings.roam && S.hunting && !S.dungeon;
     if (tmpRoam) S.settings.roam = true;
-    let r; try { r = catch0(S, seconds); } finally { if (tmpRoam) S.settings.roam = false; }
+    let r; try { r = yield* catch0(S, seconds); } finally { if (tmpRoam) S.settings.roam = false; }
     if (!r) return r;
     const out = [];
     if (tmpRoam && r.roamed && r.roamed.length) out.push(`Itinérance pendant l'absence : ${r.roamed.length} changement${r.roamed.length > 1 ? "s" : ""} de zone.`);

@@ -21,9 +21,44 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.2";
+const GAME_VERSION = "2.1.30.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.10", name: "Couture fine plus claire", items: [
+    "Collection de panoplies : la description de la Couture fine est plus claire (une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce)",
+    "Héros › Équipement : quand la Couture fine joue, le palier qu'elle débloque s'affiche en bleu avec l'étiquette « Couture fine » (aussi dans l'infobulle des objets et le détail d'une panoplie)",
+    "Une panoplie dont seul le bonus de la Couture fine est atteint apparaît maintenant dans « Panoplies actives »",
+  ] },
+  { v: "2.1.30.9", name: "Infobulle de Maîtrise", guide: "maitrise", items: [
+    "Maîtrise : à la souris, l’infobulle d’une étoile se ferme quand on ne la survole plus, même après un clic ; sur téléphone, l’aperçu au toucher est conservé (signalement n°23)",
+  ] },
+  { v: "2.1.30.8", name: "Hauts faits sans doublons", items: [
+    "Chat › Hauts faits : se connecter sur un autre appareil (téléphone ou PC) ne renvoie plus tes anciens records de stasis au serveur. Avant, ils pouvaient ressortir en rafale dans les Hauts faits ; merci Gagou",
+    "Les records déjà envoyés sont maintenant notés dans ta partie, donc partagés entre tous tes appareils. Un vrai nouveau record s'envoie toujours comme avant",
+  ] },
+  { v: "2.1.30.7", name: "Coffres de l'Ascension", items: [
+    "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
+    "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)",
+  ] },
+  { v: "2.1.30.6", name: "Fenêtres qui restent en place", items: [
+    "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+    "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position",
+  ] },
+  { v: "2.1.30.5", name: "Malus de panoplie", guide: "equipement", items: [
+    "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+    "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+    "Les chances de coup critique affichées ne descendent plus sous 0 %",
+  ] },
+  { v: "2.1.30.4", name: "Potentiel affiché", items: [
+    "Héros › Équipement : le passif et les caractéristiques d'un Dofus s'affichent maintenant à son rang de Potentiel (étiquette « Potentiel IV +20 % » ou « Sublimé +50 % ») ; le bonus était déjà bien appliqué en combat",
+    "Bulle d'un Dofus : la part du Potentiel apparaît à côté de chaque caractéristique (ex. +80 Puissance (+40 Potentiel))",
+  ] },
+  { v: "2.1.30.3", name: "Retour sans attente", items: [
+    "Retour d'absence : le jeu ne fige plus pendant le calcul de ta progression hors ligne ; une barre montre les combats calculés, puis le compte rendu s'affiche comme avant. Gains identiques",
+    "Calcul de l'absence environ deux fois plus rapide",
+    "Hors ligne : après une mise à jour, le jeu ne mélange plus d'anciens fichiers avec les nouveaux",
+    "Sauvegarde en ligne plus sûre quand deux envois se croisent ou quand on change de partie pendant un envoi",
+  ] },
   { v: "2.1.30.2", name: "Ailes dans le chat", guide: "alignement", items: [
     "Chat : les ailes de son camp entourent le portrait des joueurs de Bonta et de Brâkmar, à partir du rang 1 d'alignement",
     "Elles battent doucement et grandissent à chaque rang ; au rang 5, elles brillent (idée de Mathis). Rien ne bouge avec les animations sobres ou coupées",
@@ -5597,11 +5632,14 @@ function dofpChips(id, c) {
   const fit = c ? E.dofpFits(S, c, id) : null;
   return `<span class="dofp-chips"><span class="dofp-chip">${G("bolt")}${h(E.dofpTrig(id))}</span>${c && E.dofpForKey(id) !== "all" ? `<span class="dofp-chip ${fit ? "ok" : "dim"}">${fit ? "✓ Idéal pour " + h(c.name) : "Plutôt pour : " + h(E.dofpFor(id))}</span>` : `<span class="dofp-chip">${G("target")}Idéal : ${h(E.dofpFor(id))}</span>`}</span>`;
 }
+/* 2.1.30.4 : rang de Potentiel du Dofus (le bonus était déjà compté en combat et dans les caractéristiques, pas affiché) */
+const dofpRank = (id) => (E.dpotRank && S && E.dofusOwned(S, id) ? E.dpotRank(S, id) : 0);
+const dofpPotTag = (r) => (r ? ` <span class="dofp-eveil">${r >= (E.DPOT_MAX || 10) ? "Sublimé" : "Potentiel " + (E.roman ? E.roman(r) : r)} +${E.dpotPct(r)} %</span>` : "");
 function dofpBlock(id, opt = {}) {
   if (!E.DOFP_LIST || !E.DOFP_LIST[id]) return "";
-  const boost = !!opt.boost;
+  const boost = !!opt.boost; const r = opt.r != null ? opt.r : dofpRank(id);
   return `<div class="dofp fam-${dofpFc(id)}${opt.mini ? " mini" : ""}"><div class="dofp-h">${dofpIco(id)}<span class="dofp-nm"><small>Passif du Dofus</small><b>${h(E.dofpName(id))}</b></span><span class="dofp-f">${h(E.dofpFam(id))}</span></div>
-    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
+    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost, false, r))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}${dofpPotTag(r)}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
 }
 /* panneau sous l'équipement : une carte par emplacement Dofus, compteur du combat en cours, Éveil des Dragons */
 function dofpHeroPanel(c) {
@@ -5615,7 +5653,7 @@ function dofpHeroPanel(c) {
   const cards = slots.map(({ sl, id, tro }) => {
     if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;
     return `<button class="dofp-card fam-${dofpFc(id)} ${ui.slot === sl ? "on" : ""}" data-act="slot" data-slot="${sl}"><span class="dofp-ch">${im(dofusImg(id), "dofp-img", E.DOFUS[id].name)}<span class="dofp-nm"><small>${h(E.DOFUS[id].name)}</small><b>${h(E.dofpName(id))}</b></span>${dofpIco(id)}</span>
-      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
+      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost, false, dofpRank(id)))}${dofpPotTag(dofpRank(id))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
   const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
     : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
   return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / 6 actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
@@ -5630,7 +5668,7 @@ function dofpPickHtml(c, all, g) {
     .sort((a, b) => (b.n > 0) - (a.n > 0) || a.dup - b.dup || b.fit - a.fit || (g[b.it.uid] || 0) - (g[a.it.uid] || 0));
   const row = (r) => { const T = ITEMS[r.it.tpl]; const high = T.lvl > c.lvl;
     return `<div class="li dofp-pr fam-${dofpFc(r.id)} ${r.n ? "" : "plow"}"><span class="dofp-primg">${im(dofusImg(r.id), "", T.name)}</span><span class="grow"><span class="dofp-prn"><b>${h(T.name)}</b>${r.n > 1 ? ` <span class="tag soft gcount">×${r.n}</span>` : ""} <span class="xs muted">niv. ${T.lvl}${r.by ? ` · porté par ${h(r.by === c ? "ce héros" : r.by.name)}` : ""}</span></span>
-      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
+      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id, false, false, dofpRank(r.id)))}${dofpPotTag(dofpRank(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
       <button class="btn sm ${r.n && !r.dup ? "primary" : ""}" data-act="equip" data-uid="${r.it.uid}" ${high || r.dup ? "disabled" : ""}>${high ? "Niv. " + T.lvl : r.n ? "Équiper" : "Prendre"}</button></div>`; };
   const fams = [["all", "Tous"]].concat(E.DOFP_FAMS.map((f) => [f, f]));
   const cnt = (f) => Object.values(byTpl).filter((L) => f === "all" || E.dofpFam(ITEMS[L[0].tpl].dofus) === f).length;
@@ -5648,8 +5686,9 @@ function dofpPickHtml(c, all, g) {
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
-  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
+  const pr = T.dofus && S.items[it.uid] === it ? dofpRank(T.dofus) : 0, pot = pr && E.dpotStatsOf ? E.dpotStatsOf(T.dofus, pr) : {}; // 2.1.30.4 : caractéristiques du Potentiel
+  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true, r: pr }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""}${pot[k] ? ` <span class="bonus">(+${pot[k]} Potentiel)</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 /* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
 const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
@@ -6134,11 +6173,15 @@ function dollSlot(c, s) {
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
 const setTiers = (setId) => { const Z = SETS[setId]; const all = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]); const n = Z.size || 0; return { ok: all.filter(([k]) => +k <= n), off: all.filter(([k]) => +k > n).map(([k]) => +k) }; };
 const setOffTxt = (off) => !off.length ? "" : `${off[0]}${off.length > 1 ? ` à ${off[off.length - 1]}` : ""} pièces`;
-function setBlock(setId, worn) {
+/* 2.1.30.10 : fine = panoplie portée par le héros affiché : le palier débloqué par la Couture fine (1 pièce en moins) est en bleu */
+function setBlock(setId, worn, fine) {
   const Z = SETS[setId]; if (!Z) return "";
   const { ok: tiers, off } = setTiers(setId);
-  return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>
-    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
+  const eff = fine && worn !== undefined && E.setCountFx ? E.setCountFx(S, setId, worn) : worn;
+  const cf = eff !== worn && E.setBonus(setId, eff) && JSON.stringify(E.setBonus(setId, eff)) !== JSON.stringify(E.setBonus(setId, worn));
+  return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>${cf ? ` <span class="cfine">✂ Couture fine : bonus des ${eff} pièces</span>` : ""}
+    ${tiers.map(([n, b]) => { const k = worn !== undefined && worn >= +n ? "on" : cf && eff >= +n ? "fine" : "";
+      return `<div class="st ${k}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span>${k === "fine" ? `<span class="cfine">Couture fine</span>` : ""}</div>`; }).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
     ${off.length ? `<div class="st off"><b>${setOffTxt(off)}</b><span>inaccessible : des pièces de cette panoplie ne sont pas dans le jeu</span></div>` : ""}</div>`;
 }
 /* 2.1.30 : détail d'une panoplie sans passer par l'encyclopédie (choix d'un objet et fiche de l'inventaire) : pièces, où elles sont, bonus */
@@ -6146,7 +6189,7 @@ function setDetailHtml(z, c) {
   const own = E.ownedTpls(S); const on = c ? new Set(Object.values(c.equip).filter((u) => u && S.items[u]).map((u) => S.items[u].tpl)) : new Set();
   const P = E.setPieces(z).slice().sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl);
   return `<div class="psetp">${P.map((t) => { const T = ITEMS[t]; const k = on.has(t) ? "on" : own[t] ? "bag" : "no";
-    return `<span class="psetpc ${k}" title="${h(T.name)}">${im(itemImg(t), "", T.name)}<span><b>${h(T.name)}</b><span class="xs">${k === "on" ? `✓ portée${c ? " par " + h(c.name) : ""}` : k === "bag" ? "dans le sac" : "pas encore obtenue"}</span></span></span>`; }).join("")}</div>${setBlock(z, c ? E.setCounts(S, c)[z] || 0 : undefined)}`;
+    return `<span class="psetpc ${k}" title="${h(T.name)}">${im(itemImg(t), "", T.name)}<span><b>${h(T.name)}</b><span class="xs">${k === "on" ? `✓ portée${c ? " par " + h(c.name) : ""}` : k === "bag" ? "dans le sac" : "pas encore obtenue"}</span></span></span>`; }).join("")}</div>${setBlock(z, c ? E.setCounts(S, c)[z] || 0 : undefined, 1)}`;
 }
 /* 1.0.30 : menu des caractéristiques refait, avec un vrai mode automatique (profils, plan par étapes, aperçu au niveau 200) */
 const EL_PAIRS = [["fo", "age"], ["fo", "ine"], ["fo", "cha"], ["ine", "cha"], ["ine", "age"], ["cha", "age"]];
@@ -6233,7 +6276,7 @@ function combatStats(c, st) {
   const hp = Math.round(st.hpMax * (osa ? 1.05 : 1) * (1 + bHp / 100));
   const hs = E.HUNT_SMALL[n]; const ds = E.SMALL_TEAM[n];
   const dmg = bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
-  const crit = Math.min(60, 5 + st.cri); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
+  const crit = Math.max(0, Math.min(60, 5 + st.cri)); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
   const xp = Math.round(((1 + st.sa / 100) * E.renXpMult(c) - 1) * 100); const ppRaw = E.teamProspectionRaw(S) + (inT ? 0 : st.pp);
   const parts = (a) => a.filter((x) => x[1]).map(([t, v]) => `${t} ${v > 0 ? "+" : ""}${fmt(Math.round(v * 10) / 10)} %`).join(" · ");
   const row = (label, val, tip) => `<div class="li"${tip ? ` data-tip="${h(tip)}"` : ""}><span class="grow">${label}</span><b class="num">${val}</b></div>`;
@@ -6402,7 +6445,7 @@ function drawTree() {
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
-  const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, n)).map(([id, n]) => setBlock(id, n)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint
+  const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, setFx(id, n))).map(([id, n]) => setBlock(id, n, 1)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint (Couture fine comprise)
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
@@ -7208,7 +7251,7 @@ function tipItemHtml(uid) {
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
-  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
+  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn, 1) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {
@@ -7865,7 +7908,17 @@ function renderQuests(soft) {
     <section class="stack">${body}</section>`;
 }
 /* ---------- feuilles ---------- */
-function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+/* 2.1.30.6 (Mathis) : une fenêtre redessinée après un clic (stasis d'un donjon, réglages…) garde sa position de défilement, ainsi que ses listes internes */
+const sheetId = (box) => { const t = box && box.querySelector("h2"), f = box && box.firstElementChild; return t ? "h|" + t.textContent.trim() : f ? "c|" + f.className + "|" + f.textContent.trim().slice(0, 40) : ""; };
+function sheetScrolls(box) { const out = [], seen = {}; if (!box) return out; for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); if (el.scrollTop > 0) out.push([k, i, el.scrollTop]); } return out; }
+function openSheet(html) {
+  const old = $("#sheet .sheet"); if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre");
+  const id = sheetId(old), keep = old ? sheetScrolls(old) : [];
+  $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const box = $("#sheet .sheet"); if (!keep.length || !id || sheetId(box) !== id) return;
+  const seen = {}, want = new Map(keep.map(([k, i, y]) => [k + "#" + i, y]));
+  for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); const y = want.get(k + "#" + i); if (y) el.scrollTop = y; }
+}
 /* 2.1.4 (Mathis) : l'album des archimonstres et la fiche d'un monstre se mettent à jour toutes seules après chaque combat (mise à jour ciblée, la position de lecture reste) */
 const SHEET_LIVE = [[".archisheet", () => archiSheetHtml()], [".encsheet[data-mk]", (el) => (MONSTERS[el.dataset.mk] ? encMonSheet(el.dataset.mk) : "")]];
 let sheetLiveSig = "";
@@ -8048,9 +8101,36 @@ function optionsSheet() {
     <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
     <div class="optbody small">${body}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
-  if (keepTop) $(".sheet").scrollTop = keepTop;
+  $(".sheet").scrollTop = keepTop; // autre onglet : on repart du haut
 }
 /* 1.0.30 : donjon pendant l'absence et retours d'expédition comptent aussi pour ouvrir la fenêtre */
+/* audit 19/10/2026 (choix 1A + 2C de Mathis) : le calcul de l'absence se fait par tranches (E.catchUpAsync) au lieu de figer la page.
+   Pendant le calcul : fenêtre « Pendant votre absence » avec une barre et le nombre de combats calculés, jeu en pause (aucun tick,
+   aucune sauvegarde, aucun envoi : un rechargement en plein calcul repart de la partie d'avant, sans gain en double ni perte),
+   puis le résumé habituel avec les récompenses définitives. Une absence courte (moins de 0,3 s de calcul) ne montre pas la barre. */
+let offRun = null;
+function offCatch(gap, done) {
+  if (offRun && offRun.S === S) return; // déjà en cours pour cette partie
+  if (offRun) { const el = $("#offc"); if (el) el.remove(); offRun = null; } // une autre partie a été chargée (partie en ligne reprise) : l'ancien calcul s'arrête
+  if (!(gap > 60)) return done(null);
+  if (!E.catchUpAsync) return done(E.catchUp(S, gap));
+  const S0 = S, t0 = Date.now(), run = (offRun = { S: S0 });
+  const counted = Math.min(gap, E.OFFLINE_MAX_S + E.bonus(S0, "offtime") * 3600);
+  const paint = (p) => {
+    if (Date.now() - t0 < 300 && !$("#offc")) return;
+    let el = $("#offc");
+    if (!el) { el = document.createElement("div"); el.id = "offc"; el.className = "sheet-bg offc"; el.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-live="polite"><h2>Pendant votre absence</h2>
+      <p class="small muted">Calcul de ta progression hors ligne…</p>
+      <p class="small">Absent ${dur(gap)}${counted < gap ? ` (${dur(counted)} comptées)` : ""}. Ton équipe continue à ${Math.round(E.offRate(S0) * 100)} % de son efficacité.</p>
+      <div class="offc-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div><div class="offc-row"><span class="offc-n"></span><span class="muted offc-p"></span></div>
+      <p class="xs muted">Le jeu reprend tout seul à la fin et affiche tes gains.</p></div>`; document.body.appendChild(el); }
+    const f = p && p.n ? Math.min(0.99, p.i / p.n) : 0;
+    el.querySelector(".offc-bar i").style.width = Math.round(f * 100) + "%"; el.querySelector(".offc-bar").setAttribute("aria-valuenow", Math.round(f * 100));
+    setTxt(el.querySelector(".offc-n"), p && p.n ? `${fmt(p.i)} combats sur ${fmt(p.n)}` : "Préparation…"); setTxt(el.querySelector(".offc-p"), Math.round(f * 100) + " %");
+  };
+  const end = (r) => { if (offRun !== run) return; offRun = null; last = performance.now(); const el = $("#offc"); if (el) el.remove(); if (S === S0) done(r); };
+  E.catchUpAsync(S0, gap, (p) => { if (offRun === run) paint(p); }, () => (document.hidden ? 250 : 12), () => offRun === run).then(end, (e) => { console.error(e); end(null); });
+}
 const offWorth = (r) => !!r && !!(r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length) || (r.dg && r.dg.runs) || (r.mis && r.mis.length));
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
@@ -9583,7 +9663,7 @@ function sndText(txt, kind) {
     else if (type === "craft") sndPlay("evt:craft"); else if (type === "chest") sndPlay("evt:coffre"); // 1.3 (4A) : les moments qui étaient muets
     else if (type === "fm") setTimeout(() => sndPlay(E.fmLastK === "ec" ? "evt:fm_ko" : "evt:fm_ok"), 0); } return r; };
   const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S) sndText(txt, kind); return r; };
-  const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
+  const cu0 = E.catchUpGen; E.catchUpGen = function* (...a) { SND.live = false; try { return yield* cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
 })();
 /* 1.3 (5A) : table de mixage : un volume général, puis un volume et une case par famille ; le haut-parleur du haut coupe tout et garde les réglages */
 function soundOptionsHtml() {
@@ -10346,7 +10426,8 @@ let dirty = false, lastSaveOk = 0, sinceTip = 0, saveWarnAt = 0;
 /* La lecture et l'écriture de la partie sont dans js/save.js (support interchangeable : navigateur aujourd'hui, serveur demain). */
 SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
 function saveNow(manual) {
-  if (!S) return; S.savedAt = E.now(); S.lastTick = E.now();
+  if (!S || offRun) return; // calcul de l'absence en cours : la partie d'avant reste sauvegardée
+  S.savedAt = E.now(); S.lastTick = E.now();
   let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
   if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); if (SV.freed) { SV.freed = null; toast("Stockage du navigateur plein : de vieilles copies de secours ont été effacées pour garder ta partie à jour.", "warn", 10000); } }
   else if (manual || Date.now() - saveWarnAt > 120000) { saveWarnAt = Date.now(); toast(`Impossible de sauvegarder dans ce navigateur (stockage plein) : exporte ta partie (Options) pour ne rien perdre.`, "warn", 15000); } // 1.0.32.8 : avant, l'échec d'une sauvegarde automatique ne disait rien
@@ -10633,11 +10714,11 @@ async function takeRemote(info) {
   SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
   if (!booted) return bootGame();
   closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
-  const gap = (E.now() - (S.lastTick || E.now())) / 1000; const r = gap > 60 ? E.catchUp(S, gap) : null; render();
-  if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée.");
+  const gap = (E.now() - (S.lastTick || E.now())) / 1000; render();
+  offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée."); });
 }
 function onPush(force) {
-  if (!onLive()) return Promise.resolve(null);
+  if (!onLive() || offRun) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
   return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
@@ -11214,8 +11295,18 @@ function lbGearHtml(x) {
 let recBusy = false, recBoot = null;
 const recOf = (did) => E.stasisSaison(S, did);
 const recSnap = () => { const o = {}; for (const did in (S && S.stasis) || {}) { const r = recOf(did); o[did] = { k: r.k, ct: r.t }; } return o; };
+/* 2.1.30.8 : les envois déjà faits sont aussi gardés dans la partie (S.recSent), donc partagés entre appareils. Avant, ils
+   n'étaient notés que sur l'appareil (rec2) : un téléphone renvoyait au serveur toutes les anciennes stasis faites sur PC,
+   et chaque temps rejoué un peu meilleur ressortait en « haut fait » dans le chat (bug n°27, Gagou). */
+function recSent() {
+  const a = (S && S.recSent) || {}, b = ON.link().rec2 || {}, o = {};
+  for (const did of new Set(Object.keys(a).concat(Object.keys(b)))) {
+    const x = a[did], y = b[did]; o[did] = !x ? y : !y ? x : x.k !== y.k ? (x.k > y.k ? x : y) : (x.ct || Infinity) <= (y.ct || Infinity) ? x : y;
+  }
+  return o;
+}
 function recQueue() {
-  const sent = ON.link().rec2 || {}, out = [];
+  const sent = recSent(), out = [];
   for (const did in S.stasis || {}) {
     const { k, t: ct } = recOf(did); if (!k || !DUNGEONS[did]) continue;
     const s = sent[did];
@@ -11225,11 +11316,13 @@ function recQueue() {
   return out.sort((a, b) => fresh(b) - fresh(a));
 }
 async function recSubmit() {
-  if (!ranked() || recBusy || S.panelUsed) return; const q = recQueue(); if (!q.length) return;
+  if (!ranked() || recBusy || S.panelUsed) return;
+  { const m = recSent(); if (JSON.stringify(m) !== JSON.stringify(S.recSent || {})) { S.recSent = m; dirty = true; } } // les envois notés sur cet appareil passent dans la partie
+  const q = recQueue(); if (!q.length) return;
   const did = q[0], b = (recBoot || {})[did], cur = recOf(did), isFresh = !b || cur.k > b.k || cur.t < b.ct;
   recBusy = true; const r = await ON.submitRecord(did); recBusy = false;
   if (!r || r.net || r.err === "trop tôt") return;
-  const l = ON.link(); const rec = l.rec2 || {}; rec[did] = { k: cur.k, ct: cur.t }; ON.setLink({ rec2: rec });
+  const rec = recSent(); rec[did] = { k: cur.k, ct: cur.t }; ON.setLink({ rec2: rec }); S.recSent = rec; dirty = true;
   if (recBoot) recBoot[did] = rec[did];
   Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
   if (window.DGRANK) window.DGRANK.reset(did); // 1.0.30 : classement dans la fiche du donjon (js/dgrank.js)
@@ -11335,6 +11428,7 @@ let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRe
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
+  if (offRun) { last = performance.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
     if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
@@ -11384,7 +11478,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (offWorth(r)) offlineSheet(r); } last = performance.now(); }
+  else if (S && !offRun) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -11400,11 +11494,10 @@ function bootGame(pushNow) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
     const gap = (E.now() - (S.lastTick || E.now())) / 1000;
-    const r = gap > 60 ? E.catchUp(S, gap) : null;
     render();
     if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
-    if (S.migration) { migrationSheet(S.migration); S.migration = null; }
-    else if (offWorth(r)) offlineSheet(r);
+    const mig = S.migration; if (mig) { migrationSheet(mig); S.migration = null; }
+    offCatch(gap, (r) => { render(); if (!mig && offWorth(r)) offlineSheet(r); });
     S.sessions = (S.sessions || 0) + 1; dirty = true;
     if (window.FORGEUI) window.FORGEUI.boot(S); // 1.0.30 : soft reset des jets, seulement si E.SOFT_RESET_ON (js/forge.js)
   } else render();

@@ -9,6 +9,38 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.10 « Couture fine plus claire »
+
+- Description de la Couture fine réécrite (`js/collections.js`) ; palier débloqué par la Couture fine affiché en bleu dans Héros › Équipement, l'infobulle des objets et le détail d'une panoplie (`setBlock` dans `js/ui.js`). Une panoplie active seulement grâce à la Couture fine apparaît dans « Panoplies actives ». Aucun changement de calcul.
+
+## 2.1.30.9 « Infobulle de Maîtrise »
+
+- Corrige l’infobulle persistante à la souris dans `js/maitrise.js` (issue #132, PR #137). La sélection de l’étoile et l’aperçu tactile sur téléphone sont conservés. Correctif relu par Claude.
+
+## 2.1.30.8 « Hauts faits sans doublons »
+
+- Records de donjon (js/ui.js, recQueue/recSubmit) : les envois déjà faits sont gardés dans la partie (`S.recSent`, synchronisée) en plus du lien de l'appareil (`rec2`), fusionnés par recSent() (stasis la plus haute, puis meilleur temps). Avant, un autre appareil, au rec2 vide ou ancien, renvoyait toutes les stasis déjà classées ; chaque temps rejoué un peu meilleur ressortait en annonce dans les Hauts faits (bug n°27, Gagou). Aucun changement serveur.
+
+## 2.1.30.7 « Coffres de l'Ascension »
+
+- Coffres du mois visibles (signalé par Akileuss) : shopHtml (js/ascensionui.js) liste `Q.chest` par mode avec ✓ ; `E.ascChest` (js/ascension.js) compare la réserve avant et après `E.sabGift` et écrit les heures vraiment reçues (« réserve pleine »). Règle inchangée : un coffre par étage, par mode et par mois.
+
+## 2.1.30.6 « Fenêtres qui restent en place »
+
+- openSheet (js/ui.js) : quand la fenêtre redessinée est la même (même titre h2, sinon même premier bloc), la position de défilement de .sheet et de ses listes internes est remise après le rendu. Options : changer d'onglet repart du haut.
+
+## 2.1.30.5 « Malus de panoplie »
+
+- DofusDB écrit certains malus de panoplie en négatif sur un effet déjà négatif (171 « -% Critique » à -40) : build_data.py et build_caracs.js prenaient « signe × valeur » et en faisaient un bonus. Ils prennent maintenant « signe × |valeur| ». js/gamedata.js corrigé sur ces seules lignes (35 lignes, 14 panoplies : Aurore Pourpre, Krobes, Glourséleste, Ilyzaelle, Musha, Abraknyde, Blop ×4, Infernale, Fluviale, Contrebandière, Meurtrière) ; les objets n'étaient pas touchés (vérifié sur les 2 595 objets). Chances de critique bornées à 0 % (estimation de sorts, fiche du héros). Test dans tests/pieces.test.js. Le serveur (Bouclier) relit gamedata.js.
+
+## 2.1.30.4 « Potentiel affiché »
+
+- Potentiel des Dofus affiché (signalé par Ley) : `dofpRank`/`dofpPotTag` dans js/ui.js ; dofpBlock, dofpHeroPanel et dofpPickHtml passent le rang à `E.dofpTxt`, itemStatsHtml ajoute `E.dpotStatsOf` (seulement pour un objet du sac du joueur) ; les builds partagés gardent le rang 0. Le moteur (E.charStats, E.dofpVal en combat) comptait déjà le Potentiel.
+
+## 2.1.30.3 « Retour sans attente »
+
+- Audit technique (avec ChatGPT) : E.catchUp devient le générateur E.catchUpGen (les modules l'enveloppent avec yield*), E.catchUpAsync le déroule par tranches (fenêtre #offc avec barre, jeu en pause, rien sauvegardé avant la fin) ; mêmes tirages et mêmes gains (tests/absence.test.js). Collection de panoplies recalculée seulement quand l'Encyclopédie grandit (E.dexVer). sw.js : précache en cache: "reload", recherche hors ligne dans le cache de la version. online.js : envoi demandé pendant un autre relancé une fois (SYNC-04), partie fixée pendant l'envoi (SYNC-06). CI : test:online. Aucun changement SQL.
+
 ## 2.1.30.2 « Ailes dans le chat »
 
 - Chat : ALIGNUI.wings entoure le portrait (cmed) des ailes du camp (wingSVG de ui.js, exporté dans DX.social ; aile droite retournée dans le SVG), taille par rang 1 à 5 (CAMP.r lu dans lb_align, son propre rang depuis la partie), rien au rang 0 ni sans camp. Battement en CSS (classe .fly seulement avec les animations complètes, coupé par prefers-reduced-motion). Aucun changement serveur.

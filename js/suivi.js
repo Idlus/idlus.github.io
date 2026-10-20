@@ -138,15 +138,15 @@
     return r;
   };
   const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); if (c.mt && E.mtNeed) x += (E.mtXpTot ? E.mtXpTot(c.mt.lvl) : (c.mt.lvl || 0) * E.mtNeed()) + (c.mt.xp || 0); return s + x; }, 0); /* 2.0.3 : l'XP de Maîtrise compte dans l'XP/h */
-  const catch0 = E.catchUp;
-  E.catchUp = (S, seconds) => {
-    if (!live(S)) return catch0(S, seconds);
+  const catch0 = E.catchUpGen;
+  E.catchUpGen = function* (S, seconds) {
+    if (!live(S)) return yield* catch0(S, seconds);
     const C = pre(S); const x0 = totXp(S), k0 = S.kamas, ren0 = S.chars.map((c) => c.ren || 0).join();
     /* 1.0.7.7 : hors ligne, l'équipe suit aussi les indices du trésor (avant, elle restait dans la zone du premier indice) */
     const tc = S.tresor && S.tresor.cur; const follow = !!(tc && tc.follow && S.hunting && !S.dungeon);
     const roamOn = S.settings.roam, roamF = E.roam, moved = [];
     if (follow) { S.settings.roam = true; E.roam = (S2, ...a) => { const c = S2.tresor && S2.tresor.cur; if (c && c.move) { const was = S2.sub; tresorPending(S2); if (S2.sub !== was) { moved.push(SUBS[S2.sub].name); return true; } } return roamOn ? roamF(S2, ...a) : null; }; }
-    let r; depth++; try { r = catch0(S, seconds); } finally { depth--; if (follow) { S.settings.roam = roamOn; E.roam = roamF; } }
+    let r; depth++; try { r = yield* catch0(S, seconds); } finally { depth--; if (follow) { S.settings.roam = roamOn; E.roam = roamF; } }
     if (r && moved.length) { r.roamed = []; r.tresor = moved; }
     if (r) {
       const now = E.now(), span = Math.min(r.seconds, NH * 3600) * 1000;

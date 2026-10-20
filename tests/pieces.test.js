@@ -63,3 +63,11 @@ console.log("ok - fabrication et dernier bonus");
   assert.deepStrictEqual(P.items.i14059.stats.pou, [16, 20], "Ceinture Glaciale : Dommages de poussée");
   assert.ok(P.items.i12416.stats.tac[1] < 0, "Ceinture de Grozilla : malus de Tacle"); }
 console.log("ok - lignes de PM, Tacle, Fuite et Dommages de poussée des pièces");
+
+// 2.1.30.5 : les malus de panoplie restent des malus (DOFUS les écrit en négatif ; Reliques de l'Aurore Pourpre donnait +40 % Critique, signalé par SegFault)
+{ const T = (s) => SETS[s].bonus;
+  [2, 3, 4, 5, 6].forEach((n) => assert.strictEqual(T("s499")[n].cri, -40, "Aurore Pourpre (" + n + ") : -40 % Critique"));
+  assert.strictEqual(T("s948")[4].pm, -3, "Krobes : -3 PM"); assert.strictEqual(T("s189")[5].tac, -40, "Glourséleste : -40 Tacle");
+  assert.strictEqual(T("s98")[2].re, -60, "Blop Griotte : -60 % Eau"); assert.strictEqual(T("s450")[3].cri, -10, "Ilyzaelle : -10 % Critique");
+}
+console.log("ok - malus de panoplie (Critique, PM, Tacle, résistances)");

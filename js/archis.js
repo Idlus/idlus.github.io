@@ -306,7 +306,7 @@
     depth++; try { onEvent(S, type, data); } finally { depth--; }
   };
   /* 1.1 : heures hors ligne (étape du Dofus d'Idlus) : la durée prise en compte par le rattrapage */
-  { const cu = E.catchUp; if (cu) E.catchUp = (S, seconds) => { const r = cu(S, seconds);
+  { const cu = E.catchUpGen; if (cu) E.catchUpGen = function* (S, seconds) { const r = yield* cu(S, seconds);
     if (r) onEvent(S, "offline", { s: Math.min(seconds, E.OFFLINE_MAX_S + (E.bonus ? E.bonus(S, "offtime") : 0) * 3600) }); return r; }; }
   /* 1.1 (7A) : titre « Gardien de la 1.1 » pour le compte qui possède les 4 Dofus de la 1.1 (les 10 premiers comptes : ornement, gravé par le serveur) */
   E.GARDIEN_TITLE = "Gardien de la 1.1";

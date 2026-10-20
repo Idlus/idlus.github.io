@@ -622,6 +622,7 @@
       ]],
       ["ul", [
         "Une tentative coûte 1 Volonté seulement sur un étage pas encore réussi ce mois-ci.",
+        "Un coffre par étage et par mois, la première fois qu'on l'atteint (Normal et Difficile à part) : l'onglet **Écus** coche ceux déjà reçus.",
         "Un boss tous les 10 étages, un tirage tous les 5, un événement, une boutique ou un autel par dizaine ; une règle sur les autres combats.",
         "Mode **manuel** : tu lances chaque étage et choisis les sorts ; mode auto : moins de Fragments.",
         "Sur PC, **raccourcis** : 1 à 9 lancent tes sorts ou prennent un choix, Entrée finit le tour ou lance l'étage, Échap passe, ← → changent de cible.",

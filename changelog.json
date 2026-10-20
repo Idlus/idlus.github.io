@@ -1,6 +1,75 @@
 {
-  "version": "2.1.30.2",
+  "version": "2.1.30.10",
   "versions": [
+    {
+      "v": "2.1.30.10",
+      "name": "Couture fine plus claire",
+      "items": [
+        "Collection de panoplies : la description de la Couture fine est plus claire (une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce)",
+        "Héros › Équipement : quand la Couture fine joue, le palier qu'elle débloque s'affiche en bleu avec l'étiquette « Couture fine » (aussi dans l'infobulle des objets et le détail d'une panoplie)",
+        "Une panoplie dont seul le bonus de la Couture fine est atteint apparaît maintenant dans « Panoplies actives »"
+      ]
+    },
+    {
+      "v": "2.1.30.9",
+      "name": "Infobulle de Maîtrise",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : à la souris, l’infobulle d’une étoile se ferme quand on ne la survole plus, même après un clic ; sur téléphone, l’aperçu au toucher est conservé (signalement n°23)"
+      ]
+    },
+    {
+      "v": "2.1.30.8",
+      "name": "Hauts faits sans doublons",
+      "items": [
+        "Chat › Hauts faits : se connecter sur un autre appareil (téléphone ou PC) ne renvoie plus tes anciens records de stasis au serveur. Avant, ils pouvaient ressortir en rafale dans les Hauts faits ; merci Gagou",
+        "Les records déjà envoyés sont maintenant notés dans ta partie, donc partagés entre tous tes appareils. Un vrai nouveau record s'envoie toujours comme avant"
+      ]
+    },
+    {
+      "v": "2.1.30.7",
+      "name": "Coffres de l'Ascension",
+      "items": [
+        "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
+        "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)"
+      ]
+    },
+    {
+      "v": "2.1.30.6",
+      "name": "Fenêtres qui restent en place",
+      "items": [
+        "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+        "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position"
+      ]
+    },
+    {
+      "v": "2.1.30.5",
+      "name": "Malus de panoplie",
+      "guide": "equipement",
+      "items": [
+        "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+        "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+        "Les chances de coup critique affichées ne descendent plus sous 0 %"
+      ]
+    },
+    {
+      "v": "2.1.30.4",
+      "name": "Potentiel affiché",
+      "items": [
+        "Héros › Équipement : le passif et les caractéristiques d'un Dofus s'affichent maintenant à son rang de Potentiel (étiquette « Potentiel IV +20 % » ou « Sublimé +50 % ») ; le bonus était déjà bien appliqué en combat",
+        "Bulle d'un Dofus : la part du Potentiel apparaît à côté de chaque caractéristique (ex. +80 Puissance (+40 Potentiel))"
+      ]
+    },
+    {
+      "v": "2.1.30.3",
+      "name": "Retour sans attente",
+      "items": [
+        "Retour d'absence : le jeu ne fige plus pendant le calcul de ta progression hors ligne ; une barre montre les combats calculés, puis le compte rendu s'affiche comme avant. Gains identiques",
+        "Calcul de l'absence environ deux fois plus rapide",
+        "Hors ligne : après une mise à jour, le jeu ne mélange plus d'anciens fichiers avec les nouveaux",
+        "Sauvegarde en ligne plus sûre quand deux envois se croisent ou quand on change de partie pendant un envoi"
+      ]
+    },
     {
       "v": "2.1.30.2",
       "name": "Ailes dans le chat",

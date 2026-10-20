@@ -29,7 +29,7 @@
     { n: 40, k: "retouche", u: 1, name: "Retouche", txt: "Retouche : changer de tenue sans rien perdre, une pièce vendue ou brisée est remplacée par une autre copie du sac" },
     { n: 60, k: "drop", v: 2, txt: "+2 % de butin" },
     { n: 80, k: "kamas", v: 3, txt: "+3 % de kamas en chasse" },
-    { n: 100, k: "fine", u: 1, name: "Couture fine", txt: "Couture fine : il manque 1 pièce, le bonus complet reste (panoplies de 3 pièces et plus)" },
+    { n: 100, k: "fine", u: 1, name: "Couture fine", txt: "Couture fine : une panoplie de 3 pièces ou plus donne son bonus complet même s'il te manque 1 pièce (ex. 5 pièces sur 6 = bonus des 6 pièces)" },
     { n: 150, k: "aura", u: 1, name: "Grand Couturier", title: "Grand Couturier", txt: "Titre « Grand Couturier » et aura dorée en combat" },
   ];
   E.COLL_REGION = 5; // % de butin et de kamas en chasse dans une région complète
@@ -63,11 +63,14 @@
   /* ---------- état de la collection (gardé en mémoire tant que l'Encyclopédie ne grandit pas) ---------- */
   const cache = typeof WeakMap !== "undefined" ? new WeakMap() : null;
   E.collState = (S) => {
-    const dex = E.itemDex(S); const nDex = Object.keys(dex).length; const old = cache && cache.get(S);
-    if (old && old.nDex === nDex) return old;
+    const dex = E.itemDex(S); const old = cache && cache.get(S);
+    // audit 19/10/2026 : même Encyclopédie (même objet, même version) = même collection, sans recompter ses milliers de modèles
+    const ver = E.dexVer ? E.dexVer(dex) : -1; if (old && ver >= 0 && old.dex === dex && old.ver === ver) return old;
+    const nDex = Object.keys(dex).length;
+    if (old && old.nDex === nDex) { old.dex = dex; old.ver = ver; return old; }
     const done = new Set(); regIdx().ids.forEach((sid) => { if (E.setPieces(sid).every((t) => dex[t])) done.add(sid); });
     const regs = new Set(); regIdx().regs.forEach((z) => { if (regIdx().regSets[z].every((s) => done.has(s))) regs.add(z); });
-    const C = { nDex, done, n: done.size, regs };
+    const C = { nDex, done, n: done.size, regs, dex, ver };
     if (cache) cache.set(S, C);
     return C;
   };
