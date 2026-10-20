@@ -140,7 +140,20 @@
   /* force du Dopeul (réglée par simulation : une équipe bien équipée gagne la plupart du temps, une équipe sans équipement perd) */
   E.DOPEUL = { hp0: 1.8, hpN: 0.7, dmg: 1.35, less: 0 };
   E.doplons = (lvl) => 1 + Math.floor(lvl / 40);
-  E.templeFight = (S, cls) => {
+  const templeRuns = new WeakMap(); // Session uniquement, hors sauvegarde.
+  const templeContext = (S) => JSON.stringify([S.sub, S.chars.map((c) => [c.id, c.cls, !!c.inTeam])]);
+  E.templeRun = (S) => { const r = templeRuns.get(S); return r ? { current: r.index + 1, total: r.list.length } : null; };
+  function templeStop(S, reason) {
+    const r = templeRuns.get(S); if (!r) return;
+    if (S.temple && S.temple.pend === r.list[r.index]) S.temple.pend = null;
+    if (S.temple && S.temple.need && !(S.fight && S.fight.dopeul === S.temple.fighting)) {
+      S.temple.need = false; S.temple.fighting = null;
+    }
+    templeRuns.delete(S);
+    E.note(S, reason || "Enchaînement arrêté. Le combat en cours se termine normalement.", "info");
+  }
+  E.templeRunStop = (S) => { templeStop(S); return null; };
+  const templeRequest = (S, cls) => {
     const T = E.templeState(S); const c = E.templeHero(S, cls);
     if (!c) return `Il faut un héros ${CLASSES[cls] ? CLASSES[cls].name : ""} pour entrer dans ce temple.`;
     if (T.done[cls]) return "Ce Dopeul a déjà été vaincu aujourd'hui.";
@@ -150,7 +163,24 @@
     if (S.tresor && S.tresor.cur && S.tresor.cur.ready) return "Battez d'abord le gardien du trésor.";
     T.pend = cls; E.note(S, `Le Dopeul ${CLASSES[cls].name} arrive au prochain combat.`, "info"); return null;
   };
-  E.templeCancel = (S) => { const T = E.templeState(S); T.pend = null; return null; };
+  E.templeFight = (S, cls) => templeRuns.has(S) ? "Un enchaînement des temples est déjà en cours." : templeRequest(S, cls);
+  E.templeRunReason = (S) => {
+    const T = E.templeState(S);
+    if (templeRuns.has(S) || T.pend || T.fighting) return "Un défi des temples est déjà en cours.";
+    if (S.dungeon) return "Quittez d'abord le donjon.";
+    if (S.exp && S.exp.on) return "Réveille d'abord l'équipe du Songe infini.";
+    if (!S.hunting || !S.sub) return "Lancez d'abord une chasse.";
+    if (S.tresor && S.tresor.cur && S.tresor.cur.ready) return "Battez d'abord le gardien du trésor.";
+    if (!E.templeClasses(S).some((k) => !T.done[k])) return "Aucun Dopeul disponible aujourd'hui.";
+    return null;
+  };
+  E.templeRunStart = (S) => {
+    const err = E.templeRunReason(S); if (err) return err;
+    const T = E.templeState(S), list = E.templeClasses(S).filter((k) => !T.done[k]);
+    const error = templeRequest(S, list[0]); if (error) return error;
+    templeRuns.set(S, { list, index: 0, day: day(), context: templeContext(S), fight: null, won: false }); return null;
+  };
+  E.templeCancel = (S) => { templeStop(S); const T = E.templeState(S); T.pend = null; return null; };
   const prot0 = E.protGroup;
   E.protGroup = (S, sub, team, monsterEntity) => {
     const T = S.temple; const cls = T && T.pend;
@@ -167,14 +197,28 @@
   };
   const start0 = E.startFight;
   if (typeof start0 === "function") E.startFight = function (S, ...a) {
-    const r = start0.call(this, S, ...a);
+    templeAdvance(S);
+    let r;
+    try { r = start0.call(this, S, ...a); } catch (e) { templeStop(S, "Enchaînement arrêté : erreur au lancement."); throw e; }
     const T = S && S.temple; if (T && T.need && S.fight) { S.fight.dopeul = T.fighting; T.need = false; }
+    const batch = templeRuns.get(S);
+    if (batch && T && !T.pend) {
+      if (S.fight && S.fight.dopeul === batch.list[batch.index]) batch.fight = S.fight;
+      else templeStop(S, "Enchaînement arrêté : le Dopeul attendu n'a pas pu être lancé.");
+    }
     return r;
   };
   const az0 = E.autoZone;
   E.autoZone = (S, win) => {
     const T = S && S.temple;
-    if (T && T.fighting && S.fight && S.fight.dopeul) { const cls = T.fighting; T.fighting = null; templeEnd(S, cls, win); }
+    if (T && T.fighting && S.fight && S.fight.dopeul) {
+      const cls = T.fighting; T.fighting = null; templeEnd(S, cls, win);
+      const batch = templeRuns.get(S);
+      if (batch) {
+        if (!win || cls !== batch.list[batch.index]) templeStop(S, "Enchaînement arrêté après une défaite ou un combat inattendu.");
+        else batch.won = true;
+      }
+    }
     return az0(S, win);
   };
   function templeEnd(S, cls, win) {
@@ -193,9 +237,24 @@
   }
   /* le combat a disparu sans fin normale (chasse arrêtée, donjon…) : le Dopeul reste disponible */
   const tick0 = E.tick;
+  function templeAdvance(S) {
+    const batch = templeRuns.get(S);
+    if (batch) {
+      if (batch.day !== day() || batch.context !== templeContext(S) || !S.hunting || S.dungeon || (S.exp && S.exp.on) || (S.tresor && S.tresor.cur && S.tresor.cur.ready)) templeStop(S, "Enchaînement arrêté : les conditions de chasse ont changé.");
+      else if (batch.won) {
+        batch.index++;
+        if (batch.index >= batch.list.length) templeStop(S, "Tous les Dopeuls de cet enchaînement ont été vaincus !");
+        else {
+          batch.fight = null; batch.won = false;
+          const err = templeRequest(S, batch.list[batch.index]); if (err) templeStop(S, "Enchaînement arrêté : " + err);
+        }
+      } else if (batch.fight ? S.fight !== batch.fight : !(S.temple && S.temple.pend === batch.list[batch.index])) templeStop(S, "Enchaînement arrêté : défi interrompu.");
+    }
+  }
   E.tick = (S, dt, realMs) => {
+    templeAdvance(S);
     const T = S && S.temple; if (T && T.fighting && !(S.fight && S.fight.dopeul)) T.fighting = null;
-    return tick0(S, dt, realMs);
+    try { return tick0(S, dt, realMs); } catch (e) { templeStop(S, "Enchaînement arrêté : erreur pendant le combat."); throw e; }
   };
   /* Comptoir des temples (monnaie : Doplons) */
   if (E.SHOPS && !E.SHOPS.temple) E.SHOPS.temple = { name: "Comptoir des temples", cur: "doplons", curName: "Doplons", icon: "🪙", items: [
@@ -228,6 +287,7 @@
   };
   const catch0 = E.catchUpGen;
   E.catchUpGen = function* (S, seconds) {
+    templeStop(S, "Enchaînement des temples arrêté pendant l'absence.");
     const C = E.consigne(S); const from = S.sub; const tmpRoam = C.roam && !S.settings.roam && S.hunting && !S.dungeon;
     if (tmpRoam) S.settings.roam = true;
     let r; try { r = yield* catch0(S, seconds); } finally { if (tmpRoam) S.settings.roam = false; }
@@ -258,7 +318,7 @@
   };
 
   /* ======================= actions, succès, ornements, recherche ======================= */
-  Object.assign(E.ACTIONS, { cmdDeliver: "livrer une commande d'artisan", cmdSwap: "changer une commande d'artisan", templeFight: "défier un Dopeul", templeCancel: "annuler le défi du Dopeul", consigneSet: "régler une consigne d'absence" });
+  Object.assign(E.ACTIONS, { templeRunStart: "enchaîner les Dopeuls disponibles", templeRunStop: "arrêter les temples", cmdDeliver: "livrer une commande d'artisan", cmdSwap: "changer une commande d'artisan", templeFight: "défier un Dopeul", templeCancel: "annuler le défi du Dopeul", consigneSet: "régler une consigne d'absence" });
   if (E.carnetCat) E.carnetCat({ cmdDeliver: "commande", cmdSwap: "quete", buyShop: "boutique" });
   if (E.carnetWrap) E.carnetWrap();
   if (E.ACH) {
