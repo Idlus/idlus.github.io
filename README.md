@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.4 « Potentiel affiché »
+
+- Potentiel des Dofus affiché (signalé par Ley) : `dofpRank`/`dofpPotTag` dans js/ui.js ; dofpBlock, dofpHeroPanel et dofpPickHtml passent le rang à `E.dofpTxt`, itemStatsHtml ajoute `E.dpotStatsOf` (seulement pour un objet du sac du joueur) ; les builds partagés gardent le rang 0. Le moteur (E.charStats, E.dofpVal en combat) comptait déjà le Potentiel.
+
 ## 2.1.30.3 « Retour sans attente »
 
 - Audit technique (avec ChatGPT) : E.catchUp devient le générateur E.catchUpGen (les modules l'enveloppent avec yield*), E.catchUpAsync le déroule par tranches (fenêtre #offc avec barre, jeu en pause, rien sauvegardé avant la fin) ; mêmes tirages et mêmes gains (tests/absence.test.js). Collection de panoplies recalculée seulement quand l'Encyclopédie grandit (E.dexVer). sw.js : précache en cache: "reload", recherche hors ligne dans le cache de la version. online.js : envoi demandé pendant un autre relancé une fois (SYNC-04), partie fixée pendant l'envoi (SYNC-06). CI : test:online. Aucun changement SQL.
