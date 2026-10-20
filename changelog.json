@@ -1,6 +1,40 @@
 {
-  "version": "2.1.30.3",
+  "version": "2.1.30.7",
   "versions": [
+    {
+      "v": "2.1.30.7",
+      "name": "Coffres de l'Ascension",
+      "items": [
+        "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
+        "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)"
+      ]
+    },
+    {
+      "v": "2.1.30.6",
+      "name": "Fenêtres qui restent en place",
+      "items": [
+        "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+        "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position"
+      ]
+    },
+    {
+      "v": "2.1.30.5",
+      "name": "Malus de panoplie",
+      "guide": "equipement",
+      "items": [
+        "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+        "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+        "Les chances de coup critique affichées ne descendent plus sous 0 %"
+      ]
+    },
+    {
+      "v": "2.1.30.4",
+      "name": "Potentiel affiché",
+      "items": [
+        "Héros › Équipement : le passif et les caractéristiques d'un Dofus s'affichent maintenant à son rang de Potentiel (étiquette « Potentiel IV +20 % » ou « Sublimé +50 % ») ; le bonus était déjà bien appliqué en combat",
+        "Bulle d'un Dofus : la part du Potentiel apparaît à côté de chaque caractéristique (ex. +80 Puissance (+40 Potentiel))"
+      ]
+    },
     {
       "v": "2.1.30.3",
       "name": "Retour sans attente",

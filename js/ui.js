@@ -21,9 +21,26 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.3";
+const GAME_VERSION = "2.1.30.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.7", name: "Coffres de l'Ascension", items: [
+    "L'Ascension › Écus : les coffres du mois (étages 25, 50, 75 et 100, Normal et Difficile) montrent ✓ quand ils sont déjà reçus ; un seul coffre par étage et par mois, la première fois qu'on l'atteint (signalé par Akileuss)",
+    "Coffre de l'Ascension : le message donne les heures de Sablier vraiment reçues (moins, ou rien, quand la réserve est pleine)",
+  ] },
+  { v: "2.1.30.6", name: "Fenêtres qui restent en place", items: [
+    "Fenêtres : un clic sur un bouton (stasis d'un donjon, enchaînement, réglages…) ne fait plus remonter la fenêtre tout en haut, elle garde sa position (demandé par Mathis)",
+    "Les listes qui défilent à l'intérieur d'une fenêtre gardent aussi leur position",
+  ] },
+  { v: "2.1.30.5", name: "Malus de panoplie", guide: "equipement", items: [
+    "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+    "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+    "Les chances de coup critique affichées ne descendent plus sous 0 %",
+  ] },
+  { v: "2.1.30.4", name: "Potentiel affiché", items: [
+    "Héros › Équipement : le passif et les caractéristiques d'un Dofus s'affichent maintenant à son rang de Potentiel (étiquette « Potentiel IV +20 % » ou « Sublimé +50 % ») ; le bonus était déjà bien appliqué en combat",
+    "Bulle d'un Dofus : la part du Potentiel apparaît à côté de chaque caractéristique (ex. +80 Puissance (+40 Potentiel))",
+  ] },
   { v: "2.1.30.3", name: "Retour sans attente", items: [
     "Retour d'absence : le jeu ne fige plus pendant le calcul de ta progression hors ligne ; une barre montre les combats calculés, puis le compte rendu s'affiche comme avant. Gains identiques",
     "Calcul de l'absence environ deux fois plus rapide",
@@ -5603,11 +5620,14 @@ function dofpChips(id, c) {
   const fit = c ? E.dofpFits(S, c, id) : null;
   return `<span class="dofp-chips"><span class="dofp-chip">${G("bolt")}${h(E.dofpTrig(id))}</span>${c && E.dofpForKey(id) !== "all" ? `<span class="dofp-chip ${fit ? "ok" : "dim"}">${fit ? "✓ Idéal pour " + h(c.name) : "Plutôt pour : " + h(E.dofpFor(id))}</span>` : `<span class="dofp-chip">${G("target")}Idéal : ${h(E.dofpFor(id))}</span>`}</span>`;
 }
+/* 2.1.30.4 : rang de Potentiel du Dofus (le bonus était déjà compté en combat et dans les caractéristiques, pas affiché) */
+const dofpRank = (id) => (E.dpotRank && S && E.dofusOwned(S, id) ? E.dpotRank(S, id) : 0);
+const dofpPotTag = (r) => (r ? ` <span class="dofp-eveil">${r >= (E.DPOT_MAX || 10) ? "Sublimé" : "Potentiel " + (E.roman ? E.roman(r) : r)} +${E.dpotPct(r)} %</span>` : "");
 function dofpBlock(id, opt = {}) {
   if (!E.DOFP_LIST || !E.DOFP_LIST[id]) return "";
-  const boost = !!opt.boost;
+  const boost = !!opt.boost; const r = opt.r != null ? opt.r : dofpRank(id);
   return `<div class="dofp fam-${dofpFc(id)}${opt.mini ? " mini" : ""}"><div class="dofp-h">${dofpIco(id)}<span class="dofp-nm"><small>Passif du Dofus</small><b>${h(E.dofpName(id))}</b></span><span class="dofp-f">${h(E.dofpFam(id))}</span></div>
-    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
+    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost, false, r))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}${dofpPotTag(r)}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
 }
 /* panneau sous l'équipement : une carte par emplacement Dofus, compteur du combat en cours, Éveil des Dragons */
 function dofpHeroPanel(c) {
@@ -5621,7 +5641,7 @@ function dofpHeroPanel(c) {
   const cards = slots.map(({ sl, id, tro }) => {
     if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;
     return `<button class="dofp-card fam-${dofpFc(id)} ${ui.slot === sl ? "on" : ""}" data-act="slot" data-slot="${sl}"><span class="dofp-ch">${im(dofusImg(id), "dofp-img", E.DOFUS[id].name)}<span class="dofp-nm"><small>${h(E.DOFUS[id].name)}</small><b>${h(E.dofpName(id))}</b></span>${dofpIco(id)}</span>
-      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
+      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost, false, dofpRank(id)))}${dofpPotTag(dofpRank(id))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
   const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
     : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
   return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / 6 actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
@@ -5636,7 +5656,7 @@ function dofpPickHtml(c, all, g) {
     .sort((a, b) => (b.n > 0) - (a.n > 0) || a.dup - b.dup || b.fit - a.fit || (g[b.it.uid] || 0) - (g[a.it.uid] || 0));
   const row = (r) => { const T = ITEMS[r.it.tpl]; const high = T.lvl > c.lvl;
     return `<div class="li dofp-pr fam-${dofpFc(r.id)} ${r.n ? "" : "plow"}"><span class="dofp-primg">${im(dofusImg(r.id), "", T.name)}</span><span class="grow"><span class="dofp-prn"><b>${h(T.name)}</b>${r.n > 1 ? ` <span class="tag soft gcount">×${r.n}</span>` : ""} <span class="xs muted">niv. ${T.lvl}${r.by ? ` · porté par ${h(r.by === c ? "ce héros" : r.by.name)}` : ""}</span></span>
-      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
+      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id, false, false, dofpRank(r.id)))}${dofpPotTag(dofpRank(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
       <button class="btn sm ${r.n && !r.dup ? "primary" : ""}" data-act="equip" data-uid="${r.it.uid}" ${high || r.dup ? "disabled" : ""}>${high ? "Niv. " + T.lvl : r.n ? "Équiper" : "Prendre"}</button></div>`; };
   const fams = [["all", "Tous"]].concat(E.DOFP_FAMS.map((f) => [f, f]));
   const cnt = (f) => Object.values(byTpl).filter((L) => f === "all" || E.dofpFam(ITEMS[L[0].tpl].dofus) === f).length;
@@ -5654,8 +5674,9 @@ function dofpPickHtml(c, all, g) {
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
-  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
+  const pr = T.dofus && S.items[it.uid] === it ? dofpRank(T.dofus) : 0, pot = pr && E.dpotStatsOf ? E.dpotStatsOf(T.dofus, pr) : {}; // 2.1.30.4 : caractéristiques du Potentiel
+  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true, r: pr }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""}${pot[k] ? ` <span class="bonus">(+${pot[k]} Potentiel)</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 /* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
 const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
@@ -6239,7 +6260,7 @@ function combatStats(c, st) {
   const hp = Math.round(st.hpMax * (osa ? 1.05 : 1) * (1 + bHp / 100));
   const hs = E.HUNT_SMALL[n]; const ds = E.SMALL_TEAM[n];
   const dmg = bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
-  const crit = Math.min(60, 5 + st.cri); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
+  const crit = Math.max(0, Math.min(60, 5 + st.cri)); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
   const xp = Math.round(((1 + st.sa / 100) * E.renXpMult(c) - 1) * 100); const ppRaw = E.teamProspectionRaw(S) + (inT ? 0 : st.pp);
   const parts = (a) => a.filter((x) => x[1]).map(([t, v]) => `${t} ${v > 0 ? "+" : ""}${fmt(Math.round(v * 10) / 10)} %`).join(" · ");
   const row = (label, val, tip) => `<div class="li"${tip ? ` data-tip="${h(tip)}"` : ""}><span class="grow">${label}</span><b class="num">${val}</b></div>`;
@@ -7871,7 +7892,17 @@ function renderQuests(soft) {
     <section class="stack">${body}</section>`;
 }
 /* ---------- feuilles ---------- */
-function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+/* 2.1.30.6 (Mathis) : une fenêtre redessinée après un clic (stasis d'un donjon, réglages…) garde sa position de défilement, ainsi que ses listes internes */
+const sheetId = (box) => { const t = box && box.querySelector("h2"), f = box && box.firstElementChild; return t ? "h|" + t.textContent.trim() : f ? "c|" + f.className + "|" + f.textContent.trim().slice(0, 40) : ""; };
+function sheetScrolls(box) { const out = [], seen = {}; if (!box) return out; for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); if (el.scrollTop > 0) out.push([k, i, el.scrollTop]); } return out; }
+function openSheet(html) {
+  const old = $("#sheet .sheet"); if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre");
+  const id = sheetId(old), keep = old ? sheetScrolls(old) : [];
+  $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const box = $("#sheet .sheet"); if (!keep.length || !id || sheetId(box) !== id) return;
+  const seen = {}, want = new Map(keep.map(([k, i, y]) => [k + "#" + i, y]));
+  for (const el of [box, ...box.querySelectorAll("*")]) { if (el !== box && el.scrollHeight <= el.clientHeight) continue; const k = el.tagName + "." + el.className; const i = (seen[k] = (seen[k] || 0) + 1); const y = want.get(k + "#" + i); if (y) el.scrollTop = y; }
+}
 /* 2.1.4 (Mathis) : l'album des archimonstres et la fiche d'un monstre se mettent à jour toutes seules après chaque combat (mise à jour ciblée, la position de lecture reste) */
 const SHEET_LIVE = [[".archisheet", () => archiSheetHtml()], [".encsheet[data-mk]", (el) => (MONSTERS[el.dataset.mk] ? encMonSheet(el.dataset.mk) : "")]];
 let sheetLiveSig = "";
@@ -8054,7 +8085,7 @@ function optionsSheet() {
     <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
     <div class="optbody small">${body}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
-  if (keepTop) $(".sheet").scrollTop = keepTop;
+  $(".sheet").scrollTop = keepTop; // autre onglet : on repart du haut
 }
 /* 1.0.30 : donjon pendant l'absence et retours d'expédition comptent aussi pour ouvrir la fenêtre */
 /* audit 19/10/2026 (choix 1A + 2C de Mathis) : le calcul de l'absence se fait par tranches (E.catchUpAsync) au lieu de figer la page.
