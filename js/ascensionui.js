@@ -262,7 +262,8 @@
     const Q = E.ascState(s); const own = s.titlesExtra || [];
     return `<p class="note">Les Écus se gagnent sur les boss et dans les coffres du mois. Ils n'achètent que des titres : rien qui rende plus fort. Tu en as <b>${fmt(Q.ecus)}</b>.</p>
       <div class="as-g2">${E.ASC_ECU_SHOP.map((o) => `<div class="as-offer"><b>Titre « ${h(o.v)} »</b><span class="grow"></span><button class="btn sm" data-act="as-buy" data-v="${o.id}" ${own.includes(o.v) || Q.ecus < o.price ? "disabled" : ""}>${own.includes(o.v) ? "Obtenu" : `${o.price} Écus`}</button></div>`).join("")}</div>
-      <p class="note">Coffres du mois aux étages 25, 50, 75 et 100 (Normal et Difficile) : kamas, Poussière, Sablier, Cristal de Forgemagie. Un titre tous les 10 étages.</p>`;
+      <p class="note">Coffres du mois aux étages 25, 50, 75 et 100 (Normal et Difficile), un seul par étage et par mois, la première fois que tu l'atteins : kamas, Poussière, Sablier (dès l'étage 50), Cristal de Forgemagie (dès l'étage 75). Un titre tous les 10 étages.</p>
+      <div class="xs">${["n", "d"].map((m) => `<div>${E.ASC_MODES[m]} : ${E.ASC_CHEST.map((f) => ((Q.chest || {})[m + f] ? `<b>${f} ✓</b>` : `<span class="muted">${f}</span>`)).join(" · ")}</div>`).join("")}<div class="muted">✓ = coffre déjà reçu ce mois-ci. Tout repart à zéro le 1er du mois.</div></div>`;
   }
   /* 1.2.x : le Reliquaire, la collection des reliques trouvées et ses récompenses */
   function relHtml(s) {

@@ -555,7 +555,8 @@
     const k = mode === "d" ? 2 : 1; const q = f / 25; const got = [];
     const kam = Math.round(20000 * q * q * k); S.kamas += kam; if (E.carnetGain) E.carnetGain(S, kam, "ascension"); got.push(`${kam.toLocaleString("fr-FR")} kamas`);
     if (E.POUSSIERE) { E.addRes(S, E.POUSSIERE, 10 * q * k); got.push(`${10 * q * k} ${E.POUSSIERE}`); }
-    if (f >= 50 && E.sabGift) { E.sabGift(S, k); got.push(`${k} h de Sablier`); }
+    if (f >= 50 && E.sabGift) { const r0 = E.sab(S).r; const add = (E.sabGift(S, k) - r0) / 3600; // 2.1.30.4 : le message dit les heures vraiment reçues (réserve pleine : moins, ou rien)
+      got.push(add >= k ? `${k} h de Sablier` : add > 0 ? `${Math.round(add * 60)} min de Sablier (réserve pleine)` : "pas de Sablier (réserve pleine)"); }
     if (f >= 75 && D.CONSUMABLES.cristal_fm) { E.addCons(S, "cristal_fm", k); got.push(`${k} Cristal de Forgemagie`); }
     const Q = E.ascState(S); Q.ecus += 5 * q * k; got.push(`${5 * q * k} Écus`);
     E.note(S, `Ascension : coffre de l'étage ${f} (${E.ASC_MODES[mode]}) : ${got.join(", ")}.`, "rare");
