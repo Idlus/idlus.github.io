@@ -2391,7 +2391,7 @@
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
     const best = [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
-    let mn = 0, mx = 0, heal = 0; const cc = Math.min(60, 5 + st.cri) / 100; let tgts = 1;
+    let mn = 0, mx = 0, heal = 0; const cc = Math.max(0, Math.min(60, 5 + st.cri)) / 100; /* 2.1.30.5 : un malus de Critique ne descend pas sous 0 % */ let tgts = 1;
     g.fx.forEach((f) => {
       if (["dmg", "drain", "dot"].includes(f.k)) {
         const el = f.el === "best" ? best : f.el || "n"; const E2 = ELEMENTS[el];

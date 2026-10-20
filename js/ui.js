@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.30.4";
+const GAME_VERSION = "2.1.30.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.30.5", name: "Malus de panoplie", guide: "equipement", items: [
+    "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+    "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+    "Les chances de coup critique affichées ne descendent plus sous 0 %",
+  ] },
   { v: "2.1.30.4", name: "Potentiel affiché", items: [
     "Héros › Équipement : le passif et les caractéristiques d'un Dofus s'affichent maintenant à son rang de Potentiel (étiquette « Potentiel IV +20 % » ou « Sublimé +50 % ») ; le bonus était déjà bien appliqué en combat",
     "Bulle d'un Dofus : la part du Potentiel apparaît à côté de chaque caractéristique (ex. +80 Puissance (+40 Potentiel))",
@@ -6247,7 +6252,7 @@ function combatStats(c, st) {
   const hp = Math.round(st.hpMax * (osa ? 1.05 : 1) * (1 + bHp / 100));
   const hs = E.HUNT_SMALL[n]; const ds = E.SMALL_TEAM[n];
   const dmg = bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
-  const crit = Math.min(60, 5 + st.cri); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
+  const crit = Math.max(0, Math.min(60, 5 + st.cri)); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
   const xp = Math.round(((1 + st.sa / 100) * E.renXpMult(c) - 1) * 100); const ppRaw = E.teamProspectionRaw(S) + (inT ? 0 : st.pp);
   const parts = (a) => a.filter((x) => x[1]).map(([t, v]) => `${t} ${v > 0 ? "+" : ""}${fmt(Math.round(v * 10) / 10)} %`).join(" · ");
   const row = (label, val, tip) => `<div class="li"${tip ? ` data-tip="${h(tip)}"` : ""}><span class="grow">${label}</span><b class="num">${val}</b></div>`;

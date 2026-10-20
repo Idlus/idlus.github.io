@@ -1,6 +1,16 @@
 {
-  "version": "2.1.30.4",
+  "version": "2.1.30.5",
   "versions": [
+    {
+      "v": "2.1.30.5",
+      "name": "Malus de panoplie",
+      "guide": "equipement",
+      "items": [
+        "Reliques de l'Aurore Pourpre : la panoplie retire bien 40 % de Critique, comme dans DOFUS (avant, elle en donnait 40 %) ; merci SegFault",
+        "Même erreur corrigée sur 13 autres panoplies dont le malus était devenu un bonus : Krobes (PM), Glourséleste (Tacle), Ilyzaelle et Musha (Critique), Abraknyde, les 4 Blop, Infernale, Fluviale, Contrebandière et Meurtrière (résistances)",
+        "Les chances de coup critique affichées ne descendent plus sous 0 %"
+      ]
+    },
     {
       "v": "2.1.30.4",
       "name": "Potentiel affiché",

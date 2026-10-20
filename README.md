@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.30.5 « Malus de panoplie »
+
+- DofusDB écrit certains malus de panoplie en négatif sur un effet déjà négatif (171 « -% Critique » à -40) : build_data.py et build_caracs.js prenaient « signe × valeur » et en faisaient un bonus. Ils prennent maintenant « signe × |valeur| ». js/gamedata.js corrigé sur ces seules lignes (35 lignes, 14 panoplies : Aurore Pourpre, Krobes, Glourséleste, Ilyzaelle, Musha, Abraknyde, Blop ×4, Infernale, Fluviale, Contrebandière, Meurtrière) ; les objets n'étaient pas touchés (vérifié sur les 2 595 objets). Chances de critique bornées à 0 % (estimation de sorts, fiche du héros). Test dans tests/pieces.test.js. Le serveur (Bouclier) relit gamedata.js.
+
 ## 2.1.30.4 « Potentiel affiché »
 
 - Potentiel des Dofus affiché (signalé par Ley) : `dofpRank`/`dofpPotTag` dans js/ui.js ; dofpBlock, dofpHeroPanel et dofpPickHtml passent le rang à `E.dofpTxt`, itemStatsHtml ajoute `E.dpotStatsOf` (seulement pour un objet du sac du joueur) ; les builds partagés gardent le rang 0. Le moteur (E.charStats, E.dofpVal en combat) comptait déjà le Potentiel.

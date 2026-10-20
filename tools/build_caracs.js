@@ -73,7 +73,7 @@ const patchStats = (old, db) => {
     const Z = G.SETS["s" + s.id]; if (!Z) continue; const before = JSON.stringify(Z.bonus);
     for (const n in Z.bonus) { NEW.forEach((k) => delete Z.bonus[n][k]); if (!Object.keys(Z.bonus[n]).length) delete Z.bonus[n]; }
     (s.effects || []).forEach((effs, n) => { const add = {};
-      (effs || []).forEach((e) => { const st = STAT[e.effectId]; if (st && NEW.includes(st[0])) add[st[0]] = (add[st[0]] || 0) + st[1] * (e.from || 0); });
+      (effs || []).forEach((e) => { const st = STAT[e.effectId]; if (st && NEW.includes(st[0])) add[st[0]] = (add[st[0]] || 0) + st[1] * Math.abs(e.from || 0); /* malus écrits en négatif par DOFUS */ });
       if (Object.keys(add).length) Z.bonus[n + 1] = Object.assign(Z.bonus[n + 1] || {}, add); });
     if (JSON.stringify(Z.bonus) !== before) count.sets++;
   }
