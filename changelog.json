@@ -1,6 +1,13 @@
 {
-  "version": "2.1.35.5",
+  "version": "2.1.35.6",
   "versions": [
+    {
+      "v": "2.1.35.6",
+      "name": "Vérification plus juste",
+      "items": [
+        "Serveur : les meilleurs joueurs avec le ×2 illimité de la Maîtrise du temps ne sont plus mis en vérification à tort pour leur Maîtrise"
+      ]
+    },
     {
       "v": "2.1.35.5",
       "name": "Points de Maîtrise signalés",
