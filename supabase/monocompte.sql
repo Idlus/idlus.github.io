@@ -55,6 +55,12 @@ create table if not exists mono.saisons (
   constraint horloge_test_seulement check (test or (clk_vitesse = 1 and clk_t is null and clk_ref is null and not clk_pause))
 );
 create unique index if not exists saisons_une_ouverte on mono.saisons ((true)) where etat in ('ouverte', 'cloture');
+-- 2.1.35.2 : remise à zéro des parties d'une saison (tools/serveur/mono_remise_zero.sql, après le bug des codes cadeaux de la
+-- bêta). gen = numéro de génération des parties de la saison (0 au départ, +1 à chaque remise) ; le jeu le lit dans mono_acces,
+-- le garde dans sa partie (S.mono.gen) et l'envoie avec chaque partie (meta.gen) : une partie locale d'une génération plus
+-- ancienne est mise de côté sur l'appareil, et mono.push refuse toute partie d'avant la remise.
+alter table mono.saisons add column if not exists gen int not null default 0;
+alter table mono.saisons add column if not exists remise timestamptz;
 
 -- ---------- testeurs : seuls ces comptes (et l'admin) entrent dans l'espace Monocompte ----------
 create table if not exists mono.testeurs (
@@ -483,7 +489,7 @@ as $$ declare s int := mono.saison_ouverte(); x mono.saisons%rowtype; t timestam
   if s is null then return jsonb_build_object('ok', true, 'saison', null); end if;
   select * into x from mono.saisons where id = s; t := mono.date_saison(s); j := mono.jour_de(s, t);
   return jsonb_build_object('ok', true, 'admin', exists (select 1 from public.admins where user_id = auth.uid()),
-    'saison', jsonb_build_object('id', x.id, 'nom', x.nom, 'theme', x.theme, 'debut', x.debut, 'etat', x.etat, 'test', x.test, 'fin', mono.fin(x.id)),
+    'saison', jsonb_build_object('id', x.id, 'nom', x.nom, 'theme', x.theme, 'debut', x.debut, 'etat', x.etat, 'test', x.test, 'fin', mono.fin(x.id), 'gen', x.gen, 'remise', x.remise),
     'date', t, 'jour', j, 'semaine', mono.semaine_de(least(j, 56)), 'manche', mono.manche_de(least(j, 56)), 'gel', mono.gel(s),
     -- 6c : le jeu suit la date de saison du serveur (horloge de test comprise) : vitesse et pause
     'clk', jsonb_build_object('v', case when x.test then x.clk_vitesse else 1 end, 'pause', x.test and x.clk_pause), 'srv', now());
@@ -505,11 +511,15 @@ end $$;
 -- Envoi de la partie (même logique que push_save) : p_expected = date de la version en ligne connue de l'appareil ;
 -- si elle a changé (autre appareil), rien n'est écrit et la fonction renvoie null (le jeu demande quelle version garder).
 -- Compte suspendu : refusé. Saison fermée : refusé. Partie remise par Mathis (meta.remise) : pas d'envoi forcé par-dessus.
+-- 2.1.35.2 : partie d'une génération plus ancienne que celle de la saison (meta.gen absent = 0) : refusée (remise à zéro).
 create or replace function mono.push(u uuid, p_data text, p_meta jsonb, p_version text, p_device text, p_expected text, p_force boolean default false)
 returns text language plpgsql security definer set search_path = mono, public
-as $$ declare s int := mono.saison_ouverte(); r timestamptz; jr date := (now() at time zone 'Europe/Paris')::date; begin
+as $$ declare s int := mono.saison_ouverte(); r timestamptz; jr date := (now() at time zone 'Europe/Paris')::date; g int; begin
   if public.susp(u) then raise exception 'compte suspendu'; end if;
   if s is null then raise exception 'saison Monocompte fermée'; end if;
+  g := case when coalesce(p_meta ->> 'gen', '') ~ '^[0-9]{1,9}$' then (p_meta ->> 'gen')::int else 0 end;
+  -- for share : attend la fin d'une remise à zéro en cours (tools/serveur/mono_remise_zero.sql) et lit sa génération
+  if g < (select gen from mono.saisons where id = s for share) then raise exception 'partie d''avant la remise à zéro de la bêta : recharge le jeu'; end if;
   if p_data is null or length(p_data) >= 3000000 then raise exception 'partie trop grande'; end if;
   perform mono.verrou(u);
   if p_force and exists (select 1 from mono.parties where user_id = u and saison = s and meta ? 'remise') then p_force := false; end if;

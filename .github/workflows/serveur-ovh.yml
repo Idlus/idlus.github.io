@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -285,6 +285,25 @@ jobs:
           sleep 15
           echo '== Fonctions record et mono (erreurs au démarrage)'
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 3m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception|boot" | tail -20'
+      - name: Monocompte, remise à zéro des parties de la bêta (sauvegarde de la base, monocompte.sql, mono_cles.sql, outil)
+        # 21/10/2026, demande écrite de Mathis : « remettre à zéro les parties Monocompte des testeurs » (bug des codes cadeaux,
+        # corrigé en 2.1.35.1). Lancé depuis la branche de la bêta. Ne touche ni aux tables du Classique, ni aux testeurs, clés et amis.
+        if: inputs.etape == 'monocompte-remise-zero'
+        run: |
+          echo "SSHO=$SSHO" >> "$GITHUB_ENV"
+          echo '== Sauvegarde complète de la base avant la remise à zéro'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-mono-remise-zero-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
+          for f in supabase/monocompte.sql supabase/mono_cles.sql tools/serveur/mono_remise_zero.sql; do
+            echo "== $f"
+            case "$f" in supabase/*) { echo "set lock_timeout = '3s';"; cat "$f"; } > /tmp/q.sql ;; *) cp "$f" /tmp/q.sql ;; esac
+            for essai in 1 2 3 4 5 6; do
+              if bash tools/serveur/vps_sql.sh fichier /tmp/q.sql > /tmp/r.txt 2>&1; then echo "OK (essai $essai)"; break; fi
+              tail -c 800 /tmp/r.txt; echo
+              if grep -qiE 'lock timeout|deadlock' /tmp/r.txt && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+              exit 1
+            done
+            case "$f" in tools/*) cat /tmp/r.txt ;; esac
+          done
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
