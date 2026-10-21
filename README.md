@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.33 « Bêta fermée du Monocompte »
+
+- Monocompte (js/mono.js, monopass, monodofus) et lot 1 de la Saison 1 « Les Fragments du Temps » (js/saison1.js, js/saison1ui.js, css/saison1.css) : partie à part (`dofousxen-save-mono`), cachée derrière un code testeur (Options › Compte, drapeau `idlus-mono-beta`), visible aussi des admins et sur localhost.
+- Éclats du Temps tenus par un registre provisoire dans la partie, en attendant le registre du serveur ; horloge accélérée réservée à la bêta. Parties de bêta remises à zéro avant la Saison 1.
+- Classique inchangé (simulations identiques, sauvegarde protégée). Aucun changement de base de données.
+
 ## 2.1.32 « Ma rotation »
 
 - Sorts : mode « Ma rotation » (c.atkMode = "rot", c.rot = [{ id, cond? }], 16 cases, "arme" = coup d'arme). charTurn lance la liste dans l'ordre et passe les sorts impossibles (recharge, PA, lancers max, condition, entrave) ; au bout de la liste le tour s'arrête. Rotation vide = Auto.

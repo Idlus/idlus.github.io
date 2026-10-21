@@ -1,6 +1,15 @@
 {
-  "version": "2.1.32",
+  "version": "2.1.33",
   "versions": [
+    {
+      "v": "2.1.33",
+      "name": "Bêta fermée du Monocompte",
+      "items": [
+        "Le serveur Monocompte ouvre sa bêta fermée, réservée aux testeurs invités : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la Saison 1 « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
+        "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta restent sur l'appareil et seront remises à zéro avant l'ouverture de la Saison 1",
+        "Ta partie Classique ne change pas : chaque serveur garde sa propre partie"
+      ]
+    },
     {
       "v": "2.1.32",
       "name": "Ma rotation",

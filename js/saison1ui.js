@@ -20,7 +20,7 @@
   const MED = ["🥉", "🥈", "🥇"], TIER = ["bronze", "argent", "or"], CL = ["br", "ar", "or"];
   const CAT_IC = ["combat", "metiers", "couronne"];
   const dur = (ms) => { const m = Math.max(0, Math.floor(ms / 60000)); const j = Math.floor(m / 1440); return j ? `${j} j ${Math.floor((m % 1440) / 60)} h` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; };
-  const testOk = (s) => !!(s && s.mono && (s.mono.test || (window.DX.testerOk && window.DX.testerOk())));
+  const testOk = (s) => !!(s && s.mono && !s.mono.eternel && (s.mono.test || (window.DX.testerOk && window.DX.testerOk()) || (window.DX.monoBetaOn && window.DX.monoBetaOn()))); // bêta fermée : chaque testeur peut lancer l'horloge accélérée (jour 3)
   const back = () => { UI().tab = "home"; X().render(); };
 
   /* ---------- morceaux ---------- */

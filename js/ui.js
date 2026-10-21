@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.32";
+const GAME_VERSION = "2.1.33";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.33", name: "Bêta fermée du Monocompte", items: [
+    "Le serveur Monocompte ouvre sa bêta fermée, réservée aux testeurs invités : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la Saison 1 « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
+    "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta restent sur l'appareil et seront remises à zéro avant l'ouverture de la Saison 1",
+    "Ta partie Classique ne change pas : chaque serveur garde sa propre partie",
+  ] },
   { v: "2.1.32", name: "Ma rotation", guide: "sorts", items: [
     "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
     "Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou dont la condition n'est pas remplie est passé : le héros lance le suivant. Au bout de la liste, le tour s'arrête. Chaque case peut avoir sa propre condition",
@@ -3072,9 +3077,9 @@ function headPick(id, sex) {
 const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
 const hasPublicSave = () => !!SV.store().get("dofousxen-save");
 /* Monocompte : au tout premier lancement, choix du serveur au-dessus du choix du héros ; depuis l'écran des parties, la carte Monocompte y mène directement */
-const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && !SV.local.get(slotKey(MONO_SLOT));
+const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && !SV.local.get(slotKey(MONO_SLOT)) && monoOk();
 const startMono = () => SLOT === MONO_SLOT || (srvFirst() && ui.startSrv === "mono");
-const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, saisons et Pass de saison : bientôt`];
+const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, échanges et HdV : avec le serveur Monocompte, bientôt`];
 function srvPick() {
   if (!menuOn() || TESTMODE) return "";
   if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur Classique ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
@@ -8229,7 +8234,7 @@ function optionsSheet() {
     + optSec("Butin qui améliore un héros", "", optChk(`data-act="setlootup"`, !S.settings.lootUpOff, "Prévenir quand un objet est mieux", "le message « ▲ Mieux pour … » avec un bouton « Équiper » quand un objet tombé améliore un héros de l'équipe"))
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
     + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
-  else if (tab === "sauvegarde") body = (menuOn() ? optSec(partName(SLOT), isEter(SLOT) ? "Éternel : le héros d'une saison finie, avec ses kamas et ses objets" : SLOT === MONO_SLOT ? "serveur Monocompte : un seul héros, partie gardée sur cet appareil en attendant son serveur" : SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">Classique : la partie 1 pour les classements, la 2 et la 3 en solo · Monocompte : une partie</span></div>`) : "")
+  else if (tab === "sauvegarde") body = (menuOn() ? optSec(partName(SLOT), isEter(SLOT) ? "Éternel : le héros d'une saison finie, avec ses kamas et ses objets" : SLOT === MONO_SLOT ? "serveur Monocompte : un seul héros, partie gardée sur cet appareil en attendant son serveur" : SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">Classique : la partie 1 pour les classements, la 2 et la 3 en solo · Monocompte : une partie</span></div>`) : "") + (menuOn() && MONO_BETA.on && !monoOk() ? optSec("Bêta Monocompte", "réservée aux testeurs : entre le code reçu pour débloquer la partie Monocompte", `<div class="row"><input id="monobeta" type="text" autocomplete="off" placeholder="Code testeur" style="max-width:180px"><button class="btn sm primary" data-act="sv-monobeta">Valider</button></div>`) : "")
     + (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile && ON.slotOnline() ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
     + saveWeightHtml()
@@ -8348,6 +8353,7 @@ function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
   if (TESTMODE) html += tchip({ k: "sys", ico: G("bug"), t: "Partie de test", d: "hors ligne, ta vraie partie n'est pas touchée", tip: "Partie de test : sauvegarde séparée, rien n'est envoyé en ligne (chat, Hôtel de vente et classements coupés).", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<button class="tc-act ghost" data-quit-test="1">Revenir à ma partie</button>` });
+  else if (MONO_BETA.on && SLOT === MONO_SLOT) html += tchip({ k: "sys", ico: G("sparkle"), t: "Bêta Monocompte", d: "partie remise à zéro avant la Saison 1", tip: "Bêta fermée du Monocompte : solo et mercenaire, partie gardée sur cet appareil. Les groupes, les échanges et l'HdV arrivent avec le serveur Monocompte. Signale les bugs avec le bouton prévu." });
   else if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
     html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
@@ -10669,6 +10675,13 @@ const slotKey = (n) => (n === 1 ? BASE_KEY : n === MONO_SLOT ? `${BASE_KEY}-mono
 const monoNom = () => E.MONO.saisons[E.monoCurrent() || E.MONO.saison].nom;
 const partName = (n) => (n === MONO_SLOT ? `Monocompte · ${monoNom()}` : isEter(n) ? "Monocompte · Éternel" : `Partie ${n}`);
 const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-eternel-`) ? +k.slice(`${BASE_KEY}-eternel-`.length) : 0)).filter((i) => i > 0 && Number.isInteger(i)).sort((a, b) => a - b).map((i) => ETER + i);
+/* 2.1.33 bêta fermée du Monocompte (Mathis 21/10) : la partie n'apparaît qu'aux testeurs (code dans Options › Compte),
+   aux admins, ou quand elle existe déjà sur l'appareil. Elle sera remise à zéro avant l'ouverture de la Saison 1. */
+const MONO_BETA = { on: true, key: "idlus-mono-beta", hash: "47db16f5" };
+const codeHash = (t) => { let x = 5381; for (const ch of String(t).trim().toUpperCase()) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(16).padStart(8, "0"); };
+const monoBetaFlag = () => { try { return localStorage.getItem(MONO_BETA.key) === "1"; } catch (e) { return false; } };
+const monoOk = () => !MONO_BETA.on || monoBetaFlag() || !!(window.CHAT && window.CHAT.role === "admin") || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!SV.local.get(slotKey(MONO_SLOT)) || eterSlots().length > 0;
+const menuSlots = () => [1, 2, 3, ...(monoOk() ? [MONO_SLOT] : []), ...eterSlots()];
 const LEGACY_KEY = () => `${BASE_KEY}-mono-legacy`; // titres et apparences gardés d'une saison à l'autre
 /* Fin de saison (Monocompte) : la partie de la saison passe dans l'Éternel (101, 102…) avec ses copies de secours ;
    ses titres et apparences sont gardés pour le prochain héros. Renvoie le message à montrer, ou "". */
@@ -10739,7 +10752,7 @@ async function menuStart(err) {
     if (!MENU.off && !ON.profile) return pseudoSheet();
   }
   const fin = monoSeasonEnd(); if (fin) { MENU.msg = fin; err = err || fin; }
-  MENU.slots = [1, 2, 3, MONO_SLOT, ...eterSlots()].map(slotRead);
+  MENU.slots = menuSlots().map(slotRead);
   if (menuLive()) {
     try {
       const infos = await Promise.all(MENU.slots.map((sl) => (ON.slotOnline(sl.n) ? ON.remoteInfo(sl.n) : null)));
@@ -10892,6 +10905,7 @@ async function svAct(a, t) {
       MENU.copies = null; closeSheet(); MENU.slots[si] = Object.assign(slotRead(n), { rem: sl ? sl.rem : null }); MENU.slots[si].plan = slotPlan(MENU.slots[si]);
       renderMenu(); toast(`Copie du ${copyDate(c.t)} restaurée dans la partie ${n} : clique sur « Jouer ».`); return; }
     case "sv-retry": t.disabled = true; try { sessionStorage.setItem("idlus-menu", "1"); } catch (e) {} location.reload(); return;
+    case "sv-monobeta": { const v = ($("#monobeta") || {}).value || ""; if (codeHash(v) !== MONO_BETA.hash) { toast("Code inconnu."); return; } try { localStorage.setItem(MONO_BETA.key, "1"); } catch (e) {} toast("Bêta Monocompte débloquée : Options › Compte › Changer de partie."); optionsSheet(); return; }
     case "sv-menu": { if (S) { saveNow(); if (onLive() && ON.state !== "conflict") { t.disabled = true; try { await onPush(); } catch (e) {} } } reloadTo(true); return; }
     case "sv-logout": { t.disabled = true; if (ON) { await ON.signOut(); } try { sessionStorage.setItem("idlus-menu", "1"); } catch (e) {} location.reload(); return; }
   }
@@ -11779,7 +11793,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, monoBetaOn: () => MONO_BETA.on, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
