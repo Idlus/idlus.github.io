@@ -340,6 +340,9 @@
     if (m.dmg === undefined) m.dmg = 1;
     if (!m.items) m.items = [];
   }
+  /* les ressources des métiers de récolte ne tombent plus sur les monstres (Blé, Ortie, Fer… des monstres d'Incarnam et Menthe Sauvage de la Gelée Menthe) : on les récolte */
+  { const GATHERED = new Set(); for (const j in GATHER_JOBS) GATHER_JOBS[j].items.forEach(([r]) => GATHERED.add(r));
+    for (const k in MONSTERS) { const m = MONSTERS[k]; if (m.drops) m.drops = m.drops.filter(([r]) => !GATHERED.has(r)); } }
   const ZONES = G.ZONES, DUNGEONS = G.DUNGEONS, ITEMS = G.ITEMS, SETS = G.SETS, SPECIAL_CRAFTS = G.SPECIAL_CRAFTS;
   const RES = G.RES, SPELL_IMG = G.SPELL_IMG, HEADS = G.HEADS, RACES = G.RACES || {}, HARVEST = G.HARVEST || {};
 
