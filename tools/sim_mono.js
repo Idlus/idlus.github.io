@@ -27,6 +27,9 @@ if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp
 if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
 if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
 if (process.env.ALIGN) { require("../js/alignement.js"); require("../js/honneur.js"); require("../js/monoalign.js"); } // ALIGN=bonta|brakmar [RANG=20] : héros aligné à ce rang (bonus de camp, d'ordre et talents ; étape 3)
+/* --mutation id|aucune : la mutation de la semaine (js/monoplus.js) imposée aux stasis 7 et plus ; MUTFX='{"monHp":0.9}' remplace ses effets (réglage) */
+{ const i = process.argv.indexOf("--mutation"); if (i > 0) { require("../js/monoplus.js"); const id = process.argv[i + 1]; if (id !== "aucune" && !E.MONO.mut.byId[id]) throw new Error("Mutation inconnue : " + id);
+  E.MONO.mut.force = id === "aucune" ? null : id; if (process.env.MUTFX && id !== "aucune") E.MONO.mut.byId[id].fx = JSON.parse(process.env.MUTFX); } }
 if (process.env.MONOGRP) process.env.MONOGRP.split(",").forEach((v, i) => (E.MONO.group[i + 2] = +v)); // MONOGRP="0.9,0.8,0.7" : part du bonus à 2, 3 et 4 joueurs
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
