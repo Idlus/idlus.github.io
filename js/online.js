@@ -17,7 +17,7 @@
   const SERVERS = {
     /* 14/10/2026 : déménagement sur le serveur OVH de Mathis (Supabase auto-hébergé, tools/serveur/). La clé « anon » est publique
        par nature (https://159-173-129-109.sslip.io/cle-publique). */
-    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: false },
+    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: true },
     beta: { url: "", key: "", mail: false, slots: false, mono: false }
   };
   const ON = {};
@@ -28,8 +28,9 @@
      sauvegarde séparée. Rien n'est envoyé en ligne et la vraie partie n'est pas touchée. */
   const TM = (() => { try { return root.localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
   ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") || TM ? "beta" : "public";
-  /* mono = espace Monocompte du serveur (supabase/monocompte.sql, déployé à la main) : tant qu'il n'est pas installé (accord écrit de
-     Mathis, étape 9), la partie Monocompte reste sur l'appareil et le jeu n'appelle aucune fonction mono_. */
+  /* mono = espace Monocompte du serveur (supabase/monocompte.sql, amis.sql, mono_social.sql, mono_bureau.sql, mono_cles.sql et la
+     fonction « mono », installés à la main) : actif depuis la bêta 2.1.35. L'accès à la partie 4 passe par le serveur (mono_acces :
+     testeurs et clés bêta) ; mono: false remet la partie Monocompte sur l'appareil, sans aucun appel mono_. */
   const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur

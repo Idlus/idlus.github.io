@@ -20,7 +20,8 @@
   const MED = ["🥉", "🥈", "🥇"], TIER = ["bronze", "argent", "or"], CL = ["br", "ar", "or"];
   const CAT_IC = ["combat", "metiers", "couronne"];
   const dur = (ms) => { const m = Math.max(0, Math.floor(ms / 60000)); const j = Math.floor(m / 1440); return j ? `${j} j ${Math.floor((m % 1440) / 60)} h` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; };
-  const testOk = (s) => !!(s && s.mono && !s.mono.eternel && (s.mono.test || (window.DX.testerOk && window.DX.testerOk()) || (window.DX.monoBetaOn && window.DX.monoBetaOn()))); // bêta fermée : chaque testeur peut lancer l'horloge accélérée (jour 3)
+  const srvMono = () => !!(window.ONLINE && window.ONLINE.enabled && window.ONLINE.monoSrv); // 2.1.35 : Monocompte en ligne actif, la date de saison est celle du serveur
+  const testOk = (s) => !!(s && s.mono && !s.mono.eternel && !(E.tfSrv && E.tfSrv.live && E.tfSrv.live(s)) && (s.mono.test || (window.DX.testerOk && window.DX.testerOk()) || (!srvMono() && window.DX.monoBetaOn && window.DX.monoBetaOn()))); // bêta hors serveur : chaque testeur pouvait lancer l'horloge accélérée (jour 3) ; avec le serveur, plus d'accélération
   const back = () => { UI().tab = "home"; X().render(); };
 
   /* ---------- morceaux ---------- */
@@ -61,7 +62,7 @@
     const L = E.tfLedger(s); const by = {}; L.forEach((l) => { const k = l.o === "achat" || l.n < 0 ? "achat" : l.o; by[k] = (by[k] || 0) + l.n; });
     const row = (k) => `<span>${ORIG[k]}</span><b class="${k === "achat" ? "neg" : ""}">${by[k] ? (by[k] > 0 ? "+" : "−") + fmt(Math.abs(by[k])) : "0"}</b>`;
     const last = L.slice().sort((a, b) => b.t - a.t || b.id - a.id).slice(0, 6);
-    return `<div class="tf-two"><section class="panel"><div class="phead"><h2>${EC()} D'où viennent tes Éclats</h2><span class="small muted">registre provisoire, avant le serveur</span></div><div class="pad tf-led">
+    return `<div class="tf-two"><section class="panel"><div class="phead"><h2>${EC()} D'où viennent tes Éclats</h2><span class="small muted">${E.tfSrv && E.tfSrv.live && E.tfSrv.live(s) ? "registre du serveur Monocompte" : "registre de la partie, hors connexion"}</span></div><div class="pad tf-led">
       ${["defi", "act", "recu", "achat"].map(row).join("")}<span class="tot"><b>Solde</b></span><b class="tot">${fmt(E.tfBalance(s))}</b></div></section>
       <section class="panel"><div class="phead"><h2>Derniers mouvements</h2></div><div class="pad tf-log">${last.length ? last.map((l) => `<div><span>${h(l.why || ORIG[l.o] || l.o)}</span><b class="${l.n < 0 ? "neg" : ""}">${l.n > 0 ? "+" : "−"}${fmt(Math.abs(l.n))}</b></div>`).join("") : `<span class="small muted">Aucun mouvement pour l'instant : finis des donjons, bats des archimonstres, récolte et fabrique.</span>`}</div></section></div>`;
   }
@@ -76,7 +77,7 @@
     return `<section class="panel tf-fin"><div class="pad tf-ev">${I(995003)}<div class="stack"><span class="tf-kick2">Manche IV · événement final · jours 50 à 56</span><h2 style="margin:0">Stabiliser le temps</h2>
       <div class="tf-gauge"><div style="width:${pct}%"></div>${marks.map(([p, r]) => `<i style="left:${p}%"></i><span style="left:${p}%">${p} %</span><em style="left:${p}%">${h(r.replace(/ «.*/, ""))}</em>`).join("")}</div>
       <span class="small">Chaque donjon fini, objet fabriqué ou ressource récoltée pendant l'événement fait monter la jauge du serveur. Les paliers donnent des cosmétiques à tous ceux qui ont contribué au moins un jour. <b>Aucun Éclat n'est créé ni dépensé.</b></span>
-      <div class="tf-led"><span>Ta contribution</span><b>${E.tfFinDays(s)} jour${E.tfFinDays(s) > 1 ? "s" : ""}</b><span>Jauge du serveur</span><b>avec le serveur Monocompte</b></div></div></div></section>`;
+      <div class="tf-led"><span>Ta contribution</span><b>${E.tfFinDays(s)} jour${E.tfFinDays(s) > 1 ? "s" : ""}</b><span>Jauge du serveur</span><b>pas encore pendant la bêta</b></div></div></div></section>`;
   }
   function clock(s) {
     if (!testOk(s)) return "";

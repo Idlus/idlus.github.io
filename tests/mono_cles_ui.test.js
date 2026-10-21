@@ -133,6 +133,10 @@ function fake(nomono) {
     let txt = await enter(p2, "FRAGMENTS21");
     if (!/Clé inconnue/.test(txt)) fail("serveur actif : l'ancien code doit être refusé par le serveur");
     if (await flag(p2)) fail("serveur actif : l'ancien code débloque encore la partie");
+    // drapeau posé avant (ancien code FRAGMENTS21 entré hors serveur) : n'ouvre plus la partie, seul le serveur décide
+    await p2.evaluate(() => localStorage.setItem("idlus-mono-beta", "1")); await opts(p2);
+    if ((await beta(p2)) !== "MONO-XXXX-XXXX") fail("serveur actif : l'ancien drapeau de l'appareil ouvre encore la partie Monocompte");
+    await p2.evaluate(() => localStorage.removeItem("idlus-mono-beta"));
     const c1 = await p2.evaluate(() => window.__MC.calls.filter((c) => c[0] === "mono_cle_utiliser").map((c) => c[1].p_code));
     if (c1.length !== 1 || c1[0] !== "FRAGMENTS21") fail("serveur actif : la saisie part au serveur telle quelle : " + JSON.stringify(c1));
     if (!/déjà été utilisée/.test(await enter(p2, "MONO-WXYZ-2345"))) fail("serveur actif : clé déjà utilisée, message attendu");

@@ -80,7 +80,7 @@
     if (A.saison.test && A.clk && A.date) { const t = Date.parse(A.date); if (!(t > 0)) return;
       const k = S.mono.clk; const at0 = ON.monoAt || E.now();
       if (!k || k.src !== at0) { S.mono.test = true; S.mono.clk = { t, at: at0, spd: Math.max(1, +A.clk.v || 1), pause: !!A.clk.pause, src: at0 }; dirty(); } }
-    else if (S.mono.clk && S.mono.clk.src) { delete S.mono.clk; delete S.mono.test; dirty(); }
+    else if (S.mono.clk) { delete S.mono.clk; delete S.mono.test; dirty(); } // 2.1.35 : saison en temps réel : aucune horloge accélérée de l'appareil
   };
   /* au démarrage d'une partie Monocompte en ligne : droits partagés du compte, état du registre, gains en attente */
   let seen = null;

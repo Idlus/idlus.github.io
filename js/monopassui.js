@@ -69,7 +69,7 @@
       return `<div class="bp-fam"><div class="bp-fi">${{ solo: "⚔", groupe: "👥", artisan: "⚒", camp: "🛡" }[f]}</div><b>${F.n}</b><div class="bp-qb"><div style="width:${Math.round((n / L.length) * 100)}%"></div></div><span class="small muted">${n} / ${L.length} hauts faits</span><span class="small">${B.fam && B.fam[f] ? "✓ " : ""}Famille complète : ${h(F.txt)}</span></div>`; }).join("");
     const row = (H) => { const m = B.hf[H.id] || 0; const v = E.hfValue(s, H); const hid = H.secret && !m;
       const thr = H.secret ? "" : H.m.map((x, i) => `${["bronze", "argent", "or"][i]} ${fmt(x)}`).join(" · ");
-      const sub = hid ? "haut fait secret" : H.soon ? `${h(H.d)} · arrive avec le serveur Monocompte` : `${h(H.d)} : ${fmt(v)}${thr ? ` · <span class="bp-thr">${thr}</span>` : ""}`;
+      const sub = hid ? "haut fait secret" : H.soon ? `${h(H.d)} · pas encore compté pendant la bêta` : `${h(H.d)} : ${fmt(v)}${thr ? ` · <span class="bp-thr">${thr}</span>` : ""}`;
       return `<div class="bp-hf${H.soon ? " soon" : ""}"><span class="bp-md">${hid ? "❔" : MED[m]}</span><span class="grow"><b>${hid ? "???" : h(H.n)}</b><br><span class="small muted">${sub}</span></span><span class="bp-pp">${m ? "+" + m : hid ? "?" : ""}</span></div>`; };
     const fam = UI().bpFam || "solo"; const list = HF.filter((H) => (fam === "secret" ? H.secret : H.fam === fam));
     return `<div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">Hauts faits de saison</h2><span class="pill">${got} / ${HF.length}</span></div>
@@ -111,8 +111,8 @@
         <p class="small muted" style="margin:0">Un donjon imposé pendant 2 semaines, le même pour tout le serveur. Pas besoin de clé, essais libres : tu montes la stasis une par une. Chaque nouvelle stasis donne ${E.MONO.md.pts} points de pass ; ta meilleure stasis donne un coffre à la fin de la manche.</p>
         ${pend.map((x) => `<div class="smallbox monobox"><span>🎁 <b>Manche ${x.m}</b> : stasis ${x.best}, ${h(D.CONSUMABLES[x.chest].name)} à récupérer.</span><button class="btn sm primary" data-act="bp-mdgot" data-m="${x.m}">Récupérer</button></div>`).join("")}
         <div class="bp-two" style="margin-top:0"><div class="stack"><b>Seul</b><div class="bp-q"><div class="row between"><span>${h(me.name)} · ${h(D.CLASSES[me.cls].name)}</span><b>${R.best ? `stasis ${R.best}` : "pas encore"}</b></div><span class="small muted">${R.tries} essai${R.tries > 1 ? "s" : ""}${ch ? ` · coffre visé : ${h(D.CONSUMABLES[ch].name)}` : ""}</span></div>
-          <span class="xs muted">Le classement de tous les joueurs arrive avec le serveur Monocompte.</span></div>
-          <div class="stack"><b>En groupe</b><div class="bp-q soon" style="opacity:.6"><span>Classement des groupes</span><span class="small muted">avec les groupes en direct (serveur Monocompte)</span></div></div></div>
+          <span class="xs muted">Le classement de tous les joueurs n'est pas encore ouvert pendant la bêta.</span></div>
+          <div class="stack"><b>En groupe</b><div class="bp-q soon" style="opacity:.6"><span>Classement des groupes</span><span class="small muted">pas encore ouvert pendant la bêta</span></div></div></div>
         ${run ? `<button class="btn primary" data-act="bp-mdgo" disabled>Essai en cours : stasis ${run.k}</button>` : R.best >= E.STASIS_MAX ? `<b>Stasis ${E.STASIS_MAX} atteinte : défi terminé !</b>` : `<button class="btn primary" data-act="bp-mdgo">⚔ Tenter la stasis ${k}</button>`}
       </div></div>
       <div class="panel" style="margin-top:14px"><div class="pad stack"><h2 style="margin:0">Coffres de fin de manche</h2>${rows}</div></div>`;
@@ -145,7 +145,7 @@
         <div class="row" style="gap:14px;flex-wrap:wrap;justify-content:center"><span class="small">Ce soir : <b>${st.day.tries} / ${E.MONO.sb.tries}</b> essais · <b>${fmt(st.day.pts)}</b> points</span><span class="small">Meilleur essai : <b>${fmt(st.B.best)}</b></span><span class="small">Soirées : <b>${s.mono.bp.cnt.live || 0} / ${E.MONO.sb.evenings}</b></span></div>
         ${last ? `<div class="bp-q" style="min-width:min(100%,360px)"><div class="row between"><span>Dernier essai</span><b>${fmt(last.points)} points · grade ${h(last.grade.g || last.grade)}</b></div></div>` : ""}
         ${open ? (st.day.tries < E.MONO.sb.tries ? `<button class="btn primary" data-act="bp-sb">⚔ Affronter le boss (seul)</button>` : `<b>Tes 3 essais sont faits : reviens demain à 21 h.</b>`) : `<button class="btn" disabled>Ouvre dans ${dur(nx)}</button>`}
-        <span class="xs muted">Les groupes en direct et les dégâts des camps (le camp en tête : +10 % d'XP pour la manche) arrivent avec le serveur Monocompte.</span></div></div>`;
+        <span class="xs muted">Les groupes et les dégâts des camps (le camp en tête : +10 % d'XP pour la manche) ne sont pas encore ouverts pendant la bêta.</span></div></div>`;
   }
   window.DX.pages.guerre = warPage;
 

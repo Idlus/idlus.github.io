@@ -11,11 +11,11 @@ La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvo
 
 ## 2.1.35 « Bêta fermée du Monocompte »
 
-- Monocompte (js/mono.js, monopass, monodofus) et lot 1 de la Saison 1 « Les Fragments du Temps » (js/saison1.js, js/saison1ui.js, css/saison1.css) : partie à part (`dofousxen-save-mono`), cachée derrière un code testeur (Options › Compte, drapeau `idlus-mono-beta`), visible aussi des admins et sur localhost.
-- Éclats du Temps tenus par un registre provisoire dans la partie, en attendant le registre du serveur ; horloge accélérée réservée à la bêta. Parties de bêta remises à zéro avant la Saison 1.
-- Bouclier Monocompte (fonction serveur « mono », js/verify_mono.js), économie de saison, amis (js/amis.js), classements de saison, Couronne du Temps, Serment de fer, renfort d'un ami, mutation de la semaine et bilan (js/monoplus.js, js/monoplusui.js), Bureau des Aventuriers (js/bureau.js, js/bureau_combat.js, css/bureau.css : groupes en direct joués par le serveur, défi 12).
-- Base : quatre fichiers à passer À LA MAIN, dans cet ordre (aucun n'est dans la liste automatique de supabase.yml) : supabase/monocompte.sql → supabase/amis.sql → supabase/mono_social.sql → supabase/mono_bureau.sql ; puis la fonction « mono » (supabase/functions/mono, game.js par tools/build_server.js).
-- Classique inchangé (simulations identiques, sauvegarde protégée).
+- Monocompte (js/mono.js, monopass, monodofus) et Saison 1 « Les Fragments du Temps » (js/saison1.js, js/saison1ui.js, css/saison1.css) : partie à part (`dofousxen-save-mono`).
+- Monocompte en ligne actif (flag `mono: true` de js/online.js) : l'accès à la partie 4 passe par le serveur (mono_acces : testeurs et clés bêta de supabase/mono_cles.sql, champ d'Options › Compte) ; l'ancien code de l'appareil n'ouvre plus rien. Saison de test 0 en temps réel (aucune horloge accélérée), parties remises à zéro avant la Saison 1.
+- Bouclier Monocompte (fonction serveur « mono », js/verify_mono.js), registre des Éclats du serveur, HdV de saison et échanges, amis (js/amis.js), classements de saison, Couronne du Temps, Serment de fer, renfort d'un ami, mutation de la semaine et bilan (js/monoplus.js, js/monoplusui.js), Bureau des Aventuriers (js/bureau.js, js/bureau_combat.js, css/bureau.css : groupes en direct joués par le serveur, défi 12).
+- Base : fichiers passés À LA MAIN, dans cet ordre (aucun n'est dans la liste automatique de supabase.yml) : supabase/monocompte.sql → amis.sql → mono_social.sql → mono_bureau.sql → mono_cles.sql ; puis la fonction « mono » (supabase/functions/mono, game.js par tools/build_server.js).
+- Classique inchangé (simulations identiques, sauvegarde protégée) ; fusion de 2.1.34.3 (écriture sur saves par push_save seulement).
 
 ## 2.1.34.3 « Classements justes »
 

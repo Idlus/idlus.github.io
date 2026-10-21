@@ -928,7 +928,7 @@
         "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées (l'air d'un endroit se trouve après 5 s passées là-bas, même sans musique ; celui de la Renaissance du Phénix est sur la page Maîtrise).",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",
         "**Sauvegarde** : la partie est enregistrée dans le navigateur toutes les 15 s et des copies de secours sont gardées. « Changer d'appareil » exporte et importe la partie.",
-        "**Compte en ligne** : la partie 1 se synchronise avec le serveur (Hôtel de vente, guilde, classements…). Les parties 2 et 3 restent sur l'appareil.",
+        "**Compte en ligne** : la partie 1 se synchronise avec le serveur (Hôtel de vente, guilde, classements…). Les parties 2 et 3 restent sur l'appareil. La partie Monocompte (bêta, sur invitation) est gardée et vérifiée par le serveur Monocompte.",
         "**Aide** : Carnet des découvertes, recherche, notes de mise à jour, Discord.",
       ]],
     ] });
@@ -1263,7 +1263,7 @@
       ["more", "Mon héros ne gagne presque plus d'XP.", ["p", `Un héros plus de ${N(() => E.XP_PEN.free, 6)} niveaux au-dessus des monstres perd de l'XP. Change de zone : l'accueil propose la zone conseillée pour ton niveau.`]],
       ["more", "Pourquoi mon équipe est redescendue de zone ?", ["p", "Avec la progression automatique, l'équipe redescend d'une zone après 3 défaites sur les 6 derniers combats, et remonte après 12 victoires d'affilée."]],
       ["more", "Combien de chance pour une monture ?", ["p", "La chance est par victoire dans la zone sauvage de l'espèce, pas par héros, et les bonus de butin ne la changent pas. Les chiffres sont dans le chapitre Montures."]],
-      ["more", "Ma partie est-elle sauvegardée en ligne ?", ["p", "Avec un compte, la partie 1 se synchronise avec le serveur. Sans compte, elle reste sur l'appareil : Options › Sauvegarde permet de l'exporter."]],
+      ["more", "Ma partie est-elle sauvegardée en ligne ?", ["p", "Avec un compte, la partie 1 se synchronise avec le serveur, et la partie Monocompte avec le serveur Monocompte. Sans compte, elle reste sur l'appareil : Options › Sauvegarde permet de l'exporter."]],
       ["more", "Pourquoi mon compte n'est plus au classement ?", ["p", "Le serveur ne classe que des parties qu'il a validées. Une progression impossible pour le temps joué est signalée à Xener ; un compte suspendu sort des classements jusqu'à la fin de sa suspension. Détails dans le chapitre Classements."]],
       ["more", "Comment signaler un bug ?", ["p", "« Signaler un bug » en bas du menu : le signalement part directement à l'équipe du jeu, avec ce qu'il faut pour le corriger."]],
     ] });

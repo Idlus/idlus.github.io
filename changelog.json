@@ -5,13 +5,13 @@
       "v": "2.1.35",
       "name": "Bêta fermée du Monocompte",
       "items": [
-        "Le serveur Monocompte ouvre sa bêta fermée, réservée aux testeurs invités : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la Saison 1 « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
-        "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta sont gardées sur le serveur Monocompte et seront remises à zéro avant l'ouverture de la Saison 1",
-        "Bureau des Aventuriers : cherche un groupe, rejoins un salon ou invite tes amis, et affrontez ensemble un donjon joué par le serveur, regardé en direct par tout le groupe. Le défi « Rendez-vous du temps » s'y remplit",
+        "Le serveur Monocompte ouvre sa bêta fermée, sur invitation : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la saison « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
+        "Une clé bêta ? Connecte-toi, puis entre-la dans Options › Compte : la partie Monocompte apparaît dans « Changer de partie »",
+        "Saison de test en temps réel : ta partie est vérifiée et gardée par le serveur Monocompte, et tout repart de zéro avant l'ouverture de la Saison 1",
+        "Bureau des Aventuriers : cherche un groupe, rejoins un salon ou invite tes amis, et affrontez ensemble un donjon joué par le serveur, en direct pour tout le groupe",
         "Amis : demandes, présence en ligne, invitations au Bureau, messages privés et renfort d'un ami en donjon solo (sa copie t'accompagne, jamais en groupe)",
-        "Classements de saison et Couronne du Temps : chaque lundi, le meilleur donjon de groupe de la semaine passée porte la couronne",
-        "Serment de fer : sans Sablier, mercenaire ni renfort de toute la saison, pour un classement et une aura à part. Chaque semaine, une mutation change les règles des donjons de stasis 7 et plus",
-        "Bilan de saison : ton parcours résumé quand la saison se termine",
+        "HdV de saison et échanges entre joueurs du Monocompte, classements de saison et Couronne du Temps : chaque lundi, le meilleur donjon de groupe de la semaine passée porte la couronne",
+        "Serment de fer, mutation de la semaine (stasis 7 et plus) et bilan de fin de saison",
         "Ta partie Classique ne change pas : chaque serveur garde sa propre partie"
       ]
     },
