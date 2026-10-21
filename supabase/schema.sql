@@ -57,12 +57,13 @@ alter table public.saves enable row level security;
 
 drop policy if exists "lire sa partie" on public.saves;
 create policy "lire sa partie" on public.saves for select to authenticated using (user_id = auth.uid());
+-- 21/10/2026 (faille de sauvegarde) : plus aucune écriture directe depuis le jeu (insert, update, upsert, delete du client).
+-- La partie ne s'écrit que par push_save (security definer) : suspension, remise imposée (meta.remise) et protection
+-- contre l'écrasement (p_expected) ne peuvent plus être contournées. L'effacement passe par delete_my_account (cascade).
 drop policy if exists "créer sa partie" on public.saves;
-create policy "créer sa partie" on public.saves for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists "modifier sa partie" on public.saves;
-create policy "modifier sa partie" on public.saves for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 drop policy if exists "effacer sa partie" on public.saves;
-create policy "effacer sa partie" on public.saves for delete to authenticated using (user_id = auth.uid());
+revoke insert, update, delete on public.saves from anon, authenticated;
 
 -- ---------- envoi de la partie ----------
 -- p_expected = date de la version en ligne que l'appareil connaît.
@@ -72,7 +73,7 @@ create policy "effacer sa partie" on public.saves for delete to authenticated us
 create or replace function public.push_save(p_data text, p_meta jsonb, p_version text, p_device text, p_expected text, p_force boolean default false)
 returns text
 language plpgsql
-security invoker
+security definer
 set search_path = public
 as $$
 declare r timestamptz;
