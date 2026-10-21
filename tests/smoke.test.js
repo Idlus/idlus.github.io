@@ -30,6 +30,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage();
+    // L'offre de lancement expire le 20/10/2026 : ce scénario la vérifie à une date fixe.
+    // Seule Date est figée ; les temporisateurs du navigateur continuent normalement.
+    await page.clock.setFixedTime(new Date("2026-10-19T12:00:00Z"));
     // le test ne dépend pas d'Internet : polices et images distantes sont remplacées par des réponses vides
     await page.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
     await page.addInitScript(() => { window.__IDLUS_OFFLINE = true; }); // pas de vrai serveur pendant le test

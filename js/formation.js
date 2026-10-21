@@ -273,7 +273,7 @@
     const on = !!(St && F && F.ents && St.settings.miniFight !== false && ui.tab !== "combat" && !ui.watch && mfLive(St));
     const phone = mqPhone.matches;
     let box = $("#navmf"); let st = $("#mfstrip");
-    if (!box && on && !phone) { const f = $("#nav .sn-fight"); if (f) { f.insertAdjacentHTML("afterend", `<button id="navmf" class="navmf" data-act="nav" data-v="combat" title="Ouvrir le combat" hidden></button>`); box = $("#navmf"); } }
+    if (!box && on && !phone) { const f = $("#nav .sn-frow") || $("#nav .sn-fight"); if (f) { f.insertAdjacentHTML("afterend", `<button id="navmf" class="navmf" data-act="nav" data-v="combat" title="Ouvrir le combat" hidden></button>`); box = $("#navmf"); } }
     const pcOn = on && !phone && !St.settings.navMini && !!box, phOn = on && phone;
     if (box && !pcOn && !box.hidden) { box.hidden = true; box.innerHTML = ""; box.dataset.s = ""; box.dataset.k = ""; }
     if (st && !phOn) { st.remove(); st = null; }

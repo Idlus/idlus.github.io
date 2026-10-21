@@ -9,6 +9,16 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.31.5 « Quitter sans ouvrir le combat »
+
+- Menu de gauche (PC, normal et réduit) : bouton à côté de « Combat en cours » pour rentrer de la chasse (E.stopHunt) ou quitter le donjon (E.leaveDungeon, deux clics en 5 s car la clé est perdue). Absent pendant le Songe infini.
+- Aucun changement de sauvegarde ni de serveur.
+
+## 2.1.31.4 « Succès de panoplies »
+
+- Corrige les six succès de panoplies : pièces lues via E.setPieces, comme le carnet (signalement de SegFault). Possession actuelle conservée ; cache de cinq secondes inchangé.
+- Tests : pièce manquante, doublons, équipement, six seuils, récompenses uniques, titre et compteur des objets différents. Aucun changement de sauvegarde ni de serveur.
+
 ## 2.1.31.3 « La tournée des temples »
 
 - Quêtes › Temples : enchaînement des Dopeuls possédés et encore disponibles, progression i/N et arrêt après le combat courant. Les 19 classes restent accessibles selon les règles existantes.
