@@ -258,8 +258,16 @@
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
-    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${X().staffCls(m.user_id)}">${window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, X().cmed(m.cls, m.lvl)) : X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    /* 2.1.35.3 : salon Monocompte : héros Monocompte du message (data.mono, posé par chat_send), jamais le profil Classique :
+       ni ailes ni camp d'alignement, ni titre Classique ; un ancien message sans data.mono ne montre ni classe, ni niveau, ni titre.
+       Les badges de l'équipe (Créateur, Modérateur) restent. */
+    const mono = m.ch === "m", mh = mono ? monoHero(m) : null;
+    const cls = mono ? mh.cls : m.cls, lvl = mono ? mh.lvl : m.lvl, title = mono ? mh.title : m.title;
+    const med = X().cmed(cls, lvl);
+    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null)}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
+  /* 2.1.35.3 : héros Monocompte d'un message du salon 'm' (data.mono posé par chat_send) ; ancien message : rien */
+  const monoHero = (m) => (m && m.data && m.data.mono ? { cls: m.cls || null, lvl: m.lvl || 1, title: m.title || null } : { cls: null, lvl: 0, title: null });
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {
     const n = +m.data.key || 1, left = 10 - n, b = (x) => (plain ? x : `<b>${x}</b>`); const v = m.data.kind === "race11" ? "1.1" : "1.0"; // 1.1 : l'étage 100 de L'Ascension en Difficile
@@ -382,13 +390,17 @@
     const u = t.dataset.u, p = t.dataset.p, id = +t.dataset.id; if (!u) return;
     const r = t.getBoundingClientRect(); const el = document.createElement("div"); el.className = "chmenu"; el.id = "chMenu";
     const mine = u === myId(); const ign = C.ign.has(u);
-    el.innerHTML = `<div class="hd"><b>${h(p)}</b></div>
-      ${msgById(id) && msgById(id).body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
-      <button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>
+    /* 2.1.35.3 : dans le salon Monocompte, carte Monocompte du joueur (héros, titre et saison du Monocompte, chat_mono_profil)
+       au lieu de sa fiche Classique ; seulement les actions utiles (privé, ignorer, signaler, modération) */
+    const msg = msgById(id), mono = (msg ? msg.ch : C.tab) === "m";
+    el.innerHTML = `<div class="hd"><b>${h(p)}</b>${mono ? `<span class="xs muted"> · Monocompte</span>` : ""}</div>
+      ${mono ? `<div class="chm-card" data-u="${h(u)}">${monoCard(msg ? Object.assign({ wait: true }, monoHero(msg)) : { wait: true })}</div>` : ""}
+      ${msg && msg.body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
+      ${mono ? "" : `<button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>`}
       ${!mine && window.AMIS ? window.AMIS.menuBtn(u, p, "chat") : ""}
       ${!mine && canWrite() && !C.me.banned && C.tab !== "p" && C.tab !== "h" ? `<button data-act="ch-ment" data-p="${h(p)}"><b class="at">@</b> Le mentionner</button>` : ""}
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
-      ${window.MARKET ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}
+      ${window.MARKET && !mono ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}
       <button data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${X().G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer ses messages"}</button>
       <button class="red" data-act="ch-rep" data-u="${h(u)}" data-p="${h(p)}" data-id="${id}">${X().G("warn")} Signaler</button>` : ""}
       ${C.role && !mine ? `<button data-act="adm-find" data-q="${h(p)}">${X().G("shield")} Fiche admin</button>` : ""}
@@ -399,6 +411,13 @@
     const nv = $("#nav .sn-mob"), nr = nv && nv.getBoundingClientRect(), bot = (nr && nr.height ? nr.top : innerHeight) - 8; // 1.0.12.8 : jamais sur la barre du bas du téléphone
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
     el.style.top = Math.max(8, r.bottom + 4 + hgt <= bot ? r.bottom + 4 : Math.min(bot, r.top - 4) - hgt) + "px"; // 1.0.12.8 : pas la place dessous : le menu s'ouvre au-dessus du pseudo
+    if (mono && ON.chatMonoProfil) ON.chatMonoProfil(u).then((P) => { const c = $(`#chMenu .chm-card[data-u="${CSS.escape(u)}"]`); if (c) c.innerHTML = monoCard(P || (msg ? monoHero(msg) : {})); });
+  }
+  /* carte Monocompte : héros (classe, niveau, nom), titre Monocompte, saison ; jamais le profil Classique */
+  function monoCard(P) {
+    P = P || {}; const CL = P.cls && window.DATA.CLASSES[P.cls];
+    const hero = CL ? `<b>${h(CL.name)}</b>${P.lvl ? ` <span class="lv">niv. ${+P.lvl}</span>` : ""}${P.hero ? `<span class="xs muted"> · ${h(P.hero)}</span>` : ""}` : P.wait ? `<span class="muted">Héros Monocompte…</span>` : `<span class="muted">Pas encore de héros Monocompte</span>`;
+    return `${X().cmed(CL ? P.cls : null, CL ? P.lvl : 0)}<div class="chm-t"><div>${hero}</div>${P.title ? `<div class="tt">${h(P.title)}</div>` : ""}${P.nom ? `<div class="xs muted">${h(P.nom)}</div>` : ""}</div>`;
   }
   const msgById = (id) => C.g.concat(C.p, C.c, C.v, C.m, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };

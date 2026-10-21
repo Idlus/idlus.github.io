@@ -5,6 +5,11 @@
      partie Monocompte (E.isMono) : « Monocompte » par défaut ; accès retiré : l'onglet disparaît, retour au Classique ;
    - envoi dans le bon salon (chat_send sans p_ch pour le Classique, p_ch 'm' pour le Monocompte), lecture du salon 'm'
      seulement avec l'accès, messages non lus du salon 'm' (pastille de l'onglet et du chat réduit), épinglage sur 'm' ;
+   - 2.1.35.3, profils séparés : Zoé (Classique : Iop niv. 200, « Légende de la 1.0 », ailes de Bonta, modératrice ; héros
+     Monocompte : Crâ niv. 12) montre son héros Monocompte dans 'm' (niv. 12, Crâ, sans titre ni ailes ni camp Classique, badge
+     Modérateur gardé ; ancien message sans data.mono : ni classe, ni niveau, ni titre) et son profil Classique dans 'g' ;
+     clic sur son pseudo dans 'm' : carte Monocompte (héros, titre et saison du Monocompte, privé, ignorer, signaler ; pas
+     « Voir son profil ») ; dans 'g' : menu Classique inchangé ;
    - PC 1280 px et téléphone 390 px, sans erreur console ni défilement de côté.
    Lancer : node tests/chat_mono_ui.test.js (SHOTS=dossier pour garder des captures) */
 "use strict";
@@ -33,8 +38,9 @@ function fake() {
   const U2 = "00000000-0000-0000-0000-000000000002";
   const at = new Date().toISOString();
   F.msgs = [
-    { id: 1, ch: "g", user_id: U2, pseudo: "Zoé", lvl: 50, body: "Bonjour le Classique", kind: "msg", created_at: at },
-    { id: 2, ch: "m", user_id: U2, pseudo: "Zoé", lvl: 12, body: "Bonjour le Monocompte", kind: "msg", created_at: at },
+    { id: 1, ch: "g", user_id: U2, pseudo: "Zoé", cls: "iop", lvl: 200, title: "Légende de la 1.0", body: "Bonjour le Classique", kind: "msg", created_at: at },
+    { id: 2, ch: "m", user_id: U2, pseudo: "Zoé", cls: "cra", lvl: 12, title: null, body: "Bonjour le Monocompte", kind: "msg", data: { mono: true, s: 0 }, created_at: at },
+    { id: 4, ch: "m", user_id: U2, pseudo: "Zoé", cls: "iop", lvl: 200, title: "Fondateur d'Idlus", body: "Ancien message du Monocompte", kind: "msg", created_at: at }, // posé avant 2.1.35.3 : profil Classique
     { id: 3, ch: "c", user_id: U2, pseudo: "Zoé", lvl: 50, body: "Vends Gelano", kind: "msg", created_at: at },
   ];
   const rows = (t, f) => (t === "chat_msgs" ? F.msgs.filter((m) => m.ch === f.ch && (m.ch !== "m" || F.acces)).slice().sort((a, b) => b.id - a.id) : []);
@@ -50,7 +56,8 @@ function fake() {
       case "chat_me": return {};
       case "my_role": return null;
       case "cosm_mine": return [];
-      case "staff_list": return [];
+      case "staff_list": return [{ u: U2, p: "Zoé", r: "mod" }];
+      case "chat_mono_profil": return F.acces && a.p_user === U2 ? { s: 0, nom: "Saison de test", cls: "cra", lvl: 12, title: "Voyageur du Temps", hero: "Flèche", u: U2, pseudo: "Zoé" } : null;
       default: return null;
     }
   };
@@ -100,6 +107,40 @@ function fake() {
   const noScroll = async (page, what) => { const x = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]); if (x[0] > x[1] + 1) fail(`${what} : la page défile de côté (${x[0]} px pour ${x[1]})`); };
   const shot = async (page, n) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, n) }); };
   const loadsM = (page) => page.evaluate(() => window.__CM.calls.length && window.CHAT.state.m.length);
+  /* Zoé : camp de Bonta au rang 10 dans le Classique (ailes et écusson), puis messages relus dans le salon affiché */
+  const campZoe = (page) => page.evaluate(() => { const A = window.ALIGNUI.CAMP, u = "00000000-0000-0000-0000-000000000002"; A.u[u] = "bonta"; A.r[u] = 10; A.p["zoé"] = "bonta"; A.at = Date.now(); window.CHAT.repaint(); });
+  const msgInfo = (page, txt) => page.evaluate((t) => { const m = [...document.querySelectorAll("#chat .ch-list .msg")].find((x) => x.querySelector(".tx").textContent.includes(t)); if (!m) return null;
+    const q = (s) => m.querySelector(s); return { lv: q(".who .lv") ? q(".who .lv").textContent : "", tt: q(".who .tt") ? q(".who .tt").textContent : "", cls: q(".cm img") ? q(".cm img").alt : "", wings: !!q(".chw"), camp: !!q(".al-w"), mod: !!q(".mtag") }; }, txt);
+  /* profils séparés dans le salon Monocompte (onglet 'm' affiché) puis dans le Classique */
+  const profils = async (page, w) => {
+    await campZoe(page);
+    let i = await msgInfo(page, "Bonjour le Monocompte");
+    if (!i || i.lv !== "niv. 12" || i.cls !== "Crâ" || i.tt || i.wings || i.camp || !i.mod) fail(`${w} px, 'm' : héros Monocompte (niv. 12, Crâ), sans titre, ailes ni camp Classique, badge Modérateur gardé : ` + JSON.stringify(i));
+    i = await msgInfo(page, "Ancien message du Monocompte");
+    if (!i || i.lv || i.cls || i.tt || i.wings || i.camp) fail(`${w} px, 'm' : ancien message sans data.mono : ni classe, ni niveau, ni titre, ni ailes : ` + JSON.stringify(i));
+    const txtM = await listTxt(page);
+    if (/Légende de la 1\.0|Fondateur d'Idlus|niv\. 200/.test(txtM)) fail(`${w} px, 'm' : rien du profil Classique : ` + txtM.slice(0, 300));
+    // clic sur le pseudo : carte Monocompte
+    await page.evaluate(() => { const m = [...document.querySelectorAll("#chat .ch-list .msg")].find((x) => x.textContent.includes("Bonjour le Monocompte")); m.querySelector('[data-act="ch-who"]').click(); });
+    await page.waitForFunction(() => /Voyageur du Temps/.test((document.querySelector("#chMenu .chm-card") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => {});
+    const card = await page.evaluate(() => { const el = document.querySelector("#chMenu"); if (!el) return null; const c = el.querySelector(".chm-card"); const r = el.getBoundingClientRect();
+      return { card: c ? c.textContent : "", acts: [...el.querySelectorAll("button")].map((b) => b.dataset.act), txt: el.textContent, l: r.left, r: r.right, b: r.bottom, w: innerWidth, h: innerHeight }; });
+    if (!card || !/Crâ/.test(card.card) || !/niv\. 12/.test(card.card) || !/Voyageur du Temps/.test(card.card) || !/Saison de test/.test(card.card) || !/Flèche/.test(card.card)) fail(`${w} px, carte Monocompte (Crâ niv. 12, titre et saison du Monocompte) : ` + JSON.stringify(card));
+    if (card && (card.acts.includes("ch-prof") || card.acts.includes("mk-trade-ask") || /Légende|Fondateur|niv\. 200|Iop/.test(card.txt))) fail(`${w} px, carte Monocompte : pas de fiche ni de profil Classique : ` + JSON.stringify(card.acts) + " " + card.txt);
+    if (card && !["ch-pm", "ch-ign", "ch-rep"].every((k) => card.acts.includes(k))) fail(`${w} px, carte Monocompte : privé, ignorer et signaler : ` + JSON.stringify(card.acts));
+    if (card && (card.l < 0 || card.r > card.w + 1 || card.b > card.h + 1)) fail(`${w} px, carte Monocompte dans l'écran : ` + JSON.stringify(card));
+    await shot(page, `chat-mono-carte-${w}.png`);
+    await page.evaluate(() => { const m = document.querySelector("#chMenu"); if (m) m.remove(); });
+    // le même joueur dans le Classique : profil Classique inchangé
+    await page.click('#chat .ch-tab[data-v="g"]'); await campZoe(page);
+    i = await msgInfo(page, "Bonjour le Classique");
+    if (!i || i.lv !== "niv. 200" || i.cls !== "Iop" || i.tt !== "Légende de la 1.0" || !i.wings || !i.camp || !i.mod) fail(`${w} px, 'g' : profil Classique (Iop niv. 200, titre, ailes, camp) : ` + JSON.stringify(i));
+    await page.evaluate(() => { const m = [...document.querySelectorAll("#chat .ch-list .msg")].find((x) => x.textContent.includes("Bonjour le Classique")); m.querySelector('[data-act="ch-who"]').click(); });
+    const mg = await page.evaluate(() => { const el = document.querySelector("#chMenu"); return el ? { card: !!el.querySelector(".chm-card"), acts: [...el.querySelectorAll("button")].map((b) => b.dataset.act) } : null; });
+    if (!mg || mg.card || !mg.acts.includes("ch-prof")) fail(`${w} px, 'g' : menu Classique (Voir son profil, pas de carte Monocompte) : ` + JSON.stringify(mg));
+    await page.evaluate(() => { const m = document.querySelector("#chMenu"); if (m) m.remove(); });
+    await page.click('#chat .ch-tab[data-v="m"]');
+  };
   try {
     /* ---------- 1. partie Classique, PC ---------- */
     const p1 = await open(1280, 800, false);
@@ -133,6 +174,8 @@ function fake() {
     if (await p1.evaluate(() => window.CHAT.state.unreadM)) fail("salon Monocompte ouvert : non lus remis à zéro");
     if (!/Épinglé pour le Monocompte/.test(await p1.evaluate(() => document.querySelector("#chat").textContent))) fail("épinglé sur 'm' : affiché dans le salon Monocompte");
     if ((await p1.getAttribute("#chIn", "placeholder")) !== "Écrire aux joueurs du Monocompte…") fail("Monocompte : texte d'aide de la zone d'écriture");
+    await profils(p1, 1280);
+    console.log("ok - 1280 px : 'm' montre le héros Monocompte (niv. 12, Crâ) sans titre, ailes ni camp Classique ; carte Monocompte au clic sur le pseudo ; 'g' garde le profil Classique");
     a = await sendTxt(p1, "message mono");
     if (a.p_ch !== "m" || a.p_body !== "message mono") fail("Monocompte : chat_send avec p_ch 'm' : " + JSON.stringify(a));
     await p1.waitForTimeout(1600); // rechargement du salon après l'envoi
@@ -173,11 +216,12 @@ function fake() {
     if (box.l < box.cl - 1 || box.r > box.cr + 1 || box.w < 30) fail("390 px : onglet Monocompte visible dans le chat " + JSON.stringify(box));
     a = await sendTxt(p3, "mono au téléphone");
     if (a.p_ch !== "m") fail("390 px : envoi dans 'm'");
+    await profils(p3, 390);
     await p3.click('#chat .ch-tab[data-v="g"]');
     a = await sendTxt(p3, "classique au téléphone");
     if ("p_ch" in a) fail("390 px : envoi dans le Classique");
     await noScroll(p3, "390 px"); await shot(p3, "chat-mono-390.png");
-    console.log("ok - téléphone 390 px : onglet Monocompte par défaut et visible, envois dans les deux salons, sans défilement de côté");
+    console.log("ok - téléphone 390 px : onglet Monocompte par défaut et visible, envois dans les deux salons, profils séparés et carte Monocompte, sans défilement de côté");
   } catch (e) { fail("exception : " + (e.stack || e.message)); }
   await browser.close(); server.close();
   if (errors.length) { console.error("ÉCHEC :\n- " + errors.join("\n- ")); process.exit(1); }

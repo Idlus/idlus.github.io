@@ -372,6 +372,8 @@
   ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
+  // 2.1.35.3 : carte Monocompte d'un joueur (clic sur son pseudo dans le salon Monocompte du chat) ; serveur pas à jour : null
+  ON.chatMonoProfil = async (u) => (ON.user && u ? (await rpc("chat_mono_profil", { p_user: u })).data || null : null);
   // 0.1.29.1 : l'équipe (créateur, modérateurs) pour le badge à côté du pseudo, lisible sans compte
   ON.staff = async () => (sb ? (await rpc("staff_list")).data || [] : []);
   ON.role = async () => (ON.user ? (await rpc("my_role")).data || null : null);

@@ -7,6 +7,11 @@
      n'écrivent 'm' (ni par chat_send, ni par signalement), 'g', 'c', 'v' inchangés pour tous ;
    - mêmes règles que le Général : 200 caractères, mode lent partagé, muet, banni, chat fermé, liens refusés ; modération
      (adm_msgs, adm_msg_purge, adm_chat_clear('m'), adm_pin avec 'm').
+   - 2.1.35.3, profils séparés : un message de 'm' porte le héros Monocompte du joueur (classe et niveau de la partie validée
+     mono.parties_ok, à défaut de mono.parties ; titre du héros Monocompte), jamais son profil Classique (ladder : niv. 200,
+     « Légende de la 1.0 ») ; sans héros Monocompte (ou saison finie) : classe vide, niveau 1, sans titre ; le même joueur garde
+     son profil Classique dans 'g' ; carte Monocompte (chat_mono_profil) réservée aux comptes qui ont accès au salon ; niveau
+     minimal du chat compté sur le héros Monocompte dans 'm'.
    Lancer : IDLUS_PG="postgresql://postgres@/postgres?host=/chemin/du/socket&port=55432" node tests/chat_mono_sql.test.js
    Sans IDLUS_PG, le test SQL est sauté. La base « idlus_chat_mono » est recréée puis effacée. */
 "use strict";
@@ -71,6 +76,9 @@ try {
   assert.strictEqual(send(2, "T:bonjour classique", "g"), "OK", "'g' inchangé");
   assert.strictEqual(+as(1, `select count(*) from chat_msgs where ch = 'g' and body = 'T:bonjour classique'`), 1, "le message 'g' est lu par les autres");
   assert.strictEqual(+as(7, `select count(*) from chat_msgs where ch = 'm'`), 1, "l'auteur garde la vue sur son propre message");
+  assert.deepStrictEqual(JSON.parse(q(`select public.chat_mono_hero('${U(1)}')::text`)), { s: null, nom: null, cls: null, lvl: 1, title: null, hero: null }, "sans espace Monocompte : pas de héros Monocompte");
+  assert.strictEqual(as(1, `select coalesce(chat_mono_profil('${U(2)}')::text, 'null')`), "null", "sans espace Monocompte : pas de carte Monocompte");
+  fails(() => as(1, `select chat_mono_hero('${U(1)}')`), /permission denied/, "chat_mono_hero réservé au serveur");
   console.log("ok - sans espace Monocompte (pas de mono.testeurs) : 'm' refusé en lecture et en écriture à tous (admin compris), 'g' inchangé");
 
   // ---------- 3. avec monocompte.sql : testeur et admin oui, les autres non ----------
@@ -132,6 +140,65 @@ try {
   assert.strictEqual(as(99, `select adm_msg_purge('${U(1)}')`), "2", "messages publics effacés, 'm' compris");
   fails(() => as(2, `select adm_chat_clear('m')`), /réservé à Mathis/, "joueur ne vide pas 'm'");
   console.log("ok - mêmes règles que le Général dans 'm' (200 caractères, liens, mode lent partagé, chat fermé, muet, banni) et modération (adm_msgs, épinglage, vider le salon, effacer les messages)");
+
+  // ---------- 5. profils séparés : héros Monocompte dans 'm', profil Classique dans 'g' ----------
+  reset(); q(`delete from chat_msgs where ch = 'm'`);
+  const LEG = "Légende de la 1.0";
+  q(`insert into ladder (user_id, main, main_lvl, title, heroes) values ('${U(1)}', 'iop', 200, ${lit(LEG)}, '[{"cls":"iop","lvl":200}]')
+       on conflict (user_id) do update set main = 'iop', main_lvl = 200, title = ${lit(LEG)}, heroes = excluded.heroes;
+     insert into ladder (user_id, main, main_lvl, title) values ('${U(99)}', 'eni', 180, 'Fondateur d''Idlus') on conflict (user_id) do update set main = 'eni', main_lvl = 180, title = 'Fondateur d''Idlus';`);
+  const last = (ch, i) => JSON.parse(q(`select row_to_json(x)::text from (select cls, lvl, title, data from chat_msgs where ch = '${ch}' and user_id = '${U(i)}' order by id desc limit 1) x`));
+  // pas de saison ouverte : pas de héros Monocompte
+  assert.strictEqual(send(1, "T:sans saison", "m"), "OK");
+  assert.deepStrictEqual(last("m", 1), { cls: null, lvl: 1, title: null, data: { mono: true, s: null } }, "sans saison : classe vide, niveau 1, sans titre, jamais le Classique");
+  q(`insert into mono.saisons (id, nom, debut, etat, test) values (0, 'Saison de test', now() - interval '3 days', 'ouverte', true)`);
+  // saison ouverte, pas de partie Monocompte
+  reset(); assert.strictEqual(send(1, "T:sans partie", "m"), "OK");
+  assert.deepStrictEqual(last("m", 1), { cls: null, lvl: 1, title: null, data: { mono: true, s: 0 } }, "sans partie Monocompte : classe vide, niveau 1, sans titre");
+  // partie envoyée, pas encore validée : meta de mono.parties (héros principal hc / hl, titre actif)
+  q(`insert into mono.parties (user_id, saison, data, meta) values ('${U(1)}', 0, '{}', '{"main":"cra","mainLvl":9,"title":"Voyageur du Temps","hc":"cra","hl":9,"hn":"Flèche"}')`);
+  reset(); assert.strictEqual(send(1, "T:partie envoyée", "m"), "OK");
+  assert.deepStrictEqual(last("m", 1), { cls: "cra", lvl: 9, title: "Voyageur du Temps", data: { mono: true, s: 0 } }, "partie Monocompte envoyée : son héros");
+  // partie validée par le Bouclier : niveau et classe du résumé du serveur (la partie envoyée, plus loin, n'est pas encore validée)
+  q(`insert into mono.parties_ok (user_id, saison, data, resume, accept) values ('${U(1)}', 0, '{}', '{"niveau":12,"classe":"cra","nom":"Flèche"}', true);
+     update mono.parties set meta = meta || '{"hl":15,"mainLvl":15}' where user_id = '${U(1)}'`);
+  reset(); assert.strictEqual(send(1, "T:Bonjour du Monocompte", "m"), "OK");
+  const mm = last("m", 1);
+  assert.deepStrictEqual(mm, { cls: "cra", lvl: 12, title: "Voyageur du Temps", data: { mono: true, s: 0 } }, "partie validée : niv. 12 du résumé du serveur, classe et titre Monocompte");
+  assert(mm.lvl !== 200 && mm.cls !== "iop" && mm.title !== LEG, "jamais le profil Classique dans 'm'");
+  // le même joueur dans 'g' (et en privé) : profil Classique inchangé
+  reset(); assert.strictEqual(send(1, "T:Bonjour du Classique", "g"), "OK");
+  assert.deepStrictEqual(last("g", 1), { cls: "iop", lvl: 200, title: LEG, data: null }, "'g' : profil Classique");
+  reset(); assert.strictEqual(as(1, `select coalesce(chat_send('T:privé', '${U(2)}'), 'OK')`), "OK");
+  assert.deepStrictEqual(last("p", 1), { cls: "iop", lvl: 200, title: LEG, data: null }, "privé : profil Classique");
+  // héros Monocompte sans titre : aucun titre (pas celui du Classique)
+  q(`update mono.parties set meta = meta - 'title' where user_id = '${U(1)}'`);
+  reset(); assert.strictEqual(send(1, "T:sans titre", "m"), "OK");
+  assert.deepStrictEqual(last("m", 1), { cls: "cra", lvl: 12, title: null, data: { mono: true, s: 0 } }, "héros Monocompte sans titre : sans titre");
+  q(`update mono.parties set meta = meta || '{"title":"Voyageur du Temps"}' where user_id = '${U(1)}'`);
+  // l'admin sans partie Monocompte : pas son profil Classique non plus
+  reset(); assert.strictEqual(send(99, "T:admin mono", "m"), "OK");
+  assert.deepStrictEqual(last("m", 99), { cls: null, lvl: 1, title: null, data: { mono: true, s: 0 } }, "admin sans partie Monocompte : classe vide, niveau 1");
+  // niveau minimal du chat : compté sur le héros Monocompte dans 'm', sur le Classique dans 'g'
+  q(`update chat_settings set min_level = 13`); reset();
+  assert.strictEqual(send(1, "T:niv min m", "m"), "Il faut un héros au niveau 13 pour écrire.", "niveau minimal : héros Monocompte niv. 12 refusé dans 'm'");
+  assert.strictEqual(send(1, "T:niv min g", "g"), "OK", "niveau minimal : héros Classique niv. 200 accepté dans 'g'");
+  q(`update chat_settings set min_level = 12`); reset();
+  assert.strictEqual(send(1, "T:niv min m2", "m"), "OK", "niveau minimal atteint par le héros Monocompte");
+  q(`update chat_settings set min_level = 0`);
+  // carte Monocompte (clic sur le pseudo dans 'm')
+  const card = (i, who) => JSON.parse(as(i, `select coalesce(chat_mono_profil('${U(who)}')::text, 'null')`));
+  assert.deepStrictEqual(card(99, 1), { s: 0, nom: "Saison de test", cls: "cra", lvl: 12, title: "Voyageur du Temps", hero: "Flèche", u: U(1), pseudo: "Joueur01" }, "carte Monocompte : pseudo, héros, titre, saison");
+  assert.deepStrictEqual(card(1, 99), { s: 0, nom: "Saison de test", cls: null, lvl: 1, title: null, hero: null, u: U(99), pseudo: "Joueur99" }, "carte d'un joueur sans héros Monocompte");
+  assert.strictEqual(card(2, 1), null, "compte sans accès au Monocompte : pas de carte");
+  fails(() => anon(`select chat_mono_profil('${U(1)}')`), /permission denied/, "visiteur : pas de carte");
+  // saison finie : plus de héros en cours
+  q(`update mono.saisons set etat = 'finie' where id = 0`);
+  reset(); assert.strictEqual(send(1, "T:saison finie", "m"), "OK");
+  assert.deepStrictEqual(last("m", 1), { cls: null, lvl: 1, title: null, data: { mono: true, s: null } }, "saison finie : pas de héros Monocompte");
+  // chat.sql relancé avec des parties Monocompte : sans danger, messages gardés
+  const avant = q(`select count(*) from chat_msgs`); deploy(src); assert.strictEqual(q(`select count(*) from chat_msgs`), avant);
+  console.log("ok - profils séparés : 'm' montre le héros Monocompte (partie validée, sinon envoyée ; titre Monocompte ; rien sans héros ou saison finie), jamais le Classique (niv. 200, « Légende de la 1.0 ») ; 'g' et privés gardent le Classique ; carte Monocompte réservée aux comptes du salon ; niveau minimal sur le héros Monocompte");
 } finally {
   run(`drop database if exists ${DB}`, URL0);
 }

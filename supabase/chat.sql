@@ -60,6 +60,39 @@ as $$ declare u uuid := auth.uid(); begin
 end $$;
 revoke all on function public.chat_mono_ok() from public;
 grant execute on function public.chat_mono_ok() to anon, authenticated;
+-- 2.1.35.3 : profils Classique et Monocompte séparés dans le chat. Le salon 'm' montre le héros Monocompte du joueur (saison
+-- en cours : 'ouverte' ou 'cloture'), jamais son profil Classique (ladder) : classe et niveau de la dernière partie validée
+-- par le Bouclier (mono.parties_ok.resume), à défaut de la partie envoyée (mono.parties.meta) ; titre actif du héros de la
+-- partie Monocompte (meta.title, comme ladder.title pour le Classique). Pas de héros Monocompte : classe vide, niveau 1, sans
+-- titre. Comme chat_mono_ok : plpgsql, tables du schéma mono lues seulement à l'appel, rien sans monocompte.sql.
+-- Renvoie { s, nom (saison), cls, lvl, title, hero (nom du héros) }.
+create or replace function public.chat_mono_hero(u uuid) returns jsonb language plpgsql stable security definer set search_path = public
+as $$ declare s record; r jsonb; m jsonb; c text; l text; t text; n text;
+  vide jsonb := jsonb_build_object('s', null, 'nom', null, 'cls', null, 'lvl', 1, 'title', null, 'hero', null); begin
+  if u is null or to_regclass('mono.saisons') is null or to_regclass('mono.parties') is null then return vide; end if;
+  select id, nom into s from mono.saisons where etat in ('ouverte', 'cloture') order by id desc limit 1;
+  if not found then return vide; end if;
+  if to_regclass('mono.parties_ok') is not null then select k.resume into r from mono.parties_ok k where k.user_id = u and k.saison = s.id; end if;
+  select p.meta into m from mono.parties p where p.user_id = u and p.saison = s.id;
+  if r is null and m is null then return vide || jsonb_build_object('s', s.id, 'nom', s.nom); end if;
+  c := coalesce(nullif(r ->> 'classe', ''), nullif(m ->> 'hc', ''), nullif(m ->> 'main', ''));
+  l := coalesce(r ->> 'niveau', m ->> 'hl', m ->> 'mainLvl');
+  t := nullif(btrim(coalesce(m ->> 'title', '')), '');
+  n := coalesce(nullif(r ->> 'nom', ''), nullif(m ->> 'hn', ''));
+  return jsonb_build_object('s', s.id, 'nom', s.nom, 'cls', case when c ~ '^[a-z]{2,12}$' then c end,
+    'lvl', case when l ~ '^[0-9]{1,4}$' then least(greatest(l::int, 1), 200) else 1 end, 'title', left(t, 40), 'hero', left(n, 20));
+end $$;
+revoke all on function public.chat_mono_hero(uuid) from public, anon, authenticated;
+-- Carte Monocompte d'un joueur (clic sur son pseudo dans le salon 'm') : seulement pour un compte qui a accès au salon.
+create or replace function public.chat_mono_profil(p_user uuid) returns jsonb language plpgsql stable security definer set search_path = public
+as $$ declare ps text; begin
+  if not public.chat_mono_ok() then return null; end if;
+  select pseudo into ps from profiles where id = p_user;
+  if not found then return null; end if;
+  return public.chat_mono_hero(p_user) || jsonb_build_object('u', p_user, 'pseudo', ps);
+end $$;
+revoke all on function public.chat_mono_profil(uuid) from public, anon;
+grant execute on function public.chat_mono_profil(uuid) to authenticated;
 drop policy if exists "chat lisible" on public.chat_msgs;
 create policy "chat lisible" on public.chat_msgs for select using (ch in ('g', 'c', 'v') or (ch = 'm' and (select public.chat_mono_ok())) or user_id = auth.uid() or to_id = auth.uid());
 grant select on public.chat_msgs to anon, authenticated;
@@ -136,7 +169,7 @@ security definer
 set search_path = public
 as $$
 declare
-  me uuid := auth.uid(); pr record; sa record; lad record; st record; last record;
+  me uuid := auth.uid(); pr record; sa record; lad record; st record; last record; mh jsonb;
   b text := btrim(coalesce(p_body, '')); best int; c text := case when p_to is not null then 'p' when p_ch in ('c', 'v', 'm') then p_ch else 'g' end;
 begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
@@ -154,7 +187,10 @@ begin
   select * into st from chat_settings where id = 1;
   if coalesce(st.closed, false) and p_to is null and not public.is_staff() then return 'Le chat est fermé pour le moment.'; end if; -- 1.2.10.1 : chat fermé par Mathis (les messages privés restent ouverts)
   select * into lad from ladder where user_id = me;
-  if coalesce(st.min_level, 0) > 0 then
+  if c = 'm' then mh := public.chat_mono_hero(me); end if; -- 2.1.35.3 : salon Monocompte : héros Monocompte, jamais le profil Classique
+  if coalesce(st.min_level, 0) > 0 and c = 'm' then
+    if coalesce((mh ->> 'lvl')::int, 1) < st.min_level then return format('Il faut un héros au niveau %s pour écrire.', st.min_level); end if;
+  elsif coalesce(st.min_level, 0) > 0 then
     select coalesce(max(case when coalesce((x->>'ren')::int, 0) > 0 then 200 else coalesce((x->>'lvl')::int, 1) end), 1) into best
       from jsonb_array_elements(coalesce(lad.heroes, '[]'::jsonb)) x;
     if coalesce(best, 1) < st.min_level then return format('Il faut un héros au niveau %s pour écrire.', st.min_level); end if;
@@ -170,8 +206,14 @@ begin
     if not exists (select 1 from profiles where id = p_to) then return 'Ce joueur n''existe plus.'; end if;
     if exists (select 1 from ignores where user_id = p_to and other = me) then return 'Ce joueur ne reçoit pas tes messages.'; end if;
   end if;
-  insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item)
-    values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item);
+  -- 'm' : héros Monocompte (data.mono : le jeu sait que cls, lvl et title viennent du Monocompte, pas du Classique)
+  if c = 'm' then
+    insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
+      values (c, me, null, pr.pseudo, mh ->> 'cls', coalesce((mh ->> 'lvl')::int, 1), mh ->> 'title', b, p_item, jsonb_build_object('mono', true, 's', mh -> 's'));
+  else
+    insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item)
+      values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item);
+  end if;
   -- le chat ne garde que 48 heures de messages
   delete from chat_msgs where created_at < now() - interval '48 hours';
   return null;

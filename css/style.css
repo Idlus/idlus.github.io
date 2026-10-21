@@ -4097,6 +4097,12 @@ img.wb-an.wb-p3{animation:wbp3 1.5s ease-in-out infinite}
 .chat .ch-ac button{border:1.5px solid var(--line);border-radius:999px;background:var(--panel);padding:2px 9px;font-weight:800;font-size:13px;cursor:pointer}
 .chat .ch-ac button.on,.chat .ch-ac button:hover{border-color:var(--gold);background:var(--panel3);color:var(--gold2)}
 .chmenu .at{display:inline-block;width:18px;text-align:center;color:var(--gold2)}
+/* 2.1.35.3 : carte Monocompte du joueur dans le menu de son pseudo (salon Monocompte du chat) */
+.chmenu .chm-card{display:flex;gap:10px;align-items:center;padding:6px 8px 8px;margin-bottom:4px;border-bottom:1px solid var(--line);max-width:260px}
+.chmenu .chm-card .cm{flex:none}
+.chmenu .chm-card .chm-t{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.chmenu .chm-card .lv{font-size:12px;color:var(--muted)}
+.chmenu .chm-card .tt{align-self:flex-start;font-size:11px;font-weight:800;color:#e7c46a;border:1px solid rgba(231,196,106,.45);border-radius:6px;padding:0 5px}
 @media (max-width:640px){.chmin .n.at{right:auto;left:-4px}}
 /* 0.1.54 : commandes du jour et boutique de la maison */
 .cmd{gap:0}

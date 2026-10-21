@@ -11209,8 +11209,8 @@ const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren
 const STAFF = { u: {}, p: {} };
 const staffOf = (u, p) => (u ? STAFF.u[u] : p ? STAFF.p[String(p).toLowerCase()] : null) || null;
 const CROWN_SVG = `<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path fill="#f4c84a" stroke="#7a5310" stroke-width="1.4" stroke-linejoin="round" d="M3 8l4.5 4L12 4l4.5 8L21 8l-2 11H5z"/><circle cx="12" cy="4" r="1.6" fill="#ffe9a3"/><circle cx="3" cy="8" r="1.4" fill="#ffe9a3"/><circle cx="21" cy="8" r="1.4" fill="#ffe9a3"/></svg>`;
-const pname = (p, u) => {
-  const r = staffOf(u, p); const al = window.ALIGNUI ? window.ALIGNUI.tag(u, p) : ""; // 1.0.30 : camp du joueur, Bonta ou Brâkmar (js/alignui.js)
+const pname = (p, u, o) => {
+  const r = staffOf(u, p); const al = window.ALIGNUI && !(o && o.mono) ? window.ALIGNUI.tag(u, p) : ""; // 1.0.30 : camp du joueur, Bonta ou Brâkmar (js/alignui.js) ; 2.1.35.3 : pas le camp Classique dans le salon Monocompte
   if (r === "crea") return `<span class="xen" data-tip="Créateur d'Idlus">${CROWN_SVG}<span class="t">${h(p)}</span></span><span class="xtag">Créateur</span>${al}`;
   if (r === "mod") return `${h(p)}<span class="mtag" data-tip="Modérateur d'Idlus">${G("shield")}Modérateur</span>${al}`;
   return h(p) + (window.AMIS ? window.AMIS.crown(u) : "") + al; // Monocompte : Couronne du Temps de la semaine (js/amis.js)
