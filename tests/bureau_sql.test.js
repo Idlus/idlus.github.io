@@ -349,6 +349,18 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     delete P[12].S.dungeon; await send(12, P[12].S);
     console.log("ok - le serveur refuse un départ qui enfreint 1B (donjon solo dans la partie validée)");
 
+    /* ---------- triche : héros prêté en renfort par un ami (copie « rf » du serveur, mono_social.sql) dans la photo ---------- */
+    for (const i of [12]) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    const c4 = ok(B(1, "lancer"), "lancement").combat;
+    for (const i of [1, 3, 12]) { const r = await send(i, P[i].S); assert(r.verif.ok, "envoi " + i); ok(B(i, "confirmer"), "confirmer " + i); }
+    // la partie validée de 12 présente comme son héros la copie d'un ami prêtée en renfort
+    const fr = E.deserialize(q(`select data from mono.parties_ok where user_id = '${U(12)}'`)); Object.assign(hero(fr), { rf: 1, renfort: { u: U(2) } });
+    q(`update mono.parties_ok set data = ${lit(E.serialize(fr))} where user_id = '${U(12)}'`);
+    const F4 = await call(U(1), { bureau: { combat: c4 } });
+    refuse("héros prêté en renfort dans le groupe", () => assert(F4.annule && /12 : héros prêté en renfort/.test(F4.why) && q(`select snaps is null from mono.bureau_combats where id = ${c4}`) === "t", "renfort côté serveur : " + JSON.stringify(F4)));
+    await send(12, P[12].S);
+    console.log("ok - triche : héros prêté en renfort refusé par le serveur dans un groupe de joueurs");
+
     /* ---------- chef déconnecté (8C) : chef provisoire immédiat, rôle rendu au retour, place libérée après 2 min ---------- */
     q(`update mono.bureau_membres set vu_at = now() - interval '30 seconds' where user_id = '${U(1)}'`);
     let s12 = etat(12).salon; assert(s12.chef === U(3) && s12.provisoire && s12.titulaire === U(1), "chef provisoire = le plus ancien connecté : " + JSON.stringify([s12.chef, s12.titulaire]));
