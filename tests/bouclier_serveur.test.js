@@ -44,6 +44,7 @@ const call = async (uid, body) => (await H(new Request("http://x/", { method: "P
 const fail = (m) => { console.error("ÉCHEC - " + m); process.exit(1); };
 const iso = (t) => new Date(t).toISOString();
 const S = E.newState("Honnête", "iop"); E.addChar(S, "cra", "Archer", 30); S.kamas = 1000;
+S.ach.sec_minuit = 1; S.ach.rq1 = 1; // 2.1.34.1 : succès de js/quetes.js (points de succès du classement)
 const t0 = Date.now() - 3600e3;
 T.saves.push({ user_id: "u1", data: E.serialize(S), meta: { level: 9999 }, updated_at: iso(t0) });
 // 1. première vérification : la partie devient la partie validée, avec le résumé calculé par le serveur
@@ -52,6 +53,7 @@ if (!r.ok) fail("partie honnête refusée : " + JSON.stringify(r));
 const ok1 = T.saves_ok.find((x) => x.user_id === "u1"); if (!ok1) fail("pas de partie validée");
 if (ok1.meta.level === 9999 || ok1.meta.level !== V.summary(E, E.deserialize(ok1.data)).level) fail("le résumé vient du jeu, pas du serveur");
 if (!T.saves_jour.length) fail("pas de copie du jour");
+if (!(ok1.meta.pts > 0) || ok1.meta.pts !== E.achPoints(E.deserialize(ok1.data))) fail("points de succès faux dans le résumé du serveur : " + ok1.meta.pts);
 console.log("ok - partie validée, résumé calculé par le serveur, copie du jour");
 // 2. une heure plus tard, +200 000 kamas : normal
 S.kamas += 200000; Object.assign(T.saves[0], { data: E.serialize(S), updated_at: iso(t0 + 3600e3) });
