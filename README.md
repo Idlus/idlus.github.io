@@ -9,6 +9,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.33 « Interface plus pratique »
+
+- Lot ergonomie (Mathis 21/10) : Donjons (encadré d'absence replié, S.settings.dghOpen), Équipe (Les 19 classes repliées par défaut, c19Shut !== false), Forgemagie au téléphone (métiers sur une ligne), page Combat sans combat (.cside.cidle).
+- Menu : épinglés PC avec leur nom, lettre du raccourci au survol (navHotkey), menu du téléphone par famille (nsOpen, ui.nsFams).
+- Téléphone : bulle du chat cachée au défilement (body.scrolldn), « Mieux pour… » dans #lootdock au-dessus de la barre du bas, flèche .tr-mv décalée.
+- Inventaire PC : double-clic (détecté à la main, le premier clic redessine) et menu du clic droit (#ctxmenu, Briser en deux temps). Aucun changement de sauvegarde ni de serveur.
+
 ## 2.1.32.2 « Ocre terminé »
 
 - Corrige le statut de la quête Ocre après les six paliers, y compris les anciennes parties, sans redonner de récompense (ticket #129, Akileuss). Tests moteur et interface PC/mobile.

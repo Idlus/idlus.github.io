@@ -21,9 +21,20 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.32.2";
+const GAME_VERSION = "2.1.33";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.33", name: "Interface plus pratique", items: [
+    "Aventure › Donjons : « Donjon pendant ton absence » tient sur une ligne, « Régler » le déplie ; la liste des donjons arrive tout de suite",
+    "Héros › Équipe : « Les 19 classes » sont repliées par défaut (« Voir » les ouvre), les héros d'abord",
+    "Forgemagie au téléphone : les 6 métiers tiennent sur une ligne qu'on fait glisser, l'établi remonte",
+    "Menu du téléphone : une ligne par famille, celle de la page ouverte est dépliée ; tout tient sur un écran",
+    "Téléphone : la bulle du chat est plus petite et se cache quand tu descends dans une page ; « Mieux pour… » s'affiche au-dessus de la barre du bas",
+    "PC : les épinglés du menu ont leur nom, et la lettre du raccourci clavier de chaque page s'affiche au survol",
+    "Inventaire sur PC : double-clic sur un objet pour l'équiper (héros choisi dans « Pour », sinon celui pour qui il est ▲ mieux) ; clic droit pour un petit menu : équiper, Forgemagie, vendre, cadenas, briser (avec confirmation)",
+    "Combat : sans combat en cours, les cadres Butin et Statistiques vides ne s'affichent plus",
+    "Téléphone : la flèche « devant / derrière » ne cache plus le niveau des héros",
+  ] },
   { v: "2.1.32.2", name: "Ocre terminé", items: [
     "Héros › Dofus › Collection : une Éternelle moisson terminée disparaît de « À faire maintenant » et sa fiche affiche 100 %, sans palier 7 sur 6 (signalé par Akileuss)",
     "Les parties existantes sont corrigées automatiquement à la consultation. Aucune récompense supplémentaire : les six paliers restent la condition pour terminer la quête",

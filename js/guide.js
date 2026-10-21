@@ -123,7 +123,7 @@
       ["p", "La loupe cherche dans tout le jeu : pages, donjons, zones, objets, panoplies, ressources, monstres, Dofus, idoles, familiers, montures, consommables et succès. Les accents, majuscules et une faute de frappe sont tolérés."],
       ["ul", [
         "Sur PC : **Ctrl + K** ou **/** ouvre la recherche.",
-        "Sur PC, une lettre ouvre une page (H Havre-Sac, M Monde, D Donjons, C Combat, E Équipe, I Inventaire, Q Quêtes…) ; les flèches gauche et droite passent d'une page à l'autre ; **?** affiche la liste des raccourcis ; **O** ouvre les options.",
+        "Sur PC, une lettre ouvre une page (H Havre-Sac, M Monde, D Donjons, C Combat, E Équipe, I Inventaire, Q Quêtes…) ; les flèches gauche et droite passent d'une page à l'autre ; **?** affiche la liste des raccourcis ; **O** ouvre les options. Au survol d'une page du menu, sa lettre s'affiche à droite.",
         "Options › Aide : le Carnet des découvertes relit toutes les bulles d'aide déjà vues.",
       ]],
     ] });
@@ -426,6 +426,7 @@
       ["ul", [
         "Sac plein : les nouveaux objets vont dans le **trop-plein**. Quand lui aussi est plein, l'objet le plus ancien est brisé en runes.",
         "Les Dofus ne quittent jamais le sac.",
+        "Sur PC, **double-clic** sur un objet : il est équipé sur le héros choisi dans « Pour », sinon sur celui pour qui il est ▲ mieux. **Clic droit** : un petit menu (équiper sur…, Forgemagie, vendre à l'HdV, cadenas, briser en deux temps).",
         "Le Grenier du Havre-Sac et certains meubles agrandissent le sac et le trop-plein.",
         "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup. « Sous le niveau » brise les objets lâchés plus bas que le niveau choisi, quel que soit le niveau de tes héros (panoplies, Rayonnants et exo gardés). Si tu règles à la fois le jet et un niveau, l'objet doit remplir toutes les conditions pour être brisé ; choisis « une seule suffit » pour briser selon le niveau quel que soit le jet.",
         "**Coffres** : « Tout ouvrir » (onglet Consommables ou tuile de l'accueil) les ouvre tous d'un coup, les plus précieux d'abord. Mode **Auto** : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal. Les kamas dépendent du niveau de ton meilleur héros au moment de l'ouverture.",

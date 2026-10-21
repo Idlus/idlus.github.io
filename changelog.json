@@ -1,6 +1,21 @@
 {
-  "version": "2.1.32.2",
+  "version": "2.1.33",
   "versions": [
+    {
+      "v": "2.1.33",
+      "name": "Interface plus pratique",
+      "items": [
+        "Aventure › Donjons : « Donjon pendant ton absence » tient sur une ligne, « Régler » le déplie ; la liste des donjons arrive tout de suite",
+        "Héros › Équipe : « Les 19 classes » sont repliées par défaut (« Voir » les ouvre), les héros d'abord",
+        "Forgemagie au téléphone : les 6 métiers tiennent sur une ligne qu'on fait glisser, l'établi remonte",
+        "Menu du téléphone : une ligne par famille, celle de la page ouverte est dépliée ; tout tient sur un écran",
+        "Téléphone : la bulle du chat est plus petite et se cache quand tu descends dans une page ; « Mieux pour… » s'affiche au-dessus de la barre du bas",
+        "PC : les épinglés du menu ont leur nom, et la lettre du raccourci clavier de chaque page s'affiche au survol",
+        "Inventaire sur PC : double-clic sur un objet pour l'équiper (héros choisi dans « Pour », sinon celui pour qui il est ▲ mieux) ; clic droit pour un petit menu : équiper, Forgemagie, vendre, cadenas, briser (avec confirmation)",
+        "Combat : sans combat en cours, les cadres Butin et Statistiques vides ne s'affichent plus",
+        "Téléphone : la flèche « devant / derrière » ne cache plus le niveau des héros"
+      ]
+    },
     {
       "v": "2.1.32.2",
       "name": "Ocre terminé",
