@@ -7687,6 +7687,7 @@ function fmBench(it) {
   const trans = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.startsWith("ta:"));
   const signOk = J.lvl >= E.FM_MAX || E.fmRen(S, job) > 0; // 1.0.25 : un métier qui a renu signe toujours
   const KC = { sc: "g", sn: "y", ec: "r" };
+  const crystals = S.cons.cristal_fm || 0;
   return `<div class="row" style="gap:12px">${itemIcon(it)}<div class="grow"><h2 style="margin:0">${itemName(it)}</h2><div class="small muted">niv. ${T.lvl}${by ? ` · porté par <b>${h(by.name)}</b>` : ""} · <b>${E.FM_JOBS[job].name} niv. ${J.lvl}</b>${it.sig ? ` · signé <b>${h(it.sig)}</b>` : ""}</div></div>
       <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie le poids des prochaines runes qui passent (au lieu de faire baisser une autre caractéristique) et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
     ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
@@ -7694,6 +7695,8 @@ function fmBench(it) {
     ${E.fmRen(S, job) ? `<div class="xs pjrenl">${IC("phenix")} <b>${E.FM_JOBS[job].name} · Renaissance ${E.roman(E.fmRen(S, job))}</b> : ${jobRenFx("fm", E.fmRen(S, job))} (déjà comptés dans les chances des runes)</div>` : ""}
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
     ${window.FORGEUI && !block ? window.FORGEUI.hardNote(it) : ""}
+    <div class="pfl fmcrystal"><div class="pfn">${IC("cristal")}<b>Cristal de Forgemagie</b><span class="small num">Stock : ${fmt(crystals)}</span></div>
+      <div class="row"><button class="btn ${!S.fmShield && crystals > 0 ? "primary" : ""}" data-act="usecons" data-id="cristal_fm" ${S.fmShield || crystals <= 0 ? "disabled" : ""}>${S.fmShield ? "Cristal actif" : "Utiliser un cristal"}</button><span class="xs muted grow" role="status">${S.fmShield ? "Cristal actif : la prochaine forgemagie ne peut rien faire baisser." : crystals > 0 ? "Consomme 1 cristal pour protéger la prochaine forgemagie." : "Aucun cristal en stock."}</span></div></div>
     ${wpFmHtml(it)}
     <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
     ${!block && extra.length && (it.well || 0) > 0 ? `<div class="pfl"><div class="pfn"><b>Ajouter une caractéristique</b><span class="xs muted">payée par le reliquat, jusqu'à ${E.EXO_STAT_W} de poids</span></div><div class="pruns">${extra.slice(0, 8).map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div></div>` : ""}
