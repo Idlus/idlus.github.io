@@ -80,7 +80,7 @@
     { id: "d6", m: 1, c: 2, n: "Marché des échos", d: "Vendre des lots à des joueurs différents (HdV de saison)", need: [5, 20, 50], soon: "avec l'HdV de saison du serveur Monocompte" },
     { id: "d7", m: 2, c: 0, n: "Tenir la Rupture", d: "Meilleure stasis sur un donjon de niveau 150 ou plus", need: [4, 6, 8], u: "stasis", best: 1 },
     { id: "d8", m: 2, c: 1, n: "Forger contre la Rupture", d: "Runes de forgemagie réussies sur des objets de niveau 150 ou plus", need: [50, 200, 500] },
-    { id: "d9", m: 2, c: 2, n: "Front commun", d: "Agressions gagnées pour ton camp", need: [5, 20, 50], soon: "avec la refonte des alignements" },
+    { id: "d9", m: 2, c: 2, n: "Front commun", d: "Agressions gagnées pour ton camp", need: [5, 20, 50] },
     { id: "d10", m: 3, c: 0, n: "Le Dernier Sablier", d: "Stasis sur un donjon de niveau 190 ou plus, seul (en groupe, il faut 2 stasis de plus)", need: [6, 7, 8], u: "stasis", best: 1 },
     { id: "d11", m: 3, c: 1, n: "Horloger", d: "Fabriquer des objets de niveau 200 de ta spécialité", need: [1, 5, 15] },
     { id: "d12", m: 3, c: 2, n: "Rendez-vous du temps", d: "Finir des donjons de la manche IV en groupe, avec des joueurs différents", need: [2, 5, 10], u: "joueurs", soon: "avec les groupes en direct du serveur Monocompte" },
@@ -238,7 +238,7 @@
         if (I.lvl >= 200 && I.craft && E.monoSpecs(S).includes(I.craft.job)) bump(S, "d11", 1);
       }
       if (t === "joblvl" || t === "craft" || t === "level") { const x = E.tfDefi("d2"); if (E.tfDefiOpen(S, x)) pay(S, x); }
-      if (t === "aggr" && d.win) bump(S, "d9", 1); // branché par la refonte des alignements (étape 3)
+      if (t === "agression" && d.win) bump(S, "d9", 1); // agressions gagnées (js/honneur.js, E.agrEnd)
     } catch (e) {}
     return r;
   };

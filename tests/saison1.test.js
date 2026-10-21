@@ -99,6 +99,8 @@ const at = (S, day) => { now = E.monoT0(S) + (day - 1) * DAY + 3600000; };
   at(S, 15); E.emit(S, "win", { mons: [{ key: "x", archi: true }] }); assert.strictEqual(E.tfProgress(S, d4), 1);
   at(S, 50); E.emit(S, "win", { mons: [{ key: "x", archi: true }] }); assert.strictEqual(E.tfProgress(S, d4), 2, "rattrapable jusqu'au jour 56");
   assert.strictEqual(TF.TOTAL, 1600); TF.MANCHES.forEach((m, i) => assert.strictEqual(TF.DEFIS.filter((x) => x.m === i).reduce((a, x) => a + E.tfReward(x).reduce((s, v) => s + v, 0), 0), 400));
+  const d9 = E.tfDefi("d9"); at(S, 29); E.emit(S, "agression", { win: false }); assert.strictEqual(E.tfProgress(S, d9), 0, "agression perdue : rien");
+  E.emit(S, "agression", { win: true }); E.emit(S, "agression", { win: true }); assert.strictEqual(E.tfProgress(S, d9), 2, "défi 9 : agressions gagnées");
   assert.strictEqual(E.tfDefi("d12").n, "Rendez-vous du temps"); assert.deepStrictEqual(E.tfDefi("d9").need, [5, 20, 50]);
   console.log("ok - défis et dépenses");
 }
