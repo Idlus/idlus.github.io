@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.34.1 « Classement des succès »
+
+- Ticket #138 (Ley) : depuis le Bouclier (2.1.4), le résumé des classements est calculé par la fonction serveur « record », qui ne chargeait pas js/quetes.js : E.achPoints manquait, la colonne ladder.pts recevait 0 à chaque partie validée, et le nombre de succès comptait aussi les succès retirés. quetes.js est ajouté à tools/build_server.js (et aux chemins de supabase.yml) ; tests/bouclier_serveur.test.js vérifie les points. Aucun changement de sauvegarde ni de SQL ; le classement se corrige au prochain envoi de chaque partie.
+
 ## 2.1.34 « Grand écran »
 
 - Choix 1B et 2A de la maquette PC (Mathis 21/10). Au moins 1600 px : colonne fixe #livecol (.lcol, liveColTick dans la boucle, arène via FORMUI.box) et chat ancré dessous (CHAT.dock) ; option S.settings.liveCol.

@@ -157,7 +157,7 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
 // 9. Le serveur (fonction « record ») charge js/honneur.js : honneur, rang et pièces de rang ; supabase/alignement2.sql tolère les anciens envois
 {
   const fs = require("fs"), path = require("path"); const R = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
-  assert.ok(/"alignement", "honneur"\]/.test(R("tools/build_server.js")), "honneur.js dans le code du serveur, après alignement.js");
+  assert.ok(/"alignement", "honneur"[\],]/.test(R("tools/build_server.js")), "honneur.js dans le code du serveur, après alignement.js");
   const q = R("supabase/alignement2.sql");
   assert.ok(/jsonb_typeof\(a->'h'\) = 'number'/.test(q), "SQL : honneur seulement s'il est envoyé et numérique");
   assert.ok(/h := least\(h, o\.hon \+ 100\)/.test(q), "SQL : honneur plafonné après un changement de camp");

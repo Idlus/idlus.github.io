@@ -1,6 +1,14 @@
 {
-  "version": "2.1.34",
+  "version": "2.1.34.1",
   "versions": [
+    {
+      "v": "2.1.34.1",
+      "name": "Classement des succès",
+      "items": [
+        "Communauté › Classements › Succès : les points de succès se mettent de nouveau à jour (le serveur ne les comptait plus et laissait tout le monde à 0)",
+        "Le nombre de succès du classement ne compte plus les anciens succès retirés du jeu"
+      ]
+    },
     {
       "v": "2.1.34",
       "name": "Grand écran",
