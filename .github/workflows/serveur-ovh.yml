@@ -283,8 +283,8 @@ jobs:
           echo '== Saison de test et testeurs'
           bash tools/serveur/vps_sql.sh fichier tools/serveur/monocompte_installer.sql
           sleep 15
-          echo '== Fonctions record et mono (un appel sans compte doit être refusé, pas planter)'
-          bash tools/serveur/vps_sql.sh commande 'docker logs --since 3m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception|boot" | tail -20; for n in record mono; do printf "%s : " $n; curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/functions/v1/$n; done'
+          echo '== Fonctions record et mono (erreurs au démarrage)'
+          bash tools/serveur/vps_sql.sh commande 'docker logs --since 3m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception|boot" | tail -20'
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
