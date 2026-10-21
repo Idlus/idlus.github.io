@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35.4";
+const GAME_VERSION = "2.1.35.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.35.5", name: "Points de Maîtrise signalés", guide: "maitrise", items: [
+    "Équipe : une pastille violette ✦ sur la ligne d'un héros montre combien de points de Maîtrise il a à placer",
+    "Maîtrise : la même pastille sur les boutons des héros en haut de l'arbre, mise à jour à chaque étoile prise (demande de Mathis)" ] },
   { v: "2.1.35.4", name: "Profils séparés", items: [
     "Chat Monocompte : chaque joueur y apparaît avec son héros et son titre Monocompte, plus avec son profil Classique",
     "Un clic sur un pseudo dans le chat Monocompte ouvre sa carte Monocompte" ] },
@@ -2832,7 +2835,8 @@ function recruitBtn() {
   return `<button class="btn sm ${ok ? "kgold" : ""}" data-act="recruitsheet">+ Recruter · <span class="coin"></span> <b class="num">${cost ? fmt(cost) : "gratuit"}</b></button>${ok ? "" : `<span class="xs bad-t">il manque ${fmt(cost - S.kamas)} k</span>`}`;
 }
 /* 2.1 (14A) : points de Maîtrise qui attendent d'être placés, tous héros confondus */
-function mtFreeBadge() { if (!S || !E.mtOn) return ""; let n = 0; S.chars.forEach((c) => { if (E.mtOn(c) && c.mt) n += Math.max(0, E.mtPts(c) - (E.mtGot(c).size - 1)); }); return n ? `<span class="navcnt" title="Points de Maîtrise à placer">${n > 999 ? "999+" : n}</span>` : ""; }
+const mtLeft = (c) => (window.MAITUI ? window.MAITUI.left(c) : 0); // points de Maîtrise à placer (js/maitrise.js)
+function mtFreeBadge() { if (!S || !E.mtOn) return ""; let n = 0; S.chars.forEach((c) => { n += mtLeft(c); }); return n ? `<span class="navcnt" title="Points de Maîtrise à placer">${n > 999 ? "999+" : n}</span>` : ""; }
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
@@ -6052,15 +6056,15 @@ function classesBoardHtml() {
     <div class="c19g">${CLASS_ORDER.map((id) => { const C = CLASSES[id]; const ok = !!done[id]; const l = best[id];
       return `<span class="c19c ${ok ? "done" : l ? "" : "no"}" style="--cc:${C.color}" data-tip="${h(`${C.name} : ${ok ? "niveau 200 atteint" : l ? `meilleur héros niveau ${l}` : "aucun héros de cette classe"}`)}">${ok ? `<i class="ck">✓</i>` : ""}${im(symImg(id), "", C.name)}<span class="c19nm">${C.name}</span><b class="num">${ok && !(l >= E.MAX_LVL) ? "200" : l || "—"}</b></span>`; }).join("")}</div></div>`;
 }
-/* une ligne de la liste : tête, nom, niveau, activité, XP ; ▲ vert = mieux dans le sac, pastille orange = points à répartir */
+/* une ligne de la liste : tête, nom, niveau, activité, XP ; ▲ vert = mieux dans le sac, pastille orange = points à répartir, violette = points de Maîtrise à placer */
 function teamRow(x, al) {
-  const z = teamZone(x); const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0;
+  const z = teamZone(x); const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0; const m = mtLeft(x);
   const st = z === "f" ? ["hunt", "Première ligne"] : z === "b" ? ["hunt", "Arrière"] : z === "job" ? ["job", "Récolte · " + x.job.res] : z === "train" ? ["train", "Entraînement"] : z === "atelier" ? ["train", "Atelier"] : z === "mis" ? ["train", "En expédition"] : ["rest", "Repos"];
   const ico = { hunt: IC("combat"), job: IC("pioche"), train: IC("havre"), rest: "" }[st[0]];
-  const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl} · ${st[1]}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}`;
+  const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl} · ${st[1]}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}${m ? ` · ${fmt(m)} point${m > 1 ? "s" : ""} de Maîtrise à placer` : ""}`;
   return `<button class="trow ${x.id === ui.cid ? "on" : ""} ${["f", "b"].includes(z) ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === ui.cid}" data-tip="${h(tip)}" style="--cc:${CLASSES[x.cls].color}">
     ${head(x)}<span class="tr-tx"><span class="tr-nm"><b class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""}</b>${mainHero() === x ? `<span class="tr-star" title="Héros principal">★</span>` : ""}<span class="grow"></span><span class="tr-lv num">${x.lvl}</span></span>
-    <span class="tr-sub"><span class="xs muted tr-sl">${h(CLASSES[x.cls].name)} · <span class="tr-st ${st[0]}">${ico}${h(st[1])}</span></span><span class="grow"></span>${g ? `<i class="tr-g" title="Meilleur objet dans le sac">▲</i>` : ""}${p ? `<i class="tr-p num" title="Points à répartir">${x.pts}</i>` : ""}</span>
+    <span class="tr-sub"><span class="xs muted tr-sl">${h(CLASSES[x.cls].name)} · <span class="tr-st ${st[0]}">${ico}${h(st[1])}</span></span><span class="grow"></span>${g ? `<i class="tr-g" title="Meilleur objet dans le sac">▲</i>` : ""}${p ? `<i class="tr-p num" title="Points à répartir">${x.pts}</i>` : ""}${m ? `<i class="tr-m num" title="Points de Maîtrise à placer">✦ ${m > 999 ? "999+" : fmt(m)}</i>` : ""}</span>
     <span class="tr-xp"><i style="width:${pct(x.xp, E.heroXpNeed(x))}%"></i></span></span></button>`;
 }
 function teamListHtml() {
@@ -6070,7 +6074,7 @@ function teamListHtml() {
   const price = recruitPrice();
   return `${grp("Première ligne", `${front.length} / ${E.frontMax(team.length)}`, front)}${grp(team.length > 1 ? "Arrière" : "Équipe", `${back.length}`, back)}${grp("Réserve", `${res.length} · hors combat`, res)}
     ${S.chars.length < E.HERO_MAX ? `<button class="tadd ${canRecruit() ? "ok" : ""}" data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span class="tadd-t"><b>Recruter un héros</b><span class="xs muted">${S.chars.length} / ${E.HERO_MAX} héros</span></span><span class="grow"></span><span class="coin"></span><b class="num">${price ? fmt(price) : "gratuit"}</b></button>` : ""}
-    <div class="tleg xs muted"><span><i class="tr-g">▲</i> mieux dans le sac</span><span><i class="tr-p">5</i> points à répartir</span></div>`;
+    <div class="tleg xs muted"><span><i class="tr-g">▲</i> mieux dans le sac</span><span><i class="tr-p">5</i> points à répartir</span>${S.chars.some((x) => mtLeft(x)) ? `<span><i class="tr-m">✦</i> points de Maîtrise à placer</span>` : ""}</div>`;
 }
 /* portrait du haut de la fiche : bannière teintée de la couleur de classe, symbole officiel en filigrane */
 /* 0.1.50.1 : renommer le héros depuis sa fiche (crayon doré à côté du nom). Premier changement gratuit, ensuite E.RENAME_COST kamas. */
