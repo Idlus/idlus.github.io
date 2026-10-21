@@ -12,6 +12,44 @@ const S0 = E.newState("Fm", "iop"); S0.fmJob = { lvl: 37, xp: 10 }; delete S0.fm
 const J0 = E.fmJobs(S0); for (const j in E.FM_JOBS) assert.strictEqual(J0[j].lvl, 37, "niveau repris pour " + j);
 assert.ok(J0.old && E.fmLearned(S0, "facomage"), "ancien forgemage : métiers ouverts");
 const S = E.newState("Fm2", "iop"); delete S.fmJob; delete S.fmJobs; S.cnt.fm = 0;
+// Cristal : même action depuis le sac et l'établi, stock et protection non cumulable.
+{
+  const s = E.newState("Cristal", "iop");
+  const before = JSON.stringify(s);
+  assert.strictEqual(E.useConsumable(s, "cristal_fm"), "Vous n'en avez plus.");
+  assert.strictEqual(JSON.stringify(s), before, "stock vide : aucun effet");
+  s.cons.cristal_fm = 2;
+  const kamas = s.kamas, runes = JSON.stringify(s.runes);
+  assert.strictEqual(E.useConsumable(s, "cristal_fm"), null);
+  assert.strictEqual(s.cons.cristal_fm, 1);
+  assert.strictEqual(s.fmShield, true);
+  assert.strictEqual(s.kamas, kamas, "activation sans coût en kamas");
+  assert.strictEqual(JSON.stringify(s.runes), runes, "activation sans coût en runes");
+  assert.strictEqual(E.useConsumable(s, "cristal_fm"), "Un Cristal est déjà actif.");
+  assert.strictEqual(s.cons.cristal_fm, 1, "double activation : un seul cristal consommé");
+  const tpl = Object.keys(ITEMS).find((k) => ITEMS[k].slot === "coiffe" && ITEMS[k].stats.vit && ITEMS[k].lvl < 20);
+  const obj = E.rollItem(s, tpl, { radiant: false });
+  obj.stats.vit = ITEMS[tpl].stats.vit[0];
+  assert.ok(E.forgemage(s, obj.uid, ":vit").err, "rune absente");
+  assert.strictEqual(s.fmShield, true, "tentative refusée : cristal toujours actif");
+  s.runes[":vit"] = 5;
+  const info = E.fmInfo(s, obj.uid, ":vit"); assert.ok(info.ok);
+  E.setRng(() => 0); // succès critique : le comportement existant conserve le bouclier
+  assert.strictEqual(E.forgemage(s, obj.uid, ":vit").kind, "sc");
+  assert.strictEqual(s.fmShield, true);
+  const stats = JSON.stringify(obj.stats), well = obj.well || 0;
+  E.setRng(() => 0.999999); // échec critique : le bouclier empêche toute perte
+  assert.strictEqual(E.forgemage(s, obj.uid, ":vit").kind, "ec");
+  assert.strictEqual(JSON.stringify(obj.stats), stats);
+  assert.strictEqual(obj.well || 0, well);
+  assert.strictEqual(s.fmShield, false);
+  const kamasAfterForge = s.kamas, runesAfterForge = JSON.stringify(s.runes);
+  assert.strictEqual(E.useConsumable(s, "cristal_fm"), null);
+  assert.ok(!("cristal_fm" in s.cons), "dernier cristal retiré du stock");
+  assert.strictEqual(s.kamas, kamasAfterForge, "réactivation sans coût en kamas");
+  assert.strictEqual(JSON.stringify(s.runes), runesAfterForge, "réactivation sans coût en runes");
+  E.setRng(() => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; });
+}
 for (const j in E.FM_JOBS) assert.ok(E.fmLearned(S, j), "nouveau joueur : " + j + " ouvert dès le départ (1.0.12.9)");
 
 // 2. Métier de chaque objet

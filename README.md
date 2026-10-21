@@ -9,7 +9,7 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
-## 2.1.32.1 « Ocre terminé »
+## 2.1.32.2 « Ocre terminé »
 
 - Corrige le statut de la quête Ocre après les six paliers, y compris les anciennes parties, sans redonner de récompense (ticket #129, Akileuss). Tests moteur et interface PC/mobile.
 

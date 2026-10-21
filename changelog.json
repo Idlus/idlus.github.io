@@ -1,12 +1,21 @@
 {
-  "version": "2.1.32.1",
+  "version": "2.1.32.2",
   "versions": [
     {
-      "v": "2.1.32.1",
+      "v": "2.1.32.2",
       "name": "Ocre terminé",
       "items": [
         "Héros › Dofus › Collection : une Éternelle moisson terminée disparaît de « À faire maintenant » et sa fiche affiche 100 %, sans palier 7 sur 6 (signalé par Akileuss)",
         "Les parties existantes sont corrigées automatiquement à la consultation. Aucune récompense supplémentaire : les six paliers restent la condition pour terminer la quête"
+      ]
+    },
+    {
+      "v": "2.1.32.1",
+      "name": "Cristal à l’établi",
+      "guide": "forgemagie",
+      "items": [
+        "Forgemagie : utilise un Cristal de Forgemagie directement depuis l’établi, sans retourner dans l’inventaire (suggestion de Ley)",
+        "Le stock et le cristal actif sont affichés ; le bouton est désactivé si tu n’as plus de cristal ou si une protection est déjà active. Les effets et les coûts restent identiques"
       ]
     },
     {

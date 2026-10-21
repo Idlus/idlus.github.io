@@ -21,12 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.32.1";
+const GAME_VERSION = "2.1.32.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "2.1.32.1", name: "Ocre terminé", items: [
+  { v: "2.1.32.2", name: "Ocre terminé", items: [
     "Héros › Dofus › Collection : une Éternelle moisson terminée disparaît de « À faire maintenant » et sa fiche affiche 100 %, sans palier 7 sur 6 (signalé par Akileuss)",
     "Les parties existantes sont corrigées automatiquement à la consultation. Aucune récompense supplémentaire : les six paliers restent la condition pour terminer la quête",
+  ] },
+  { v: "2.1.32.1", name: "Cristal à l’établi", guide: "forgemagie", items: [
+    "Forgemagie : utilise un Cristal de Forgemagie directement depuis l’établi, sans retourner dans l’inventaire (suggestion de Ley)",
+    "Le stock et le cristal actif sont affichés ; le bouton est désactivé si tu n’as plus de cristal ou si une protection est déjà active. Les effets et les coûts restent identiques",
   ] },
   { v: "2.1.32", name: "Ma rotation", guide: "sorts", items: [
     "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
@@ -7691,6 +7695,7 @@ function fmBench(it) {
   const trans = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.startsWith("ta:"));
   const signOk = J.lvl >= E.FM_MAX || E.fmRen(S, job) > 0; // 1.0.25 : un métier qui a renu signe toujours
   const KC = { sc: "g", sn: "y", ec: "r" };
+  const crystals = S.cons.cristal_fm || 0;
   return `<div class="row" style="gap:12px">${itemIcon(it)}<div class="grow"><h2 style="margin:0">${itemName(it)}</h2><div class="small muted">niv. ${T.lvl}${by ? ` · porté par <b>${h(by.name)}</b>` : ""} · <b>${E.FM_JOBS[job].name} niv. ${J.lvl}</b>${it.sig ? ` · signé <b>${h(it.sig)}</b>` : ""}</div></div>
       <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie le poids des prochaines runes qui passent (au lieu de faire baisser une autre caractéristique) et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
     ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
@@ -7698,6 +7703,8 @@ function fmBench(it) {
     ${E.fmRen(S, job) ? `<div class="xs pjrenl">${IC("phenix")} <b>${E.FM_JOBS[job].name} · Renaissance ${E.roman(E.fmRen(S, job))}</b> : ${jobRenFx("fm", E.fmRen(S, job))} (déjà comptés dans les chances des runes)</div>` : ""}
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
     ${window.FORGEUI && !block ? window.FORGEUI.hardNote(it) : ""}
+    <div class="pfl fmcrystal"><div class="pfn">${IC("cristal")}<b>Cristal de Forgemagie</b><span class="small num">Stock : ${fmt(crystals)}</span></div>
+      <div class="row"><button class="btn ${!S.fmShield && crystals > 0 ? "primary" : ""}" data-act="usecons" data-id="cristal_fm" ${S.fmShield || crystals <= 0 ? "disabled" : ""}>${S.fmShield ? "Cristal actif" : "Utiliser un cristal"}</button><span class="xs muted grow" role="status">${S.fmShield ? "Cristal actif : la prochaine forgemagie ne peut rien faire baisser." : crystals > 0 ? "Consomme 1 cristal pour protéger la prochaine forgemagie." : "Aucun cristal en stock."}</span></div></div>
     ${wpFmHtml(it)}
     <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
     ${!block && extra.length && (it.well || 0) > 0 ? `<div class="pfl"><div class="pfn"><b>Ajouter une caractéristique</b><span class="xs muted">payée par le reliquat, jusqu'à ${E.EXO_STAT_W} de poids</span></div><div class="pruns">${extra.slice(0, 8).map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div></div>` : ""}
