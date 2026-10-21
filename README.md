@@ -9,8 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
-## 2.1.35.7 « Un panel par serveur »
+## 2.1.35.8 « Un panel par serveur »
 - Panel Xener séparé entre Classique et Monocompte (`PANEL.register({ srv: "m" })`), épinglé et annonces du salon Monocompte à part (`adm_pin_mono`, `adm_announce_mono`, `announces.srv`), `mono_adm_vue` et `mono_adm_copies` dans `supabase/monocompte.sql` (installation manuelle).
+## 2.1.35.7 « Récolte aux récolteurs »
+- `js/data.js` : les ressources de `GATHER_JOBS` sont retirées des butins de monstres au chargement (17 lignes : Blé, Ortie, Goujon, Bois de Frêne, Fer sur 15 monstres d'Incarnam, Menthe Sauvage sur la Gelée Menthe et le Geloliaine). Test dans `tests/recolte.test.js`.
 
 ## 2.1.35.6 « Vérification plus juste »
 - Bouclier (`js/verify.js`, `V.impossible`) : le plafond de Maîtrise par héros compte 2,25 h de jeu par heure réelle depuis la sortie du Sablier pour les parties au niveau 15+ de la Maîtrise du temps (×2 illimité), et `V.MT_XP_H` passe de 225 à 600 (2 fois lucy8, 21/10). Le Monocompte garde 225 (`V.MT_XP_H_MONO`).

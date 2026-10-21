@@ -33,4 +33,11 @@ for (const lvl of [1, 100, 200]) {
 // XP par heure : la même qu'en 1.0.7.9
 { const { S, c } = make(1, "Blé"); const H = 1; const t = E.gatherPeriod(S, c); E.gatherTick(S, t, { quiet: true });
   const want = (10 + 1) * E.gatherYield(1) * t / E.basePeriod(S, c); assert.ok(Math.abs(S.jobs.paysan.xp - want) < 1e-6, "XP d'un coup = XP des récoltes de l'ancien rythme"); }
+// les ressources des métiers de récolte ne tombent sur aucun monstre (Classique et Monocompte partagent les mêmes monstres)
+{ const D = require("../js/data.js"); const G = new Set(); Object.values(D.GATHER_JOBS).forEach((j) => j.items.forEach(([r]) => G.add(r)));
+  const bad = Object.values(D.MONSTERS).filter((m) => (m.drops || []).some(([r]) => G.has(r))).map((m) => m.name);
+  assert.deepStrictEqual(bad, [], `ressources de récolte sur des monstres : ${bad.join(", ")}`);
+  const S = E.newState("Inc", "iop"); for (let i = 0; i < 200; i++) E.giveRewards(S, ["m970", "m971", "m982", "m4107", "m4108", "m56"].map((key) => ({ key, lvl: 5, name: "x" })), { offline: true });
+  assert.ok(S.res["Viande Intangible"] > 0, "les autres ressources des monstres tombent toujours");
+  assert.ok(![...G].some((r) => S.res[r]), "aucune ressource de récolte après des combats à Incarnam"); }
 console.log("recolte : OK");

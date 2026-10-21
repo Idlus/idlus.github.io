@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -306,12 +306,14 @@ jobs:
           done
       - name: Monocompte, mise à jour (sauvegarde de la base, monocompte.sql puis mono_bureau.sql)
         # 21/10/2026 : panel Monocompte (mono_adm_vue, mono_adm_copies) et séries du Bureau. Relançable sans perte.
-        if: inputs.etape == 'monocompte-maj'
+        # monocompte-panel : monocompte.sql seul (panel), ordre écrit de Mathis « publie et installe le panel ».
+        if: inputs.etape == 'monocompte-maj' || inputs.etape == 'monocompte-panel'
         run: |
           echo "SSHO=$SSHO" >> "$GITHUB_ENV"
           echo '== Sauvegarde complète de la base avant mise à jour'
           bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-mono-maj-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
-          for f in supabase/monocompte.sql supabase/mono_bureau.sql; do
+          L="supabase/monocompte.sql supabase/mono_bureau.sql"; [ "${{ inputs.etape }}" = monocompte-panel ] && L="supabase/monocompte.sql"
+          for f in $L; do
             echo "== $f"
             { echo "set lock_timeout = '3s';"; cat "$f"; } > /tmp/q.sql
             for essai in 1 2 3 4 5 6; do

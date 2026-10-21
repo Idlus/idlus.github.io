@@ -1,14 +1,20 @@
 {
-  "version": "2.1.35.7",
+  "version": "2.1.35.8",
   "versions": [
     {
-      "v": "2.1.35.7",
+      "v": "2.1.35.8",
       "name": "Un panel par serveur",
       "items": [
         "Panel Xener : sélecteur Classique | Monocompte, chaque page n'agit que sur le serveur choisi",
         "Monocompte : vue d'ensemble, testeurs, clés bêta, Bouclier, remise d'une partie, Bureau, chat et annonces à part",
-        "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement",
-        "Bureau des Aventuriers : le chef du groupe peut enchaîner ×1, ×5, ×10 ou jusqu'à 10 combats d'affilée (idée de Bsasuk), avec le cumul du butin et un bouton « Arrêter après ce combat »"
+        "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement"
+      ]
+    },
+    {
+      "v": "2.1.35.7",
+      "name": "Récolte aux récolteurs",
+      "items": [
+        "Les monstres ne donnent plus de ressources de métiers de récolte (Blé, Ortie, Goujon, Bois de Frêne, Fer à Incarnam, Menthe Sauvage de la Gelée Menthe) : on les récolte"
       ]
     },
     {
