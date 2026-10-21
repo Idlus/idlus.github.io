@@ -63,8 +63,8 @@ run(`drop database if exists ${DB}`, URL0); run(`create database ${DB}`, URL0);
     assert.strictEqual(snap(), before, "le schéma public du Classique a changé");
     // contrat avec supabase/mono_social.sql : mono.apres_validation est appelée après chaque partie validée, avec le résumé du serveur
     q(`create table mono.t_apres (id serial, user_id uuid, saison int, resume jsonb);
-       create or replace function mono.apres_validation(user_id uuid, saison int, resume jsonb) returns void language plpgsql security definer set search_path = mono, public
-       as $$ begin insert into mono.t_apres (user_id, saison, resume) values (user_id, saison, resume); end $$;`);
+       create or replace function mono.apres_validation(p_user uuid, p_saison int, p_resume jsonb) returns void language plpgsql security definer set search_path = mono, public
+       as $$ begin insert into mono.t_apres (user_id, saison, resume) values (p_user, p_saison, p_resume); end $$;`);
     q(`insert into auth.users select ('00000000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid from generate_series(1, 9) i;
        insert into profiles (id, pseudo) select id, 'Joueur' || substr(id::text, 35) from auth.users;
        insert into admins values ('${U(9)}');`);

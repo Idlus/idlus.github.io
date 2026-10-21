@@ -7,7 +7,8 @@
    - Présence : en ligne, mode (Classique ou Monocompte), niveau et « cherche un groupe » ; un battement par minute.
    - Inviter dans un groupe (Monocompte) ; rendez-vous du Bureau prévu (bouton inactif) ; message privé = MP du chat.
    - Renfort (Monocompte) : la copie validée du héros d'un ami remplace le mercenaire dans un donjon solo
-     (supabase/mono_social.sql : mono_renfort_publier, mono_renforts, mono_renfort_utiliser ; aucun gain pour l'ami).
+     (supabase/mono_social.sql : mono_renfort_publier, mono_renforts, mono_renfort_prendre ; copie construite par le serveur
+     depuis la partie validée de l'ami ; aucun gain pour l'ami).
    - Couronne du Temps : petite couronne à côté du pseudo du porteur, partout (couronne_temps).
    Hors connexion : la page explique qu'il faut le serveur, rien n'est appelé.
    ========================================================================== */
@@ -53,14 +54,21 @@
     if (Date.now() - A.lastPres > 55000) { A.lastPres = Date.now(); await rpc("amis_presence", { p_mode: monoLive() ? "mo" : "cl", p_lvl: c.lvl || 1, p_cls: c.cls, p_cherche: null }); }
     if (monoLive() && E.monoSnap && !(E.monoFer && E.monoFer(s)) && Date.now() - A.lastSnap > 600000) {
       A.lastSnap = Date.now();
-      try { const snap = Object.assign(E.monoSnap(s, c), { n: c.name, sex: c.sex, head: c.head || 0 }); delete snap.id; await rpc("mono_renfort_publier", { p_snap: snap }); } catch (e) {}
+      // prêter son héros : le serveur copie celui de la partie validée (seul l'identifiant du héros part d'ici)
+      try { await rpc("mono_renfort_publier", { p_hero: c.id }); } catch (e) {}
     }
     if (Date.now() - A.at > 60000) refresh();
   }
   setInterval(beat, 20000);
   setTimeout(() => { beat(); refresh(); }, 4000);
-  // E.monoRenfortUsed : appelé par le moteur quand un renfort entre en donjon (compteur cosmétique de l'ami)
-  E.monoRenfortUsed = (u) => { rpc("mono_renfort_utiliser", { p_ami: u }); };
+  /* prendre le renfort d'un ami pour un donjon solo : le serveur vérifie (amis, blocage, serment, niveau, ni mercenaire ni
+     groupe) et rend SA copie, celle que le combat utilise (le Bouclier refuse une partie avec une autre copie) */
+  async function prendre(u, did, stasis) {
+    const r = await rpc("mono_renfort_prendre", { p_ami: u, p_did: did, p_stasis: stasis || 1, p_merc: null, p_groupe: null });
+    if (r.err) return { err: String(r.err) }; const d = r.data || {}; if (d.err) return { err: d.err };
+    if (!d.snap) return { err: "Ce renfort n'est pas disponible." };
+    return { u: d.u || u, p: d.p || "", snap: d.snap };
+  }
   if (E.MONO && E.MONO.renfort) E.MONO.renfort.get = (u) => { const r = A.renf && (A.renf.amis || []).find((x) => x.u === u); return r ? { u: r.u, p: r.p, snap: r.snap } : null; };
 
   /* ---------- boutons posés ailleurs (chat, classements, guilde) ---------- */
@@ -129,5 +137,5 @@
   // message privé : celui du chat (MP), qui refuse déjà un joueur bloqué
   function openPm(u, p) { const C = window.CHAT && window.CHAT.state; if (!C) { X().toast("Le chat n'est pas disponible."); return; } C.names[u] = p; C.tab = "p"; C.peer = u; C.open = true; window.CHAT.repaint(); }
 
-  window.AMIS = { crown, menuBtn, addBtn, refresh, get state() { return A; }, renforts: () => (A.renf && A.renf.amis) || [], couronne: () => A.cour, monoLive };
+  window.AMIS = { crown, menuBtn, addBtn, refresh, get state() { return A; }, renforts: () => (A.renf && A.renf.amis) || [], prendre, couronne: () => A.cour, monoLive };
 })();

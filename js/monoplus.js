@@ -7,8 +7,8 @@
        S.mono.serment = { t: "fer" | "ord", at, lvl, rompu?: date de l'abandon }
        S.mono.aide    = { sab: secondes de jeu accélérées par le Sablier, merc: donjons avec un mercenaire, ren: donjons avec un renfort }
      Le serveur retire du classement de fer une partie dont le résumé montre une aide (supabase/mono_social.sql).
-   - Renfort d'un ami (décision 4) : la copie du héros d'un ami Monocompte (photo publiée depuis sa partie validée)
-     prend la place du mercenaire dans un donjon solo : l'un ou l'autre, jamais les deux ; aucun gain pour l'ami
+   - Renfort d'un ami (décision 4) : la copie du héros d'un ami Monocompte, construite par le serveur depuis sa partie
+     validée (Bouclier) et rendue par mono_renfort_prendre au moment d'entrer, prend la place du mercenaire dans un donjon solo : l'un ou l'autre, jamais les deux ; aucun gain pour l'ami
      (un compteur cosmétique sur le serveur) ; le mercenaire reste disponible.
    - Mutation de la semaine (décision 5) : une règle par semaine sur les donjons de stasis 7 et plus du Monocompte,
      sans puissance en plus (chaque règle a sa contrepartie, réglée par tools/sim_mutations.js : ± 0,5 stasis) ;
@@ -75,12 +75,13 @@
   };
 
   /* ======================= Mercenaire et renfort d'un ami ======================= */
-  M.renfort = { ecart: 10, get: null }; // get(u) : le renfort publié par un ami (js/amis.js) // la copie d'un ami : son héros au plus 10 niveaux au-dessus du tien
+  M.renfort = { ecart: 10, get: null }; // get(u) : le renfort prêté par un ami (js/amis.js, pour l'affichage) ; la copie d'un ami : son héros au plus 10 niveaux au-dessus du tien
   const enter0 = E.monoEnter;
-  /* mercCls : classe du mercenaire, ou { ami: { u, p, snap } } pour le renfort d'un ami (l'un ou l'autre) */
+  /* mercCls : classe du mercenaire, ou { ami: { u, p, snap } } pour le renfort d'un ami (l'un ou l'autre ; snap = la copie
+     rendue par le serveur, mono_renfort_prendre) */
   E.monoEnter = function (S, did, stasis, mercCls) {
     if (!mono(S)) return enter0.apply(this, arguments);
-    if (typeof mercCls === "string" && mercCls.startsWith("ami:")) { const R = M.renfort.get ? M.renfort.get(mercCls.slice(4)) : null; return E.monoEnterRenfort(S, did, stasis, R); } // choix fait dans la boîte du donjon (js/amis.js tient les renforts)
+    if (typeof mercCls === "string" && mercCls.startsWith("ami:")) return "Le renfort d'un ami se prend auprès du serveur : reconnecte-toi au Monocompte."; // le jeu passe par window.AMIS.prendre (copie rendue par le serveur), puis { ami }
     if (mercCls && typeof mercCls === "object") return E.monoEnterRenfort(S, did, stasis, mercCls.ami);
     if (mercCls && E.monoFer(S)) return "Serment de fer : pas de mercenaire pendant la saison.";
     const r = enter0.apply(this, arguments);
@@ -110,7 +111,6 @@
     S.mono.merc = c.id; E.monoAide(S).ren++;
     S.mono.renN = (S.mono.renN || 0) + 1;
     if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ce donjon (renfort, sans gain pour lui).`, "info");
-    if (E.monoRenfortUsed) try { E.monoRenfortUsed(R.u); } catch (e) {} // compteur cosmétique du serveur (js/amis.js)
     return null;
   };
 
@@ -145,6 +145,7 @@
   E.monoMutNext = (S, n = 2) => { const w = E.monoMutWeek(S), out = []; for (let k = 1; k <= n; k++) if (w + k <= 8) out.push({ w: w + k, m: E.monoMutAt(S.mono.s || 1, w + k) }); return out; };
   /* combat de groupe joué à part (même combat chez chacun) : la mutation de la partie chargée, ou celle donnée */
   if (E.monoGroupSetup) { const gs0 = E.monoGroupSetup; E.monoGroupSetup = function (snaps, did, stasis, mut) {
+    if (Array.isArray(snaps) && snaps.some((h) => h && h.rf)) return { err: "Pas de renfort d'un ami dans un groupe de joueurs : il se prend en donjon solo." };
     const G = gs0.apply(this, arguments); if (G && G.S2 && G.S2.dungeon) { const id = (stasis || 1) >= MU.from ? (mut !== undefined ? mut : MU.force !== undefined ? MU.force : MU.cur) : null; G.S2.dungeon.mut = id && MU.byId[id] ? id : null; }
     return G; }; }
   /* la mutation d'un combat de donjon (lue à chaque combat : une montée de stasis qui passe la stasis 7 la prend en route) */
@@ -188,11 +189,12 @@
   };
   E.monoMutPay = (S) => {
     const X = E.monoMutDefi(S); if (!X || X.paid || X.n < X.need || !E.tfState) return 0;
-    const T = E.tfState(S); const q = Math.max(0, E.tfQuota(S) - E.tfActTotal(S)); const g = Math.min(X.gain, q);
+    const q = Math.max(0, E.tfQuota(S) - E.tfActTotal(S)); const g = Math.min(X.gain, q);
     S.mono.mutd.paid = E.now();
     if (g <= 0) return 0;
-    E.tfPost(S, g, "act", `act:${X.src}`, `Défi de groupe de la semaine : ${X.m.c}`);
-    if (E.tfSrvOf(S) || (E.tfSrv && E.tfSrv.live(S))) { (T.q = T.q || []).push({ t: "act", k: MU.defi.kind, n: g, src: X.src }); try { if (E.tfSrv && E.tfSrv.live(S)) E.tfSrv.flush(S); } catch (e) {} }
+    // ligne « act:<jour>:mut » du registre provisoire : le serveur en fait des bons de butin à la partie validée suivante
+    // (borne de 20 par semaine de saison, supabase/mono_social.sql), comme les autres gains d'activité (6a)
+    if (!E.tfPost(S, g, "act", `act:${E.monoDay(S)}:${MU.defi.kind}`, `Défi de groupe de la semaine : ${X.m.c}`)) return 0;
     if (E.note) E.note(S, `Défi de groupe de la semaine « ${X.m.c} » réussi : +${g} Éclats du Temps.`, "rare");
     return g;
   };

@@ -4,7 +4,7 @@
 //   puis vérification tout de suite ; la réponse dit si la partie est devenue la « dernière partie validée ».
 // - { verif: 1 } : vérifie la dernière partie envoyée.
 // Vérification (js/verify_mono.js, V.mono.verifier) : impossible (un héros, Dofus, spécialités, plafonds de la date de saison,
-// objets numérotés, copie du registre des Éclats), puis gains depuis la dernière partie validée (rythmes du Classique, partie
+// objets numérotés, copie du registre des Éclats, renfort d'un ami = copie rendue par le serveur), puis gains depuis la dernière partie validée (rythmes du Classique, partie
 // reculée, défis). Acceptée : mono.parties_ok (résumé calculé ici), bons de butin, défis payés, mono.apres_validation.
 // Refusée : notée pour le panel de Mathis (mono_adm_bouclier), la partie validée ne change pas.
 // La base ne laisse appeler les fonctions mono_srv_* qu'au rôle service_role (cette fonction).
@@ -57,7 +57,7 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
   const s = st.saison || {};
   const r = V.mono.verifier(E, st.partie.data, {
     prev, at: st.partie.ms, admin: !!st.admin, accept: !!(ok && ok.accept), ops: st.ops || [], reg: st.reg,
-    ctx: { debut: s.debut, date: s.date, objets: st.objets || {}, sortis: st.sortis || [] },
+    ctx: { debut: s.debut, date: s.date, objets: st.objets || {}, sortis: st.sortis || [], renforts: st.renforts || [] }, // renforts : copies rendues par mono_renfort_prendre
   });
   E.setClock(null); // la vérification a réglé l'horloge du moteur sur la date de saison
   if (!r.ok) {

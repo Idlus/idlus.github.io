@@ -30,6 +30,8 @@
   VM.SERVER_DEFIS = ["d6", "d12"]; // comptés par le serveur seulement (HdV de saison, groupes en direct)
 
   const hero = (S) => (S.chars || []).find((c) => !c.merc) || null;
+  // activités payées en Éclats : celles du jour (TF.ACT) et celles de la semaine (TF.ACTW : défi de la mutation)
+  const actOf = (E, k) => { const TF = E.MONO.tf || {}; return (TF.ACT || {})[k] || (TF.ACTW || {})[k] || null; };
   const days = (ctx) => Math.max(0, ((ctx.date || 0) - (ctx.debut || 0)) / DAY);
   const n0 = (x) => Math.max(0, Math.floor(+x || 0));
   VM.days = days;
@@ -65,9 +67,23 @@
   /* Gains d'activité de la partie, par jour et par activité (le serveur en fait ses bons de butin, js/saison1.js : lignes act:jour:activité) */
   VM.acts = (E, S) => (E.tfLedger ? E.tfLedger(S) : []).map((l) => { const m = /^act:(\d+):(\w+)$/.exec(l.src || ""); return m && { j: +m[1], k: m[2], n: n0(l.n) }; }).filter((x) => x && x.j >= 1 && x.j <= 56 && x.n > 0);
 
+  /* Copie du héros pour le renfort d'un ami (supabase/mono_social.sql : mono.renforts) : calculée ici, sur la partie validée,
+     jamais par le navigateur ; hid = identifiant du héros, rf = copie de renfort (refusée dans les groupes de joueurs) */
+  VM.renfort = (E, S) => {
+    const c = hero(S); if (!c || !E.monoSnap) return null;
+    try { const o = JSON.parse(JSON.stringify(Object.assign(E.monoSnap(S, c), { n: String(c.name || "").slice(0, 20), sex: c.sex, head: c.head || 0, hid: c.id, merc: 0, rf: 1 })));
+      delete o.id; return o; } catch (e) { return null; }
+  };
+  /* même valeur JSON (clés dans n'importe quel ordre) : la copie gardée dans la partie et celle rendue par le serveur */
+  const canon = (x) => (Array.isArray(x) ? `[${x.map(canon).join(",")}]` : x && typeof x === "object" ? `{${Object.keys(x).filter((k) => x[k] !== undefined).sort().map((k) => JSON.stringify(k) + ":" + canon(x[k])).join(",")}}` : JSON.stringify(x === undefined ? null : x));
+  VM.same = (a, b) => canon(a) === canon(b);
+  /* gbest { donjon: { stasis: { t, at } } } → lignes { k, ms, at } du classement de donjon de groupe (mono.grp_rows) */
+  const grpRows = (G) => { const out = []; if (G && typeof G === "object") for (const d in G) { const R = G[d]; if (R && typeof R === "object") for (const k in R) { const x = R[k]; if (x && +x.t > 0) out.push({ k: +k, ms: Math.round(+x.t), at: x.at || null, d }); } } return out.slice(0, 200); };
+
   /* Résumé calculé par le serveur (contrat avec les classements de saison : mono.parties_ok.resume) */
   VM.resume = (E, S, ctx) => VM.withClock(E, S, ctx, () => {
     const c = hero(S) || {}; const TF = E.MONO.tf || {};
+    const SR = S.mono && S.mono.serment, A = (S.mono && S.mono.aide) || {};
     const Q = E.dofusQuest && E.DOFUS && E.DOFUS.phenix ? E.dofusQuest(S, "phenix") : { step: 0, done: 0 };
     const defis = {}, ok = {};
     (TF.DEFIS || []).forEach((x) => { if (VM.SERVER_DEFIS.includes(x.id)) return; const p = E.tfProgress(S, x); defis[x.id] = p; const t = x.need.filter((v) => p >= v).length; if (t) ok[x.id] = t; });
@@ -75,7 +91,10 @@
       niveau: c.lvl || 1, classe: c.cls || null, nom: String(c.name || "").slice(0, 20), xp: c.lvl ? xpTot(E, c) : 0,
       phenix: { etape: n0(Q.step), fini: !!Q.done, renaissances: E.phxReborn ? E.phxReborn(S) : 0, stade: E.phxStage ? E.phxStage(S) : 0 },
       groupe: (S.mono && S.mono.gbest && typeof S.mono.gbest === "object") ? S.mono.gbest : {}, // { donjon: { stasis: { t, at } } } (groupes en direct)
-      serment: (S.mono && (S.mono.serment || S.mono.fer)) || null,
+      grp: grpRows(S.mono && S.mono.gbest),
+      serment: SR && typeof SR === "object" ? (SR.t === "fer" || SR.t === "ord" ? SR.t : null) : (S.mono && (S.mono.serment || S.mono.fer)) || null, // « fer » ou « ord » (js/monoplus.js)
+      aide: { sab: n0(A.sab), merc: n0(A.merc), ren: n0(A.ren) }, // Sablier, mercenaire, renfort : le serment de fer sans aide
+      renfort: VM.renfort(E, S),
       camp: (S.align && S.align.side) || null, rang: S.align && E.alignRankIdx ? E.alignRankIdx(S) : 0, honneur: S.align ? Math.max(0, Math.round(+S.align.hon || 0)) : 0,
       pass: E.bpTier ? E.bpTier(S) : 0, defis, defis_ok: ok, eternel: !!(S.mono && S.mono.eternel),
     };
@@ -91,6 +110,10 @@
       const solo = (S.chars || []).filter((c) => !c.merc), mercs = (S.chars || []).filter((c) => c.merc);
       if (solo.length !== 1) return `${solo.length} héros dans la partie (un seul par saison)`;
       if (mercs.length > 1 || (mercs.length && !S.dungeon)) return "mercenaire en dehors d'un donjon";
+      // renfort d'un ami : seulement une copie rendue par le serveur à ce compte (mono_renfort_prendre), jamais une copie du jeu
+      for (const m of mercs) if (m.renfort || m.snap) {
+        const ok = m.renfort && Array.isArray(ctx.renforts) && ctx.renforts.some((r) => r && r.u === m.renfort.u && VM.same(r.snap, m.snap));
+        if (!ok) return "renfort d'un ami qui ne vient pas du serveur"; }
       const c = solo[0], nm = String(c.name || "le héros").slice(0, 20);
       // 3 Dofus portés au plus, sur les emplacements du Monocompte
       const D = root.DATA || E.DATA || {}; const ITEMS = D.ITEMS || {};
@@ -150,15 +173,14 @@
     if (!R) { // partie jamais en ligne : son registre provisoire ne contient que des gains possibles (le serveur en fera ses bons)
       const TF = E.MONO.tf || {}; let act = 0;
       for (const l of T.led || []) { const n = +l.n || 0; let m;
-        if (l.o === "act" && (m = /^act:(\d+):(\w+)$/.exec(l.src || "")) && TF.ACT[m[2]] && n > 0 && n <= TF.ACT[m[2]].max) { act += n; continue; }
+        if (l.o === "act" && (m = /^act:(\d+):(\w+)$/.exec(l.src || "")) && actOf(E, m[2]) && n > 0 && n <= actOf(E, m[2]).max) { act += n; continue; }
         if (l.o === "defi" && (m = /^defi:(d\d+):([0-2])$/.exec(l.src || "")) && E.tfDefi(m[1]) && n === TF.REW[E.tfDefi(m[1]).c][+m[2]]) continue;
         if (l.o === "achat" && n < 0) continue;
         return `registre provisoire des Éclats du Temps illisible (${String(l.src || "").slice(0, 30)} : ${n})`; }
       if (act > (TF.cap || 800)) return `${act} Éclats d'activité dans le registre provisoire (au plus ${TF.cap || 800})`;
     }
-    const ACT = (E.MONO.tf || {}).ACT || {};
     for (const l of T.led || []) { const m = /^act:(\d+):(\w+)$/.exec(l.src || ""); if (!m) continue;
-      if (!ACT[m[2]] || (+l.n || 0) > ACT[m[2]].max || +m[1] < 1 || +m[1] > 56) return `Éclats d'activité impossibles (${l.src} : ${l.n})`; }
+      if (!actOf(E, m[2]) || (+l.n || 0) > actOf(E, m[2]).max || +m[1] < 1 || +m[1] > 56) return `Éclats d'activité impossibles (${l.src} : ${l.n})`; }
     if (sac > Math.max(0, E.tfBalance(S))) return `Éclats du Temps : ${sac} dans le sac pour ${E.tfBalance(S)} au registre`;
     return null;
   };

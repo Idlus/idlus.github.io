@@ -10,6 +10,7 @@ require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/alignement.js"); require("../js/wboss.js"); require("../js/defi.js"); require("../js/koli.js");
 require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/mono.js"); require("../js/monopass.js"); require("../js/monodofus.js"); require("../js/vente.js");
 require("../js/saison1.js"); require("../js/honneur.js"); require("../js/monoalign.js"); require("../js/monoplus.js");
+const VM = require("../js/verify_mono.js"); // Bouclier Monocompte : copie du héros pour le renfort, renfort vérifié
 const D = require("../js/data.js");
 
 let seed = 77;
@@ -60,21 +61,33 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   const snap = E.monoSnap(F, F.chars[0]); assert(E.monoSnapOk(snap));
   const S = mono(55); S.kamas = 5e5; const k0 = S.kamas;
   const R = { u: "00000000-0000-0000-0000-000000000002", p: "Ombrelune", snap };
-  let used = null; E.monoRenfortUsed = (u) => (used = u);
   const did = dj(40);
   assert.strictEqual(enter(S, did, 1, { ami: R }), null);
   const rc = S.chars.find((c) => c.merc); assert(rc && rc.renfort && rc.renfort.p === "Ombrelune" && rc.snap, "renfort dans l'équipe");
   assert.strictEqual(S.chars.filter((c) => c.merc).length, 1, "un seul : pas de mercenaire en plus");
-  assert.strictEqual(S.kamas, k0, "le renfort ne coûte rien"); assert.strictEqual(used, R.u, "compteur cosmétique du serveur appelé");
+  assert.strictEqual(S.kamas, k0, "le renfort ne coûte rien");
   assert.strictEqual(E.monoPlayers(S, E.team(S)), 1.5, "compte pour un demi-joueur, comme le mercenaire");
   const xp0 = rc.xp || 0; finish(S);
   assert(!S.chars.some((c) => c.merc), "le renfort repart à la fin du donjon"); assert.strictEqual(rc.xp || 0, xp0, "aucun gain pour la copie");
   assert.strictEqual(E.monoAide(S).ren, 1, "renfort compté dans les aides");
+  // copie construite par le serveur (Bouclier, résumé de la partie validée) : jamais d'identifiant de partie, marquée « rf »
+  const SV = VM.renfort(E, F); assert(E.monoSnapOk(SV) && SV.rf === 1 && SV.hid === F.chars[0].id && SV.id === undefined && SV.n === "Ami", "copie du serveur");
+  assert.strictEqual(VM.resume(E, F, {}).renfort.cls, F.chars[0].cls, "la copie est dans le résumé de la partie validée");
+  assert.match(E.monoGroupSetup([E.monoSnap(S, S.chars[0]), SV], did, 1).err, /Pas de renfort/, "renfort en groupe : refusé");
+  // Bouclier : un renfort dans la partie doit être une copie rendue par le serveur à ce compte (mono_renfort_prendre)
+  { const B = mono(55); B.kamas = 5e5; const RS = { u: R.u, p: "Ombrelune", snap: SV }; assert.strictEqual(enter(B, did, 1, { ami: RS }), null);
+    const ctx = { debut: now - 2 * DAY, date: now };
+    const imp = (c) => VM.withClock(E, B, c, () => null) || VM.impossible(E, B, c, +B.nextUid || 0);
+    assert.strictEqual(imp(Object.assign({ renforts: [{ u: R.u, snap: JSON.parse(JSON.stringify(SV)) }] }, ctx)), null, "copie du serveur : acceptée");
+    assert.strictEqual(imp(Object.assign({ renforts: [] }, ctx)), "renfort d'un ami qui ne vient pas du serveur", "aucune copie rendue : refusé");
+    assert.strictEqual(imp(Object.assign({ renforts: [{ u: "autre", snap: SV }] }, ctx)), "renfort d'un ami qui ne vient pas du serveur", "copie d'un autre ami : refusé");
+    const rc2 = B.chars.find((c) => c.merc); rc2.snap.st.hpMax *= 10; // copie forgée dans la partie
+    assert.strictEqual(imp(Object.assign({ renforts: [{ u: R.u, snap: SV }] }, ctx)), "renfort d'un ami qui ne vient pas du serveur", "copie forgée : refusé");
+    E.setClock(() => now); } // le Bouclier remet l'horloge du moteur à zéro après sa vérification
   // trop fort, photo illisible, sous serment
   assert.match(enter(mono(30), did, 1, { ami: R }), /trop fort/);
   assert.match(enter(mono(60), did, 1, { ami: { u: "x", snap: { cls: "??" } } }), /pas disponible/);
   const T = mono(10); E.monoSwear(T, "fer"); assert.match(enter(T, dj(1), 1, { ami: Object.assign({}, R, { snap: Object.assign({}, snap, { lvl: 10 }) }) }), /pas de renfort/);
-  E.monoRenfortUsed = null;
 }
 
 // 3. Mutation de la semaine : rotation, semaines suivantes, stasis 7 et plus seulement, jamais au Classique
@@ -124,8 +137,8 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   E.emit(S, "dungeon", { id: did, stasis: 6, group: true }); E.emit(S, "dungeon", { id: did, stasis: 9 }); // stasis 6, ou seul : pas compté
   assert.strictEqual(E.monoMutDefi(S).n, 4); const b0 = E.tfBalance(S);
   E.emit(S, "dungeon", { id: did, stasis: 8, group: true, with: ["Ombrelune"] });
-  assert(E.monoMutDefi(S).paid > 0, "défi réussi"); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:s1-w1-mut").reduce((a, l) => a + l.n, 0), 20, "20 Éclats d'activité");
-  const b1 = E.tfBalance(S); E.emit(S, "dungeon", { id: did, stasis: 8, group: true }); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:s1-w1-mut").reduce((a, l) => a + l.n, 0), 20, "payé une seule fois");
+  assert(E.monoMutDefi(S).paid > 0, "défi réussi"); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "20 Éclats d'activité");
+  const b1 = E.tfBalance(S); E.emit(S, "dungeon", { id: did, stasis: 8, group: true }); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "payé une seule fois");
   assert(b1 - b0 >= 20); assert(E.tfActTotal(S) <= E.tfQuota(S), "dans le quota");
   // quota déjà rempli : rien de plus (la règle des 800 tient)
   const T = mono(150); now = E.monoT0(T) + 3600000; E.tfPost(T, 100, "act", "act:plein", "test");
@@ -134,7 +147,10 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   // serveur : le gain part au registre (activité « mut », source unique de la semaine)
   const V = mono(150); now = E.monoT0(V) + 3600000; const live0 = E.tfSrv; let flushed = 0; E.tfSrv = { live: () => true, flush: () => flushed++ };
   for (let i = 0; i < 5; i++) E.emit(V, "dungeon", { id: did, stasis: 7, group: true });
-  assert.deepStrictEqual(E.tfState(V).q.filter((o) => o.k === "mut"), [{ t: "act", k: "mut", n: 20, src: "s1-w1-mut" }]); assert(flushed > 0); E.tfSrv = live0;
+  // 6a : rien dans la file : la ligne « act:<jour>:mut » du registre provisoire devient des bons de butin à la partie validée
+  assert.deepStrictEqual((E.tfState(V).q || []).filter((o) => o.k === "mut"), []); E.tfSrv = live0; void flushed;
+  assert.strictEqual(E.tfLedger(V).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "ligne du jour pour le serveur");
+  assert.deepStrictEqual(VM.acts(E, V).filter((a) => a.k === "mut"), [{ j: 1, k: "mut", n: 20 }], "le Bouclier en fait des bons (activité mut)");
   assert.strictEqual(S.mono.grpWith.Ombrelune, 5, "groupe principal suivi");
 }
 

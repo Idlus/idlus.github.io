@@ -163,7 +163,7 @@
   function pendLine() { return season() && E.monoOathPending(S()) ? `<div class="smallbox mp-oathl"><span><b>Début de saison :</b> choisis ton serment (ordinaire ou de fer) avant de dépasser le niveau ${E.MONO.serment.lvlMax}.</span><button class="btn sm" data-act="nav" data-v="serment">Choisir</button></div>` : ""; }
   function dgBox(fer) {
     if (fer) return `${mutLine()}<div class="mercbox mp-ferbox"><b>Serment de fer</b><span class="xs">Un seul héros, aucune aide : ni mercenaire, ni renfort d'un ami, ni Sablier.</span><button class="btn sm ghost" data-act="nav" data-v="serment">Voir le serment</button></div>`;
-    const u = UI().mercCls.slice(4); const R = (AM() && AM().renforts().find((x) => x.u === u)) || null; const err = R ? E.monoRenfortErr(S(), { u: R.u, p: R.p, snap: R.snap }) : "Ce renfort n'est plus disponible.";
+    const u = UI().mercCls.slice(4); const R = (AM() && AM().renforts().find((x) => x.u === u)) || null; const err = R ? R.err || E.monoRenfortErr(S(), { u: R.u, p: R.p, snap: R.snap }) : "Ce renfort n'est plus disponible.";
     return `${mutLine()}<div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Renfort d'un ami</b><span class="xs muted">à la place du mercenaire · sans gain pour ton ami</span></div>
       ${R ? `<div class="mp-lr sm">${X().cmed(R.cls, R.lvl)}<div class="mp-fi"><b>${h(R.p)}</b><span class="xs muted">${h((D.CLASSES[R.cls] || {}).name || "")} niveau ${R.lvl}, copie de sa partie validée</span></div></div>` : ""}
       ${err ? `<span class="xs" style="color:var(--danger)">${h(err)}</span>` : `<span class="xs muted">Il prend ta part de demi-joueur, ne prend ni XP ni butin, et repart à la fin du donjon. Ton ami ne gagne rien, seulement un compteur.</span>`}
@@ -173,7 +173,7 @@
     if (!season() || E.monoFer(S())) return pendLine();
     const L = AM() ? AM().renforts() : []; if (!srvOn()) return pendLine();
     return `${pendLine()}<div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Renfort d'un ami</b><span class="xs muted">la copie de son héros à la place du mercenaire, l'un ou l'autre</span></div>
-      ${L.length ? `<div class="mp-renf">${L.map((R) => { const e = E.monoRenfortErr(S(), { u: R.u, p: R.p, snap: R.snap }); return `<button data-act="mercpick" data-v="ami:${h(R.u)}" ${e ? `disabled data-tip="${h(e)}"` : ""}>${X().cmed(R.cls, R.lvl)}<span>${h(R.p)}</span></button>`; }).join("")}</div>` : `<span class="xs muted">Aucun ami n'a encore publié son héros. Ajoute des amis dans Communauté › Amis.</span>`}</div>`;
+      ${L.length ? `<div class="mp-renf">${L.map((R) => { const e = R.err || E.monoRenfortErr(S(), { u: R.u, p: R.p, snap: R.snap }); return `<button data-act="mercpick" data-v="ami:${h(R.u)}" ${e ? `disabled data-tip="${h(e)}"` : ""}>${X().cmed(R.cls, R.lvl)}<span>${h(R.p)}</span></button>`; }).join("")}</div>` : `<span class="xs muted">Aucun ami n'a encore publié son héros. Ajoute des amis dans Communauté › Amis.</span>`}</div>`;
   }
 
   /* ---------- clics ---------- */

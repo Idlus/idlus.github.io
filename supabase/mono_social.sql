@@ -2,9 +2,15 @@
 -- Idlus — Monocompte : classements de saison, Couronne du Temps, Serment de fer, renfort d'un ami et défi de la mutation
 -- de la semaine (lot 2, points 9, 10 et 11 ; « Saison plus » ; décisions de Mathis du 21/10, maquette validée).
 -- DÉPLOIEMENT MANUEL SEULEMENT, comme supabase/monocompte.sql : jamais dans la liste automatique de
--- .github/workflows/supabase.yml. Ordre : monocompte.sql (avec mono.parties_ok et mono.apres_validation du Bouclier
--- Monocompte), puis amis.sql, puis CE fichier. Relancer monocompte.sql remet mono.apres_validation à vide : relancer
--- ce fichier juste après. Relançable sans danger.
+-- .github/workflows/supabase.yml.
+-- ORDRE DE CHARGEMENT (obligatoire) :
+--   1. supabase/monocompte.sql (mono.parties_ok, Bouclier Monocompte ; crée mono.apres_validation et mono.etat_social
+--      vides seulement s'ils n'existent pas, donc le relancer plus tard n'efface pas ceux d'ici) ;
+--   2. supabase/amis.sql (public.amis, public.ignores lu pour le blocage) ;
+--   3. CE fichier, qui redéfinit mono.apres_validation (classements, Couronne, copie du héros pour le renfort) et
+--      mono.etat_social (renforts pris, lus par le Bouclier). Relançable sans danger.
+-- La version de monocompte.sql de mono.apres_validation est vide (le Bouclier fait ses bons de butin et ses défis dans
+-- mono_srv_valider, avant de l'appeler) : celle d'ici n'a donc rien à reprendre d'elle.
 --
 -- Contrat avec le Bouclier Monocompte (autre chantier) : après chaque partie validée, il appelle
 --   mono.apres_validation(user_id, saison, resume)
@@ -47,7 +53,8 @@ create table if not exists mono.grp_semaine (
   k int not null, ms int not null check (ms > 0), at timestamptz not null,
   primary key (user_id, saison, semaine)
 );
--- renfort : la photo du héros d'un joueur (publiée depuis sa partie, vérifiée sur sa partie validée), et le compteur
+-- renfort : la copie du héros d'un joueur, construite par le serveur (le Bouclier la calcule dans le résumé de la partie
+-- validée, clé « renfort » : jamais ce que le navigateur envoie), recopiée à chaque partie validée ; et le compteur
 -- cosmétique de ses aides (aucun gain)
 create table if not exists mono.renforts (
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -57,6 +64,10 @@ create table if not exists mono.renforts (
   at timestamptz not null default now(),
   primary key (user_id, saison)
 );
+alter table mono.renforts add column if not exists hero int;
+delete from mono.renforts where hero is null; -- anciennes photos envoyées par le jeu (avant la copie du serveur) : effacées
+-- renforts pris : un par donjon solo, avec la copie donnée par le serveur (le Bouclier refuse une partie dont le renfort
+-- n'est pas l'une d'elles) ; compteur de l'ami : au plus une fois toutes les 2 minutes
 create table if not exists mono.renfort_log (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -64,11 +75,15 @@ create table if not exists mono.renfort_log (
   saison int not null,
   at timestamptz not null default now()
 );
+alter table mono.renfort_log add column if not exists did text;
+alter table mono.renfort_log add column if not exists stasis int;
+alter table mono.renfort_log add column if not exists snap jsonb;
+alter table mono.renfort_log add column if not exists compte boolean not null default true;
 create index if not exists renfort_log_u on mono.renfort_log (user_id, ami, at desc);
 
--- défi de groupe de la mutation de la semaine : payé par le registre (mono_eclats_activite, activité « mut »), dans le quota,
--- une source par semaine (le jeu envoie « s<saison>-w<semaine>-mut ») ; 20 Éclats au plus par jour pour cette activité
-insert into mono.act_regles (kind, max_jour) values ('mut', 20) on conflict (kind) do update set max_jour = excluded.max_jour;
+-- défi de groupe de la mutation de la semaine : payé par des bons de butin (mono.bons_partie, activité « mut », ligne
+-- « act:<jour>:mut » du registre provisoire de la partie validée), dans le quota ; 20 Éclats au plus par semaine de saison
+insert into mono.act_regles (kind, max_jour, max_semaine) values ('mut', 20, 20) on conflict (kind) do update set max_jour = excluded.max_jour, max_semaine = excluded.max_semaine;
 
 do $$ declare t text; begin
   foreach t in array array['lb_saison', 'grp_semaine', 'renforts', 'renfort_log'] loop
@@ -113,11 +128,31 @@ $$;
 create or replace function mono.aide_de(r jsonb) returns numeric language sql immutable
 as $$ select coalesce(mono.num(r -> 'aide' -> 'sab'), mono.num(r -> 'sablier'), 0) + coalesce(mono.num(r -> 'aide' -> 'merc'), mono.num(r -> 'mercenaire'), 0) + coalesce(mono.num(r -> 'aide' -> 'ren'), mono.num(r -> 'renfort'), 0) $$;
 
+-- copie du héros d'un joueur pour le renfort, prise dans le résumé de sa partie validée (clé « renfort », calculée par le
+-- Bouclier : js/verify_mono.js, VM.renfort). p_hero : le héros choisi (au plus son identifiant, jamais son contenu) ;
+-- p_creer : publier (sinon seulement mettre à jour une copie déjà prêtée). Renvoie null, ou la raison d'un refus.
+create or replace function mono.renfort_copier(p_user uuid, p_saison int, p_resume jsonb, p_hero int, p_creer boolean) returns text
+language plpgsql security definer set search_path = mono, public
+as $$ declare c jsonb := p_resume -> 'renfort'; n int; k text; h int; begin
+  if not p_creer and not exists (select 1 from mono.renforts where user_id = p_user and saison = p_saison) then return null; end if;
+  if c is null or jsonb_typeof(c) <> 'object' or jsonb_typeof(c -> 'st') <> 'object' or jsonb_typeof(c -> 'sp') <> 'array' or length(c::text) > 40000 then
+    if not p_creer then delete from mono.renforts where user_id = p_user and saison = p_saison; end if;
+    return 'Ton héros n''est pas dans ta partie validée.'; end if;
+  n := mono.num(c -> 'lvl')::int; k := c ->> 'cls'; h := mono.num(c -> 'hid')::int;
+  if n is null or n < 1 or n > 200 or k is null or k !~ '^[a-z]{2,12}$' then return 'Ton héros n''est pas dans ta partie validée.'; end if;
+  if p_hero is not null and h is distinct from p_hero then return 'Ce héros n''est pas dans ta partie validée.'; end if;
+  insert into mono.renforts (user_id, saison, snap, niveau, cls, hero) values (p_user, p_saison, c, n, k, h)
+    on conflict (user_id, saison) do update set snap = excluded.snap, niveau = excluded.niveau, cls = excluded.cls, hero = excluded.hero, at = now();
+  return null;
+end $$;
+
 -- Redéfinie ici (contrat avec le Bouclier Monocompte) : appelée après chaque partie validée.
 drop function if exists mono.apres_validation(uuid, int, jsonb);
 create function mono.apres_validation(p_user uuid, p_saison int, p_resume jsonb) returns void language plpgsql security definer set search_path = mono, public
-as $$ declare r jsonb := coalesce(p_resume, '{}'::jsonb); b record; old mono.lb_saison%rowtype; fer_now boolean; perdu boolean; g record; w int; begin
+as $$ declare r jsonb := coalesce(p_resume, '{}'::jsonb) - 'renfort'; b record; old mono.lb_saison%rowtype; fer_now boolean; perdu boolean; g record; w int; begin
   if p_user is null or p_saison is null then return; end if;
+  -- copie du héros pour le renfort : refaite depuis chaque partie validée (seulement pour un joueur qui la prête)
+  perform mono.renfort_copier(p_user, p_saison, coalesce(p_resume, '{}'::jsonb), null, false);
   select x.k, x.ms, x.at into b from mono.grp_rows(r) x order by x.k desc, x.ms asc, x.at asc nulls last limit 1;
   select * into old from mono.lb_saison where user_id = p_user and saison = p_saison;
   fer_now := coalesce(r ->> 'serment', '') = 'fer' and mono.aide_de(r) = 0;
@@ -222,43 +257,72 @@ as $$ declare u uuid := mono.need(); s int := coalesce(p_saison, mono.saison_vue
 end $$;
 
 -- ---------- renfort d'un ami ----------
--- Publier la photo de son héros (js/monoplus.js, E.monoSnap) : acceptée seulement si elle correspond à la partie validée
--- (même classe, niveau au plus celui du résumé).
-create or replace function public.mono_renfort_publier(p_snap jsonb) returns jsonb language plpgsql security definer set search_path = mono, public
-as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); l mono.lb_saison%rowtype; n int; begin
+-- Prêter son héros : le serveur copie le héros de la dernière partie validée (mono.parties_ok.resume -> 'renfort', calculé
+-- par le Bouclier). Le jeu n'envoie au plus que l'identifiant du héros choisi, jamais son contenu.
+drop function if exists public.mono_renfort_publier(jsonb);
+create or replace function public.mono_renfort_publier(p_hero int default null) returns jsonb language plpgsql security definer set search_path = mono, public
+as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); r jsonb; e text; begin
   if public.susp(u) then return jsonb_build_object('err', 'Compte suspendu.'); end if;
   if s is null or not mono.saison_en_jeu(s) then return jsonb_build_object('err', 'La saison est fermée.'); end if;
-  if p_snap is null or jsonb_typeof(p_snap) <> 'object' or length(p_snap::text) > 40000 then return jsonb_build_object('err', 'Photo illisible.'); end if;
-  select * into l from mono.lb_saison where user_id = u and saison = s;
-  if not found then return jsonb_build_object('err', 'Ta partie n''est pas encore validée par le serveur.'); end if;
-  n := mono.num(p_snap -> 'lvl')::int;
-  if (p_snap ->> 'cls') is distinct from l.cls or n is null or n < 1 or n > l.niveau then return jsonb_build_object('err', 'La photo ne correspond pas à ta partie validée.'); end if;
-  insert into mono.renforts (user_id, saison, snap, niveau, cls) values (u, s, p_snap, n, l.cls)
-    on conflict (user_id, saison) do update set snap = excluded.snap, niveau = excluded.niveau, cls = excluded.cls, at = now();
+  select resume into r from mono.parties_ok where user_id = u and saison = s;
+  if r is null then return jsonb_build_object('err', 'Ta partie n''est pas encore validée par le serveur.'); end if;
+  e := mono.renfort_copier(u, s, r, p_hero, true);
+  if e is not null then return jsonb_build_object('err', e); end if;
   return jsonb_build_object('ok', true);
 end $$;
--- Les renforts disponibles : ceux de mes amis (supabase/amis.sql) pour la saison ouverte ; et mes propres aides (compteur)
+-- le renfort que u peut prendre chez v : null s'il est possible, sinon la raison (amis acceptés des deux côtés, aucun blocage,
+-- copie prêtée tirée d'une partie validée, serment de fer, écart de niveau avec la partie validée de u)
+create or replace function mono.renfort_refus(u uuid, v uuid, s int) returns text language plpgsql stable security definer set search_path = mono, public
+as $$ declare me jsonb; rn mono.renforts%rowtype; lv int; begin
+  if v is null or v = u then return 'Ce renfort n''est pas disponible.'; end if;
+  if not (public.amis_sont(u, v) and public.amis_sont(v, u)) then return 'Ce joueur n''est pas dans tes amis.'; end if;
+  if public.amis_bloque(u, v) or public.amis_bloque(v, u) then return 'Ce joueur n''est pas dans tes amis.'; end if;
+  select * into rn from mono.renforts where user_id = v and saison = s;
+  if rn.user_id is null or not exists (select 1 from mono.parties_ok where user_id = v and saison = s) or public.susp(v) then return 'Ce renfort n''est pas disponible.'; end if;
+  select resume into me from mono.parties_ok where user_id = u and saison = s;
+  if me is null then return 'Ta partie n''est pas encore validée par le serveur.'; end if;
+  if coalesce(me ->> 'serment', me -> 'serment' ->> 't', '') = 'fer' then return 'Serment de fer : pas de renfort pendant la saison.'; end if;
+  lv := coalesce(mono.num(me -> 'niveau'), mono.num(me -> 'lvl'), 1)::int;
+  if rn.niveau > lv + 10 then return 'Le héros de ton ami est trop fort pour t''accompagner (10 niveaux au-dessus du tien au plus).'; end if;
+  return null;
+end $$;
+-- Les renforts disponibles : ceux de mes amis (supabase/amis.sql) pour la saison ouverte, copies du serveur ; et mes aides
 create or replace function public.mono_renforts() returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); begin
   if s is null then return jsonb_build_object('amis', '[]'::jsonb, 'aides', 0); end if;
   return jsonb_build_object(
-    'amis', (select coalesce(jsonb_agg(jsonb_build_object('u', r.user_id, 'p', mono.pseudo(r.user_id), 'cls', r.cls, 'lvl', r.niveau, 'snap', r.snap, 'at', r.at) order by r.niveau desc), '[]'::jsonb)
-      from mono.renforts r join public.amis a on a.user_id = u and a.ami = r.user_id where r.saison = s),
+    'amis', (select coalesce(jsonb_agg(jsonb_build_object('u', r.user_id, 'p', mono.pseudo(r.user_id), 'cls', r.cls, 'lvl', r.niveau, 'snap', r.snap, 'at', r.at, 'err', mono.renfort_refus(u, r.user_id, s)) order by r.niveau desc), '[]'::jsonb)
+      from mono.renforts r join public.amis a on a.user_id = u and a.ami = r.user_id
+      where r.saison = s and not public.amis_bloque(u, r.user_id) and not public.amis_bloque(r.user_id, u) and exists (select 1 from mono.parties_ok k where k.user_id = r.user_id and k.saison = s)),
+    'prete', exists (select 1 from mono.renforts where user_id = u and saison = s),
     'aides', coalesce((select aides from mono.renforts where user_id = u and saison = s), 0));
 end $$;
--- Le renfort d'un ami a été pris : son compteur cosmétique monte (au plus une fois toutes les 2 minutes par ami). Aucun gain.
-create or replace function public.mono_renfort_utiliser(p_ami uuid) returns jsonb language plpgsql security definer set search_path = mono, public
-as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); begin
+-- Prendre le renfort d'un ami pour un donjon solo : le serveur rend SA copie (celle que le combat utilise) et la note ;
+-- le Bouclier refuse ensuite une partie dont le renfort n'est pas une copie rendue ici. L'un ou l'autre : jamais avec un
+-- mercenaire (p_merc), jamais dans un groupe (p_groupe). Aucun gain pour l'ami : un compteur cosmétique (2 minutes).
+drop function if exists public.mono_renfort_utiliser(uuid);
+create or replace function public.mono_renfort_prendre(p_ami uuid, p_did text default null, p_stasis int default null, p_merc text default null, p_groupe text default null)
+returns jsonb language plpgsql security definer set search_path = mono, public
+as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); e text; rn mono.renforts%rowtype; cpt boolean; begin
+  if public.susp(u) then return jsonb_build_object('err', 'Compte suspendu.'); end if;
   if s is null or not mono.saison_en_jeu(s) then return jsonb_build_object('err', 'La saison est fermée.'); end if;
-  if not exists (select 1 from public.amis where user_id = u and ami = p_ami) then return jsonb_build_object('err', 'Ce joueur n''est pas dans tes amis.'); end if;
-  if not exists (select 1 from mono.renforts where user_id = p_ami and saison = s) then return jsonb_build_object('err', 'Ce renfort n''est pas disponible.'); end if;
+  if nullif(btrim(coalesce(p_groupe, '')), '') is not null then return jsonb_build_object('err', 'Le renfort d''un ami se prend seulement en donjon solo, pas en groupe.'); end if;
+  if nullif(btrim(coalesce(p_merc, '')), '') is not null then return jsonb_build_object('err', 'Renfort ou mercenaire : l''un ou l''autre, jamais les deux.'); end if;
+  if p_did is not null and (length(p_did) > 40 or p_stasis is null or p_stasis < 1 or p_stasis > 30) then return jsonb_build_object('err', 'Donjon inconnu.'); end if;
+  e := mono.renfort_refus(u, p_ami, s);
+  if e is not null then return jsonb_build_object('err', e); end if;
   perform mono.verrou(u);
-  if exists (select 1 from mono.renfort_log where user_id = u and ami = p_ami and at > now() - interval '2 minutes') then return jsonb_build_object('ok', true, 'compte', false); end if;
-  insert into mono.renfort_log (user_id, ami, saison) values (u, p_ami, s);
-  update mono.renforts set aides = aides + 1 where user_id = p_ami and saison = s;
-  delete from mono.renfort_log where at < now() - interval '1 day';
-  return jsonb_build_object('ok', true, 'compte', true);
+  select * into rn from mono.renforts where user_id = p_ami and saison = s;
+  cpt := not exists (select 1 from mono.renfort_log where user_id = u and ami = p_ami and compte and at > now() - interval '2 minutes');
+  delete from mono.renfort_log where at < now() - interval '2 days';
+  insert into mono.renfort_log (user_id, ami, saison, did, stasis, snap, compte) values (u, p_ami, s, p_did, p_stasis, rn.snap, cpt);
+  if cpt then update mono.renforts set aides = aides + 1 where user_id = p_ami and saison = s; end if;
+  return jsonb_build_object('ok', true, 'compte', cpt, 'u', p_ami, 'p', mono.pseudo(p_ami), 'snap', rn.snap);
 end $$;
+-- Pour le Bouclier (mono_srv_etat) : les copies rendues à ce compte ces 2 derniers jours
+create or replace function mono.etat_social(p_user uuid, p_s int) returns jsonb language sql stable security definer set search_path = mono, public
+as $$ select jsonb_build_object('renforts', coalesce((select jsonb_agg(jsonb_build_object('u', l.ami, 'snap', l.snap) order by l.id desc)
+  from (select * from mono.renfort_log where user_id = p_user and saison = p_s and snap is not null and at > now() - interval '2 days' order by id desc limit 50) l), '[]'::jsonb)) $$;
 
 -- ---------- aura de fer : au passage dans l'Éternel sous un serment tenu ----------
 create or replace function mono.fer_aura_eternel() returns trigger language plpgsql security definer set search_path = mono, public
@@ -286,7 +350,7 @@ do $$ declare f record; begin
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
   end loop;
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname in ('mono_classement', 'mono_couronne', 'mono_bilan', 'mono_renfort_publier', 'mono_renforts', 'mono_renfort_utiliser', 'mono_adm_fer_auras') loop
+      where n.nspname = 'public' and p.proname in ('mono_classement', 'mono_couronne', 'mono_bilan', 'mono_renfort_publier', 'mono_renforts', 'mono_renfort_prendre', 'mono_adm_fer_auras') loop
     execute format('revoke all on function %s from public, anon', f.sig);
     execute format('grant execute on function %s to authenticated', f.sig);
   end loop;

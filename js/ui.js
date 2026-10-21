@@ -4017,6 +4017,17 @@ function monoDgBox() {
       ${mc ? `<span class="xs">${h(E.monoMercName(mc))} niveau ${me.lvl}, équipement correct de son niveau. Il repart à la fin du donjon.</span>` : poor ? `<span class="xs muted">Il faut ${fmt(cost)} kamas pour engager un mercenaire.</span>` : ""}
       <span class="xs muted">Le mercenaire est réservé au jeu en solo : pas de mercenaire dans les groupes de joueurs (jusqu'à ${E.MONO.groupMax}, avec le serveur Monocompte).</span></div>${MP ? MP.renfortPick() : ""}`;
 }
+/* Monocompte : entrer en donjon solo avec le renfort d'un ami. Le serveur vérifie et rend sa copie du héros de l'ami
+   (mono_renfort_prendre, js/amis.js) ; c'est elle qui combat (le Bouclier refuse une partie avec une autre copie). */
+let renfBusy = false;
+async function enterRenfort(did, stasis, u) {
+  if (renfBusy) return; if (!window.AMIS || !window.AMIS.prendre) { toast("Le renfort d'un ami passe par le serveur Monocompte."); return; }
+  renfBusy = true; let R;
+  try { R = await window.AMIS.prendre(u, did, stasis || 1); } finally { renfBusy = false; }
+  if (!R || R.err) { toast((R && R.err) || "Ce renfort n'est pas disponible."); return; }
+  const r = E.monoEnter(S, did, stasis, { ami: R }); if (r) { toast(r); return; }
+  closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); dirty = true; render();
+}
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   return XP ? `${window.SGUI ? window.SGUI.where(S) : "Songe infini"} · ${XP.relics.length} bonus${XP.sable ? ` · ${XP.sable} Sable${XP.sable > 1 ? "s" : ""}` : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
@@ -10289,7 +10300,8 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": if (window.COLL) { ui.tab = "world"; ui.world = "enc"; ui.zoneView = null; (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "sets"; break; } ui.tab = "inv"; ui.inv = "sets"; break; // 1.0.30 : la Collection de panoplies est dans l'Encyclopédie
-    case "enterdg": { const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id && !merc ? chainCount(d.id) : 1; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+    case "enterdg": { if (S.mono && typeof ui.mercCls === "string" && ui.mercCls.startsWith("ami:")) { enterRenfort(d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls.slice(4)); return; } // renfort d'un ami : copie rendue par le serveur
+      const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id && !merc ? chainCount(d.id) : 1; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null;
       /* 1.0.32.3 : depuis une étape de quête « en stasis N », la fiche propose déjà la montée de la meilleure stasis jusqu'à N */
       if (d.k && DUNGEONS[d.id]) { dgPick(d.id); const SI = E.stasisInfo(S, d.id); const T = +d.k; if (SI.max < T) { ui.dgStasis = Math.min(T, SI.max + 1); if (ui.dgStasis < T) ui.dgClimb = T; } }

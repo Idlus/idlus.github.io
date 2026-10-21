@@ -163,6 +163,8 @@ create table if not exists mono.act_regles (
   kind text primary key,
   max_jour int not null check (max_jour > 0)
 );
+-- borne par semaine de saison en plus de celle du jour (défi de la mutation de la semaine : supabase/mono_social.sql)
+alter table mono.act_regles add column if not exists max_semaine int check (max_semaine > 0);
 insert into mono.act_regles (kind, max_jour) values ('dj', 8), ('arch', 6), ('job', 4), ('grp', 2)
   on conflict (kind) do update set max_jour = excluded.max_jour;
 
@@ -763,10 +765,18 @@ end $$;
 -- ============================================================================
 
 -- ---------- Bouclier : ce qui ne change jamais après une validation ----------
--- Contrat avec supabase/mono_social.sql (classements, Couronne, Serment de fer, amis) : appelée après chaque partie validée,
--- avec le résumé calculé par le serveur. Vide ici : l'autre fichier la redéfinit (create or replace, mêmes paramètres).
-create or replace function mono.apres_validation(user_id uuid, saison int, resume jsonb) returns void language plpgsql security definer set search_path = mono, public
-as $$ begin end $$;
+-- Contrat avec supabase/mono_social.sql (classements, Couronne, Serment de fer, renfort, amis) : appelées après chaque partie
+-- validée (mono.apres_validation, avec le résumé calculé par le serveur) et par le Bouclier (mono.etat_social, ajouté à
+-- mono_srv_etat). Ordre de chargement : CE fichier, puis amis.sql, puis mono_social.sql, qui les redéfinit. Ici, elles ne
+-- sont créées (vides) que si elles n'existent pas encore : relancer ce fichier n'efface jamais celles de mono_social.sql.
+do $$ begin
+  if to_regprocedure('mono.apres_validation(uuid, integer, jsonb)') is null then
+    execute 'create function mono.apres_validation(p_user uuid, p_saison int, p_resume jsonb) returns void language plpgsql security definer set search_path = mono, public as $f$ begin end $f$';
+  end if;
+  if to_regprocedure('mono.etat_social(uuid, integer)') is null then
+    execute 'create function mono.etat_social(p_user uuid, p_s int) returns jsonb language sql stable security definer set search_path = mono, public as $f$ select ''{}''::jsonb $f$';
+  end if;
+end $$;
 
 -- Bon de butin : un par combat et par joueur ; paie les Éclats d'activité (borne du jour du combat, quota de la semaine).
 -- Un bon qui ne paie rien (borne ou quota atteints) n'est pas gardé : le même combat pourra payer quand le quota s'ouvre.
@@ -784,12 +794,16 @@ end $$;
 -- Bons d'une partie validée : p_acts = [{ j, k, n }] (gains de la journée j pour l'activité k, d'après la partie) ;
 -- un bon par rang de gain dans la journée (« j3:dj:5 » = 5e Éclat de donjon du jour 3), jamais au-delà de la borne du jour.
 create or replace function mono.bons_partie(u uuid, p_s int, p_acts jsonb) returns int language plpgsql security definer set search_path = mono, public
-as $$ declare a record; mx int; deja int; r int; g int; tot int := 0; gain int; begin
+as $$ declare a record; mx int; mw int; deja int; dw int; r int; g int; tot int := 0; gain int; begin
   if p_acts is null or jsonb_typeof(p_acts) <> 'array' then return 0; end if;
   for a in select (x ->> 'j')::int j, x ->> 'k' k, least(coalesce((x ->> 'n')::int, 0), 100) n from jsonb_array_elements(p_acts) x
       where (x ->> 'j') ~ '^\d{1,2}$' and (x ->> 'n') ~ '^\d{1,4}$' and (x ->> 'k') ~ '^[a-z]{2,8}$' order by 1, 2 loop
-    select max_jour into mx from mono.act_regles where kind = a.k; if mx is null then continue; end if;
+    select max_jour, max_semaine into mx, mw from mono.act_regles where kind = a.k; if mx is null then continue; end if;
     select count(*) into deja from mono.bons where user_id = u and saison = p_s and kind = a.k and jour = a.j;
+    if mw is not null then -- borne de la semaine : les bons des autres jours de la même semaine de saison comptent aussi
+      select count(*) into dw from mono.bons where user_id = u and saison = p_s and kind = a.k and jour <> a.j and mono.semaine_de(jour) = mono.semaine_de(a.j);
+      mx := least(mx, deja + greatest(0, mw - dw - deja));
+    end if;
     for r in deja + 1 .. least(a.n, mx) loop
       g := mono.bon(u, p_s, a.k, format('j%s:%s:%s', a.j, a.k, r), 1, a.j);
       exit when g = 0; tot := tot + g;
@@ -1315,7 +1329,8 @@ as $$ declare s int := mono.saison_ouverte(); k mono.parties_ok; op0 bigint; beg
     'objets', coalesce((select jsonb_object_agg(sn::text, op) from mono.sortis where user_id = p_user and saison = s and sn is not null), '{}'::jsonb)
       || coalesce((select jsonb_object_agg(sn::text, true) from mono.objets where owner = p_user and saison = s), '{}'::jsonb),
     'sortis', coalesce((select jsonb_agg(jsonb_build_object('uid', uid, 'tpl', tpl, 'op', op)) from mono.sortis where user_id = p_user and saison = s and uid > 0), '[]'::jsonb),
-    'ops', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'p', payload) order by id) from (select * from mono.ops where user_id = p_user and saison = s and id > op0 order by id limit 2000) z), '[]'::jsonb));
+    'ops', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'p', payload) order by id) from (select * from mono.ops where user_id = p_user and saison = s and id > op0 order by id limit 2000) z), '[]'::jsonb))
+    || coalesce(mono.etat_social(p_user, s), '{}'::jsonb); -- renforts pris par ce compte (supabase/mono_social.sql)
 end $$;
 -- Partie acceptée : elle devient la partie validée (seulement si c'est bien celle qui a été vérifiée), puis bons de butin,
 -- défis atteints, et mono.apres_validation (classements de saison…)

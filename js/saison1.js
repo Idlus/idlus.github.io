@@ -101,6 +101,9 @@
     grp: { n: "Donjons en groupe (en plus)", gain: 1, max: 2 },
   };
   TF.DAYMAX = Object.values(TF.ACT).reduce((a, x) => a + x.max, 0); // 20
+  // activités payées une fois par semaine de saison, hors des 20 du jour (ligne « act:<jour>:<activité> » du registre ;
+  // le serveur en fait des bons de butin dans sa borne de la semaine) : défi de groupe de la mutation (js/monoplus.js)
+  TF.ACTW = { mut: { n: "Défi de groupe de la semaine", max: 20 } };
 
   /* ---------------- boutique (5A) ---------------- */
   TF.SHOP = [
