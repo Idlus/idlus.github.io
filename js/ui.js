@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.32";
+const GAME_VERSION = "2.1.32.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.32.1", name: "Ocre terminé", items: [
+    "Héros › Dofus › Collection : une Éternelle moisson terminée disparaît de « À faire maintenant » et sa fiche affiche 100 %, sans palier 7 sur 6 (signalé par Akileuss)",
+    "Les parties existantes sont corrigées automatiquement à la consultation. Aucune récompense supplémentaire : les six paliers restent la condition pour terminer la quête",
+  ] },
   { v: "2.1.32", name: "Ma rotation", guide: "sorts", items: [
     "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
     "Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou dont la condition n'est pas remplie est passé : le héros lance le suivant. Au bout de la liste, le tour s'arrête. Chaque case peut avoir sa propre condition",
