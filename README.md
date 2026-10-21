@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.35.9 « Combats de groupe animés »
+- Bureau des Aventuriers (Monocompte) : `js/bureau_direct.js` rejoue le combat de groupe sur l'écran de combat (`extWatchStart`), une seconde de combat par pas, avec les photos, la graine et l'heure de lancement du serveur (mêmes conditions que `E.monoGroupRun` / `BC.run`, hasard du joueur mis de côté à chaque pas). En direct, la lecture suit l'heure du serveur ; « Revoir » à ×1 ×2 ×4 ; dans une série (×N), l'écran suit le combat suivant.
+- Réponses de Mathis à la maquette du 21/10 : 1A (vrai écran de combat), 2A (Tableau du groupe, `E.fightStats` cumulé par salle), 3A (ouverture toute seule sur la page du Bureau, bandeau `#bxdBan` ailleurs) + améliorations 1 à 5 (discussion du salon, héros encadré, progression du donjon, fin avec `Bureau.gain`, onglet qui clignote). Idée de Bsasuk.
+- `js/bureau.js` : boutons « Regarder / Revoir le combat » dans `#bxView`, `Bureau.heure()` et `Bureau.gain(id)`. Serveur inchangé. Test : `tests/bureau_direct.test.js`.
+
 ## 2.1.35.8 « Un panel par serveur »
 - Panel Xener séparé entre Classique et Monocompte (`PANEL.register({ srv: "m" })`), épinglé et annonces du salon Monocompte à part (`adm_pin_mono`, `adm_announce_mono`, `announces.srv`), `mono_adm_vue` et `mono_adm_copies` dans `supabase/monocompte.sql` (installation manuelle).
 ## 2.1.35.7 « Récolte aux récolteurs »

@@ -154,6 +154,8 @@ function fake() {
     // prêt, lancement, transition (sauvegarde validée puis confirmation), calcul par la fonction serveur
     await page.click('[data-act="bx-pret"]'); await page.waitForTimeout(300);
     const solo = await page.evaluate(() => { const { E, S } = window.DX; const sid = Object.keys(E.SUBS)[0]; E.startHunt(S, sid); return !!S.hunting; });
+    // l'écran de combat qui s'ouvre tout seul (js/bureau_direct.js) a son test : tests/bureau_direct.test.js ; ici, le résumé du Bureau
+    await page.evaluate(() => { if (window.BureauDirect) window.BureauDirect.vus[5] = 1; });
     await page.click('[data-act="bx-lancer"]'); await page.waitForTimeout(2500);
     const st1 = await page.evaluate(() => ({ push: window.__BX.pushes || 0, conf: window.__BX.calls.some((c) => c[0] === "mono_bureau_confirmer"), inv: window.__BX.invoke, live: window.DX.S.mono.live || 0 }));
     if (!st1.push || !st1.conf) fail("transition : sauvegarde puis confirmation attendues " + JSON.stringify(st1));
@@ -200,6 +202,7 @@ function fake() {
     const serie = () => { const B = window.__BX, x = B.st.salon, c0 = x.combat, t = Date.now();
       x.combat = Object.assign({}, c0, { id: 6, serie_id: 6, serie_k: 1, serie_n: 3, serie_bilan: [], win: true, debut: new Date(t).toISOString(), fin: new Date(t + c0.duree).toISOString() }); x.etat = "combat"; x.serie_id = 6; x.serie_stop = null;
       B.st.butins = [{ combat: 6, did: c0.did, stasis: c0.stasis, fin: x.combat.fin, win: true }]; };
+    await page.evaluate(() => { if (window.BureauDirect) window.BureauDirect.vus[6] = 1; }); // ici, le résumé du Bureau (l'écran de combat : tests/bureau_direct.test.js)
     await page.evaluate(serie); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(800);
     const sv = await page.evaluate(() => ({ view: (document.querySelector("#bxView") || {}).textContent || "", main: document.querySelector("#main").textContent, stop: !!document.querySelector("[data-act=bx-sstop]") }));
     if (!/Combat 1 \/ 3/.test(sv.view) || !/Série en cours/.test(sv.main) || !sv.stop) fail("série en cours : " + JSON.stringify(sv).slice(0, 300));

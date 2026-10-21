@@ -1,6 +1,18 @@
 {
-  "version": "2.1.35.8",
+  "version": "2.1.35.9",
   "versions": [
+    {
+      "v": "2.1.35.9",
+      "name": "Combats de groupe animés",
+      "items": [
+        "Bureau des Aventuriers (Monocompte) : le combat de groupe se regarde sur le vrai écran de combat, comme en solo (Formation, Scène ou Compacte, sorts animés, dégâts, journal), à la même seconde pour tout le groupe. Idée de Bsasuk",
+        "Sur la page du Bureau, l'écran s'ouvre tout seul au lancement ; ailleurs, un bandeau « Ton groupe combat » propose Regarder ou Plus tard. L'onglet clignote si tu es ailleurs",
+        "À côté du combat : le Tableau du groupe (dégâts, soins, dégâts subis, monstres vaincus de chacun sur tout le donjon, couronne pour le meilleur) et la discussion du salon",
+        "Ton héros est encadré d'or, la progression du donjon (une case par salle et le boss) s'affiche en haut",
+        "À la fin : victoire ou défaite, meilleur du combat, ton butin, « Revoir le combat » (×1, ×2, ×4) et « Retour au salon ». Dans une série, l'écran passe tout seul au combat suivant",
+        "On arrive en retard ou on recharge la page : le combat reprend à la bonne seconde. Le combat et le butin ne changent pas"
+      ]
+    },
     {
       "v": "2.1.35.8",
       "name": "Un panel par serveur",

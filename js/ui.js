@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35.8";
+const GAME_VERSION = "2.1.35.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.35.9", name: "Combats de groupe animés", items: [
+    "Bureau des Aventuriers (Monocompte) : le combat de groupe se regarde sur le vrai écran de combat, comme en solo (Formation, Scène ou Compacte, sorts animés, dégâts, journal), à la même seconde pour tout le groupe. Idée de Bsasuk",
+    "Sur la page du Bureau, l'écran s'ouvre tout seul au lancement ; ailleurs, un bandeau « Ton groupe combat » propose Regarder ou Plus tard. L'onglet clignote si tu es ailleurs",
+    "À côté du combat : le Tableau du groupe (dégâts, soins, dégâts subis, monstres vaincus de chacun sur tout le donjon, couronne pour le meilleur) et la discussion du salon",
+    "Ton héros est encadré d'or, la progression du donjon (une case par salle et le boss) s'affiche en haut",
+    "À la fin : victoire ou défaite, meilleur du combat, ton butin, « Revoir le combat » (×1, ×2, ×4) et « Retour au salon ». Dans une série, l'écran passe tout seul au combat suivant",
+    "On arrive en retard ou on recharge la page : le combat reprend à la bonne seconde. Le combat et le butin ne changent pas" ] },
   { v: "2.1.35.8", name: "Un panel par serveur", items: [
     "Panel Xener : sélecteur Classique | Monocompte, chaque page n'agit que sur le serveur choisi",
     "Monocompte : vue d'ensemble, testeurs, clés bêta, Bouclier, remise d'une partie, Bureau, chat et annonces à part",

@@ -32,7 +32,7 @@
   const mono = (s) => !!(s && s.mono && !s.mono.eternel);
   const live = () => !!(ON && ON.enabled && mono(S()) && ON.monoOn && ON.monoOn() && ON.slot && ON.slot() === 4);
   const me = () => (ON && ON.user && ON.user.id) || null;
-  const B = { st: null, off: 0, at: 0, err: null, tab: "jouer", salons: null, salonsAt: 0, exps: null, rdv: null, V: {}, conf: {}, calc: {}, pris: {}, cumul: {}, pend: false, f: null };
+  const B = { st: null, off: 0, at: 0, err: null, tab: "jouer", salons: null, salonsAt: 0, exps: null, rdv: null, V: {}, conf: {}, calc: {}, pris: {}, cumul: {}, gain: {}, pend: false, f: null };
   const now = () => Date.now() + B.off; // heure du serveur
   const left = (iso) => Math.max(0, Math.ceil((Date.parse(iso) - now()) / 1000));
   const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -119,6 +119,7 @@
     const got = BC.butin(s, r.data);
     delete s.mono.live; mark();
     if (got) {
+      B.gain[b.combat] = got; // écran du combat en direct (js/bureau_direct.js) : « Ton butin »
       const fmt = X().fmt || String, sr = r.data.serie_n > 1 ? ` · combat ${r.data.serie_k} / ${r.data.serie_n}` : "";
       if (sr) { const k = B.cumul[r.data.serie_id] || (B.cumul[r.data.serie_id] = { n: 0, xp: 0, kamas: 0, items: 0 }); k.n++; k.xp += got.xp || 0; k.kamas += got.kamas || 0; k.items += (got.items || []).length; }
       toast(`${r.data.win ? "Victoire" : "Défaite"} en groupe (${dname(r.data.did)}, stasis ${r.data.stasis}${sr}) : ${fmt(Math.round(got.xp))} XP, ${fmt(got.kamas)} kamas${got.items.length ? `, ${got.items.length} objet${got.items.length > 1 ? "s" : ""}` : ""}.`, "rare", 7000);
@@ -284,12 +285,14 @@
       const suite = ser && d.salon.serie_id === c.serie_id && c.serie_k < c.serie_n && c.win && !d.salon.serie_stop;
       const fin = !ser ? "Le chef peut proposer de rejouer, changer de stasis ou de donjon."
         : suite ? "Le combat suivant se lance tout seul." : `Série ${c.serie_k >= c.serie_n && c.win ? "terminée" : "arrêtée"} : ${(c.serie_bilan || []).filter((b) => b.win).length} victoire${(c.serie_bilan || []).filter((b) => b.win).length > 1 ? "s" : ""} sur ${c.serie_k} combat${c.serie_k > 1 ? "s" : ""} (${c.serie_n} prévus).`;
-      if (fini || !V || V.err) html += `<b>${c.win ? "Victoire" : "Défaite"} : ${h(dname(c.did))}, stasis ${c.stasis}</b><span class="small muted">${fini ? `Le butin de chacun arrive dans sa partie. ${fin}` : "Combat en cours…"}</span>`;
-      else if (V.wait) html += `<b>${kn}Combat en cours…</b>`;
+      /* 21/10 : le combat se regarde sur l'écran de combat (js/bureau_direct.js) ; ici, le résumé et les boutons */
+      const bd = window.BureauDirect ? (!fini ? `<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn primary" data-act="bxd-voir">Regarder le combat</button><span class="small muted">sur l'écran de combat, en même temps que ton groupe</span></div>` : c.snaps ? `<div class="row" style="gap:8px"><button class="btn" data-act="bxd-revoir">Revoir le combat</button></div>` : "") : "";
+      if (fini || !V || V.err) html += `<b>${c.win ? "Victoire" : "Défaite"} : ${h(dname(c.did))}, stasis ${c.stasis}</b><span class="small muted">${fini ? `Le butin de chacun arrive dans sa partie. ${fin}` : "Combat en cours…"}</span>${bd}`;
+      else if (V.wait) html += `<b>${kn}Combat en cours…</b>${bd}`;
       else {
         const F = BC.image(V, t) || { ents: [] }; const bar = (e) => `<div class="bx-e${e.hp <= 0 ? " ko" : ""}">${e.s === "m" && e.k && D.MONSTERS[e.k] ? `<img src="assets/m/${h(D.MONSTERS[e.k].img)}.png" alt="" loading="lazy">` : ""}<span>${h(e.n)}</span><i><u style="width:${Math.round((100 * e.hp) / e.mx)}%"></u></i></div>`;
         html += `<div class="row between"><b>${F.boss ? "Salle du boss" : `Salle ${(F.salle || 0) + 1}`}</b><span class="small muted">${mmss(Math.floor(t / 1000))} / ${mmss(Math.ceil((c.duree || 0) / 1000))}</span></div>
-          <div class="bx-fight"><div>${F.ents.filter((e) => e.s !== "m").map(bar).join("")}</div><div>${F.ents.filter((e) => e.s === "m").map(bar).join("")}</div></div>`;
+          <div class="bx-fight"><div>${F.ents.filter((e) => e.s !== "m").map(bar).join("")}</div><div>${F.ents.filter((e) => e.s === "m").map(bar).join("")}</div></div>${bd}`;
       }
     }
     if (ser) html += cumulTxt(c);
@@ -405,6 +408,8 @@
     /* défi 12 « Rendez-vous du temps » : la règle, comptée par le serveur (mono.bureau_d12) */
     d12: () => Object.assign({ texte: "Finir (victoire) un donjon de groupe en direct du Bureau des Aventuriers pendant la manche IV ; chaque joueur différent compte une fois." }, BC.D12),
     etat: () => B.st,
+    heure: () => now(), // heure du serveur
+    gain: (id) => B.gain[id] || null, // butin reçu de ce combat de groupe (après sa fin)
     actualiser: () => poll(),
     ouvert: live,
   };
