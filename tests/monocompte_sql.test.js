@@ -35,7 +35,8 @@ try {
   const J = (i, s) => JSON.parse(as(i, `select ${s}`) || "null");
   const fails = (fn, re, why) => { let e0 = null; try { fn(); } catch (e) { e0 = e; } assert(e0, why + " : aurait dû être refusé"); const m = String(e0.stderr || e0.message); assert(re.test(m), why + " : " + m); };
   // rôles et authentification simulés (auth.uid() lit request.jwt.claim.sub), comme Supabase
-  q(`do $$ begin if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if; end $$;
+  q(`do $$ begin if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if; if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+       if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end $$;
      create schema auth; grant usage on schema auth to anon, authenticated; create table auth.users (id uuid primary key);
      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
      grant usage on schema public to anon, authenticated;
@@ -56,7 +57,10 @@ try {
   const before = snap();
   file(path.join(ROOT, "supabase", "monocompte.sql")); file(path.join(ROOT, "supabase", "monocompte.sql")); // relancé deux fois : sans danger
   assert.strictEqual(snap(), before, "le schéma public du Classique a changé");
-  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 20, "fonctions du jeu");
+  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 45, "fonctions du jeu");
+  // fonctions du Bouclier (mono_srv_*) : la fonction serveur seulement (service_role), ni les joueurs ni anon
+  assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'mono\\_srv\\_%'
+    and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('service_role', p.oid, 'execute'))`), "0", "mono_srv_* : service_role seulement");
 
   q(`insert into auth.users select ('00000000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid from generate_series(1, 9) i;
      insert into profiles (id, pseudo) select id, 'Joueur' || substr(id::text, 35) from auth.users;
@@ -67,7 +71,7 @@ try {
   const at = (ts) => q(`update mono.saisons set clk_t = '${ts}'::timestamptz, clk_ref = now(), clk_pause = true where id = 0`); // date de saison figée (superutilisateur du test)
   at("2026-10-19 10:00 Europe/Paris");
   assert.deepStrictEqual(J(5, `mono_acces()`), { ok: false }, "non-testeur");
-  for (const f of ["mono_info()", "mono_pull()", "mono_push('x', '{}', '1', 'pc', null)", "mono_eclats_etat()", "mono_eclats_activite('dj', 1, 'j1-dj-1')", "mono_eclats_defi('d1', 0)", "mono_boutique_achat('emb')", "mono_copies()", "mono_eternel()", "mono_delete()"])
+  for (const f of ["mono_info()", "mono_pull()", "mono_push('x', '{}', '1', 'pc', null)", "mono_eclats_etat()", "mono_hdv_sync(0)", "mono_trade_state()", "mono_eclats_defi('d1', 0)", "mono_boutique_achat('emb')", "mono_copies()", "mono_eternel()", "mono_delete()"])
     fails(() => as(5, `select ${f}`), /réservé aux testeurs/, "non-testeur : " + f);
   fails(() => as(1, `select mono_adm_testeur('Joueur01', true)`), /réservé à Mathis/, "un joueur s'ouvre l'accès");
   for (const i of [1, 2, 3, 4]) assert.strictEqual(as(9, `select mono_adm_testeur('Joueur0${i}', true)`), "");
@@ -79,7 +83,11 @@ try {
     "insert into mono.cosm_droits (user_id, cle, source) values (auth.uid(), 'tf_aura', 'triche')", "insert into mono.testeurs (user_id) values ('" + U(5) + "')", "update mono.eclats set n = 999",
     "delete from mono.eclats", "insert into mono.eternel (user_id, saison, data) values (auth.uid(), 0, 'x')", "insert into mono.copies (user_id, jour, saison, data) values (auth.uid(), current_date, 0, 'x')",
     "update mono.saisons set clk_vitesse = 168", "insert into mono.collection (user_id, saison, objet) values (auth.uid(), 0, 'cri')", "select mono.mouvement(auth.uid(), 0, 500, 'defi', 'triche')",
-    "select mono.vers_eternel(auth.uid(), 0)", "select mono.etat('" + U(2) + "', 0)"];
+    "select mono.vers_eternel(auth.uid(), 0)", "select mono.etat('" + U(2) + "', 0)",
+    "insert into mono.parties_ok (user_id, saison, data) values (auth.uid(), 0, 'x')", "update mono.parties_ok set resume = '{}'", "select mono.bon(auth.uid(), 0, 'dj', 'triche', 8)",
+    "insert into mono.bons (user_id, saison, combat, kind, jour) values (auth.uid(), 0, 'triche', 'dj', 1)", "insert into mono.ops (user_id, saison, payload) values (auth.uid(), 0, '{\"k\": 1000000}')",
+    "select mono_srv_valider(auth.uid(), now()::text, '{}', '{}', 0, '[]')", "select mono_srv_push(auth.uid(), 'x', '{}', '1', 'pc', null)", "select mono_srv_etat(auth.uid())",
+    "select mono.apres_validation(auth.uid(), 0, '{}')", "select mono.payer_defis(auth.uid(), 0)", "select mono.cloture_marche(0, 10)"];
   for (const s of direct) fails(() => as(1, s), /permission denied/, "écriture directe : " + s);
   for (const s of ["select * from mono.parties", "select mono_acces()", "select cosm_mine()", "select mono_push('x', '{}', '1', 'pc', null)"])
     fails(() => q(`set role anon; ${s}`), /permission denied/, "anon : " + s);
@@ -104,7 +112,7 @@ try {
   assert.strictEqual(q(`select count(*) from public.saves`), "0", "rien dans les parties du Classique");
   // compte suspendu, remise par Mathis
   q(`update profiles set suspended_at = now() where id = '${U(3)}'`); fails(() => as(3, `select mono_push('x', '{}', '1', 'pc', null)`), /suspendu/, "compte suspendu");
-  assert.match(as(3, `select mono_eclats_activite('dj', 1, 'susp-1')`), /suspendu/); q(`update profiles set suspended_at = null where id = '${U(3)}'`);
+  assert.match(as(3, `select mono_eclats_defi('d1', 0)`), /suspendu/); q(`update profiles set suspended_at = null where id = '${U(3)}'`);
   fails(() => as(1, `select mono_adm_restaurer('${U(1)}', current_date)`), /réservé à Mathis/, "remise par un joueur");
   assert.strictEqual(as(9, `select mono_adm_restaurer('${U(1)}', (now() at time zone 'Europe/Paris')::date)`), "");
   assert.strictEqual(as(1, `select mono_pull()`), txt.replace(/''/g, "'"), "remise : la copie du jour (la première reçue)");
@@ -126,8 +134,8 @@ try {
   assert.strictEqual(J(9, `mono_adm_horloge(24, 10, true)`).jour, 10, "avancer au jour 10, en pause");
   fails(() => as(9, `select mono_adm_horloge(7)`), /vitesse inconnue/, "vitesse");
 
-  // ---------- registre : bornes du jour, quota cumulable, même source ----------
-  const act = (i, k, n, src) => J(i, `mono_eclats_activite('${k}', ${n}, '${src}')`);
+  // ---------- registre : bornes du jour, quota cumulable, même bon (6a : les Éclats d'activité ne viennent que des bons du serveur) ----------
+  const act = (i, k, n, src) => ({ n: +q(`select mono.bon('${U(i)}', 0, '${k}', '${src}', ${n})`) });
   const etat = (i, s) => J(i, `mono_eclats_etat(${s == null ? "null" : s})`);
   const somme = (i, s) => +q(`select coalesce(sum(n), 0) from mono.eclats where user_id = '${U(i)}' and saison = ${s}`);
   at("2026-10-19 10:00 Europe/Paris"); // jour 1, semaine 1 (lundi)
@@ -135,17 +143,25 @@ try {
   assert.strictEqual(act(1, "dj", 1, "j1-dj-bis").n, 0, "borne du jour atteinte");
   assert.strictEqual(act(1, "arch", 6, "j1-arch").n + act(1, "job", 4, "j1-job").n + act(1, "grp", 5, "j1-grp").n, 12, "20 par jour en tout");
   assert.strictEqual(act(1, "inconnue", 3, "j1-x").n, 0, "activité inconnue");
-  assert.match(JSON.stringify(act(1, "dj", 999, "j1-trop")), /illisible/); assert.match(JSON.stringify(act(1, "dj", 1, "a b")), /illisible/);
+  assert.strictEqual(+q(`select mono.bons_partie('${U(1)}', 0, '[{"j": "x", "k": "dj", "n": 3}, {"j": 1, "k": "DJ;", "n": 3}, {"j": 1, "k": "dj", "n": "-4"}]')`), 0, "bons d'une partie : lignes illisibles ignorées");
+  assert.strictEqual(+q(`select mono.bons_partie('${U(1)}', 0, '[{"j": 9, "k": "dj", "n": 3}]')`), 0, "bons d'un jour à venir : rien");
   for (let d = 2; d <= 5; d++) { at(`2026-10-${18 + d} 10:00 Europe/Paris`); ["dj:8", "arch:6", "job:4", "grp:2"].forEach((x, j) => { const [k, n] = x.split(":"); act(1, k, +n, `j${d}-${k}`); }); }
   let e = etat(1); assert.deepStrictEqual([e.genere, e.quota, e.reste, e.solde], [100, 100, 0, 100], "quota de la semaine 1 rempli en 5 jours : " + JSON.stringify(e));
   at("2026-10-24 10:00 Europe/Paris"); assert.strictEqual(act(1, "dj", 8, "j6-dj").n, 0, "quota de la semaine atteint");
   // même source jamais créditée deux fois (même un autre jour), même en écriture brute
   at("2026-10-26 10:00 Europe/Paris"); assert.strictEqual(act(1, "dj", 5, "j1-dj").n, 0, "même source, autre jour");
-  fails(() => q(`insert into mono.eclats (user_id, saison, n, origine, source) values ('${U(1)}', 0, 1, 'act', 'act:j1-dj')`), /eclats_source_unique/, "source en double");
+  fails(() => q(`insert into mono.eclats (user_id, saison, n, origine, source) values ('${U(1)}', 0, 1, 'act', 'bon:j1-dj')`), /eclats_source_unique/, "source en double");
   fails(() => q(`insert into mono.eclats (user_id, saison, n, origine, source) values ('${U(1)}', 0, -5, 'defi', 'signe')`), /eclats_signe/, "défi négatif");
   // défis : hors quota, une fois par défi et palier, dans l'ordre, une fois la manche ouverte
   at("2026-10-24 10:00 Europe/Paris");
-  assert.strictEqual(J(1, `mono_eclats_defi('d1', 0)`).n + J(1, `mono_eclats_defi('d1', 1)`).n + J(1, `mono_eclats_defi('d1', 2)`).n, 160, "défi 1 : 40 + 56 + 64, hors quota");
+  const valide = (i, data, defis) => q(`insert into mono.parties_ok (user_id, saison, data, resume) values ('${U(i)}', 0, '${data}', '{"defis": ${JSON.stringify(defis)}}')
+    on conflict (user_id, saison) do update set resume = excluded.resume`); // partie validée par le Bouclier (tests/mono_eco_sql.test.js : par la fonction serveur)
+  assert.match(JSON.stringify(J(1, `mono_eclats_defi('d1', 0)`)), /pas encore validée/, "défi sans partie validée");
+  valide(1, "v3-tel", { d1: 30 });
+  assert.strictEqual(J(1, `mono_eclats_defi('d1', 0)`).n + J(1, `mono_eclats_defi('d1', 1)`).n, 96, "progression validée : 2 paliers sur 3");
+  assert.match(JSON.stringify(J(1, `mono_eclats_defi('d1', 2)`)), /pas encore validée/, "palier au-delà de la progression validée");
+  valide(1, "v3-tel", { d1: 50 });
+  assert.strictEqual(J(1, `mono_eclats_defi('d1', 0)`).n + J(1, `mono_eclats_defi('d1', 1)`).n + J(1, `mono_eclats_defi('d1', 2)`).n, 64, "défi 1 : 40 + 56 puis 64, hors quota");
   assert.strictEqual(J(1, `mono_eclats_defi('d1', 2)`).n, 0, "palier déjà payé");
   assert.match(JSON.stringify(J(1, `mono_eclats_defi('d2', 1)`)), /Palier précédent/); assert.match(JSON.stringify(J(1, `mono_eclats_defi('d4', 0)`)), /pas encore ouvert/);
   assert.match(JSON.stringify(J(1, `mono_eclats_defi('d99', 0)`)), /inconnu/);
@@ -177,19 +193,28 @@ try {
   at("2026-10-25T22:59:59Z"); assert.strictEqual(js(), "7/1");
   at("2026-10-25T23:00:00Z"); assert.strictEqual(js(), "8/2", "lundi minuit à Paris : semaine 2");
   e = etat(1); assert.deepStrictEqual([e.quota, e.reste], [200, 100], "semaine 2 : 100 de plus, cumulables");
-  assert.strictEqual(act(1, "dj", 8, "j8-dj").n, 8); assert.strictEqual(q(`select jour || '/' || semaine from mono.eclats where source = 'act:j8-dj'`), "8/2", "ligne datée en heure de Paris");
+  assert.strictEqual(act(1, "dj", 8, "j8-dj").n, 8); assert.strictEqual(q(`select jour || '/' || semaine from mono.eclats where source = 'bon:j8-dj'`), "8/2", "ligne datée en heure de Paris");
   at("2026-10-26T22:30:00Z"); assert.strictEqual(act(1, "dj", 8, "j8-dj-soir").n, 0, "lundi 23 h 30 : même jour, borne atteinte");
   at("2026-10-26T23:00:00Z"); assert.strictEqual(act(1, "dj", 8, "j9-dj").n, 8, "mardi minuit : nouvelle journée");
   // deux appareils créditent en même temps : le verrou du compte les fait passer l'un après l'autre (8 au plus, pas 16)
   at("2026-10-28 10:00 Europe/Paris");
-  const sess = (src, pause) => `psql '${dbUrl}' -X -q -At -c "begin; set local role authenticated; set local request.jwt.claim.sub = '${U(1)}'; select mono_eclats_activite('dj', 8, '${src}'); select pg_sleep(${pause}); commit;"`;
+  const sess = (src, pause) => `psql '${dbUrl}' -X -q -At -c "begin; select mono.bon('${U(1)}', 0, 'dj', '${src}', 8); select pg_sleep(${pause}); commit;"`;
   execFileSync("bash", ["-c", `${sess("par-a", 0.6)} & sleep 0.2; ${sess("par-b", 0)} & wait`], { encoding: "utf8" });
   assert.strictEqual(q(`select sum(n) from mono.eclats where user_id = '${U(1)}' and jour = 10 and quoi = 'dj'`), "8", "crédits simultanés");
   // cumul : sans jouer de la semaine 3 à la 8, tout reste à prendre, jamais plus de 800
   at("2026-12-13 10:00 Europe/Paris"); e = etat(1); assert.deepStrictEqual([e.jour, e.semaine, e.quota, e.reste], [56, 8, 800, 676], "fin de saison : 800 au plus");
   assert.strictEqual(somme(1, 0), e.solde, "solde = somme des lignes"); assert.strictEqual(somme(2, 0), etat(2).solde); assert.strictEqual(somme(3, 0), etat(3).solde);
   // ---------- achats : objets de collection sans droit, numéro du Cristal, opération unique ----------
+  valide(2, "partie-2", Object.fromEntries(Array.from({ length: 12 }, (_, d) => ["d" + (d + 1), 999])));
   for (let d = 1; d <= 12; d++) [0, 1, 2].forEach((p) => J(2, `mono_eclats_defi('d${d}', ${p})`));
+  assert.strictEqual(etat(2).solde, 30 + 1600 - 120 - 120, "défi 6 compté par le serveur (pas de ventes), défi 12 en attente des groupes en direct");
+  // défi 6 « Marché des échos » : lots vendus à d'autres joueurs, comptés seulement à partir de 3 acheteurs différents
+  q(`insert into mono.ventes (saison, monde, key, cat, qty, price, seller, buyer) select 0, 's', 'Blé', 'res', 1, 10, '${U(2)}', '${U(3)}' from generate_series(1, 60)`);
+  assert.match(JSON.stringify(J(2, `mono_eclats_defi('d6', 0)`)), /pas encore validée/, "60 ventes au même acheteur : défi 6 non compté");
+  q(`insert into mono.ventes (saison, monde, key, cat, qty, price, seller, buyer) values (0, 's', 'Blé', 'res', 1, 10, '${U(2)}', '${U(4)}'), (0, 's', 'Blé', 'res', 1, 10, '${U(2)}', '${U(1)}')`);
+  [0, 1, 2].forEach((p) => J(2, `mono_eclats_defi('d6', ${p})`));
+  assert.match(JSON.stringify(J(2, `mono_eclats_defi('d12', 0)`)), /pas encore validée/, "défi 12 : groupes en direct, pas encore là");
+  q(`select mono.mouvement('${U(2)}', 0, 120, 'echange_recu', 'test:sans-d12', null)`); // remplace le défi 12 pour la suite du test
   assert.strictEqual(etat(2).solde, 30 + 1600, "les 12 défis : 1 600 Éclats");
   b = achat(2, "sab"); assert(b.ok && b.droit === null && b.numero === null, JSON.stringify(b));
   b = achat(2, "cri"); assert(b.ok && b.droit === null && b.numero === 1, "Cristal n° 1 : " + JSON.stringify(b));
@@ -206,6 +231,7 @@ try {
   assert.strictEqual(as(2, `select count(*) from mono.cosm_droits`), "1", "RLS : droits d'un autre invisibles");
   // titre de défi : droit partagé, une seule fois
   q(`update mono.defis set titre = 'Gardien des échos' where contenu = 1 and defi = 'd9' and palier = 2`);
+  valide(3, "partie-3", { d9: 50 });
   [0, 1, 2].forEach((p) => J(3, `mono_eclats_defi('d9', ${p})`)); J(3, `mono_eclats_defi('d9', 2)`);
   assert.deepStrictEqual(J(3, `cosm_mine()`).map((x) => x.cle), ["titre:Gardien des échos"], "titre du défi");
   q(`update mono.defis set titre = null where defi = 'd9'`);
@@ -215,7 +241,7 @@ try {
   fails(() => as(1, `select mono_adm_fin_saison(0)`), /réservé à Mathis/, "fin de saison par un joueur");
   let f = J(9, `mono_adm_fin_saison(0, 1)`); assert.deepStrictEqual([f.passees, f.reste, f.etat], [1, 2, "cloture"], "premier lot puis coupure");
   fails(() => as(2, `select mono_push('trop-tard', '{}', '1', 'pc', null)`), /fermée/, "plus d'envoi pendant la clôture");
-  assert.match(JSON.stringify(act(2, "dj", 1, "apres")), /fermée/);
+  assert.strictEqual(act(2, "dj", 1, "apres").n, 0, "plus de bon pendant la clôture");
   f = J(9, `mono_adm_fin_saison(0)`); assert.deepStrictEqual([f.passees, f.reste, f.etat], [2, 0, "finie"], "reprise");
   f = J(9, `mono_adm_fin_saison(0)`); assert.deepStrictEqual([f.passees, f.reste], [0, 0], "rejouée : rien de plus");
   assert.strictEqual(q(`select count(*) from mono.parties where saison = 0`), "0"); assert.strictEqual(q(`select count(*) from mono.eternel where saison = 0`), "3");
