@@ -27,7 +27,10 @@ const CHANGELOG = [
   { v: "2.1.35.2", name: "Remise à zéro de la bêta", items: [
     "Bêta Monocompte : remise à zéro des parties après le bug des codes cadeaux",
     "Ta partie Monocompte d'avant la remise est gardée à part sur ton appareil, et une nouvelle partie de la bêta t'attend",
-    "Clés bêta : plus de limite d'essais" ] },
+    "Clés bêta : plus de limite d'essais",
+    "Classements en Monocompte : ceux de ta saison s'affichent d'abord (bouton « Voir le Classique »)",
+    "Chat : un Général à part pour le Monocompte",
+    "Panel Xener : page « Bouclier Monocompte » avec les parties Monocompte refusées et leur motif" ] },
   { v: "2.1.35.1", name: "C'est une bêta", items: [
     "Écran des parties : la carte Monocompte dit clairement qu'il s'agit de la bêta fermée (saison de test, bugs possibles, remise à zéro avant la Saison 1)",
     "Monocompte : les codes cadeaux du compte ne sont plus redonnés à la partie Monocompte (ils restent pour le serveur Classique)" ] },

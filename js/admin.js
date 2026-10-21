@@ -391,3 +391,42 @@ document.addEventListener("input", (ev) => { const id = ev.target && ev.target.i
 P.register({ id: "clesbeta", name: "Clés bêta", group: "Joueurs", html, load }); // recherche du panel : « Aller à : Clés bêta »
 window.MONOCLES = { st, load, html };
 })();
+
+/* ============================================================================
+   BOUCLIER DU MONOCOMPTE (supabase/monocompte.sql : mono_adm_bouclier, mono_adm_accepter) : page « Bouclier Monocompte »
+   du Panel Xener (groupe Joueurs). Une ligne par compte refusé : dernier motif, nombre de refus, date. « C'est bon » laisse
+   passer les gros gains à la prochaine vérification, jamais une partie impossible (niveau, Maîtrise).
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const toast = (t) => X().toast(t);
+const st = { L: null, err: null, busy: false };
+const date = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
+const repaint = () => { if (DX.ui.tab === "admin") P.repaint(); };
+async function load() {
+  const r = await ON.rpc("mono_adm_bouclier");
+  if (r.err) { st.L = null; st.err = /function .* does not exist|schema cache/i.test(r.err) ? "Le Monocompte n'est pas installé sur le serveur." : r.err; return; }
+  const by = new Map();
+  (Array.isArray(r.data) ? r.data : []).forEach((x) => { const k = x.user + ":" + x.saison; const o = by.get(k); if (o) o.n++; else by.set(k, Object.assign({ n: 1 }, x)); });
+  st.err = null; st.L = [...by.values()];
+}
+function html() {
+  if (st.err) return `<div class="box"><div class="empty">${h(st.err)}</div></div>`;
+  if (!st.L) return `<div class="box"><div class="empty">Chargement…</div></div>`;
+  return `<div class="box"><h2>Bouclier Monocompte</h2><span class="xs muted">Parties Monocompte refusées par le serveur. « C'est bon » laisse passer les gros gains à la prochaine sauvegarde, jamais un niveau ou une Maîtrise impossible.</span>
+    ${st.L.length ? st.L.map((x) => `<div class="ln"><b>${h(x.pseudo || "?")}</b><span class="xs muted">${h(x.why)}${x.n > 1 ? ` · ${x.n} refus` : ""}</span><span class="t">${h(date(x.at))}</span><button class="btn sm" data-act="mbcl-ok" data-v="${h(x.user)}" ${st.busy ? "disabled" : ""}>C'est bon</button></div>`).join("") : `<div class="empty">Aucune partie Monocompte en vérification.</div>`}</div>`;
+}
+async function act(a, v) {
+  if (st.busy || a !== "mbcl-ok") return;
+  st.busy = true;
+  try { const r = await ON.rpc("mono_adm_accepter", { p_user: v }); if (r.err || r.data) { toast(r.err || r.data); return; } toast("C'est noté : sa prochaine sauvegarde repasse le contrôle."); await load(); }
+  finally { st.busy = false; repaint(); }
+}
+document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act^='mbcl-']"); if (!t || !P.admin()) return; act(t.dataset.act, t.dataset.v); });
+P.register({ id: "monobouclier", name: "Bouclier Monocompte", group: "Joueurs", html, load });
+window.MONOBOUCLIER = { st, load, html };
+})();
