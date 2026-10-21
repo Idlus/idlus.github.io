@@ -1,13 +1,23 @@
 {
-  "version": "2.1.35.2",
+  "version": "2.1.35.3",
   "versions": [
+    {
+      "v": "2.1.35.3",
+      "name": "Panoplies à découvrir",
+      "items": [
+        "Encyclopédie › Panoplies : nouveau filtre « Non commencées » pour voir les panoplies dont tu n'as encore aucune pièce (idée de SegFault)"
+      ]
+    },
     {
       "v": "2.1.35.2",
       "name": "Remise à zéro de la bêta",
       "items": [
         "Bêta Monocompte : remise à zéro des parties après le bug des codes cadeaux",
         "Ta partie Monocompte d'avant la remise est gardée à part sur ton appareil, et une nouvelle partie de la bêta t'attend",
-        "Clés bêta : plus de limite d'essais"
+        "Clés bêta : plus de limite d'essais",
+        "Classements en Monocompte : ceux de ta saison s'affichent d'abord (bouton « Voir le Classique »)",
+        "Chat : un Général à part pour le Monocompte",
+        "Panel Xener : page « Bouclier Monocompte » avec les parties Monocompte refusées et leur motif"
       ]
     },
     {
