@@ -7614,8 +7614,8 @@ function toolGauge(id) {
   const L = E.toolLvl(S, id), T = E.TOOL_TIERS[id], max = E.TOOL_MAX;
   const nx = L < max ? (() => { for (let k = L + 1; k <= max; k++) if (E.toolTier(id, k)[2] === k && k > 1) return [E.toolName(id, k), k]; return null; })() : null;
   const ticks = T.slice(1).map((_, i) => `<i class="tk" style="left:${(Math.floor((i + 1) * max / T.length) / max) * 100}%"></i>`).join("");
-  const G = E.gravOf(S, id);
-  const slots = E.GRAV_LV.map((lv, i) => { const k = G[i]; return k ? `<span class="tag good" data-tip="${h(E.GRAV[k].desc)}">${h(E.GRAV[k].name)}</span>` : `<span class="tag soft ${L >= lv ? "gfree" : ""}">${L >= lv ? "à graver" : `gravure niv. ${lv}`}</span>`; }).join("");
+  const G = E.tgravOf(S, id);
+  const slots = E.TGRAV_LV.map((lv, i) => { const k = G[i]; return k ? `<span class="tag good" data-tip="${h(E.TGRAV[k].desc)}">${h(E.TGRAV[k].name)}</span>` : `<span class="tag soft ${L >= lv ? "gfree" : ""}">${L >= lv ? "à graver" : `gravure niv. ${lv}`}</span>`; }).join("");
   return `<div class="ptool2"><div class="row ptl">${im(toolImg(id, L), `toolico${L ? "" : " off"}`, L ? E.toolName(id, L) : E.TOOL_NAMES[id])}
     <div class="grow ptlg"><div class="row between small"><b>${L ? h(E.toolName(id, L)) : "Pas d'outil"}</b><span class="xs muted">niv. ${L} / ${max}</span></div>
       <div class="tgauge">${ticks}<i class="tf" style="width:${(L / max) * 100}%"></i></div>
@@ -7625,19 +7625,19 @@ function toolGauge(id) {
 }
 const toolCan = (id) => { const R = E.toolCost(S, id); return S.jobs[id].lvl >= R.lvl && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q); };
 function toolSheet(job) {
-  const L = E.toolLvl(S, job), G = E.gravOf(S, job);
-  const grav = E.GRAV_LV.map((lv, i) => {
+  const L = E.toolLvl(S, job), G = E.tgravOf(S, job);
+  const grav = E.TGRAV_LV.map((lv, i) => {
     const k = G[i], open = L >= lv;
-    const opts = E.GRAV_ORDER.map((g) => { const Gr = E.GRAV[g], st = E.gravStone(g, lv), have = S.res[st] || 0, on = k === g;
+    const opts = E.TGRAV_ORDER.map((g) => { const Gr = E.TGRAV[g], st = E.tgravStone(g, lv), have = S.res[st] || 0, on = k === g;
       return `<button class="gopt ${on ? "on" : ""}" data-act="engrave" data-job="${job}" data-i="${i}" data-k="${g}" ${!open || on || !have ? "disabled" : ""}>
         <b>${h(Gr.name)}${on ? ` <span class="tag good">gravée</span>` : ""}</b><span class="xs muted">${h(Gr.desc)}</span>
         <span class="xs">${im(resImg(st), "rico", st)} ${h(st)} · <span class="${have ? "plus" : "minus"}">${fmt(have)} en stock</span></span></button>`; }).join("");
-    return `<div class="gslot ${open ? "" : "lock"}"><div class="row between small"><b>Gravure du niveau ${lv}</b><span class="xs muted">${k ? h(E.GRAV[k].name) : open ? "libre" : `outil niveau ${lv} requis`}</span></div>${open ? `<div class="gopts">${opts}</div>` : ""}</div>`;
+    return `<div class="gslot ${open ? "" : "lock"}"><div class="row between small"><b>Gravure du niveau ${lv}</b><span class="xs muted">${k ? h(E.TGRAV[k].name) : open ? "libre" : `outil niveau ${lv} requis`}</span></div>${open ? `<div class="gopts">${opts}</div>` : ""}</div>`;
   }).join("");
   openSheet(`<div class="toolsheet" data-job="${job}"><div class="row between"><h3 class="row" style="gap:8px">${im(toolImg(job, L), "toolico", "")}${L ? h(E.toolName(job, L)) + " " + L : "Pas d'outil"}</h3><button class="btn sm ghost" data-act="closesheet">✕</button></div>
     <p class="xs muted">${h(GATHER_JOBS[job].name)} niv. ${S.jobs[job].lvl} · +${E.toolPct(L)} % de ressources par coup${L < E.TOOL_MAX ? ` → +${E.toolPct(L + 1)} % au niveau ${L + 1}` : ""}</p>
     ${toolHtml(job)}
-    <h4 class="small" style="margin:10px 0 4px">Gravures</h4><p class="xs muted">Aux niveaux 5, 10, 15, 20, 25 et 30, l'outil reçoit une gravure au choix (la même plusieurs fois si tu veux). Graver ou regraver consomme une pierre de gravure, butin rare des combats : monstres de niveau ${E.GRAV_DROP.small.lvl} et plus pour les gravures 5 à 15, de niveau ${E.GRAV_DROP.big.lvl} et plus pour 20 à 30.</p>
+    <h4 class="small" style="margin:10px 0 4px">Gravures</h4><p class="xs muted">Aux niveaux 5, 10, 15, 20, 25 et 30, l'outil reçoit une gravure au choix (la même plusieurs fois si tu veux). Graver ou regraver consomme une pierre de gravure, butin rare des combats : monstres de niveau ${E.TGRAV_DROP.small.lvl} et plus pour les gravures 5 à 15, de niveau ${E.TGRAV_DROP.big.lvl} et plus pour 20 à 30.</p>
     <div class="stack" style="gap:8px">${grav}</div></div>`);
 }
 function potionRow() {
@@ -10323,7 +10323,7 @@ document.addEventListener("click", (ev) => {
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); if ($("#sheet .toolsheet")) { toolSheet(d.job); dirty = true; render(); return; } break;
     case "toolsheet": toolSheet(d.job); return;
-    case "engrave": { const r = E.engrave(S, d.job, +d.i, d.k); if (r) { toast(r); return; } toast(`${E.GRAV[d.k].name} gravé !`); toolSheet(d.job); dirty = true; render(); return; }
+    case "engrave": { const r = E.engrave(S, d.job, +d.i, d.k); if (r) { toast(r); return; } toast(`${E.TGRAV[d.k].name} gravé !`); toolSheet(d.job); dirty = true; render(); return; }
     case "brew": { const r = E.brewPotion(S); if (r) { toast(r); return; } toast("Potion de récolte préparée."); break; }
     case "appsheet": ui.appJob = null; ui.appRes = null; appSheet(); return;
     case "appjob": ui.appJob = d.v; ui.appRes = null; appSheet(); return;

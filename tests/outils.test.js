@@ -35,23 +35,23 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   assert.ok(E.engrave(S, "paysan", 0, "pro"), "même gravure déjà en place");
   assert.strictEqual(E.engrave(S, "paysan", 1, "pro"), null); assert.ok(!S.res["Gravure de Secousse"], "pierre consommée");
   assert.ok(E.engrave(S, "paysan", 2, "sav"), "emplacement niveau 15 verrouillé avec l'outil 12");
-  assert.deepStrictEqual(E.gravFx(S, "paysan"), { find: 2, filon: 0, xp: 0 });
+  assert.deepStrictEqual(E.tgravFx(S, "paysan"), { find: 2, filon: 0, xp: 0 });
   assert.ok(Math.abs(E.findChance(S, "paysan") - 3 * E.FIND_CHANCE) < 1e-12, "trouvailles ×3 avec deux Prospecteur");
   S.tools.paysan = 20; assert.ok(E.engrave(S, "paysan", 3, "sav"), "emplacement 20 : grande pierre de la bonne gravure");
   S.res["Gravure d'Incendie"] = 1; assert.strictEqual(E.engrave(S, "paysan", 3, "sav"), null);
-  assert.ok(Math.abs(E.gravFx(S, "paysan").xp - 0.15) < 1e-12);
+  assert.ok(Math.abs(E.tgravFx(S, "paysan").xp - 0.15) < 1e-12);
   const back = E.deserialize ? E.deserialize(E.serialize(S)) : JSON.parse(E.serialize(S));
-  assert.deepStrictEqual((back.grav || {}).paysan, S.grav.paysan, "gravures sauvegardées"); }
+  assert.deepStrictEqual((back.tgrav || {}).paysan, S.tgrav.paysan, "gravures sauvegardées"); }
 
 // pierres de gravure : butin rare, seulement au-delà du niveau 20 / 80
 { const S = E.newState("D", "iop"); let small = 0, big = 0;
-  for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 100 }], { offline: true }, o); for (const r in o.res) (RES[r].lvl >= 80 ? big++ : small++); }
+  for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.tgravDrop(S, [{ lvl: 100 }], { offline: true }, o); for (const r in o.res) (RES[r].lvl >= 80 ? big++ : small++); }
   assert.ok(small > 60 && small < 145, `petites pierres ≈ 100 (${small})`); assert.ok(big > 30 && big < 95, `grandes pierres ≈ 60 (${big})`);
-  const M = E.monoStart(E.newState("DM", "iop")); let nm = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(M, [{ lvl: 100 }], { offline: true }, o); nm += Object.keys(o.res).length; }
+  const M = E.monoStart(E.newState("DM", "iop")); let nm = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.tgravDrop(M, [{ lvl: 100 }], { offline: true }, o); nm += Object.keys(o.res).length; }
   assert.ok(nm > (small + big) * 0.3 && nm < (small + big) * 0.75, `Monocompte : moitié moins par victoire (${nm} pour ${small + big})`);
-  let low = 0; for (let i = 0; i < 100000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 10 }], { offline: true }, o); low += Object.keys(o.res).length; }
+  let low = 0; for (let i = 0; i < 100000; i++) { const o = { res: {} }; E.tgravDrop(S, [{ lvl: 10 }], { offline: true }, o); low += Object.keys(o.res).length; }
   assert.strictEqual(low, 0, "rien sous le niveau 20");
-  let mid = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 50 }], { offline: true }, o); for (const r in o.res) { mid++; assert.ok(RES[r].lvl < 80, "pas de grande pierre sous le niveau 80"); } }
+  let mid = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.tgravDrop(S, [{ lvl: 50 }], { offline: true }, o); for (const r in o.res) { mid++; assert.ok(RES[r].lvl < 80, "pas de grande pierre sous le niveau 80"); } }
   assert.ok(mid > 60, `petites pierres au niveau 50 (${mid})`); }
 
 // Maîtrise des ressources : étoiles et bonus

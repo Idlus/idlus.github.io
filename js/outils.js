@@ -16,41 +16,41 @@
   const rnd = () => E.rnd();
 
   /* ---------------- Gravures ---------------- */
-  E.GRAV_LV = [5, 10, 15, 20, 25, 30];
+  E.TGRAV_LV = [5, 10, 15, 20, 25, 30];
   // fx : trouvailles × (1 + find), filons × (1 + filon), XP de métier × (1 + xp), par gravure
-  E.GRAV = {
+  E.TGRAV = {
     pro: { name: "Prospecteur", fx: { find: 1 }, desc: "Trouvailles 2 fois plus fréquentes : environ +4 % de ressources et plus d'Éclats de trouvaille.", stone: ["Gravure de Secousse", "Gravure de Séisme"], icon: 15214 },
     sou: { name: "Sourcier", fx: { filon: 0.5 }, desc: "Filons 50 % plus fréquents : environ +3 % de ressources.", stone: ["Gravure de Crachin", "Gravure de Tsunami"], icon: 15211 },
     sav: { name: "Savant", fx: { xp: 0.15 }, desc: "+15 % d'XP de métier.", stone: ["Gravure d'Étincelle", "Gravure d'Incendie"], icon: 15212 },
   };
-  E.GRAV_ORDER = ["pro", "sou", "sav"];
+  E.TGRAV_ORDER = ["pro", "sou", "sav"];
   // pierres de gravure : petites (gravures des niveaux 5 à 15), grandes (20 à 30)
-  E.GRAV_DROP = { small: { lvl: 20, p: 1 / 3000 }, big: { lvl: 80, p: 1 / 5000 }, mono: 0.5 }; // simulation : ≈ 1 pierre par jour de chasse (équipe de 8 : 75-170 victoires/h ; Monocompte : environ 2 fois plus de victoires, d'où × 0,5)
-  if (RES) E.GRAV_ORDER.forEach((k) => { const G = E.GRAV[k]; G.stone.forEach((n, i) => { if (!RES[n]) RES[n] = { id: 0, icon: G.icon, lvl: i ? 80 : 20, price: i ? 2000 : 500, type: -2, nosale: true }; }); }); // pas de vente au jeu : elles servent aux gravures
-  E.gravStone = (k, lv) => E.GRAV[k].stone[lv >= 20 ? 1 : 0];
-  E.gravOf = (S, job) => (S.grav && Array.isArray(S.grav[job]) ? S.grav[job] : []);
-  E.gravFx = (S, job) => { const f = { find: 0, filon: 0, xp: 0 }; for (const k of E.gravOf(S, job)) { const G = k && E.GRAV[k]; if (G) for (const x in G.fx) f[x] += G.fx[x]; } return f; };
+  E.TGRAV_DROP = { small: { lvl: 20, p: 1 / 3000 }, big: { lvl: 80, p: 1 / 5000 }, mono: 0.5 }; // simulation : ≈ 1 pierre par jour de chasse (équipe de 8 : 75-170 victoires/h ; Monocompte : environ 2 fois plus de victoires, d'où × 0,5)
+  if (RES) E.TGRAV_ORDER.forEach((k) => { const G = E.TGRAV[k]; G.stone.forEach((n, i) => { if (!RES[n]) RES[n] = { id: 0, icon: G.icon, lvl: i ? 80 : 20, price: i ? 2000 : 500, type: -2, nosale: true }; }); }); // pas de vente au jeu : elles servent aux gravures
+  E.tgravStone = (k, lv) => E.TGRAV[k].stone[lv >= 20 ? 1 : 0];
+  E.tgravOf = (S, job) => (S.tgrav && Array.isArray(S.tgrav[job]) ? S.tgrav[job] : []);
+  E.tgravFx = (S, job) => { const f = { find: 0, filon: 0, xp: 0 }; for (const k of E.tgravOf(S, job)) { const G = k && E.TGRAV[k]; if (G) for (const x in G.fx) f[x] += G.fx[x]; } return f; };
   /* grave (ou regrave) l'emplacement i (0 à 5) de l'outil du métier job ; une pierre est consommée à chaque fois */
   E.engrave = (S, job, i, k) => {
     if (!GATHER_JOBS[job]) return "Métier inconnu.";
-    const G = E.GRAV[k]; if (!G) return "Gravure inconnue.";
-    const lv = E.GRAV_LV[i]; if (lv == null) return "Emplacement inconnu.";
+    const G = E.TGRAV[k]; if (!G) return "Gravure inconnue.";
+    const lv = E.TGRAV_LV[i]; if (lv == null) return "Emplacement inconnu.";
     if (E.toolLvl(S, job) < lv) return `Il faut l'outil au niveau ${lv}.`;
-    const cur = E.gravOf(S, job); if (cur[i] === k) return `${G.name} est déjà gravé ici.`;
-    const st = E.gravStone(k, lv); if (!(S.res[st] > 0)) return `Il faut 1 ${st} (butin rare des combats, monstres de niveau ${lv >= 20 ? E.GRAV_DROP.big.lvl : E.GRAV_DROP.small.lvl} et plus).`;
+    const cur = E.tgravOf(S, job); if (cur[i] === k) return `${G.name} est déjà gravé ici.`;
+    const st = E.tgravStone(k, lv); if (!(S.res[st] > 0)) return `Il faut 1 ${st} (butin rare des combats, monstres de niveau ${lv >= 20 ? E.TGRAV_DROP.big.lvl : E.TGRAV_DROP.small.lvl} et plus).`;
     S.res[st]--; if (!S.res[st]) delete S.res[st];
-    S.grav = S.grav || {}; const g = (S.grav[job] = cur.slice()); while (g.length < E.GRAV_LV.length) g.push(null); g[i] = k;
+    S.tgrav = S.tgrav || {}; const g = (S.tgrav[job] = cur.slice()); while (g.length < E.TGRAV_LV.length) g.push(null); g[i] = k;
     E.note(S, `Gravure ${G.name} sur ${E.toolName(job, E.toolLvl(S, job))} (${GATHER_JOBS[job].name}).`, "up");
     E.emit(S, "tool", { job, grav: k });
     return null;
   };
   /* butin : une chance par combat gagné (chasse, donjon, groupe), selon le niveau du monstre le plus fort */
-  E.gravDrop = (S, mons, opts, out) => {
+  E.tgravDrop = (S, mons, opts, out) => {
     if (!mons || !mons.length) return;
-    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = rnd() / (isMono(S) ? E.GRAV_DROP.mono : 1);
-    const T = lvl >= E.GRAV_DROP.big.lvl && r < E.GRAV_DROP.big.p ? 1 : lvl >= E.GRAV_DROP.small.lvl && r < E.GRAV_DROP.big.p + E.GRAV_DROP.small.p ? 0 : -1;
+    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = rnd() / (isMono(S) ? E.TGRAV_DROP.mono : 1);
+    const T = lvl >= E.TGRAV_DROP.big.lvl && r < E.TGRAV_DROP.big.p ? 1 : lvl >= E.TGRAV_DROP.small.lvl && r < E.TGRAV_DROP.big.p + E.TGRAV_DROP.small.p ? 0 : -1;
     if (T < 0) return;
-    const k = E.GRAV_ORDER[Math.floor(rnd() * E.GRAV_ORDER.length)]; const n = E.GRAV[k].stone[T];
+    const k = E.TGRAV_ORDER[Math.floor(rnd() * E.TGRAV_ORDER.length)]; const n = E.TGRAV[k].stone[T];
     E.addRes(S, n, 1); if (out) out.res[n] = (out.res[n] || 0) + 1;
     if (!(opts && opts.offline)) E.note(S, `Butin rare : ${n} ! (gravure d'outil)`, "rare");
   };

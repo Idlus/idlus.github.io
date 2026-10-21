@@ -2736,7 +2736,7 @@
     if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
-    if (E.gravDrop) E.gravDrop(S, mons, opts, out); // 2.1.36 : gravures d'outil (js/outils.js)
+    if (E.tgravDrop) E.tgravDrop(S, mons, opts, out); // 2.1.36 : gravures d'outil (js/outils.js)
     return out;
   };
   E.giveRewards = giveRewards;
@@ -3412,8 +3412,8 @@
   E.hitQty = (S, c, frac = 1) => { if (!c.job) return 0; const L = S.jobs[c.job.job].lvl; return frac * E.hitScale(S, c) * (1 + L / 200) * (1 + 4 * E.findChance(S, c.job.job)) * E.gatherYield(L) * E.almMult(S, "gather", c.job.job) * (E.filonOn(S, c.job.res) ? 2 : 1) * E.protMult(S, c.job.res) * E.resMastMult(S, c.job.res); };
   E.FIND_CHANCE = 0.01;
   /* 2.1.36 : gravures des outils (js/outils.js) : trouvailles, filons et XP de métier ; Maîtrise des ressources (étoiles) */
-  E.gravFx = () => ({ find: 0, filon: 0, xp: 0 });
-  E.findChance = (S, job) => E.FIND_CHANCE * (1 + E.gravFx(S, job).find);
+  E.tgravFx = () => ({ find: 0, filon: 0, xp: 0 });
+  E.findChance = (S, job) => E.FIND_CHANCE * (1 + E.tgravFx(S, job).find);
   E.resMastMult = () => 1;
   E.resMastAdd = () => {};
   /* 1.0.7.9 : rendement de la récolte, part des ressources gardées à chaque coup selon le niveau du métier
@@ -3456,7 +3456,7 @@
   /* un coup (ou la part frac d'un coup quand le héros est rappelé) : k récoltes de l'ancien rythme d'un seul bloc */
   const gatherHit = (S, c, frac, opts = {}) => {
     const W = c.job; const J = S.jobs[W.job]; const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!J || !def || def[1] > J.lvl) return 0;
-    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl), gf = E.gravFx(S, W.job);
+    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl), gf = E.tgravFx(S, W.job);
     if (k <= 0) return 0;
     if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon") * (1 + gf.filon)) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
     const fe = k * E.FIND_CHANCE * (1 + gf.find); const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
