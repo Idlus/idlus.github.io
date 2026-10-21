@@ -6016,3 +6016,53 @@ button.pset.open{outline:1px solid var(--action)}
 .spcast.skip{opacity:.45;text-decoration:line-through;background:transparent;border:1px dashed var(--line)}
 .spcast.skip span{font-weight:600}
 @media (max-width:600px){.spcast.skip span{display:none}}
+/* lot ergonomie (21/10) : au téléphone, les 6 métiers de forgemagie tiennent sur une ligne qu'on fait glisser, l'établi remonte ;
+   la phrase sur la renaissance reste sur PC (Comment ça marche et le Guide l'expliquent aussi) */
+@media (max-width:700px){
+  .pfmjobs{display:flex;overflow-x:auto;scrollbar-width:none;gap:6px;padding-bottom:2px}.pfmjobs::-webkit-scrollbar{display:none}
+  .pfmjobs .pfj{flex:none;padding:4px 8px}.pfmjobs .pfj .bar.thin{display:none}
+  .pjrenh{display:none}
+}
+/* lot ergonomie (21/10) : page Combat sans combat, seuls les derniers combats restent à droite */
+.cside.cidle>.csec-butin:has(#floot),.cside.cidle>.csec-stats{display:none}
+/* lot ergonomie (21/10) */
+/* 5 : les épinglés du menu PC avec leur nom, deux par ligne */
+@media (min-width:860px){
+  #nav .sn-pins>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+  #nav .sn-side .sn-pin{position:relative;width:auto;height:30px;display:flex;align-items:center;justify-content:flex-start;gap:5px;padding:0 6px 0 2px;border-radius:9px;overflow:visible}
+  #nav .sn-side .sn-pin .med{width:24px;height:24px;flex:none}#nav .sn-side .sn-pin .med img{width:17px;height:17px}
+  #nav .sn-pin .sn-pl{font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:left}
+  body.navmini #nav .sn-pin .sn-pl{display:none}
+  /* D : la lettre du raccourci clavier au survol */
+  #nav .sn-side button[data-nk]{position:relative}
+  #nav .sn-kbd{position:absolute;right:6px;top:50%;transform:translateY(-50%);font:800 10.5px/1 var(--font-body);color:var(--muted);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 5px;background:var(--panel);opacity:0;transition:opacity .12s;pointer-events:none}
+  #nav .sn-side button[data-nk]:hover .sn-kbd,#nav .sn-fly button[data-nk]:hover .sn-kbd{opacity:1}
+  #nav .sn-side button[data-nk]:hover .navcnt,#nav .sn-side button[data-nk]:hover .sn-new{visibility:hidden}
+}
+@media (max-width:859px){#nav .sn-kbd{display:none}}
+/* 6 : menu du téléphone, une ligne par famille */
+.ns-fh{display:flex;align-items:center;gap:10px;width:100%;border:2px solid var(--frame);background:var(--panel2);border-radius:12px;padding:6px 10px;margin:6px 0 0;color:var(--ink);font:inherit;font-weight:900;font-size:14px;cursor:pointer;text-align:left}
+.ns-fh .med{width:30px;height:30px;flex:none}.ns-fh .med img{width:21px;height:21px}
+.ns-fh .ns-fn{font-size:11.5px;font-weight:700;color:var(--muted)}
+.ns-fh .navcnt{position:static;margin:0}
+.ns-fh .sn-chev{width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);opacity:.6;flex:none;margin-right:4px}
+.ns-fh.open{border-color:var(--gold);color:var(--gold2)}.ns-fh.open .sn-chev{transform:rotate(45deg)}
+.ns-fh+.ns-tiles{margin-top:7px}
+/* 3 : bulle du chat plus petite au téléphone, et cachée quand on descend */
+@media (max-width:859px){
+  .chmin{width:46px;height:46px;transition:transform .2s,opacity .2s}
+  body.scrolldn .chmin{transform:translateY(calc(var(--navh) + 70px));opacity:0;pointer-events:none}
+  /* 4 : « Mieux pour… » juste au-dessus de la barre du bas ; la bulle du chat laisse la place */
+  .toasts.lootdock{top:auto!important;bottom:calc(var(--navh) + 10px)!important;left:50%;right:auto;transform:translateX(-50%)}
+  body:has(#lootdock>.toast) .chmin{opacity:0;pointer-events:none}
+}
+@media (min-width:860px){#lootdock{display:none}}
+/* lot ergonomie (21/10), C : menu du clic droit sur un objet du sac */
+.ctxmenu{position:fixed;z-index:200;min-width:190px;display:flex;flex-direction:column;padding:5px;border-radius:12px;background:var(--panel);border:2px solid var(--gold);box-shadow:var(--shadow)}
+.ctxmenu .ctx-h{font-size:12px;font-weight:900;color:var(--gold2);padding:4px 8px 6px;border-bottom:1px solid var(--line);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.ctxmenu button{border:0;background:none;color:var(--ink);font:inherit;font-size:13px;font-weight:700;text-align:left;padding:6px 8px;border-radius:8px;cursor:pointer}
+.ctxmenu button:hover{background:var(--panel2)}
+.ctxmenu .ctx-del{color:var(--danger)}.ctxmenu .ctx-del.ask{background:var(--danger);color:#fff}
+body:has(#ctxmenu) .tooltip{display:none!important}
+/* lot ergonomie (21/10) : au téléphone, la flèche « devant / derrière » ne couvre plus le niveau du héros */
+@media (hover:none){.tr-mv{right:64px}}

@@ -2791,7 +2791,7 @@ function renderNav() {
   const famCount = (F) => { let n = 0, coin = false; navFamPages(F).forEach((p) => { const b = badge(p[0]); const m = /navcnt[^>]*>(\d+)</.exec(b); if (m) n += +m[1]; else if (/navcoin/.test(b)) coin = true; else if (b) n += 1; }); return { n, coin }; };
   const famBadge = (F) => { const c = famCount(F); return c.n ? `<span class="navcnt" title="${c.n} chose${c.n > 1 ? "s" : ""} à faire">${c.n}</span>` : c.coin ? '<span class="navcoin" title="Vous pouvez recruter un héros"></span>' : ""; }; // 8A : le total des pastilles d'une famille repliée
   const famNew = (F) => (navFamPages(F).some((p) => navIsNew(p[0])) ? '<span class="sn-newdot" title="Nouveauté"></span>' : "");
-  const item = (key, n, ic, desc) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}</button>`;
+  const item = (key, n, ic, desc) => { const hk = navHotkey(key); return `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}${hk ? ` (touche ${hk})` : ""}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}${hk ? `<kbd class="sn-kbd" aria-hidden="true">${hk}</kbd>` : ""}</button>`; };
   const fightBtn = `<button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${k === "combat" ? 'aria-current="page"' : ""} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>`;
   const quit = navQuitBtn(); const fightRow = `<div class="sn-frow${quit ? " q" : ""}">${fightBtn}${quit}</div>`; // 2.1.31.5 : quitter le donjon ou rentrer de la chasse sans ouvrir le combat
   const foot = `<div class="sn-foot"><button class="sn-fb" data-act="gd-open" title="Guide de cette page"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Guide</span></button><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
@@ -2807,7 +2807,7 @@ function renderNav() {
     side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="Réduire le menu aux icônes" aria-label="Réduire le menu">«</button></div>
       <label class="sn-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Aller à une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
       ${fightRow}${item("home", "Havre-Sac", "logo")}
-      ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}${badge(key)}</button>`; }).join("")}</div></div>` : ""}
+      ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}<span class="sn-pl">${h(p[1])}</span>${badge(key)}</button>`; }).join("")}</div></div>` : ""}
       ${q ? `<div class="sn-hits"><span>${hits.length ? `${hits.length} page${hits.length > 1 ? "s" : ""}` : "Aucune page"} pour « ${h(q)} »</span>${hits.map((p) => item(p[0], p[1], p[2], true)).join("")}</div>`
         : NAV.map((F) => { const op = isOpen(F); return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
       <span class="sn-grow"></span>${foot}</div>`;
@@ -2848,14 +2848,18 @@ function navAfter(k, B) {
   navBadgeSeen = seen;
 }
 /* téléphone : toutes les pages en tuiles, par famille, avec la recherche et les épinglés */
+/* lot ergonomie (21/10) : le menu tient sur un écran, chaque famille se déplie d'un toucher ; celle de la page affichée est ouverte */
+const nsOpen = (F, curF) => (ui.nsFams && F.id in ui.nsFams ? !!ui.nsFams[F.id] : !!(curF && curF.id === F.id));
 function navMenuSheet() {
-  const k = navKey(); const kk = navParent(k); const B = navBadges(); const pins = navPins(); const q = (ui.navQ || "").trim(); const hits = q ? navSearchHits(q) : [];
+  const k = navKey(); const kk = navParent(k); const curF = navFam(k); const B = navBadges(); const pins = navPins(); const q = (ui.navQ || "").trim(); const hits = q ? navSearchHits(q) : [];
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const tile = (key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key || kk === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || (navIsNew(key) ? '<span class="sn-new t">nouveau</span>' : "")}</button>` : ""; };
   const hit = (p) => `<button class="ns-hit" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${k === p[0] ? 'aria-current="page"' : ""}>${icon(p[2])}<span class="sn-l">${h(p[1])}<small>${h(NAV_DESC[p[0]] || "")}</small></span>${B[p[0]] || ""}</button>`;
   openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
-      : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => `<h3>${h(F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}`}
+      : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => { const op = nsOpen(F, curF); const L = navFamPages(F);
+        const cnt = L.reduce((n, p) => { const m = /navcnt[^>]*>(\d+)</.exec(B[p[0]] || ""); return n + (m ? +m[1] : B[p[0]] ? 1 : 0); }, 0);
+        return `<button class="ns-fh${op ? " open" : ""}" data-act="nsfam" data-v="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="grow">${h(F.n)}</span>${op ? "" : `<span class="ns-fn">${L.length} pages</span>${cnt ? `<span class="navcnt">${cnt}</span>` : ""}`}<i class="sn-chev"></i></button>${op ? `<div class="ns-tiles">${L.map((p) => tile(p[0])).join("")}</div>` : ""}`; }).join("")}`}
     <div class="ns-foot"><button class="btn" data-act="gd-open"><b class="sn-gq" aria-hidden="true">?</b> Guide</button><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
@@ -5529,6 +5533,7 @@ function axWheel(A, res) {
 }
 function updateCombat(force) {
   const F = ui.watch ? ui.watch.W.S2.fight : S.fight; const arena = $("#arena"); if (!arena) return;
+  { const cs = document.querySelector(".cside"); if (cs) cs.classList.toggle("cidle", !ui.watch && !F && !S.hunting && !S.dungeon && !E.expActive(S)); } // lot ergonomie (21/10) : sans combat, Butin et Statistiques vides se cachent
   if (!ui.arena || ui.arena.el !== arena || ui.arena.fid !== (F ? F.id : null) || ui.arena.theme !== isDark() || ui.arena.view !== combatView()) buildArena(F);
   const A = ui.arena;
   if (F && A.nEnts !== undefined && F.ents.length > A.nEnts) {
@@ -5931,11 +5936,11 @@ function teamTopHtml() {
     <span class="grow"></span>${idolBtn(null)}${archiBtn()}<button class="btn sm" data-act="sm-card">${G("share")} Partager</button></div>`;
 }
 /* 1.0.34 : collection « Les 19 classes » en haut de la page Équipe : une case par classe (meilleur niveau), dorée une fois le niveau 200 atteint.
-   +1 % d'XP et de kamas par classe (E.classesMult), titre « Maître des 19 classes » et Blason à 19. Repliable (S.settings.c19Shut). */
+   +1 % d'XP et de kamas par classe (E.classesMult), titre « Maître des 19 classes » et Blason à 19. Repliable (S.settings.c19Shut), replié par défaut depuis le lot ergonomie (21/10) : les héros d'abord. */
 function classesBoardHtml() {
   const done = E.classesDone(S); const n = E.classesN(S); const best = {};
   S.chars.forEach((c) => { best[c.cls] = Math.max(best[c.cls] || 0, c.lvl); });
-  const shut = !!S.settings.c19Shut; const bon = n * E.CLASS_BONUS;
+  const shut = S.settings.c19Shut !== false; const bon = n * E.CLASS_BONUS;
   const head = `<div class="c19h"><b class="c19t">Les 19 classes</b><span class="c19n num">${n} / 19 au niveau 200</span>${bon ? `<span class="c19b">+${bon} % d'XP et de kamas</span>` : ""}<span class="grow"></span><button class="btn sm" data-act="c19fold" aria-expanded="${!shut}">${shut ? "Voir" : "Replier"}</button></div>`;
   if (shut) return `<div class="c19 shut">${head}</div>`;
   return `<div class="c19">${head}<div class="c19bar"><i style="width:${Math.round((n / 19) * 100)}%"></i></div>
@@ -8542,6 +8547,12 @@ const msg = (r) => { if (typeof r === "string") toast(r); };
 /* 1.0.31 : un butin qui améliore un héros de l'équipe le dit tout de suite, avec « Équiper » (choix de Mathis, 3e série 4A).
    Seuls les objets arrivés depuis le dernier passage sont testés, au plus toutes les 3 s : quelques gainFor, pas de plan complet */
 let lootUpUid = 0, lootUpAt = 0;
+/* lot ergonomie (21/10) : au téléphone, « Mieux pour… » s'affiche juste au-dessus de la barre du bas, plus sur les pastilles et l'annonce */
+function lootDock() {
+  if (!(window.matchMedia && window.matchMedia("(max-width: 859px)").matches)) return $("#toasts");
+  let d = $("#lootdock"); if (!d) { d = document.createElement("div"); d.id = "lootdock"; d.className = "toasts lootdock"; d.setAttribute("aria-live", "polite"); document.body.appendChild(d); }
+  return d;
+}
 function lootUpCheck() {
   if (!lootUpUid || S.settings.lootUpOff || S.nextUid - lootUpUid > 400) { lootUpUid = S.nextUid; return; }
   if (S.nextUid <= lootUpUid || performance.now() - lootUpAt < 3000) return;
@@ -8551,7 +8562,7 @@ function lootUpCheck() {
   E.team(S).forEach((c) => { const base = gearScore(c, c.equip); fresh.forEach((it) => { const T = ITEMS[it.tpl]; if (T.lvl > c.lvl) return;
     (T.slot === "anneau" ? ["anneau1", "anneau2"] : [T.slot]).forEach((s) => { if (equipBlocked(c, c.equip, s, it)) return; const g = gainFor(c, s, it.uid, base) / Math.max(1, base);
       if (g > 0.005 && (!best || g > best.g)) best = { c, s, it, g }; }); }); });
-  if (!best) return; const box = $("#toasts"); if (!box) return;
+  if (!best) return; const box = lootDock(); if (!box) return;
   const d = document.createElement("div"); d.className = "toast lootup";
   d.innerHTML = `<span class="grow"><b>▲ Mieux pour ${h(best.c.name)}</b> : ${h(ITEMS[best.it.tpl].name)} <span class="tsub">+${Math.max(1, Math.round(best.g * 100))} % de puissance</span></span><button class="btn sm primary" data-act="lootup" data-cid="${best.c.id}" data-uid="${best.it.uid}" data-s="${best.s}">Équiper</button>`;
   box.prepend(d); while (box.children.length > 3) box.lastChild.remove(); setTimeout(() => d.remove(), 8000);
@@ -8827,6 +8838,7 @@ document.addEventListener("keydown", (ev) => {
    D'autres pages de la 1.1 s'ajoutent ici avec leur lettre. */
 const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "maitrise"],
   ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"], ["a", "asc"], ["p", "pets"], ["y", "dofus"]];
+const navHotkey = (k) => { if (!S || (S.settings && S.settings.keysOff)) return ""; const x = HOTKEYS.find(([, p]) => p === k); return x ? x[0].toUpperCase() : ""; }; // lot ergonomie (21/10) : la lettre s'affiche au survol dans le menu
 const hotPages = () => { const out = ["home", "combat"]; NAV.forEach((F) => F.pages.forEach((p) => { if (p[0] !== "bug" && p[0] !== "admin") out.push(p[0]); })); return out; }; // 1.2.7.2 : les flèches ne butent plus sur Signaler un bug
 function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(k)) return; navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
 function hotkey(ev) {
@@ -10215,6 +10227,7 @@ document.addEventListener("click", (ev) => {
       else if (t === "equip") { navGo("heroes"); const c = mainHero(); if (c) ui.cid = c.id; ui.hero = "equip"; }
       else { navGo("quests"); ui.qt = t; }
       closeSheet(); window.scrollTo(0, 0); break; }
+    case "nsfam": { const F = NAV.find((x) => x.id === d.v); if (!F) return; const op = nsOpen(F, navFam(navKey())); (ui.nsFams || (ui.nsFams = {}))[d.v] = !op; const sc = $("#sheet .sheet"); const y = sc ? sc.scrollTop : 0; navMenuSheet(); const sc2 = $("#sheet .sheet"); if (sc2) sc2.scrollTop = y; return; }
     case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
@@ -10242,7 +10255,7 @@ document.addEventListener("click", (ev) => {
       ui.cid = cc.id; ui.tab = "heroes"; ui.hero = d.v === "pts" ? "stats" : "pet"; ui.slot = null; render(); window.scrollTo(0, 0); return; }
     case "teamequipall": { let n = 0; E.team(S).forEach((x) => (n += equipBest(x))); toast(n ? `${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
     case "teamboard": ui.teamBoard = !ui.teamBoard; ui.teamSel = null; break;
-    case "c19fold": S.settings.c19Shut = !S.settings.c19Shut; break;
+    case "c19fold": S.settings.c19Shut = S.settings.c19Shut === false; break; // lot ergonomie (21/10) : replié par défaut
     case "teamsel": { const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tc = char(+d.id);
       /* un héros est déjà choisi et on touche un héros d'une autre zone : on l'y envoie */
       if (sel && tc && sel !== tc && teamZone(sel) !== teamZone(tc)) { ui.teamSel = null; const z = teamZone(tc) === "atelier" ? "rest" : teamZone(tc); msg(teamMove(sel.id, z)); dirty = true; break; }
@@ -11700,6 +11713,43 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
+/* lot ergonomie (21/10) : au téléphone, la bulle du chat s'efface quand on descend dans une page (elle cachait des boutons) et revient quand on remonte */
+{ let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY || 0; const dn = y > lastY + 6 && y > 120; const up = y < lastY - 6 || y < 120;
+  if (dn) document.body.classList.add("scrolldn"); else if (up) document.body.classList.remove("scrolldn"); if (dn || up) lastY = y; }, { passive: true }); }
+/* lot ergonomie (21/10), C : sur PC, double-clic sur un objet du sac = l'équiper (sur le héros choisi dans « Pour », sinon celui pour qui il est ▲ mieux),
+   clic droit = petit menu (Équiper sur…, Forgemagie, Vendre à l'HdV, Cadenas, Briser en deux temps) */
+function invQuickTarget(it) {
+  const T = ITEMS[it.tpl]; if (!T || T.trophy || T.slot === "dofus") return null;
+  const c = (ui.invFor && char(ui.invFor)) || invUps().get(it.uid) || null; if (!c || T.lvl > c.lvl) return null;
+  const base = gearScore(c, c.equip); let best = null;
+  (T.slot === "anneau" ? ["anneau1", "anneau2"] : [T.slot]).forEach((sl) => { if (equipBlocked(c, c.equip, sl, it)) return; const g = gainFor(c, sl, it.uid, base); if (!best || g > best.g) best = { sl, g }; });
+  return best ? { c, sl: best.sl } : null;
+}
+function ctxClose() { const m = $("#ctxmenu"); if (m) m.remove(); }
+let invDbl = { tpl: null, t: 0 }; // le premier clic redessine le sac (fiche de l'objet) : le double-clic est donc repéré à la main, deux clics sur le même objet en 0,4 s
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest && ev.target.closest("#invItems .itile[data-tipitem]"); if (!t || !S || ui.invMulti || (window.matchMedia && window.matchMedia("(pointer:coarse)").matches)) return;
+  const now = performance.now(); const tpl = t.dataset.tpl; if (invDbl.tpl !== tpl || now - invDbl.t > 400) { invDbl = { tpl, t: now }; return; }
+  invDbl = { tpl: null, t: 0 }; ev.stopPropagation(); ev.preventDefault();
+  const it = S.items[+t.dataset.tipitem]; if (!it) return; if (E.equippedBy(S, it.uid)) { toast("Cet objet est déjà porté."); return; }
+  const q = invQuickTarget(it); if (!q) { giveSheet(it.uid); return; }
+  const r = E.equip(S, q.c.id, it.uid, q.sl); toast(r || `${ITEMS[it.tpl].name} équipé sur ${q.c.name}.`); if (!r) { ui.invSel = null; dirty = true; render(); }
+}, true);
+document.addEventListener("contextmenu", (ev) => {
+  const t = ev.target.closest && ev.target.closest("#invItems .itile[data-tipitem]"); if (!t || !S || ui.invMulti) return;
+  const it = S.items[+t.dataset.tipitem]; const T = it && ITEMS[it.tpl]; if (!T) return; ev.preventDefault(); ctxClose();
+  const by = E.equippedBy(S, it.uid); const q = by ? null : invQuickTarget(it); const free = !by && !it.locked;
+  const m = document.createElement("div"); m.id = "ctxmenu"; m.className = "ctxmenu"; m.setAttribute("role", "menu");
+  m.innerHTML = `<div class="ctx-h">${h(T.name)}</div>${q ? `<button role="menuitem" data-ctx="quick">Équiper sur ${h(q.c.name)}</button>` : ""}<button role="menuitem" data-act="givesheet" data-uid="${it.uid}">Équiper sur…</button>${T.leg ? "" : `<button role="menuitem" data-act="fmgo" data-uid="${it.uid}">Forgemagie</button>`}${free && hdvOn() ? `<button role="menuitem" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button role="menuitem" data-act="lock" data-uid="${it.uid}">${it.locked ? "Enlever le cadenas" : "Cadenas"}</button>${free ? `<button role="menuitem" class="ctx-del" data-ctx="brk">Briser…</button>` : ""}`;
+  document.body.appendChild(m);
+  const W = innerWidth, H = innerHeight, r = m.getBoundingClientRect(); m.style.left = Math.min(ev.clientX, W - r.width - 8) + "px"; m.style.top = Math.min(ev.clientY, H - r.height - 8) + "px";
+  m.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.ctx === "brk") { e.stopPropagation(); b.dataset.ctx = ""; b.dataset.act = "break"; b.dataset.uid = it.uid; b.textContent = "Sûr ? Briser l'objet"; b.classList.add("ask"); return; }
+    if (b.dataset.ctx === "quick") { e.stopPropagation(); ctxClose(); const r2 = E.equip(S, q.c.id, it.uid, q.sl); toast(r2 || `${T.name} équipé sur ${q.c.name}.`); if (!r2) { dirty = true; render(); } return; }
+    setTimeout(ctxClose, 0); });
+});
+["click", "scroll", "resize"].forEach((e) => window.addEventListener(e, (ev) => { if (e === "click" && ev.target.closest && ev.target.closest("#ctxmenu")) return; ctxClose(); }, { passive: true, capture: e !== "click" }));
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") ctxClose(); });
 window.DX = { get S() { return S; }, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
