@@ -108,3 +108,27 @@ const M = (i, S) => ({ user: "u" + i, data: E.serialize(S) });
   assert.strictEqual(JSON.stringify(R1), JSON.stringify(R2), "onTick sans effet sur le combat"); assert.strictEqual(n * 1000, R1.t);
   console.log("ok - E.monoGroupRun : durée R.t et onTick sans tirage au hasard");
 }
+
+// 5. triche : un héros prêté en renfort par un ami (copie « rf » rendue par le serveur, mono_social.sql) ne joue jamais dans un
+//    groupe de joueurs, même si la partie le présente comme son propre héros
+{
+  const ok1 = M(1, game("iop", 40));
+  const lend = (mut) => { const S = game("cra", 40); mut(S, S.chars[0]); return M(2, S); };
+  const cas = {
+    "marque rf sur le héros": (S, c) => { c.rf = 1; },
+    "marque renfort sur le héros": (S, c) => { c.renfort = { u: "u7" }; },
+    "copie d'ami à la place du héros (snap)": (S, c) => { c.snap = Object.assign(E.monoSnap(S, c), { rf: 1 }); },
+    "renfort sans héros à soi": (S, c) => { c.merc = true; c.renfort = { u: "u7" }; c.snap = E.monoSnap(S, c); },
+  };
+  for (const k in cas) {
+    const r = BC.combat(VM, [ok1, lend(cas[k])], DJ, 1, 5);
+    assert.ok(r.exclus && r.exclus.some((x) => x.user === "u2" && /renfort|pas de héros validé/.test(x.why)) && !r.snaps, `${k} : ${JSON.stringify(r).slice(0, 200)}`);
+  }
+  // l'ami qui joue lui-même son héros reste accepté ; un renfort à côté du héros (mercenaire) n'entre jamais dans la photo
+  const S3 = game("eni", 40); const fr = E.monoStart(E.newState("Ami", "sram")); fr.chars[0].lvl = 40;
+  S3.chars.push(Object.assign(JSON.parse(JSON.stringify(fr.chars[0])), { id: 999, merc: true, renfort: { u: "u7" }, snap: Object.assign(E.monoSnap(fr, fr.chars[0]), { rf: 1 }) }));
+  const r = BC.combat(VM, [ok1, M(3, S3)], DJ, 1, 5);
+  assert.ok(!r.exclus && !r.err, JSON.stringify(r.exclus || r.err));
+  assert.ok(JSON.parse(r.snaps).every((x) => !BC.renfort(x) && x.id !== 999) && JSON.parse(r.snaps).length === 2, "photos : seulement le héros de chaque compte");
+  console.log("ok - triche : héros prêté en renfort refusé dans le groupe (4 cas), renfort à côté du héros jamais photographié");
+}

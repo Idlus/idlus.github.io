@@ -27,6 +27,9 @@
     finally { E.weekly = w0; E.flashOf = f0; E.setClock(c0); }
   };
 
+  /* Copie d'un héros prêté en renfort par un ami (marque « rf » ou « renfort », js/verify_mono.js : VM.renfort ; mono_social.sql) ou
+     mercenaire : jamais dans un groupe de joueurs, seulement le propre héros de chaque compte */
+  BC.renfort = (x) => !!(x && (x.rf || x.renfort || x.merc || x.snap));
   /* Côté serveur. membres : [{ user, pseudo, data (texte de la partie validée) }]. VM : js/verify_mono.js (lecture d'une partie).
      at : heure du lancement (ms, donnée par la base). Renvoie { exclus: [{ user, why }] } (lancement annulé), { err } ou { snaps (texte), R, duree, cle }. */
   BC.combat = (VM, membres, did, stasis, seed, at) => {
@@ -40,8 +43,10 @@
       if (!S || !S.mono || S.mono.eternel || !c) { exclus.push({ user: m.user, why: "pas de héros validé cette saison" }); continue; }
       if (S.dungeon) { exclus.push({ user: m.user, why: "donjon solo en cours" }); continue; } // 1B
       if (!E.dungeonUnlocked(S, did)) { exclus.push({ user: m.user, why: "donjon pas encore débloqué" }); continue; } // 4A
+      if (BC.renfort(c)) { exclus.push({ user: m.user, why: "héros prêté en renfort" }); continue; } // copie d'un ami : jamais dans un groupe de joueurs
       top = Math.max(top, (E.stasisInfo(S, did).max) || 0);
-      const sn = E.monoSnap(S, c); sn.merc = 0; snaps.push(sn);
+      const sn = E.monoSnap(S, c); if (BC.renfort(sn)) { exclus.push({ user: m.user, why: "héros prêté en renfort" }); continue; }
+      sn.merc = 0; snaps.push(sn);
     }
     if (exclus.length) return { exclus };
     if (stasis > 1 && top < stasis - 1) return { exclus: membres.map((m) => ({ user: m.user, why: `personne n'a réussi la stasis ${stasis - 1}` })) }; // 4A
