@@ -348,7 +348,7 @@
   ON.chatLoad = async (ch) => {
     if (!sb) return null;
     let q = sb.from("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
-    q = q.eq("ch", ["p", "c", "v"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v)
+    q = q.eq("ch", ["p", "c", "v", "m"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
     try { const { data, error } = await withTimeout(q, 12000); return error ? null : (data || []).reverse(); } catch (e) { return null; } // 1.0.9.1 : une erreur du serveur (délai dépassé côté base) compte comme « pas chargé », le chat réessaie
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
@@ -369,7 +369,7 @@
   ON.chatLost = () => !!chan && lost; // 1.0.10.1 : temps réel coupé (incident Supabase Realtime) : le chat se met à jour sans lui
   ON.onlinePseudos = () => { try { return chan ? Object.values(chan.presenceState()).flat().map((x) => x && x.p).filter(Boolean) : []; } catch (e) { return []; } }; // 0.1.53.7 : proposés quand on tape « @ »
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
-  ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };
+  ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
   // 0.1.29.1 : l'équipe (créateur, modérateurs) pour le badge à côté du pseudo, lisible sans compte
