@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35.1";
+const GAME_VERSION = "2.1.35.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.35.2", name: "Remise à zéro de la bêta", items: [
+    "Bêta Monocompte : remise à zéro des parties après le bug des codes cadeaux",
+    "Ta partie Monocompte d'avant la remise est gardée à part sur ton appareil, et une nouvelle partie de la bêta t'attend",
+    "Clés bêta : plus de limite d'essais" ] },
   { v: "2.1.35.1", name: "C'est une bêta", items: [
     "Écran des parties : la carte Monocompte dit clairement qu'il s'agit de la bêta fermée (saison de test, bugs possibles, remise à zéro avant la Saison 1)",
     "Monocompte : les codes cadeaux du compte ne sont plus redonnés à la partie Monocompte (ils restent pour le serveur Classique)" ] },
@@ -10080,7 +10084,7 @@ document.addEventListener("click", (ev) => {
     case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -10714,7 +10718,7 @@ const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
 let booted = false, sincePush = 0;
 /* 1.0.11 : + héros principal (nom, apparence) et kamas, pour la carte de la partie sur l'écran « Choisis ta partie » */
 const onMeta = (st) => { if (!st || !st.chars) return {}; const mh = st.chars.find((c) => c.id === st.mainHero) || st.chars[0];
-  return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }); };
+  return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }, st.mono && !st.mono.eternel ? { gen: monoGenOf(st) } : {}); };
 const onLive = () => !!(ON && ON.user && ON.profile && booted && S && ON.slotOnline());
 /* 1.0.11 : la partie 1 seule entre aux classements et joue avec les autres (Hôtel de vente, guilde, Kolizéum classé…) */
 const ranked = () => onLive() && SLOT === 1;
@@ -10791,6 +10795,34 @@ function monoSeasonEnd() {
   const nom = E.monoSeasonDef(st.mono.s).nom, extra = [got.pass ? `${got.pass} récompense${got.pass > 1 ? "s" : ""} de pass` : "", got.chests.length ? `${got.chests.length} coffre${got.chests.length > 1 ? "s" : ""} du Défi de la manche` : ""].filter(Boolean);
   return `La ${nom} est finie : ${st.chars[0].name} rejoint l'Éternel avec ses kamas et ses objets${extra.length ? ` (et ${extra.join(" et ")} pas encore pris)` : ""}. Tes titres et apparences te suivent dans la prochaine saison.`;
 }
+/* 2.1.35.2 : remise à zéro de la bêta (tools/serveur/mono_remise_zero.sql, après le bug des codes cadeaux). Le serveur numérote
+   les générations de parties de la saison (mono_acces : saison.gen, saison.remise) ; la partie Monocompte les garde (S.mono.gen)
+   et les envoie (meta.gen). Une partie sans numéro (jeu d'avant 2.1.35.2) est de la génération en cours si elle a commencé
+   après la remise, sinon de la précédente. */
+const monoSrvSaison = () => (ON && ON.mono && ON.mono.ok && ON.mono.saison) || null;
+const monoGenOf = (st, A) => {
+  if (!st || !st.mono) return 0; if (st.mono.gen != null) return +st.mono.gen || 0;
+  A = A || monoSrvSaison(); const g = A ? +A.gen || 0 : 0, r = A && A.remise ? Date.parse(A.remise) : 0;
+  return g > 0 && r > 0 && (st.mono.t0 || 0) > r ? g : Math.max(0, g - 1);
+};
+/* Partie Monocompte de l'appareil d'avant la remise : mise de côté (copie renommée « -remise-<génération> », jamais effacée),
+   le joueur repart sur « Nouvelle partie de la bêta ». Une partie d'après la remise n'est jamais touchée. Renvoie le message. */
+function monoRemiseCheck() {
+  const A = monoSrvSaison(); if (!A || !(+A.gen > 0)) return "";
+  const k = slotKey(MONO_SLOT), raw = SV.local.get(k); if (!raw) return "";
+  const st = SV.peek(k).state; if (!st || !st.mono || st.mono.eternel) return "";
+  if (st.mono.sid != null && st.mono.sid !== A.id) return ""; // partie d'une autre saison du serveur
+  if (monoGenOf(st, A) >= +A.gen) return "";
+  const ak = `${k}-remise-${A.gen}`;
+  if (!SV.local.get(ak) && !SV.local.set(ak, raw)) return "La bêta a été remise à zéro, mais la place manque sur cet appareil pour mettre ton ancienne partie de côté : libère de la place (Options › Sauvegarde) puis recharge le jeu.";
+  const cp = SV.local.get(k + "-copies"); if (cp && SV.local.set(ak + "-copies", cp)) SV.local.del(k + "-copies");
+  SV.local.del(k); SV.local.del(k + "-online");
+  return "La bêta a été remise à zéro : ta partie repart de zéro. Les codes cadeaux du compte Classique arrivaient par erreur dans les parties Monocompte : tout le monde recommence à égalité. L'ancienne partie reste gardée à part sur cet appareil.";
+}
+/* pendant le jeu : le serveur refuse la partie (remise à zéro faite entre-temps) : retour à l'écran des parties, qui la met de côté */
+let monoRemiseVu = false;
+if (ON) ON.onMonoRemise = () => { if (monoRemiseVu || SLOT !== MONO_SLOT) return; monoRemiseVu = true;
+  toast("La bêta a été remise à zéro : ta partie repart de zéro.", "rare"); setTimeout(() => reloadTo(true), 2500); };
 let SLOT = 1;
 function setSlot(n) {
   SLOT = n; LS_KEY = slotKey(n); SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
@@ -10844,6 +10876,7 @@ async function menuStart(err) {
     if (!MENU.off && !ON.profile) return pseudoSheet();
     if (!MENU.off && ON.monoSrv) await ON.monoCheck(); // espace Monocompte du serveur : la partie 4 va en ligne pour un compte autorisé
   }
+  const rz = monoRemiseCheck(); if (rz) { MENU.msg = rz; err = err || rz; } // 2.1.35.2 : remise à zéro de la bêta
   const fin = monoSeasonEnd(); if (fin) { MENU.msg = fin; err = err || fin; }
   MENU.slots = menuSlots().map(slotRead);
   if (menuLive()) {
@@ -11803,6 +11836,7 @@ function bootGame(pushNow) {
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
   if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
   if (S) {
+    if (S.mono && !S.mono.eternel && S.mono.gen == null && monoSrvSaison()) S.mono.gen = monoGenOf(S); // 2.1.35.2 : génération de la partie (remise à zéro)
     if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
     if (S.mono) monoNav();
     setTheme(S.settings.theme || "dark");

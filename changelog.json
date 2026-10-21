@@ -1,6 +1,15 @@
 {
-  "version": "2.1.35.1",
+  "version": "2.1.35.2",
   "versions": [
+    {
+      "v": "2.1.35.2",
+      "name": "Remise à zéro de la bêta",
+      "items": [
+        "Bêta Monocompte : remise à zéro des parties après le bug des codes cadeaux",
+        "Ta partie Monocompte d'avant la remise est gardée à part sur ton appareil, et une nouvelle partie de la bêta t'attend",
+        "Clés bêta : plus de limite d'essais"
+      ]
+    },
     {
       "v": "2.1.35.1",
       "name": "C'est une bêta",

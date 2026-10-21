@@ -281,7 +281,10 @@
         if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(ON.monoVerif); } catch (e) {} } // registre des Éclats et réponse du Bouclier Monocompte (js/mono_online.js)
         if (slot === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
-      } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
+      } catch (e) {
+        // 2.1.35.2 : partie Monocompte d'avant la remise à zéro de la bêta, refusée par le serveur : le jeu la met de côté (js/ui.js)
+        if (slot === MONO_N && /remise à zéro/i.test(String(e && e.message)) && ON.onMonoRemise) { try { ON.onMonoRemise(); } catch (x) {} }
+        setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
       finally { if (pushing === p) pushing = null; }
     })();
     pushing = p; return p;
