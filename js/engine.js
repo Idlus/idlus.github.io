@@ -2736,6 +2736,7 @@
     if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
+    if (E.gravDrop) E.gravDrop(S, mons, opts, out); // 2.1.36 : gravures d'outil (js/outils.js)
     return out;
   };
   E.giveRewards = giveRewards;
@@ -3351,20 +3352,43 @@
   /* passif de métier : seulement pour le héros qui récolte lui-même */
   E.gatherMult = (S, job, c) => (c && c.cls === "sadi" && (job === "bucheron" || job === "alchimiste") ? 0.8 : 1) * (c && c.cls === "steam" && job === "pecheur" ? 0.75 : 1);
   /* ---- Outils : vraies recettes (ressources de plusieurs métiers + ressources de monstres + composants rares) ---- */
-  E.TOOL_MAX = 10;
+  /* 2.1.36 « Outils de récolte » (Mathis, 1A à 6A) : 30 niveaux (+8 % par niveau jusqu'au 10, puis +3 %, +140 % au niveau 30).
+     Chaque palier porte le nom et l'icône d'un vrai objet de DOFUS du même type (TOOL_TIERS) ; les niveaux 11 à 30 demandent
+     un métier de plus en plus haut (jusqu'au 200) et coûtent 1,25 fois plus de kamas à chaque niveau. */
+  E.TOOL_MAX = 30;
   E.TOOL_NAMES = { paysan: "Faux", bucheron: "Hache", mineur: "Pioche", alchimiste: "Serpe", pecheur: "Canne" };
+  E.TOOL_TIERS = {
+    paysan: [["Faux usée du Paysan", 22002], ["Faux de Farle Ingalsse", 22001], ["Faux du Directeur Grunob", 22011], ["Faux Enracinée de Malter", 22010], ["Faux de San Jifu", 22015], ["Faux Séraphine", 22008]],
+    bucheron: [["Hachette de Bûcheron", 19006], ["Hachette Hévlalav", 19007], ["Hache de Pierre", 19002], ["Hachette Savante", 19004], ["Hache du Dragoeuf", 19043], ["Hache Ériphe", 19065]],
+    mineur: [["Pioche solide", 21001], ["Pelle du Craqueleur", 8007], ["Pioche de Grizou", 21002], ["Pelle du Mineur Sombre", 8034], ["Pioche de Sidoa", 25147], ["Pelle Emélaka", 8051]],
+    alchimiste: [["Serpe de Rakoopeur", 22012], ["Ciseaux à rose démoniaque", 20022], ["Serpe Aigrie", 22013]],
+    pecheur: [["Canne à pêche pandalienne", 20008], ["Kamapêche", 20091]],
+  };
+  E.toolPct = (L) => 8 * Math.min(L, 10) + 3 * Math.max(0, L - 10);
+  /* palier de l'outil au niveau L (L ≥ 1) : [nom, icône, premier niveau du palier] */
+  E.toolTier = (job, L) => { const T = E.TOOL_TIERS[job]; const k = Math.min(T.length - 1, Math.floor((Math.max(1, L) - 1) * T.length / E.TOOL_MAX)); return [T[k][0], T[k][1], Math.floor(k * E.TOOL_MAX / T.length) + 1]; };
+  E.toolName = (job, L) => E.toolTier(job, L)[0];
   E.RARE_COMPONENT = "Éclat de trouvaille";
   E.toolLvl = (S, job) => (S.tools && S.tools[job]) || 0;
   const MON_RES = (() => { const m = new Map(); for (const k in MONSTERS) { const mo = MONSTERS[k]; if (mo.boss || mo.archiOf) continue; mo.drops.forEach(([r, p]) => { if (p >= 8 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); } return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])); })();
   const hsh = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
-  E.toolRecipe = (job, L) => { // recette pour passer l'outil au niveau L (1..10)
+  const toolReq = (L) => (L <= 10 ? Math.max(1, (L - 1) * 8) : Math.min(200, Math.round(72 + (L - 10) * 6.4)));
+  E.toolRecipe = (job, L) => { // recette pour passer l'outil au niveau L (1..30)
+    const name = `${E.toolName(job, L)} ${L}`;
+    if (L > 10) { // 2.1.36 : ressources du niveau demandé, kamas × 1,25 par niveau après le 10
+      const lvl = toolReq(L), at = (j) => GATHER_JOBS[j].items.filter((x) => x[1] <= lvl).pop()[0];
+      const other = job === "bucheron" ? "mineur" : "bucheron";
+      const pool = MON_RES.filter(([n, l]) => Math.abs(l - lvl) <= 12 && !/^(Puissant |Petit |)Parchemin|^Potion/.test(n)); const mr = (pool.length ? pool : MON_RES)[Math.floor(hsh(job + L) * (pool.length || MON_RES.length))][0];
+      const ing = [[at(job), 60 + L * 12], [at(other), 40 + L * 8], [mr, 20 + L * 4], [E.RARE_COMPONENT, (L - 4) * 2]];
+      return { name, mat: ing[0][0], lvl, kamas: Math.round(200 * Math.pow(1.9, 9) * Math.pow(1.25, L - 10)), ing };
+    }
     const own = GATHER_JOBS[job].items; const tier = (j) => GATHER_JOBS[j].items[Math.min(GATHER_JOBS[j].items.length - 1, Math.floor((L - 1) / 2))][0];
     const other = job === "bucheron" ? "mineur" : "bucheron";
     const pool = MON_RES.filter(([, l]) => Math.abs(l - L * 6) <= 8); const mr = (pool.length ? pool : MON_RES)[Math.floor(hsh(job + L) * (pool.length || MON_RES.length))][0];
     const ing = [[tier(job), 10 + L * 8], [tier(other), 6 + L * 5], [mr, 4 + L * 3]];
     if (L >= 5) ing.push([E.RARE_COMPONENT, (L - 4) * 2]);
     const matTier = own[Math.min(own.length - 1, Math.floor((L - 1) / 2))][0];
-    return { name: `${E.TOOL_NAMES[job]} ${L}`, mat: matTier, lvl: Math.max(1, (L - 1) * 8), kamas: Math.round(200 * Math.pow(1.9, L - 1)), ing };
+    return { name, mat: matTier, lvl: toolReq(L), kamas: Math.round(200 * Math.pow(1.9, L - 1)), ing };
   };
   E.toolCost = (S, job) => E.toolRecipe(job, E.toolLvl(S, job) + 1);
   E.upgradeTool = (S, job) => {
@@ -3376,7 +3400,7 @@
     S.kamas -= R.kamas; R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
     S.tools[job] = l + 1; note(S, `Outil fabriqué : ${R.name} (${GATHER_JOBS[job].name}).`, "up"); E.emit(S, "tool", { job }); return null;
   };
-  E.gatherSpeed = (S, job, c) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job, c);
+  E.gatherSpeed = (S, job, c) => (1 + E.toolPct(E.toolLvl(S, job)) / 100) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job, c);
   /* 1.0.8.6 « Coups de récolte longs » (Mathis) : un coup dure E.HIT_S secondes (de lo au niveau 1 à hi au niveau 200).
      La production par heure ne change pas : le niveau, l'outil et les bonus donnent plus de ressources par coup.
      E.basePeriod = l'ancien rythme d'une récolte, qui sert de mesure (un coup vaut hitScale récoltes de l'ancien rythme). */
@@ -3385,8 +3409,13 @@
   E.gatherPeriod = (S, c) => { const j = c.job; if (!j) return 0; const L = Math.min(200, Math.max(1, S.jobs[j.job].lvl)); return E.HIT_S.lo + (E.HIT_S.hi - E.HIT_S.lo) * (L - 1) / 199; };
   E.hitScale = (S, c) => { const b = E.basePeriod(S, c); return b > 0 ? E.gatherPeriod(S, c) / b : 0; };
   /* ressources attendues à la fin du coup (affichage) */
-  E.hitQty = (S, c) => { if (!c.job) return 0; const L = S.jobs[c.job.job].lvl; return E.hitScale(S, c) * (1 + L / 200) * (1 + 4 * E.FIND_CHANCE) * E.gatherYield(L) * E.almMult(S, "gather", c.job.job) * (E.filonOn(S, c.job.res) ? 2 : 1) * E.protMult(S, c.job.res); };
+  E.hitQty = (S, c, frac = 1) => { if (!c.job) return 0; const L = S.jobs[c.job.job].lvl; return frac * E.hitScale(S, c) * (1 + L / 200) * (1 + 4 * E.findChance(S, c.job.job)) * E.gatherYield(L) * E.almMult(S, "gather", c.job.job) * (E.filonOn(S, c.job.res) ? 2 : 1) * E.protMult(S, c.job.res) * E.resMastMult(S, c.job.res); };
   E.FIND_CHANCE = 0.01;
+  /* 2.1.36 : gravures des outils (js/outils.js) : trouvailles, filons et XP de métier ; Maîtrise des ressources (étoiles) */
+  E.gravFx = () => ({ find: 0, filon: 0, xp: 0 });
+  E.findChance = (S, job) => E.FIND_CHANCE * (1 + E.gravFx(S, job).find);
+  E.resMastMult = () => 1;
+  E.resMastAdd = () => {};
   /* 1.0.7.9 : rendement de la récolte, part des ressources gardées à chaque coup selon le niveau du métier
      (35 % au niveau 1, 10 % au niveau 200). L'XP de métier par coup baisse dans la même proportion. */
   E.YIELD = { lo: 0.35, hi: 0.1, from: 150, top: 1.53 };
@@ -3427,20 +3456,21 @@
   /* un coup (ou la part frac d'un coup quand le héros est rappelé) : k récoltes de l'ancien rythme d'un seul bloc */
   const gatherHit = (S, c, frac, opts = {}) => {
     const W = c.job; const J = S.jobs[W.job]; const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!J || !def || def[1] > J.lvl) return 0;
-    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl);
+    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl), gf = E.gravFx(S, W.job);
     if (k <= 0) return 0;
-    if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
-    const fe = k * E.FIND_CHANCE; const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
+    if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon") * (1 + gf.filon)) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
+    const fe = k * E.FIND_CHANCE * (1 + gf.find); const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
     let v = (k + 4 * finds) * (1 + J.lvl / 200) * y * E.almMult(S, "gather", W.job); // Almanax « Récolte abondante »
-    if (E.mtOwn) v *= E.mtOwn(S, c, "rec"); // 2.1 : Artisan (récolte)
+    if (E.mtOwn && !opts.app) v *= E.mtOwn(S, c, "rec"); // 2.1 : Artisan (récolte) ; l'apprenti du Monocompte n'a pas de Maîtrise
+    v *= E.resMastMult(S, W.res); // 2.1.36 : Maîtrise des ressources
     if (E.filonOn(S, W.res)) v *= 2;
     v *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
     v *= E.sabLoot(); // 2.1.22 : Sablier ×2 / ×3
-    if (frac >= 1 && !opts.quiet) E.protSpawn(S, c, W, k);
+    if (frac >= 1 && !opts.quiet && !opts.app) E.protSpawn(S, c, W, k);
     let q = Math.floor(v); if (rnd() < v - q) q++;
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
-    if (q) addRes(S, W.res, q);
-    J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn ? E.mtOwn(S, c, "xpj") : 1); // 2.1 : Artisan (XP de métier)
+    if (q) { addRes(S, W.res, q); E.resMastAdd(S, W.res, q); }
+    J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn && !opts.app ? E.mtOwn(S, c, "xpj") : 1) * (1 + gf.xp); // 2.1 : Artisan (XP de métier) ; 2.1.36 : gravure Savant
     const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
     while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
@@ -3457,9 +3487,11 @@
       let n = 0;
       while (W.prog >= E.gatherPeriod(S, c) && n < 200000) { W.prog -= E.gatherPeriod(S, c); n++; total += gatherHit(S, c, 1, opts); }
     });
+    if (E.appTick) total += E.appTick(S, dt, opts); // 2.1.36 : apprenti récolteur du Monocompte (js/outils.js)
     return total;
   };
   E.gatherTick = gatherTick;
+  E.gatherHit = gatherHit;
 
   /* ---------------- Artisanat ---------------- */
   /* 1.0.19 « Métiers comme dans DOFUS » : un objet se fabrique avec le métier à son niveau (0.1.14.4 à 1.0.16 : au tiers de son niveau).

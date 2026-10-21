@@ -7554,10 +7554,10 @@ function ingHtml(ing, mult = 1, go = false) {
   return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; const ok = have >= q * mult; const g = go && !ok ? resGo(r) : ""; return `<span class="${ok ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b>${g ? `<button class="btn xs ingo" ${g}>${IC("carte")} Y aller</button>` : ""}</span>`; }).join("")}</div>`;
 }
 function toolHtml(id) {
-  const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de ressources)</span></div>`;
+  const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.toolName(id, tl))} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${E.toolPct(tl)} % de ressources)</span></div>`;
   const R = E.toolCost(S, id); const lvOk = S.jobs[id].lvl >= R.lvl; const ok = lvOk && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q);
   const pinned = S.shop.some((e) => e.k === "tool" && e.id === id);
-  return `<div class="toolbox"><div class="row between small"><span>${IC("metiers")} Outil actuel : <b>${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "aucun"}</b> <span class="xs muted">(+${tl * 8} % de ressources)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
+  return `<div class="toolbox"><div class="row between small"><span>${IC("metiers")} Outil actuel : <b>${tl ? h(E.toolName(id, tl)) + " " + tl : "aucun"}</b> <span class="xs muted">(+${E.toolPct(tl)} % de ressources)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
     ${ingHtml(R.ing, 1, true)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
@@ -7603,7 +7603,91 @@ function dayBar(where) {
 /* ---------- Récolte ---------- */
 function resGrid(id) {
   const s = S.jobs[id];
-  return `<div class="presgrid">${GATHER_JOBS[id].items.map(([r, l]) => { const lock = l > s.lvl; return `<span class="pres ${lock ? "lock" : ""}" data-tip="${h(r)} · niv. ${l}${lock ? "" : ` · ${fmt(S.res[r] || 0)} en stock`}">${im(resImg(r), "", r)}<b class="num">${lock ? l : fmtK(S.res[r] || 0)}</b></span>`; }).join("")}</div>`;
+  const ST = ["", "bronze", "argent", "or"];
+  return `<div class="presgrid">${GATHER_JOBS[id].items.map(([r, l]) => { const lock = l > s.lvl; const st = lock ? 0 : E.resMastStar(S, r), nx = E.RES_MAST[st];
+    const mt = lock ? "" : ` · Maîtrise : ${fmt(E.resMastN(S, r))} récoltées${st ? `, étoile ${ST[st]} (+${E.RES_MAST[st - 1][1]} %)` : ""}${nx ? `, ${ST[st + 1]} à ${fmt(nx[0])}` : ""}`;
+    return `<span class="pres ${lock ? "lock" : ""}" data-tip="${h(r)} · niv. ${l}${lock ? "" : ` · ${fmt(S.res[r] || 0)} en stock`}${h(mt)}">${im(resImg(r), "", r)}<b class="num">${lock ? l : fmtK(S.res[r] || 0)}</b>${st ? `<i class="pstar s${st}" aria-label="étoile ${ST[st]}">★</i>` : ""}</span>`; }).join("")}</div>`;
+}
+/* ---------- 2.1.36 « Outils de récolte » : bandeau d'améliorations, jauge d'outil, gravures, apprenti (Monocompte) ---------- */
+const toolImg = (job, L) => imgI(E.toolTier(job, Math.max(1, L))[1]);
+function toolGauge(id) {
+  const L = E.toolLvl(S, id), T = E.TOOL_TIERS[id], max = E.TOOL_MAX;
+  const nx = L < max ? (() => { for (let k = L + 1; k <= max; k++) if (E.toolTier(id, k)[2] === k && k > 1) return [E.toolName(id, k), k]; return null; })() : null;
+  const ticks = T.slice(1).map((_, i) => `<i class="tk" style="left:${(Math.floor((i + 1) * max / T.length) / max) * 100}%"></i>`).join("");
+  const G = E.gravOf(S, id);
+  const slots = E.GRAV_LV.map((lv, i) => { const k = G[i]; return k ? `<span class="tag good" data-tip="${h(E.GRAV[k].desc)}">${h(E.GRAV[k].name)}</span>` : `<span class="tag soft ${L >= lv ? "gfree" : ""}">${L >= lv ? "à graver" : `gravure niv. ${lv}`}</span>`; }).join("");
+  return `<div class="ptool2"><div class="row ptl">${im(toolImg(id, L), `toolico${L ? "" : " off"}`, L ? E.toolName(id, L) : E.TOOL_NAMES[id])}
+    <div class="grow ptlg"><div class="row between small"><b>${L ? h(E.toolName(id, L)) : "Pas d'outil"}</b><span class="xs muted">niv. ${L} / ${max}</span></div>
+      <div class="tgauge">${ticks}<i class="tf" style="width:${(L / max) * 100}%"></i></div>
+      <div class="row between xs"><span class="good">+${E.toolPct(L)} % de ressources par coup</span>${nx ? `<span class="muted">${h(nx[0])} au niv. ${nx[1]}</span>` : L >= max ? `<span class="tag good">niveau max</span>` : ""}</div></div>
+    <button class="btn sm ${L < max && toolCan(id) ? "primary" : ""}" data-act="toolsheet" data-job="${id}">Améliorer</button></div>
+    <div class="row xs pgrav">${slots}</div></div>`;
+}
+const toolCan = (id) => { const R = E.toolCost(S, id); return S.jobs[id].lvl >= R.lvl && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q); };
+function toolSheet(job) {
+  const L = E.toolLvl(S, job), G = E.gravOf(S, job);
+  const grav = E.GRAV_LV.map((lv, i) => {
+    const k = G[i], open = L >= lv;
+    const opts = E.GRAV_ORDER.map((g) => { const Gr = E.GRAV[g], st = E.gravStone(g, lv), have = S.res[st] || 0, on = k === g;
+      return `<button class="gopt ${on ? "on" : ""}" data-act="engrave" data-job="${job}" data-i="${i}" data-k="${g}" ${!open || on || !have ? "disabled" : ""}>
+        <b>${h(Gr.name)}${on ? ` <span class="tag good">gravée</span>` : ""}</b><span class="xs muted">${h(Gr.desc)}</span>
+        <span class="xs">${im(resImg(st), "rico", st)} ${h(st)} · <span class="${have ? "plus" : "minus"}">${fmt(have)} en stock</span></span></button>`; }).join("");
+    return `<div class="gslot ${open ? "" : "lock"}"><div class="row between small"><b>Gravure du niveau ${lv}</b><span class="xs muted">${k ? h(E.GRAV[k].name) : open ? "libre" : `outil niveau ${lv} requis`}</span></div>${open ? `<div class="gopts">${opts}</div>` : ""}</div>`;
+  }).join("");
+  openSheet(`<div class="toolsheet" data-job="${job}"><div class="row between"><h3 class="row" style="gap:8px">${im(toolImg(job, L), "toolico", "")}${L ? h(E.toolName(job, L)) + " " + L : "Pas d'outil"}</h3><button class="btn sm ghost" data-act="closesheet">✕</button></div>
+    <p class="xs muted">${h(GATHER_JOBS[job].name)} niv. ${S.jobs[job].lvl} · +${E.toolPct(L)} % de ressources par coup${L < E.TOOL_MAX ? ` → +${E.toolPct(L + 1)} % au niveau ${L + 1}` : ""}</p>
+    ${toolHtml(job)}
+    <h4 class="small" style="margin:10px 0 4px">Gravures</h4><p class="xs muted">Aux niveaux 5, 10, 15, 20, 25 et 30, l'outil reçoit une gravure au choix (la même plusieurs fois si tu veux). Graver ou regraver consomme une pierre de gravure, butin rare des combats : monstres de niveau ${E.GRAV_DROP.small.lvl} et plus pour les gravures 5 à 15, de niveau ${E.GRAV_DROP.big.lvl} et plus pour 20 à 30.</p>
+    <div class="stack" style="gap:8px">${grav}</div></div>`);
+}
+function potionRow() {
+  const P = E.POTION_REC, err = E.brewCheck(S), n = S.cons.potion_recolte || 0, C = CONSUMABLES.potion_recolte;
+  return `<div class="pwork ppot">${im(`assets/ui/potions/${C.pimg}.png`, "ico sm", C.name)}<div class="grow"><div class="pwt small"><b>${h(C.name)}${n ? ` <span class="xs muted">· ${n} en stock</span>` : ""}</b><span class="xs muted">+${C.pct} % de ressources 1 h · ${P.ing.map(([r, q]) => `${q} ${h(r)}`).join(" + ")} · ${fmt(P.kamas)} k</span></div>${err ? `<span class="xs minus">${h(err)}</span>` : ""}</div>
+    <button class="btn sm ${err ? "" : "primary"}" data-act="brew" ${err ? "disabled" : ""}>Préparer</button>${n ? `<button class="btn sm" data-act="usecons" data-id="potion_recolte">Boire</button>` : ""}</div>`;
+}
+function appRow(id) {
+  const A = E.appState(S); if (!A || A.job !== id || !E.appActive(S)) return "";
+  const c = { id: -9, job: A }; const t = E.gatherPeriod(S, c);
+  return `<div class="pwork papp"><span class="head" style="--cc:${CLASSES.enu.color}"><img src="assets/h/enu_m.png" alt="${h(E.APP.name)}"></span>${im(resImg(A.res), "ico sm", A.res)}<div class="grow"><div class="pwt small"><b>${h(A.res)} <span class="tag soft">apprenti · ${Math.round(E.APP.rate * 100)} %</span></b><span class="xs muted">${h(E.APP.name)} · coup de ${hitDur(t)}</span></div><div class="row between xs pwhit"><span>Reste <b>${hitDur(Math.max(0, t - (A.prog || 0)))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.appQty(S))))} ${h(A.res)} à la fin du coup</span></div><div class="bar green"><i style="width:${pct(A.prog || 0, t)}%"></i></div></div><button class="btn sm" data-act="appsheet">Changer</button></div>`;
+}
+function appBlock() {
+  if (!S.mono) return "";
+  const A = E.appState(S), on = E.appActive(S), k = E.appCost(S), left = on ? A.until - E.now() : 0;
+  const hl = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`; };
+  return `<div class="xs muted recsub">Apprenti récolteur · Monocompte</div><div class="pfree"><div class="pfreec pappc"><span class="head" style="--cc:${CLASSES.enu.color}"><img src="assets/h/enu_m.png" alt=""></span><span class="grow"><b>${h(E.APP.name)}</b><br><span class="xs muted">${on ? `reste ${hl(left)} · ${h(A.res)} · ${Math.round(E.APP.rate * 100)} %` : "récolte pendant que ton héros combat"}</span></span>
+    <span class="pappb">${on ? `<button class="btn sm" data-act="appsheet">Changer</button>` : ""}<button class="btn sm ${on ? "" : "primary"}" data-act="${on ? "apphire" : "appsheet"}" ${S.kamas < k ? "disabled" : ""}>${on ? "Prolonger" : "Engager"} · ${fmt(k)} k</button></span></div></div>
+    <span class="xs muted">Il récolte avec tes niveaux de métier, à ${Math.round(E.APP.rate * 100)} % du rythme de ton héros (comme un héros récolteur du Classique), sans bonus de classe ni de Maîtrise, même quand ton héros récolte lui-même. Contrat de 24 h : 4 000 kamas × niveau du héros.</span>`;
+}
+function appSheet() {
+  const A = E.appState(S) || {}; const job = ui.appJob || A.job || "paysan"; const lvl = S.jobs[job].lvl;
+  const list = E.jobRes(job).filter((x) => x[1] <= lvl); const res = ui.appRes && list.some((x) => x[0] === ui.appRes) ? ui.appRes : (A.job === job && A.res) || (list[list.length - 1] || [])[0];
+  const on = E.appActive(S);
+  openSheet(`<div class="appsheet"><div class="row between"><h3>${h(E.APP.name)}</h3><button class="btn sm ghost" data-act="closesheet">✕</button></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(GATHER_JOBS).map((j) => `<button class="btn sm ${j === job ? "primary" : ""}" data-act="appjob" data-v="${j}">${im(jobImg(j), "joblogo sm", "")} ${h(GATHER_JOBS[j].name)} ${S.jobs[j].lvl}</button>`).join("")}</div>
+    <div class="presgrid" style="margin-top:8px">${list.map(([r]) => `<button class="pres ${r === res ? "on" : ""}" data-act="appres" data-v="${h(r)}" data-tip="${h(r)}">${im(resImg(r), "", r)}<b class="num">${fmtK(S.res[r] || 0)}</b></button>`).join("")}</div>
+    <div class="row" style="gap:8px;margin-top:10px"><button class="btn primary" data-act="appgo" data-job="${job}" data-res="${h(res || "")}">${on ? `Confier : ${h(res || "")}` : `Engager · ${fmt(E.appCost(S))} k`}</button><span class="xs muted">${on ? "Changer de ressource est gratuit." : "24 h de récolte, prolongeables jusqu'à 3 jours."}</span></div></div>`);
+}
+function recBand() {
+  const tot = E.bonus(S, "gather"), jar = E.havreLvl(S, "gather"), H = E.HAVRE.find((x) => x.id === "gather");
+  let fJar = 0, nJar = 0, fTro = 0, nTro = 0; for (const r in S.placed || {}) for (const n of S.placed[r]) { const F = E.FURN[n]; if (F && F.kind === "gather") { if (F.trophy) { fTro += F.v; nTro++; } else { fJar += F.v; nJar++; } } }
+  const allJar = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "gather" && !E.FURN[n].trophy).length, allTro = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "gather" && E.FURN[n].trophy).length;
+  const b = S.boosts && S.boosts.gather && S.boosts.gather.until > E.now() ? S.boosts.gather : null;
+  const stars = Object.keys(S.resMast || {}).reduce((a, r) => a + E.resMastStar(S, r), 0);
+  const alm = E.almOn && E.almOn(S); const almG = alm && alm.kind === "gather" ? alm : null;
+  const chip = (t, v, sub) => `<span class="rchip"><span class="xs muted">${t}</span><b>${v}</b>${sub ? `<span class="xs muted">${sub}</span>` : ""}</span>`;
+  // prochaines améliorations : outil le moins cher, Jardin, meuble de jardin à acheter, potion
+  const tips = [];
+  const tj = Object.keys(GATHER_JOBS).filter((j) => E.toolLvl(S, j) < E.TOOL_MAX && S.jobs[j].lvl >= E.toolCost(S, j).lvl).sort((a, b) => E.toolCost(S, a).kamas - E.toolCost(S, b).kamas)[0];
+  if (tj) { const L = E.toolLvl(S, tj); tips.push([im(toolImg(tj, L + 1), "ico sm", ""), `${E.toolName(tj, L + 1)} niv. ${L + 1}`, `${fmt(E.toolCost(S, tj).kamas)} kamas + ressources`, `+${E.toolPct(L + 1) - E.toolPct(L)} % en ${GATHER_JOBS[tj].name}`, `<button class="btn sm ${toolCan(tj) ? "primary" : ""}" data-act="toolsheet" data-job="${tj}">Voir</button>`, E.toolCost(S, tj).kamas]); }
+  if (jar < H.max) { const k = E.havreCost(S, "gather"); tips.push([IC("havre"), `Jardin rang ${jar + 1}`, `${fmt(k)} kamas`, `+${H.per} %, tous les métiers`, `<button class="btn sm ${S.kamas >= k ? "primary" : ""}" data-act="havre" data-id="gather" ${S.kamas >= k ? "" : "disabled"}>Acheter</button>`, k]); }
+  const fb = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "gather" && E.FURN[n].shop && !S.furniture.includes(n)).sort((a, b) => E.FURN[a].shop - E.FURN[b].shop)[0];
+  if (fb) tips.push([IC("meuble"), fb, `${fmt(E.FURN[fb].shop)} kamas`, `+${E.FURN[fb].v} %, tous les métiers`, `<button class="btn sm" data-act="fbuy" data-v="${h(fb)}" ${S.kamas >= E.FURN[fb].shop ? "" : "disabled"}>Acheter</button>`, E.FURN[fb].shop]);
+  if (!b && S.jobs.alchimiste.lvl >= E.POTION_REC.lvl) tips.push([im(`assets/ui/potions/${CONSUMABLES.potion_recolte.pimg}.png`, "ico sm", ""), "Potion de récolte", (S.cons.potion_recolte || 0) ? `${S.cons.potion_recolte} en stock` : "Alchimiste", "+20 % pendant 1 h", (S.cons.potion_recolte || 0) ? `<button class="btn sm primary" data-act="usecons" data-id="potion_recolte">Boire</button>` : `<button class="btn sm" data-act="brew" ${E.brewCheck(S) ? "disabled" : ""}>Préparer</button>`, 0]);
+  const tipH = tips.slice(0, 3).map(([ic, n, c, g, btn]) => `<div class="pwork rtip">${ic}<div class="grow"><div class="pwt small"><b>${h(n)}</b><span class="xs muted">${h(c)}</span></div><span class="xs good">${h(g)}</span></div>${btn}</div>`).join("");
+  return `<section class="panel recband"><div class="phead"><h2>Améliorer ma récolte</h2><span class="xs muted">bonus total <b class="good">+${fmt(tot)} %</b> de ressources</span></div>
+    <div class="pad stack" style="gap:10px"><div class="row rchips">${chip("Jardin (Havre-Sac)", `rang ${jar} · +${jar * H.per} %`)}${chip("Meubles du jardin", `+${fJar} %`, `${nJar} / ${allJar}`)}${chip("Trophées de donjon", `+${fTro} %`, `${nTro} / ${allTro}`)}${chip(b ? (b.pct === 20 ? "Potion de récolte" : "Bonbon Récolteur") : "Potion ou bonbon", b ? `+${b.pct} %` : "inactif", b ? `encore ${Math.ceil((b.until - E.now()) / 60000)} min` : "+20 % ou +15 % · 1 h")}${chip("Maîtrise des ressources", `${stars} ★`, "bronze, argent, or")}${almG ? chip("Almanax du jour", "actif") : ""}</div>
+    ${tipH ? `<div class="xs muted recsub">Prochaines améliorations</div><div class="stack" style="gap:6px">${tipH}</div>` : ""}
+    ${appBlock()}</div></section>`;
 }
 function recolteHtml() {
   const free = S.chars.filter((c) => !c.job && !c.inTeam); const hunters = S.chars.filter((c) => !c.job && c.inTeam).length;
@@ -7612,14 +7696,14 @@ function recolteHtml() {
         <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="row between"><span class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-g="gather" data-v="${id}" data-tip="Classement des joueurs en ${h(J.name)}">${IC("couronne")} Classement</button>` : ""}</div></div></div>
       <div class="pad stack" style="gap:8px">
         ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · coup de ${hitDur(E.gatherPeriod(S, c))}</span></div><div class="row between xs pwhit"><span>Reste <b data-wleft="${c.id}">${hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.hitQty(S, c))))} ${h(c.job.res)} à la fin du coup</span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
-        <div class="row pslotrow" style="gap:6px"><button class="pslot grow" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>${free.length > 1 ? `<button class="pslot pslotall" data-act="gathersheet" data-job="${id}" data-all="1" data-tip="Choisir la ressource puis envoyer d'un coup tous les héros libres">Les ${free.length} libres</button>` : ""}</div>
-        <details class="ptool" data-job="${id}" ${ui.toolOpen && ui.toolOpen[id] ? "open" : ""}><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de ressources par coup</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
+        ${appRow(id)}<div class="row pslotrow" style="gap:6px"><button class="pslot grow" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>${free.length > 1 ? `<button class="pslot pslotall" data-act="gathersheet" data-job="${id}" data-all="1" data-tip="Choisir la ressource puis envoyer d'un coup tous les héros libres">Les ${free.length} libres</button>` : ""}</div>
+        ${toolGauge(id)}${id === "alchimiste" ? potionRow() : ""}
         ${resGrid(id)}
       </div></div>`; }).join("");
-  return `${dayBar("met")}
-    <section class="panel"><div class="phead"><h2>Héros libres</h2><span class="xs muted">${hunters} chasse${hunters > 1 ? "nt" : ""} avec l'équipe</span></div>
+  return `${dayBar("met")}${recBand()}
+    ${S.mono && !free.length ? "" : `<section class="panel"><div class="phead"><h2>Héros libres</h2><span class="xs muted">${hunters} chasse${hunters > 1 ? "nt" : ""} avec l'équipe</span></div>
       <div class="pad pfree">${free.length ? free.map((c) => `<div class="pfreec">${head(c)}<span><b>${h(c.name)}</b><br><span class="xs muted">niv. ${c.lvl} · ${h(restLabel(c).replace(/<[^>]+>/g, ""))}</span></span><button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button></div>`).join("")
-        : `<span class="small muted">Tous tes héros sont occupés. Un héros de l'équipe peut aussi récolter : « Envoyer un héros » le retire de la chasse.</span>`}</div></section>
+        : `<span class="small muted">Tous tes héros sont occupés. Un héros de l'équipe peut aussi récolter : « Envoyer un héros » le retire de la chasse.</span>`}</div></section>`}
     <div class="pjobs">${cards}</div>
     <p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). Un filon rare double parfois une ressource 10 minutes, et un protecteur de ressources peut surgir : bats-le avec l'équipe pour doubler la récolte 20 minutes.</p>`;
 }
@@ -10237,7 +10321,15 @@ document.addEventListener("click", (ev) => {
       if (g.pick.length > 1 && free.every((id) => g.pick.includes(id))) g.pick = [g.pick[0]]; else g.pick = [...new Set([...g.pick, ...free])];
       g.cid = g.pick[0]; gatherSheet(); return; }
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
-    case "tool": msg(E.upgradeTool(S, d.job)); break;
+    case "tool": msg(E.upgradeTool(S, d.job)); if ($("#sheet .toolsheet")) { toolSheet(d.job); dirty = true; render(); return; } break;
+    case "toolsheet": toolSheet(d.job); return;
+    case "engrave": { const r = E.engrave(S, d.job, +d.i, d.k); if (r) { toast(r); return; } toast(`${E.GRAV[d.k].name} gravé !`); toolSheet(d.job); dirty = true; render(); return; }
+    case "brew": { const r = E.brewPotion(S); if (r) { toast(r); return; } toast("Potion de récolte préparée."); break; }
+    case "appsheet": ui.appJob = null; ui.appRes = null; appSheet(); return;
+    case "appjob": ui.appJob = d.v; ui.appRes = null; appSheet(); return;
+    case "appres": ui.appRes = d.v; appSheet(); return;
+    case "appgo": { const r = E.appActive(S) ? E.appSet(S, d.job, d.res) : E.appHire(S, d.job, d.res); if (r) { toast(r); return; } closeSheet(); toast(`${E.APP.name} récolte : ${E.appState(S).res}.`); break; }
+    case "apphire": { const r = E.appHire(S); if (r) { toast(r); return; } break; }
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
     case "dustgo": dustClose(); if (d.id === "idols") { idolSheet(); return; } { const R = SPECIAL_CRAFTS[d.id]; if (!R) return; ui.craftJob = R.job; const F = fltOf("met"); F.q = d.id; F.mode = "all"; ui.recSel = d.id; ui.recStick = d.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
     case "shopgo": { const e = S.shop[+d.i]; if (!e) return;

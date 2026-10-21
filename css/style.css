@@ -3253,6 +3253,37 @@ details>summary.alx-h{cursor:pointer}
 .pwork{display:flex;align-items:center;gap:8px}
 .pslot{border:2px dashed var(--line);background:transparent;border-radius:12px;padding:8px;color:var(--muted);font-weight:700;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center}
 .ptool{padding:6px 8px;border-radius:10px;background:var(--panel2)}
+/* 2.1.36 « Outils de récolte » : jauge d'outil, gravures, étoiles de Maîtrise, bandeau « Améliorer ma récolte », apprenti */
+.ptool2{display:grid;gap:6px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.ptl{gap:10px;align-items:center}
+.ptlg{min-width:0}
+.toolico{width:44px;height:44px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.toolico.off{opacity:.35;filter:grayscale(1)}
+.tgauge{position:relative;height:8px;border-radius:6px;background:var(--panel3);margin:5px 0 3px}
+.tgauge .tf{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--action)}
+.tgauge .tk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--gold);z-index:1}
+.pgrav{gap:5px;flex-wrap:wrap}
+.pgrav .gfree{border:1px dashed var(--action)}
+.pres .pstar{position:absolute;top:-5px;right:-4px;font-style:normal;font-size:13px;text-shadow:0 1px 2px #000}
+.pres .pstar.s1{color:#cd7f32}.pres .pstar.s2{color:#dfe6ea}.pres .pstar.s3{color:#f2c94c}
+button.pres{cursor:pointer;color:inherit;font:inherit}
+button.pres.on{border-color:var(--action);box-shadow:0 0 0 2px var(--action)}
+.rchips{gap:8px;flex-wrap:wrap}
+.rchip{display:grid;padding:6px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);min-width:0}
+.recsub{font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.rtip,.ppot,.papp{padding:6px 8px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.rtip .ico.sm,.ppot .ico.sm{width:28px;height:28px;object-fit:contain}
+.rtip .grow,.papp .grow,.pappc .grow{min-width:0}
+.pappc{flex-wrap:wrap;flex:1 1 320px;max-width:560px}
+.pappb{display:flex;gap:6px;margin-left:auto}
+@media (max-width:600px){.rtip{flex-wrap:wrap}.rtip>.btn{margin-left:auto}.pappc{flex-basis:100%}.pappb{width:100%;justify-content:flex-end}.papp{flex-wrap:wrap}.papp>.btn{margin-left:auto}.papp .pwt{flex-direction:column;align-items:flex-start}.rchips{display:grid;grid-template-columns:1fr 1fr}}
+.gslot{display:grid;gap:6px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.gslot.lock{opacity:.6}
+.gopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px}
+.gopt{display:grid;gap:2px;text-align:left;padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;cursor:pointer}
+.gopt.on{border-color:var(--action)}
+.gopt:disabled{cursor:default}
+.gopt:disabled:not(.on){opacity:.65}
 .presgrid{display:flex;flex-wrap:wrap;gap:4px}
 .pres{position:relative;width:38px;height:38px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;border:1px solid var(--line)}
 .pres img{width:28px;height:28px;object-fit:contain}

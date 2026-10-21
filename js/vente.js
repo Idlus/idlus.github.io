@@ -27,7 +27,7 @@
   const V = E.VENTE;
   const clampC = (c) => Math.min(V.MAX, Math.max(V.MIN, +c || 0));
   /* ressources vendables au jeu : celles qui ont une valeur, sauf les clefs et les Fragments d'anomalie (monnaie du Boss des mondes) */
-  E.venteOk = (n) => !!D.RES[n] && E.resPrice(n) > 0 && !E.isKey(n) && n !== (E.WB_FRAG || "Fragment d'anomalie");
+  E.venteOk = (n) => !!D.RES[n] && !D.RES[n].nosale && E.resPrice(n) > 0 && !E.isKey(n) && n !== (E.WB_FRAG || "Fragment d'anomalie");
   /* coef c et volume récent v (ventes du serveur, qui s'effacent de moitié en 6 h) h heures plus tard, sans nouvelle vente */
   E.venteNow = (c, v, h) => {
     const f = Math.pow(2, -Math.max(0, +h || 0) / V.HALF_H);

@@ -477,7 +477,7 @@
     ] });
 
   /* ======================= Artisanat ======================= */
-  add({ id: "metiers", f: "Économie", n: "Métiers : récolte et artisanat", ic: "metiers", page: "metiers", pages: ["recolte", "craft"], k: "recolte artisanat paysan bucheron mineur alchimiste pecheur tailleur bijoutier cordonnier forgeron sculpteur faconneur bricoleur filon outil recette",
+  add({ id: "metiers", f: "Économie", n: "Métiers : récolte et artisanat", ic: "metiers", page: "metiers", pages: ["recolte", "craft"], k: "recolte artisanat paysan bucheron mineur alchimiste pecheur tailleur bijoutier cordonnier forgeron sculpteur faconneur bricoleur filon outil gravure apprenti potion maitrise etoile recette",
     ou: "Économie › Métiers (Récolte, Artisanat)", de: "dès le début",
     voir: ["forgemagie", "maitrise", "quetes"],
     b: () => [
@@ -489,7 +489,12 @@
         `Un coup de récolte dure ${N(() => E.HIT_S.lo)} s.`,
         `Trouvailles : ${pc(V(() => E.FIND_CHANCE, 0))} de chance par coup.`,
         `**Filons** : environ toutes les ${N(() => E.FILON_EVERY_S / 3600)} h, un filon rend ×2 pendant ${N(() => E.FILON_DUR_S / 60)} min.`,
-        `**Outils** : jusqu'au niveau ${N(() => E.TOOL_MAX)}, chaque niveau accélère la récolte.`,
+        `**Outils** : jusqu'au niveau ${N(() => E.TOOL_MAX)} (+${N(() => E.toolPct(E.TOOL_MAX))} % de ressources au maximum). L'outil change de nom et d'apparence par palier. Au-delà du niveau 10, il demande aussi des ressources de monstre et des Éclats de trouvaille.`,
+        `**Gravures** : aux niveaux ${N(() => E.GRAV_LV.join(", "))} d'un outil, grave Prospecteur (trouvailles ×2), Sourcier (filons +50 %) ou Savant (+15 % d'XP de métier), plusieurs fois la même si tu veux. Chaque gravure consomme une pierre de gravure, objet rare des combats : petites pierres dès les monstres niveau ${N(() => E.GRAV_DROP.small.lvl)}, grandes dès le niveau ${N(() => E.GRAV_DROP.big.lvl)}.`,
+        "**Maîtrise des ressources** : une étoile bronze, argent puis or à 1 000, 10 000 et 100 000 récoltes d'une même ressource, pour +5, +10 et +15 % de cette ressource.",
+        `**Potion de récolte** : l'Alchimiste niveau ${N(() => E.POTION_REC.lvl)} la prépare depuis sa carte (+20 % de ressources pendant 1 h, sans cumul avec le Bonbon Récolteur).`,
+        "**Améliorer ma récolte** : le bandeau en haut de Récolte résume tous tes bonus et propose les prochaines améliorations.",
+        `**Apprenti récolteur (Monocompte)** : engage-le 24 h (${N(() => E.APP.perLvl)} kamas × niveau du héros, prolongeable jusqu'à 3 jours). Il récolte avec tes niveaux de métier, à ${N(() => E.APP.rate * 100)} % du rythme de ton héros, pendant que celui-ci combat, et même hors-ligne.`,
       ]],
       ["h", "Artisanat"],
       ["ul", [
