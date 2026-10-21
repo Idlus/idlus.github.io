@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-cles]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-cles, monocompte-cles-creer]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -258,6 +258,15 @@ jobs:
           echo '== Parties validées'
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from public.saves where updated_at > now() - interval '1 hour') envois_1h, (select count(*) from public.saves_ok where at > now() - interval '1 hour') valides_1h, (select count(*) from public.saves s join public.saves_ok o using (user_id) where s.updated_at > o.src_at + interval '30 minutes' and s.updated_at > now() - interval '2 hours') en_retard, (select max(at) from public.saves_ok) derniere_validation"
           bash tools/serveur/vps_sql.sh commande "echo '== Fonction record (2 h)'; docker logs --since 120m supabase-edge-functions 2>&1 | grep -iE 'error|erreur|exception|limit|timeout|boot' | tail -40"
+      - name: Monocompte, 20 clés bêta (lot « Bêta 1 »), affichées chiffrées seulement
+        # Le journal est public : les clés ne sortent que chiffrées pour tools/serveur/cles_cert.pem (clé privée hors du dépôt).
+        if: inputs.etape == 'monocompte-cles-creer'
+        run: |
+          bash tools/serveur/vps_sql.sh fichier tools/serveur/cles_creer.sql > /tmp/cles.txt 2>&1 || { echo "Création échouée"; grep -v -E 'MONO-' /tmp/cles.txt | tail -5; exit 1; }
+          grep -oE 'MONO-[A-Z0-9]{4}-[A-Z0-9]{4}' /tmp/cles.txt | sort -u > /tmp/liste.txt
+          echo "Clés créées : $(wc -l < /tmp/liste.txt)"
+          openssl cms -encrypt -aes256 -in /tmp/liste.txt -outform PEM tools/serveur/cles_cert.pem
+          rm -f /tmp/cles.txt /tmp/liste.txt
       - name: Monocompte, clés bêta seules (sauvegarde de la base puis mono_cles.sql)
         if: inputs.etape == 'monocompte-cles'
         run: |
