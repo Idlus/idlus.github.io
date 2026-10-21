@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35.6";
+const GAME_VERSION = "2.1.35.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.35.7", name: "Un panel par serveur", items: [
+    "Panel Xener : sélecteur Classique | Monocompte, chaque page n'agit que sur le serveur choisi",
+    "Monocompte : vue d'ensemble, testeurs, clés bêta, Bouclier, remise d'une partie, Bureau, chat et annonces à part",
+    "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement" ] },
   { v: "2.1.35.6", name: "Vérification plus juste", items: [
     "Serveur : les meilleurs joueurs avec le ×2 illimité de la Maîtrise du temps ne sont plus mis en vérification à tort pour leur Maîtrise" ] },
   { v: "2.1.35.5", name: "Points de Maîtrise signalés", guide: "maitrise", items: [

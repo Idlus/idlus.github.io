@@ -1,6 +1,15 @@
 {
-  "version": "2.1.35.6",
+  "version": "2.1.35.7",
   "versions": [
+    {
+      "v": "2.1.35.7",
+      "name": "Un panel par serveur",
+      "items": [
+        "Panel Xener : sélecteur Classique | Monocompte, chaque page n'agit que sur le serveur choisi",
+        "Monocompte : vue d'ensemble, testeurs, clés bêta, Bouclier, remise d'une partie, Bureau, chat et annonces à part",
+        "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement"
+      ]
+    },
     {
       "v": "2.1.35.6",
       "name": "Vérification plus juste",
