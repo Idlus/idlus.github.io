@@ -22,7 +22,7 @@ const TOOL = path.join(ROOT, "tools/serveur/mono_remise_zero.sql");
   assert(/^\\set ON_ERROR_STOP on$/m.test(t) && /^begin;$/m.test(t) && /^commit;$/m.test(t), "outil : ON_ERROR_STOP et une transaction");
   const ovh = fs.readFileSync(path.join(ROOT, ".github/workflows/serveur-ovh.yml"), "utf8");
   const st = ovh.split("      - name: ").find((x) => /inputs\.etape == 'monocompte-remise-zero'/.test(x)) || "";
-  assert(st, "étape monocompte-remise-zero absente"); assert(/monocompte-remise-zero\]/.test(ovh), "option monocompte-remise-zero");
+  assert(st, "étape monocompte-remise-zero absente"); assert(/options: \[[^\]]*\bmonocompte-remise-zero\b[^\]]*\]/.test(ovh), "option monocompte-remise-zero");
   assert(/pg_dumpall/.test(st) && /for f in supabase\/monocompte\.sql supabase\/mono_cles\.sql tools\/serveur\/mono_remise_zero\.sql; do/.test(st) && /lock_timeout = '3s'/.test(st), "étape : sauvegarde, puis monocompte.sql, mono_cles.sql et l'outil");
   const yml = fs.readFileSync(path.join(ROOT, ".github/workflows/supabase.yml"), "utf8"); const tous = (/tous="([^"]+)"/.exec(yml) || [])[1] || "";
   assert(tous && !/mono/.test(tous), "fichiers Monocompte hors du déploiement automatique"); }
