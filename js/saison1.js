@@ -57,7 +57,7 @@
   };
   /* le calendrier de la saison lit la date de saison */
   E.monoManche = (S) => Math.max(1, Math.floor((E.monoDate(S) - E.monoT0(S)) / M.dur.manche) + 1);
-  E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && E.monoDate(S) >= E.monoEnd(S));
+  E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && (E.monoDate(S) >= E.monoEnd(S) || !!E.monoSeasonDef(S.mono.s).closed)); // 6c : closed = saison fermée par le serveur
   E.monoDay = (S) => Math.max(1, Math.floor((Math.min(E.monoDate(S), E.monoEnd(S) - 1) - E.monoT0(S)) / DAY) + 1); // 1 à 56
   E.monoWeek = (S) => Math.floor((E.monoDay(S) - 1) / 7) + 1; // 1 à 8
 
@@ -169,7 +169,8 @@
     // une ligne par jour et par source (registre provisoire) ; le registre du serveur écrit une ligne par gain
     const src = `act:${day}:${kind}`; const L = T.led.find((l) => l.src === src);
     if (L) { L.n += g; L.t = E.monoDate(S); E.tfSync(S); } else post(S, g, "act", src, `${A.n}, jour ${day}`);
-    fwd(S, { t: "act", k: kind, n: g, src: `s${T.s}-j${day}-${kind}-${T.act[kind]}` }); // source unique : jour et rang du gain dans la journée
+    // 6a : rien à envoyer : partie en ligne, le serveur crée lui-même un bon de butin par gain (jour et rang du gain dans la journée),
+    // d'après cette ligne du registre provisoire, à chaque partie validée par le Bouclier ; il applique les bornes et le quota
     return g;
   };
 
@@ -213,6 +214,9 @@
     };
     // partie en ligne : le serveur fait l'achat (débit + droit en une opération) ; la partie le recopie ensuite. Renvoie une promesse.
     if (E.tfSrvOf(S) && !srvLive(S) && !E.monoEternal(S)) return "Connexion au serveur nécessaire pour la boutique : réessaie dans un instant.";
+    // 6c : Boutique d'Archives d'un héros de l'Éternel qui a été en ligne : le serveur débite le registre de sa saison finie
+    if (E.monoEternal(S) && E.tfSrvOf(S) && E.tfSrv && E.tfSrv.archive) return Promise.resolve(E.tfSrv.archive(S, id)).then((r) => { if (!r || r.err) return (r && r.err) || "Pas de connexion au serveur : réessaie dans un instant.";
+      E.tfSrvSet(S, r); return done(r.numero); }, () => "Pas de connexion au serveur : réessaie dans un instant.");
     if (srvLive(S)) return Promise.resolve(E.tfSrv.buy(S, id)).then((r) => { if (!r || r.err) return (r && r.err) || "Pas de connexion au serveur : réessaie dans un instant.";
       E.tfSrvSet(S, r); return done(r.numero); }, () => "Pas de connexion au serveur : réessaie dans un instant.");
     return done();
@@ -229,7 +233,7 @@
   { const p0 = E.resPrice; E.resPrice = function (n) { return isTF(n) ? 0 : p0.apply(this, arguments); }; }
   { const m0 = E.merchantRes; E.merchantRes = function (S, n) { return isTF(n) ? 0 : m0.apply(this, arguments); }; }
   if (E.venteOk) { const v0 = E.venteOk; E.venteOk = function (n) { return !isTF(n) && v0.apply(this, arguments); }; }
-  E.tfSellable = (n) => !isTF(n); // l'HdV de saison et l'échange arriveront avec le serveur Monocompte (registre, une seule opération)
+  E.tfSellable = (n) => !isTF(n) || !!(E.tfSrv && E.tfSrv.market && E.tfSrv.market()); // 6a : HdV de saison et échange du serveur Monocompte (registre, une seule opération)
 
   /* ---------------- écoute du moteur ---------------- */
   const heroLvl = (S) => Math.max(1, ...S.chars.filter((c) => !c.merc).map((c) => c.lvl || 1));

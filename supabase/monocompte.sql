@@ -1046,11 +1046,11 @@ end $$;
 create or replace function public.mono_hdv_market(p_cat text, p_q text, p_slot text, p_keys text[], p_saison int default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); m text := mono.monde(s); begin
   return (select coalesce(jsonb_agg(r), '[]'::jsonb) from (
-    select jsonb_build_object('key', l.key, 'cat', min(l.cat), 'name', min(l.name), 'lvl', max(l.lvl), 'slot', min(l.slot), 'n', count(*), 'qty', sum(l.qty),
+    select jsonb_build_object('key', l.key, 'cat', min(case l.cat when 'tf' then 'res' else l.cat end), 'name', min(l.name), 'lvl', max(l.lvl), 'slot', min(l.slot), 'n', count(*), 'qty', sum(l.qty),
       'unit', round(min(l.price::numeric / l.qty), 2), 'p1', min(l.price) filter (where l.qty = 1), 'p10', min(l.price) filter (where l.qty = 10), 'p100', min(l.price) filter (where l.qty = 100),
       'avg', (select round(sum(v.price)::numeric / nullif(sum(v.qty), 0), 1) from mono.ventes v where v.saison = s and v.monde = m and v.key = l.key and v.at > now() - interval '14 days')) r
     from mono.hdv l where l.saison = s and l.monde = m and l.status = 'open' and l.expires_at > now()
-      and (p_keys is null or l.key = any(p_keys)) and (p_cat is null or p_cat = '' or l.cat = p_cat or (p_cat = 'res' and l.cat = 'tf'))
+      and (p_keys is null or l.key = any(p_keys)) and (l.cat = p_cat or (p_cat = 'res' and l.cat = 'tf') or ((p_cat is null or p_cat = '') and l.cat <> 'col'))
       and (p_slot is null or p_slot = '' or l.slot = p_slot) and (p_q is null or p_q = '' or l.name ilike '%' || replace(replace(p_q, '%', ''), '_', '') || '%')
     group by l.key limit 400) x);
 end $$;
@@ -1070,13 +1070,13 @@ end $$;
 create or replace function public.mono_hdv_mine(p_saison int default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); begin
   return jsonb_build_object(
-    'open', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'qty', qty, 'price', price, 'item', item, 'exp', expires_at) order by id desc) from mono.hdv where seller = u and saison = s and status = 'open'), '[]'::jsonb),
-    'sold', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'qty', qty, 'price', price, 'item', item, 'at', closed_at, 'buyer', mono.pseudo(buyer)) order by closed_at desc)
+    'open', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'cat', case cat when 'tf' then 'res' else cat end, 'key', key, 'name', name, 'qty', qty, 'price', price, 'item', item, 'exp', expires_at) order by id desc) from mono.hdv where seller = u and saison = s and status = 'open'), '[]'::jsonb),
+    'sold', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'cat', case cat when 'tf' then 'res' else cat end, 'key', key, 'name', name, 'qty', qty, 'price', price, 'item', item, 'at', closed_at, 'buyer', mono.pseudo(buyer)) order by closed_at desc)
       from (select * from mono.hdv where seller = u and saison = s and status = 'sold' and closed_at > now() - interval '7 days' order by closed_at desc limit 40) z), '[]'::jsonb));
 end $$;
 create or replace function public.mono_hdv_bought(p_saison int default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); begin
-  return (select coalesce(jsonb_agg(jsonb_build_object('cat', cat, 'key', key, 'name', name, 'qty', qty, 'price', price, 'at', at, 'seller', mono.pseudo(seller)) order by at desc), '[]'::jsonb)
+  return (select coalesce(jsonb_agg(jsonb_build_object('cat', case cat when 'tf' then 'res' else cat end, 'key', key, 'name', name, 'qty', qty, 'price', price, 'at', at, 'seller', mono.pseudo(seller)) order by at desc), '[]'::jsonb)
     from (select * from mono.ventes where buyer = u and saison = s and at > now() - interval '7 days' order by at desc limit 40) z);
 end $$;
 
@@ -1142,14 +1142,14 @@ as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); d jsonb;
 end $$;
 create or replace function public.mono_hdv_orders_list(p_key text, p_q text, p_cat text, p_saison int default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); begin
-  return (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'lvl', lvl, 'left', qty - filled, 'qty', qty, 'price', price, 'exp', expires_at, 'mine', buyer = u) order by price desc, id), '[]'::jsonb)
+  return (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', case cat when 'tf' then 'res' else cat end, 'key', key, 'name', name, 'lvl', lvl, 'left', qty - filled, 'qty', qty, 'price', price, 'exp', expires_at, 'mine', buyer = u) order by price desc, id), '[]'::jsonb)
     from (select * from mono.ordres where saison = s and monde = mono.monde(s) and status = 'open' and expires_at > now()
-      and (p_key is null or p_key = '' or key = p_key) and (p_cat is null or p_cat = '' or cat = p_cat)
+      and (p_key is null or p_key = '' or key = p_key) and (p_cat is null or p_cat = '' or cat = p_cat or (p_cat = 'res' and cat = 'tf'))
       and (p_q is null or p_q = '' or name ilike '%' || replace(replace(p_q, '%', ''), '_', '') || '%') order by price desc, id limit 120) x);
 end $$;
 create or replace function public.mono_hdv_orders_mine(p_saison int default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); begin
-  return (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'qty', qty, 'filled', filled, 'price', price, 'held', held, 'st', status, 'exp', expires_at, 'at', closed_at) order by status <> 'open', coalesce(closed_at, created_at) desc), '[]'::jsonb)
+  return (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', case cat when 'tf' then 'res' else cat end, 'key', key, 'name', name, 'qty', qty, 'filled', filled, 'price', price, 'held', held, 'st', status, 'exp', expires_at, 'at', closed_at) order by status <> 'open', coalesce(closed_at, created_at) desc), '[]'::jsonb)
     from (select * from mono.ordres where buyer = u and saison = s and (status = 'open' or closed_at > now() - interval '7 days') order by id desc limit 40) x);
 end $$;
 

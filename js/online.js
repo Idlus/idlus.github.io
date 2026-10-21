@@ -50,14 +50,16 @@
      serveur Monocompte, ou pour un compte non autorisé : null, et tout reste sur l'appareil comme avant. */
   ON.monoSrv = !!SRV.mono;
   ON.mono = null; ON.monoCosm = null;
-  ON.monoOn = () => !!(ON.monoSrv && sb && ON.user && ON.mono && ON.mono.ok && ON.mono.saison);
+  ON.monoOn = () => !!(ON.monoSrv && sb && ON.user && ON.mono && ON.mono.ok && ON.mono.saison && (ON.mono.saison.etat || "ouverte") === "ouverte");
+  /* 6a : HdV de saison et échanges du Monocompte (fonctions mono_hdv_* et mono_trade_* du serveur), partie Monocompte en ligne seulement */
+  ON.monoMarket = () => SLOT === MONO_N && ON.monoOn();
   ON.cosmLegacy = (rows) => ({ t: rows.filter((r) => /^titre:/.test(r.cle)).map((r) => r.cle.slice(6)), u: rows.filter((r) => !/^titre:/.test(r.cle)).map((r) => r.cle) });
   ON.monoCheck = async () => {
     ON.mono = null; ON.monoCosm = null;
     if (!ON.monoSrv || !sb || !ON.user) return null;
     try {
       const { data, error } = await withTimeout(sb.rpc("mono_acces"), 8000); if (error || !data) return null;
-      ON.mono = data;
+      ON.mono = data; ON.monoAt = Date.now();
       if (data.ok) { const c = await withTimeout(sb.rpc("cosm_mine"), 8000); if (!c.error && Array.isArray(c.data)) ON.monoCosm = ON.cosmLegacy(c.data); }
     } catch (e) { /* hors ligne : la partie Monocompte reste sur l'appareil */ }
     return ON.mono;
@@ -65,7 +67,7 @@
   ON.cosmRefresh = async () => { if (!ON.monoOn()) return null; const r = await rpc("cosm_mine"); if (!r.err && Array.isArray(r.data)) ON.monoCosm = ON.cosmLegacy(r.data); return ON.monoCosm; };
   // registre des Éclats du Temps : le serveur tient le solde et le quota ; chaque réponse renvoie l'état du registre
   ON.tfEtat = () => rpc("mono_eclats_etat");
-  ON.tfAct = (kind, n, src) => rpc("mono_eclats_activite", { p_kind: kind, p_n: n, p_source: src });
+  // 6a : les Éclats d'activité ne s'envoient plus : le serveur crée les bons de butin d'après la partie validée par le Bouclier
   ON.tfDefi = (id, palier) => rpc("mono_eclats_defi", { p_defi: id, p_palier: palier });
   ON.tfAchat = (obj, saison) => rpc("mono_boutique_achat", saison != null ? { p_objet: obj, p_saison: saison } : { p_objet: obj });
   /* 4 : partie Monocompte, en ligne seulement pour un compte autorisé (testeur ou admin) quand une saison est ouverte ;
@@ -265,7 +267,7 @@
         for (let i = 0; i < 2; i++) {
           const l = link();
           const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
-          const r = await withTimeout(slot === 1 ? sb.rpc("push_save", args) : slot === MONO_N ? sb.rpc("mono_push", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
+          const r = slot === MONO_N ? await monoPush(args) : await withTimeout(slot === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
           const info = await ON.remoteInfo(slot); // envoi refusé : la version en ligne est-elle un de nos envois ?
@@ -275,13 +277,26 @@
         if (!data) { setState("conflict"); return "conflict"; }
         setLinkOf(key, { uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok");
-        if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(); } catch (e) {} } // registre des Éclats : envois en attente (js/mono_online.js) ; le Bouclier Monocompte (étape 5) se branchera ici
+        if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(ON.monoVerif); } catch (e) {} } // registre des Éclats et réponse du Bouclier Monocompte (js/mono_online.js)
         if (slot === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
       } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
       finally { if (pushing === p) pushing = null; }
     })();
     pushing = p; return p;
+  };
+  /* Bouclier Monocompte (étape 5) : la partie Monocompte part par la fonction serveur « mono », qui l'enregistre (même logique
+     que mono_push) et la vérifie aussitôt (ON.monoVerif : { ok, held, registre… }). Fonction absente (serveur pas encore à jour) :
+     envoi direct par mono_push, vérifié plus tard. */
+  ON.monoVerif = null;
+  const monoPush = async (args) => {
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("mono", { body: { push: { data: args.p_data, meta: args.p_meta, version: args.p_version, device: args.p_device, expected: args.p_expected, force: args.p_force } } }), 30000);
+      if (!error && data && data.ok) { ON.monoVerif = data.verif || null; return { data: data.at || null }; }
+      if (!error && data && data.err) return { error: { message: data.err } };
+    } catch (e) { /* fonction injoignable : envoi direct */ }
+    ON.monoVerif = null;
+    return withTimeout(sb.rpc("mono_push", args), 20000);
   };
   /* 2.1.4 « Bouclier du serveur » : après chaque envoi, le serveur relit la partie, calcule lui-même le résumé des classements
      et la garde comme « dernière partie validée » si elle est possible (fonction « record », { verif: 1 }). Rien à montrer
@@ -318,8 +333,10 @@
   /* 1.0.11 : une partie solo ne touche jamais à ce que le serveur tient pour la partie 1 (ventes, échanges, guilde,
      Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
   const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_|vente_sell$|foire_jackpot_buy$)/; // 1.0.30 : vente directe et Jackpot du Trool
+  const MONO_RPC = /^(hdv_(sync|list|buy|cancel|reprice|market|offers|history|mine|bought|order_new|order_cancel|order_fill|orders_list|orders_mine)|trade_(start|state|offer|ok|cancel))$/;
   const rpc = async (name, args) => {
-    if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
+    if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
+    else if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
     try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
     catch (e) { return { err: "Pas de connexion au serveur." }; }
   };

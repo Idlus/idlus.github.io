@@ -165,6 +165,17 @@ const MOCK = () => {
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
     functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco || o.body.prism) return guildInvoke(o.body); const d = db();
+      // Bouclier Monocompte (fonction « mono », étape 5) : envoi de la partie 4 puis vérification ; bons de butin d'après les lignes
+      // d'activité de la partie (un par gain), registre renvoyé au jeu
+      if (name === "mono" && o.body.push) { if (window.__offline) throw new Error("Failed to fetch"); const u = d.session; const M = (d.mono = d.mono || { testers: [] }); const a = o.body.push;
+        if (!u || !M.testers.includes(u.id)) return { data: { ok: false, err: "espace Monocompte réservé aux testeurs" }, error: null };
+        const P = (d.monoParts = d.monoParts || {}); const x = P[u.id];
+        if (!a.force && ((a.expected == null && x) || (a.expected != null && (!x || x.updated_at !== a.expected)))) { put(d); return { data: { ok: true, at: null }, error: null }; }
+        P[u.id] = { data: a.data, meta: a.meta, device: a.device, game_version: a.version, updated_at: ts() }; d.monoPushes = (d.monoPushes || 0) + 1;
+        const L = ((d.tfLed = d.tfLed || {})[u.id] = d.tfLed[u.id] || []); const led = ((JSON.parse(a.data).mono || {}).tf || {}).led || [];
+        led.forEach((l) => { const m = /^act:(\d+):(\w+)$/.exec(l.src || ""); if (!m) return; const k = `bon:j${m[1]}:${m[2]}:`; for (let r = L.filter((y) => y.src.startsWith(k)).length + 1; r <= l.n; r++) L.push({ n: 1, o: "act", src: k + r }); });
+        const solde = L.reduce((t, l) => t + l.n, 0), genere = L.reduce((t, l) => t + (l.o === "act" ? l.n : 0), 0); d.monoVerifs = (d.monoVerifs || 0) + 1; put(d);
+        return { data: { ok: true, at: P[u.id].updated_at, verif: { ok: true, registre: { saison: 0, solde, genere, quota: 100, reste: Math.max(0, 100 - genere), semaine: 1, jour: 1 } } }, error: null }; }
       if (o.body.verif) { d.verifs = (d.verifs || 0) + 1; put(d); return { data: { ok: true }, error: null }; } // 2.1.4 « Bouclier du serveur »
       if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
       if (o.body.songe) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: true, songe: 1, w: Math.floor((Date.now() / 864e5 + 3) / 7), ii: 2, waves: 20, claim: 20, best: 20, improved: true, rank: 3, fii: 2, fwaves: 20 }, error: null }; } // 1.0.30 : Songe infini rejoué par le serveur
@@ -270,7 +281,7 @@ const MOCK = () => {
         const st = () => { const solde = L.reduce((t, l) => t + l.n, 0), genere = L.reduce((t, l) => t + (l.o === "act" ? l.n : 0), 0); return { saison: 0, solde, genere, quota: 100, reste: Math.max(0, 100 - genere), semaine: 1, jour: 1, manche: 1 }; };
         const line = (n, o, src) => { if (L.some((l) => l.src === src)) return 0; L.push({ n, o, src }); return n; };
         if (name === "mono_eclats_etat") return ok(st());
-        if (name === "mono_eclats_activite") { const g = Math.min(a.p_n, st().reste); return ok(Object.assign({ ok: true, n: g > 0 ? line(g, "act", "act:" + a.p_source) : 0 }, st())); }
+        if (name === "mono_hdv_sync") return ok({ ops: [], registre: st() });
         if (name === "mono_eclats_defi") { const x2 = TF.DEFIS.find((y) => y.id === a.p_defi); if (!x2) return ok({ err: "Défi inconnu.", n: 0 }); return ok(Object.assign({ ok: true, n: line(TF.REW[x2.c][a.p_palier], "defi", `defi:${a.p_defi}:${a.p_palier}`) }, st())); }
         if (name === "mono_boutique_achat") {
           const it = TF.SHOP.find((y) => y.id === a.p_objet); if (!it) return ok({ err: "Objet inconnu." }); const cle = TF.UNLOCK[it.id] || null;
@@ -1513,9 +1524,14 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!m4.monoParts || !m4.monoParts.u4 || JSON.parse(m4.monoParts.u4.data).chars[0].name !== "Solitaire") fail("Monocompte : partie absente du serveur Monocompte");
     if ((m4.slots || {})["u4:4"] || m4.saves.u4) fail("Monocompte : la partie est partie dans les tables du Classique");
     if (!(await p4.evaluate(() => (window.DX.S.titlesExtra || []).includes("Gardien des échos")))) fail("Monocompte : titre partagé du compte non donné au nouveau héros");
-    // gain d'activité envoyé au registre du serveur, solde affiché = celui du serveur
-    await p4.evaluate(() => window.ENGINE.tfActivity(window.DX.S, "dj"));
-    await p4.waitForFunction(() => { const d = JSON.parse(localStorage.getItem("__mock")); return ((d.tfLed || {}).u4 || []).length === 1; }, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain d'activité non envoyé au registre du serveur"));
+    // gain d'activité payé par un bon de butin du serveur à l'envoi suivant (fonction « mono »), solde affiché = celui du serveur
+    await p4.evaluate(() => { window.ENGINE.tfActivity(window.DX.S, "dj"); window.DX.social.onPush(); });
+    await p4.waitForFunction(() => { const d = JSON.parse(localStorage.getItem("__mock")); return ((d.tfLed || {}).u4 || []).length === 1; }, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain d'activité non payé par un bon du serveur"));
+    if (!(await mock4()).monoVerifs) fail("Monocompte : la partie n'est pas passée par la fonction « mono » (Bouclier)");
+    // 6a : HdV de saison et échanges du serveur Monocompte (mono_hdv_*, mono_trade_*) ; Éclats du Temps à vendre ; rien de l'HdV du Classique
+    const mk = await p4.evaluate(async () => { const r = await window.ONLINE.rpc("hdv_sync", { p_after: 0 }); const g = await window.ONLINE.rpc("guild_create", {});
+      return { reg: !!(r.data && r.data.registre), tf: window.MARKET.canSell(window.ENGINE.TF_RES), guild: g.err || "" }; });
+    if (!mk.reg || !mk.tf || !/Partie solo/.test(mk.guild)) fail("Monocompte : HdV de saison " + JSON.stringify(mk));
     await edit4(`d.tfLed.u4.push({ n: 1000, o: "defi", src: "defi:autre-appareil" });`);
     const bal = await p4.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; await E.tfSrv.refresh(S); return [E.tfBalance(S), S.res[E.TF_RES], E.tfActTotal(S), (S.mono.tf.led || []).reduce((a, l) => a + l.n, 0)]; });
     if (JSON.stringify(bal) !== "[1001,1001,1,1]") fail("Monocompte : le solde affiché ne vient pas du registre du serveur " + JSON.stringify(bal));
@@ -1529,13 +1545,13 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await p4.waitForFunction(() => window.DX.S.mono.tf.own.sab, null, { timeout: 8000 }).catch(() => fail("Monocompte : achat depuis la Boutique temporelle"));
     m4 = await mock4(); if (m4.cosm.u4.length !== 2) fail("Monocompte : un objet de collection a donné un droit " + JSON.stringify(m4.cosm.u4));
     if (process.env.SHOTS) await p4.screenshot({ path: process.env.SHOTS + "/mono-boutique-en-ligne.png" });
-    // hors connexion : le gain attend dans la partie, compte dans le solde, puis part au retour
-    const q1 = await p4.evaluate(() => { window.__offline = true; const S = window.DX.S, E = window.ENGINE; E.tfActivity(S, "arch"); return [S.mono.tf.q.length, E.tfBalance(S)]; });
+    // hors connexion : le gain reste dans la partie (ligne du jour), le serveur le paie au retour (bon de butin)
+    const q1 = await p4.evaluate(() => { window.__offline = true; const S = window.DX.S, E = window.ENGINE; E.tfActivity(S, "arch"); return [(S.mono.tf.q || []).length, E.tfBalance(S)]; });
     await p4.waitForTimeout(300);
-    if (q1[0] !== 1 || q1[1] !== 553) fail("Monocompte : gain hors connexion " + JSON.stringify(q1));
-    await p4.evaluate(() => { window.__offline = false; window.ONLINE.onMonoPush(); });
-    await p4.waitForFunction(() => !window.DX.S.mono.tf.q.length, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain en attente jamais envoyé"));
-    m4 = await mock4(); if (m4.tfLed.u4.filter((l) => l.o === "act").length !== 2) fail("Monocompte : gain en attente absent du registre");
+    if (q1[0] !== 0 || q1[1] !== 551) fail("Monocompte : gain hors connexion " + JSON.stringify(q1));
+    await p4.evaluate(() => { window.__offline = false; window.DX.social.onPush(); });
+    await p4.waitForFunction(() => { const d = JSON.parse(localStorage.getItem("__mock")); return d.tfLed.u4.filter((l) => l.o === "act").length === 3; }, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain hors connexion jamais payé par le serveur"));
+    await p4.waitForFunction(() => window.ENGINE.tfBalance(window.DX.S) === 553, null, { timeout: 8000 }).catch(() => fail("Monocompte : registre du serveur non recopié après l'envoi"));
     // deux appareils : l'autre version de la partie 4 est montrée
     await p4.evaluate(() => window.DX.social.onPush()); await p4.waitForTimeout(300);
     await edit4(`const p = d.monoParts.u4; const st = JSON.parse(p.data); st.kamas = 4444; p.data = JSON.stringify(st); p.updated_at = "2099-03-01T00:00:00.000001Z"; p.device = "téléphone"; p.meta = Object.assign({}, p.meta, { pid: "tel" });`);
@@ -1555,7 +1571,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (await p4.$("#onPill")) fail("Monocompte : pastille d'envoi pour un compte non autorisé");
     if ((await mock4()).monoPushes) fail("Monocompte : envoi en ligne pour un compte non autorisé");
     // la partie a été en ligne : la dernière copie du registre du serveur reste affichée, le gain attend, la boutique attend le serveur
-    if (loc[0] !== 554 || loc[1] !== 1 || !/Connexion au serveur/.test(loc[2])) fail("Monocompte : partie hors serveur après avoir été en ligne " + JSON.stringify(loc));
+    if (loc[0] !== 553 || loc[1] !== 0 || !/Connexion au serveur/.test(loc[2])) fail("Monocompte : partie hors serveur après avoir été en ligne " + JSON.stringify(loc));
     await ctx4.close();
   } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus
   finally { await browser.close(); server.close(); }

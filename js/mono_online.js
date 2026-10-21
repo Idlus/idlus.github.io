@@ -3,8 +3,11 @@
    Branche le moteur de la Saison 1 (js/saison1.js, E.tfSrv) sur les fonctions du serveur (js/online.js, supabase/monocompte.sql),
    seulement quand la partie Monocompte est en ligne : compte autorisé (testeur ou admin), saison ouverte, partie 4 jouée.
    Sinon rien ne change : le registre provisoire de la partie reste celui qu'on affiche.
-   - chaque gain d'activité et chaque palier de défi est envoyé (file S.mono.tf.q, gardée dans la partie hors connexion) ;
-     le serveur applique les bornes du jour et le quota, et renvoie son état du registre (solde, générés, quota) ;
+   - 6a : les gains d'activité ne s'envoient plus : à chaque envoi, la fonction serveur « mono » vérifie la partie (Bouclier)
+     et crée un bon de butin par gain (bornes du jour et quota), puis paie les défis atteints ; sa réponse (ON.monoVerif)
+     donne le registre. Les paliers de défi demandés par le jeu partent encore (file S.mono.tf.q) ;
+   - 6c : la partie suit la date de saison du serveur (début, horloge de test, fin de saison et clôture) ;
+   - HdV de saison et échanges : js/market.js (ON.monoMarket) ; Boutique d'Archives d'un héros de l'Éternel : par le serveur ;
    - un achat en boutique passe par le serveur d'abord (débit + droit en une opération) ;
    - les droits partagés du compte (cosm_mine) sont redonnés à la partie au démarrage.
    ========================================================================== */
@@ -24,7 +27,8 @@
       try {
         while (live(S) && T.q.length) {
           const op = T.q[0];
-          const r = op.t === "act" ? await ON.tfAct(op.k, op.n, op.src) : op.t === "defi" ? await ON.tfDefi(op.id, op.i) : { data: { err: "?" } };
+          if (op.t !== "defi") { T.q.shift(); continue; } // ancien gain d'activité en file : le serveur le paie par un bon de butin
+          const r = await ON.tfDefi(op.id, op.i);
           if (r.err === NET) break;
           T.q.shift();
           if (r.data && !r.data.err) E.tfSrvSet(S, r.data);
@@ -40,15 +44,40 @@
     if (r.data && r.data.ok) { ON.cosmRefresh().catch(() => {}); dirty(); }
     return r.data || null;
   };
-  E.tfSrv = { live, flush, buy, refresh };
+  /* Boutique d'Archives (6c) : héros de l'Éternel d'une saison jouée en ligne (S.mono.sid : numéro de la saison sur le serveur) */
+  const archive = async (S, id) => {
+    if (!ON.user || !ON.mono || !ON.mono.ok || !S || !S.mono || S.mono.sid == null) return { err: "Connexion au serveur nécessaire pour la Boutique d'Archives." };
+    const r = await ON.tfAchat(id, S.mono.sid); if (r.err) return { err: r.err === NET ? "Pas de connexion au serveur : réessaie dans un instant." : r.err };
+    if (r.data && r.data.ok) { ON.cosmRefresh().catch(() => {}); dirty(); }
+    return r.data || null;
+  };
+  E.tfSrv = { live, flush, buy, refresh, archive, market: () => !!(ON.monoMarket && ON.monoMarket()) };
+  /* 6c : date de saison du serveur. Début de la saison, horloge de test (vitesse, pause) et fin de saison (clôture) : la partie
+     les suit ; hors saison de test, la date de saison est la vraie date. */
+  const clock = (S) => {
+    const A = ON.mono; if (!S || !S.mono || S.mono.eternel || !A || !A.ok || !A.saison) return;
+    const def = E.MONO.saisons[S.mono.s] || (E.MONO.saisons[S.mono.s] = { nom: A.saison.nom || `Saison ${S.mono.s}`, debut: null });
+    if (S.mono.sid != null && S.mono.sid !== A.saison.id) return; // partie d'une autre saison du serveur
+    const d0 = Date.parse(A.saison.debut); if (d0 > 0) def.debut = d0;
+    def.closed = A.saison.etat !== "ouverte";
+    if (def.closed) return;
+    S.mono.sid = A.saison.id;
+    if (A.saison.test && A.clk && A.date) { const t = Date.parse(A.date); if (!(t > 0)) return;
+      const k = S.mono.clk; const at0 = ON.monoAt || E.now();
+      if (!k || k.src !== at0) { S.mono.test = true; S.mono.clk = { t, at: at0, spd: Math.max(1, +A.clk.v || 1), pause: !!A.clk.pause, src: at0 }; dirty(); } }
+    else if (S.mono.clk && S.mono.clk.src) { delete S.mono.clk; delete S.mono.test; dirty(); }
+  };
   /* au démarrage d'une partie Monocompte en ligne : droits partagés du compte, état du registre, gains en attente */
   let seen = null;
   const boot = (S) => {
-    seen = S;
+    seen = S; clock(S);
     try { if (ON.monoCosm && E.monoApplyLegacy(S, ON.monoCosm)) dirty(); } catch (e) {}
     refresh(S).then(() => flush(S)).catch(() => {});
   };
-  ON.onMonoPush = () => { const S = window.DX.S; if (live(S)) flush(S).then(() => refresh(S)).catch(() => {}); };
+  ON.onMonoPush = (v) => { const S = window.DX.S; if (!live(S)) return;
+    if (v && v.ok && v.registre) { E.tfSrvSet(S, v.registre); dirty(); } // partie validée par le Bouclier : bons et défis payés
+    flush(S).then(() => refresh(S)).catch(() => {}); };
+  setInterval(() => { try { clock(window.DX.S); } catch (e) {} }, 5000);
   setInterval(() => { const S = window.DX.S; if (!live(S)) return; if (S !== seen) return boot(S);
     const T = E.tfState(S); if (T && ((T.q || []).length || !T.srv || E.now() - (T.srv.at || 0) > 60000)) flush(S).then(() => refresh(S)).catch(() => {}); }, 2000);
 })();

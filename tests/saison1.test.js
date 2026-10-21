@@ -190,7 +190,7 @@ const at = (S, day) => { now = E.monoT0(S) + (day - 1) * DAY + 3600000; };
 (async () => {
   const S = mono(); at(S, 1); let on = true; const sent = [];
   E.tfSrv = { live: () => on, flush: (s) => { const T = E.tfState(s); sent.push(...T.q.splice(0)); }, buy: async (s, id) => (id === "emb" ? { ok: true, solde: 300, genere: 1, quota: 100, numero: null } : { err: "Il faut 600 Éclats du Temps." }) };
-  assert.strictEqual(E.tfActivity(S, "dj"), 1); assert.strictEqual(sent.length, 1); assert.strictEqual(sent[0].t, "act"); assert.match(sent[0].src, /^s1-j1-dj-1$/);
+  assert.strictEqual(E.tfActivity(S, "dj"), 1); assert.strictEqual(sent.length, 0, "6a : gain d'activité jamais envoyé (bons de butin du serveur)"); assert.ok(E.tfLedger(S).some((l) => l.src === "act:1:dj"), "ligne du jour gardée pour le serveur");
   E.tfSrvSet(S, { solde: 500, genere: 1, quota: 100, reste: 99, semaine: 1, jour: 1, saison: 0 });
   assert.strictEqual(E.tfBalance(S), 500, "solde du serveur"); assert.strictEqual(S.res[RES], 500, "le sac recopie le solde du serveur");
   E.tfState(S).q = [{ t: "act", k: "arch", n: 2 }]; assert.strictEqual(E.tfBalance(S), 502, "gain pas encore envoyé compté"); assert.strictEqual(E.tfActTotal(S), 3); E.tfState(S).q = [];
@@ -200,7 +200,7 @@ const at = (S, day) => { now = E.monoT0(S) + (day - 1) * DAY + 3600000; };
   E.tfSrv.buy = async () => { throw new Error("Failed to fetch"); }; assert.match(await E.tfBuy(S, "orn"), /connexion/); assert.ok(!E.tfState(S).own.orn);
   on = false; assert.strictEqual(E.tfBalance(S), 300, "coupure : la dernière copie du serveur reste affichée");
   assert.match(E.tfBuy(S, "sab"), /Connexion au serveur/, "coupure : pas d'achat sans le serveur"); E.tfActivity(S, "arch");
-  assert.strictEqual(E.tfState(S).q.length, 1, "coupure : le gain attend dans la partie"); assert.strictEqual(E.tfBalance(S), 302);
+  assert.strictEqual((E.tfState(S).q || []).length, 0, "coupure : rien en file (le serveur paiera d'après la partie)"); assert.strictEqual(E.tfBalance(S), 300);
   const S2 = mono(); at(S2, 1); E.tfActivity(S2, "dj"); assert.strictEqual(E.tfBalance(S2), 1, "partie jamais en ligne : registre de la partie"); assert.ok(!(E.tfState(S2).q || []).length);
   for (let i = 0; i < 4; i++) E.tfPost(S2, 100, "defi", "t" + i); assert.strictEqual(E.tfBuy(S2, "emb"), null, "partie jamais en ligne : achat local, sans promesse");
   E.tfSrv = null;

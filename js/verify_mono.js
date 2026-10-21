@@ -43,7 +43,8 @@
     const def = M.saisons[s] || (M.saisons[s] = { nom: `Saison ${s}`, debut: null }); const d0 = def.debut;
     if (ctx.debut != null) def.debut = ctx.debut;
     if (ctx.date != null) E.setClock(() => ctx.date);
-    try { return fn(); } finally { def.debut = d0; E.setClock(null); }
+    const ck = S && S.mono && S.mono.clk; if (ck) delete S.mono.clk; // l'horloge de test de la partie ne compte pas : seule la date du serveur
+    try { return fn(); } finally { def.debut = d0; E.setClock(null); if (ck) S.mono.clk = ck; }
   };
   VM.load = (E, txt) => { const S = E.deserialize(txt); if (E.events) E.events.length = 0; if (S && S.mono && E.monoBoot) E.monoBoot(S); return S; };
 

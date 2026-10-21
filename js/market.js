@@ -46,7 +46,8 @@
     return `<span class="icobox mkcons">${X().consIco(CONSUMABLES[key], true)}</span>`;
   };
   const kk = (n) => `<span class="mkpx"><span class="coin"></span> ${fmt(Math.round(n))}</span>`;
-  const blocked = (cat, key) => (cat === "res" && key === E.TF_RES) /* Éclats du Temps : HdV de saison du serveur Monocompte seulement */ || (cat === "eq" && ITEMS[key] && (ITEMS[key].slot === "dofus" || ITEMS[key].bound)) || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
+  const monoM = () => !!(ON.monoMarket && ON.monoMarket()); // 6a : partie Monocompte en ligne (HdV de saison, échanges)
+  const blocked = (cat, key) => (cat === "res" && key === E.TF_RES && !monoM()) /* Éclats du Temps : HdV de saison du serveur Monocompte seulement */ || (cat === "eq" && ITEMS[key] && (ITEMS[key].slot === "dofus" || ITEMS[key].bound)) || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
   /* 0.1.38 : plus de prix minimum (on ne vend plus au jeu). Le seul plancher est 1 kama par unité.
      La « valeur de base » (l'ancienne revente au jeu) sert de repère et de garde-fou : sous la moitié du prix moyen
      (ou de cette valeur quand rien ne s'est encore vendu), le jeu demande une confirmation. */
@@ -84,7 +85,7 @@
 
   /* ---------- opérations du serveur appliquées à la partie ---------- */
   const cursor = () => { const s = S(); return (s && s.hdv && s.hdv.op) || 0; };
-  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id && !(ON.solo && ON.solo())); // 1.0.11 : pas de vente ni d'achat depuis une partie solo
+  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id && (!(ON.solo && ON.solo()) || monoM())); // 1.0.11 : pas de vente ni d'achat depuis une partie solo ; 6a : sauf la partie Monocompte en ligne (HdV de saison)
   function apply(ops, quiet) {
     const s = S(); if (!s || !ops || !ops.length || !mine()) return 0;
     s.hdv = s.hdv || { op: 0, log: [] }; s.hdv.log = s.hdv.log || [];
@@ -100,6 +101,7 @@
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
       (p.rmM || []).forEach((uid) => { if (E.mountGone) E.mountGone(s, +uid); }); (p.rmP || []).forEach((uid) => { if (E.petGone) E.petGone(s, +uid); }); // 2.1.30 : bêtes vendues ou échangées
       (p.addM || []).forEach((m) => { if (E.mountIn) E.mountIn(s, m); }); (p.addP || []).forEach((x) => { if (E.petIn) E.petIn(s, x); });
+      if (p.col && E.tfState) { const T = E.tfState(s); if (T) for (const k in p.col) { const v = (T.col[k] || 0) + Number(p.col[k]); if (v > 0) T.col[k] = v; else delete T.col[k]; } } // 6a : objets de collection de la Boutique temporelle
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
       if (E.carnetOp) E.carnetOp(s, p, o.t); // 2.1.29.6 : chaque opération dans sa case du carnet (vente directe, guilde, Foire…)
@@ -112,10 +114,13 @@
     if (got) { M.oMine = null; if (window.DX.ui.tab === "hdv" && M.tab === "ord") loadOMine(); } // 0.1.33 : une offre d'achat a avancé
     return n;
   }
+  /* 6a : registre des Éclats du Temps renvoyé par l'HdV de saison (Éclats vendus, achetés, échangés) : le sac le recopie */
+  const reg = (d) => { if (d && d.registre && d.registre.solde != null && E.tfSrvSet && S()) { E.tfSrvSet(S(), d.registre); X().markDirty(); } };
   async function sync() {
     if (!mine()) return;
     const r = await ON.rpc("hdv_sync", { p_after: cursor() });
     if (r.data && r.data.ops) apply(r.data.ops);
+    reg(r.data);
   }
   async function act(name, args, okTxt) {
     if (M.busy) return null;
@@ -128,6 +133,7 @@
     if (r.err) { X().toast(/connexion/i.test(r.err) ? r.err : "Refusé par le serveur : " + r.err); paint(); return null; }
     if (r.data && r.data.err) { X().toast(r.data.err); paint(); return null; }
     if (r.data && r.data.ops) apply(r.data.ops, true);
+    reg(r.data);
     if (okTxt) X().toast(okTxt);
     return r.data;
   }
@@ -737,7 +743,7 @@
       case "mk-tq": { const [b, k] = d.v.split("|"); const inp = document.querySelector(`[data-tq="${CSS.escape(d.v)}"]`); const v = Math.max(0, Math.round(+(inp ? inp.value : 0))); tradeSet((o) => { o[b] = o[b] || {}; if (v) o[b][k] = v; else delete o[b][k]; }); return; }
       case "mk-tk": { const v = Math.max(0, Math.round(+String(($("#mkTK") || {}).value || 0).replace(/\s/g, ""))); tradeSet((o) => { o.k = v; }); return; }
       case "mk-tok": { const t2 = M.trade; if (!t2) return; try { await X().onPush(); } catch (e) {} const r = await ON.rpc("trade_ok", { p_id: t2.id, p_ver: t2.ver, p_after: cursor() });
-        if (r.err || (r.data && r.data.err)) X().toast(r.err || r.data.err); else if (r.data && r.data.ops) apply(r.data.ops, true); await tradePoll(); return; }
+        if (r.err || (r.data && r.data.err)) X().toast(r.err || r.data.err); else { if (r.data && r.data.ops) apply(r.data.ops, true); reg(r.data); } await tradePoll(); return; }
       case "mk-tcancel": { const t2 = M.trade; if (t2) await ON.rpc("trade_cancel", { p_id: t2.id }); await tradePoll(); X().closeSheet(); return; }
       case "mk-oview": M.oView = d.v; if (d.v === "all") M.orders = null; else M.oMine = null; render($("#main")); return;
       case "mk-ocat": M.oCat = d.v; paint(); return;
