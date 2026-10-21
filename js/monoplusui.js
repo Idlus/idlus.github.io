@@ -27,7 +27,7 @@
   const CROWN = (c) => `<svg class="mp-crown ${c || ""}" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l-1.6-9-4.6 3.8L12 5l-2.8 7.8L4.6 9z" fill="#e8c45a" stroke="#7a5a0c" stroke-width="1.2"/><circle cx="12" cy="5" r="1.4" fill="#7fe6ff"/></svg>`;
   const head = (t, sub) => `<div class="pagehead"><h1>${t}</h1>${sub ? `<span class="small muted">${sub}</span>` : ""}</div>`;
   const dur = (ms) => { if (!(ms > 0)) return "–"; const s = Math.round(ms / 1000), m = Math.floor(s / 60); return m ? `${m} min ${String(s % 60).padStart(2, "0")} s` : `${s} s`; };
-  const redraw = () => { const m = document.getElementById("main"); const P = window.DX.pages[UI().tab]; if (m && P) P(m); };
+  const redraw = () => { if (UI().tab === "ladder") return X().render(); const m = document.getElementById("main"); const P = window.DX.pages[UI().tab]; if (m && P) P(m); }; // 2.1.35.2 : la page Classements affiche aussi les classements de saison
   const leave = () => { UI().tab = "home"; X().render(); };
 
   /* ---------- menu (appelé par monoNav dans js/ui.js) ---------- */
@@ -47,7 +47,7 @@
     if (!srvOn() || (LB.at[t] && Date.now() - LB.at[t] < 60000)) return; LB.at[t] = Date.now();
     const r = await ON.rpc("mono_classement", { p_type: t, p_saison: null, p_limit: 50 });
     if (r.err) { LB.err = "Classement indisponible pour l'instant."; } else { LB.data[t] = r.data; LB.err = ""; }
-    if (UI().tab === "saisonlb") redraw();
+    if (UI().tab === "saisonlb" || UI().tab === "ladder") redraw();
   }
   function crownBox() {
     const K = AM() && AM().couronne();

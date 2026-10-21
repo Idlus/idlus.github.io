@@ -11583,6 +11583,12 @@ function raceChip() {
 }
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }
+  // 2.1.35.2 : en Monocompte, la page Classements montre d'abord les classements de saison (bouton pour revoir le Classique)
+  if (monoSlot(SLOT) && !E.monoEternal(S) && !LB.classic && window.DX.pages.saisonlb) {
+    const m = $("#main"); window.DX.pages.saisonlb(m);
+    if (ui.tab === "ladder") { const ph = m.querySelector(".pagehead"); const pn = `<div class="panel"><div class="pad row between"><span class="small muted">Tu joues en Monocompte : voici les classements de ta saison.</span><button class="btn sm" data-act="lb-classic">Voir le Classique</button></div></div>`; if (ph) ph.insertAdjacentHTML("afterend", pn); else m.insertAdjacentHTML("afterbegin", pn); }
+    return;
+  }
   const wl = weekList(), dids = Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || DUNGEONS[a].name.localeCompare(DUNGEONS[b].name));
   if (!LB.did) LB.did = lbDefaultDid();
   const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
@@ -11602,7 +11608,7 @@ function renderLadder() {
     : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
-  const login = ON.user ? (SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  const login = ON.user ? (monoSlot(SLOT) && !E.monoEternal(S) && window.DX.pages.saisonlb ? `<div class="panel"><div class="pad row between"><span class="small muted">Ici, ce sont les classements du serveur Classique.</span><button class="btn sm primary" data-act="lb-mono">Classements de ma saison</button></div></div>` : SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     <nav class="subtabs">${LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n]).map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
@@ -11718,6 +11724,8 @@ function lbAct(a, t) {
   const d = t.dataset;
   switch (a) {
     case "lb-tab": LB.tab = d.v; break;
+    case "lb-classic": LB.classic = true; break;
+    case "lb-mono": LB.classic = false; break;
     case "lb-job": LB.job = d.v; break;
     case "lb-jgrp": LB.jgrp = d.v; LB.job = JOB_ALL; break; // 1.0.9 : Artisanat / Récolte / Forgemagie
     case "lb-jmode": LB.jmode = d.v; break;
