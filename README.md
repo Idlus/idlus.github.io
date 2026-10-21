@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.34.3 « Classements justes »
+
+- Ticket #143 (Akileuss) : 12 succès sont déclarés dans des fichiers que la fonction serveur ne charge pas (suivi.js, vie.js, ui.js, guide.js) ; VERIFY.ACH_EXTRA les compte avec leurs points dans le résumé (tests/succes_serveur.test.js garde la liste juste).
+- Ticket #142 (lucy8) : E.poutchPreview copiait la partie avec le combat en cours (la Marque d'ébène y garde une entité : JSON circulaire) → copie par E.serialize ; E.dofpDeath crée dpS s'il manque (invocation portant les Dofus). Aucun changement de sauvegarde ni de SQL.
+
 ## 2.1.34.2 « Mission de donjon »
 
 - Ticket #141 (Akileuss) : Défis › Alignement, la carte de mission n'avait « Y aller » que pour les missions de chasse (q.sub). Les missions « boss » (q.dg) ont maintenant le bouton dgopen vers la fiche du donjon, caché une fois la mission remplie. Aucun changement de sauvegarde ni de serveur.

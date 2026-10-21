@@ -1,6 +1,15 @@
 {
-  "version": "2.1.34.2",
+  "version": "2.1.34.3",
   "versions": [
+    {
+      "v": "2.1.34.3",
+      "name": "Classements justes",
+      "items": [
+        "Classement des succès : les succès des chasses au trésor, des commandes d'artisans, des temples, des partitions et du guide comptent aussi, avec leurs points : le total est le même que sur la page Succès",
+        "Le Poutch (essai des sorts) ne plante plus pendant un combat où un héros porte le Dofus Ébène",
+        "Colère du Bworker : plus d'erreur quand une invocation porte les Dofus de son maître"
+      ]
+    },
     {
       "v": "2.1.34.2",
       "name": "Mission de donjon",

@@ -194,7 +194,8 @@
   /* un héros tombe : la Colère du Bworker monte chez ses alliés */
   E.dofpDeath = (F, tgt) => {
     if (!tgt.dp || tgt.summon) return;
-    F.ents.forEach((m) => { if (m.alive && m.side === tgt.side && m !== tgt && has(m, "dofoozbz")) { m.dpS.rage = (m.dpS.rage || 0) + 1; proc(F, m, "dofoozbz", `+${pc(m.dpS.rage * V(F, "dofoozbz", m))} % de dégâts`); } });
+    F.ents.forEach((m) => { if (m.alive && m.side === tgt.side && m !== tgt && has(m, "dofoozbz")) { if (!m.dpS) m.dpS = {}; m.dpS.rage = (m.dpS.rage || 0) + 1; // 2.1.34.2 : une invocation qui porte les Dofus n'avait pas dpS
+      proc(F, m, "dofoozbz", `+${pc(m.dpS.rage * V(F, "dofoozbz", m))} % de dégâts`); } });
   };
   /* soins : reçus (Kaliptus), lancés (Dofawa au premier tour), et leurs effets (Dotruche, Verdoyant) */
   E.dofpHealIn = (F, t) => (has(t, "kaliptus") ? 1 + V(F, "kaliptus", t) * (t.hp < t.hpMax * 0.3 ? 2 : 1) / 100 : 1);

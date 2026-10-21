@@ -166,4 +166,12 @@ console.log("ok - Dofus de quête jamais perdu (sac plein, trop-plein, brisage)"
   assert.ok(!E.dofusOwned(E.deserialize(E.serialize(T)), "jyfus"), "pas de Jyfus sans être fondateur"); }
 console.log("ok - Jyfus rendu aux fondateurs");
 
+// 2.1.34.2 (ticket #142) : Colère du Bworker sur une entité sans dpS ; le Poutch pendant un combat marqué par l'Ébène
+{ const S = team(200); const [a, b] = S.chars; wear(S, a, ["dofoozbz"]); const F = hunt(S, 200);
+  const ea = F.ents.find((e) => e.cid === a.id), eb = F.ents.find((e) => e.cid === b.id); delete ea.dpS; eb.dp = eb.dp || ["vulbis"];
+  assert.doesNotThrow(() => E.dofpDeath(F, eb), "Colère du Bworker sans dpS"); assert.strictEqual(ea.dpS.rage, 1);
+  ea.dpS.markT = F.ents.find((e) => e.side === "m"); ea.dpS.markT.back = ea; // entité gardée par la Marque d'ébène : JSON circulaire
+  assert.doesNotThrow(() => E.poutchPreview(S, a.id), "Poutch pendant un combat"); }
+console.log("ok - Colère du Bworker et Poutch pendant un combat");
+
 console.log("dofusp.test.js : tout est bon");
