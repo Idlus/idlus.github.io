@@ -141,9 +141,14 @@
     if (!(+S.kamas >= 0) || +S.kamas > 1e13) return `kamas illisibles (${S.kamas})`;
     { /* 2.1.17 : Maîtrise plafonnée par le temps écoulé depuis le reset de la Maîtrise lente (2.1.15, 16/10 18:15 Paris) : sans ça,
          une partie retouchée envoyée pour la première fois (ou après une coupure) passait, VERIFY.check ne comparant qu'à la partie validée d'avant */
-      const h = Math.max(0, ((V.now ? V.now() : Date.now()) - (P && P.mtT0 != null ? P.mtT0 : V.MT_T0)) / 3600000) * V.RES_RATE;
+      const now = V.now ? V.now() : Date.now(), t0 = P && P.mtT0 != null ? P.mtT0 : V.MT_T0, ts = Math.max(t0, P && P.sabT0 != null ? P.sabT0 : V.SAB_T0);
+      // 2.1.35.5 : le ×2 illimité de la Maîtrise du temps (niveau 15, depuis sa sortie) donne 2,25 h de jeu par heure réelle, comme dans V.check
+      // (lucy8, 21/10 : 593 points sur un héros, plafond 521, retenue sans cesse alors qu'elle joue en ×2 depuis le 18/10)
+      const free2 = E.sabMtLvl && E.sabMtLvl(S) >= (E.SAB_FREE2_LVL || 15);
+      const h = Math.max(0, (now - t0) / 3600000) * V.RES_RATE + (free2 ? Math.max(0, (now - ts) / 3600000) * (V.RES_RATE2 - V.RES_RATE) : 0);
       // 2.1.25 : plafond par héros tiré du coût réel des points (Maîtrise lente) : 225 fois l'XP du niveau 199 par heure, 4 fois le meilleur
       // joueur vérifié mesuré le 18/10 (91 points en 48 h, soit environ 56 fois cette XP par heure), + 20 points de marge
+      // 2.1.35.5 : 600 fois cette XP par heure de jeu (2 fois lucy8, la meilleure joueuse mesurée : environ 300 fois par heure de jeu du 18 au 21/10)
       const X = V.MT_XP_H * h, hero = E.MT_LENT && E.mtXpTot ? Math.floor((-20.1 + Math.sqrt(20.1 * 20.1 + 0.4 * X)) / 0.2) + V.MT_PAD : Math.floor(V.MT_HERO0 + V.MT_HERO_H * h);
       const team = Math.floor(V.MT_TEAM0 + V.MT_TEAM_H * h); let tot = 0;
       for (const c of S.chars || []) { if (!c.mt) continue; const nm = String(c.name || "un héros").slice(0, 20), lv = Math.max(0, Math.floor(+c.mt.lvl || 0));
@@ -158,7 +163,7 @@
     return null;
   };
   /* rythmes de V.rates, marge comprise : 180 points par heure pour l'équipe, 30 pour un seul héros (4,8 mesurés × 5, arrondi) */
-  V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 225; V.MT_PAD = 20;
+  V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 600; V.MT_PAD = 20;
   V.SAB_T0 = Date.UTC(2026, 9, 18, 18, 15); V.SAB_H0 = 73; V.SAB_H_DAY = 30;
 
   /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :

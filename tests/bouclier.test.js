@@ -63,6 +63,10 @@ console.log("  " + bad((Y) => { Y.kamas = 1e15; }, "kamas illisibles"));
   assert.strictEqual(V.impossible(E, mk([40, 36, 35]), 0), null, "Maîtrise honnête du lendemain : acceptée");
   console.log("  " + V.impossible(E, mk([21388, 18028, 16521]), 0)); assert.ok(V.impossible(E, mk([21388, 18028, 16521]), 0), "21 388 points le lendemain : refusé");
   assert.ok(V.impossible(E, mk([10, 10, 10], 5), 0), "points des vies passées après le reset : refusé");
+  // 2.1.35.5 : lucy8, 21/10, ×2 illimité de la Maîtrise du temps depuis le 18/10 : 593 points sur un héros acceptés, 5 000 toujours refusés
+  V.now = () => Date.UTC(2026, 9, 21, 20, 25); { const Y = mk([593, 494, 431]); Y.sabMt = { xp: E.sabMtXpAt(16) };
+    assert.strictEqual(V.impossible(E, Y, 0), null, "593 points de Maîtrise le 21/10 en ×2 : acceptés");
+    assert.ok(V.impossible(E, mk([5000, 10, 10]), 0), "5 000 points le 21/10 : refusé"); }
   V.now = () => Date.UTC(2027, 9, 17); assert.strictEqual(V.impossible(E, mk([2000, 1500, 1000]), 0), null, "un an plus tard, 2 000 points : acceptés");
   delete V.now; }
 /* un objet né avant le bouclier a une marge plus large (anciens jets) */
