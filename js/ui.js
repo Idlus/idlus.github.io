@@ -8261,7 +8261,7 @@ function optionsSheet() {
     + optSec("Butin qui améliore un héros", "", optChk(`data-act="setlootup"`, !S.settings.lootUpOff, "Prévenir quand un objet est mieux", "le message « ▲ Mieux pour … » avec un bouton « Équiper » quand un objet tombé améliore un héros de l'équipe"))
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
     + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
-  else if (tab === "sauvegarde") body = (menuOn() ? optSec(partName(SLOT), isEter(SLOT) ? "Éternel : le héros d'une saison finie, avec ses kamas et ses objets" : SLOT === MONO_SLOT ? "serveur Monocompte : un seul héros, partie gardée sur cet appareil en attendant son serveur" : SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">Classique : la partie 1 pour les classements, la 2 et la 3 en solo · Monocompte : une partie</span></div>`) : "") + (menuOn() && MONO_BETA.on && !monoOk() ? optSec("Bêta Monocompte", "réservée aux testeurs : entre le code reçu pour débloquer la partie Monocompte", `<div class="row"><input id="monobeta" type="text" autocomplete="off" placeholder="Code testeur" style="max-width:180px"><button class="btn sm primary" data-act="sv-monobeta">Valider</button></div>`) : "")
+  else if (tab === "sauvegarde") body = (menuOn() ? optSec(partName(SLOT), isEter(SLOT) ? "Éternel : le héros d'une saison finie, avec ses kamas et ses objets" : SLOT === MONO_SLOT ? (ON && ON.slotOnline() ? "serveur Monocompte : un seul héros, partie gardée sur ton compte" : "serveur Monocompte : un seul héros, partie gardée sur cet appareil en attendant son serveur") : SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">Classique : la partie 1 pour les classements, la 2 et la 3 en solo · Monocompte : une partie</span></div>`) : "") + (menuOn() && MONO_BETA.on && !monoOk() ? optSec("Bêta Monocompte", "réservée aux testeurs : entre le code reçu pour débloquer la partie Monocompte", `<div class="row"><input id="monobeta" type="text" autocomplete="off" placeholder="Code testeur" style="max-width:180px"><button class="btn sm primary" data-act="sv-monobeta">Valider</button></div>`) : "")
     + (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile && ON.slotOnline() ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
     + saveWeightHtml()
@@ -10034,7 +10034,7 @@ document.addEventListener("click", (ev) => {
     case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); monoNav(); let L = null; try { L = JSON.parse(SV.local.get(LEGACY_KEY()) || "null"); } catch (e) {} if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -10715,9 +10715,12 @@ const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-et
 const MONO_BETA = { on: true, key: "idlus-mono-beta", hash: "47db16f5" };
 const codeHash = (t) => { let x = 5381; for (const ch of String(t).trim().toUpperCase()) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(16).padStart(8, "0"); };
 const monoBetaFlag = () => { try { return localStorage.getItem(MONO_BETA.key) === "1"; } catch (e) { return false; } };
-const monoOk = () => !MONO_BETA.on || monoBetaFlag() || !!(window.CHAT && window.CHAT.role === "admin") || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!SV.local.get(slotKey(MONO_SLOT)) || eterSlots().length > 0;
+const monoOk = () => !MONO_BETA.on || monoBetaFlag() || !!(ON && ON.mono && ON.mono.ok) || !!(window.CHAT && window.CHAT.role === "admin") || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!SV.local.get(slotKey(MONO_SLOT)) || eterSlots().length > 0;
 const menuSlots = () => [1, 2, 3, ...(monoOk() ? [MONO_SLOT] : []), ...eterSlots()];
-const LEGACY_KEY = () => `${BASE_KEY}-mono-legacy`; // titres et apparences gardés d'une saison à l'autre
+const LEGACY_KEY = () => `${BASE_KEY}-mono-legacy`; // titres et apparences gardés d'une saison à l'autre (sur l'appareil)
+/* Ce que le prochain héros garde : les droits cosmétiques partagés du compte lus sur le serveur (cosm_mine, js/online.js) ;
+   hors connexion ou sans serveur Monocompte, le relevé de l'appareil, comme avant. */
+const monoLegacyRead = () => { if (ON && ON.monoCosm) return ON.monoCosm; try { return JSON.parse(SV.local.get(LEGACY_KEY()) || "null"); } catch (e) { return null; } };
 /* Fin de saison (Monocompte) : la partie de la saison passe dans l'Éternel (101, 102…) avec ses copies de secours ;
    ses titres et apparences sont gardés pour le prochain héros. Renvoie le message à montrer, ou "". */
 function monoSeasonEnd() {
@@ -10785,6 +10788,7 @@ async function menuStart(err) {
     onBlank("Connexion à ton compte…");
     try { await ON.fetchProfile(); } catch (e) { MENU.off = true; }
     if (!MENU.off && !ON.profile) return pseudoSheet();
+    if (!MENU.off && ON.monoSrv) await ON.monoCheck(); // espace Monocompte du serveur : la partie 4 va en ligne pour un compte autorisé
   }
   const fin = monoSeasonEnd(); if (fin) { MENU.msg = fin; err = err || fin; }
   MENU.slots = menuSlots().map(slotRead);
@@ -10828,7 +10832,7 @@ function slotCard(sl) {
   if (conf === "fresh" + n) foot = `<div class="svask"><span class="minus small">La partie de cet appareil part dans les copies de secours et une nouvelle aventure commence dans ${mono ? "la partie Monocompte" : `la partie ${n}`}.</span><div class="row"><button class="btn sm danger" data-act="sv-freshgo" data-n="${n}">Commencer</button><button class="btn sm" data-act="sv-no">Annuler</button></div></div>`;
   if (!sl.st && !rem) {
     if (mono && !E.monoCurrent()) return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">Entre deux saisons</span><div class="plus">⏳</div><b>La prochaine saison arrive bientôt</b><span class="small muted">Ton héros de la saison passée t'attend dans l'Éternel.</span></div>`;
-    if (mono) { let L = null; try { L = JSON.parse(SV.local.get(LEGACY_KEY()) || "null"); } catch (e) {} const keep = L ? (L.t || []).length + (L.u || []).length + (L.aura ? 1 : 0) : 0;
+    if (mono) { const L = monoLegacyRead(); const keep = L ? (L.t || []).length + (L.u || []).length + (L.aura ? 1 : 0) : 0;
       return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">${h(monoNom())}</span><div class="plus">⭐</div><b>Nouvelle partie Monocompte</b><span class="small muted">Un seul héros, qui part du niveau 1 sans rien, comme tous les joueurs${keep ? `. Tu gardes tes ${keep} titres et apparences des saisons passées.` : ""}</span><button class="btn primary" data-act="sv-play" data-n="${n}">Commencer la ${h(monoNom())}</button></div>`; }
     return `<div class="svc2 empty" data-slot="${n}"><span class="pn">Partie ${n}</span><div class="plus">+</div><b>Nouvelle partie</b><span class="small muted">${solo ? "Solo, hors classements : une autre aventure dans le même compte" : "Classements, course, Hôtel de vente, guilde et Kolizéum"}</span>
       ${!solo && ON && ON.user && MENU.off ? `<span class="xs muted">Serveur injoignable : ta partie en ligne n'apparaît pas pour l'instant.</span>` : ""}
@@ -10850,7 +10854,7 @@ function slotCard(sl) {
     const note = plan === "send" ? `<span class="svnote">Partie de cet appareil, pas encore sur ton compte : « Jouer » l'y envoie.</span>`
       : plan === "take" ? `<span class="svnote">Plus récente en ligne${dev ? ` (${h(dev)})` : ""} : elle sera chargée ici.</span>`
       : plan === "remote" ? `<span class="svnote">Sur ton compte : elle sera chargée sur cet appareil.</span>`
-      : solo && ON && ON.user && !ON.slotsOk ? `<span class="svnote">Gardée sur cet appareil pour l'instant (pas encore en ligne).</span>`
+      : solo && ON && ON.user && !ON.slotOnline(n) ? `<span class="svnote">Gardée sur cet appareil pour l'instant (pas encore en ligne).</span>`
       : sl.restored ? `<span class="svnote">Sauvegarde illisible : la copie de secours la plus récente sera utilisée.</span>` : "";
     mid = `${svStats(ci, eter ? "Éternel" : mono)}<div class="when">Dernière partie ${h(agoTxt(t) || "—")}${dev && dev !== (ON && ON.device()) ? ` · ${h(dev)}` : ""}</div>${note}<div class="go"><button class="btn primary" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
   }

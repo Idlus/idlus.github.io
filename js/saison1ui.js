@@ -151,7 +151,7 @@
     const s = S(); const done = (r) => { if (r) X().toast(r); X().markDirty(); redraw(); X().renderStatus && X().renderStatus(); };
     if (a === "tf-go") { UI().tab = t.dataset.v; X().render(); window.scrollTo(0, 0); return; }
     if (a === "tf-man") { UI().tfMan = +t.dataset.v; redraw(); return; }
-    if (a === "tf-buy") return done(E.tfBuy(s, t.dataset.v));
+    if (a === "tf-buy") { const r = E.tfBuy(s, t.dataset.v); if (r && r.then) { t.disabled = true; return r.then(done, () => done("Pas de connexion au serveur.")); } return done(r); } // partie en ligne : achat fait par le serveur
     if (a === "tf-wear") return done(E.tfWear(s, t.dataset.v, !E.tfWorn(s, t.dataset.v)));
     if (a === "tf-clock") { if (!testOk(s)) return; return done(E.monoTestClock(s, t.dataset.v === "1")); }
     if (a === "tf-spd") return done(E.monoClockSet(s, { spd: +t.dataset.v }));

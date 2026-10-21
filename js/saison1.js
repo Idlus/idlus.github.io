@@ -9,9 +9,13 @@
      1. distincts des Éclats du Classique ; 2. échangeables entre joueurs ; 3. aucune boutique n'en crée contre des kamas ;
      4. plafond de 800 sur 56 jours seulement pour les activités ; 5. défis hors quota ; 6. achats et échanges hors quota ;
      7. rien ne remet le quota à zéro ; 8. le serveur fait autorité ; 9. le reste passe dans l'Éternel.
-   REGISTRE PROVISOIRE : en attendant le registre du serveur (étape 6b), le registre vit dans la partie (S.mono.tf.led).
-   Le nombre du sac (S.res) n'en est qu'une copie, réécrite à chaque opération. L'étape 6b remplacera tfLedger/tfPost
-   par le serveur sans toucher aux écrans.
+   REGISTRE PROVISOIRE : sans le registre du serveur, le registre vit dans la partie (S.mono.tf.led).
+   Le nombre du sac (S.res) n'en est qu'une copie, réécrite à chaque opération.
+   REGISTRE DU SERVEUR (étape 6b, supabase/monocompte.sql) : quand la partie Monocompte est en ligne (compte autorisé, E.tfSrv
+   branché par js/mono_online.js), le solde, les Éclats générés et le quota affichés viennent du serveur (S.mono.tf.srv, copie
+   gardée dans la sauvegarde), plus les gains pas encore envoyés (S.mono.tf.q). Chaque gain d'activité et chaque palier de défi
+   part au serveur, qui applique lui-même les bornes et le quota ; un achat en boutique est fait par le serveur d'abord
+   (une seule opération : débit + droit), puis recopié dans la partie. Les écrans ne changent pas.
    DATE DE SAISON : tout ce qui dépend du calendrier (manches, semaines du quota, défis, fin de saison) lit E.monoDate (E.monoNow est déjà pris par monodofus.js).
    Les durées réelles (56, 14 et 7 jours) ne changent jamais ; l'horloge de test (partie de test seulement,
    S.mono.test) fait seulement avancer la date de saison plus vite. Hors partie de test, elle n'a aucun effet.
@@ -125,9 +129,19 @@
     return S.mono.tf;
   };
   E.tfLedger = (S) => { const T = E.tfState(S); return T ? T.led : []; };
-  E.tfBalance = (S) => E.tfLedger(S).reduce((a, l) => a + l.n, 0);
-  E.tfActTotal = (S) => E.tfLedger(S).reduce((a, l) => a + (l.o === "act" ? l.n : 0), 0); // Éclats générés par les activités (le quota ne compte que ceux-là)
-  E.tfQuota = (S) => Math.min(TF.cap, TF.quota * E.monoWeek(S)); // déjà débloqué à la date de saison
+  /* registre du serveur : sa dernière réponse. Une partie qui a été en ligne garde cette copie (et sa file de gains) même
+     hors connexion : son registre de la partie n'a pas les gains crédités ailleurs, il ne sert plus qu'aux parties jamais en ligne. */
+  E.tfSrv = null;
+  E.tfSrvOf = (S) => { const T = E.isMono(S) && E.tfState(S); return T && T.srv ? T.srv : null; };
+  const srvLive = (S) => !!(E.tfSrv && E.tfSrv.live(S));
+  const pend = (S, o) => ((E.tfState(S) || {}).q || []).reduce((a, x) => a + (!o || x.t === o ? x.n : 0), 0); // gains pas encore envoyés
+  E.tfBalance = (S) => { const R = E.tfSrvOf(S); return R ? R.solde + pend(S) : E.tfLedger(S).reduce((a, l) => a + l.n, 0); };
+  E.tfActTotal = (S) => { const R = E.tfSrvOf(S); return R ? R.genere + pend(S, "act") : E.tfLedger(S).reduce((a, l) => a + (l.o === "act" ? l.n : 0), 0); }; // Éclats générés par les activités (le quota ne compte que ceux-là)
+  E.tfQuota = (S) => { const R = E.tfSrvOf(S); return R && R.quota != null ? R.quota : Math.min(TF.cap, TF.quota * E.monoWeek(S)); }; // déjà débloqué à la date de saison
+  /* un gain à envoyer au registre du serveur (gardé dans la partie tant que le serveur ne l'a pas reçu) */
+  const fwd = (S, op) => { if (!srvLive(S) && !E.tfSrvOf(S)) return; const T = E.tfState(S); (T.q = T.q || []).push(op); try { if (srvLive(S)) E.tfSrv.flush(S); } catch (e) {} };
+  /* réponse du serveur : son état du registre devient celui qu'on affiche */
+  E.tfSrvSet = (S, r) => { const T = E.isMono(S) && E.tfState(S); if (!T || !r || r.solde == null) return; T.srv = { solde: r.solde, genere: r.genere, quota: r.quota, reste: r.reste, sem: r.semaine, jour: r.jour, sid: r.saison, at: E.now() }; E.tfSync(S); };
   /* le sac ne montre qu'une copie du registre */
   E.tfSync = (S) => {
     if (!S || !S.res) return;
@@ -152,9 +166,10 @@
     const q = Math.max(0, E.tfQuota(S) - E.tfActTotal(S));
     const g = Math.min(n * A.gain, room, q); if (g <= 0) return 0;
     T.act[kind] = (T.act[kind] || 0) + g;
-    // une ligne par jour et par source (registre provisoire) ; le registre du serveur écrira une ligne par gain
+    // une ligne par jour et par source (registre provisoire) ; le registre du serveur écrit une ligne par gain
     const src = `act:${day}:${kind}`; const L = T.led.find((l) => l.src === src);
     if (L) { L.n += g; L.t = E.monoDate(S); E.tfSync(S); } else post(S, g, "act", src, `${A.n}, jour ${day}`);
+    fwd(S, { t: "act", k: kind, n: g, src: `s${T.s}-j${day}-${kind}-${T.act[kind]}` }); // source unique : jour et rang du gain dans la journée
     return g;
   };
 
@@ -165,7 +180,7 @@
   const pay = (S, x) => {
     const T = E.tfState(S); const r = (T.d[x.id] = T.d[x.id] || { p: 0, paid: 0 }); const tier = E.tfTier(S, x);
     let got = 0; while ((r.paid || 0) < tier) { const i = r.paid || 0; const n = post(S, TF.REW[x.c][i], "defi", `defi:${x.id}:${i}`, `${x.n}, ${["bronze", "argent", "or"][i]}`);
-      r.paid = i + 1; got += n; if (n && E.note) E.note(S, `Carnet des Fragments : « ${x.n} » ${["bronze", "argent", "or"][i]}, +${n} Éclats du Temps.`, "rare"); }
+      r.paid = i + 1; got += n; if (n) fwd(S, { t: "defi", id: x.id, i, n }); if (n && E.note) E.note(S, `Carnet des Fragments : « ${x.n} » ${["bronze", "argent", "or"][i]}, +${n} Éclats du Temps.`, "rare"); }
     return got;
   };
   const bump = (S, id, v, best) => {
@@ -187,13 +202,20 @@
     if (T.own[id]) return "Déjà acheté cette saison.";
     if (x.lie && E.tfOwned(S, id)) return "Tu l'as déjà : il est lié à ton compte.";
     if (E.tfBalance(S) < x.p) return `Il faut ${x.p} Éclats du Temps.`;
-    T.own[id] = E.monoDate(S);
-    post(S, -x.p, "achat", `achat:${id}`, `${E.monoEternal(S) ? "Boutique d'Archives" : "Boutique temporelle"} : ${x.n}`);
-    S.unlocks = S.unlocks || {};
-    if (x.lie) S.unlocks[TF.UNLOCK[id]] = 1;
-    else { T.col[id] = (T.col[id] || 0) + 1; if (id === "cri") T.criNo = T.criNo || T.seq; } // numéro provisoire : le serveur numérotera
-    if (E.note) E.note(S, `${x.n} acheté pour ${x.p} Éclats du Temps.`, "rare");
-    return null;
+    const done = (no) => {
+      T.own[id] = E.monoDate(S);
+      post(S, -x.p, "achat", `achat:${id}`, `${E.monoEternal(S) ? "Boutique d'Archives" : "Boutique temporelle"} : ${x.n}`);
+      S.unlocks = S.unlocks || {};
+      if (x.lie) S.unlocks[TF.UNLOCK[id]] = 1;
+      else { T.col[id] = (T.col[id] || 0) + 1; if (id === "cri") T.criNo = no || T.criNo || T.seq; } // sans serveur : numéro provisoire
+      if (E.note) E.note(S, `${x.n} acheté pour ${x.p} Éclats du Temps.`, "rare");
+      return null;
+    };
+    // partie en ligne : le serveur fait l'achat (débit + droit en une opération) ; la partie le recopie ensuite. Renvoie une promesse.
+    if (E.tfSrvOf(S) && !srvLive(S) && !E.monoEternal(S)) return "Connexion au serveur nécessaire pour la boutique : réessaie dans un instant.";
+    if (srvLive(S)) return Promise.resolve(E.tfSrv.buy(S, id)).then((r) => { if (!r || r.err) return (r && r.err) || "Pas de connexion au serveur : réessaie dans un instant.";
+      E.tfSrvSet(S, r); return done(r.numero); }, () => "Pas de connexion au serveur : réessaie dans un instant.");
+    return done();
   };
 
   /* ---------------- événement final (6A) : jauge commune, aucun Éclat créé ni dépensé ---------------- */

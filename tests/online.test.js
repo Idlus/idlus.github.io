@@ -250,6 +250,38 @@ const MOCK = () => {
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
       if (window.__offline) throw new Error("Failed to fetch");
       const s = d.saves[u.id];
+      /* espace Monocompte (supabase/monocompte.sql) : d.mono.testers = comptes autorisés ; d.monoParts = parties ; d.tfLed = registre des Éclats ;
+         d.cosm = droits cosmétiques partagés. Même logique que le serveur : conflit comme push_save, source unique, quota, achat = débit + droit. */
+      if (/^mono_|^cosm_mine$/.test(name)) {
+        const M = (d.mono = d.mono || { testers: [] }); const ok = (x) => { put(d); return { data: x, error: null }; };
+        const tester = M.testers.includes(u.id); const SA = { id: 0, nom: "Saison de test", etat: "ouverte", test: true };
+        if (name === "mono_acces") return ok(tester ? { ok: true, saison: SA, jour: 1, semaine: 1, manche: 1 } : { ok: false });
+        const C = ((d.cosm = d.cosm || {})[u.id] = d.cosm[u.id] || []);
+        if (name === "cosm_mine") return ok(C.map((cle) => ({ cle, source: "test", saison: 0 })));
+        if (!tester) return { data: null, error: { message: "espace Monocompte réservé aux testeurs" } };
+        const P = (d.monoParts = d.monoParts || {}); const x = P[u.id];
+        if (name === "mono_info") return ok(x ? [{ updated_at: x.updated_at, meta: x.meta, device: x.device, game_version: x.game_version, saison: 0 }] : []);
+        if (name === "mono_pull") return ok(x ? x.data : null);
+        if (name === "mono_push") {
+          if (!a.p_force && ((a.p_expected == null && x) || (a.p_expected != null && (!x || x.updated_at !== a.p_expected)))) return ok(null);
+          P[u.id] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.monoPushes = (d.monoPushes || 0) + 1; return ok(P[u.id].updated_at); }
+        if (name === "mono_delete") { delete P[u.id]; return ok(null); }
+        const L = ((d.tfLed = d.tfLed || {})[u.id] = d.tfLed[u.id] || []); const TF = window.ENGINE.MONO.tf;
+        const st = () => { const solde = L.reduce((t, l) => t + l.n, 0), genere = L.reduce((t, l) => t + (l.o === "act" ? l.n : 0), 0); return { saison: 0, solde, genere, quota: 100, reste: Math.max(0, 100 - genere), semaine: 1, jour: 1, manche: 1 }; };
+        const line = (n, o, src) => { if (L.some((l) => l.src === src)) return 0; L.push({ n, o, src }); return n; };
+        if (name === "mono_eclats_etat") return ok(st());
+        if (name === "mono_eclats_activite") { const g = Math.min(a.p_n, st().reste); return ok(Object.assign({ ok: true, n: g > 0 ? line(g, "act", "act:" + a.p_source) : 0 }, st())); }
+        if (name === "mono_eclats_defi") { const x2 = TF.DEFIS.find((y) => y.id === a.p_defi); if (!x2) return ok({ err: "Défi inconnu.", n: 0 }); return ok(Object.assign({ ok: true, n: line(TF.REW[x2.c][a.p_palier], "defi", `defi:${a.p_defi}:${a.p_palier}`) }, st())); }
+        if (name === "mono_boutique_achat") {
+          const it = TF.SHOP.find((y) => y.id === a.p_objet); if (!it) return ok({ err: "Objet inconnu." }); const cle = TF.UNLOCK[it.id] || null;
+          if (cle && C.includes(cle)) return ok({ err: "Tu l'as déjà : il est lié à ton compte." });
+          if (L.some((l) => l.src === "boutique:" + it.id)) return ok({ err: "Déjà acheté cette saison." });
+          if (st().solde < it.p) return ok({ err: `Il faut ${it.p} Éclats du Temps.` });
+          line(-it.p, "boutique", "boutique:" + it.id); if (cle) C.push(cle); d.achats = (d.achats || []).concat([it.id]);
+          return ok(Object.assign({ ok: true, objet: it.id, droit: cle, numero: it.id === "cri" ? 7 : null }, st()));
+        }
+        return { data: null, error: { message: "fonction inconnue " + name } };
+      }
       // 0.1.50.1 : changer son pseudo (une fois tous les 30 jours)
       if (name === "pseudo_info") { const me = d.profiles.find((p) => p.id === u.id); return { data: me ? { at: me.pseudo_at || null, next: me.pseudo_at ? new Date(Date.parse(me.pseudo_at) + 30 * 864e5).toISOString() : null } : null, error: null }; }
       if (name === "pseudo_change") { const me = d.profiles.find((p) => p.id === u.id); const p = a.p_pseudo;
@@ -1460,6 +1492,71 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await p3.evaluate(() => window.DX.saveNow()); await p3.reload(); await p3.waitForSelector(".svm", { timeout: 10000 });
     if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-invite-mob.png", fullPage: true });
     await ctx3.close();
+    // 11. espace Monocompte du serveur (supabase/monocompte.sql) : la partie 4 en ligne pour un testeur, registre des Éclats du serveur,
+    // achat en une opération, droits partagés du compte (cosm_mine) ; un compte non autorisé reste sur l'appareil
+    const ctx4 = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx4.addInitScript(MOCK); await ctx4.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; });
+    await ctx4.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+    const p4 = await ctx4.newPage();
+    p4.on("console", (x) => { if (x.type() === "error") fail(`Monocompte en ligne, console : ${x.text()}`); });
+    p4.on("pageerror", (e) => fail(`Monocompte en ligne, exception : ${e.message}`));
+    const mock4 = () => p4.evaluate(() => JSON.parse(localStorage.getItem("__mock") || "{}"));
+    const edit4 = (fn, arg) => p4.evaluate(([f, x]) => { const d = JSON.parse(localStorage.getItem("__mock") || '{"session":null,"profiles":[],"saves":{}}'); new Function("d", "x", f)(d, x); localStorage.setItem("__mock", JSON.stringify(d)); }, [fn, arg]);
+    await p4.goto(base); await p4.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    await edit4(`d.session = { id: "u4", identities: [] }; d.profiles.push({ id: "u4", pseudo: "Testeuse" }); d.mono = { testers: ["u4"] }; d.cosm = { u4: ["titre:Gardien des échos"] };`);
+    await p4.reload(); await p4.waitForSelector(".svm", { timeout: 10000 });
+    if (!/tes 1 titres et apparences/.test(await p4.textContent(card(4)))) fail("Monocompte : les droits partagés du serveur (cosm_mine) ne sont pas lus pour la carte");
+    await p4.click(`${card(4)} [data-act="sv-play"]`); await p4.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    await p4.fill("#startName", "Solitaire"); await p4.click('[data-act="startgame"]'); await p4.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    await p4.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 }).catch(() => fail("Monocompte : la partie 4 n'est pas envoyée en ligne pour un testeur"));
+    let m4 = await mock4();
+    if (!m4.monoParts || !m4.monoParts.u4 || JSON.parse(m4.monoParts.u4.data).chars[0].name !== "Solitaire") fail("Monocompte : partie absente du serveur Monocompte");
+    if ((m4.slots || {})["u4:4"] || m4.saves.u4) fail("Monocompte : la partie est partie dans les tables du Classique");
+    if (!(await p4.evaluate(() => (window.DX.S.titlesExtra || []).includes("Gardien des échos")))) fail("Monocompte : titre partagé du compte non donné au nouveau héros");
+    // gain d'activité envoyé au registre du serveur, solde affiché = celui du serveur
+    await p4.evaluate(() => window.ENGINE.tfActivity(window.DX.S, "dj"));
+    await p4.waitForFunction(() => { const d = JSON.parse(localStorage.getItem("__mock")); return ((d.tfLed || {}).u4 || []).length === 1; }, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain d'activité non envoyé au registre du serveur"));
+    await edit4(`d.tfLed.u4.push({ n: 1000, o: "defi", src: "defi:autre-appareil" });`);
+    const bal = await p4.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; await E.tfSrv.refresh(S); return [E.tfBalance(S), S.res[E.TF_RES], E.tfActTotal(S), (S.mono.tf.led || []).reduce((a, l) => a + l.n, 0)]; });
+    if (JSON.stringify(bal) !== "[1001,1001,1,1]") fail("Monocompte : le solde affiché ne vient pas du registre du serveur " + JSON.stringify(bal));
+    // achat : fait par le serveur (débit + droit), recopié dans la partie ; coupure : rien d'acheté
+    const buy = await p4.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; const r1 = await E.tfBuy(S, "emb"); window.__offline = true; const r2 = await E.tfBuy(S, "sab"); window.__offline = false;
+      return { r1, r2, emb: !!S.unlocks.tf_emb, sab: !!S.mono.tf.own.sab, bal: E.tfBalance(S) }; });
+    m4 = await mock4();
+    if (buy.r1 !== null || !buy.emb || buy.bal !== 801 || !m4.cosm.u4.includes("tf_emb")) fail("Monocompte : achat par le serveur " + JSON.stringify(buy));
+    if (!/connexion/.test(buy.r2 || "") || buy.sab || (m4.achats || []).includes("sab")) fail("Monocompte : achat hors connexion accepté " + JSON.stringify(buy));
+    await p4.evaluate(() => { window.DX.ui.tab = "boutique"; window.DX.render(); }); await p4.click('[data-act="tf-buy"][data-v="sab"]');
+    await p4.waitForFunction(() => window.DX.S.mono.tf.own.sab, null, { timeout: 8000 }).catch(() => fail("Monocompte : achat depuis la Boutique temporelle"));
+    m4 = await mock4(); if (m4.cosm.u4.length !== 2) fail("Monocompte : un objet de collection a donné un droit " + JSON.stringify(m4.cosm.u4));
+    if (process.env.SHOTS) await p4.screenshot({ path: process.env.SHOTS + "/mono-boutique-en-ligne.png" });
+    // hors connexion : le gain attend dans la partie, compte dans le solde, puis part au retour
+    const q1 = await p4.evaluate(() => { window.__offline = true; const S = window.DX.S, E = window.ENGINE; E.tfActivity(S, "arch"); return [S.mono.tf.q.length, E.tfBalance(S)]; });
+    await p4.waitForTimeout(300);
+    if (q1[0] !== 1 || q1[1] !== 553) fail("Monocompte : gain hors connexion " + JSON.stringify(q1));
+    await p4.evaluate(() => { window.__offline = false; window.ONLINE.onMonoPush(); });
+    await p4.waitForFunction(() => !window.DX.S.mono.tf.q.length, null, { timeout: 8000 }).catch(() => fail("Monocompte : gain en attente jamais envoyé"));
+    m4 = await mock4(); if (m4.tfLed.u4.filter((l) => l.o === "act").length !== 2) fail("Monocompte : gain en attente absent du registre");
+    // deux appareils : l'autre version de la partie 4 est montrée
+    await p4.evaluate(() => window.DX.social.onPush()); await p4.waitForTimeout(300);
+    await edit4(`const p = d.monoParts.u4; const st = JSON.parse(p.data); st.kamas = 4444; p.data = JSON.stringify(st); p.updated_at = "2099-03-01T00:00:00.000001Z"; p.device = "téléphone"; p.meta = Object.assign({}, p.meta, { pid: "tel" });`);
+    await p4.evaluate(() => { window.DX.S.kamas = 1234; window.DX.saveNow(); });
+    await p4.reload(); await p4.waitForSelector(".svm", { timeout: 10000 });
+    if (!(await p4.$(`${card(4)} .svver`)) || !/téléphone/.test(await p4.textContent(`${card(4)} .svver`))) fail("Monocompte : conflit entre deux appareils non montré");
+    await p4.click(`${card(4)} [data-act="sv-play"][data-w="remote"]`); await p4.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    if ((await p4.evaluate(() => window.DX.S.kamas)) !== 4444) fail("Monocompte : version en ligne non reprise");
+    // compte qui n'est plus autorisé : la partie Monocompte reste sur l'appareil, rien n'est envoyé
+    await edit4(`d.mono.testers = []; d.monoPushes = 0;`);
+    await p4.reload(); await p4.waitForSelector(".svm", { timeout: 10000 });
+    if (!/Gardée sur cet appareil/.test(await p4.textContent(card(4)))) fail("Monocompte : compte non autorisé, la partie 4 ne dit pas qu'elle reste sur l'appareil");
+    await p4.click(`${card(4)} [data-act="sv-play"]`); await p4.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    const loc = await p4.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; S.mono.tf.jobAcc = 0; E.emit(S, "craft", {}); for (let i = 0; i < 49; i++) E.emit(S, "craft", {}); window.DX.saveNow();
+      return [E.tfBalance(S), (S.mono.tf.q || []).length, await E.tfBuy(S, "cri")]; });
+    await p4.waitForTimeout(800);
+    if (await p4.$("#onPill")) fail("Monocompte : pastille d'envoi pour un compte non autorisé");
+    if ((await mock4()).monoPushes) fail("Monocompte : envoi en ligne pour un compte non autorisé");
+    // la partie a été en ligne : la dernière copie du registre du serveur reste affichée, le gain attend, la boutique attend le serveur
+    if (loc[0] !== 554 || loc[1] !== 1 || !/Connexion au serveur/.test(loc[2])) fail("Monocompte : partie hors serveur après avoir été en ligne " + JSON.stringify(loc));
+    await ctx4.close();
   } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus
   finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }

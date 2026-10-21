@@ -17,8 +17,8 @@
   const SERVERS = {
     /* 14/10/2026 : déménagement sur le serveur OVH de Mathis (Supabase auto-hébergé, tools/serveur/). La clé « anon » est publique
        par nature (https://159-173-129-109.sslip.io/cle-publique). */
-    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false },
-    beta: { url: "", key: "", mail: false, slots: false }
+    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: false },
+    beta: { url: "", key: "", mail: false, slots: false, mono: false }
   };
   const ON = {};
   /* Session de l'ancien serveur gardée sur l'appareil : le joueur doit se reconnecter une fois sur le nouveau (message à l'écran de choix). */
@@ -28,7 +28,9 @@
      sauvegarde séparée. Rien n'est envoyé en ligne et la vraie partie n'est pas touchée. */
   const TM = (() => { try { return root.localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
   ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") || TM ? "beta" : "public";
-  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS } : SERVERS[ON.world];
+  /* mono = espace Monocompte du serveur (supabase/monocompte.sql, déployé à la main) : tant qu'il n'est pas installé (accord écrit de
+     Mathis, étape 9), la partie Monocompte reste sur l'appareil et le jeu n'appelle aucune fonction mono_. */
+  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
   ON.mail = SRV.mail;
@@ -38,10 +40,37 @@
      compte (table saves) : elle porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et
      le boss des mondes, que le serveur vérifie avec elle. Les parties 2 et 3 se jouent en solo. */
   let SLOT = 1;
+  const MONO_N = 4;
   ON.slot = () => SLOT;
   ON.solo = () => SLOT !== 1;
   ON.slotsOk = !!SRV.slots;
-  ON.slotOnline = (n) => (n || SLOT) === 1 || ((n || SLOT) < 4 && ON.slotsOk); // 4 : partie Monocompte, 101… : Éternel, sur l'appareil en attendant son serveur
+  /* ---------- espace Monocompte (supabase/monocompte.sql : étape 4 et registre des Éclats du Temps, 6b) ----------
+     ON.mono : réponse de mono_acces ({ ok, saison, date, jour, semaine, manche }) ; ON.monoCosm : droits cosmétiques partagés
+     du compte (cosm_mine), au format des titres et apparences gardés d'une saison à l'autre ({ t, u }). Hors connexion, sans
+     serveur Monocompte, ou pour un compte non autorisé : null, et tout reste sur l'appareil comme avant. */
+  ON.monoSrv = !!SRV.mono;
+  ON.mono = null; ON.monoCosm = null;
+  ON.monoOn = () => !!(ON.monoSrv && sb && ON.user && ON.mono && ON.mono.ok && ON.mono.saison);
+  ON.cosmLegacy = (rows) => ({ t: rows.filter((r) => /^titre:/.test(r.cle)).map((r) => r.cle.slice(6)), u: rows.filter((r) => !/^titre:/.test(r.cle)).map((r) => r.cle) });
+  ON.monoCheck = async () => {
+    ON.mono = null; ON.monoCosm = null;
+    if (!ON.monoSrv || !sb || !ON.user) return null;
+    try {
+      const { data, error } = await withTimeout(sb.rpc("mono_acces"), 8000); if (error || !data) return null;
+      ON.mono = data;
+      if (data.ok) { const c = await withTimeout(sb.rpc("cosm_mine"), 8000); if (!c.error && Array.isArray(c.data)) ON.monoCosm = ON.cosmLegacy(c.data); }
+    } catch (e) { /* hors ligne : la partie Monocompte reste sur l'appareil */ }
+    return ON.mono;
+  };
+  ON.cosmRefresh = async () => { if (!ON.monoOn()) return null; const r = await rpc("cosm_mine"); if (!r.err && Array.isArray(r.data)) ON.monoCosm = ON.cosmLegacy(r.data); return ON.monoCosm; };
+  // registre des Éclats du Temps : le serveur tient le solde et le quota ; chaque réponse renvoie l'état du registre
+  ON.tfEtat = () => rpc("mono_eclats_etat");
+  ON.tfAct = (kind, n, src) => rpc("mono_eclats_activite", { p_kind: kind, p_n: n, p_source: src });
+  ON.tfDefi = (id, palier) => rpc("mono_eclats_defi", { p_defi: id, p_palier: palier });
+  ON.tfAchat = (obj, saison) => rpc("mono_boutique_achat", saison != null ? { p_objet: obj, p_saison: saison } : { p_objet: obj });
+  /* 4 : partie Monocompte, en ligne seulement pour un compte autorisé (testeur ou admin) quand une saison est ouverte ;
+     101… : Éternel, sur l'appareil (le serveur le garde en lecture seule après la fin de saison) */
+  ON.slotOnline = (n) => { n = n || SLOT; return n === 1 || (n < 4 && ON.slotsOk) || (n === MONO_N && ON.monoOn()); };
   ON.setSlot = (n, key) => { SLOT = n; KEY = key; };
   const SOLO_ERR = "Partie solo : les classements, le Kolizéum classé, l'Hôtel de vente, la guilde et les boss se jouent avec ta partie 1.";
   ON.SOLO_ERR = SOLO_ERR;
@@ -190,12 +219,13 @@
   /* Renvoie null s'il n'y a pas encore de partie en ligne ; lève une erreur hors ligne. */
   ON.remoteInfo = async (n) => {
     n = n || SLOT;
-    const { data, error } = await withTimeout(n === 1 ? sb.rpc("save_info") : sb.rpc("slot_info", { p_slot: n }));
+    const { data, error } = await withTimeout(n === 1 ? sb.rpc("save_info") : n === MONO_N ? sb.rpc("mono_info") : sb.rpc("slot_info", { p_slot: n }));
     if (error) throw error;
     return (data && data[0]) || null;
   };
   ON.remoteData = async (n) => {
     n = n || SLOT;
+    if (n === MONO_N) { const { data, error } = await withTimeout(sb.rpc("mono_pull"), 20000); if (error) throw error; return data || null; } // tables Monocompte invisibles de l'API : seulement par fonction
     const q = n === 1 ? sb.from("saves").select("data").eq("user_id", ON.user.id) : sb.from("save_slots").select("data").eq("user_id", ON.user.id).eq("slot", n);
     const { data, error } = await withTimeout(q.maybeSingle(), 20000);
     if (error) throw error;
@@ -203,8 +233,8 @@
   };
   /* 1.0.11 : effacer la partie 2 ou 3 du compte (la 1 ne s'efface qu'avec le compte). */
   ON.deleteSlot = async (n) => {
-    if (!sb || !ON.user || n === 1 || !ON.slotsOk) return null;
-    try { const { error } = await withTimeout(sb.rpc("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
+    if (!sb || !ON.user || n === 1 || !ON.slotOnline(n)) return null;
+    try { const { error } = await withTimeout(n === MONO_N ? sb.rpc("mono_delete") : sb.rpc("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
   };
   /* Envoie la partie. Résultat : "ok", "conflict" (une autre version est en ligne) ou "offline". */
   let pushing = null, again = null, againP = null;
@@ -235,7 +265,7 @@
         for (let i = 0; i < 2; i++) {
           const l = link();
           const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
-          const r = await withTimeout(slot === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
+          const r = await withTimeout(slot === 1 ? sb.rpc("push_save", args) : slot === MONO_N ? sb.rpc("mono_push", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
           const info = await ON.remoteInfo(slot); // envoi refusé : la version en ligne est-elle un de nos envois ?
@@ -245,6 +275,7 @@
         if (!data) { setState("conflict"); return "conflict"; }
         setLinkOf(key, { uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok");
+        if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(); } catch (e) {} } // registre des Éclats : envois en attente (js/mono_online.js) ; le Bouclier Monocompte (étape 5) se branchera ici
         if (slot === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
       } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
