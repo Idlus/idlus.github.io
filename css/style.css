@@ -6153,3 +6153,14 @@ body:has(#ctxmenu) .tooltip{display:none!important}
   body.livecol:not(.toast-top):not(.toast-bot) .toasts{right:410px}
 }
 .invhw .invtools .ilbl{display:none}.invhw .invtools .ilbs{display:inline}
+
+/* Recycleur (21/10/2026) */
+.recybar{height:8px;border-radius:6px;background:var(--line);overflow:hidden}.recybar span{display:block;height:100%;background:linear-gradient(90deg,#e0a43a,#d0503c)}
+.recyf{display:grid;gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.recyprev{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}.recyprev>.grow{min-width:240px;flex:1}
+.recygrid{margin-top:6px}.recygrid .itile{pointer-events:none}
+.recygain{flex:0 1 300px;align-self:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);display:grid;gap:4px}
+.recybig{font-size:20px;font-weight:800}.recyrunes{display:flex;flex-wrap:wrap;gap:4px}
+.recyauto,.recycraft{padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.recycraft{margin:6px 0 8px}
+.recyf label,.recyauto,.recycraft{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5}.recyf label input[type=checkbox],.recyauto input[type=checkbox],.recycraft input[type=checkbox]{margin-top:3px;flex:none}.recyf input[type=number],.recyauto input[type=number],.recycraft input[type=number]{padding:2px 6px}

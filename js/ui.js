@@ -7399,6 +7399,8 @@ function renderInventory() {
         <div id="invItems" class="${S.settings.invSmall ? "invsmall" : ""}">${invItemsHtml(groups)}</div>
       </div>`;
     body = hp ? `<div class="invhw"><div class="invhw-m">${main}</div>${hp}</div>${pickBar}` : main + pickBar;
+  } else if (ui.inv === "recy") {
+    body = recyHtml();
   } else if (ui.inv === "over") {
     body = overHtml();
   } else if (ui.inv === "res") {
@@ -7412,7 +7414,7 @@ function renderInventory() {
   }
   const nc = Object.values(S.cons || {}).reduce((a, b) => a + b, 0);
   $("#main").innerHTML = `<div class="pagehead"><h1>Inventaire</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <nav class="subtabs">${[["items", "Équipements"], ...(S.over && S.over.length ? [["over", `Trop-plein · ${S.over.length}`]] : []), ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}" ${id === "over" && S.overNew ? 'class="hasdot"' : ""}>${n}${id === "over" && S.overNew ? '<span class="navdot"></span>' : ""}</button>`).join("")}</nav>
+    <nav class="subtabs">${[["items", "Équipements"], ["recy", "♻ Recycleur"], ...(S.over && S.over.length ? [["over", `Trop-plein · ${S.over.length}`]] : []), ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}" ${id === "over" && S.overNew ? 'class="hasdot"' : ""}>${n}${id === "over" && S.overNew ? '<span class="navdot"></span>' : ""}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
   if (!invSide()) invSheetSync();
 }
@@ -7442,6 +7444,39 @@ function overHtml() {
       <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm primary" data-act="overtakeall" ${L.length && room > 0 ? "" : "disabled"} title="Remet dans le sac autant d'objets que la place le permet">Tout prendre</button><button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
     <div class="list">${L.map((it) => { const T = ITEMS[it.tpl]; return `<div class="li mkrow">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.at ? ` · ${agoTxt(it.at)}` : ""}</span></span>
       <button class="btn sm primary" data-act="overtake" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Prendre</button>${hdv ? `<button class="btn sm" data-act="overhdv" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="overbreak" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Le trop-plein est vide.</div>`}</div></section>`;
+}
+/* Recycleur (choix de Mathis 1C 2A 3A, 21/10/2026) : tout le sac d'un coup selon les réglages, en runes comme le brisage (E.recyList, E.recycle) */
+let recyMemo = null;
+function recyData() {
+  const R = E.recyCfg(S); const key = [S.nextUid, E.itemCount(S), JSON.stringify(R), E.recyLvl(S, R)].join("|");
+  if (recyMemo && recyMemo.key === key && Date.now() - recyMemo.at < 60000) return recyMemo;
+  const uids = E.recyList(S, R); const est = E.recyEstimate(S, uids);
+  const by = {}; const show = []; uids.forEach((u) => { const it = S.items[u]; if (by[it.tpl]) { by[it.tpl].n++; return; } by[it.tpl] = { tpl: it.tpl, n: 1 }; show.push(by[it.tpl]); });
+  show.sort((a, b) => b.n - a.n || ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
+  return (recyMemo = { key, at: Date.now(), uids, est, show });
+}
+function recyHtml() {
+  const R = E.recyCfg(S); const d = recyData(); const lvl = E.recyLvl(S, R); const n = E.itemCount(S); const cap = E.itemCap(S); const pct = Math.min(100, Math.round(n / cap * 100));
+  const nR = Object.values(d.est.got).reduce((a, b) => a + b, 0);
+  const top = Object.entries(d.est.got).sort((a, b) => E.runeInfo(b[0]).weight * b[1] - E.runeInfo(a[0]).weight * a[1]).slice(0, 6);
+  const N = d.uids.length;
+  return `<section class="panel"><div class="phead"><h2>♻ Recycleur</h2><span class="xs muted num">Sac : ${fmt(n)} / ${fmt(cap)}</span></div>
+    <div class="pad stack" style="gap:10px">
+      <div class="recybar"><span style="width:${pct}%"></span></div>
+      <span class="small muted">Choisis ce qui ne te sert plus : le Recycleur brise tout le sac d'un coup, en runes, comme le brisage. Une seule règle suffit. Jamais touchés : objets portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, Dofus et trophées.</span>
+      <div class="recyf">
+        <label><input type="checkbox" data-act="recyset" data-k="lvlOn" ${R.lvlOn ? "checked" : ""}><span>Objets de niveau <input type="number" min="0" max="200" step="10" data-act="recynum" data-k="lvl" value="${R.lvl > 0 ? R.lvl : ""}" placeholder="${lvl}" style="width:64px"> ou moins <span class="xs muted">${R.lvl > 0 ? "" : "(vide : 30 niveaux sous ton héros le plus faible)"}</span></span></label>
+        <label><input type="checkbox" data-act="recyset" data-k="qOn" ${R.qOn ? "checked" : ""}><span>Objets au jet sous <input type="number" min="1" max="100" step="5" data-act="recynum" data-k="q" value="${R.q}" style="width:56px"> %</span></label>
+        <label><input type="checkbox" data-act="recyset" data-k="dup" ${R.dup ? "checked" : ""}><span>Doublons : garder seulement le meilleur exemplaire de chaque objet</span></label>
+        <label><input type="checkbox" data-act="recyset" data-k="keepSets" ${R.keepSets ? "checked" : ""}><span>Garder un exemplaire de chaque objet de panoplie, quelles que soient les règles</span></label>
+      </div>
+      <div class="recyprev"><div class="grow"><div class="small"><b class="num">${fmt(N)}</b> objet${N > 1 ? "s" : ""} ${N > 1 ? "seront recyclés" : "sera recyclé"}${N ? ` (${d.show.length} modèle${d.show.length > 1 ? "s" : ""})` : ""}</div>
+        ${N ? `<div class="invgrid invsmall recygrid">${d.show.slice(0, 18).map((g) => `<span class="itile ${rarCls(g.tpl)}" title="${h(ITEMS[g.tpl].name)}">${im(itemImg(g.tpl), "", ITEMS[g.tpl].name)}<span class="ilvl">${ITEMS[g.tpl].lvl}</span>${g.n > 1 ? `<span class="icount">×${fmt(g.n)}</span>` : ""}</span>`).join("")}${d.show.length > 18 ? `<span class="xs muted" style="align-self:center">+${d.show.length - 18}</span>` : ""}</div>` : `<div class="empty">Aucun objet ne correspond à ces réglages.</div>`}</div>
+        ${N ? `<div class="recygain"><div class="xs muted">Tu recevras environ</div><div class="recybig"><b class="num">${fmt(nR)}</b> runes</div><div class="recyrunes">${top.map(([k, q]) => `<span class="tag soft">${sIco(E.runeInfo(k).stat)} ${h(E.runeName(k))} ×${fmt(q)}</span>`).join("")}</div><div class="xs muted">Poids total ≈ ${fmt(d.est.weight)}. Même calcul et même coefficient que le brisage (−3 % par objet brisé).</div></div>` : ""}</div>
+      <div class="row">${ui.confirm === "recy" ? `<span class="small">Recycler ${fmt(N)} objet${N > 1 ? "s" : ""} ? C'est définitif.</span><button class="btn sm danger" data-act="recygo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn primary grow" data-act="recyask" ${N ? "" : "disabled"}>♻ Recycler ${fmt(N)} objet${N > 1 ? "s" : ""}</button>`}</div>
+      <label class="small recyauto"><input type="checkbox" data-act="recyset" data-k="auto" ${R.auto ? "checked" : ""}><span><b>Recyclage automatique</b> : quand le sac est plein, les nouveaux objets qui correspondent à ces réglages sont recyclés au lieu d'aller au trop-plein.</span></label>
+      <label class="small recyauto"><input type="checkbox" data-act="recyset" data-k="craft" ${R.craft ? "checked" : ""}><span><b>Recycler aussitôt à la fabrication</b> : garder les <input type="number" min="1" max="99" data-act="recynum" data-k="keep" value="${R.keep}" style="width:52px"> meilleurs exemplaires de chaque objet fabriqué et recycler les autres. La fabrication ne s'arrête plus quand le sac est plein.</span></label>
+    </div></section>`;
 }
 const runesTxt = (got) => Object.entries(got).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune";
 /* 0.1.10.1 : carnet de panoplies */
@@ -7702,7 +7737,8 @@ function recDetail(r, job) {
     <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b>${ok ? "" : `<button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${q - have}">Offre HdV</button>` : ""}`}</div>`; }).join("")}</div>
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
     ${galetBox(r)}
-    ${r.T && r.okLvl && !r.miss ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
+    ${r.T ? (() => { const R = E.recyCfg(S); return `<label class="small recycraft"><input type="checkbox" data-act="recyset" data-k="craft" ${R.craft ? "checked" : ""}><span>♻ <b>Recycler aussitôt</b> : garder les <input type="number" min="1" max="99" data-act="recynum" data-k="keep" value="${R.keep}" style="width:52px"> meilleurs exemplaires, recycler les autres dès leur fabrication. La fabrication ne s'arrête plus quand le sac est plein.</span></label>`; })() : ""}
+    ${r.T && r.okLvl && !r.miss && !E.recyCraftOn(S, r.id) ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
     <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div>
       <span class="pqn"><button class="btn sm" data-act="recqtyd" data-v="-1" ${nMax > 1 && qty > 1 ? "" : "disabled"} aria-label="Un de moins">−</button><input type="number" id="recqtyn" inputmode="numeric" min="1" max="${Math.max(1, nMax)}" value="${qty}" data-xp="${xp}" data-max="${Math.max(1, nMax)}" ${nMax > 1 ? "" : "disabled"} aria-label="Quantité à fabriquer"><button class="btn sm" data-act="recqtyd" data-v="1" ${qty < nMax ? "" : "disabled"} aria-label="Un de plus">+</button></span>
       <span class="xs muted grow" id="recqtyxp">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
@@ -10593,7 +10629,9 @@ document.addEventListener("click", (ev) => {
     case "recgalet": ui.recGalet = ui.recGalet === d.g ? null : d.g; ui.recQty = "1"; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
     case "craftmany": { if (ui.outdated) { toast(`La version ${ui.outdated} est en ligne : recharge le jeu pour fabriquer.`); break; } ui.recStick = d.id; const qi = $("#recqtyn"); const nq = qi && !qi.disabled ? recQtyOf(qi) : +d.n; const r = E.craftMany(S, d.k, d.id, nq, d.g || null); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
-      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.twins ? ` · ${d.g} : +${fmt(r.twins)} en bonus !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.twins ? ` · ${d.g} : +${fmt(r.twins)} en bonus !` : ""}${r.recy ? ` · ♻ ${fmt(r.recy)} recyclé${r.recy > 1 ? "s" : ""}` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
+    case "recyask": ui.confirm = "recy"; break;
+    case "recygo": { const r = E.recycle(S, recyData().uids); recyMemo = null; ui.confirm = null; toast(`♻ ${fmt(r.n)} objet${r.n > 1 ? "s" : ""} recyclé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
     case "dupesask": ui.confirm = "dupes"; break;
     case "dupesgo": { const r = E.breakDupes(S); ui.confirm = null; toast(`${r.n} doublon${r.n > 1 ? "s" : ""} brisé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
@@ -10672,6 +10710,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
   else if (a === "flt") { fltOf(t.dataset.ctx)[t.dataset.k] = t.value; }
+  else if (a === "recyset") { E.recyCfg(S)[t.dataset.k] = t.checked; recyMemo = null; if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); }
+  else if (a === "recynum") { const R = E.recyCfg(S); const k = t.dataset.k; const v = Math.floor(+t.value) || 0; R[k] = k === "lvl" ? Math.max(0, Math.min(200, v)) : k === "q" ? Math.max(1, Math.min(100, v || 50)) : Math.max(1, Math.min(99, v || 1)); if (k === "lvl" && R[k] > 0) R.lvlOn = true; if (k === "q") R.qOn = true; recyMemo = null; if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); }
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }

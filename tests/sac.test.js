@@ -36,10 +36,10 @@ console.log("ok - rangement compact sans perte");
 }
 console.log("ok - sauvegarde du navigateur compacte, lecture normale");
 
-// 3. sac de 3 000 places, +100 par niveau de Grenier
-assert.strictEqual(E.ITEM_CAP, 3000);
+// 3. sac de 4 000 places (Recycleur, 21/10), +100 par niveau de Grenier
+assert.strictEqual(E.ITEM_CAP, 4000);
 assert.strictEqual(E.HAVRE.find((x) => x.id === "bag").per, 100);
-console.log("ok - sac de 3 000 places");
+console.log("ok - sac de 4 000 places");
 
 // 4. règle « Bas niveau » : brise ce qui est 30 niveaux sous le héros le plus faible, garde panoplies, Rayonnants, exo, cadenas
 {

@@ -518,7 +518,11 @@
     let count = Object.keys(S.items).length; if (count <= cap) return 0;
     const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u) && !(ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus"); }); // 1.0.32.11 : un Dofus reste toujours dans le sac (avant : le Dofus d'une quête finie, le plus récent, partait au trop-plein)
     const now = E.now(); const broken = [];
-    for (const u of free) { if (count <= cap) break; const it = S.items[u]; delete S.items[u]; S.over.push(Object.assign({}, it, { at: now })); count--; n++; }
+    const R = S.settings && S.settings.recy && S.settings.recy.auto ? S.settings.recy : null; let best = null, lvl = 0, recyN = 0; // Recycleur : recyclage automatique (1C)
+    for (const u of free) { if (count <= cap) break; const it = S.items[u];
+      if (R) { if (!best) { best = E.recyBest(S); lvl = E.recyLvl(S, R); } if (E.recyMatch(S, it, R, best, lvl)) { const r = E.breakItem(S, u, null); if (r && typeof r === "object") { count--; recyN++; continue; } } }
+      delete S.items[u]; S.over.push(Object.assign({}, it, { at: now })); count--; n++; }
+    if (recyN) { S.cnt = S.cnt || {}; S.cnt.recy = (S.cnt.recy || 0) + recyN; }
     while (S.over.length > E.overCap(S)) { const o = S.over.shift(); if (ITEMS[o.tpl] && ITEMS[o.tpl].slot === "dofus") { delete o.at; S.items[o.uid] = o; continue; } overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
     if (n) { S.overNew = (S.overNew || 0) + n; S.cnt = S.cnt || {}; note(S, `Sac plein : ${n > 1 ? `${n} objets rangés` : `${ITEMS[S.over[S.over.length - 1].tpl].name} rangé`} dans le trop-plein.`, "warn"); }
     if (broken.length) note(S, `Trop-plein plein : ${broken.length > 1 ? `${broken.length} objets les plus anciens brisés` : `${broken[0]} brisé`} en runes.`, "warn");
@@ -553,6 +557,64 @@
     return out;
   };
   E.breakDupes = (S) => { const got = {}; let n = 0; E.dupesList(S).forEach((u) => { const r = E.breakItem(S, u, null); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } }); return { n, got }; };
+  /* Recycleur (choix de Mathis 1C 2A 3A, 21/10/2026) : brise d'un coup tout ce qui correspond aux réglages du joueur, en runes comme le
+     brisage (même calcul, même coefficient). Relevé sur les vraies parties : les sacs pleins le sont surtout d'objets de panoplie bas niveau
+     fabriqués en série pour monter les métiers, que la règle « Bas niveau » (E.lowItem) ne touche pas.
+     Une règle suffit : niveau ≤ lvl (0 = 30 niveaux sous le héros le plus faible de l'équipe), jet < q %, ou doublon (pas le meilleur exemplaire).
+     keepSets : le meilleur exemplaire de chaque objet de panoplie est toujours gardé. auto : quand le sac déborde, les objets qui
+     correspondent sont recyclés au lieu d'aller au trop-plein. craft + keep : à la fabrication, garder les keep meilleurs exemplaires
+     de l'objet et recycler les autres aussitôt (la fabrication ne s'arrête plus quand le sac est plein). */
+  E.RECY_DEF = { lvlOn: true, lvl: 0, qOn: false, q: 50, dup: true, keepSets: true, auto: false, craft: false, keep: 1 };
+  E.recyCfg = (S) => {
+    const st = S.settings || (S.settings = {}); if (!st.recy || typeof st.recy !== "object") st.recy = {};
+    for (const k in E.RECY_DEF) if (st.recy[k] === undefined) st.recy[k] = E.RECY_DEF[k];
+    return st.recy;
+  };
+  E.recyLvl = (S, R) => { if (R.lvl > 0) return R.lvl; const team = E.team ? E.team(S) : []; return team.length ? Math.max(0, Math.min(...team.map((c) => c.lvl)) - 30) : 0; };
+  /* jamais recyclés : portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, transcendés, Dofus, trophées et légendaires */
+  E.recySafe = (S, it) => {
+    const T = ITEMS[it && it.tpl]; if (!T || T.slot === "dofus" || T.trophy || T.leg) return true;
+    return !!(it.radiant || it.exo || it.locked || it.fm || it.trans || E.isPerfect(it) || E.equippedBy(S, it.uid) || E.inGear(S, it.uid));
+  };
+  const recyRank = (a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a) || a.uid - b.uid;
+  E.recyBest = (S) => { const by = {}; for (const u in S.items) { const it = S.items[u]; const b = by[it.tpl]; if (!b || recyRank(it, b) < 0) by[it.tpl] = it; } const o = {}; for (const t in by) o[t] = by[t].uid; return o; };
+  E.recyMatch = (S, it, R, best, lvl) => {
+    if (E.recySafe(S, it)) return false; const T = ITEMS[it.tpl]; const top = best[it.tpl] === it.uid;
+    if (R.keepSets && T.set && top) return false;
+    return (R.lvlOn && T.lvl <= lvl) || (R.qOn && E.itemQuality(it) * 100 < R.q) || (R.dup && !top);
+  };
+  E.recyList = (S, R = E.recyCfg(S)) => { const best = E.recyBest(S); const lvl = E.recyLvl(S, R); return Object.values(S.items).filter((it) => E.recyMatch(S, it, R, best, lvl)).map((it) => it.uid); };
+  const recyAdd = (got, r) => { if (r && typeof r === "object") for (const k in r) got[k] = (got[k] || 0) + r[k]; };
+  E.recycle = (S, uids) => {
+    const got = {}; let n = 0;
+    (uids || E.recyList(S)).forEach((u) => { if (!S.items[u] || E.recySafe(S, S.items[u])) return; const r = E.breakItem(S, u, null); if (r && typeof r === "object") { n++; recyAdd(got, r); } });
+    if (n) { S.cnt = S.cnt || {}; S.cnt.recy = (S.cnt.recy || 0) + n; }
+    return { n, got };
+  };
+  /* aperçu sans hasard ni changement du coefficient : runes attendues (moyenne du jet de brisage, coefficient −3 % par objet) */
+  E.recyEstimate = (S, uids) => {
+    const coef = {}; const w = {};
+    uids.forEach((u) => { const it = S.items[u]; if (!it) return; const T = ITEMS[it.tpl]; if (coef[it.tpl] === undefined) coef[it.tpl] = E.getCoef(S, it.tpl);
+      const c = coef[it.tpl]; const m = (1 + T.lvl * 3 / 200) * c / 100 * (it.radiant ? 1.5 : 1) * (it.exo ? E.EXO_BREAK_MULT : 1) * 0.95;
+      for (const k in it.stats) if (it.stats[k] > 0 && STATS[k]) w[k] = (w[k] || 0) + it.stats[k] * STATS[k].w * m;
+      coef[it.tpl] = Math.max(10, c - 3); });
+    const got = {}; let weight = 0;
+    for (const k in w) { weight += w[k]; const s = STATS[k]; const base = s.w * s.pts; let rem = w[k]; if (!(base > 0)) continue;
+      E.runeTiers(k).forEach((t) => { const unit = base * (t === "ra" ? 10 : t === "pa" ? 3 : 1); const q = Math.floor(rem / unit); if (q > 0) { got[E.runeKey(t, k)] = q; rem -= q * unit; } }); }
+    return { got, weight: Math.round(weight) };
+  };
+  /* « Recycler aussitôt » : garde les keep meilleurs exemplaires de tpl (les objets protégés comptent et restent), brise le reste */
+  E.recyGot = null;
+  E.recyKeepBest = (S, tpl, keep) => {
+    const inOver = new Set(); const L = Object.values(S.items).filter((x) => x.tpl === tpl);
+    (Array.isArray(S.over) ? S.over : []).forEach((o) => { if (o.tpl === tpl) { inOver.add(o); L.push(o); } }); // sac plein : les exemplaires du trop-plein comptent aussi
+    L.sort(recyRank); let n = 0;
+    L.slice(Math.max(1, keep)).forEach((x) => { if (inOver.has(x) ? x.radiant || x.exo || x.fm || x.trans || E.isPerfect(x) : E.recySafe(S, x)) return;
+      const r = inOver.has(x) ? E.overBreak(S, x.uid) : E.breakItem(S, x.uid, null); if (r && typeof r === "object") { n++; if (E.recyGot) recyAdd(E.recyGot, r); } });
+    if (n) { S.cnt = S.cnt || {}; S.cnt.recy = (S.cnt.recy || 0) + n; }
+    return n;
+  };
+  E.recyCraftOn = (S, tpl) => { const R = S.settings && S.settings.recy; if (!R || !R.craft) return false; const T = ITEMS[tpl]; return !!(T && T.slot !== "dofus" && !T.trophy && !T.leg); };
   E.itemQuality = (it) => {
     const T = ITEMS[it.tpl]; const base = it.roll || it.stats; let s = 0, n = 0;
     for (const k in T.stats) { const [a, b] = T.stats[k]; s += b === a ? 1 : (base[k] - a) / (b - a); n++; }
@@ -560,7 +622,7 @@
   };
   E.qualityTier = (q) => (q >= 0.999 ? "parfait" : q >= 0.8 ? "excellent" : q >= 0.5 ? "bon" : "commun");
   E.itemCount = (S) => Object.keys(S.items).length;
-  E.ITEM_CAP = 3000; // 0.1.37 : 300 → 1 000 places ; 1.0.33.1 : 3 000 places
+  E.ITEM_CAP = 4000; // 0.1.37 : 300 → 1 000 places ; 1.0.33.1 : 3 000 places ; Recycleur (choix 1C de Mathis, 21/10) : 4 000 places
   E.itemCap = (S) => E.ITEM_CAP + Math.round(E.bonus(S, "bag"));
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
@@ -3433,13 +3495,17 @@
     const J = S.crafts[T.craft.job];
     if (J.lvl < E.craftReq(tpl)) return `${CRAFT_JOBS[T.craft.job].name} niveau ${E.craftReq(tpl)} requis.`;
     if (!E.canCraft(S, T.craft)) return "Ressources insuffisantes.";
-    if (E.craftRoom(S) <= 0) return "Sac et trop-plein pleins : fais de la place dans l'inventaire.";
+    const recy = E.recyCraftOn(S, tpl); // Recycleur (3A) : « Recycler aussitôt », la place se libère à chaque fabrication
+    const room = () => recy || E.craftRoom(S) > 0;
+    if (!room()) return "Sac et trop-plein pleins : fais de la place dans l'inventaire.";
     const gx = galet ? E.galetFx(S, tpl, galet) : null; if (typeof gx === "string") return gx;
     T.craft.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     if (gx) { S.res[galet]--; if (!S.res[galet]) delete S.res[galet]; }
-    const job = T.craft.job; const it = E.rollItem(S, tpl, craftRoll(S, job, gx ? gx.roll : {})); craftStow(S, it);
-    if (gx && gx.double && rnd() < gx.double && E.craftRoom(S) > 0) { const it2 = E.rollItem(S, tpl, craftRoll(S, job)); craftStow(S, it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
-    if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl, craftRoll(S, job))); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
+    const stow = (x) => { if (recy) E.recyKeepBest(S, tpl, S.settings.recy.keep); if (S.items[x.uid]) craftStow(S, x);
+      if (recy) while (overLen(S) > E.overCap(S)) { const o = S.over.find((y) => !(ITEMS[y.tpl] && ITEMS[y.tpl].slot === "dofus")); if (!o) break; const r = E.overBreak(S, o.uid); if (r && typeof r === "object" && E.recyGot) recyAdd(E.recyGot, r); } }; // trop-plein plein : le plus ancien est brisé, comme E.bagFlush
+    const job = T.craft.job; const it = E.rollItem(S, tpl, craftRoll(S, job, gx ? gx.roll : {})); stow(it);
+    if (gx && gx.double && rnd() < gx.double && room()) { const it2 = E.rollItem(S, tpl, craftRoll(S, job)); stow(it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
+    if (E.almChance(S, "craft2") && room()) { stow(E.rollItem(S, tpl, craftRoll(S, job))); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
     craftXp(S, T.craft.job, E.craftXpOf(S, T.craft.job, E.craftReq(tpl), 12 + T.lvl * 3));
     E.emit(S, "craft", { tpl });
     return it;
@@ -3461,19 +3527,21 @@
   /* 0.1.30.1 : fabrication en série (×10, max). Chaque exemplaire passe par craftItem / craftSpecial : jets, XP de métier et quêtes identiques à une fabrication une par une */
   E.craftMax = (S, ing, n = Infinity) => ing.reduce((m, [r, q]) => Math.min(m, Math.floor((S.res[r] || 0) / q)), n);
   E.craftCount = (S, k, id) => {
-    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return E.craftMax(S, T.craft.ing, E.craftRoom(S)); }
+    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return E.craftMax(S, T.craft.ing, E.recyCraftOn(S, id) ? Infinity : E.craftRoom(S)); }
     const R = SPECIAL_CRAFTS[id]; if (!R || S.crafts[R.job].lvl < R.lvl) return 0;
     return E.craftMax(S, R.ing, R.unique ? 1 : Infinity);
   };
   E.craftMany = (S, k, id, n, galet) => {
-    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null, over: 0 }; const o0 = overLen(S);
-    for (let i = 0; i < n; i++) {
-      E.craftTwin = null; const r = k === "tpl" ? E.craftItem(S, id, galet) : E.craftSpecial(S, id);
-      if (typeof r === "string") { out.err = r; break; }
-      out.n++; if (r && r.uid) out.items.push(r);
-      if (E.craftTwin) { out.items.push(E.craftTwin); out.twins = (out.twins || 0) + 1; E.craftTwin = null; }
-    }
-    out.over = Math.max(0, overLen(S) - o0);
+    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null, over: 0, recy: 0, got: {} }; const o0 = overLen(S); E.recyGot = out.got; const c0 = (S.cnt && S.cnt.recy) || 0;
+    try {
+      for (let i = 0; i < n; i++) {
+        E.craftTwin = null; const r = k === "tpl" ? E.craftItem(S, id, galet) : E.craftSpecial(S, id);
+        if (typeof r === "string") { out.err = r; break; }
+        out.n++; if (r && r.uid) out.items.push(r);
+        if (E.craftTwin) { out.items.push(E.craftTwin); out.twins = (out.twins || 0) + 1; E.craftTwin = null; }
+      }
+    } finally { E.recyGot = null; }
+    out.over = Math.max(0, overLen(S) - o0); out.recy = ((S.cnt && S.cnt.recy) || 0) - c0;
     return out.n ? out : (out.err || "Fabrication impossible.");
   };
   const craftXp = (S, job, x) => {

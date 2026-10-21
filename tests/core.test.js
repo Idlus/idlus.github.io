@@ -138,10 +138,10 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   console.log("ok - 19 héros et collection « Les 19 classes »");
 }
 
-// 0.1.37 : sac de 1 000 places (3 000 depuis 1.0.33.1), Coffre de trop-plein (rien n'est perdu), « Briser les doublons »
+// 0.1.37 : sac de 1 000 places (3 000 depuis 1.0.33.1, 4 000 avec le Recycleur), Coffre de trop-plein (rien n'est perdu), « Briser les doublons »
 {
   E.setRng(mulberry(37)); const S = E.newState("Sac", "iop");
-  assert.strictEqual(E.itemCap(S), 3000);
+  assert.strictEqual(E.itemCap(S), 4000);
   const CAP = E.itemCap(S);
   const tpl = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].lvl === 20 && D.ITEMS[k].slot === "coiffe");
   for (let i = 0; i < CAP - E.itemCount(S); ) E.rollItem(S, tpl, { radiant: false });
