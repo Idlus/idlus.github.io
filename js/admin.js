@@ -306,3 +306,88 @@ if (P) {
   if (P.TESTMODE || /\/beta\//.test(location.pathname)) setTimeout(applyTodo, 400);
 }
 })();
+
+/* ============================================================================
+   CLÉS BÊTA DU MONOCOMPTE (supabase/mono_cles.sql) : page « Clés bêta » du Panel Xener (groupe Joueurs), compte admin sur
+   le vrai serveur. Créer N clés avec un nom de lot, copier la liste, voir les clés libres, utilisées (pseudo, date) et
+   annulées, annuler une clé libre, retirer un testeur (mono_adm_testeur). Chaque appel est vérifié par le serveur
+   (mono.need_admin). Hors de la partie de test aussi : ce bloc ne dépend pas de DX.testerOk.
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const toast = (t) => X().toast(t);
+const st = { L: null, err: null, neuves: [], n: "10", lot: "", vue: "tout", retirer: null, busy: false };
+const NOSRV = /mono_adm_cles|function .* does not exist|schema cache/i;
+const date = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
+const etat = (x) => (x.annulee ? "annulee" : x.user ? "utilisee" : "libre");
+const repaint = () => { if (DX.ui.tab === "admin") P.repaint(); };
+async function load() {
+  const r = await ON.rpc("mono_adm_cles");
+  if (r.err) { st.L = null; st.err = NOSRV.test(r.err) ? "Les clés bêta ne sont pas encore installées sur le serveur (supabase/mono_cles.sql)." : r.err; return; }
+  st.err = null; st.L = Array.isArray(r.data) ? r.data : [];
+}
+function copy(txt) {
+  const done = () => toast("Liste copiée.");
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(done, () => fallback(txt)); return; } } catch (e) {}
+  fallback(txt);
+}
+function fallback(txt) {
+  const t = document.getElementById("mcList"); if (!t) { toast("Copie impossible : sélectionne la liste à la main."); return; }
+  t.focus(); t.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  toast(ok ? "Liste copiée." : "Copie impossible : sélectionne la liste à la main.");
+}
+function html() {
+  const L = st.L || [];
+  const n = { libre: 0, utilisee: 0, annulee: 0 }; L.forEach((x) => n[etat(x)]++);
+  const libres = L.filter((x) => etat(x) === "libre").map((x) => x.code);
+  const rows = L.filter((x) => st.vue === "tout" || etat(x) === st.vue);
+  const form = `<div class="box"><h2>Créer des clés</h2>
+    <div class="row"><input id="mcN" type="number" min="1" max="100" value="${h(st.n)}" style="max-width:80px" aria-label="Nombre de clés"><input id="mcLot" type="text" maxlength="60" value="${h(st.lot)}" placeholder="Nom du lot (ex. Vague 1)" autocomplete="off" style="max-width:220px" aria-label="Nom du lot"><button class="btn sm primary" data-act="mcle-creer" ${st.busy ? "disabled" : ""}>Créer</button></div>
+    <span class="xs muted">De 1 à 100 clés à la fois. Une clé ouvre la bêta Monocompte à un seul compte (Options › Compte › Bêta Monocompte).</span>
+    ${st.neuves.length ? `<textarea id="mcList" readonly rows="${Math.min(8, st.neuves.length)}" style="width:100%;font-family:monospace">${h(st.neuves.join("\n"))}</textarea><div class="row"><button class="btn sm" data-act="mcle-copier" data-v="neuves">Copier la liste</button><span class="xs muted">${st.neuves.length} clé${st.neuves.length > 1 ? "s" : ""} créée${st.neuves.length > 1 ? "s" : ""}</span></div>` : ""}</div>`;
+  if (st.err) return form + `<div class="box"><div class="empty">${h(st.err)}</div></div>`;
+  if (!st.L) return form + `<div class="box"><div class="empty">Chargement…</div></div>`;
+  const tabs = [["tout", `Toutes (${L.length})`], ["libre", `Libres (${n.libre})`], ["utilisee", `Utilisées (${n.utilisee})`], ["annulee", `Annulées (${n.annulee})`]]
+    .map(([k, t]) => `<button class="btn sm${st.vue === k ? " primary" : ""}" data-act="mcle-vue" data-v="${k}">${t}</button>`).join("");
+  const line = (x) => {
+    const e = etat(x);
+    const who = e === "utilisee" ? `${h(x.pseudo || "compte effacé")}${x.testeur ? "" : ` <span class="tag soft">retiré</span>`} · ${h(date(x.at))}` : e === "annulee" ? `<span class="muted">annulée</span>` : `<span class="muted">libre</span>`;
+    const act = e === "libre" ? `<button class="btn sm" data-act="mcle-annuler" data-v="${h(x.code)}">Annuler</button>`
+      : e === "utilisee" && x.testeur && x.pseudo ? (st.retirer === x.code ? `<button class="btn sm danger" data-act="mcle-retirer" data-v="${h(x.code)}">Confirmer le retrait</button>` : `<button class="btn sm" data-act="mcle-retirer" data-v="${h(x.code)}">Retirer le testeur</button>`) : "";
+    return `<tr data-code="${h(x.code)}"><td style="font-family:monospace;white-space:nowrap">${h(x.code)}</td><td>${h(x.lot || "")}</td><td>${who}</td><td style="text-align:right">${act}</td></tr>`;
+  };
+  return form + `<div class="box"><div class="row between"><h2>Clés bêta</h2>${libres.length ? `<button class="btn sm" data-act="mcle-copier" data-v="libres">${libres.length > 1 ? `Copier les ${libres.length} clés libres` : "Copier la clé libre"}</button>` : ""}</div>
+    <div class="row" style="flex-wrap:wrap">${tabs}</div>
+    ${rows.length ? `<div style="overflow-x:auto"><table class="mc-tab" style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Clé</th><th style="text-align:left">Lot</th><th style="text-align:left">État</th><th></th></tr></thead><tbody>${rows.map(line).join("")}</tbody></table></div>` : `<div class="empty">Aucune clé ici.</div>`}
+    <span class="xs muted">Retirer un testeur ferme son accès au Monocompte ; sa clé reste utilisée et ce compte ne peut pas en utiliser une autre (rouvrir : mono_adm_testeur).</span></div>`;
+}
+async function act(a, v) {
+  if (st.busy) return;
+  if (a === "mcle-vue") { st.vue = v; st.retirer = null; repaint(); return; }
+  if (a === "mcle-copier") { const L = v === "neuves" ? st.neuves : (st.L || []).filter((x) => etat(x) === "libre").map((x) => x.code); if (L.length) copy(L.join("\n")); return; }
+  st.busy = true;
+  try {
+    if (a === "mcle-creer") {
+      const n = Math.round(+st.n); if (!(n >= 1 && n <= 100)) { toast("De 1 à 100 clés à la fois."); return; }
+      const r = await ON.rpc("mono_adm_cles_creer", { p_n: n, p_lot: st.lot.trim() || null });
+      if (r.err) { toast(NOSRV.test(r.err) ? "Les clés bêta ne sont pas encore installées sur le serveur." : r.err); return; }
+      st.neuves = Array.isArray(r.data) ? r.data : []; toast(`${st.neuves.length} clé${st.neuves.length > 1 ? "s" : ""} créée${st.neuves.length > 1 ? "s" : ""}.`);
+    } else if (a === "mcle-annuler") {
+      const r = await ON.rpc("mono_adm_cle_annuler", { p_code: v }); if (r.err || r.data) { toast(r.err || r.data); return; } toast("Clé annulée.");
+    } else if (a === "mcle-retirer") {
+      if (st.retirer !== v) { st.retirer = v; return; }
+      st.retirer = null; const x = (st.L || []).find((y) => y.code === v); if (!x || !x.pseudo) return;
+      const r = await ON.rpc("mono_adm_testeur", { p_pseudo: x.pseudo, p_on: false }); if (r.err || r.data) { toast(r.err || r.data); return; } toast(`${x.pseudo} n'est plus testeur.`);
+    }
+    await load();
+  } finally { st.busy = false; repaint(); }
+}
+document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act^='mcle-']"); if (!t || !P.admin()) return; act(t.dataset.act, t.dataset.v); });
+document.addEventListener("input", (ev) => { const id = ev.target && ev.target.id; if (id === "mcN") st.n = ev.target.value; else if (id === "mcLot") st.lot = ev.target.value; });
+P.register({ id: "clesbeta", name: "Clés bêta", group: "Joueurs", html, load }); // recherche du panel : « Aller à : Clés bêta »
+window.MONOCLES = { st, load, html };
+})();

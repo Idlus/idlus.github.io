@@ -14,6 +14,21 @@
 (function () {
   "use strict";
   const E = window.ENGINE, ON = window.ONLINE;
+  /* Clés bêta (supabase/mono_cles.sql) : le champ « Code testeur » d'Options › Compte (js/ui.js) les envoie ici quand le
+     Monocompte en ligne est actif (flag mono de js/online.js) ; le serveur seul dit si la clé est bonne (une clé = un compte,
+     5 essais ratés par heure). Clé acceptée : l'accès du compte (mono_acces) est relu. Flag coupé : le jeu garde l'ancien code. */
+  if (ON) {
+    ON.monoCleOn = () => !!(ON.enabled && ON.monoSrv);
+    ON.monoCle = async (code) => {
+      if (!ON.monoCleOn()) return { err: "Serveur Monocompte indisponible." };
+      if (!ON.user) return { err: "Connecte-toi d'abord à ton compte (Options › Compte)." };
+      const r = await ON.rpc("mono_cle_utiliser", { p_code: String(code || "").slice(0, 60) });
+      if (r.err) return { err: r.err === "Pas de connexion au serveur." ? "Pas de connexion au serveur : réessaie dans un instant." : r.err };
+      const d = r.data || {}; if (d.err || !d.ok) return { err: d.err || "Clé refusée." };
+      try { await ON.monoCheck(); } catch (e) {}
+      return { ok: true, deja: !!d.deja, msg: d.msg || null };
+    };
+  }
   if (!E || !E.MONO || !E.MONO.tf || !ON || !ON.enabled || !window.DX) return;
   const NET = "Pas de connexion au serveur.";
   const live = (S) => !!(S && S.mono && !S.mono.eternel && ON.monoOn() && ON.slot() === 4);
