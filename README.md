@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.35.3 « Panoplies à découvrir »
+- Encyclopédie › Panoplies : filtre « Non commencées » (aucune pièce obtenue), à côté de « Commencées » (`js/collui.js`). Idée de SegFault.
+
 ## 2.1.35.2 « Remise à zéro de la bêta »
 - Bêta Monocompte : remise à zéro des parties après le bug des codes cadeaux (`tools/serveur/mono_remise_zero.sql`, étape `monocompte-remise-zero` du workflow « Serveur OVH »). Le serveur numérote les générations de parties (`mono.saisons.gen`, lu par `mono_acces`) ; la partie Monocompte d'avant la remise est mise de côté sur l'appareil (`dofousxen-save-mono-remise-1`) et `mono.push` la refuse.
 - Clés bêta : plus de limite d'essais ratés (le journal `mono.cles_essais` reste).

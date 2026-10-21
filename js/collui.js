@@ -231,12 +231,12 @@
     if (st.scid) { const main = CLASSES[c.cls].main; ids = ids.filter((sid) => { const L = E.setLvl(sid); if (L > c.lvl || L < c.lvl - 40) return false;
       const ks = new Set(E.setPieces(sid).flatMap((t) => Object.keys(ITEMS[t].stats))); return ks.has(main) || !["fo", "ine", "cha", "age"].some((k) => ks.has(k)); }); }
     const missN = (sid) => E.setPieces(sid).filter((t) => !dex[t]).length;
-    const nDone = ids.filter((sid) => C.done.has(sid)).length, nOne = ids.filter((sid) => missN(sid) === 1).length, nRun = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length).length;
-    if (st.sf === "done") ids = ids.filter((sid) => C.done.has(sid)); else if (st.sf === "one") ids = ids.filter((sid) => missN(sid) === 1); else if (st.sf === "run") ids = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length);
+    const nDone = ids.filter((sid) => C.done.has(sid)).length, nOne = ids.filter((sid) => missN(sid) === 1).length, nRun = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length).length, nNew = ids.filter((sid) => missN(sid) === E.setPieces(sid).length).length;
+    if (st.sf === "done") ids = ids.filter((sid) => C.done.has(sid)); else if (st.sf === "one") ids = ids.filter((sid) => missN(sid) === 1); else if (st.sf === "run") ids = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length); else if (st.sf === "new") ids = ids.filter((sid) => missN(sid) === E.setPieces(sid).length);
     const worn = E.setCounts(s, c); const have = (sid) => E.setPieces(sid).filter((t) => dex[t]).length / E.setPieces(sid).length;
     ids.sort((a, b) => (worn[b] || 0) - (worn[a] || 0) || (missN(a) === 1 ? 0 : 1) - (missN(b) === 1 ? 0 : 1) || have(b) - have(a) || E.setLvl(b) - E.setLvl(a) || a.localeCompare(b));
     const total = ids.length; const shown = ids.slice(0, st.sn);
-    const chips = [["all", "Toutes", null], ["done", "Complètes", nDone], ["one", "Il manque 1 pièce", nOne], ["run", "Commencées", nRun]];
+    const chips = [["all", "Toutes", null], ["done", "Complètes", nDone], ["one", "Il manque 1 pièce", nOne], ["run", "Commencées", nRun], ["new", "Non commencées", nNew]];
     return `<div class="stack co-sets-page" style="margin-top:10px">${collPanel(s)}
       <div class="co-tb"><input type="search" id="coSQ" data-co="sq" placeholder="Rechercher une panoplie ou une pièce…" value="${h(st.sq)}" autocomplete="off" spellcheck="false" enterkeyhint="search">
         <span class="co-chips">${chips.map(([k, nm, n]) => `<button class="co-chip" data-act="co-sf" data-v="${k}" aria-pressed="${st.sf === k}">${nm}${n != null ? ` <span class="n">${n}</span>` : ""}</button>`).join("")}</span>
