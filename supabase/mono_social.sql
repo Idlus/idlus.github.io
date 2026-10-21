@@ -3,12 +3,16 @@
 -- de la semaine (lot 2, points 9, 10 et 11 ; « Saison plus » ; décisions de Mathis du 21/10, maquette validée).
 -- DÉPLOIEMENT MANUEL SEULEMENT, comme supabase/monocompte.sql : jamais dans la liste automatique de
 -- .github/workflows/supabase.yml.
--- ORDRE DE CHARGEMENT (obligatoire) :
---   1. supabase/monocompte.sql (mono.parties_ok, Bouclier Monocompte ; crée mono.apres_validation et mono.etat_social
---      vides seulement s'ils n'existent pas, donc le relancer plus tard n'efface pas ceux d'ici) ;
---   2. supabase/amis.sql (public.amis, public.ignores lu pour le blocage) ;
---   3. CE fichier, qui redéfinit mono.apres_validation (classements, Couronne, copie du héros pour le renfort) et
---      mono.etat_social (renforts pris, lus par le Bouclier). Relançable sans danger.
+-- ORDRE DE CHARGEMENT DU MONOCOMPTE (unique, à la main, chaque fichier relançable sans danger) :
+--   1. supabase/monocompte.sql   espace mono, Bouclier, défis ; crée mono.apres_validation, mono.etat_social et
+--                                mono.defi_d12 VIDES seulement s'ils n'existent pas (le relancer n'efface rien d'après) ;
+--   2. supabase/amis.sql         amis (Classique et Monocompte), blocage = public.ignores (chat.sql) ;
+--   3. supabase/mono_social.sql  redéfinit mono.apres_validation (classements, Couronne, renfort) et mono.etat_social ;
+--   4. supabase/mono_bureau.sql  Bureau des Aventuriers ; redéfinit mono.defi_d12 (défi 12) ; lit les amis et le blocage.
+-- Aucune fonction n'est définie avec un vrai corps dans deux fichiers : chaque crochet a un seul propriétaire
+-- (vérifié par tests/bureau_sql.test.js, qui charge les quatre fichiers dans cet ordre puis relance monocompte.sql).
+-- Ici (3) : mono.apres_validation (classements, Couronne, copie du héros pour le renfort) et mono.etat_social (renforts
+-- pris, lus par le Bouclier). mono_bureau.sql ne touche à aucune des deux.
 -- La version de monocompte.sql de mono.apres_validation est vide (le Bouclier fait ses bons de butin et ses défis dans
 -- mono_srv_valider, avant de l'appeler) : celle d'ici n'a donc rien à reprendre d'elle.
 --
@@ -191,8 +195,7 @@ as $$ select count(*)::int from generate_series(1, least(8, mono.semaine_now(p_s
 -- saison à montrer : l'ouverte, sinon la dernière en clôture ou finie
 create or replace function mono.saison_vue() returns int language sql stable set search_path = mono, public
 as $$ select coalesce(mono.saison_ouverte(), (select max(id) from mono.saisons where etat in ('cloture', 'finie'))) $$;
-create or replace function mono.pseudo(u uuid) returns text language sql stable security definer set search_path = mono, public
-as $$ select pseudo from public.profiles where id = u $$;
+-- mono.pseudo(u) : définie par monocompte.sql (chargé avant).
 -- prochain lundi 00 h 00 à Paris (date de saison), quand la couronne change de tête
 create or replace function mono.change_at(p_s int) returns timestamptz language sql stable set search_path = mono, public
 as $$ select (((x.debut at time zone 'Europe/Paris')::date + 7 * mono.semaine_now(p_s))::timestamp at time zone 'Europe/Paris') from mono.saisons x where x.id = p_s $$;

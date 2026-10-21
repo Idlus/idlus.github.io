@@ -7,7 +7,11 @@
      photo forgée (le jeu n'envoie jamais de photo), héros modifié après sa validation, quitter pendant le combat, compte hors
      saison, non testeur, suspendu, en vérification, butin pris deux fois, fonctions du serveur appelées par un joueur ;
    - même combat côté jeu et serveur, temps de calcul, butin reçu une seule fois, aucun faux refus du Bouclier après le butin ;
-   - défi 12 compté par le serveur ; créneaux de rendez-vous et messages privés désactivés par défaut ; Classique intact.
+   - défi 12 compté par le serveur ; créneaux de rendez-vous et messages privés désactivés par défaut ; Classique intact ;
+   - ORDRE DE CHARGEMENT unique du Monocompte : monocompte.sql → amis.sql → mono_social.sql → mono_bureau.sql (puis
+     monocompte.sql relancé) : défi 12, crochets sociaux (classements, renfort) et Bouclier ensemble, aucun crochet effacé ;
+   - amis : invitation directe aux amis acceptés non bloqués seulement, salon fermé au joueur bloqué par un membre ;
+   - renfort d'un ami : la copie prêtée (marque rf / renfort) n'entre jamais dans un groupe (fonction serveur et base).
    Lancer : IDLUS_PG="postgresql://postgres@/postgres?host=/chemin/du/socket&port=55432" node tests/bureau_sql.test.js
    Sans IDLUS_PG (ou Node < 22.6), le test est sauté. La base « idlus_mono_bureau » est recréée puis effacée. */
 "use strict";
@@ -59,12 +63,11 @@ run(`drop database if exists ${DB}`, URL0); run(`create database ${DB}`, URL0);
          if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if; end $$;
        create schema auth; grant usage on schema auth to anon, authenticated, service_role; create table auth.users (id uuid primary key);
        create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-       grant usage on schema public to anon, authenticated, service_role;
-       create table public.ladder (user_id uuid primary key references auth.users(id) on delete cascade, flagged boolean default false, flag_reason text, main text, main_lvl int);
-       create table public.admins (user_id uuid primary key references auth.users(id) on delete cascade); alter table public.admins enable row level security;
-       create function public.is_admin() returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from public.admins where user_id = auth.uid()) $$;`);
-    file(path.join(ROOT, "supabase", "schema.sql"));
+       grant usage on schema public to anon, authenticated, service_role; create publication supabase_realtime;`);
+    for (const f of ["schema.sql", "classements.sql", "chat.sql"]) file(path.join(ROOT, "supabase", f)); // amis.sql lit public.ignores (chat.sql)
     q(`grant select, insert, update, delete on all tables in schema public to anon, authenticated;`);
+    // ordre de chargement unique (en tête de chaque fichier) : 1. monocompte.sql, 2. amis.sql, 3. mono_social.sql, 4. mono_bureau.sql
+    file(path.join(ROOT, "supabase", "monocompte.sql")); file(path.join(ROOT, "supabase", "amis.sql")); file(path.join(ROOT, "supabase", "mono_social.sql"));
     const snap = () => q(`select md5(string_agg(x, E'\\n' order by x)) from (
         select 'T ' || table_name || ' ' || column_name || ' ' || data_type || ' ' || coalesce(column_default, '') x from information_schema.columns where table_schema = 'public'
         union all select 'P ' || tablename || ' ' || policyname || ' ' || cmd || ' ' || array_to_string(roles, ',') || ' ' || coalesce(qual, '') || ' ' || coalesce(with_check, '') from pg_policies where schemaname = 'public'
@@ -72,23 +75,40 @@ run(`drop database if exists ${DB}`, URL0); run(`create database ${DB}`, URL0);
         union all select 'F ' || p.oid::regprocedure || ' ' || md5(p.prosrc) || ' ' || coalesce(array_to_string(p.proacl, ','), '') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where n.nspname = 'public' and p.proname not like 'mono\\_%' and p.proname <> 'cosm_mine') s`);
     const before = snap();
-    file(path.join(ROOT, "supabase", "monocompte.sql"));
     const monoAvant = q(`select md5(string_agg(p.oid::regprocedure::text || md5(p.prosrc), ',' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where (n.nspname = 'public' and p.proname like 'mono\\_%' and p.proname not like 'mono\\_bureau%' and p.proname not like 'mono\\_adm\\_bureau%' and p.proname not like 'mono\\_srv\\_bureau%') or (n.nspname = 'mono' and p.proname not like 'bureau%' and p.proname not in ('defi_prog', 'bcfg', 'bn', 'bon_', 'bsec'))`);
+      where (n.nspname = 'public' and p.proname like 'mono\\_%' and p.proname not like 'mono\\_bureau%' and p.proname not like 'mono\\_adm\\_bureau%' and p.proname not like 'mono\\_srv\\_bureau%') or (n.nspname = 'mono' and p.proname not like 'bureau%' and p.proname not in ('defi_d12', 'bcfg', 'bn', 'bon_', 'bsec'))`);
     file(path.join(ROOT, "supabase", "mono_bureau.sql")); file(path.join(ROOT, "supabase", "mono_bureau.sql")); // relancé deux fois : sans danger
     assert.strictEqual(snap(), before, "le schéma public du Classique a changé");
     assert.strictEqual(q(`select md5(string_agg(p.oid::regprocedure::text || md5(p.prosrc), ',' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where (n.nspname = 'public' and p.proname like 'mono\\_%' and p.proname not like 'mono\\_bureau%' and p.proname not like 'mono\\_adm\\_bureau%' and p.proname not like 'mono\\_srv\\_bureau%') or (n.nspname = 'mono' and p.proname not like 'bureau%' and p.proname not in ('defi_prog', 'bcfg', 'bn', 'bon_', 'bsec'))`), monoAvant,
-      "seule mono.defi_prog change dans monocompte.sql (défi 12)");
+      where (n.nspname = 'public' and p.proname like 'mono\\_%' and p.proname not like 'mono\\_bureau%' and p.proname not like 'mono\\_adm\\_bureau%' and p.proname not like 'mono\\_srv\\_bureau%') or (n.nspname = 'mono' and p.proname not like 'bureau%' and p.proname not in ('defi_d12', 'bcfg', 'bn', 'bon_', 'bsec'))`), monoAvant,
+      "mono_bureau.sql ne change que le crochet mono.defi_d12 (défi 12) : ni monocompte.sql, ni amis.sql, ni mono_social.sql");
+    // relancer les fichiers d'avant (dans l'ordre) n'efface aucun crochet d'après : chaque fonction a un seul propriétaire
+    const crochets = () => ["mono.defi_d12(uuid, integer)", "mono.defi_prog(uuid, integer, text)", "mono.apres_validation(uuid, integer, jsonb)", "mono.etat_social(uuid, integer)"]
+      .map((f) => q(`select prosrc from pg_proc where oid = '${f}'::regprocedure`));
+    const verifCrochets = (why) => { const [d12, prog, apres, social] = crochets();
+      assert.match(d12, /bureau_d12/, why + " : défi 12 branché sur le Bureau"); assert.match(prog, /defi_d12/, why + " : mono.defi_prog lit le crochet du défi 12");
+      assert.match(apres, /lb_saison/, why + " : mono.apres_validation de mono_social.sql"); assert.match(apres, /renfort_copier/, why + " : copie du renfort");
+      assert.match(social, /renfort_log/, why + " : mono.etat_social de mono_social.sql"); };
+    verifCrochets("quatre fichiers chargés");
+    for (const f of ["monocompte.sql", "amis.sql", "mono_social.sql"]) { file(path.join(ROOT, "supabase", f)); verifCrochets(f + " relancé après mono_bureau.sql"); }
+    { // aucune fonction définie (avec son vrai corps) dans deux des quatre fichiers : les crochets vides de monocompte.sql sont
+      // créés par « execute » seulement s'ils manquent
+      const own = {}; const dbl = [];
+      for (const f of ["monocompte.sql", "amis.sql", "mono_social.sql", "mono_bureau.sql"])
+        for (const m of fs.readFileSync(path.join(ROOT, "supabase", f), "utf8").matchAll(/^create (?:or replace )?function ([a-z_]+\.[a-z_0-9]+)/gm)) {
+          if (own[m[1]] && own[m[1]] !== f) dbl.push(m[1] + " : " + own[m[1]] + " et " + f); own[m[1]] = own[m[1]] || f; }
+      assert.deepStrictEqual(dbl, [], "fonctions définies dans deux fichiers"); }
     assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'mono\\_srv\\_bureau\\_%'
       and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('service_role', p.oid, 'execute'))`), "0", "mono_srv_bureau_* : service_role seulement");
     assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_bureau\\_%' or p.proname like 'mono\\_adm\\_bureau%')
       and (has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('authenticated', p.oid, 'execute'))`), "0", "mono_bureau_* : joueurs connectés seulement");
-    console.log("ok - mono_bureau.sql relançable, Classique et fonctions du Monocompte intacts (sauf le défi 12), droits d'appel");
+    console.log("ok - ordre monocompte.sql → amis.sql → mono_social.sql → mono_bureau.sql : relançables, crochets gardés (défi 12, classements, renfort), Classique intact, droits d'appel");
 
     q(`insert into auth.users select ('00000000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid from generate_series(1, 12) i;
        insert into profiles (id, pseudo) select id, 'Joueur' || substr(id::text, 35) from auth.users;
-       insert into admins values ('${U(9)}');`);
+       delete from admins; insert into admins values ('${U(9)}');`); // classements.sql fait du premier profil un admin : Mathis = 9 ici
+    // amis acceptés (supabase/amis.sql, les deux lignes) : 12 et 1, 5 et 1
+    q(`insert into public.amis (user_id, ami) values ('${U(12)}', '${U(1)}'), ('${U(1)}', '${U(12)}'), ('${U(5)}', '${U(1)}'), ('${U(1)}', '${U(5)}')`);
     J(9, `mono_adm_saison(0, 'Saison de test', '2026-10-19 00:00 Europe/Paris', true, 'ouverte')`);
     for (const i of [1, 2, 3, 4, 5, 6, 7, 10, 11, 12]) as(9, `select mono_adm_testeur('Joueur${String(i).padStart(2, "0")}', true)`);
     const DEBUT = Date.parse("2026-10-18T22:00:00Z");
@@ -153,7 +173,9 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     const etat = (i, o) => J(i, `mono_bureau_etat(${lit(o || null)}, '${app(i)}')`);
     const B = (i, f, ...a) => J(i, `mono_bureau_${f}(${a.map(litA).join(", ")})`);
     const chercher = (i, ds, k, flex, auto = true, appareil) => B(i, "chercher", ds, k, flex, auto, VER, appareil || app(i));
-    console.log("ok - 9 héros validés par le Bouclier (fonction « mono »)");
+    // Bouclier + crochets sociaux ensemble : chaque partie validée passe par mono.apres_validation de mono_social.sql
+    assert.strictEqual(+q(`select count(*) from mono.lb_saison where saison = 0`), 9, "classements de saison tenus après chaque validation du Bouclier");
+    console.log("ok - 9 héros validés par le Bouclier (fonction « mono »), classements de saison tenus par mono_social.sql");
 
     /* ---------- accès : non testeur, anon, écritures directes, fonctions du serveur ---------- */
     for (const f of ["mono_bureau_etat()", "mono_bureau_chercher(array['crypte_kardorim'], 1, 0, true, '1')", "mono_bureau_salons()", "mono_bureau_expeditions()", "mono_bureau_rdv()", "mono_bureau_butin(1)"])
@@ -361,6 +383,40 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     await send(12, P[12].S);
     console.log("ok - triche : héros prêté en renfort refusé par le serveur dans un groupe de joueurs");
 
+    /* ---------- renfort d'un ami (mono_social.sql) : la copie prêtée n'entre jamais dans un groupe ---------- */
+    ok(J(1, `mono_renfort_publier()`), "1 prête son héros (copie tirée de sa partie validée)");
+    const rf = ok(J(12, `mono_renfort_prendre('${U(1)}', '${DJ}', 1)`), "12 prend le renfort de 1 en donjon solo");
+    assert(rf.snap && rf.snap.rf === 1, "copie de renfort marquée rf : " + JSON.stringify(rf.snap && Object.keys(rf.snap)));
+    refuse("renfort d'un ami demandé pour un groupe", () => err(J(12, `mono_renfort_prendre('${U(1)}', '${DJ}', 1, null, 'bureau')`), /pas en groupe/, "renfort en groupe"));
+    // (a) partie validée dont le héros est la copie du renfort (le Bouclier l'aurait laissée passer) : la fonction serveur refuse
+    for (const i of [1, 3, 12]) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    const c5 = ok(B(1, "lancer"), "lancement").combat;
+    for (const i of [1, 3, 12]) { await send(i, P[i].S); ok(B(i, "confirmer"), "confirmer " + i); }
+    const vrai12 = q(`select data from mono.parties_ok where user_id = '${U(12)}' and saison = 0`);
+    const dg = E.deserialize(E.serialize(P[12].S)); Object.assign(hero(dg), { renfort: { u: U(1), p: "Joueur01" }, snap: rf.snap });
+    q(`update mono.parties_ok set data = ${lit(E.serialize(dg))} where user_id = '${U(12)}' and saison = 0`);
+    const F5 = await call(U(3), { bureau: { combat: c5 } });
+    q(`update mono.parties_ok set data = ${lit(vrai12)} where user_id = '${U(12)}' and saison = 0`);
+    refuse("copie de renfort rendue par le serveur (renfort + snap) portée par le héros", () => assert(F5.annule && /12 : héros prêté en renfort/.test(F5.why), "renfort côté serveur : " + JSON.stringify(F5)));
+    assert.strictEqual(+q(`select count(*) from mono.bureau_butins where combat = ${c5}`), 0, "aucun butin");
+    // (b) photos envoyées à la base avec la copie (rf), un mercenaire, ou une photo de trop : refusées par mono_srv_bureau_resultat
+    const vraies = BC.combat(V.mono, JSON.parse(run(`select jsonb_agg(jsonb_build_object('user', user_id, 'data', data) order by user_id)::text from mono.parties_ok where user_id in ('${U(1)}', '${U(3)}', '${U(12)}') and saison = 0`)), DJ, 1, 1, Date.now());
+    assert(vraies.snaps, "photos honnêtes : " + JSON.stringify(vraies.exclus || vraies.err));
+    const ph = JSON.parse(vraies.snaps);
+    const triches = [["photo de la copie du renfort (rf)", [ph[0], ph[1], rf.snap]], ["photo d'un mercenaire", [ph[0], ph[1], Object.assign({}, ph[2], { merc: 1 })]],
+      ["photo marquée renfort", [ph[0], ph[1], Object.assign({}, ph[2], { renfort: { u: U(1) } })]], ["photo en plus (copie du renfort ajoutée)", ph.concat([rf.snap])]];
+    for (const [label, sn] of triches) {
+      ok(B(12, "pret", true, VER, false), "prêt 12");
+      const cx = ok(B(1, "lancer"), "lancement").combat;
+      for (const i of [1, 3, 12]) { await send(i, P[i].S); ok(B(i, "confirmer"), "confirmer " + i); }
+      const p0 = JSON.parse(run(`set role service_role; select mono_srv_bureau_photos('${U(1)}', ${cx})::text;`)); assert(p0.membres && p0.membres.length === 3, JSON.stringify(p0).slice(0, 200));
+      const r = JSON.parse(run(`set role service_role; select mono_srv_bureau_resultat(${cx}, ${lit(JSON.stringify(sn))}, ${lit(JSON.stringify(vraies.R))}, ${vraies.duree}, null, '[]')::text;`));
+      refuse(label + " (base)", () => assert(r.annule && /renfort/.test(r.err) && q(`select etat from mono.bureau_combats where id = ${cx}`) === "annule"
+        && +q(`select count(*) from mono.bureau_butins where combat = ${cx}`) === 0, label + " : " + JSON.stringify(r)));
+    }
+    sa = etat(1).salon; assert(sa.etat === "ouvert", "salon rouvert après les lancements refusés");
+    console.log("ok - renfort d'un ami : copie refusée dans un groupe par la fonction serveur et par la base (rf, renfort, mercenaire, photo en plus)");
+
     /* ---------- chef déconnecté (8C) : chef provisoire immédiat, rôle rendu au retour, place libérée après 2 min ---------- */
     q(`update mono.bureau_membres set vu_at = now() - interval '30 seconds' where user_id = '${U(1)}'`);
     let s12 = etat(12).salon; assert(s12.chef === U(3) && s12.provisoire && s12.titulaire === U(1), "chef provisoire = le plus ancien connecté : " + JSON.stringify([s12.chef, s12.titulaire]));
@@ -373,6 +429,19 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     console.log("ok - chef provisoire immédiat, rôle rendu au retour, place gardée 2 minutes puis libérée, transmission du chef");
 
     /* ---------- invitation d'un ami (Bureau.inviter), remplaçants automatiques ---------- */
+    // invitation directe : amis acceptés non bloqués seulement (supabase/amis.sql)
+    refuse("inviter un joueur qui n'est pas un ami", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "pas ami"));
+    J(12, `amis_demander(p_user => '${U(2)}')`);
+    refuse("inviter un joueur dont la demande d'ami n'est pas acceptée", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "demande en attente"));
+    q(`insert into public.amis (user_id, ami) values ('${U(12)}', '${U(2)}')`);
+    refuse("inviter avec une amitié à sens unique", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "sens unique"));
+    q(`delete from public.amis where user_id = '${U(12)}' and ami = '${U(2)}'; delete from public.amis_demandes where de = '${U(12)}'`);
+    q(`insert into public.ignores (user_id, other) values ('${U(1)}', '${U(12)}')`);
+    refuse("inviter un ami qui nous a bloqué", () => err(B(12, "inviter", U(1), VER, app(12)), /que tes amis/, "bloqué par l'ami"));
+    q(`delete from public.ignores where user_id = '${U(1)}'; insert into public.ignores (user_id, other) values ('${U(12)}', '${U(1)}')`);
+    refuse("inviter un ami qu'on a bloqué", () => err(B(12, "inviter", U(1), VER, app(12)), /que tes amis/, "ami bloqué"));
+    q(`delete from public.ignores where user_id = '${U(12)}'`);
+    assert.strictEqual(+q(`select count(*) from mono.bureau_invitations where salon = ${sidA} and etat = 'attente'`), 0, "aucune invitation partie");
     ok(B(12, "inviter", U(1), VER, app(12)), "inviter 1"); err(B(12, "inviter", U(1), VER, app(12)), /déjà envoyée/, "même invitation deux fois");
     const inv1 = etat(1).invitations; assert(inv1.length === 1 && inv1[0].quoi === "ami" && inv1[0].par === "Joueur12", "invitation d'un ami : " + JSON.stringify(inv1));
     ok(B(1, "repondre", inv1[0].id, true, VER, app(1)), "1 accepte l'ami"); assert.strictEqual(etat(1).salon.id, sidA);
@@ -380,12 +449,22 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     ok(chercher(1, [DJ], 1, 0), "1 cherche : une place libre dans un salon qui accepte des remplaçants");
     const inv2 = etat(1).invitations; assert(inv2.length === 1 && inv2[0].quoi === "remplacant" && inv2[0].salon === sidA, "remplaçant automatique : " + JSON.stringify(inv2));
     ok(B(1, "repondre", inv2[0].id, false), "1 refuse"); assert(!etat(1).recherche, "refus : hors recherche");
-    console.log("ok - invitation d'un ami (Bureau.inviter), remplaçant automatique proposé, refus");
+    // un joueur bloqué par un membre : salon absent de sa liste, « Rejoindre » refusé, jamais proposé comme remplaçant ;
+    // la recherche et les salons ouverts restent ouverts à tous les autres
+    q(`insert into public.ignores (user_id, other) values ('${U(12)}', '${U(2)}')`);
+    assert(!J(2, `mono_bureau_salons()`).some((x) => x.id === sidA), "salon de celui qui l'a bloqué absent de la liste");
+    assert(J(1, `mono_bureau_salons()`).some((x) => x.id === sidA), "salon ouvert visible des autres (même non amis)");
+    refuse("rejoindre le salon de celui qui nous a bloqué", () => err(B(2, "rejoindre", sidA, VER, app(2)), /pas ouvert/, "bloqué : rejoindre"));
+    ok(chercher(2, [DJ], 1, 0), "2 cherche");
+    refuse("remplaçant automatique dans le salon de celui qui nous a bloqué", () => assert(!etat(2).invitations.some((v) => v.salon === sidA), "bloqué : pas de place proposée"));
+    ok(J(2, `mono_bureau_annuler_recherche()`), "2 arrête de chercher");
+    q(`delete from public.ignores where user_id = '${U(12)}'`);
+    console.log("ok - invitation d'un ami (Bureau.inviter) réservée aux amis acceptés non bloqués, salon fermé au joueur bloqué, remplaçant automatique proposé, refus");
 
     /* ---------- discussion du salon (7A) : modération du chat actuel ---------- */
     ok(B(12, "dire", "On rejoue ?"), "message"); err(B(12, "dire", "Encore"), /2 secondes/, "un message toutes les 2 s");
     err(B(12, "dire", "x".repeat(201)), /200 caractères/, "200 caractères");
-    q(`create table if not exists public.chat_sanctions (user_id uuid primary key, mute_until timestamptz, banned boolean, at timestamptz default now()); insert into public.chat_sanctions (user_id, mute_until) values ('${U(3)}', now() + interval '1 hour')`);
+    q(`insert into public.chat_sanctions (user_id, mute_until) values ('${U(3)}', now() + interval '1 hour')`); // supabase/chat.sql
     refuse("message d'un joueur muet", () => err(B(3, "dire", "Bonjour"), /ne peux pas écrire/, "muet"));
     assert.strictEqual(etat(3).salon.msgs[0].b, "On rejoue ?");
     console.log("ok - discussion libre du salon, joueurs muets refusés, 200 caractères, 2 s entre deux messages");
@@ -461,7 +540,10 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     console.log("ok - triche et cas interdits refusés : " + REFUS.length + "/" + REFUS.length);
     for (const l of REFUS) console.log("   - " + l);
     assert(RPC.length > 10 && RPC.every((n) => /^mono_srv_/.test(n)));
-    q(`drop table if exists public.chat_sanctions`); // table créée par ce test pour les joueurs muets (supabase/chat.sql)
+    q(`delete from public.chat_sanctions`); // joueur muet de ce test (supabase/chat.sql)
+    // monocompte.sql relancé en fin de parcours : le défi 12 reste celui du Bureau
+    file(path.join(ROOT, "supabase", "monocompte.sql")); verifCrochets("monocompte.sql relancé en fin de parcours");
+    assert.strictEqual(q(`select mono.defi_prog('${U(1)}', 0, 'd12') = mono.bureau_d12('${U(1)}', 0)`), "t", "défi 12 lu au Bureau après la relance");
     assert.strictEqual(snap(), before, "schéma public toujours identique");
   } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} run(`drop database if exists ${DB}`, URL0); }
 })().catch((e) => { console.error(e); try { run(`drop database if exists ${DB}`, URL0); } catch (x) {} process.exit(1); });

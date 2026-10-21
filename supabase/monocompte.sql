@@ -13,6 +13,15 @@
 -- et déclencheurs du Classique (le test tests/monocompte_sql.test.js compare le schéma public avant/après).
 -- En plus : RLS activé partout, lecture de ses seules lignes, aucune écriture directe pour anon/authenticated.
 --
+-- ORDRE DE CHARGEMENT DU MONOCOMPTE (unique, à la main, chaque fichier relançable sans danger) :
+--   1. supabase/monocompte.sql   espace mono, Bouclier, défis ; crée mono.apres_validation, mono.etat_social et
+--                                mono.defi_d12 VIDES seulement s'ils n'existent pas (le relancer n'efface rien d'après) ;
+--   2. supabase/amis.sql         amis (Classique et Monocompte), blocage = public.ignores (chat.sql) ;
+--   3. supabase/mono_social.sql  redéfinit mono.apres_validation (classements, Couronne, renfort) et mono.etat_social ;
+--   4. supabase/mono_bureau.sql  Bureau des Aventuriers ; redéfinit mono.defi_d12 (défi 12) ; lit les amis et le blocage.
+-- Aucune fonction n'est définie avec un vrai corps dans deux fichiers : chaque crochet a un seul propriétaire
+-- (vérifié par tests/bureau_sql.test.js, qui charge les quatre fichiers dans cet ordre puis relance monocompte.sql).
+--
 -- Mise en route (à la main, panel ou SQL, compte admin) :
 --   select mono_adm_saison(0, 'Saison de test', '2026-11-02 00:00 Europe/Paris', true, 'ouverte');  -- saison de test (horloge de test permise)
 --   select mono_adm_testeur('Pseudo', true);                                                          -- ouvrir l'accès à un testeur
@@ -570,11 +579,18 @@ drop function if exists public.mono_eclats_activite(text, int, text);
 
 -- Progression d'un défi d'après le serveur : le défi 6 « Marché des échos » est compté sur l'HdV de saison (lots vendus à
 -- d'autres joueurs, comptés seulement à partir de 3 acheteurs différents) ; les autres sont lus dans le résumé de la dernière
--- partie validée par le Bouclier (qui plafonne leur progression par heure réelle) ; le défi 12 attend les groupes en direct.
+-- partie validée par le Bouclier (qui plafonne leur progression par heure réelle) ; le défi 12 est compté par le Bureau des
+-- Aventuriers (mono.defi_d12 : 0 ici, redéfinie par supabase/mono_bureau.sql ; créée seulement si elle n'existe pas, pour que
+-- relancer ce fichier ne débranche pas le Bureau).
+do $$ begin
+  if to_regprocedure('mono.defi_d12(uuid, integer)') is null then
+    execute 'create function mono.defi_d12(u uuid, p_s int) returns int language sql stable security definer set search_path = mono, public as $f$ select 0 $f$';
+  end if;
+end $$;
 create or replace function mono.defi_prog(u uuid, p_s int, p_defi text) returns int language sql stable security definer set search_path = mono, public
 as $$ select case p_defi
   when 'd6' then (select case when count(distinct buyer) >= 3 then count(*) else 0 end from mono.ventes where seller = u and saison = p_s and monde = 's' and buyer <> u)::int
-  when 'd12' then 0
+  when 'd12' then mono.defi_d12(u, p_s)
   else coalesce((select case when (resume -> 'defis' ->> p_defi) ~ '^\d{1,9}$' then (resume -> 'defis' ->> p_defi)::int end from mono.parties_ok where user_id = u and saison = p_s), 0) end $$;
 
 -- Paie un palier de défi : une seule fois par défi et par palier, dans l'ordre, une fois sa manche ouverte, la progression

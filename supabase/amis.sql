@@ -12,6 +12,14 @@
 -- authenticated ; tout passe par les fonctions « security definer » amis_* ci-dessous, qui ne montrent à chacun que
 -- ses propres amis, demandes et invitations.
 -- S'appuie sur schema.sql (profiles, susp), classements.sql (ladder) et chat.sql (ignores). Relançable sans danger.
+-- ORDRE DE CHARGEMENT DU MONOCOMPTE (unique, à la main, chaque fichier relançable sans danger) :
+--   1. supabase/monocompte.sql   espace mono, Bouclier, défis ; crée mono.apres_validation, mono.etat_social et
+--                                mono.defi_d12 VIDES seulement s'ils n'existent pas (le relancer n'efface rien d'après) ;
+--   2. supabase/amis.sql         amis (Classique et Monocompte), blocage = public.ignores (chat.sql) ;
+--   3. supabase/mono_social.sql  redéfinit mono.apres_validation (classements, Couronne, renfort) et mono.etat_social ;
+--   4. supabase/mono_bureau.sql  Bureau des Aventuriers ; redéfinit mono.defi_d12 (défi 12) ; lit les amis et le blocage.
+-- Aucune fonction n'est définie avec un vrai corps dans deux fichiers : chaque crochet a un seul propriétaire
+-- (vérifié par tests/bureau_sql.test.js, qui charge les quatre fichiers dans cet ordre puis relance monocompte.sql).
 -- DÉPLOIEMENT : pas encore dans la liste automatique de .github/workflows/supabase.yml (à ajouter à la publication,
 -- après chat.sql, avec l'accord de Mathis).
 -- ============================================================================

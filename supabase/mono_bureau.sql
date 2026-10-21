@@ -2,8 +2,17 @@
 -- Idlus — Bureau des Aventuriers du serveur Monocompte : groupes en direct (salons, recherche, invitations, combat de groupe
 -- calculé par le serveur, butin), expéditions programmées, rendez-vous communautaires.
 -- Cahier des charges : maquette validée du Bureau (19/10) et plan directeur, section 5.5 (choix 1B 2A 3A 4A 5A 6A 7A 8C 9B 10A 11A).
--- DÉPLOIEMENT MANUEL SEULEMENT, à charger APRÈS supabase/monocompte.sql (même règle que lui : jamais dans le workflow).
--- Relançable sans danger.
+-- DÉPLOIEMENT MANUEL SEULEMENT (même règle que monocompte.sql : jamais dans le workflow). Relançable sans danger.
+-- ORDRE DE CHARGEMENT DU MONOCOMPTE (unique, à la main, chaque fichier relançable sans danger) :
+--   1. supabase/monocompte.sql   espace mono, Bouclier, défis ; crée mono.apres_validation, mono.etat_social et
+--                                mono.defi_d12 VIDES seulement s'ils n'existent pas (le relancer n'efface rien d'après) ;
+--   2. supabase/amis.sql         amis (Classique et Monocompte), blocage = public.ignores (chat.sql) ;
+--   3. supabase/mono_social.sql  redéfinit mono.apres_validation (classements, Couronne, renfort) et mono.etat_social ;
+--   4. supabase/mono_bureau.sql  Bureau des Aventuriers ; redéfinit mono.defi_d12 (défi 12) ; lit les amis et le blocage.
+-- Aucune fonction n'est définie avec un vrai corps dans deux fichiers : chaque crochet a un seul propriétaire
+-- (vérifié par tests/bureau_sql.test.js, qui charge les quatre fichiers dans cet ordre puis relance monocompte.sql).
+-- Ici (4) : mono.defi_d12 (défi 12) ; s'appuie sur public.amis_sont et public.amis_bloque (amis.sql) : invitation directe
+-- réservée aux amis acceptés non bloqués, salon refusé au joueur bloqué par un membre ; copies de renfort refusées en groupe.
 --
 -- Principes :
 --   - toutes les tables dans le schéma « mono » (invisible de l'API) ; seules entrées : les fonctions mono_bureau_* (joueurs),
@@ -274,13 +283,18 @@ create or replace function mono.bureau_d12(u uuid, p_s int) returns int language
 as $$ select count(distinct o.user_id)::int from mono.bureau_combat_membres m join mono.bureau_combats c on c.id = m.combat
   join mono.bureau_combat_membres o on o.combat = c.id and o.user_id <> u
   where m.user_id = u and c.saison = p_s and c.etat = 'fini' and c.win and c.manche = 4 $$;
--- Branchement : la progression des défis lue par le serveur (monocompte.sql) prend le défi 12 au Bureau. Même corps que l'original
--- pour les autres défis (ce fichier se charge après monocompte.sql ; relancer celui-ci si monocompte.sql est relancé).
-create or replace function mono.defi_prog(u uuid, p_s int, p_defi text) returns int language sql stable security definer set search_path = mono, public
-as $$ select case p_defi
-  when 'd6' then (select case when count(distinct buyer) >= 3 then count(*) else 0 end from mono.ventes where seller = u and saison = p_s and monde = 's' and buyer <> u)::int
-  when 'd12' then mono.bureau_d12(u, p_s)
-  else coalesce((select case when (resume -> 'defis' ->> p_defi) ~ '^\d{1,9}$' then (resume -> 'defis' ->> p_defi)::int end from mono.parties_ok where user_id = u and saison = p_s), 0) end $$;
+-- Branchement : mono.defi_prog (monocompte.sql) lit le défi 12 dans le crochet mono.defi_d12, créé vide par monocompte.sql
+-- seulement s'il n'existe pas : relancer monocompte.sql ne débranche donc pas le Bureau (mono.defi_prog n'est plus redéfinie ici).
+create or replace function mono.defi_d12(u uuid, p_s int) returns int language sql stable security definer set search_path = mono, public
+as $$ select mono.bureau_d12(u, p_s) $$;
+
+-- ---------- amis et blocage (supabase/amis.sql) ----------
+-- un membre du salon a bloqué ce joueur (liste des ignorés du chat) : le salon lui est fermé
+create or replace function mono.bureau_bloque_par(p_salon bigint, u uuid) returns boolean language sql stable security definer set search_path = mono, public
+as $$ select exists (select 1 from mono.bureau_membres m where m.salon = p_salon and public.amis_bloque(m.user_id, u)) $$;
+-- rencontre automatique : jamais ensemble si l'un a bloqué l'autre
+create or replace function mono.bureau_brouille(a uuid, b uuid) returns boolean language sql stable security definer set search_path = mono, public
+as $$ select public.amis_bloque(a, b) or public.amis_bloque(b, a) $$;
 
 -- ---------- sortir d'un salon (départ, place perdue, exclusion par la grâce) ----------
 create or replace function mono.bureau_sortir(p_salon bigint, u uuid, p_txt text) returns void language plpgsql security definer set search_path = mono, public
@@ -436,7 +450,8 @@ as $$ declare me mono.bureau_recherches%rowtype; d text; best_d text; best_ids u
     where sl.saison = me.saison and sl.etat = 'ouvert' and sl.remplacants and sl.expedition is null and sl.did = any(me.donjons)
       and sl.stasis between me.stasis - me.flex and me.stasis + me.flex
       and (select count(*) from mono.bureau_membres m where m.salon = sl.id) + (select count(*) from mono.bureau_invitations i where i.salon = sl.id and i.etat = 'attente') < 4
-      and not mono.bureau_conflit(sl.id, u) and (sl.version is null or me.version is null or sl.version = me.version)
+      and not mono.bureau_conflit(sl.id, u) and not exists (select 1 from mono.bureau_membres bm where bm.salon = sl.id and mono.bureau_brouille(bm.user_id, u))
+      and (sl.version is null or me.version is null or sl.version = me.version)
     order by sl.created_at limit 1 for update skip locked;
   if r.id is not null then
     insert into mono.bureau_invitations (salon, user_id, quoi, recherche, expire_at) values (r.id, u, 'remplacant', mono.bureau_rjson(me), now() + mono.bsec('invit_s'));
@@ -453,7 +468,7 @@ as $$ declare me mono.bureau_recherches%rowtype; d text; best_d text; best_ids u
       exit when array_length(ids, 1) >= 4;
       if greatest(lo, x.stasis - x.flex) > least(hi, x.stasis + x.flex) then continue; end if;
       ok := true;
-      for k in 1 .. array_length(ids, 1) loop if mono.bureau_meme_appareil(ids[k], x.user_id) then ok := false; end if; end loop;
+      for k in 1 .. array_length(ids, 1) loop if mono.bureau_meme_appareil(ids[k], x.user_id) or mono.bureau_brouille(ids[k], x.user_id) then ok := false; end if; end loop;
       if not ok then continue; end if;
       ids := ids || x.user_id; lo := greatest(lo, x.stasis - x.flex); hi := least(hi, x.stasis + x.flex);
     end loop;
@@ -588,7 +603,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); begin
       'n', (select count(*) from mono.bureau_membres m where m.salon = x.id), 'pseudos', (select jsonb_agg(mono.bureau_nom(m.user_id) order by m.arrive_at) from mono.bureau_membres m where m.salon = x.id),
       'cree', x.created_at, 'version', x.version) order by x.created_at), '[]'::jsonb)
     from mono.bureau_salons x where x.saison = s and x.public and x.expedition is null and x.etat in ('ouvert', 'transition', 'combat')
-      and (select count(*) from mono.bureau_membres m where m.salon = x.id) < 4);
+      and (select count(*) from mono.bureau_membres m where m.salon = x.id) < 4 and not mono.bureau_bloque_par(x.id, u));
 end $$;
 
 -- Créer son salon (sans recherche)
@@ -623,6 +638,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); b text; x mo
      and not exists (select 1 from mono.bureau_inscriptions i where x.expedition is not null and i.expedition = x.expedition and i.user_id = u and not i.attente) then return mono.err('Ce salon est privé.'); end if;
   if (select count(*) from mono.bureau_membres where salon = x.id) >= 4 then return mono.err('Salon complet : 4 joueurs au plus.'); end if;
   if mono.bureau_conflit(x.id, u) then return mono.err('Un compte du même appareil est déjà dans ce salon.'); end if;
+  if mono.bureau_bloque_par(x.id, u) then return mono.err('Ce salon ne t''est pas ouvert.'); end if; -- bloqué par un membre
   perform mono.bureau_entrer(x.id, u, p_onglet);
   update mono.bureau_membres set version = left(p_version, 20) where salon = x.id and user_id = u;
   if x.etat <> 'ouvert' then perform mono.bureau_log(x.id, mono.bureau_nom(u) || ' attend le combat suivant.'); end if;
@@ -650,6 +666,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); i mono.burea
   if x.etat not in ('invitation', 'ouvert', 'transition', 'combat') then return mono.err('Ce salon n''existe plus.'); end if;
   if (select count(*) from mono.bureau_membres where salon = x.id) >= 4 then return mono.err('Salon complet : 4 joueurs au plus.'); end if;
   if mono.bureau_conflit(x.id, u) then return mono.err('Un compte du même appareil est déjà dans ce salon.'); end if;
+  if mono.bureau_bloque_par(x.id, u) then return mono.err('Ce salon ne t''est pas ouvert.'); end if; -- bloqué par un membre arrivé entre-temps
   update mono.bureau_invitations set etat = 'oui' where id = i.id;
   r := i.recherche;
   perform mono.bureau_entrer(x.id, u, p_onglet, case when r is not null then (r ->> 'stasis')::int - (r ->> 'flex')::int end, case when r is not null then (r ->> 'stasis')::int + (r ->> 'flex')::int end);
@@ -658,13 +675,16 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); i mono.burea
   return mono.bureau_etat(u, p_onglet) || jsonb_build_object('ok', true);
 end $$;
 
--- Inviter un joueur (Bureau.inviter, bouton « Inviter » de la page Amis) : crée son salon s'il n'en a pas
+-- Inviter un joueur (Bureau.inviter, bouton « Inviter » de la page Amis) : crée son salon s'il n'en a pas. Seulement un ami
+-- accepté (amis.sql), sans blocage d'un côté ni de l'autre ; la recherche et les salons ouverts restent ouverts à tous.
 create or replace function public.mono_bureau_inviter(p_user uuid, p_version text default null, p_appareil text default null, p_onglet text default null)
 returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); b text; m mono.bureau_membres%rowtype; x mono.bureau_salons%rowtype; sid bigint; begin
   perform mono.bureau_menage();
   b := mono.bureau_bloque(u, s); if b is not null then return mono.err(b); end if;
   if p_user is null or p_user = u then return mono.err('Joueur introuvable.'); end if;
+  if not (public.amis_sont(u, p_user) and public.amis_sont(p_user, u)) or mono.bureau_brouille(u, p_user) then
+    return mono.err('Tu ne peux inviter directement que tes amis.'); end if;
   if not mono.acces(p_user) or mono.bureau_bloque(p_user, s) is not null then return mono.err('Ce joueur ne peut pas rejoindre de groupe en ce moment.'); end if;
   perform mono.verrou(u);
   perform mono.bureau_appareil(u, p_appareil);
@@ -677,6 +697,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); b text; m mo
   if exists (select 1 from mono.bureau_membres where user_id = p_user and salon = sid) then return mono.err('Ce joueur est déjà dans ton salon.'); end if;
   if exists (select 1 from mono.bureau_membres where user_id = p_user) then return mono.err('Ce joueur est déjà dans un autre salon.'); end if;
   if mono.bureau_conflit(sid, p_user) then return mono.err('Ce compte est vu sur le même appareil qu''un membre du salon.'); end if;
+  if mono.bureau_bloque_par(sid, p_user) then return mono.err('Ce joueur ne peut pas rejoindre ton salon.'); end if;
   if exists (select 1 from mono.bureau_invitations where salon = sid and user_id = p_user and etat = 'attente' and expire_at > now()) then return mono.err('Invitation déjà envoyée.'); end if;
   if (select count(*) from mono.bureau_membres where salon = sid) + (select count(*) from mono.bureau_invitations where salon = sid and etat = 'attente') >= 4 then return mono.err('Salon complet : 4 joueurs au plus.'); end if;
   insert into mono.bureau_invitations (salon, user_id, par, quoi, expire_at) values (sid, p_user, u, 'ami', now() + mono.bsec('invit_s'));
@@ -1068,6 +1089,14 @@ as $$ declare c mono.bureau_combats%rowtype; z record; d jsonb; ex uuid[] := '{}
   end if;
   if p_duree_ms is null or p_duree_ms < 0 or p_duree_ms > 3 * 3600 * 1000 then return mono.err('durée impossible'); end if;
   if p_snaps is null or p_result is null then return mono.err('combat incomplet'); end if;
+  -- copie de renfort d'un ami (mono_social.sql : rf, renfort, snap) ou mercenaire : jamais dans un groupe de joueurs ; une
+  -- photo par joueur du combat (la fonction serveur n'en envoie pas d'autre)
+  begin d := p_snaps::jsonb; exception when others then d := null; end;
+  if d is null or jsonb_typeof(d) <> 'array' or jsonb_array_length(d) <> (select count(*) from mono.bureau_combat_membres where combat = c.id)
+     or exists (select 1 from jsonb_array_elements(d) e where jsonb_typeof(e) <> 'object' or e ? 'rf' or e ? 'renfort' or e ? 'snap' or coalesce(e ->> 'merc', '0') not in ('0', 'false')) then
+    perform mono.bureau_annuler(c.id, 'Lancement annulé : la copie d''un renfort (ou un mercenaire) ne joue jamais dans un groupe de joueurs.', '{}');
+    return jsonb_build_object('ok', false, 'annule', true, 'err', 'renfort refusé en groupe');
+  end if;
   w := coalesce((p_result::jsonb ->> 'done')::boolean, false);
   j := mono.jour_de(c.saison, mono.date_saison(c.saison));
   if p_cle is not null then

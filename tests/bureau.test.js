@@ -78,6 +78,20 @@ const M = (i, S) => ({ user: "u" + i, data: E.serialize(S) });
   console.log("ok - règles du départ refusées par le serveur : 1B, 4A (débloqué, stasis précédente), partie illisible ou Classique, 2 à 4 joueurs");
 }
 
+// 2 bis. les marques testées par BC.renfort sont bien celles que produit le serveur : VM.renfort (js/verify_mono.js, copie
+//        prêtée = resume.renfort, rendue par mono_renfort_prendre) et le renfort pris dans une partie (js/monoplus.js)
+{
+  const A0 = game("cra", 40); const cp = VM.renfort(E, A0);
+  assert.ok(cp && cp.rf === 1 && cp.merc === 0 && BC.renfort(cp), "VM.renfort : copie marquée rf, reconnue par BC.renfort (merc = 0 : la marque rf suffit)");
+  assert.ok(BC.renfort(JSON.parse(JSON.stringify(cp))), "marque rf gardée après passage en JSON (base, jsonb)");
+  // la copie rendue par le serveur portée par le héros (marques renfort + snap posées par E.monoEnterRenfort)
+  let S = game("eni", 40); Object.assign(S.chars[0], { renfort: { u: "ami", p: "Ami" }, snap: cp });
+  let r = BC.combat(VM, [M(1, game("iop", 40)), M(2, S)], DJ, 1, 5);
+  assert.ok(r.exclus && r.exclus[0].user === "u2" && /renfort/.test(r.exclus[0].why), "héros qui porte la copie rendue par le serveur : " + JSON.stringify(r));
+  assert.ok(!BC.renfort(E.monoSnap(A0, A0.chars[0])), "la photo d'un vrai héros n'a aucune marque de renfort");
+  console.log("ok - marques de renfort : VM.renfort (rf) et E.monoEnterRenfort (renfort, snap) reconnues par BC.renfort");
+}
+
 // 3. butin individuel : une seule fois par partie, défi 12 compté avec les autres joueurs
 {
   const ms = [M(1, game("iop", 60, { smax: 5 })), M(2, game("eni", 60, { smax: 5 }))];
