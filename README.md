@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.34.2 « Mission de donjon »
+
+- Ticket #141 (Akileuss) : Défis › Alignement, la carte de mission n'avait « Y aller » que pour les missions de chasse (q.sub). Les missions « boss » (q.dg) ont maintenant le bouton dgopen vers la fiche du donjon, caché une fois la mission remplie. Aucun changement de sauvegarde ni de serveur.
+
 ## 2.1.34.1 « Classement des succès »
 
 - Ticket #138 (Ley) : depuis le Bouclier (2.1.4), le résumé des classements est calculé par la fonction serveur « record », qui ne chargeait pas js/quetes.js : E.achPoints manquait, la colonne ladder.pts recevait 0 à chaque partie validée, et le nombre de succès comptait aussi les succès retirés. quetes.js est ajouté à tools/build_server.js (et aux chemins de supabase.yml) ; tests/bouclier_serveur.test.js vérifie les points. Aucun changement de sauvegarde ni de SQL ; le classement se corrige au prochain envoi de chaque partie.
