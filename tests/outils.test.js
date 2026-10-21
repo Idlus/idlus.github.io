@@ -54,6 +54,10 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   let mid = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.tgravDrop(S, [{ lvl: 50 }], { offline: true }, o); for (const r in o.res) { mid++; assert.ok(RES[r].lvl < 80, "pas de grande pierre sous le niveau 80"); } }
   assert.ok(mid > 60, `petites pierres au niveau 50 (${mid})`); }
 
+// les pierres ne tirent pas dans le générateur du moteur (combats rejoués avec une graine côté serveur, qui n'a pas ce fichier)
+{ const S = E.newState("R", "iop"); let n = 0; const r0 = E.getRng(); E.setRng(() => { n++; return 0.5; });
+  for (let i = 0; i < 1000; i++) E.tgravDrop(S, [{ lvl: 100 }], { offline: true }, { res: {} }); E.setRng(r0);
+  assert.strictEqual(n, 0, "aucun tirage du générateur du moteur"); }
 // Maîtrise des ressources : étoiles et bonus
 { const S = E.newState("M", "iop"); S.jobs.paysan.lvl = 50; const c = S.chars[0]; c.job = { job: "paysan", res: "Blé", prog: 0 };
   const q0 = E.hitQty(S, c); S.resMast = { "Blé": 999 }; assert.strictEqual(E.resMastStar(S, "Blé"), 0);

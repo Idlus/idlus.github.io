@@ -44,13 +44,16 @@
     E.emit(S, "tool", { job, grav: k });
     return null;
   };
-  /* butin : une chance par combat gagné (chasse, donjon, groupe), selon le niveau du monstre le plus fort */
+  /* butin : une chance par combat gagné (chasse, donjon, groupe), selon le niveau du monstre le plus fort.
+     Tirage hors du générateur du moteur (Math.random) : les combats rejoués avec une graine (serveur, combat de groupe du Bureau)
+     doivent tirer exactement les mêmes nombres que le serveur, qui ne charge pas ce fichier. */
+  const grnd = () => Math.random();
   E.tgravDrop = (S, mons, opts, out) => {
     if (!mons || !mons.length) return;
-    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = rnd() / (isMono(S) ? E.TGRAV_DROP.mono : 1);
+    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = grnd() / (isMono(S) ? E.TGRAV_DROP.mono : 1);
     const T = lvl >= E.TGRAV_DROP.big.lvl && r < E.TGRAV_DROP.big.p ? 1 : lvl >= E.TGRAV_DROP.small.lvl && r < E.TGRAV_DROP.big.p + E.TGRAV_DROP.small.p ? 0 : -1;
     if (T < 0) return;
-    const k = E.TGRAV_ORDER[Math.floor(rnd() * E.TGRAV_ORDER.length)]; const n = E.TGRAV[k].stone[T];
+    const k = E.TGRAV_ORDER[Math.floor(grnd() * E.TGRAV_ORDER.length)]; const n = E.TGRAV[k].stone[T];
     E.addRes(S, n, 1); if (out) out.res[n] = (out.res[n] || 0) + 1;
     if (!(opts && opts.offline)) E.note(S, `Butin rare : ${n} ! (gravure d'outil)`, "rare");
   };
