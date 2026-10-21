@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-cles]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -258,6 +258,14 @@ jobs:
           echo '== Parties validées'
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from public.saves where updated_at > now() - interval '1 hour') envois_1h, (select count(*) from public.saves_ok where at > now() - interval '1 hour') valides_1h, (select count(*) from public.saves s join public.saves_ok o using (user_id) where s.updated_at > o.src_at + interval '30 minutes' and s.updated_at > now() - interval '2 hours') en_retard, (select max(at) from public.saves_ok) derniere_validation"
           bash tools/serveur/vps_sql.sh commande "echo '== Fonction record (2 h)'; docker logs --since 120m supabase-edge-functions 2>&1 | grep -iE 'error|erreur|exception|limit|timeout|boot' | tail -40"
+      - name: Monocompte, clés bêta seules (sauvegarde de la base puis mono_cles.sql)
+        if: inputs.etape == 'monocompte-cles'
+        run: |
+          echo '== Sauvegarde complète de la base avant installation'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; f=/opt/idlus/sauvegardes/avant-cles-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
+          { echo "set lock_timeout = '3s';"; cat supabase/mono_cles.sql; } > /tmp/q.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/q.sql
+          bash tools/serveur/vps_sql.sh lecture "select (select count(*) from mono.cles) cles, (select count(*) from mono.testeurs) testeurs, (select count(*) from pg_proc where proname like 'mono%cle%') fonctions"
       - name: Monocompte, lot 3 (sauvegarde de la base, 5 fichiers SQL, fonction « mono », saison de test)
         # 21/10/2026, ordre écrit de Mathis : « Installe le lot 3 Monocompte sur le serveur ». Lancé depuis la branche de la bêta.
         # Ne touche ni aux tables du Classique ni à la fonction « record ».
