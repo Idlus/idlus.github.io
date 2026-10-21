@@ -97,7 +97,10 @@ function fake() {
   const login = (page, acces) => page.evaluate(async (ok) => { window.__CM.acces = ok; window.ONLINE.user = { id: "00000000-0000-0000-0000-000000000001" }; window.ONLINE.profile = { pseudo: "Moi" };
     await window.ONLINE.monoCheck(); await window.CHAT.refresh(); }, acces);
   // bulle du chat cliquée par le script : au téléphone, elle se cache quand la page défile (scrolldn)
-  const openChat = async (page) => { if (!(await page.$("#chat .ch-tabs"))) await page.evaluate(() => document.querySelector("#chat .chmin").click()); await page.waitForSelector("#chat .ch-tabs", { timeout: 5000 }); };
+  /* le chat se dessine quand une partie est affichée : après « Commencer », par la vérification toutes les 2 s de js/chat.js (partie
+     commencée après le lancement du chat) ; sur une machine chargée, la bulle peut donc manquer juste après le chargement : on l'attend */
+  const openChat = async (page) => { await page.waitForSelector("#chat .chmin, #chat .ch-tabs", { timeout: 10000, state: "attached" });
+    if (!(await page.$("#chat .ch-tabs"))) await page.evaluate(() => document.querySelector("#chat .chmin").click()); await page.waitForSelector("#chat .ch-tabs", { timeout: 5000 }); };
   const tabs = (page) => page.evaluate(() => [...document.querySelectorAll("#chat .ch-tabs .ch-tab")].map((b) => (b.dataset.v || "?") + ":" + b.querySelector("span").textContent));
   const cur = (page) => page.evaluate(() => window.CHAT.state.tab);
   const listTxt = (page) => page.evaluate(() => (document.querySelector("#chat .ch-list") || {}).textContent || "");

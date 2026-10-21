@@ -1397,6 +1397,34 @@ as $$ begin
   return null;
 end $$;
 
+-- ---------- 2.1.36 : Panel Xener, côté Monocompte (lecture seule) ----------
+-- Vue d'ensemble : la saison ouverte (sinon la dernière qui n'est pas finie, sinon la dernière), sa date et son horloge de
+-- test (lues, jamais changées : mono_adm_horloge écrit), testeurs, parties de la saison, refus du Bouclier récents.
+create or replace function public.mono_adm_vue() returns jsonb language plpgsql stable security definer set search_path = mono, public
+as $$ declare s int; x mono.saisons%rowtype; t timestamptz; begin
+  perform mono.need_admin();
+  s := coalesce(mono.saison_ouverte(), (select id from mono.saisons where etat <> 'finie' order by id desc limit 1), (select max(id) from mono.saisons));
+  select * into x from mono.saisons where id = s;
+  if found then t := mono.date_saison(s); end if;
+  return jsonb_build_object(
+    'saison', case when x.id is null then null else jsonb_build_object('id', x.id, 'nom', x.nom, 'etat', x.etat, 'test', x.test, 'debut', x.debut, 'date', t,
+      'jour', mono.jour_de(x.id, t), 'duree', x.duree_j, 'vitesse', x.clk_vitesse, 'pause', x.clk_pause, 'horloge', x.test and x.clk_t is not null) end,
+    'testeurs', (select count(*) from mono.testeurs),
+    'parties', (select count(*) from mono.parties where saison = s),
+    'validees', (select count(*) from mono.parties_ok where saison = s),
+    'actives', (select count(*) from mono.parties where saison = s and updated_at > now() - interval '24 hours'),
+    'refus', (select count(distinct user_id) from mono.bouclier where at > now() - interval '7 days'),
+    'derniers', (select coalesce(jsonb_agg(jsonb_build_object('user', b.user_id, 'pseudo', mono.pseudo(b.user_id), 'why', b.why, 'at', b.at) order by b.at desc), '[]'::jsonb)
+      from (select * from mono.bouclier order by at desc limit 5) b));
+end $$;
+-- Copies journalières d'un joueur (pour « Remettre une partie à une copie » : mono_adm_restaurer)
+create or replace function public.mono_adm_copies(p_user uuid) returns jsonb language plpgsql stable security definer set search_path = mono, public
+as $$ begin
+  perform mono.need_admin();
+  return (select coalesce(jsonb_agg(jsonb_build_object('jour', jour, 'saison', saison, 'at', at, 'lvl', meta -> 'lvl', 'ouverte', saison is not distinct from mono.saison_ouverte()) order by jour desc), '[]'::jsonb)
+    from mono.copies where user_id = p_user);
+end $$;
+
 -- ---------- droits d'appel ----------
 -- fonctions internes : personne (seul le propriétaire, via les fonctions ci-dessus)
 do $$ declare f record; begin

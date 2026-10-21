@@ -18,7 +18,8 @@
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
   const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, m: [], unreadM: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
   const LP0 = () => ({ id: null, body: "", every: 60, banner: true, chat: true, show: 10, ends: "" }); // 1.1.2.4 : formulaire « Annonces en boucle »
-  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, lp: LP0(), loops: null, pin: null, busy: false };
+  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, lp: LP0(), loops: null, pin: null, busy: false,
+    mann: { body: "", banner: true, chat: true, hours: 24 }, mpin: null, mclr: false }; // 2.1.36 : pages Monocompte du panel (chat et annonces du salon 'm')
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
   const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -29,6 +30,8 @@
   const monoOk = () => !!(ON.user && ON.mono && ON.mono.ok);
   const defTab = () => { const E = window.ENGINE; return monoOk() && E && E.isMono && E.isMono(S()) ? "m" : "g"; };
   const PUB = ["g", "c", "v", "m"];
+  const PUB_C = ["g", "c", "v"]; // 2.1.36 : salons du Classique (le message épinglé et le panel du Monocompte sont à part)
+  const monoGame = () => { const E = window.ENGINE; return !!(E && E.isMono && E.isMono(S())); }; // partie Monocompte affichée
 
   /* ---------- démarrage (appelé par ui.js quand la partie est lancée) ---------- */
   async function start() {
@@ -44,6 +47,7 @@
     setInterval(banner, 120000);
     setInterval(loadPin, 120000); // 0.1.50.2 : un message épinglé changé dans le panel arrive aussi aux joueurs déjà en jeu // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
+    let wasMono = monoGame(); setInterval(() => { const m = monoGame(); if (m !== wasMono) { wasMono = m; banner(); } }, 2000); // 2.1.36 : passage Classique ↔ Monocompte : bandeaux de l'autre serveur
   }
   /* Rechargé à la connexion ou au changement de compte. */
   /* 1.0.9.1 : si le serveur est lent au moment du chargement (délai dépassé), le chat ne restait plus jamais sur
@@ -225,11 +229,14 @@
   /* 0.1.50.2 : message épinglé en haut du chat (texte et salons choisis dans le panel admin, onglet Annonces).
      La croix le cache jusqu'au lendemain, ou jusqu'à ce que le texte change. */
   const today = () => new Date().toDateString();
-  const pinBody = () => String((C.pin && C.pin.pin_body) || "").replace(/^\s*\u{1F4A1}\s*/u, "").trim(); // l'ampoule du jeu remplace l'emoji
+  /* 2.1.36 : le salon Monocompte a son propre message (pin_m_body) ; base pas encore à jour : l'ancien message s'il était épinglé sur 'm' */
+  const pinOf = (k) => { const p = C.pin; if (!p) return null; if (k === "m" && "pin_m_body" in p) return { body: p.pin_m_body, at: p.pin_m_at, hide: "pinHideM" };
+    return String(p.pin_chs || "g").split(",").includes(k) ? { body: p.pin_body, at: p.pin_at, hide: "pinHide" } : null; };
+  const pinBody = (x) => String((x && x.body) || "").replace(/^\s*\u{1F4A1}\s*/u, "").trim(); // l'ampoule du jeu remplace l'emoji
   function pinHtml() {
-    const p = C.pin, body = pinBody();
-    if (!body || !String(p.pin_chs || "g").split(",").includes(C.tab)) return "";
-    const hid = pref.pinHide; if (hid && hid.at === p.pin_at && hid.day === today()) return "";
+    const x = pinOf(C.tab), body = pinBody(x);
+    if (!body) return "";
+    const hid = pref[x.hide]; if (hid && hid.at === x.at && hid.day === today()) return "";
     const m = body.match(/^(.{4,80}?[?!])\s+(\S.*)$/s); // la première question en gras
     return `<div class="ch-pin"><img class="pi" src="assets/ui/idee.webp" alt=""><div class="pt"><span class="pk">📌 Épinglé</span>${m ? `<b>${h(m[1])}</b> ${h(m[2])}` : h(body)}<div class="pf"><button class="btn sm primary" data-act="nav" data-v="sugg">Boîte à idées</button></div></div><button class="px" data-act="ch-pinx" title="Masquer jusqu'à demain" aria-label="Masquer le message épinglé">×</button></div>`;
   }
@@ -440,7 +447,8 @@
   async function banner() {
     const el = $("#annbar"); if (!el) return;
     await annTick();
-    const list = await ON.announces(); const seen = pref.annSeen || 0;
+    /* 2.1.36 : chaque serveur ses bandeaux (srv 'm' : seulement dans une partie Monocompte ; les autres : seulement dans le Classique) */
+    const mono = monoGame(); const list = (await ON.announces()).filter((x) => (x.srv === "m") === mono); const seen = pref[mono ? "annSeenM" : "annSeen"] || 0;
     const a = list.find((x) => x.id > seen) || null; if (!a || !C.ann || a.id !== C.ann.id) C.annMore = false;
     C.ann = a; annPaint();
   }
@@ -464,7 +472,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel Xener" : "Modération"}" aria-label="${C.role === "admin" ? "Panel Xener" : "Modération"}">${X().G("shield")}</button>` : ""; } // 1.0.30 : Panel Xener (js/panel.js)
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUGS ? [["bugs", "Bugs"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUGS ? [["bugs", "Bugs"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]).concat([["mchat", "Chat Monocompte"], ["mann", "Annonces Monocompte"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 2.1.36 : mchat, mann : côté Monocompte du Panel Xener // 1.0.30 : les modérateurs gardent seulement les outils du chat
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -472,6 +480,8 @@
     if (A.tab === "sig") A.reps = await r("adm_reports");
     if (A.tab === "verif") A.flag = await r("adm_flagged");
     if (A.tab === "equipe") A.mods = await r("adm_mods");
+    if (A.tab === "mann") A.anns = await ON.announces(); // 2.1.36
+    if (A.tab === "mchat") await loadPin();
     if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); if (window.PLUIE) await window.PLUIE.admLoad(); } // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
     if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
@@ -528,7 +538,7 @@
       <div class="box"><h2>Dernières inscriptions</h2>${(o.signups || []).map((x) => `<button class="ln lnb" data-act="adm-find" data-q="${h(x.pseudo)}">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="t">${when(x.at)}</span></button>`).join("") || `<div class="ln muted">Aucune.</div>`}</div></div>
       ${isAdmin() ? `<div class="box"><h2>Réglages du chat</h2><div class="row small"><label class="row">Niveau minimum pour écrire <select id="admMin">${[0, 10, 20, 30, 50].map((v) => `<option value="${v}" ${+st.min_level === v ? "selected" : ""}>${v ? `héros niveau ${v}` : "aucun"}</option>`).join("")}</select></label>
         <label class="row">Entre deux messages <select id="admSlow">${[0, 4, 10, 30].map((v) => `<option value="${v}" ${+st.slow_s === v ? "selected" : ""}>${v ? `${v} s` : "aucun délai"}</option>`).join("")}</select></label><button class="btn sm primary" data-act="adm-settings">Enregistrer</button></div>
-        <div class="row small" style="margin-top:8px"><button class="btn sm${st.closed ? " primary" : " danger"}" data-act="adm-chclose" data-v="${st.closed ? 0 : 1}">${st.closed ? "Rouvrir le chat" : "Fermer le chat"}</button>${st.closed ? `<span class="st m">Chat fermé : seuls toi et les modérateurs écrivez</span>` : ""}<span class="muted" style="margin-left:auto">Vider :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"], ["m", "Monocompte"]].map(([k, n]) => `<button class="btn sm" data-act="adm-chclear" data-v="${k}" data-n="${n}">${n}</button>`).join("")}</div></div>` : ""}
+        <div class="row small" style="margin-top:8px"><button class="btn sm${st.closed ? " primary" : " danger"}" data-act="adm-chclose" data-v="${st.closed ? 0 : 1}">${st.closed ? "Rouvrir le chat" : "Fermer le chat"}</button>${st.closed ? `<span class="st m">Chat fermé : seuls toi et les modérateurs écrivez</span>` : ""}<span class="muted" style="margin-left:auto">Vider :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"]].map(([k, n]) => `<button class="btn sm" data-act="adm-chclear" data-v="${k}" data-n="${n}">${n}</button>`).join("")}</div></div>` : ""}
       <div class="box"><h2>Journal</h2>${(o.log || []).map((x) => `<div class="ln"><span class="t" style="margin:0;min-width:64px">${hhmm(x.at)}</span><span>${h(x.txt)}${x.who ? ` <span class="xs muted">· ${h(x.who)}</span>` : ""}</span></div>`).join("") || `<div class="ln muted">Rien pour l'instant.</div>`}</div>`;
     }
     if (A.tab === "joueurs") {
@@ -550,23 +560,47 @@
         : `<div class="box"><div class="empty">Personne n'est en vérification.</div></div>`;
     }
     if (A.tab === "ann") {
-      const a = A.ann; const st = Object.assign({}, C.pin, o.settings); const pn = A.pin || { body: st.pin_body || "", chs: st.pin_chs || "g" }; const on = pn.chs.split(",");
+      const a = A.ann; const st = Object.assign({}, C.pin, o.settings); const pn = A.pin || { body: st.pin_body || "", chs: st.pin_chs || "g" }; const on = pn.chs.split(",").filter((k) => PUB_C.includes(k));
       return `<div class="box"><h2>Message épinglé du chat</h2><p class="small muted">Reste en haut du chat pour tous les joueurs, avec le bouton « Boîte à idées ». 200 caractères au plus. Un joueur qui le ferme le revoit le lendemain, ou tout de suite si tu changes le texte.</p>
         <textarea id="admPin" maxlength="200" placeholder="Ex. : Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées !">${h(pn.body)}</textarea>
-        <div class="row small"><span class="muted">Salons :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"], ["m", "Monocompte"]].map(([k, n]) => `<label class="row"><input type="checkbox" id="admPin${k}" ${on.includes(k) ? "checked" : ""}> ${n}</label>`).join("")}<span class="muted" id="admPinN" style="margin-left:auto">${pn.body.length}/200</span>${st.pin_body ? `<button class="btn sm" data-act="adm-pinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-pin">Enregistrer</button></div></div>
+        <div class="row small"><span class="muted">Salons :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"]].map(([k, n]) => `<label class="row"><input type="checkbox" id="admPin${k}" ${on.includes(k) ? "checked" : ""}> ${n}</label>`).join("")}<span class="muted" id="admPinN" style="margin-left:auto">${pn.body.length}/200</span>${st.pin_body ? `<button class="btn sm" data-act="adm-pinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-pin">Enregistrer</button></div></div>
         <div class="box"><h2>Nouvelle annonce</h2><textarea id="admAnn" maxlength="300" placeholder="Ex. : maintenance ce soir à 22 h, le chat sera coupé 10 minutes.">${h(a.body)}</textarea>
         <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admAnnB" ${a.banner ? "checked" : ""}> Bandeau en haut du jeu</label><label class="row"><input type="checkbox" id="admAnnC" ${a.chat ? "checked" : ""}> Message dans le chat</label></div>
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
         ${loopBox()}
         <div id="plAdm">${window.PLUIE ? window.PLUIE.adminBox() : ""}</div>
-        <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
+        <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).filter((x) => x.srv !== "m").map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
     }
+    if (A.tab === "mchat") return monoChatHtml();
+    if (A.tab === "mann") return monoAnnHtml();
     if (A.tab === "equipe") {
       return `<div class="box"><h2>Modérateurs</h2><p class="small muted">Ils peuvent rendre muet et traiter les signalements. Ils ne peuvent ni bannir, ni suspendre un compte, ni publier d'annonce.</p>
         ${(A.mods || []).map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="t">depuis ${when(x.at)}</span><button class="btn sm" data-act="adm-mod" data-p="${h(x.pseudo)}" data-v="0">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun modérateur pour l'instant.</div>`}
         <div class="srch"><input id="admMod" placeholder="Pseudo du joueur" autocomplete="off"><button class="btn" data-act="adm-mod" data-v="1">Nommer modérateur</button></div></div>`;
     }
     return "";
+  }
+  /* 2.1.36 : côté Monocompte du Panel Xener. Chat Monocompte : message épinglé du salon 'm' (adm_pin_mono, à part de celui du
+     Classique) et « vider le salon » (adm_chat_clear('m'), avec confirmation dans la page). Annonces Monocompte (adm_announce_mono) :
+     bandeau montré seulement dans une partie Monocompte, message dans le salon 'm'. Les annonces en boucle restent Classique. */
+  function monoChatHtml() {
+    const p = C.pin || {}, old = !("pin_m_body" in p) && p.pin_chs && String(p.pin_chs).split(",").includes("m");
+    const body = A.mpin != null ? A.mpin : "pin_m_body" in p ? p.pin_m_body || "" : old ? p.pin_body || "" : "";
+    const cur = "pin_m_body" in p ? p.pin_m_body : old ? p.pin_body : "";
+    return `<div class="box"><h2>Message épinglé du salon Monocompte</h2><p class="small muted">Reste en haut du salon Monocompte du chat, pour les testeurs seulement, avec le bouton « Boîte à idées ». À part du message épinglé du Classique. 200 caractères au plus.</p>
+        <textarea id="admMPin" maxlength="200" placeholder="Ex. : Bienvenue dans la bêta Monocompte ! Vos retours sont précieux.">${h(body)}</textarea>
+        <div class="row small"><span class="muted" id="admMPinN" style="margin-left:auto">${body.length}/200</span>${cur ? `<button class="btn sm" data-act="adm-mpinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-mpin">Enregistrer</button></div></div>
+      <div class="box"><h2>Vider le salon Monocompte</h2><p class="small muted">Efface tous les messages des joueurs du salon Monocompte (les annonces restent). Le Classique n'est pas touché.</p>
+        <div class="row small">${A.mclr ? `<span class="st m">Effacer tout le salon Monocompte ?</span><button class="btn sm danger" data-act="adm-mclear" data-v="1">Oui, vider le salon</button><button class="btn sm" data-act="adm-mclear" data-v="0">Annuler</button>`
+          : `<button class="btn sm danger" data-act="adm-mclear">Vider le salon Monocompte</button>`}</div></div>`;
+  }
+  function monoAnnHtml() {
+    const a = A.mann, L = (A.anns || []).filter((x) => x.srv === "m");
+    return `<div class="box"><h2>Nouvelle annonce Monocompte</h2><p class="small muted">Le bandeau ne s'affiche qu'aux joueurs dans une partie Monocompte, et le message part dans le salon Monocompte du chat. Les annonces du Classique ne s'affichent pas dans une partie Monocompte.</p>
+        <textarea id="admMAnn" maxlength="300" placeholder="Ex. : nouvelle saison de test lundi, vos parties repartent de zéro.">${h(a.body)}</textarea>
+        <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admMAnnB" ${a.banner ? "checked" : ""}> Bandeau des parties Monocompte</label><label class="row"><input type="checkbox" id="admMAnnC" ${a.chat ? "checked" : ""}> Message dans le salon Monocompte</label></div>
+        <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admMAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-mannounce">Publier</button></div></div>
+      <div class="box"><h2>Bandeaux Monocompte affichés</h2>${L.map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau Monocompte en ce moment.</div>`}</div>`;
   }
   /* 1.1.2.4 : annonces en boucle (ex. toutes les heures), publiées par le serveur au rythme choisi */
   const EVERY = [[30, "30 min"], [60, "1 h"], [120, "2 h"], [180, "3 h"], [360, "6 h"], [720, "12 h"], [1440, "24 h"]];
@@ -664,8 +698,8 @@
       case "ch-item": X().itemSheet(d.tpl); return;
       case "ch-share": C.item = d.tpl; C.open = true; pref.open = true; savePref(); X().closeSheet(); paint(); setTimeout(() => { const i = $("#chIn"); if (i) i.focus(); }, 30); return;
       case "ch-unitem": C.item = null; paint(true); return;
-      case "ch-pinx": pref.pinHide = { at: C.pin && C.pin.pin_at, day: today() }; savePref(); paint(true); return;
-      case "ch-annok": pref.annSeen = +d.id; savePref(); banner(); return;
+      case "ch-pinx": { const x = pinOf(C.tab); if (x) { pref[x.hide] = { at: x.at, day: today() }; savePref(); } paint(true); return; }
+      case "ch-annok": pref[C.ann && C.ann.srv === "m" ? "annSeenM" : "annSeen"] = +d.id; savePref(); banner(); return;
       case "ch-annmore": C.annMore = !C.annMore; annPaint(); return; // 1.0.12.8
       case "adm-open": openAdmin(); return;
       case "adm-tab": A.tab = d.v; repaintAdm(); await admLoad(); repaintAdm(); return;
@@ -703,11 +737,30 @@
         return;
       }
       case "adm-pin": case "adm-pinoff": {
-        const b = a === "adm-pinoff" ? "" : ($("#admPin").value || "").trim(); const chs = a === "adm-pinoff" ? (C.pin && C.pin.pin_chs) || "g" : PUB.filter((k) => $("#admPin" + k).checked).join(",");
+        const b = a === "adm-pinoff" ? "" : ($("#admPin").value || "").trim(); const chs = a === "adm-pinoff" ? (C.pin && C.pin.pin_chs) || "g" : PUB_C.filter((k) => $("#admPin" + k).checked).join(",");
         if (a === "adm-pin" && !b) return X().toast("Le message est vide. Pour l'enlever, utilise « Retirer ».");
         if (a === "adm-pin" && !chs) return X().toast("Choisis au moins un salon.");
         A.pin = { body: b, chs };
         if (await admDo("adm_pin", { p_body: b, p_chs: chs }, b ? "Message épinglé enregistré." : "Message épinglé retiré.")) { A.pin = null; await loadPin(); }
+        return;
+      }
+      case "adm-mpin": case "adm-mpinoff": { // 2.1.36 : message épinglé du salon Monocompte
+        const b = a === "adm-mpinoff" ? "" : ($("#admMPin").value || "").trim();
+        if (a === "adm-mpin" && !b) return X().toast("Le message est vide. Pour l'enlever, utilise « Retirer ».");
+        A.mpin = b;
+        if (await admDo("adm_pin_mono", { p_body: b }, b ? "Message épinglé du salon Monocompte enregistré." : "Message épinglé du salon Monocompte retiré.")) { A.mpin = null; await loadPin(); repaintAdm(); }
+        return;
+      }
+      case "adm-mclear": // 2.1.36 : vider le salon Monocompte, confirmation dans la page
+        if (!d.v) { A.mclr = true; repaintAdm(); return; }
+        A.mclr = false; if (d.v !== "1") { repaintAdm(); return; }
+        if (await admDo("adm_chat_clear", { p_ch: "m" }, "Salon Monocompte vidé.")) { C.m = C.m.filter((m) => m.kind !== "msg"); paint(true); } else repaintAdm();
+        return;
+      case "adm-mannounce": { // 2.1.36 : annonce Monocompte
+        const b = ($("#admMAnn").value || "").trim(); A.mann = { body: b, banner: $("#admMAnnB").checked, chat: $("#admMAnnC").checked, hours: +$("#admMAnnH").value };
+        if (!b) return X().toast("L'annonce est vide.");
+        if (!A.mann.banner && !A.mann.chat) return X().toast("Choisis au moins le bandeau ou le salon Monocompte.");
+        if (await admDo("adm_announce_mono", { p_body: b, p_banner: A.mann.banner, p_chat: A.mann.chat, p_hours: A.mann.hours }, "Annonce Monocompte publiée.")) { A.mann.body = ""; repaintAdm(); banner(); }
         return;
       }
       case "adm-loop": {
@@ -740,10 +793,12 @@
   function admKeep(id) {
     if (/^admAnn/.test(id)) A.ann = { body: $("#admAnn").value, banner: $("#admAnnB").checked, chat: $("#admAnnC").checked, hours: +$("#admAnnH").value };
     else if (/^admLoop/.test(id)) A.lp = loopRead();
-    else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: PUB.filter((k) => $("#admPin" + k).checked).join(",") };
+    else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: PUB_C.filter((k) => $("#admPin" + k).checked).join(",") };
+    else if (/^admMAnn/.test(id)) A.mann = { body: $("#admMAnn").value, banner: $("#admMAnnB").checked, chat: $("#admMAnnC").checked, hours: +$("#admMAnnH").value };
+    else if (id === "admMPin") A.mpin = $("#admMPin").value;
     else if (id === "admQ") A.q = $("#admQ").value.trim();
   }
-  document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Loop|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admLoop") { const n = $("#admLoopN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Loop|Q|MAnn|MPin)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admMPin") { const n = $("#admMPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admLoop") { const n = $("#admLoopN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { dock: () => { if (pref.docked || !S()) return; pref.docked = true; C.open = true; pref.open = true; savePref(); paint(); }, start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; },
     adm: { get A() { return A; }, body: () => admBody(), load: () => admLoad(), tabs: () => ATABS(), repaint: () => repaintAdm(), keepFocus, isAdmin } }; // 1.0.30 : pour le Panel Xener (js/panel.js)

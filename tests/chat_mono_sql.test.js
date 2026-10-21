@@ -6,7 +6,9 @@
    - avec monocompte.sql : un testeur et l'admin lisent et écrivent 'm', un compte sans accès et un visiteur ne lisent ni
      n'écrivent 'm' (ni par chat_send, ni par signalement), 'g', 'c', 'v' inchangés pour tous ;
    - mêmes règles que le Général : 200 caractères, mode lent partagé, muet, banni, chat fermé, liens refusés ; modération
-     (adm_msgs, adm_msg_purge, adm_chat_clear('m'), adm_pin avec 'm').
+     (adm_msgs, adm_msg_purge, adm_chat_clear('m')) ; 2.1.36 (panel par serveur) : message épinglé du salon 'm' à part
+     (adm_pin_mono ; adm_pin ne prend plus 'm', l'ancien message sur 'm' est repris une fois), annonces par serveur
+     (announces.srv, adm_announce_mono), annonces en boucle jamais bloquées par un bandeau Monocompte.
    - 2.1.35.3, profils séparés : un message de 'm' porte le héros Monocompte du joueur (classe et niveau de la partie validée
      mono.parties_ok, à défaut de mono.parties ; titre du héros Monocompte), jamais son profil Classique (ladder : niv. 200,
      « Légende de la 1.0 ») ; sans héros Monocompte (ou saison finie) : classe vide, niveau 1, sans titre ; le même joueur garde
@@ -55,13 +57,25 @@ try {
   q(`insert into auth.users select ('00000000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid from generate_series(1, 99) i;
      insert into profiles (id, pseudo) select id, 'Joueur' || right(id::text, 2) from auth.users;
      delete from admins; insert into admins values ('${U(99)}'); -- classements.sql nomme admin le premier profil : seul le compte 99 l'est ici
-     insert into chat_msgs (ch, user_id, pseudo, body) select (array['g', 'c', 'v'])[1 + i % 3], '${U(5)}', 'Joueur05', 'ancien ' || i from generate_series(1, 3000) i;`);
+     insert into chat_msgs (ch, user_id, pseudo, body) select (array['g', 'c', 'v'])[1 + i % 3], '${U(5)}', 'Joueur05', 'ancien ' || i from generate_series(1, 3000) i;
+     insert into announces (body, banner, until) values ('Ancienne annonce', true, null), ('Annonce finie', true, now() - interval '1 hour');
+     update chat_settings set pin_body = 'Épinglé de partout', pin_chs = 'g,m', pin_at = '2026-10-01T00:00:00Z';`);
   const before = q(`select count(*) || ' ' || md5(string_agg(id || ch || body, ',' order by id)) from chat_msgs`);
+  const annBefore = q(`select string_agg(id || ':' || body || ':' || coalesce(until::text, '-'), ',' order by id) from announces`);
+  const relA = q(`select pg_relation_filenode('public.announces')`), relS = q(`select pg_relation_filenode('public.chat_settings')`);
   const rel0 = q(`select pg_relation_filenode('public.chat_msgs')`);
   const src = fs.readFileSync(path.join(ROOT, "supabase", "chat.sql"), "utf8");
   deploy(src); deploy(src); // relancé : sans danger
   assert.strictEqual(q(`select count(*) || ' ' || md5(string_agg(id || ch || body, ',' order by id)) from chat_msgs`), before, "aucun message perdu ni modifié");
   assert.strictEqual(q(`select pg_relation_filenode('public.chat_msgs')`), rel0, "table chat_msgs pas réécrite");
+  // 2.1.36 (panel par serveur) : annonces gardées, sans serveur (= Classique) ; message épinglé du Monocompte repris de l'ancien s'il était sur 'm'
+  assert.strictEqual(q(`select string_agg(id || ':' || body || ':' || coalesce(until::text, '-'), ',' order by id) from announces`), annBefore, "annonces gardées");
+  assert.strictEqual(q(`select count(*) from announces where srv is not null`), "0", "annonces d'avant : Classique (srv vide)");
+  assert.strictEqual(q(`select pg_relation_filenode('public.announces')`), relA, "table announces pas réécrite");
+  assert.strictEqual(q(`select pg_relation_filenode('public.chat_settings')`), relS, "table chat_settings pas réécrite");
+  assert.strictEqual(q(`select pin_body || '|' || pin_chs || '|' || pin_m_body from chat_settings`), "Épinglé de partout|g,m|Épinglé de partout", "épinglé Monocompte repris de l'ancien message sur 'm', une seule fois");
+  as(99, `select adm_pin_mono('Bienvenue aux testeurs')`); deploy(src);
+  assert.strictEqual(q(`select pin_m_body from chat_settings`), "Bienvenue aux testeurs", "chat.sql relancé : l'épinglé Monocompte n'est pas écrasé");
   console.log("ok - chat.sql réappliqué deux fois sur une base avec 3000 messages (lock_timeout 3 s) : aucun message touché, table pas réécrite");
 
   // ---------- 2. base sans espace Monocompte : 'm' refusé à tout le monde ----------
@@ -130,9 +144,35 @@ try {
   reset(); send(1, "T:m1", "m"); send(1, "T:g1", "g");
   const am = JSON.parse(as(99, `select adm_msgs('${U(1)}')::text`)).map((x) => x.body).sort();
   assert.deepStrictEqual(am, ["T:g1", "T:m1"], "adm_msgs montre aussi 'm'");
+  // 2.1.36 : le message épinglé du Classique ne va plus sur 'm' ; celui du salon Monocompte est à part (adm_pin_mono)
   as(99, `select adm_pin('Épinglé', 'g,m,x')`);
-  assert.strictEqual(q(`select pin_chs from chat_settings`), "g,m", "épinglage sur 'm'");
-  assert.strictEqual(+anon(`select count(*) from chat_settings where pin_chs = 'g,m'`), 1, "épinglage lisible");
+  assert.strictEqual(q(`select pin_chs from chat_settings`), "g", "épinglé du Classique : 'm' et salon inconnu retirés");
+  as(99, `select adm_pin('Épinglé', 'm')`);
+  assert.strictEqual(q(`select pin_chs from chat_settings`), "g", "épinglé du Classique demandé sur 'm' seul : Général");
+  const pinAt0 = q(`select pin_m_at from chat_settings`);
+  as(99, `select adm_pin_mono('  Épinglé Monocompte  ')`);
+  assert.strictEqual(q(`select pin_body || '|' || pin_m_body || '|' || (pin_m_at > '${pinAt0}'::timestamptz) from chat_settings`), "Épinglé|Épinglé Monocompte|true", "épinglé Monocompte à part, date changée");
+  assert.strictEqual(+anon(`select count(*) from chat_settings where pin_chs = 'g' and pin_m_body = 'Épinglé Monocompte'`), 1, "épinglages lisibles");
+  assert.match(q(`select txt from admin_log order by id desc limit 1`), /message épinglé Monocompte/);
+  fails(() => as(1, `select adm_pin_mono('x')`), /réservé à Mathis/, "testeur n'épingle pas");
+  as(99, `select adm_pin_mono('')`); assert.strictEqual(q(`select pin_m_body from chat_settings`), "", "épinglé Monocompte retiré");
+  // annonces par serveur : adm_announce (Classique, srv vide, chat 'g') et adm_announce_mono (srv 'm', chat 'm')
+  q(`delete from announces`);
+  as(99, `select adm_announce('Annonce Classique', true, true, 24)`);
+  as(99, `select adm_announce_mono('Annonce Monocompte', true, true, 0)`);
+  assert.strictEqual(q(`select string_agg(body || ':' || coalesce(srv, '-') || ':' || (until is null), ',' order by id) from announces`), "Annonce Classique:-:false,Annonce Monocompte:m:true", "bandeaux et serveur");
+  assert.strictEqual(q(`select string_agg(ch || ':' || body, ',' order by id) from chat_msgs where kind = 'ann' and body like 'Annonce %'`), "g:Annonce Classique,m:Annonce Monocompte", "message de l'annonce dans le bon salon");
+  assert.strictEqual(+anon(`select count(*) from announces where srv = 'm'`), 1, "bandeau Monocompte lisible (le jeu le filtre)");
+  assert.strictEqual(+as(2, `select count(*) from chat_msgs where kind = 'ann' and body = 'Annonce Monocompte'`), 0, "message Monocompte invisible hors du Monocompte");
+  assert.strictEqual(+as(1, `select count(*) from chat_msgs where kind = 'ann' and body = 'Annonce Monocompte'`), 1, "message Monocompte lu par un testeur");
+  as(99, `select adm_announce_mono('Bandeau seul', true, false, 1)`);
+  assert.strictEqual(+q(`select count(*) from chat_msgs where body = 'Bandeau seul'`), 0, "bandeau seul : pas de message");
+  fails(() => as(99, `select adm_announce_mono('   ', true, true, 1)`), /annonce vide/, "annonce vide");
+  fails(() => as(1, `select adm_announce_mono('x', true, true, 1)`), /réservé à Mathis/, "testeur n'annonce pas");
+  fails(() => anon(`select adm_announce_mono('x', true, true, 1)`), /permission denied/, "visiteur n'annonce pas");
+  const mid2 = q(`select id from announces where body = 'Annonce Monocompte'`); as(99, `select adm_announce_end(${mid2})`);
+  assert.strictEqual(+anon(`select count(*) from announces where srv = 'm' and (until is null or until > now())`), 1, "bandeau Monocompte retiré (adm_announce_end)");
+  q(`delete from announces; delete from chat_msgs where kind = 'ann'`);
   assert.strictEqual(as(99, `select adm_chat_clear('m')`), "1", "salon Monocompte vidé");
   assert.strictEqual(+q(`select count(*) from chat_msgs where ch = 'm' and kind = 'msg'`), 0);
   assert.match(q(`select txt from admin_log order by id desc limit 1`), /salon Monocompte vidé/);
@@ -199,6 +239,18 @@ try {
   // chat.sql relancé avec des parties Monocompte : sans danger, messages gardés
   const avant = q(`select count(*) from chat_msgs`); deploy(src); assert.strictEqual(q(`select count(*) from chat_msgs`), avant);
   console.log("ok - profils séparés : 'm' montre le héros Monocompte (partie validée, sinon envoyée ; titre Monocompte ; rien sans héros ou saison finie), jamais le Classique (niv. 200, « Légende de la 1.0 ») ; 'g' et privés gardent le Classique ; carte Monocompte réservée aux comptes du salon ; niveau minimal sur le héros Monocompte");
+
+  // ---------- 6. 2.1.36 : un bandeau Monocompte ne prend pas la place des annonces en boucle du Classique ----------
+  file("annonces_boucle.sql"); deploy(src); file("annonces_boucle.sql");
+  q(`delete from announces; delete from chat_msgs where kind = 'ann'`);
+  as(99, `select adm_announce_mono('Bandeau Monocompte', true, false, 0)`);
+  assert.strictEqual(as(99, `select coalesce(adm_loop_save(null, 'Boucle Classique', 60, true, false, 10, null, true), 'OK')`), "OK");
+  as(1, `select ann_tick()`);
+  assert.strictEqual(q(`select string_agg(body || ':' || coalesce(srv, '-'), ',' order by id) from announces where until is null or until > now()`), "Bandeau Monocompte:m,Boucle Classique:-", "bandeau de la boucle publié malgré le bandeau Monocompte, et rangé au Classique");
+  as(99, `select adm_announce('Bandeau Classique', true, false, 0)`);
+  q(`update announce_loops set next_at = now() - interval '1 minute'`); as(1, `select ann_tick()`);
+  assert.strictEqual(+q(`select count(*) from chat_msgs where kind = 'ann' and ch = 'g' and body = 'Boucle Classique'`), 1, "bandeau Classique déjà pris : la boucle passe dans le chat Général");
+  console.log("ok - 2.1.36 : chat.sql réappliqué (annonces gardées et Classique, épinglé Monocompte repris de l'ancien, tables pas réécrites) ; adm_pin sans 'm', adm_pin_mono, adm_announce_mono (bandeau srv 'm', message dans 'm'), réservés à Mathis ; un bandeau Monocompte ne bloque pas les annonces en boucle du Classique");
 } finally {
   run(`drop database if exists ${DB}`, URL0);
 }

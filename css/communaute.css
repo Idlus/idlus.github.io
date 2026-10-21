@@ -71,6 +71,13 @@
 
 /* ---------- Panel Xener (js/panel.js, js/admin.js) : menu par thème, recherche d'action, onglet Test ---------- */
 .adm.px .ahd h1{margin-right:auto}
+/* 2.1.36 : sélecteur de serveur sous le titre (Classique | Monocompte) */
+.px-srv{display:inline-flex;align-self:flex-start;gap:4px;padding:4px;border-radius:12px;border:2px solid var(--frame);background:var(--panel);max-width:100%}
+.px-srv button{padding:7px 16px;border-radius:9px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}
+.px-srv button:hover{background:var(--panel2)}
+.px-srv button.on{background:var(--gold);color:#1b1206}
+.px-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center}
+.px-kv input[type=number]{width:90px}
 .px-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
 .px-body{display:flex;flex-direction:column;gap:14px;min-width:0}
 .px-nav{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:14px;border:2px solid var(--frame);background:var(--panel);position:sticky;top:8px}

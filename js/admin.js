@@ -308,7 +308,7 @@ if (P) {
 })();
 
 /* ============================================================================
-   CLÉS BÊTA DU MONOCOMPTE (supabase/mono_cles.sql) : page « Clés bêta » du Panel Xener (groupe Joueurs), compte admin sur
+   CLÉS BÊTA DU MONOCOMPTE (supabase/mono_cles.sql) : page « Clés bêta » du Panel Xener (côté Monocompte, groupe Joueurs), compte admin sur
    le vrai serveur. Créer N clés avec un nom de lot, copier la liste, voir les clés libres, utilisées (pseudo, date) et
    annulées, annuler une clé libre, retirer un testeur (mono_adm_testeur). Chaque appel est vérifié par le serveur
    (mono.need_admin). Hors de la partie de test aussi : ce bloc ne dépend pas de DX.testerOk.
@@ -388,7 +388,7 @@ async function act(a, v) {
 }
 document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act^='mcle-']"); if (!t || !P.admin()) return; act(t.dataset.act, t.dataset.v); });
 document.addEventListener("input", (ev) => { const id = ev.target && ev.target.id; if (id === "mcN") st.n = ev.target.value; else if (id === "mcLot") st.lot = ev.target.value; });
-P.register({ id: "clesbeta", name: "Clés bêta", group: "Joueurs", html, load }); // recherche du panel : « Aller à : Clés bêta »
+P.register({ id: "clesbeta", srv: "m", name: "Clés bêta", group: "Joueurs", html, load }); // côté Monocompte du panel (2.1.36) ; recherche : « Aller à : Clés bêta »
 window.MONOCLES = { st, load, html };
 })();
 
@@ -427,6 +427,205 @@ async function act(a, v) {
   finally { st.busy = false; repaint(); }
 }
 document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act^='mbcl-']"); if (!t || !P.admin()) return; act(t.dataset.act, t.dataset.v); });
-P.register({ id: "monobouclier", name: "Bouclier Monocompte", group: "Joueurs", html, load });
+P.register({ id: "monobouclier", srv: "m", name: "Bouclier Monocompte", group: "Joueurs", html, load }); // côté Monocompte du panel (2.1.36)
 window.MONOBOUCLIER = { st, load, html };
+})();
+
+/* ============================================================================
+   2.1.36 : CÔTÉ MONOCOMPTE DU PANEL XENER (choix « Monocompte » du sélecteur, js/panel.js). Compte admin sur le vrai serveur ;
+   chaque appel est vérifié par le serveur (mono.need_admin). Pages :
+   - Vue d'ensemble (mono_adm_vue, supabase/monocompte.sql : saison, horloge de test lue sans la changer, testeurs, parties,
+     refus du Bouclier) ; base sans mono_adm_vue : testeurs et refus seulement (mono_adm_testeurs, mono_adm_bouclier) ;
+   - Testeurs (mono_adm_testeurs, mono_adm_testeur) ;
+   - Remettre une partie à une copie (mono_adm_copies, mono_adm_restaurer), confirmation dans la page ;
+   - Bureau des Aventuriers : réglages et créneaux de rendez-vous (mono_adm_bureau, mono_adm_bureau_reglage, mono_adm_bureau_creneau).
+   Les pages Chat Monocompte et Annonces Monocompte sont dans js/chat.js (mchat, mann).
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const toast = (t) => X().toast(t);
+const NOFN = /function .* does not exist|schema cache|Could not find the function/i;
+const NOMONO = "Le Monocompte n'est pas installé sur le serveur (supabase/monocompte.sql).";
+const date = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
+const jourFr = (j) => { const [y, m, d] = String(j || "").split("-"); return d ? `${d}/${m}/${y}` : String(j || ""); };
+const repaint = () => { if (DX.ui.tab === "admin") P.repaint(); };
+const err = (e) => (NOFN.test(e) ? NOMONO : e);
+const empty = (t) => `<div class="box"><div class="empty">${h(t)}</div></div>`;
+const busyRun = async (st, fn) => { if (st.busy) return; st.busy = true; try { await fn(); } finally { st.busy = false; repaint(); } };
+
+/* ---------- testeurs (partagé par Vue d'ensemble, Testeurs, Remettre une partie) ---------- */
+const T = { L: null, err: null };
+async function loadTesteurs() { const r = await ON.rpc("mono_adm_testeurs"); if (r.err) { T.L = null; T.err = err(r.err); return; } T.err = null; T.L = Array.isArray(r.data) ? r.data : []; }
+
+/* ---------- Vue d'ensemble Monocompte ---------- */
+const V = { d: null, err: null, old: false };
+const ETAT = { prevue: "prévue", ouverte: "ouverte", cloture: "en clôture", finie: "finie" };
+async function loadVue() {
+  const r = await ON.rpc("mono_adm_vue");
+  if (!r.err) { V.err = null; V.old = false; V.d = r.data || {}; return; }
+  if (!NOFN.test(r.err)) { V.err = r.err; V.d = null; return; }
+  // mono_adm_vue pas encore installée : ce que les fonctions déjà là disent
+  V.old = true; await loadTesteurs();
+  const b = await ON.rpc("mono_adm_bouclier");
+  if (T.err && b.err) { V.err = NOMONO; V.d = null; return; }
+  const L = Array.isArray(b.data) ? b.data : [];
+  const wk = Date.now() - 7 * 864e5;
+  V.err = null; V.d = { saison: null, testeurs: T.L ? T.L.length : null, parties: null, refus: new Set(L.filter((x) => Date.parse(x.at) > wk).map((x) => x.user)).size, derniers: L.slice(0, 5) };
+}
+function vueHtml() {
+  if (V.err) return empty(V.err);
+  if (!V.d) return empty("Chargement…");
+  const d = V.d, s = d.saison;
+  const kpi = (n, t, warn) => `<div class="kpi${warn ? " warn" : ""}"><b>${n == null ? "?" : n}</b><span>${t}</span></div>`;
+  const clk = s && s.test ? (s.horloge ? `horloge de test ×${+s.vitesse || 1}${s.pause ? ", en pause" : ""}` : "horloge réelle (pas encore accélérée)") : "";
+  const saison = V.old ? `<p class="small muted">Saison et nombre de parties : installe mono_adm_vue (supabase/monocompte.sql, à la main) pour les voir ici.</p>`
+    : s ? `<div class="ln"><b>${h(s.nom)}</b><span class="st ${s.etat === "ouverte" ? "mod" : "v"}">${h(ETAT[s.etat] || s.etat)}</span>${s.test ? `<span class="st v">saison de test</span>` : ""}<span class="t">n° ${h(s.id)}</span></div>
+      <div class="ln small"><span>Jour ${s.jour == null ? "?" : h(s.jour)} sur ${h(s.duree || 56)}${s.date ? ` · date de saison ${h(date(s.date))}` : ""}</span>${clk ? `<span class="t">${h(clk)}</span>` : ""}</div>`
+    : `<div class="ln muted">Aucune saison créée (mono_adm_saison).</div>`;
+  return `<div class="kpis">${kpi(d.testeurs, "testeurs")}${kpi(d.parties, "parties cette saison")}${kpi(d.validees, "validées par le Bouclier")}${kpi(d.refus, "refus du Bouclier (7 jours)", d.refus > 0)}</div>
+    <div class="two"><div class="box"><h2>Saison</h2>${saison}</div>
+    <div class="box"><div class="row between"><h2>Refus récents du Bouclier</h2><button class="btn sm" data-act="adm-tab" data-v="monobouclier">Voir</button></div>
+      ${(d.derniers || []).map((x) => `<div class="ln"><b>${h(x.pseudo || "?")}</b><span class="xs muted grow">${h(x.why)}</span><span class="t">${h(date(x.at))}</span></div>`).join("") || `<div class="ln muted">Aucun refus.</div>`}</div></div>`;
+}
+P.register({ id: "monovue", srv: "m", name: "Vue d'ensemble", group: "", html: vueHtml, load: loadVue });
+
+/* ---------- Testeurs ---------- */
+const TS = { add: "", retirer: null, busy: false };
+function testHtml() {
+  const form = `<div class="box"><h2>Ouvrir le Monocompte à un joueur</h2><div class="srch"><input id="mtAdd" value="${h(TS.add)}" placeholder="Pseudo du joueur" autocomplete="off" maxlength="16"><button class="btn primary" data-act="mtst-add" ${TS.busy ? "disabled" : ""}>Ajouter</button></div>
+    <span class="xs muted">Sans clé bêta. Le compte de Mathis a toujours accès.</span></div>`;
+  if (T.err) return form + empty(T.err);
+  if (!T.L) return form + empty("Chargement…");
+  return form + `<div class="box"><h2>Testeurs (${T.L.length})</h2>${T.L.map((x) => `<div class="ln"><b>${h(x.pseudo || "compte effacé")}</b><span class="t">depuis ${h(date(x.at))}</span>${x.pseudo ? (TS.retirer === x.id
+      ? `<button class="btn sm danger" data-act="mtst-del" data-u="${h(x.id)}" data-v="1">Confirmer le retrait</button><button class="btn sm" data-act="mtst-del" data-u="${h(x.id)}" data-v="0">Annuler</button>`
+      : `<button class="btn sm" data-act="mtst-del" data-u="${h(x.id)}">Retirer</button>`) : ""}</div>`).join("") || `<div class="ln muted">Aucun testeur.</div>`}
+    <span class="xs muted">Retirer un testeur ferme son accès au Monocompte ; sa partie reste sur le serveur.</span></div>`;
+}
+async function testAct(a, d) {
+  if (a === "mtst-del" && !d.v) { TS.retirer = d.u; repaint(); return; }
+  if (a === "mtst-del" && d.v === "0") { TS.retirer = null; repaint(); return; }
+  await busyRun(TS, async () => {
+    if (a === "mtst-add") {
+      const p = (TS.add || "").trim(); if (!p) { toast("Tape le pseudo du joueur."); return; }
+      const r = await ON.rpc("mono_adm_testeur", { p_pseudo: p, p_on: true }); if (r.err || r.data) { toast(err(r.err || r.data)); return; }
+      toast(`${p} a accès au Monocompte.`); TS.add = "";
+    } else if (a === "mtst-del") {
+      TS.retirer = null; const x = (T.L || []).find((y) => y.id === d.u); if (!x || !x.pseudo) return;
+      const r = await ON.rpc("mono_adm_testeur", { p_pseudo: x.pseudo, p_on: false }); if (r.err || r.data) { toast(err(r.err || r.data)); return; }
+      toast(`${x.pseudo} n'est plus testeur.`);
+    }
+    await loadTesteurs();
+  });
+}
+P.register({ id: "monotesteurs", srv: "m", name: "Testeurs", group: "Joueurs", html: testHtml, load: loadTesteurs });
+
+/* ---------- Remettre une partie à une copie ---------- */
+const R = { q: "", who: null, copies: null, cerr: null, pend: null, autre: "", busy: false };
+async function loadCopies() {
+  if (!R.who) return;
+  const r = await ON.rpc("mono_adm_copies", { p_user: R.who.id });
+  if (r.err) { R.copies = null; R.cerr = NFtxt(r.err); return; }
+  R.cerr = null; R.copies = Array.isArray(r.data) ? r.data : [];
+}
+const NFtxt = (e) => (NOFN.test(e) ? "La liste des copies n'est pas encore installée (mono_adm_copies, supabase/monocompte.sql) : choisis le jour à la main." : e);
+async function pick(id, pseudo) { R.who = { id, pseudo }; R.copies = null; R.cerr = null; R.pend = null; repaint(); await loadCopies(); repaint(); }
+async function find() {
+  const q = (R.q || "").trim(); if (!q) { toast("Tape le pseudo du joueur."); return; }
+  const lo = q.toLowerCase(); const t = (T.L || []).find((x) => (x.pseudo || "").toLowerCase() === lo);
+  if (t) { await pick(t.id, t.pseudo); return; }
+  const r = await ON.rpc("adm_players", { p_q: q }); if (r.err) { toast(r.err); return; }
+  const L = Array.isArray(r.data) ? r.data : []; const x = L.find((y) => (y.pseudo || "").toLowerCase() === lo) || L[0];
+  if (!x) { toast("Aucun joueur trouvé."); return; }
+  await pick(x.id, x.pseudo);
+}
+function remiseHtml() {
+  const chips = (T.L || []).filter((x) => x.pseudo).map((x) => `<button class="px-chip" data-act="mrem-pick" data-u="${h(x.id)}" data-p="${h(x.pseudo)}">${h(x.pseudo)}</button>`).join("");
+  let out = `<div class="box"><h2>Remettre une partie Monocompte à une copie</h2><p class="small muted">Le serveur garde une copie par jour de chaque partie Monocompte (14 jours). La partie du joueur repart de la copie choisie, de la saison ouverte ; tout ce qu'il a fait depuis est perdu et son appareil reprend cette copie.</p>
+    <div class="srch"><input id="mrQ" value="${h(R.q)}" placeholder="Pseudo du joueur" autocomplete="off" maxlength="16"><button class="btn" data-act="mrem-find">Chercher</button></div>
+    ${chips ? `<div class="px-chips">${chips}</div>` : ""}</div>`;
+  if (!R.who) return out;
+  const c = R.copies;
+  const days = c ? c.map((x) => `<button class="btn sm${R.pend === x.jour ? " primary" : ""}" data-act="mrem-day" data-v="${h(x.jour)}" ${x.ouverte === false ? "disabled title=\"Copie d'une autre saison\"" : ""}>${h(jourFr(x.jour))}${x.lvl != null ? ` · niv. ${h(x.lvl)}` : ""}</button>`).join("") : "";
+  out += `<div class="box"><div class="row between"><h2>Copies de ${h(R.who.pseudo)}</h2><button class="btn sm" data-act="mrem-pick" data-u="">Changer de joueur</button></div>
+    ${R.cerr ? `<p class="small muted">${h(R.cerr)}</p>` : !c ? `<div class="ln muted">Chargement…</div>` : c.length ? `<div class="row" style="flex-wrap:wrap;gap:6px">${days}</div>` : `<div class="ln muted">Pas de copie de sa partie Monocompte.</div>`}
+    <div class="row small"><span class="muted">Autre jour :</span><input type="date" id="mrDay" value="${h(R.autre)}"><button class="btn sm" data-act="mrem-day" data-v="">Choisir</button></div>
+    ${R.pend ? `<div class="stack" style="gap:6px;margin-top:8px"><span class="minus small">Remettre la partie Monocompte de ${h(R.who.pseudo)} à sa copie du ${h(jourFr(R.pend))} ? Tout ce qu'il a fait depuis sera perdu.</span>
+      <div class="row"><button class="btn sm danger" data-act="mrem-go" ${R.busy ? "disabled" : ""}>Confirmer la remise</button><button class="btn sm" data-act="mrem-no">Annuler</button></div></div>` : ""}</div>`;
+  return out;
+}
+async function remiseAct(a, d) {
+  if (a === "mrem-pick") { if (!d.u) { R.who = null; R.pend = null; repaint(); return; } await pick(d.u, d.p); return; }
+  if (a === "mrem-find") { await find(); return; }
+  if (a === "mrem-day") { const v = d.v || (document.getElementById("mrDay") || {}).value || ""; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { toast("Choisis un jour."); return; } R.pend = v; repaint(); return; }
+  if (a === "mrem-no") { R.pend = null; repaint(); return; }
+  if (a === "mrem-go" && R.who && R.pend) await busyRun(R, async () => {
+    const r = await ON.rpc("mono_adm_restaurer", { p_user: R.who.id, p_jour: R.pend });
+    if (r.err || r.data) { toast(err(r.err || r.data)); return; }
+    toast(`Partie de ${R.who.pseudo} remise à sa copie du ${jourFr(R.pend)}.`); R.pend = null;
+  });
+}
+P.register({ id: "monoremise", srv: "m", name: "Remettre une partie", group: "Joueurs", html: remiseHtml, load: async () => { await loadTesteurs(); await loadCopies(); } });
+
+/* ---------- Bureau des Aventuriers : réglages et créneaux ---------- */
+const B = { d: null, err: null, del: null, busy: false };
+const REG = { invit_s: "Réponse à une invitation (s)", place_s: "Place gardée (s)", deco_s: "Déconnexion tolérée (s)", transition_s: "Transition avant le combat (s)", grace_s: "Grâce (s)",
+  ouverture_min: "Ouverture d'une expédition avant l'heure (min)", attente_s: "Attente de la recherche (s)", calcul_s: "Calcul du combat (s)", annonces: "Expéditions annoncées par joueur",
+  jours: "Expéditions : jours d'avance au plus", inscriptions: "Inscriptions par joueur", liste_attente: "Places en liste d'attente", rdv: "Créneaux de rendez-vous ouverts", rdv_min: "Durée d'un rendez-vous (min)",
+  mp: "Messages privés Discord", suspects_n: "Combats ensemble avant « groupe suspect » (7 jours)" };
+async function loadBureau() {
+  const r = await ON.rpc("mono_adm_bureau");
+  if (r.err) { B.d = null; B.err = NOFN.test(r.err) ? "Le Bureau des Aventuriers n'est pas installé sur le serveur (supabase/mono_bureau.sql)." : r.err; return; }
+  B.err = null; B.d = r.data || {};
+}
+function bureauHtml() {
+  if (B.err) return empty(B.err);
+  if (!B.d) return empty("Chargement…");
+  const reg = B.d.reglages || {}, C = B.d.creneaux || [];
+  const keys = Object.keys(REG).filter((k) => k in reg).concat(Object.keys(reg).filter((k) => !(k in REG)));
+  const row = (k) => { const v = reg[k]; const inp = typeof v === "boolean" ? `<input type="checkbox" id="mbR-${h(k)}" ${v ? "checked" : ""}>` : `<input type="number" id="mbR-${h(k)}" value="${h(v)}" step="1">`;
+    return `<label for="mbR-${h(k)}" class="small">${h(REG[k] || k)}</label><span class="row" style="gap:6px">${inp}<button class="btn sm" data-act="mbur-reg" data-v="${h(k)}" ${B.busy ? "disabled" : ""}>Enregistrer</button></span>`; };
+  const cr = (c) => `<div class="ln" style="flex-wrap:wrap"><input type="time" id="mbH-${c.id}" value="${h(c.heure)}" aria-label="Heure"><input type="text" id="mbN-${c.id}" value="${h(c.nom)}" maxlength="60" aria-label="Nom" style="max-width:180px">
+    <label class="row small"><input type="checkbox" id="mbA-${c.id}" ${c.actif ? "checked" : ""}> actif</label>
+    <button class="btn sm" data-act="mbur-cre" data-v="${c.id}" ${B.busy ? "disabled" : ""}>Enregistrer</button>${B.del === c.id ? `<button class="btn sm danger" data-act="mbur-del" data-v="${c.id}" data-ok="1">Confirmer la suppression</button><button class="btn sm" data-act="mbur-del" data-v="${c.id}" data-ok="0">Annuler</button>` : `<button class="btn sm" data-act="mbur-del" data-v="${c.id}">Supprimer</button>`}</div>`;
+  const n = (L) => (Array.isArray(L) ? L.length : 0);
+  return `<div class="box"><h2>En ce moment</h2><div class="ln small">${n(B.d.salons)} salon${n(B.d.salons) > 1 ? "s" : ""} ouvert${n(B.d.salons) > 1 ? "s" : ""} · ${n(B.d.expeditions)} expédition${n(B.d.expeditions) > 1 ? "s" : ""} annoncée${n(B.d.expeditions) > 1 ? "s" : ""} · ${n(B.d.suspects)} groupe${n(B.d.suspects) > 1 ? "s" : ""} suspect${n(B.d.suspects) > 1 ? "s" : ""} · ${n(B.d.appareils)} paire${n(B.d.appareils) > 1 ? "s" : ""} sur un même appareil</div></div>
+    <div class="box"><h2>Créneaux de rendez-vous</h2><span class="xs muted">Heure de Paris. Ils ne s'affichent aux joueurs que si « Créneaux de rendez-vous ouverts » est coché.</span>
+      ${C.map(cr).join("") || `<div class="ln muted">Aucun créneau.</div>`}<div class="row"><button class="btn sm" data-act="mbur-new" ${B.busy ? "disabled" : ""}>Ajouter un créneau</button></div></div>
+    <div class="box"><h2>Réglages</h2><div class="px-kv">${keys.map(row).join("")}</div></div>`;
+}
+async function bureauAct(a, d) {
+  if (a === "mbur-del" && !d.ok) { B.del = +d.v; repaint(); return; }
+  if (a === "mbur-del" && d.ok === "0") { B.del = null; repaint(); return; }
+  await busyRun(B, async () => {
+    let r;
+    if (a === "mbur-reg") {
+      const k = d.v, el = document.getElementById("mbR-" + k), old = (B.d.reglages || {})[k]; if (!el) return;
+      const v = typeof old === "boolean" ? el.checked : Number(el.value);
+      if (typeof old !== "boolean" && !(isFinite(v) && v >= 0)) { toast("Nombre positif attendu."); return; }
+      r = await ON.rpc("mono_adm_bureau_reglage", { p_cle: k, p_v: v }); if (r.err) { toast(r.err); return; } toast("Réglage enregistré.");
+    } else if (a === "mbur-cre" || a === "mbur-new") {
+      const id = a === "mbur-new" ? Math.max(0, ...(B.d.creneaux || []).map((c) => +c.id || 0)) + 1 : +d.v;
+      const g = (p) => document.getElementById(p + id);
+      const args = a === "mbur-new" ? { p_id: id, p_heure: "20:30", p_nom: "Rendez-vous", p_actif: false } : { p_id: id, p_heure: (g("mbH-") || {}).value || null, p_nom: ((g("mbN-") || {}).value || "").trim() || null, p_actif: !!(g("mbA-") || {}).checked };
+      r = await ON.rpc("mono_adm_bureau_creneau", args); if (r.err) { toast(r.err); return; } toast(a === "mbur-new" ? "Créneau ajouté (inactif)." : "Créneau enregistré.");
+    } else if (a === "mbur-del") {
+      B.del = null; r = await ON.rpc("mono_adm_bureau_creneau", { p_id: +d.v, p_heure: null, p_nom: null, p_actif: null }); if (r.err) { toast(r.err); return; } toast("Créneau supprimé.");
+    }
+    await loadBureau();
+  });
+}
+P.register({ id: "monobureau", srv: "m", name: "Bureau des Aventuriers", group: "Contenu", html: bureauHtml, load: loadBureau });
+
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest && ev.target.closest("[data-act^='mtst-'],[data-act^='mrem-'],[data-act^='mbur-']"); if (!t || !P.admin()) return;
+  const a = t.dataset.act, d = t.dataset;
+  if (/^mtst-/.test(a)) testAct(a, d); else if (/^mrem-/.test(a)) remiseAct(a, d); else bureauAct(a, d);
+});
+document.addEventListener("input", (ev) => { const id = ev.target && ev.target.id; if (id === "mtAdd") TS.add = ev.target.value; else if (id === "mrQ") R.q = ev.target.value; else if (id === "mrDay") R.autre = ev.target.value; });
+document.addEventListener("keydown", (ev) => { const id = ev.target && ev.target.id; if (ev.key !== "Enter" || (id !== "mtAdd" && id !== "mrQ")) return; ev.preventDefault(); if (id === "mtAdd") testAct("mtst-add", {}); else remiseAct("mrem-find", {}); });
+window.MONOPANEL = { V, T, TS, R, B, loadVue, loadTesteurs, loadBureau };
 })();

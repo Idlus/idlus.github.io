@@ -114,7 +114,7 @@ begin
   if p_announce then
     body := 'Pluie de kamas : ' || rain_fmt(p_total) || ' kamas à partager pendant ' || p_min || ' min ! Accueil › « Je participe ».' || case when m <> '' then ' ' || m else '' end;
     body := left(body, 300);
-    manual := exists (select 1 from announces where banner and (until is null or until > now())); -- un seul bandeau à la fois
+    manual := exists (select 1 from announces where banner and (until is null or until > now()) and srv is distinct from 'm'); -- un seul bandeau à la fois (2.1.36 : par serveur)
     if not manual then
       insert into announces (body, banner, until) values (body, true, now() + make_interval(mins => p_min)) returning id into aid;
       update kamas_rains set ann_id = aid where id = id_;

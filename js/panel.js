@@ -12,6 +12,10 @@
      PANEL.register({ id, name, group: "Joueurs" | "Économie" | "Contenu" | "Test", html(), load(), count() })
      PANEL.register({ cmd: { n, k, run, test } })      (k : mots-clés ; test : seulement sur la partie de test)
      PANEL.register({ toggle: { id, n, on(), set(v) } }) (onglet Test › Essayer une nouveauté)
+     PANEL.register({ id, srv: "m", … })              (2.1.36 : page du côté Monocompte ; sans srv : Classique)
+   2.1.36 : un panel par serveur. Sélecteur « Classique | Monocompte » sous le titre (choix gardé dans ce navigateur) ; chaque page
+   appartient à un serveur, le menu, la recherche et les pastilles ne montrent que celles du serveur choisi. L'onglet Test et les
+   départs rapides restent côté Classique. Ouvrir une page de l'autre serveur (fiche d'un joueur, lien direct) y passe.
    Pas de boucle de rafraîchissement : la page se redessine sur les clics et après les réponses du serveur.
    ========================================================================== */
 (function () {
@@ -28,7 +32,8 @@
   const TESTMODE = LS.get("idlus-partie-test") === "1" && !/\/beta\//.test(location.pathname);
   const TEST_KEY = "dofousxen-save-beta", TODO_KEY = "idlus-test-todo";
 
-  const P = { v: "test", q: "", sel: 0, res: [], reg: [], cmds: [], toggles: [], test: null, busy: false, copyQ: "" };
+  const SRV_KEY = "idlus-panel-srv";
+  const P = { v: "test", q: "", sel: 0, res: [], reg: [], cmds: [], toggles: [], test: null, busy: false, copyQ: "", srv: LS.get(SRV_KEY) === "m" ? "m" : "c" };
   const CH = () => (window.CHAT && window.CHAT.adm ? window.CHAT : null);
   const role = () => (window.CHAT ? window.CHAT.role : null) || null;
   const testEnv = () => !!(DX.testerOk && DX.testerOk()); // cette partie est une partie de test : les outils agissent dessus
@@ -39,20 +44,35 @@
 
   /* ---------- pages du menu ---------- */
   const GROUPS = [["", ""], ["Joueurs", "Joueurs"], ["Économie", "Économie"], ["Contenu", "Contenu"], ["Test", "Test"], ["Modération", "Modération"]];
-  const GROUP_OF = { vue: "", joueurs: "Joueurs", fiches: "Joueurs", sig: "Joueurs", verif: "Joueurs", equipe: "Joueurs", hdv: "Économie", guildes: "Économie", ann: "Contenu", codes: "Contenu", idees: "Contenu", builds: "Contenu" };
+  const GROUP_OF = { vue: "", joueurs: "Joueurs", fiches: "Joueurs", sig: "Joueurs", verif: "Joueurs", equipe: "Joueurs", hdv: "Économie", guildes: "Économie", ann: "Contenu", codes: "Contenu", idees: "Contenu", builds: "Contenu", mchat: "Contenu", mann: "Contenu" };
   const NAME_OF = { equipe: "Modérateurs", sig: "Signalements" };
-  const ICON_OF = { vue: "trophee", joueurs: "couronne", fiches: "parchemin_or", sig: "combat", verif: "cristal", equipe: "couronne", hdv: "bourse", guildes: "couronne", ann: "parchemin_or", codes: "coffre", idees: "idee", builds: "parchemin_or", test: "metiers" };
-  /* les pages visibles : [clé, nom, pastille, groupe] */
-  function views() {
+  const ICON_OF = { vue: "trophee", joueurs: "couronne", fiches: "parchemin_or", sig: "combat", verif: "cristal", equipe: "couronne", hdv: "bourse", guildes: "couronne", ann: "parchemin_or", codes: "coffre", idees: "idee", builds: "parchemin_or", test: "metiers",
+    monovue: "trophee", monotesteurs: "couronne", clesbeta: "cle", monobouclier: "cristal", monoremise: "phenix", monobureau: "combat", mchat: "parchemin_or", mann: "parchemin_or" };
+  /* 2.1.36 : serveur de chaque page (pages du chat : mchat, mann ; pages ajoutées : leur srv) */
+  const MONO_TABS = { mchat: 1, mann: 1 };
+  const SRV_NAME = { c: "Classique", m: "Monocompte" };
+  const HOME = { c: "vue", m: "monovue" };
+  const sel = () => !!(srv() && admin()); // le sélecteur de serveur : compte admin sur le vrai serveur
+  const pageSrv = (k) => { if (MONO_TABS[k]) return "m"; const r = P.reg.find((x) => x.id === k); return r && r.srv === "m" ? "m" : "c"; };
+  /* les pages visibles : [clé, nom, pastille, groupe] ; toutes : celles des deux serveurs, avec leur serveur en 5e */
+  function views(all) {
     const L = [];
     if (srv()) {
       const tabs = CH().adm.tabs();
-      tabs.forEach(([k, n, c]) => L.push([k, NAME_OF[k] || n, c, admin() ? (k in GROUP_OF ? GROUP_OF[k] : "Contenu") : "Modération"]));
-      if (admin()) P.reg.forEach((r) => { if (r.id && r.html) L.push([r.id, r.name || r.id, r.count ? r.count() : 0, r.group || "Contenu"]); });
+      tabs.forEach(([k, n, c]) => L.push([k, NAME_OF[k] || n, c, admin() ? (k in GROUP_OF ? GROUP_OF[k] : "Contenu") : "Modération", pageSrv(k)]));
+      if (admin()) P.reg.forEach((r) => { if (r.id && r.html) L.push([r.id, r.name || r.id, r.count ? r.count() : 0, r.group || "Contenu", r.srv === "m" ? "m" : "c"]); });
     }
-    if (admin() || testEnv()) L.push(["test", "Partie de test", 0, "Test"]);
-    if (!srv() && testEnv()) P.reg.forEach((r) => { if (r.id && r.html && r.group === "Test") L.push([r.id, r.name || r.id, r.count ? r.count() : 0, "Test"]); });
-    return L;
+    if (admin() || testEnv()) L.push(["test", "Partie de test", 0, "Test", "c"]);
+    if (!srv() && testEnv()) P.reg.forEach((r) => { if (r.id && r.html && r.group === "Test") L.push([r.id, r.name || r.id, r.count ? r.count() : 0, "Test", "c"]); });
+    return all || !sel() ? L : L.filter((x) => x[4] === P.srv);
+  }
+  function setSrv(v) { P.srv = v === "m" ? "m" : "c"; LS.set(SRV_KEY, P.srv); }
+  /* page ouverte d'un autre serveur (fiche d'un joueur, lien direct) : le panel y passe ; la page d'accueil du Classique (« vue »,
+     page par défaut à l'ouverture) ne change pas le choix gardé */
+  function follow(v) { if (!sel() || !v || v === HOME.c) return; const x = views(true).find((y) => y[0] === v); if (x && x[4] !== P.srv) setSrv(x[4]); }
+  function srvHtml() {
+    if (!sel()) return "";
+    return `<div class="px-srv" role="tablist" aria-label="Serveur">${["c", "m"].map((k) => `<button role="tab" aria-selected="${P.srv === k}" class="${P.srv === k ? "on" : ""}" data-act="adm-pxsrv" data-v="${k}">${SRV_NAME[k]}</button>`).join("")}</div>`;
   }
   const cur = () => { const A = srv() ? CH().adm.A : null; return A ? A.tab : P.v; };
   const isLocal = (v) => v === "test" || P.reg.some((r) => r.id === v && r.local);
@@ -71,8 +91,9 @@
   /* ---------- page ---------- */
   function html(loading) {
     if (!allowed()) return `<section class="adm"><div class="box"><div class="empty">Le Panel Xener est réservé à l'équipe d'Idlus.</div></div></section>`;
+    follow(cur());
     const V = views(); let v = cur();
-    if (!V.some((x) => x[0] === v)) { v = V[0] ? V[0][0] : "test"; if (srv()) CH().adm.A.tab = v; else P.v = v; }
+    if (!V.some((x) => x[0] === v)) { v = V.some((x) => x[0] === HOME[P.srv]) ? HOME[P.srv] : V[0] ? V[0][0] : "test"; if (srv()) CH().adm.A.tab = v; else P.v = v; }
     const mod = srv() && !admin();
     const reg = P.reg.find((r) => r.id === v && r.html);
     let body;
@@ -80,11 +101,12 @@
     else if (reg) body = reg.html();
     else if (srv()) { const A = CH().adm.A; body = loading || !A.ov ? `<div class="box"><div class="empty">Chargement…</div></div>` : CH().adm.body(); }
     else body = "";
+    const mono = sel() && P.srv === "m";
     const head = `<div class="ahd"><h1>${mod ? "Modération" : "Panel Xener"}</h1><span class="badge">${mod ? "Modérateur" : srv() ? "Réservé à ton compte" : "Partie de test"}</span>
-      ${srv() ? `<button class="btn sm" data-act="adm-reload">Actualiser</button>` : ""}${srv() && admin() ? `<button class="btn sm" data-act="adm-test">${G("bug")} Partie de test</button>` : ""}${TESTMODE ? `<button class="btn sm" data-quit-test="1">Revenir à ma partie</button>` : ""}</div>`;
-    const note = srv() ? `<p class="small muted">${mod ? "Tes outils de modération du chat : joueurs, muet et signalements. Chaque action est vérifiée par le serveur." : "Ce panel agit sur le serveur, pour tous les joueurs, et chaque action est vérifiée par le serveur. Il ne touche pas à ta partie. L'onglet Test prépare ta partie de test (hors ligne, sauvegarde à part) : ta vraie partie est envoyée en ligne puis mise de côté, intacte."}</p>`
+      ${srv() ? `<button class="btn sm" data-act="adm-reload">Actualiser</button>` : ""}${srv() && admin() && !mono ? `<button class="btn sm" data-act="adm-test">${G("bug")} Partie de test</button>` : ""}${TESTMODE ? `<button class="btn sm" data-quit-test="1">Revenir à ma partie</button>` : ""}</div>`;
+    const note = srv() ? `<p class="small muted">${mod ? "Tes outils de modération du chat : joueurs, muet et signalements. Chaque action est vérifiée par le serveur." : mono ? "Côté Monocompte : saison, testeurs, Bouclier, Bureau des Aventuriers, salon et annonces du Monocompte. Chaque action est vérifiée par le serveur et ne touche pas au Classique." : "Ce panel agit sur le serveur, pour tous les joueurs, et chaque action est vérifiée par le serveur. Il ne touche pas à ta partie. L'onglet Test prépare ta partie de test (hors ligne, sauvegarde à part) : ta vraie partie est envoyée en ligne puis mise de côté, intacte."}</p>`
       : `<p class="small muted">${TESTMODE ? "Partie de test : hors ligne, sur une sauvegarde à part. Les outils du serveur (joueurs, économie, contenu) sont dans le Panel Xener de ta vraie partie." : "Version de test : ces outils modifient la partie de test de ce navigateur, jamais le jeu public."}</p>`;
-    return `<section class="adm px">${head}${note}${mod ? "" : cmdHtml()}<div class="px-wrap">${navHtml()}<div class="px-body">${body}</div></div></section>`;
+    return `<section class="adm px${mono ? " px-mono" : ""}">${head}${srvHtml()}${note}${mod ? "" : cmdHtml()}<div class="px-wrap">${navHtml()}<div class="px-body">${body}</div></div></section>`;
   }
   function render(main) {
     if (!main) return;
@@ -169,14 +191,14 @@
     const hit = (s) => words.every((w) => s.includes(w));
     const out = [];
     views().forEach(([k, n, c, g]) => { if (hit(norm(`${n} ${g} aller ouvrir page`))) out.push({ n: `Aller à : ${n}`, sub: g || "Panel", run: () => go(k) }); });
-    P.cmds.forEach((c) => { if (c.test && !testEnv()) return; if (hit(norm(`${c.n} ${c.k || ""}`))) out.push({ n: c.n, sub: c.test ? "partie de test" : c.sub || "", run: c.run }); });
-    if (!testEnv() && admin()) PRESETS.forEach(([k, n, d]) => { if (hit(norm(`${n} ${d} depart partie test`))) out.push({ n: `Partie de test : ${n}`, sub: d, run: () => preset(k) }); });
+    P.cmds.forEach((c) => { if (c.test && !testEnv()) return; if (sel() && (c.srv === "m" ? "m" : "c") !== P.srv) return; if (hit(norm(`${c.n} ${c.k || ""}`))) out.push({ n: c.n, sub: c.test ? "partie de test" : c.sub || "", run: c.run }); });
+    if (!testEnv() && admin() && !(sel() && P.srv === "m")) PRESETS.forEach(([k, n, d]) => { if (hit(norm(`${n} ${d} depart partie test`))) out.push({ n: `Partie de test : ${n}`, sub: d, run: () => preset(k) }); });
     if (testEnv() && P.test && P.test.give) {
       const g = norm(q).replace(/^(donner|give)\s+/, "").trim();
       if (g.length >= 3) { const gw = g.split(/\s+/); catalog().filter((x) => gw.every((w) => x[2].includes(w))).sort((a, b) => (a[2].startsWith(g) ? 0 : 1) - (b[2].startsWith(g) ? 0 : 1) || a[0].length - b[0].length).slice(0, 6)
         .forEach(([n, kind]) => out.push({ n: `Donner : ${n}`, sub: kind, run: () => P.test.give(n, 1) })); }
     }
-    if (srv() && norm(q).length >= 2 && !/^donner\b/.test(norm(q))) out.push({ n: `Chercher le joueur « ${q.trim()} »`, sub: "Joueurs", run: () => window.CHAT.openAdmin("joueurs", q.trim()) });
+    if (srv() && !(sel() && P.srv === "m") && norm(q).length >= 2 && !/^donner\b/.test(norm(q))) out.push({ n: `Chercher le joueur « ${q.trim()} »`, sub: "Joueurs", run: () => window.CHAT.openAdmin("joueurs", q.trim()) });
     return out.slice(0, 9);
   }
   function resHtml() {
@@ -196,6 +218,7 @@
     toTest({ k: "preset", v: k, cls: teamCls(), at: Date.now() });
   }
   function open(v) {
+    follow(v);
     if (v) { if (srv()) CH().adm.A.tab = v; else P.v = v; }
     X().closeSheet(); DX.ui.tab = "admin"; DX.render(); window.scrollTo(0, 0);
   }
@@ -216,6 +239,7 @@
     if (!/^adm-px/.test(a)) return;
     switch (a) {
       case "adm-pxv": P.v = d.v; repaint(); window.scrollTo(0, 0); return;
+      case "adm-pxsrv": { if (d.v === P.srv) return; setSrv(d.v); P.q = ""; P.sel = 0; go(HOME[P.srv]); return; } // 2.1.36 : Classique | Monocompte
       case "adm-pxrun": run(+d.i); return;
       case "adm-pxpre": preset(d.v); return;
       case "adm-pxcopy": { if (d.u) { copyPlayer(d.u, d.p); return; } const i = $("#pxCopy") || $("#admCopy"); P.copyQ = i ? i.value : ""; copyPlayer(null, P.copyQ); return; }
@@ -245,5 +269,5 @@
     if (def.toggle) P.toggles.push(def.toggle);
     if (def.id && def.html) { P.reg = P.reg.filter((r) => r.id !== def.id); P.reg.push(def); }
   }
-  window.PANEL = { html, render, load, repaint, register, open, go, preset, P, toTest, testEnv, admin, get toggles() { return P.toggles; }, setTest: (o) => { P.test = o; }, TODO_KEY, TESTMODE };
+  window.PANEL = { html, render, load, repaint, register, open, go, preset, P, toTest, testEnv, admin, setSrv, srvOf: pageSrv, get toggles() { return P.toggles; }, setTest: (o) => { P.test = o; }, TODO_KEY, TESTMODE };
 })();

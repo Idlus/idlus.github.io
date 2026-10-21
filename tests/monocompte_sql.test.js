@@ -57,7 +57,7 @@ try {
   const before = snap();
   file(path.join(ROOT, "supabase", "monocompte.sql")); file(path.join(ROOT, "supabase", "monocompte.sql")); // relancé deux fois : sans danger
   assert.strictEqual(snap(), before, "le schéma public du Classique a changé");
-  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 45, "fonctions du jeu");
+  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 47, "fonctions du jeu");
   // fonctions du Bouclier (mono_srv_*) : la fonction serveur seulement (service_role), ni les joueurs ni anon
   assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'mono\\_srv\\_%'
     and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('service_role', p.oid, 'execute'))`), "0", "mono_srv_* : service_role seulement");
@@ -133,6 +133,22 @@ try {
   fails(() => as(9, `select mono_adm_horloge(null, 3)`), /vers l'avant/, "horloge reculée");
   assert.strictEqual(J(9, `mono_adm_horloge(24, 10, true)`).jour, 10, "avancer au jour 10, en pause");
   fails(() => as(9, `select mono_adm_horloge(7)`), /vitesse inconnue/, "vitesse");
+
+  // ---------- 2.1.36 : Panel Xener côté Monocompte (lecture seule) : vue d'ensemble et copies d'un joueur ----------
+  fails(() => as(1, `select mono_adm_vue()`), /réservé à Mathis/, "vue d'ensemble par un joueur");
+  fails(() => as(1, `select mono_adm_copies('${U(1)}')`), /réservé à Mathis/, "copies d'un autre par un joueur");
+  q(`insert into mono.bouclier (user_id, saison, why, at) values ('${U(2)}', 0, 'gain trop gros', now() - interval '3 hours'), ('${U(2)}', 0, 'encore', now() - interval '2 hours'), ('${U(3)}', 0, 'niveau impossible', now() - interval '1 hour'), ('${U(5)}', 0, 'vieux refus', now() - interval '9 days')`);
+  const clk0 = q(`select clk_t || '|' || clk_ref || '|' || clk_vitesse || '|' || clk_pause from mono.saisons where id = 0`);
+  const vu = J(9, `mono_adm_vue()`);
+  assert.deepStrictEqual([vu.saison.id, vu.saison.etat, vu.saison.test, vu.saison.jour, vu.saison.vitesse, vu.saison.pause, vu.saison.horloge], [0, "ouverte", true, 10, 24, true, true], "vue : saison de test, jour 10, horloge ×24 en pause " + JSON.stringify(vu.saison));
+  assert.strictEqual(vu.testeurs, +q(`select count(*) from mono.testeurs`), "vue : testeurs");
+  assert.strictEqual(vu.parties, +q(`select count(*) from mono.parties where saison = 0`), "vue : parties de la saison"); assert(vu.parties >= 2);
+  assert.strictEqual(vu.refus, 2, "vue : comptes refusés ces 7 jours"); assert.strictEqual(vu.derniers.length, 4); assert.strictEqual(vu.derniers[0].pseudo, "Joueur03"); assert.strictEqual(vu.derniers[0].why, "niveau impossible");
+  assert.strictEqual(q(`select clk_t || '|' || clk_ref || '|' || clk_vitesse || '|' || clk_pause from mono.saisons where id = 0`), clk0, "vue : l'horloge de test n'est pas touchée");
+  q(`delete from mono.bouclier`);
+  const cp = J(9, `mono_adm_copies('${U(1)}')`);
+  assert.strictEqual(cp.length, 14, "copies du joueur (14 jours)"); assert(cp[0].jour > cp[1].jour, "plus récente d'abord"); assert.strictEqual(cp[0].ouverte, true);
+  assert.deepStrictEqual(J(9, `mono_adm_copies('${U(8)}')`), [], "joueur sans copie");
 
   // ---------- registre : bornes du jour, quota cumulable, même bon (6a : les Éclats d'activité ne viennent que des bons du serveur) ----------
   const act = (i, k, n, src) => ({ n: +q(`select mono.bon('${U(i)}', 0, '${k}', '${src}', ${n})`) });

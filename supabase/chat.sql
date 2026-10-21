@@ -21,6 +21,15 @@ create policy "réglages lisibles" on public.chat_settings for select using (tru
 alter table public.chat_settings add column if not exists pin_body text not null default 'Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées, chaque proposition est lue et peut finir dans le jeu !';
 alter table public.chat_settings add column if not exists pin_chs text not null default 'g';
 alter table public.chat_settings add column if not exists pin_at timestamptz not null default now();
+-- 2.1.36 (panel par serveur) : message épinglé du salon Monocompte ('m'), à part de celui du Classique (pin_body, salons g, c, v).
+-- Colonnes ajoutées sans réécrire la table ; à la création, il reprend le message du Classique s'il était épinglé sur 'm'.
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'chat_settings' and column_name = 'pin_m_body') then
+    alter table public.chat_settings add column pin_m_body text not null default '';
+    update public.chat_settings set pin_m_body = pin_body where 'm' = any (string_to_array(pin_chs, ','));
+  end if;
+end $$;
+alter table public.chat_settings add column if not exists pin_m_at timestamptz not null default now();
 grant select on public.chat_settings to anon, authenticated;
 
 -- ---------- modérateurs (nommés par Mathis) ----------
@@ -150,6 +159,9 @@ alter table public.announces enable row level security;
 drop policy if exists "annonces lisibles" on public.announces;
 create policy "annonces lisibles" on public.announces for select using (until is null or until > now());
 grant select on public.announces to anon, authenticated;
+-- 2.1.36 (panel par serveur) : serveur de l'annonce. null = Classique (toutes les annonces d'avant, les annonces en boucle, la
+-- pluie de kamas), 'm' = Monocompte (adm_announce_mono). Le jeu montre le bandeau seulement aux parties du même serveur.
+alter table public.announces add column if not exists srv text;
 
 -- ---------- journal du panel admin ----------
 create table if not exists public.admin_log (id bigint generated always as identity primary key, at timestamptz not null default now(), by_user uuid, txt text);
@@ -417,10 +429,18 @@ end $$;
 
 create or replace function public.adm_pin(p_body text, p_chs text) returns void language plpgsql security definer set search_path = public
 as $$ declare b text := left(btrim(coalesce(p_body, '')), 200);
-  c text := array_to_string(array(select x from unnest(string_to_array(coalesce(p_chs, ''), ',')) x where x in ('g', 'c', 'v', 'm')), ','); begin
+  c text := array_to_string(array(select x from unnest(string_to_array(coalesce(p_chs, ''), ',')) x where x in ('g', 'c', 'v')), ','); begin -- 2.1.36 : 'm' a son propre message (adm_pin_mono)
   perform public.adm_need(true);
   update chat_settings set pin_body = b, pin_chs = case when c = '' then 'g' else c end, pin_at = now() where id = 1;
   perform public.alog(case when b = '' then 'message épinglé retiré' else format('message épinglé : « %s »', left(b, 60)) end);
+end $$;
+
+-- 2.1.36 (panel par serveur) : message épinglé du salon Monocompte
+create or replace function public.adm_pin_mono(p_body text) returns void language plpgsql security definer set search_path = public
+as $$ declare b text := left(btrim(coalesce(p_body, '')), 200); begin
+  perform public.adm_need(true);
+  update chat_settings set pin_m_body = b, pin_m_at = now() where id = 1;
+  perform public.alog(case when b = '' then 'message épinglé Monocompte retiré' else format('message épinglé Monocompte : « %s »', left(b, 60)) end);
 end $$;
 
 create or replace function public.adm_announce(p_body text, p_banner boolean, p_chat boolean, p_hours int) returns void language plpgsql security definer set search_path = public
@@ -430,6 +450,15 @@ as $$ declare b text := left(btrim(p_body), 300); begin
   if p_banner then insert into announces (body, banner, until) values (b, true, case when p_hours > 0 then now() + make_interval(hours => p_hours) end); end if;
   if p_chat then insert into chat_msgs (ch, user_id, pseudo, kind, body, data) values ('g', auth.uid(), public.pseudo_of(auth.uid()), 'ann', b, jsonb_build_object('t', 'admin', 'banner', p_banner)); end if;
   perform public.alog(format('annonce publiée : « %s »', left(b, 60)));
+end $$;
+-- 2.1.36 (panel par serveur) : annonce Monocompte : bandeau montré seulement dans une partie Monocompte, message dans le salon 'm'
+create or replace function public.adm_announce_mono(p_body text, p_banner boolean, p_chat boolean, p_hours int) returns void language plpgsql security definer set search_path = public
+as $$ declare b text := left(btrim(coalesce(p_body, '')), 300); begin
+  perform public.adm_need(true);
+  if b = '' then raise exception 'annonce vide'; end if;
+  if p_banner then insert into announces (body, banner, until, srv) values (b, true, case when p_hours > 0 then now() + make_interval(hours => p_hours) end, 'm'); end if;
+  if p_chat then insert into chat_msgs (ch, user_id, pseudo, kind, body, data) values ('m', auth.uid(), public.pseudo_of(auth.uid()), 'ann', b, jsonb_build_object('t', 'admin', 'banner', p_banner)); end if;
+  perform public.alog(format('annonce Monocompte publiée : « %s »', left(b, 60)));
 end $$;
 create or replace function public.adm_announce_end(p_id bigint) returns void language plpgsql security definer set search_path = public
 as $$ begin
@@ -489,7 +518,7 @@ end $$;
 do $$ declare f text; begin
   foreach f in array array['adm_overview()', 'adm_msg_del(bigint)', 'adm_msg_purge(uuid)', 'adm_chat_clear(text)', 'adm_chat_close(boolean)', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
     'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean, int)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
-    'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
+    'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_pin_mono(text)', 'adm_announce_mono(text, boolean, boolean, int)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;

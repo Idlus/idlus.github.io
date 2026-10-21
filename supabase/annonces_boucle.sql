@@ -28,7 +28,7 @@ as $$ declare r record; manual boolean; nxt timestamptz; begin
   for r in select * from announce_loops where active and next_at <= now() order by id for update skip locked loop
     if r.ends is not null and r.ends <= now() then update announce_loops set active = false where id = r.id; continue; end if;
     update announces set until = now() where loop_id = r.id and (until is null or until > now()); -- l'ancien bandeau de cette boucle s'efface
-    manual := exists (select 1 from announces where loop_id is null and banner and (until is null or until > now()));
+    manual := exists (select 1 from announces where loop_id is null and banner and (until is null or until > now()) and srv is distinct from 'm'); -- 2.1.36 : un bandeau Monocompte ne prend pas la place du Classique
     if r.banner and not manual then
       insert into announces (body, banner, until, loop_id) values (r.body, true, now() + make_interval(mins => r.show_min), r.id);
     end if;
