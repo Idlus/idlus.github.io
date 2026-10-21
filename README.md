@@ -9,6 +9,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.32 « Ma rotation »
+
+- Sorts : mode « Ma rotation » (c.atkMode = "rot", c.rot = [{ id, cond? }], 16 cases, "arme" = coup d'arme). charTurn lance la liste dans l'ordre et passe les sorts impossibles (recharge, PA, lancers max, condition, entrave) ; au bout de la liste le tour s'arrête. Rotation vide = Auto.
+- « Mon ordre » (2.1.21) converti à la lecture de la sauvegarde (E.rotConvert : soutiens puis attaques en boucle jusqu'aux PA), stratégies et anciennes équipes du Kolizéum (am 1) comprises. koliSnap envoie am 2 + rot.
+- Auto (planTurn) : bonus de Puissance/élément/Dommages cumulables comptés à chaque lancer et lancés en premier, Dommages des buffs dans l'estimation, coût d'ivresse du Pandawa. NO_CUMUL=1 pour comparer.
+- Aperçu : sorts passés (fx « rskip ») barrés avec la raison ; « Tour 1 » ne contient plus le premier tour du round 2. Tests : tests/ordre.test.js.
+
 ## 2.1.31.5 « Quitter sans ouvrir le combat »
 
 - Menu de gauche (PC, normal et réduit) : bouton à côté de « Combat en cours » pour rentrer de la chasse (E.stopHunt) ou quitter le donjon (E.leaveDungeon, deux clics en 5 s car la clé est perdue). Absent pendant le Songe infini.
