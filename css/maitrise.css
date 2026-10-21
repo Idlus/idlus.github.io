@@ -6,6 +6,8 @@
 .mt-hb img{width:28px;height:28px;filter:drop-shadow(0 0 6px var(--cc))}
 .mt-hb>span{display:grid;line-height:1.15}.mt-hb b{font-size:13px}
 .mt-hb.off{opacity:.62}
+.mt-hb{position:relative}.mt-left{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#b994ff;color:#160a2a;font-style:normal;font-size:10.5px;font-weight:900;line-height:18px;text-align:center;box-shadow:0 0 8px rgba(185,148,255,.7)}
+.mt-heroes{padding-top:12px}
 .mt-hb[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 35%,transparent)}
 .mt-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 14px}
 .mt-head>img{width:46px;height:46px;filter:drop-shadow(0 0 10px var(--cc))}

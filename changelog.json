@@ -1,6 +1,15 @@
 {
-  "version": "2.1.35.4",
+  "version": "2.1.35.5",
   "versions": [
+    {
+      "v": "2.1.35.5",
+      "name": "Points de Maîtrise signalés",
+      "guide": "maitrise",
+      "items": [
+        "Équipe : une pastille violette ✦ sur la ligne d'un héros montre combien de points de Maîtrise il a à placer",
+        "Maîtrise : la même pastille sur les boutons des héros en haut de l'arbre, mise à jour à chaque étoile prise (demande de Mathis)"
+      ]
+    },
     {
       "v": "2.1.35.4",
       "name": "Profils séparés",

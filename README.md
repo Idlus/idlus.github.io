@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.35.5 « Points de Maîtrise signalés »
+- Pastille violette ✦ = points de Maîtrise à placer : sur la ligne du héros (page Équipe, `.tr-m`) et sur les boutons des héros de l'arbre (`.mt-left`, `MAITUI.left` dans `js/maitrise.js`). Le compteur du menu Maîtrise utilise le même calcul.
+
 ## 2.1.35.4 « Profils séparés »
 - Chat Monocompte : héros et titre Monocompte à la place du profil Classique (`chat_mono_hero`, `chat_mono_profil` dans `supabase/chat.sql`) ; clic sur un pseudo = carte Monocompte.
 

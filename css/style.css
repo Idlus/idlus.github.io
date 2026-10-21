@@ -3170,6 +3170,7 @@ details>summary.alx-h{cursor:pointer}
 .tr-st.hunt{color:var(--gold)}.tr-st.job{color:#e7c46a}.tr-st.train{color:#8fc7ff}.tr-st.rest{color:var(--muted)}
 .tr-g{font-style:normal;font-size:10px;font-weight:900;color:#13200a;background:var(--good,#8fe36a);border-radius:999px;padding:1px 5px;flex:none}
 .tr-p{font-style:normal;font-size:10px;font-weight:900;color:#1a0d00;background:#ff9b4a;border-radius:999px;padding:1px 6px;flex:none}
+.tr-m{font-style:normal;font-size:10px;font-weight:900;color:#160a2a;background:#b994ff;border-radius:999px;padding:1px 6px;flex:none;margin-left:3px}
 .tr-xp{display:block;height:3px;border-radius:3px;background:var(--hp-bg);margin-top:3px;overflow:hidden}.tr-xp i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
 .tadd{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:2px dashed var(--frame);background:none;border-radius:12px;padding:6px 9px;color:var(--ink);cursor:pointer}
 .tadd .head{width:34px;height:34px;display:grid;place-items:center;font-weight:900}
