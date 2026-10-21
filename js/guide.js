@@ -417,7 +417,7 @@
       ];
     } });
 
-  add({ id: "inventaire", f: "Héros", n: "Inventaire et sac", ic: "sac", page: "inv", pages: ["invres", "invcons"], k: "sac trop plein place ressources consommables runes briser doublons coffre tout ouvrir automatique",
+  add({ id: "inventaire", f: "Héros", n: "Inventaire et sac", ic: "sac", page: "inv", pages: ["invres", "invcons"], k: "sac trop plein place ressources consommables runes briser doublons coffre tout ouvrir automatique recycleur recycler",
     ou: "Héros › Inventaire", de: "dès le début",
     voir: ["equipement", "forgemagie", "home"],
     b: () => [
@@ -430,7 +430,20 @@
         "Sur un écran large, l'**équipement du héros** s'affiche à côté du sac : glisse un objet sur une case ou sur la tête d'un héros pour l'équiper. Sur un très grand écran (1600 px et plus), une colonne **Combat en direct** et le chat restent à droite. Les deux se coupent dans Options › Affichage.",
         "Le Grenier du Havre-Sac et certains meubles agrandissent le sac et le trop-plein.",
         "Les **règles automatiques** peuvent vendre ou briser ce qui ne t'intéresse pas ; « Briser les doublons » fait de la place d'un coup. « Sous le niveau » brise les objets lâchés plus bas que le niveau choisi, quel que soit le niveau de tes héros (panoplies, Rayonnants et exo gardés). Si tu règles à la fois le jet et un niveau, l'objet doit remplir toutes les conditions pour être brisé ; choisis « une seule suffit » pour briser selon le niveau quel que soit le jet.",
+        "**Recycleur** (onglet ♻ Recycleur) : brise d'un coup tout ce qui correspond à tes règles (niveau, jet, doublons), en runes comme le brisage. Le meilleur exemplaire de chaque objet de panoplie peut être gardé. Jamais touchés : objets portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, Dofus et trophées. **Recyclage automatique** : sac plein, ce qui correspond est recyclé au lieu d'aller au trop-plein. **Recycler aussitôt** (aussi dans la fiche d'une recette) : garde les N meilleurs exemplaires d'un objet fabriqué et recycle les autres, la fabrication ne s'arrête plus quand le sac est plein.",
         "**Coffres** : « Tout ouvrir » (onglet Consommables ou tuile de l'accueil) les ouvre tous d'un coup, les plus précieux d'abord. Mode **Auto** : chaque coffre gagné s'ouvre tout seul et le butin est noté dans le journal. Les kamas dépendent du niveau de ton meilleur héros au moment de l'ouverture.",
+      ]],
+    ] });
+
+  add({ id: "gravure", f: "Héros", n: "Gravure runique", ic: "forge", page: "grav", k: "gravure graver rang emplacement runes kamas fin de jeu",
+    ou: "Héros › Gravure runique", de: "dès le début",
+    voir: ["forgemagie", "inventaire", "maitrise"],
+    b: () => [
+      ["p", `Chaque emplacement d'équipement d'un héros (arme, coiffe, cape, amulette, 2 anneaux, ceinture, bottes, bouclier) se grave du rang 1 au rang ${N(() => E.GRAV.max)}. Chaque rang donne **+${N(() => E.GRAV.pct)} %** aux caractéristiques de l'objet porté, arrondi (jamais de PA, PM, Portée ni Invocation en plus). La gravure reste sur l'emplacement quand tu changes d'objet.`],
+      ["kv", [["Rang 1", V(() => `${fr(E.gravCost(1).w)} de poids de runes et ${fr(E.gravCost(1).k)} kamas`)], ["Chaque rang", `${N(() => E.GRAV.mult)} fois le précédent`], ["Rang 10", V(() => `${fr(E.gravCost(10).w)} de poids et ${fr(E.gravCost(10).k)} kamas`)]]],
+      ["ul", [
+        "**Runes** : « Auto » fond d'abord les runes dont tu as le plus (en poids), jamais les runes Ga, de transcendance, ni celles de PA, PM, Portée et Invocation. « Je choisis » : coche les runes à fondre.",
+        "C'est un objectif de très long terme : graver toute une équipe de 8 héros au rang 10 coûte des milliards de kamas et de poids de runes.",
       ]],
     ] });
 

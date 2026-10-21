@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.36 « Recycleur et Gravure »
+- Recycleur (choix de Mathis 1C 2A 3A) : `E.ITEM_CAP` 3 000 → 4 000 ; `E.recyCfg` (`S.settings.recy`), `E.recyList`, `E.recycle` (brisage, même coefficient), `E.recyEstimate` (aperçu sans hasard) ; recyclage automatique dans `E.bagFlush` ; « Recycler aussitôt » (`E.recyKeepBest`) dans `E.craftItem`, trop-plein compris. Onglet Inventaire › ♻ Recycleur (`recyHtml`). Test `tests/recycleur.test.js`.
+- Gravure runique (choix 1A 2A 3A 4C + Auto) : `c.grav` = rang par emplacement, `E.GRAV` (rang 10, ×2, 50 000 de poids et 2 M de kamas au rang 1), bonus dans `E.charStats` (`E.gravStats`, +1 % par rang, sans PA/PM/Po/Invo), paiement `E.gravUp` / `E.gravPlan` / `E.gravAuto`. Page `js/gravure.js` (Héros › Gravure runique). Bouclier : rang 0 à 10 sur un emplacement connu. Simulation `tools/simulate.js --gravure N` : tout au rang 10 ≈ +0,45 stasis. Test `tests/gravure.test.js`.
+
 ## 2.1.35.9 « Combats de groupe animés »
 - Bureau des Aventuriers (Monocompte) : `js/bureau_direct.js` rejoue le combat de groupe sur l'écran de combat (`extWatchStart`), une seconde de combat par pas, avec les photos, la graine et l'heure de lancement du serveur (mêmes conditions que `E.monoGroupRun` / `BC.run`, hasard du joueur mis de côté à chaque pas). En direct, la lecture suit l'heure du serveur ; « Revoir » à ×1 ×2 ×4 ; dans une série (×N), l'écran suit le combat suivant.
 - Réponses de Mathis à la maquette du 21/10 : 1A (vrai écran de combat), 2A (Tableau du groupe, `E.fightStats` cumulé par salle), 3A (ouverture toute seule sur la page du Bureau, bandeau `#bxdBan` ailleurs) + améliorations 1 à 5 (discussion du salon, héros encadré, progression du donjon, fin avec `Bureau.gain`, onglet qui clignote). Idée de Bsasuk.

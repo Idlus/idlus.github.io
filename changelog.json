@@ -1,6 +1,17 @@
 {
-  "version": "2.1.35.9",
+  "version": "2.1.36",
   "versions": [
+    {
+      "v": "2.1.36",
+      "name": "Recycleur et Gravure",
+      "guide": "gravure",
+      "items": [
+        "Inventaire : le sac de base passe de 3 000 à 4 000 places",
+        "Nouvel onglet ♻ Recycleur : recycle d'un coup en runes tout ce qui correspond à tes règles (niveau, jet, doublons), recyclage automatique quand le sac est plein",
+        "Fabrication : case « Recycler aussitôt » pour garder les meilleurs exemplaires, la fabrication ne s'arrête plus sac plein",
+        "Nouvelle page Héros › Gravure runique : grave les emplacements de tes héros du rang 1 au rang 10 avec des runes et des kamas, +1 % aux caractéristiques de l'objet par rang"
+      ]
+    },
     {
       "v": "2.1.35.9",
       "name": "Combats de groupe animés",

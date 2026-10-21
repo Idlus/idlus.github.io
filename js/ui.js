@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35.9";
+const GAME_VERSION = "2.1.36";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.36", name: "Recycleur et Gravure", guide: "gravure", items: [
+    "Inventaire : le sac de base passe de 3 000 à 4 000 places",
+    "Nouvel onglet ♻ Recycleur : recycle d'un coup en runes tout ce qui correspond à tes règles (niveau, jet, doublons), recyclage automatique quand le sac est plein",
+    "Fabrication : case « Recycler aussitôt » pour garder les meilleurs exemplaires, la fabrication ne s'arrête plus sac plein",
+    "Nouvelle page Héros › Gravure runique : grave les emplacements de tes héros du rang 1 au rang 10 avec des runes et des kamas, +1 % aux caractéristiques de l'objet par rang" ] },
   { v: "2.1.35.9", name: "Combats de groupe animés", items: [
     "Bureau des Aventuriers (Monocompte) : le combat de groupe se regarde sur le vrai écran de combat, comme en solo (Formation, Scène ou Compacte, sorts animés, dégâts, journal), à la même seconde pour tout le groupe. Idée de Bsasuk",
     "Sur la page du Bureau, l'écran s'ouvre tout seul au lancement ; ailleurs, un bandeau « Ton groupe combat » propose Regarder ou Plus tard. L'onglet clignote si tu es ailleurs",
@@ -2682,7 +2687,7 @@ const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A 
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
 const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
-const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev", "guide", "align"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
+const NAV_NEW = { until: Date.UTC(2026, 9, 29), pages: ["grav"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
 const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
