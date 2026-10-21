@@ -2405,7 +2405,7 @@
     const nT = o.rounds || E.POUTCH_TOURS; const evLen = E.events.length; const rng0 = rnd; let out = null;
     try {
       let seed = 7919; rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-      const S2 = JSON.parse(JSON.stringify(S)); const c = S2.chars.find((x) => x.id === cid);
+      const S2 = JSON.parse(E.serialize(S)); const c = S2.chars.find((x) => x.id === cid); // 2.1.34.2 : sans le combat en cours (la Marque d'ébène y garde une entité : JSON circulaire)
       if (o.spells) c.spells = o.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
       if (o.auto) delete c.atkMode; if (o.rot) { c.rot = o.rot; c.atkMode = "rot"; } // 2.1.21 / 2.1.32 : comparaison avec l'auto, essai d'une rotation // 2.1.21 : comparaison de « Mon ordre » avec l'auto
       S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;

@@ -34,6 +34,14 @@ const CHANGELOG = [
     "Bilan de saison : ton parcours résumé quand la saison se termine",
     "Ta partie Classique ne change pas : chaque serveur garde sa propre partie",
   ] },
+  { v: "2.1.34.3", name: "Classements justes", items: [
+    "Classement des succès : les succès des chasses au trésor, des commandes d'artisans, des temples, des partitions et du guide comptent aussi, avec leurs points : le total est le même que sur la page Succès",
+    "Le Poutch (essai des sorts) ne plante plus pendant un combat où un héros porte le Dofus Ébène",
+    "Colère du Bworker : plus d'erreur quand une invocation porte les Dofus de son maître",
+  ] },
+  { v: "2.1.34.2", name: "Mission de donjon", items: [
+    "Alignement : une mission qui demande de vaincre le boss d'un donjon a enfin son bouton « Y aller », qui ouvre la fiche du donjon (signalé par Akileuss)",
+  ] },
   { v: "2.1.34.1", name: "Classement des succès", items: [
     "Communauté › Classements › Succès : les points de succès se mettent de nouveau à jour (le serveur ne les comptait plus et laissait tout le monde à 0)",
     "Le nombre de succès du classement ne compte plus les anciens succès retirés du jeu",

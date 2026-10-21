@@ -17,6 +17,15 @@ La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvo
 - Base : quatre fichiers à passer À LA MAIN, dans cet ordre (aucun n'est dans la liste automatique de supabase.yml) : supabase/monocompte.sql → supabase/amis.sql → supabase/mono_social.sql → supabase/mono_bureau.sql ; puis la fonction « mono » (supabase/functions/mono, game.js par tools/build_server.js).
 - Classique inchangé (simulations identiques, sauvegarde protégée).
 
+## 2.1.34.3 « Classements justes »
+
+- Ticket #143 (Akileuss) : 12 succès sont déclarés dans des fichiers que la fonction serveur ne charge pas (suivi.js, vie.js, ui.js, guide.js) ; VERIFY.ACH_EXTRA les compte avec leurs points dans le résumé (tests/succes_serveur.test.js garde la liste juste).
+- Ticket #142 (lucy8) : E.poutchPreview copiait la partie avec le combat en cours (la Marque d'ébène y garde une entité : JSON circulaire) → copie par E.serialize ; E.dofpDeath crée dpS s'il manque (invocation portant les Dofus). Aucun changement de sauvegarde ni de SQL.
+
+## 2.1.34.2 « Mission de donjon »
+
+- Ticket #141 (Akileuss) : Défis › Alignement, la carte de mission n'avait « Y aller » que pour les missions de chasse (q.sub). Les missions « boss » (q.dg) ont maintenant le bouton dgopen vers la fiche du donjon, caché une fois la mission remplie. Aucun changement de sauvegarde ni de serveur.
+
 ## 2.1.34.1 « Classement des succès »
 
 - Ticket #138 (Ley) : depuis le Bouclier (2.1.4), le résumé des classements est calculé par la fonction serveur « record », qui ne chargeait pas js/quetes.js : E.achPoints manquait, la colonne ladder.pts recevait 0 à chaque partie validée, et le nombre de succès comptait aussi les succès retirés. quetes.js est ajouté à tools/build_server.js (et aux chemins de supabase.yml) ; tests/bouclier_serveur.test.js vérifie les points. Aucun changement de sauvegarde ni de SQL ; le classement se corrige au prochain envoi de chaque partie.
