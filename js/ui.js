@@ -7235,10 +7235,12 @@ const invCountTxt = (groups) => `${Object.keys(S.items).length}/${E.itemCap(S)} 
 const jetHue = (q) => Math.round(q * 120);
 function invTile(g) { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0]; 
   const pick = ui.invMulti; const on = pick && g.items.some((x) => pick.has(x.uid));
-  return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl && !pick ? "on" : ""} ${on ? "picked" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+  return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl && !pick ? "on" : ""} ${on ? "picked" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}"${invDragOn && !pick && T.slot !== "dofus" ? ' draggable="true"' : ""}>
       ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.gain !== undefined ? `<span class="igain ${g.gain > 0.5 ? "" : "neg"}">${g.gain > 0.5 ? "+" + Math.round(g.gain) + " %" : "="}</span>` : g.sk ? `<span class="igain st">${g.svs.map(([k, v]) => `${g.svs.length > 1 ? "" : "+"}${v} ${h(STATS[k].short)}`).join(" · ")}</span>` : ""}${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}
       ${g.up ? `<span class="iup" title="Mieux pour ${h(g.up.name)}">▲</span>` : ""}${g.nw ? `<span class="inewi">Nouveau</span>` : ""}${`<span class="ijet" style="--w:${Math.round(g.best * 100)}%;--hj:${jetHue(g.best)}" title="Meilleur jet ${Math.round(g.best * 100)} %"></span>`}${T.set && SETS[T.set] && !g.eq ? `<span class="iset" title="${h(SETS[T.set].name)}">${setTpls(T.set).filter((t) => invOwn.has(t)).length}/${setTpls(T.set).length}</span>` : ""}${pick ? `<span class="ipick">${on ? "✓" : ""}</span>` : ""}</button>`; }
+let invDragOn = false; // vrai pendant le rendu du sac quand le panneau du héros est affiché
 function invItemsHtml(groups) {
+  invDragOn = invHeroOn() && !ui.invMulti;
   const empty = `<div class="empty">${ui.invSearch || (ui.slotFilter && ui.slotFilter !== "all") ? "Aucun objet ne correspond." : "Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer."}</div>`;
   const by = {}; groups.forEach((g) => (by[ITEMS[g.tpl].slot] = by[ITEMS[g.tpl].slot] || []).push(g));
   return INV_SLOTS.filter(([k]) => by[k]).map(([k, n]) => { const L = by[k]; const nb = L.reduce((a, g) => a + g.items.length, 0); const up = L.filter((g) => g.up).length; const shut = ui.invShut && ui.invShut[k];
@@ -7277,11 +7279,13 @@ function renderInventory() {
       ${ui.slotFilter === "up" && invCnt.up ? (() => { const hs = new Set([...invUps().values()].map((c) => c.id)); return `<div class="invhint">${G("sparkle")}<span class="grow"><b>${invCnt.up} ${invCnt.up > 1 ? "objets</b> sont" : "objet</b> est"} mieux pour <b>${hs.size} héros</b> de l'équipe.</span><button class="btn sm primary" data-act="invupall">Tout équiper au mieux</button></div>`; })() : ""}
       ${ui.slotFilter === "trash" && invCnt.trash ? `<div class="invhint"><span class="grow"><b>${invCnt.trash} ${invCnt.trash > 1 ? "objets</b> ne servent" : "objet</b> ne sert"} à aucun héros de l'équipe : niveau bien plus bas, aucune panoplie, ni cadenas, ni Rayonnant, ni Parfait.</span><button class="btn sm" data-act="invtrashpick">Tout sélectionner</button></div>` : ""}
       ${ui.invMore ? `<div class="panel invmore"><div class="pad stack" style="gap:8px"><div class="row"><span class="muted small num">${invCountTxt(groups)}</span>${`<span class="row small">Niveau <input type="number" min="1" max="200" data-act="invlv0" value="${ui.invLv ? ui.invLv[0] : ""}" placeholder="1" style="width:64px"> à <input type="number" min="1" max="200" data-act="invlv1" value="${ui.invLv ? ui.invLv[1] : ""}" placeholder="200" style="width:64px"></span>`}<label class="row small"><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé (${nWorn})</label>${dupesBtn()}</div>${autoRulesHtml()}</div></div>` : `<div class="xs muted num" id="invCount">${invCountTxt(groups)}</div>`}</div>`;
-    body = `${toolsA}
+    const hp = !detail && !pick && invHeroOn() ? invHeroHtml() : ""; // 2.1.34 (Mathis 2A) : le héros à côté du sac, sauf quand la fiche d'un objet est ouverte
+    const main = `${toolsA}
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div id="invItems" class="${S.settings.invSmall ? "invsmall" : ""}">${invItemsHtml(groups)}</div>
-      </div>${pickBar}`;
+      </div>`;
+    body = hp ? `<div class="invhw"><div class="invhw-m">${main}</div>${hp}</div>${pickBar}` : main + pickBar;
   } else if (ui.inv === "over") {
     body = overHtml();
   } else if (ui.inv === "res") {
@@ -8646,6 +8650,8 @@ function displayOptionsHtml() {
     + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
     + optLine("Écrans de récompense", "objet Rayonnant, palier de 10 niveaux, stasis", `<span class="seg">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span>`)
     + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent")
+    + optChk(`data-act="setlivecol"`, S.settings.liveCol !== false, "Colonne « Combat en direct »", "écran de 1600 px de large ou plus : le combat, le butin récent et le chat dans une colonne à droite")
+    + optChk(`data-act="setinvhero"`, S.settings.invHero !== false, "Héros à côté du sac", "PC : l'équipement d'un héros à droite de l'Inventaire, on y glisse les objets")
     + optChk(`data-act="fm-mini"`, S.settings.miniFight !== false, "Petit module de combat", "hors de l'onglet Combat : sous « Combat en cours » sur PC, bande au-dessus de la barre du bas sur téléphone")); // 1.0.30 (js/formation.js)
 }
 /* ---- bulles de découverte ---- */
@@ -10156,6 +10162,7 @@ document.addEventListener("click", (ev) => {
       ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
     case "invchip": ui.slotFilter = d.v; break;
     case "invfor": ui.invFor = d.cid ? +d.cid : null; break;
+    case "invhero": ui.invHero = +d.cid; ui.invFor = +d.cid; break; // 2.1.34 (2A) : la tête du panneau choisit aussi le tri « Pour »
     case "invstatopen": ui.invStatOpen = !ui.invStatOpen; break;
     case "invstat": { const L = (ui.invStats || []).slice(); const i = L.indexOf(d.k); if (i >= 0) L.splice(i, 1); else if (statOfQ(E.searchNorm(ui.invSearch)) === d.k) { ui.invSearch = ""; } else L.push(d.k); ui.invStats = L; break; }
     case "invstatclr": ui.invStats = []; break;
@@ -10513,6 +10520,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
   else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
+  else if (a === "setlivecol") { S.settings.liveCol = t.checked; dirty = true; liveColTick(true); return; }
+  else if (a === "setinvhero") { S.settings.invHero = t.checked; dirty = true; return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setcontrast") { S.settings.contrast = t.checked; dirty = true; applyDisplay(); return; }
   else if (a === "tipsoff") { E.tipState(S).off = !t.checked; dirty = true; if (!t.checked) tipHide(); return; }
@@ -11597,6 +11606,7 @@ function loop() {
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) setTxt(sb, dur(Math.min(...ab.map((b) => b.left)))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) setTxt(kl, fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0)));
     if (ui.tab !== "combat" && window.FORMUI) window.FORMUI.loop(); // 1.0.30 : petit module de combat (ses propres éléments seulement)
+    liveColTick(); // 2.1.34 (1B) : colonne « Combat en direct » des grands écrans
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
@@ -11761,6 +11771,92 @@ document.addEventListener("contextmenu", (ev) => {
 });
 ["click", "scroll", "resize"].forEach((e) => window.addEventListener(e, (ev) => { if (e === "click" && ev.target.closest && ev.target.closest("#ctxmenu")) return; ctxClose(); }, { passive: true, capture: e !== "click" }));
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") ctxClose(); });
+/* ---------- 2.1.34 (Mathis 2A) : Inventaire sur PC, le héros à côté du sac ----------
+   Les têtes de l'équipe, les 15 cases du héros choisi et ses chiffres clés. On glisse un objet du sac sur une case (ou sur une tête) :
+   les cases possibles s'allument et le gain de puissance s'affiche avant de lâcher. Masqué au téléphone, pendant la sélection
+   multiple et quand la fiche d'un objet est ouverte. Option : S.settings.invHero. */
+const IHP_MQ = window.matchMedia ? window.matchMedia("(min-width: 1100px) and (hover: hover)") : null;
+const invHeroOn = () => !!(S && IHP_MQ && IHP_MQ.matches && S.settings.invHero !== false && E.team(S).length);
+const invHeroChar = () => { const team = E.team(S); return team.find((x) => x.id === ui.invFor) || team.find((x) => x.id === ui.invHero) || team[0]; };
+function invHeroHtml() {
+  const c = invHeroChar(); if (!c) return ""; const st = E.charStats(S, c);
+  const heads = E.team(S).map((x) => `<button class="ihp-h ${x.id === c.id ? "on" : ""}" data-act="invhero" data-cid="${x.id}" data-ihp-cid="${x.id}" title="${h(x.name)} niv. ${x.lvl}" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</button>`).join("");
+  const cell = (sl) => { const it = S.items[c.equip[sl]]; const T = it && ITEMS[it.tpl];
+    return `<div class="ihp-s ${it ? "filled " + rarCls(it.tpl, it) : ""}" data-ihp-slot="${sl}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[sl])} : vide"`}>${it ? im(itemImg(it.tpl), "", T.name) : ""}<small>${h(SLOTS[sl])}</small><b class="ihp-g"></b></div>`; };
+  const kv = [["PV", st.hpMax], ["PA", st.pa], ["Puissance", st.pui], ["Critique", st.cri], ["Sagesse", st.sa], ["Initiative", st.ini]].filter(([, v]) => v !== undefined);
+  return `<aside class="ihp" data-ihp-c="${c.id}"><div class="ihp-heads">${heads}</div>
+    <div class="ihp-n"><b>${h(c.name)}</b><span>${h(CLASSES[c.cls].name)} · niv. ${c.lvl}</span><span class="grow"></span><button class="btn sm" data-act="homehero" data-id="${c.id}" title="Ouvrir la fiche du héros">Fiche</button></div>
+    <div class="ihp-slots">${EQ_SLOTS.map(cell).join("")}</div>
+    <div class="ihp-cmp" id="ihpCmp"><span class="xs muted">Glisse un objet du sac sur une case ou sur une tête, ou double-clique dessus. Toucher une tête trie le sac pour ce héros.</span></div>
+    <div class="ihp-k">${kv.map(([k, v]) => `<div><b class="num">${fmt(Math.round(v || 0))}</b><span>${k}</span></div>`).join("")}</div></aside>`;
+}
+const ihpSlotsFor = (c, it) => { const T = ITEMS[it.tpl]; if (!T || T.trophy || T.lvl > c.lvl) return []; const L = T.slot === "anneau" ? ["anneau1", "anneau2"] : T.slot === "dofus" ? D.DOFUS_SLOTS : [T.slot]; return L.filter((sl) => !equipBlocked(c, c.equip, sl, it)); };
+let ihpDrag = null;
+function ihpCmp(c, it, sl) {
+  const box = $("#ihpCmp"); if (!box) return; const T = ITEMS[it.tpl];
+  if (!sl) { box.innerHTML = `<span class="xs muted">${h(T.name)} ne va sur aucune case de ${h(c.name)}${T.lvl > c.lvl ? ` (niveau ${T.lvl})` : ""}.</span>`; return; }
+  const base = gearScore(c, c.equip); const g = gainFor(c, sl, it.uid, base) / Math.max(1, base) * 100;
+  box.innerHTML = g > 0.5 ? `<b class="up">▲ Mieux pour ${h(c.name)}</b> : <b>+${Math.round(g)} %</b> de puissance (${h(SLOTS[sl])})` : g < -0.5 ? `<b class="dn">▼ Moins bien pour ${h(c.name)}</b> : ${Math.round(g)} % de puissance (${h(SLOTS[sl])})` : `≈ À peu près pareil pour ${h(c.name)} (${h(SLOTS[sl])})`;
+}
+function ihpClear() { document.querySelectorAll(".ihp-s.ok,.ihp-s.over,.ihp-h.over").forEach((x) => x.classList.remove("ok", "over")); document.querySelectorAll(".ihp-g").forEach((x) => (x.textContent = "")); const p = $(".ihp"); if (p) p.classList.remove("drag"); }
+document.addEventListener("dragstart", (ev) => {
+  const t = ev.target.closest && ev.target.closest("#invItems .itile[draggable]"); if (!t || !S) return;
+  const it = S.items[+t.dataset.tipitem]; const c = invHeroChar(); if (!it || !c) return;
+  ihpDrag = { uid: it.uid }; hideTip(); try { ev.dataTransfer.setData("text/plain", String(it.uid)); ev.dataTransfer.effectAllowed = "move"; } catch (e) {}
+  const p = $(".ihp"); if (p) p.classList.add("drag"); const ok = ihpSlotsFor(c, it); const base = gearScore(c, c.equip);
+  ok.forEach((sl) => { const el = document.querySelector(`.ihp-s[data-ihp-slot="${sl}"]`); if (!el) return; el.classList.add("ok"); const g = gainFor(c, sl, it.uid, base) / Math.max(1, base) * 100; const b = el.querySelector(".ihp-g"); if (b) { b.textContent = g > 0.5 ? `+${Math.round(g)}%` : g < -0.5 ? `${Math.round(g)}%` : "="; b.className = "ihp-g " + (g > 0.5 ? "up" : g < -0.5 ? "dn" : ""); } });
+  ihpCmp(c, it, ok.sort((a, b) => gainFor(c, b, it.uid, base) - gainFor(c, a, it.uid, base))[0]);
+});
+document.addEventListener("dragover", (ev) => {
+  if (!ihpDrag) return; const sEl = ev.target.closest && ev.target.closest(".ihp-s.ok"); const hEl = ev.target.closest && ev.target.closest(".ihp-h");
+  document.querySelectorAll(".ihp-s.over,.ihp-h.over").forEach((x) => { if (x !== sEl && x !== hEl) x.classList.remove("over"); });
+  if (!sEl && !hEl) return; ev.preventDefault(); try { ev.dataTransfer.dropEffect = "move"; } catch (e) {}
+  const it = S.items[ihpDrag.uid]; if (!it) return;
+  if (sEl && !sEl.classList.contains("over")) { sEl.classList.add("over"); ihpCmp(invHeroChar(), it, sEl.dataset.ihpSlot); }
+  if (hEl && !hEl.classList.contains("over")) { hEl.classList.add("over"); const c = char(+hEl.dataset.ihpCid); const q = c && ihpBest(c, it); ihpCmp(c, it, q); }
+});
+const ihpBest = (c, it) => { const base = gearScore(c, c.equip); return ihpSlotsFor(c, it).sort((a, b) => gainFor(c, b, it.uid, base) - gainFor(c, a, it.uid, base))[0] || null; };
+document.addEventListener("drop", (ev) => {
+  if (!ihpDrag) return; const sEl = ev.target.closest && ev.target.closest(".ihp-s.ok"); const hEl = ev.target.closest && ev.target.closest(".ihp-h");
+  const it = S.items[ihpDrag.uid]; ihpDrag = null; ihpClear(); if (!it || (!sEl && !hEl)) return; ev.preventDefault();
+  const c = sEl ? invHeroChar() : char(+hEl.dataset.ihpCid); const sl = sEl ? sEl.dataset.ihpSlot : c && ihpBest(c, it);
+  if (!c || !sl) { toast(`${ITEMS[it.tpl].name} ne va sur aucune case de ${c ? c.name : "ce héros"}.`); return; }
+  const r = E.equip(S, c.id, it.uid, sl); toast(r || `${ITEMS[it.tpl].name} équipé sur ${c.name}.`); if (!r) { if (hEl) { ui.invHero = c.id; ui.invFor = c.id; } dirty = true; render(); }
+});
+document.addEventListener("dragend", () => { if (ihpDrag) { ihpDrag = null; ihpClear(); } });
+
+/* ---------- 2.1.34 (Mathis 1B) : grand écran, colonne « Combat en direct » à droite, le chat ancré dessous ----------
+   Dès 1600 px de large : le combat en cours (le petit module en grand), « Voir le combat », rentrer ou quitter le donjon,
+   et le butin récent (▲ = mieux pour un héros). Le chat s'ouvre dessous la première fois. Sur la page Combat, seul le chat reste.
+   Option : S.settings.liveCol. Rien ne change sous 1600 px ni au téléphone. */
+const LC_MQ = window.matchMedia ? window.matchMedia("(min-width: 1600px)") : null;
+const liveColOn = () => !!(S && LC_MQ && LC_MQ.matches && S.settings.liveCol !== false);
+let lcAt = 0, lcLootAt = 0;
+function liveColTick(force) {
+  const on = liveColOn(); const B = document.body; let el = $("#livecol");
+  if (B.classList.contains("livecol") !== on) { B.classList.toggle("livecol", on); if (on && window.CHAT && window.CHAT.dock) window.CHAT.dock(); }
+  if (!on) { if (el) el.hidden = true; return; }
+  const now = performance.now(); if (!force && now - lcAt < 250) return; lcAt = now;
+  if (!el) { el = document.createElement("div"); el.id = "livecol"; el.className = "lcol"; el.setAttribute("aria-label", "Combat en direct"); document.body.appendChild(el); }
+  const hideCard = ui.tab === "combat" || !E.team(S).length; el.hidden = hideCard; B.classList.toggle("lc-nocard", hideCard);
+  if (hideCard) { B.style.setProperty("--lch", "0px"); return; }
+  const q = navQuitKind(); const ask = q === "dg" && ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000; const live = navLiveTxt(); const F = S.fight;
+  const sig = `${live ? 1 : 0}|${q}|${ask ? 1 : 0}`;
+  if (el.dataset.sig !== sig) {
+    el.dataset.sig = sig; lcLootAt = 0;
+    const quit = q === "hunt" ? `<button class="btn sm" data-act="navquit">${IC("havre")} Rentrer</button>` : q === "dg" ? `<button class="btn sm ${ask ? "danger" : ""}" data-act="navquit">${ask ? "Sûr ? La clé est perdue" : "Quitter le donjon"}</button>` : "";
+    el.innerHTML = live ? `<div class="lc-hd"><i class="lc-dot" aria-hidden="true"></i><b>Combat en direct</b><span class="grow"></span><span class="lc-t" id="lcT"></span></div><div class="lc-sub" id="lcSub"></div><div class="lc-ar navmf" id="lcAr"></div>
+      <div class="lc-row"><button class="btn sm primary" data-act="nav" data-v="combat">Voir le combat</button>${quit}</div><div class="lc-lh">Butin récent</div><div class="lc-loot" id="lcLoot"></div>`
+      : `<div class="lc-hd"><b>Combat</b></div><div class="lc-idle"><span class="small muted">Ton équipe se repose.</span><button class="btn sm primary" data-tab="world">Choisir une zone</button></div><div class="lc-lh">Butin récent</div><div class="lc-loot" id="lcLoot"></div>`;
+  }
+  if (live) { setTxt($("#lcSub"), live); setTxt($("#lcT"), F && !F.over ? `tour ${F.round}` : ""); const ar = $("#lcAr"); if (ar && window.FORMUI && window.FORMUI.box && !window.FORMUI.box(ar)) ar.innerHTML = `<span class="xs muted">Le combat suivant commence…</span>`; }
+  if (now - lcLootAt > 2500) { lcLootAt = now; const L = $("#lcLoot"); if (L) {
+    const ups = invUps(); const its = []; for (let u = S.nextUid - 1; u > 0 && its.length < 6 && S.nextUid - u < 600; u--) { const it = S.items[u]; const T = it && ITEMS[it.tpl]; if (T && !T.trophy && T.slot !== "dofus") its.push(it); }
+    const html = its.length ? its.map((it) => `<span class="lc-it ${rarCls(it.tpl, it)}" data-tipitem="${it.uid}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}${ups.get(it.uid) ? '<i class="lc-up">▲</i>' : ""}</span>`).join("") : `<span class="xs muted">Rien de nouveau pour l'instant.</span>`;
+    if (L.dataset.h !== html) { L.dataset.h = html; L.innerHTML = html; } } }
+  const hgt = Math.round(el.getBoundingClientRect().height + 12) + "px"; if (B.style.getPropertyValue("--lch") !== hgt) B.style.setProperty("--lch", hgt);
+}
+if (LC_MQ && LC_MQ.addEventListener) LC_MQ.addEventListener("change", () => liveColTick(true));
 window.DX = { get S() { return S; }, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };

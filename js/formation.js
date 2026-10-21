@@ -287,6 +287,12 @@
     const fold = !!St.settings.mfFold; if (st.classList.contains("fold") !== fold || !st.className) { st.className = "mfstrip" + (fold ? " fold" : ""); st.dataset.s = ""; }
     mfPaint(st, St, F, D2, mfStrip); st.dataset.k = k;
   }
+  /* 2.1.34 (Mathis 1B) : le même module, plus grand, dans la colonne « Combat en direct » des grands écrans */
+  function box(el) {
+    const St = S(), F = St && St.fight; if (!el || !St || !F || !F.ents || !mfLive(St)) return false;
+    const k = `${F.id}:${F.seq}:${F.round}:${F.over ? 1 : 0}`; if (el.dataset.k === k) return true;
+    mfPaint(el, St, F, mfData(St, F), mfBox); el.dataset.k = k; return true;
+  }
   let mfAt = 0;
   function loop() { if (Date.now() - mfAt < 250) return; mfAt = Date.now(); try { mini(); } catch (e) { /* le module ne bloque jamais la boucle du jeu */ } }
   mqPhone.addEventListener && mqPhone.addEventListener("change", () => { const b = $("#navmf"); if (b) b.dataset.k = ""; mini(); });
@@ -302,5 +308,5 @@
   });
   const fightOf = () => { const ui = UI(); return ui.watch ? ui.watch.W.S2.fight : S() && S().fight; };
 
-  window.FORMUI = { view, html, add, update, tipMon, mini, loop, monRes, monWeak };
+  window.FORMUI = { view, html, add, update, tipMon, mini, loop, monRes, monWeak, box };
 })();
