@@ -22,6 +22,9 @@
 .bx-m.free{border-style:dashed;background:transparent;justify-content:center;align-items:center;min-height:64px}
 .bx-chefbox{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:var(--panel2)}
 .bx-chefbox select{max-width:100%}
+.bx-serie{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--panel2)}
+.bx-serie .chainrow .sbtn{min-width:44px}
+.bx-serie-on{padding:8px 10px;border-radius:12px;background:rgba(var(--glw,143,186,80),.08)}
 .bx-view{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--panel3);border:1px solid var(--line)}
 .bx-view:empty{display:none}
 .bx-ok{display:flex;flex-wrap:wrap;gap:6px}

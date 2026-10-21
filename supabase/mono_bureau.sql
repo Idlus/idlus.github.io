@@ -26,7 +26,11 @@
 --   - pas encore d'horloge du serveur (planificateur) : l'entretien (invitations expirées, places gardées, transitions,
 --     ouverture des expéditions, grâce…) se fait à chaque appel (mono.bureau_menage). mono_srv_bureau_horloge() est prête
 --     pour le planificateur, qui attend l'accord de Mathis (« installe l'horloge du serveur ») ;
---   - créneaux de rendez-vous (12 h 30, 18 h 30, 20 h 30) et messages privés Discord : en réglage, DÉSACTIVÉS par défaut.
+--   - créneaux de rendez-vous (12 h 30, 18 h 30, 20 h 30) et messages privés Discord : en réglage, DÉSACTIVÉS par défaut ;
+--   - séries (idée de joueur validée par Mathis : « x1, x10, choix pour les dj en groupe mono ») : le chef choisit 1 à 10
+--     combats à la suite (mono_bureau_serie, plafond 10 dans la table) ; chaque combat est un combat normal (transition,
+--     confirmation, photos, verrou, un butin par joueur et par combat) ; le suivant est lancé par l'entretien (mono.bureau_menage)
+--     à la fin du précédent, seulement si l'équipe a gagné et que tous ses joueurs sont encore là et connectés.
 -- ============================================================================
 
 -- ---------- réglages (Mathis, panneau) ----------
@@ -124,6 +128,20 @@ create table if not exists mono.bureau_combat_membres (
   primary key (combat, user_id)
 );
 create index if not exists bureau_cm_user on mono.bureau_combat_membres (user_id);
+-- séries : salon.serie = nombre de combats choisi par le chef (1 à 10) ; salon.serie_id = série en cours (numéro de son premier
+-- combat), salon.serie_stop = arrêt demandé (départ, demande d'un joueur) : la série s'arrête après le combat en cours.
+-- combat.serie_k / serie_n = « Combat k / N » ; un seul combat par numéro dans une série (jamais rejoué).
+alter table mono.bureau_salons add column if not exists serie int not null default 1 check (serie between 1 and 10);
+alter table mono.bureau_salons add column if not exists serie_id bigint;
+alter table mono.bureau_salons add column if not exists serie_stop text;
+alter table mono.bureau_combats add column if not exists serie_id bigint;
+alter table mono.bureau_combats add column if not exists serie_k int not null default 1 check (serie_k between 1 and 10);
+alter table mono.bureau_combats add column if not exists serie_n int not null default 1 check (serie_n between 1 and 10);
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'bureau_combats_serie_kn') then
+    alter table mono.bureau_combats add constraint bureau_combats_serie_kn check (serie_k <= serie_n); end if;
+end $$;
+create unique index if not exists bureau_serie_k on mono.bureau_combats (serie_id, serie_k) where serie_id is not null;
 -- butin : un par combat et par joueur (son numéro), récupéré une seule fois
 create table if not exists mono.bureau_butins (
   combat bigint not null references mono.bureau_combats (id) on delete cascade,
@@ -308,6 +326,9 @@ as $$ declare s mono.bureau_salons%rowtype; c mono.bureau_combats%rowtype; nouve
   if c.id is not null and exists (select 1 from mono.bureau_combat_membres where combat = c.id and user_id = u) then
     perform mono.bureau_annuler(c.id, mono.bureau_nom(u) || ' est parti : lancement annulé.', null);
   end if;
+  -- série en cours : un joueur de la série quitte le groupe, elle s'arrête après le combat en cours
+  update mono.bureau_salons x set serie_stop = coalesce(x.serie_stop, mono.bureau_nom(u) || ' a quitté le groupe') where x.id = p_salon and x.serie_id is not null
+    and exists (select 1 from mono.bureau_combats cc join mono.bureau_combat_membres cm on cm.combat = cc.id where cc.serie_id = x.serie_id and cm.user_id = u);
   if not exists (select 1 from mono.bureau_membres where salon = p_salon) then
     update mono.bureau_salons set etat = 'ferme', ferme_at = now(), motif = coalesce(motif, 'salon vide') where id = p_salon and etat <> 'ferme';
     update mono.bureau_invitations set etat = 'annulee' where salon = p_salon and etat = 'attente';
@@ -330,6 +351,33 @@ as $$ declare c mono.bureau_combats%rowtype; begin
     or (p_qui is null and exists (select 1 from mono.bureau_combat_membres x where x.combat = c.id and x.user_id = m.user_id and x.confirme_at is null)));
   update mono.bureau_salons set etat = 'ouvert' where id = c.salon and etat = 'transition';
   perform mono.bureau_log(c.salon, p_txt);
+  -- un lancement annulé arrête la série (les combats finis restent acquis, pas de reprise automatique)
+  update mono.bureau_salons set serie_id = null, serie_stop = null where id = c.salon and serie_id = c.serie_id;
+  if found and c.serie_n > 1 then
+    perform mono.bureau_log(c.salon, format('Série arrêtée au combat %s / %s : les combats finis restent acquis.', c.serie_k, c.serie_n)); end if;
+end $$;
+
+-- Série : le combat suivant, lancé à la fin du précédent (entretien). Renvoie null s'il est lancé, sinon pourquoi la série
+-- s'arrête : arrêt demandé (départ), défaite, joueur parti ou déconnecté (même règle de présence que partout : mono.bureau_present),
+-- compte bloqué, saison fermée. Mêmes joueurs, même donjon, même stasis ; transition de 60 s comme un lancement du chef.
+create or replace function mono.bureau_serie_suite(x mono.bureau_salons, c mono.bureau_combats) returns text language plpgsql security definer set search_path = mono, public
+as $$ declare z record; cid bigint; begin
+  if x.serie_stop is not null then return x.serie_stop; end if;
+  if c.serie_id is null or c.serie_k >= c.serie_n then return 'série finie'; end if;
+  if not coalesce(c.win, false) then return 'défaite'; end if;
+  if mono.bureau_saison() is distinct from c.saison then return 'saison fermée'; end if;
+  for z in select cm.user_id, m.salon, m.vu_at from mono.bureau_combat_membres cm left join mono.bureau_membres m on m.user_id = cm.user_id and m.salon = x.id where cm.combat = c.id loop
+    if z.salon is null then return mono.bureau_nom(z.user_id) || ' a quitté le groupe'; end if;
+    if not (z.vu_at is not null and z.vu_at > now() - mono.bsec('deco_s')) then return mono.bureau_nom(z.user_id) || ' est déconnecté'; end if;
+    if mono.bureau_bloque(z.user_id, c.saison) is not null then return mono.bureau_nom(z.user_id) || ' ne peut plus jouer en groupe'; end if;
+  end loop;
+  insert into mono.bureau_combats (salon, saison, did, stasis, seed, lance_par, transition_fin, serie_id, serie_k, serie_n)
+    values (x.id, c.saison, c.did, c.stasis, floor(random() * 4294967295)::bigint, c.lance_par, now() + mono.bsec('transition_s'), c.serie_id, c.serie_k + 1, c.serie_n)
+    returning id into cid;
+  insert into mono.bureau_combat_membres (combat, user_id) select cid, cm.user_id from mono.bureau_combat_membres cm where cm.combat = c.id;
+  update mono.bureau_salons set etat = 'transition' where id = x.id;
+  perform mono.bureau_log(x.id, format('Combat %s / %s : lancement automatique, chacun a 60 secondes pour confirmer.', c.serie_k + 1, c.serie_n));
+  return null;
 end $$;
 
 -- ---------- recherche : rendue en tête de file ----------
@@ -370,7 +418,7 @@ end $$;
 
 -- ---------- entretien (à chaque appel ; le planificateur pourra l'appeler aussi) ----------
 create or replace function mono.bureau_menage() returns void language plpgsql security definer set search_path = mono, public
-as $$ declare r record; s int := mono.saison_ouverte(); sid bigint; n int; libres int; begin
+as $$ declare r record; s int := mono.saison_ouverte(); sid bigint; n int; libres int; xs mono.bureau_salons%rowtype; cb mono.bureau_combats%rowtype; why text; begin
   if not pg_try_advisory_xact_lock(hashtextextended('mono:bureau:menage', 0)) then return; end if;
   -- 1. invitations arrivées à échéance (60 s) ; salons automatiques résolus
   for r in select distinct i.salon from mono.bureau_invitations i where i.etat = 'attente' and i.expire_at <= now() loop
@@ -385,11 +433,22 @@ as $$ declare r record; s int := mono.saison_ouverte(); sid bigint; n int; libre
   for r in select id from mono.bureau_combats where etat = 'calcul' and calc_at < now() - interval '5 minutes' loop
     perform mono.bureau_annuler(r.id, 'Le serveur n''a pas pu jouer le combat : lancement annulé.', array[]::uuid[]);
   end loop;
-  -- 3. combat fini (heure de fin passée) : le salon reste ouvert, chacun doit reconfirmer « Prêt »
-  for r in select x.id from mono.bureau_salons x where x.etat = 'combat' and not exists (select 1 from mono.bureau_combats c where c.salon = x.id and c.etat = 'fini' and c.fin_at > now())
+  -- 3. combat fini (heure de fin passée) : combat suivant d'une série (un seul à la fois, lancé ici), sinon le salon reste
+  --    ouvert et chacun doit reconfirmer « Prêt »
+  for xs in select x.* from mono.bureau_salons x where x.etat = 'combat' and not exists (select 1 from mono.bureau_combats c where c.salon = x.id and c.etat = 'fini' and c.fin_at > now())
       for update skip locked loop
-    update mono.bureau_salons set etat = 'ouvert' where id = r.id; update mono.bureau_membres set pret = false where salon = r.id;
-    perform mono.bureau_log(r.id, 'Combat terminé. Le chef peut proposer de rejouer, changer de stasis ou de donjon.');
+    select * into cb from mono.bureau_combats where salon = xs.id and etat = 'fini' order by id desc limit 1;
+    why := null;
+    if xs.serie_id is not null and cb.serie_id = xs.serie_id then
+      why := mono.bureau_serie_suite(xs, cb);
+      if why is null then continue; end if;
+    end if;
+    update mono.bureau_salons set etat = 'ouvert', serie_id = null, serie_stop = null where id = xs.id; update mono.bureau_membres set pret = false where salon = xs.id;
+    if xs.serie_id is not null and cb.serie_n > 1 then
+      perform mono.bureau_log(xs.id, case when cb.serie_k >= cb.serie_n then format('Série terminée : %s combats sur %s.', cb.serie_k, cb.serie_n)
+        else format('Série arrêtée après le combat %s / %s (%s). Les combats finis restent acquis.', cb.serie_k, cb.serie_n, why) end);
+    end if;
+    perform mono.bureau_log(xs.id, 'Combat terminé. Le chef peut proposer de rejouer, changer de stasis ou de donjon.');
   end loop;
   -- 4. places gardées 2 minutes (avant le combat) : au-delà, la place est libérée ; jamais pendant un combat
   for r in select m.salon, m.user_id from mono.bureau_membres m join mono.bureau_salons x on x.id = m.salon
@@ -528,6 +587,7 @@ as $$ declare s int := mono.bureau_saison(); m mono.bureau_membres%rowtype; x mo
     chef := mono.bureau_chef(x.id);
     sal := jsonb_build_object('id', x.id, 'etat', x.etat, 'did', x.did, 'stasis', x.stasis, 'cle', x.cle, 'public', x.public, 'remplacants', x.remplacants, 'version', x.version,
       'expedition', x.expedition, 'heure', (select heure from mono.bureau_expeditions where id = x.expedition), 'seq', x.seq,
+      'serie', x.serie, 'serie_id', x.serie_id, 'serie_stop', x.serie_stop,
       'chef', chef, 'titulaire', x.chef, 'provisoire', chef is distinct from x.chef, 'cree', x.created_at, 'attente_fin', x.created_at + mono.bsec('attente_s'),
       'membres', (select coalesce(jsonb_agg(jsonb_build_object('user', y.user_id, 'pseudo', mono.bureau_nom(y.user_id), 'arrive', y.arrive_at, 'pret', y.pret,
           'present', mono.bureau_present(y), 'venu', y.vu_at is not null, 'chef', y.user_id = chef, 'moi', y.user_id = u, 'version', y.version,
@@ -539,7 +599,9 @@ as $$ declare s int := mono.bureau_saison(); m mono.bureau_membres%rowtype; x mo
           'membres', (select jsonb_agg(jsonb_build_object('user', z.user_id, 'pseudo', mono.bureau_nom(z.user_id), 'ok', z.confirme_at is not null) order by z.user_id) from mono.bureau_combat_membres z where z.combat = c.id),
           'debut', c.debut_at, 'fin', c.fin_at, 'win', case when c.etat = 'fini' then c.win end,
           'seed', case when c.etat = 'fini' then c.seed end, 'snaps', case when c.etat = 'fini' then c.snaps end, 'duree', c.duree_ms,
-          'at', floor(extract(epoch from c.lance_at))::bigint * 1000) end,
+          'at', floor(extract(epoch from c.lance_at))::bigint * 1000, 'serie_id', c.serie_id, 'serie_k', c.serie_k, 'serie_n', c.serie_n,
+          'serie_bilan', case when c.serie_n > 1 then (select coalesce(jsonb_agg(jsonb_build_object('k', y.serie_k, 'win', y.win) order by y.serie_k), '[]'::jsonb)
+            from mono.bureau_combats y where y.serie_id = c.serie_id and y.etat = 'fini' and y.fin_at <= now()) end) end,
       'journal', (select coalesce(jsonb_agg(jsonb_build_object('t', j.txt, 'at', j.at) order by j.id), '[]'::jsonb) from (select * from mono.bureau_journal where salon = x.id order by id desc limit 20) j),
       'msgs', (select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 'p', mono.bureau_nom(g.user_id), 'b', g.body, 'at', g.at, 'moi', g.user_id = u) order by g.id), '[]'::jsonb)
         from (select * from mono.bureau_msgs where salon = x.id order by id desc limit 30) g));
@@ -799,6 +861,44 @@ as $$ declare u uuid := mono.need(); m mono.bureau_membres%rowtype; x mono.burea
   return mono.bureau_etat(u, p_onglet) || jsonb_build_object('ok', true);
 end $$;
 
+-- Série (idée de joueur validée) : le chef choisit 1 à 10 combats à la suite (×1, ×5, ×10 ou un nombre libre) ; tout le monde
+-- voit le choix et reconfirme « Prêt » ; jamais pendant un lancement, un combat ou une série en cours
+create or replace function public.mono_bureau_serie(p_n int, p_onglet text default null) returns jsonb language plpgsql security definer set search_path = mono, public
+as $$ declare u uuid := mono.need(); m mono.bureau_membres%rowtype; x mono.bureau_salons%rowtype; begin
+  perform mono.bureau_menage();
+  select * into m from mono.bureau_membres where user_id = u;
+  if m.salon is null then return mono.err('Tu n''es dans aucun salon.'); end if;
+  select * into x from mono.bureau_salons where id = m.salon for update;
+  begin m := mono.bureau_moi(u, p_onglet); exception when raise_exception then return mono.err(sqlerrm); end;
+  if mono.bureau_chef(x.id) <> u then return mono.err('Seul le chef choisit le nombre de combats.'); end if;
+  if p_n is null or p_n not between 1 and 10 then return mono.err('De 1 à 10 combats à la suite.'); end if;
+  if x.etat <> 'ouvert' then return mono.err(case x.etat when 'transition' then 'Impossible pendant le lancement.' when 'combat' then 'Attends la fin du combat.' else 'Le salon n''est pas encore formé.' end); end if;
+  if p_n <> x.serie then
+    update mono.bureau_salons set serie = p_n where id = x.id;
+    update mono.bureau_membres set pret = false where salon = x.id;
+    perform mono.bureau_log(x.id, format('%s choisit %s. Tout le monde doit reconfirmer « Prêt ».', mono.bureau_nom(u), case when p_n = 1 then 'un seul combat' else p_n || ' combats à la suite' end));
+  end if;
+  return mono.bureau_etat(u, p_onglet) || jsonb_build_object('ok', true);
+end $$;
+
+-- Arrêter la série après le combat en cours (un joueur de la série) : les combats finis restent acquis
+create or replace function public.mono_bureau_serie_arreter(p_onglet text default null) returns jsonb language plpgsql security definer set search_path = mono, public
+as $$ declare u uuid := mono.need(); m mono.bureau_membres%rowtype; x mono.bureau_salons%rowtype; begin
+  perform mono.bureau_menage();
+  select * into m from mono.bureau_membres where user_id = u;
+  if m.salon is null then return mono.err('Tu n''es dans aucun salon.'); end if;
+  select * into x from mono.bureau_salons where id = m.salon for update;
+  begin m := mono.bureau_moi(u, p_onglet); exception when raise_exception then return mono.err(sqlerrm); end;
+  if x.serie_id is null then return mono.err('Aucune série en cours.'); end if;
+  if not exists (select 1 from mono.bureau_combats cc join mono.bureau_combat_membres cm on cm.combat = cc.id where cc.serie_id = x.serie_id and cm.user_id = u) then
+    return mono.err('Tu ne joues pas cette série.'); end if;
+  if x.serie_stop is null then
+    update mono.bureau_salons set serie_stop = mono.bureau_nom(u) || ' a demandé l''arrêt' where id = x.id;
+    perform mono.bureau_log(x.id, mono.bureau_nom(u) || ' arrête la série : elle s''arrête après le combat en cours.');
+  end if;
+  return mono.bureau_etat(u, p_onglet) || jsonb_build_object('ok', true);
+end $$;
+
 -- Lancer (chef effectif) : les présents prêts partent (2 à 4) ; un absent garde sa place ; transition de 60 s
 create or replace function public.mono_bureau_lancer(p_onglet text default null) returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); m mono.bureau_membres%rowtype; x mono.bureau_salons%rowtype; n int; cid bigint; e mono.bureau_expeditions%rowtype; b text; begin
@@ -819,12 +919,14 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); m mono.burea
   if n < 2 then return mono.err('Il faut au moins 2 joueurs présents et prêts.'); end if;
   if x.stasis > 1 and not exists (select 1 from mono.bureau_membres y where y.salon = x.id and y.pret and mono.bureau_present(y) and mono.bureau_smax(y.user_id, x.saison, x.did) >= x.stasis - 1) then
     return mono.err(format('Il faut au moins un joueur qui a réussi la stasis %s de ce donjon.', x.stasis - 1)); end if;
-  insert into mono.bureau_combats (salon, saison, did, stasis, seed, lance_par, transition_fin) values (x.id, x.saison, x.did, x.stasis, floor(random() * 4294967295)::bigint, u, now() + mono.bsec('transition_s'))
+  insert into mono.bureau_combats (salon, saison, did, stasis, seed, lance_par, transition_fin, serie_k, serie_n) values (x.id, x.saison, x.did, x.stasis, floor(random() * 4294967295)::bigint, u, now() + mono.bsec('transition_s'), 1, x.serie)
     returning id into cid;
+  update mono.bureau_combats set serie_id = cid where id = cid;
   insert into mono.bureau_combat_membres (combat, user_id) select cid, y.user_id from mono.bureau_membres y where y.salon = x.id and y.pret and mono.bureau_present(y);
-  update mono.bureau_salons set etat = 'transition' where id = x.id;
+  update mono.bureau_salons set etat = 'transition', serie_id = cid, serie_stop = null where id = x.id;
   if x.expedition is not null then update mono.bureau_expeditions set etat = 'partie' where id = x.expedition and etat = 'ouverte'; end if;
-  perform mono.bureau_log(x.id, format('%s lance le combat à %s : chacun a 60 secondes pour terminer son action solo.', mono.bureau_nom(u), n));
+  perform mono.bureau_log(x.id, case when x.serie > 1 then format('%s lance une série de %s combats à %s (combat 1 / %s) : chacun a 60 secondes pour terminer son action solo.', mono.bureau_nom(u), x.serie, n, x.serie)
+    else format('%s lance le combat à %s : chacun a 60 secondes pour terminer son action solo.', mono.bureau_nom(u), n) end);
   return mono.bureau_etat(u, p_onglet) || jsonb_build_object('ok', true, 'combat', cid);
 end $$;
 
@@ -857,6 +959,7 @@ as $$ declare u uuid := mono.need(); b mono.bureau_butins%rowtype; c mono.bureau
   if c.fin_at > now() then return mono.err('Le combat n''est pas fini : le butin arrive à la fin.'); end if;
   update mono.bureau_butins set pris_at = now() where combat = p_combat and user_id = u;
   return jsonb_build_object('ok', true, 'combat', c.id, 'did', c.did, 'stasis', c.stasis, 'seed', c.seed, 'win', c.win, 'result', c.result,
+    'serie_id', c.serie_id, 'serie_k', c.serie_k, 'serie_n', c.serie_n,
     'ids', (select coalesce(jsonb_agg(z.user_id order by z.user_id), '[]'::jsonb) from mono.bureau_combat_membres z where z.combat = c.id and z.user_id <> u));
 end $$;
 
@@ -997,7 +1100,7 @@ as $$ begin
   return jsonb_build_object(
     'reglages', (select jsonb_object_agg(cle, v) from mono.bureau_reglages),
     'creneaux', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'heure', to_char(heure, 'HH24:MI'), 'nom', nom, 'actif', actif) order by heure), '[]'::jsonb) from mono.bureau_creneaux),
-    'salons', (select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'etat', x.etat, 'did', x.did, 'stasis', x.stasis, 'expedition', x.expedition,
+    'salons', (select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'etat', x.etat, 'did', x.did, 'stasis', x.stasis, 'expedition', x.expedition, 'serie', x.serie, 'serie_id', x.serie_id,
         'membres', (select jsonb_agg(mono.bureau_nom(m.user_id)) from mono.bureau_membres m where m.salon = x.id)) order by x.id), '[]'::jsonb) from mono.bureau_salons x where x.etat <> 'ferme'),
     'expeditions', (select coalesce(jsonb_agg(jsonb_build_object('id', e.id, 'org', mono.bureau_nom(e.org), 'did', e.did, 'stasis', e.stasis, 'heure', e.heure, 'etat', e.etat,
         'n', (select count(*) from mono.bureau_inscriptions i where i.expedition = e.id)) order by e.heure), '[]'::jsonb) from mono.bureau_expeditions e where e.etat in ('annoncee', 'ouverte')),
