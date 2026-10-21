@@ -976,6 +976,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
     // 2.1.30 « Marché des bêtes » : catégorie Montures, une ligne par couleur qui s'ouvre sur chaque monture (3A), repère « carnet » (5B)
+    await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Découverte » posée sur les onglets de l'hôtel de vente
     await page.click('.subtabs [data-act="mk-tab"][data-v="buy"]'); await page.waitForTimeout(300);
     await page.evaluate(() => { window.DX.S.kamas += 200000; });
     await page.click('[data-act="mk-fam"][data-v="mt"]'); await page.waitForSelector('.mktr2[data-k="dd:Rousse"]', { timeout: 8000 });

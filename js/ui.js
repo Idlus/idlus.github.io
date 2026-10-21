@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.31.4";
+const GAME_VERSION = "2.1.31.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.31.5", name: "Quitter sans ouvrir le combat", items: [
+    "Menu (PC) : à côté de « Combat en cours », un petit bouton fait rentrer l'équipe de la chasse, ou quitte le donjon sans ouvrir l'écran de combat",
+    "Pour le donjon, il faut cliquer deux fois (« Sûr ? ») car la clé est perdue. En quittant un donjon, l'équipe reprend la chasse de sa zone, comme avant",
+  ] },
   { v: "2.1.31.4", name: "Succès de panoplies", items: [
     "Les succès de panoplies se débloquent lorsque tu possèdes toutes les pièces requises (signalé par SegFault). Les panoplies déjà complètes seront reconnues lors des prochaines vérifications des succès.",
   ] },
@@ -2773,19 +2777,20 @@ function renderNav() {
   const famNew = (F) => (navFamPages(F).some((p) => navIsNew(p[0])) ? '<span class="sn-newdot" title="Nouveauté"></span>' : "");
   const item = (key, n, ic, desc) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}</button>`;
   const fightBtn = `<button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${k === "combat" ? 'aria-current="page"' : ""} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>`;
+  const quit = navQuitBtn(); const fightRow = `<div class="sn-frow${quit ? " q" : ""}">${fightBtn}${quit}</div>`; // 2.1.31.5 : quitter le donjon ou rentrer de la chasse sans ouvrir le combat
   const foot = `<div class="sn-foot"><button class="sn-fb" data-act="gd-open" title="Guide de cette page"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Guide</span></button><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
   let side;
   if (mini) {
     const fly = ui.navFly && NAV.find((F) => F.id === ui.navFly);
     side = `<div class="sn-side sn-mcol"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button><button class="sn-mini" data-act="navmini" title="Afficher le nom des pages" aria-label="Agrandir le menu">»</button>
-      ${fightBtn}${item("home", "Havre-Sac", "logo")}<i class="sn-msep"></i>
+      ${fightRow}${item("home", "Havre-Sac", "logo")}<i class="sn-msep"></i>
       ${NAV.map((F) => `<button class="sn-fh${curFam && curFam.id === F.id ? " cur" : ""}${fly && fly.id === F.id ? " fly" : ""}" data-act="navfly" data-v="${F.id}" data-fam="${F.id}" title="${h(F.n)}" aria-expanded="${!!(fly && fly.id === F.id)}">${icon(F.ic)}${famNew(F)}${famBadge(F)}</button>`).join("")}
       <span class="sn-grow"></span>${foot}</div>${fly ? `<div class="sn-fly"><h4>${h(fly.n)}</h4>${navFamPages(fly).map((p) => item(p[0], p[1], p[2], true)).join("")}</div>` : ""}`;
   } else {
     const isOpen = (F) => (F.id in navFams ? !!navFams[F.id] : !!(curFam && curFam.id === F.id)); // 1.2.5.5 : plusieurs familles ouvertes
     side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="Réduire le menu aux icônes" aria-label="Réduire le menu">«</button></div>
       <label class="sn-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Aller à une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
-      ${fightBtn}${item("home", "Havre-Sac", "logo")}
+      ${fightRow}${item("home", "Havre-Sac", "logo")}
       ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}${badge(key)}</button>`; }).join("")}</div></div>` : ""}
       ${q ? `<div class="sn-hits"><span>${hits.length ? `${hits.length} page${hits.length > 1 ? "s" : ""}` : "Aucune page"} pour « ${h(q)} »</span>${hits.map((p) => item(p[0], p[1], p[2], true)).join("")}</div>`
         : NAV.map((F) => { const op = isOpen(F); return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
@@ -2846,7 +2851,18 @@ function navLiveTxt() {
   if (dg) return (S.dungeon.tot || 1) > 1 ? `Course ${S.dungeon.run || 1}/${S.dungeon.tot} · ${dg.name}` : `${dg.name} · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}`;
   return `Chasse · ${E.SUBS[S.sub].name}`;
 }
+/* 2.1.31.5 : à côté de « Combat en cours », quitter le donjon (2 clics : la clé est perdue) ou rentrer de la chasse */
+function navQuitKind() { return !S || !E.team(S).length || E.expActive(S) ? "" : S.dungeon ? "dg" : S.hunting && S.sub ? "hunt" : ""; }
+function navQuitBtn() {
+  const q = navQuitKind(); if (!q) { ui.navQuitAsk = 0; return ""; }
+  if (q === "hunt") return `<button class="sn-quit" data-act="navquit" title="Rentrer au Havre-Sac (arrête la chasse)" aria-label="Rentrer au Havre-Sac">${IC("havre")}</button>`;
+  const ask = ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000;
+  return ask ? `<button class="sn-quit ask" data-act="navquit" title="Cliquer encore pour quitter le donjon (la clé est perdue)" aria-label="Confirmer : quitter le donjon"><b>Sûr ?</b></button>`
+    : `<button class="sn-quit dg" data-act="navquit" title="Quitter le donjon (la clé est perdue)" aria-label="Quitter le donjon"><b aria-hidden="true">✕</b></button>`;
+}
 function updNavLive() {
+  { const fr = $("#nav .sn-frow"); const q = navQuitKind(); const was = fr ? (fr.querySelector(".sn-quit.ask") ? "ask" : fr.querySelector(".sn-quit.dg") ? "dg" : fr.querySelector(".sn-quit") ? "hunt" : "") : null;
+    const now = q === "dg" && ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000 ? "ask" : q; if (was !== null && was !== now) return renderNav(); }
   const el = $("#navlive"); if (!el) return; const v = navLiveTxt(); if (el.dataset.v === v) return; el.dataset.v = v;
   el.textContent = v || "voir l'arène"; const b = el.closest(".sn-fight"); if (b) { b.classList.toggle("on", !!v); b.querySelector("b").textContent = v ? "Combat en cours" : "Combat"; }
 }
@@ -10077,6 +10093,7 @@ document.addEventListener("click", (ev) => {
     case "autonow": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && E.applyAuto(S, it)) n++; }); toast(n ? `${n} objet${n > 1 ? "s" : ""} traité${n > 1 ? "s" : ""}.` : "Aucun objet concerné."); break; }
     case "leavedg": E.leaveDungeon(S); break;
     case "stophunt": msg(E.stopHunt(S)); break;
+    case "navquit": { const q = navQuitKind(); if (q === "dg") { if (!(ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000)) { ui.navQuitAsk = Date.now(); renderNav(); return; } ui.navQuitAsk = 0; E.leaveDungeon(S); toast(S.hunting && S.sub ? `Donjon quitté : l'équipe reprend la chasse (${E.SUBS[S.sub].name}).` : "Donjon quitté."); } else if (q === "hunt") toast(E.stopHunt(S) || "L'équipe rentre au Havre-Sac."); break; }
     case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
     /* Chasse aux Percepteurs (js/chasse.js) : de la carte vers l'onglet de la guilde, et retour */

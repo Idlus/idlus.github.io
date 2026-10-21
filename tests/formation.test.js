@@ -97,7 +97,7 @@ const server = http.createServer((req, res) => {
 
     // petit module (PC) : sous « Combat en cours », hors de l'onglet Combat ; un clic ouvre le combat
     await page.click('#nav .sn-side [data-nk="home"]'); await page.waitForTimeout(900); await clean();
-    const mf = await page.evaluate(() => { const b = document.querySelector("#navmf"), f = document.querySelector("#nav .sn-fight"); return b ? { vis: !b.hidden && b.offsetHeight > 0, txt: b.innerText, after: f && f.nextElementSibling === b, units: b.querySelectorAll(".mf-u").length } : null; });
+    const mf = await page.evaluate(() => { const b = document.querySelector("#navmf"), f = document.querySelector("#nav .sn-frow") || document.querySelector("#nav .sn-fight"); return b ? { vis: !b.hidden && b.offsetHeight > 0, txt: b.innerText, after: f && f.nextElementSibling === b, units: b.querySelectorAll(".mf-u").length } : null; });
     if (!mf || !mf.vis || !mf.after || !/Château Ensablé/.test(mf.txt) || !/tour \d/.test(mf.txt) || mf.units < 2) fail(`petit module (PC) absent ou incomplet (${JSON.stringify(mf)})`);
     if (SHOTS) await shot("petit-module-pc.png", { x: 0, y: 0, width: 640, height: 420 });
     // 1.0.30.7 : un Dopeul (monstre de la zone déguisé, il garde e.img) montre sa tête de classe, pas le monstre
