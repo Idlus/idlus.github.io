@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, stats-inventaire, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, stats-inventaire, kamas-anormaux, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -248,6 +248,14 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select s.data from public.saves s" > "$f"
           node tools/stats_inventaire.js "$f"
           rm -f "$f"
+      - name: Comptes aux kamas anormaux (lecture seule, pseudo et montant seulement)
+        if: inputs.etape == 'kamas-anormaux'
+        run: |
+          # 21/10/2026 : « regarde le compte qui possède 23 390 milliards de kama » (Mathis). Affiche seulement pseudo, kamas et temps de jeu
+          # des comptes à plus de 10 milliards de kamas, puis l'étape enquete-joueur se lance sur ce pseudo.
+          bash tools/serveur/vps_sql.sh lecture "select public.pseudo_of(s.user_id) as pseudo, (s.data::json->>'kamas')::numeric as kamas,
+            round(((s.data::json->'stats'->>'playtime')::numeric) / 3600, 1) as heures, s.updated_at
+            from public.saves s where (s.data::json->>'kamas')::numeric > 10000000000 order by 2 desc"
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
         run: |
