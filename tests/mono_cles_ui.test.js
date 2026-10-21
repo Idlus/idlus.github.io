@@ -39,7 +39,6 @@ function fake(nomono) {
       case "mono_acces": return F.testeur ? { ok: true, saison: null } : { ok: false };
       case "mono_cle_utiliser": {
         if (F.testeur) return { ok: true, deja: true, msg: "Tu es déjà testeur." };
-        if (F.essais >= 5) return { err: "Trop d'essais ratés : réessaie dans une heure." };
         const c = norm(a.p_code), k = c && F.cles[c];
         if (!k) { F.essais++; return { err: "Clé inconnue." }; }
         if (k.annulee) { F.essais++; return { err: "Cette clé a été annulée." }; }

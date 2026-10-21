@@ -16,7 +16,7 @@
   const E = window.ENGINE, ON = window.ONLINE;
   /* Clés bêta (supabase/mono_cles.sql) : le champ « Code testeur » d'Options › Compte (js/ui.js) les envoie ici quand le
      Monocompte en ligne est actif (flag mono de js/online.js) ; le serveur seul dit si la clé est bonne (une clé = un compte,
-     5 essais ratés par heure). Clé acceptée : l'accès du compte (mono_acces) est relu. Flag coupé : le jeu garde l'ancien code. */
+     sans limite d'essais depuis 2.1.35.2). Clé acceptée : l'accès du compte (mono_acces) est relu. Flag coupé : le jeu garde l'ancien code. */
   if (ON) {
     ON.monoCleOn = () => !!(ON.enabled && ON.monoSrv);
     ON.monoCle = async (code) => {

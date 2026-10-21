@@ -26,7 +26,7 @@ create table if not exists mono.cles (
   utilisee_par uuid unique, -- pas de clé étrangère : un compte effacé laisse sa clé utilisée
   utilisee_a timestamptz
 );
--- journal des essais ratés (5 par heure et par compte)
+-- journal des essais ratés (panel de Mathis ; 2.1.35.2 : plus de limite d'essais, demande de Mathis)
 create table if not exists mono.cles_essais (
   id bigserial primary key,
   user_id uuid not null,
@@ -92,12 +92,11 @@ end $$;
 -- ---------- le joueur entre sa clé (Options › Compte › Bêta Monocompte) ----------
 -- { ok: true, msg } (deja: true si le compte était déjà testeur : aucune clé n'est prise) ou { err }
 create or replace function public.mono_cle_utiliser(p_code text) returns jsonb language plpgsql security definer set search_path = mono, public
-as $$ declare u uuid := auth.uid(); c text; k mono.cles%rowtype; rate constant text := 'Trop d''essais ratés : réessaie dans une heure.'; begin
+as $$ declare u uuid := auth.uid(); c text; k mono.cles%rowtype; begin
   if u is null then return mono.err('Connecte-toi d''abord.'); end if;
   if btrim(coalesce(p_code, '')) = '' then return mono.err('Entre ta clé.'); end if;
   perform mono.verrou(u); -- deux essais du même compte passent l'un après l'autre
   if mono.acces(u) then return jsonb_build_object('ok', true, 'deja', true, 'msg', 'Tu es déjà testeur.'); end if;
-  if (select count(*) from mono.cles_essais where user_id = u and at > now() - interval '1 hour') >= 5 then return mono.err(rate); end if;
   if exists (select 1 from mono.cles where utilisee_par = u) then return mono.err('Ce compte a déjà utilisé une clé.'); end if;
   c := mono.cle_norm(p_code);
   if c is not null then

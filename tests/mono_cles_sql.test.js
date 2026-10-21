@@ -3,8 +3,10 @@
      (mono_cles.sql deux fois, puis monocompte.sql et mono_cles.sql à nouveau : aucune clé ni aucun testeur perdu) ;
    - panel : créer des clés (format MONO-XXXX-XXXX, alphabet sans caractères ambigus), liste, annuler ;
    - joueur : saisie normalisée, une clé = un compte, « déjà testeur » sans prendre de clé, accès ouvert (mono_acces) ;
-   - triche : clé déjà utilisée, annulée, inventée, 6e essai raté dans l'heure, deux comptes en même temps sur la même clé
-     (un seul gagne), fonctions du panel appelées par un joueur, anon refusé, lecture directe des tables refusée.
+   - triche : clé déjà utilisée, annulée, inventée, deux comptes en même temps sur la même clé
+     (un seul gagne), fonctions du panel appelées par un joueur, anon refusé, lecture directe des tables refusée ;
+   - 2.1.35.2 (Mathis) : plus de limite d'essais ratés : 8 essais ratés d'affilée, puis la bonne clé passe ; chaque essai
+     raté reste dans le journal mono.cles_essais.
    Lancer : IDLUS_PG="postgresql://postgres@/postgres?host=/chemin/du/socket&port=55432" node tests/mono_cles_sql.test.js
    Sans IDLUS_PG, le test SQL est sauté. La base « idlus_mono_cles » est recréée puis effacée. */
 "use strict";
@@ -109,16 +111,15 @@ run(`drop database if exists ${DB}`, URL0); run(`create database ${DB}`, URL0);
     refuse("clé annulée", () => errR(use(2, K[2]), /annulée/, "clé annulée"));
     refuse("clé inventée", () => { errR(use(3, "MONO-ZZZZ-ZZZZ"), /inconnue/, "clé inventée"); errR(use(3, "FRAGMENTS21"), /inconnue/, "ancien code du jeu"); errR(use(3, "'; drop table mono.cles; --"), /inconnue/, "saisie piégée"); });
     assert.strictEqual(acces(2), false, "joueur 2 toujours pas testeur"); assert.strictEqual(acces(3), false, "joueur 3 toujours pas testeur");
-    refuse("6e essai raté dans l'heure", () => {
-      for (let n = 0; n < 5; n++) errR(use(4, "MONO-ZZZZ-ZZZ" + "ABCDE"[n]), /inconnue/, "essai raté " + (n + 1));
-      errR(use(4, K[3]), /Trop d'essais/, "6e essai, même avec une bonne clé");
-      assert.strictEqual(q(`select utilisee_par is null from mono.cles where code = '${K[3]}'`), "t", "clé pas prise par l'essai refusé");
-      assert.strictEqual(acces(4), false, "joueur 4 pas testeur"); });
-    q(`update mono.cles_essais set at = at - interval '61 minutes' where user_id = '${U(4)}'`);
-    okR(use(4, K[3]), "une heure plus tard, la clé passe");
+    { // 2.1.35.2 : plus de limite d'essais ratés (demande de Mathis) ; le journal garde chaque essai raté
+      for (let n = 0; n < 8; n++) errR(use(4, "MONO-ZZZZ-ZZZ" + "ABCDEFGH"[n]), /inconnue/, "essai raté " + (n + 1));
+      assert.strictEqual(acces(4), false, "joueur 4 pas testeur après 8 essais ratés");
+      assert.strictEqual(q(`select count(*) from mono.cles_essais where user_id = '${U(4)}'`), "8", "8 essais ratés au journal");
+      assert.strictEqual(q(`select count(*) from pg_proc where proname = 'mono_cle_utiliser' and prosrc ~* 'interval|Trop d'`), "0", "aucune limite d'essais dans mono_cle_utiliser"); }
+    okR(use(4, K[3]), "9e essai, la bonne clé passe sans attendre");
     { // les essais ratés d'un compte ne bloquent pas les autres
       okR(use(13, K[4]), "joueur 13 pas gêné par le joueur 4"); }
-    console.log("ok - joueur : saisie normalisée, une clé par compte, « déjà testeur » sans clé prise, clé utilisée / annulée / inventée refusée, 5 essais ratés par heure");
+    console.log("ok - joueur : saisie normalisée, une clé par compte, « déjà testeur » sans clé prise, clé utilisée / annulée / inventée refusée, sans limite d'essais ratés (journal gardé)");
 
     /* ---------- deux comptes en même temps sur la même clé ---------- */
     refuse("deux comptes en même temps sur la même clé", () => {});
