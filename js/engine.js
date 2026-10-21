@@ -1473,6 +1473,7 @@
     if (E.dofpFight) E.dofpFight(S, F); // 1.0.16 : passifs des Dofus
     if (E.sealFight) E.sealFight(S, F); // Sceaux de champion (js/champions.js)
     if (E.petFight) E.petFight(S, F); // 1.1 : aptitudes des familiers (écaille, aura)
+    if (E.mutFight) E.mutFight(S, F); // Monocompte : mutation de la semaine, stasis 7 et plus (js/monoplus.js)
     newRound(F);
     return F;
   };
@@ -2244,6 +2245,7 @@
 
   const startOfTurn = (S, F, e) => {
     if (E.idTurn && (e.idn || e.idRegen || F.idGly) && !E.idTurn(F, e)) { flog(F, `${e.name} est vaincu.`, "ko"); return false; } // identité : retardement, bombes, glyphes
+    if (F.mut && E.mutTurn) E.mutTurn(F, e); // Monocompte : mutation de la semaine (soins des monstres, poisons ; js/monoplus.js)
     e.dots = e.dots.filter((d) => {
       F.dotSrc = e.side === "m" && d.src ? F.ents.find((x) => x.side === "c" && !x.summon && x.name === d.src) || null : null;
       const v = dealDamage(F, null, e, d.v, d.el); F.dotSrc = null;
