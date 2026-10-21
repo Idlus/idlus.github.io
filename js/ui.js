@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.35";
+const GAME_VERSION = "2.1.35.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.35.1", name: "C'est une bêta", items: [
+    "Écran des parties : la carte Monocompte dit clairement qu'il s'agit de la bêta fermée (saison de test, bugs possibles, remise à zéro avant la Saison 1)",
+    "Monocompte : les codes cadeaux du compte ne sont plus redonnés à la partie Monocompte (ils restent pour le serveur Classique)" ] },
   { v: "2.1.35", name: "Bêta fermée du Monocompte", items: [
     "Le serveur Monocompte ouvre sa bêta fermée, sur invitation : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la saison « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
     "Une clé bêta ? Connecte-toi, puis entre-la dans Options › Compte : la partie Monocompte apparaît dans « Changer de partie »",
@@ -3129,7 +3132,7 @@ const startMono = () => SLOT === MONO_SLOT || (srvFirst() && ui.startSrv === "mo
 const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, échanges et HdV : avec le serveur Monocompte, bientôt`];
 function srvPick() {
   if (!menuOn() || TESTMODE) return "";
-  if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur Classique ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
+  if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur Classique ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
   if (!srvFirst()) return "";
   const on = ui.startSrv === "mono" ? "mono" : "cl";
   return `<div class="panel"><div class="pad stack"><h2>Choisis ton serveur</h2><div class="srvpick">
@@ -10755,7 +10758,7 @@ const isEter = (n) => n > ETER;
 const monoSlot = (n) => n === MONO_SLOT || isEter(n);
 const slotKey = (n) => (n === 1 ? BASE_KEY : n === MONO_SLOT ? `${BASE_KEY}-mono` : isEter(n) ? `${BASE_KEY}-eternel-${n - ETER}` : `${BASE_KEY}-${n}`);
 const monoNom = () => E.MONO.saisons[E.monoCurrent() || E.MONO.saison].nom;
-const partName = (n) => (n === MONO_SLOT ? `Monocompte · ${monoNom()}` : isEter(n) ? "Monocompte · Éternel" : `Partie ${n}`);
+const partName = (n) => (n === MONO_SLOT ? `Monocompte · ${MONO_BETA.on ? "Bêta" : monoNom()}` : isEter(n) ? "Monocompte · Éternel" : `Partie ${n}`);
 const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-eternel-`) ? +k.slice(`${BASE_KEY}-eternel-`.length) : 0)).filter((i) => i > 0 && Number.isInteger(i)).sort((a, b) => a - b).map((i) => ETER + i);
 /* 2.1.33 bêta fermée du Monocompte (Mathis 21/10) : la partie n'apparaît qu'aux testeurs (code dans Options › Compte),
    aux admins, ou quand elle existe déjà sur l'appareil. Elle sera remise à zéro avant l'ouverture de la Saison 1. */
@@ -10884,7 +10887,7 @@ function slotCard(sl) {
   if (!sl.st && !rem) {
     if (mono && !E.monoCurrent()) return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">Entre deux saisons</span><div class="plus">⏳</div><b>La prochaine saison arrive bientôt</b><span class="small muted">Ton héros de la saison passée t'attend dans l'Éternel.</span></div>`;
     if (mono) { const L = monoLegacyRead(); const keep = L ? (L.t || []).length + (L.u || []).length + (L.aura ? 1 : 0) : 0;
-      return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">${h(monoNom())}</span><div class="plus">⭐</div><b>Nouvelle partie Monocompte</b><span class="small muted">Un seul héros, qui part du niveau 1 sans rien, comme tous les joueurs${keep ? `. Tu gardes tes ${keep} titres et apparences des saisons passées.` : ""}</span><button class="btn primary" data-act="sv-play" data-n="${n}">Commencer la ${h(monoNom())}</button></div>`; }
+      return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">${MONO_BETA.on ? "Bêta · saison de test" : h(monoNom())}</span><div class="plus">⭐</div><b>${MONO_BETA.on ? "Nouvelle partie de la bêta" : "Nouvelle partie Monocompte"}</b><span class="small muted">Un seul héros, qui part du niveau 1 sans rien, comme tous les joueurs${keep ? `. Tu gardes tes ${keep} titres et apparences des saisons passées.` : ""}</span><button class="btn primary" data-act="sv-play" data-n="${n}">${MONO_BETA.on ? "Commencer la bêta" : `Commencer la ${h(monoNom())}`}</button></div>`; }
     return `<div class="svc2 empty" data-slot="${n}"><span class="pn">Partie ${n}</span><div class="plus">+</div><b>Nouvelle partie</b><span class="small muted">${solo ? "Solo, hors classements : une autre aventure dans le même compte" : "Classements, course, Hôtel de vente, guilde et Kolizéum"}</span>
       ${!solo && ON && ON.user && MENU.off ? `<span class="xs muted">Serveur injoignable : ta partie en ligne n'apparaît pas pour l'instant.</span>` : ""}
       <button class="btn primary" data-act="sv-play" data-n="${n}">Commencer</button></div>`;
@@ -10928,7 +10931,7 @@ function renderMenu() {
     <div class="svtitle"><h2>Choisis ton serveur et ta partie</h2></div>
     <div class="svsrv"><h3>🌍 Classique</h3><span class="small muted">La partie 1 porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et le boss des mondes. Les parties 2 et 3 se jouent en solo.</span></div>
     <div class="svgrid">${MENU.slots.filter((sl) => !monoSlot(sl.n)).map(slotCard).join("")}</div>
-    <div class="svsrv mono"><h3>⭐ Monocompte <span class="srvtg">${h(monoNom().toUpperCase())}</span></h3><span class="small muted">Un seul héros par saison, tout le monde repart de 0. À la fin d'une saison, le héros rejoint l'Éternel avec ses kamas et ses objets. Pour l'instant, la partie reste sur cet appareil : les groupes en direct et le serveur arrivent ensuite.</span></div>
+    <div class="svsrv mono"><h3>⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h3><span class="small muted">${MONO_BETA.on ? "Bêta fermée, sur clé bêta : saison de test en temps réel, partie gardée par le serveur, groupes en direct au Bureau des Aventuriers. Des bugs sont possibles, et tout repart de zéro avant l'ouverture de la Saison 1." : "Un seul héros par saison, tout le monde repart de 0. À la fin d'une saison, le héros rejoint l'Éternel avec ses kamas et ses objets."}</span></div>
     <div class="svgrid mono">${MENU.slots.filter((sl) => monoSlot(sl.n)).map(slotCard).join("")}</div>
     <label class="svopt"><input type="checkbox" data-act="sv-auto" ${pref.auto ? "checked" : ""}> Ouvrir directement ma dernière partie</label>
     <div class="svfoot">Pour revenir ici en jeu : ${G("gear", "opt-in")}Options › ${ON ? "Compte" : "Sauvegarde"} › Changer de partie. Version ${GAME_VERSION}</div></section>`;

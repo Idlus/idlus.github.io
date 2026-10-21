@@ -18,6 +18,7 @@
   async function redeem(S, raw) {
     const code = String(raw || "").trim();
     if (!code) return { err: "Tape un code d'abord." };
+    if (E.isMono && E.isMono(S)) return { err: "Les codes cadeaux sont pour le serveur Classique : change de partie pour l'utiliser." }; // 2.1.35.1 : rien du Classique dans le Monocompte
     if (/^IDLUS-/i.test(code)) return E.redeemGift(S, code);
     const c = norm(code);
     if (!OK.test(c)) return { err: "Ce code n'existe pas." };
@@ -41,6 +42,7 @@
   async function recover() {
     const S = window.DX && window.DX.S;
     if (!S || !ON || !ON.enabled || !ON.db()) return;
+    if (E.isMono && E.isMono(S)) return; // 2.1.35.1 : les codes du compte appartiennent à la partie Classique, jamais redonnés au Monocompte ni à l'Éternel
     if (!($("#nav") && $("#nav").innerHTML) || ($("#sheet") && $("#sheet").innerHTML)) return; // partie pas encore affichée, ou choix de partie en cours
     if (ON.user ? ON.state !== "ok" : !S.gid) return;
     const who = ON.user ? ON.user.id : "g:" + S.gid;

@@ -1,6 +1,14 @@
 {
-  "version": "2.1.35",
+  "version": "2.1.35.1",
   "versions": [
+    {
+      "v": "2.1.35.1",
+      "name": "C'est une bêta",
+      "items": [
+        "Écran des parties : la carte Monocompte dit clairement qu'il s'agit de la bêta fermée (saison de test, bugs possibles, remise à zéro avant la Saison 1)",
+        "Monocompte : les codes cadeaux du compte ne sont plus redonnés à la partie Monocompte (ils restent pour le serveur Classique)"
+      ]
+    },
     {
       "v": "2.1.35",
       "name": "Bêta fermée du Monocompte",

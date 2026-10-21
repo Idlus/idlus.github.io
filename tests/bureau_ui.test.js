@@ -13,6 +13,7 @@ const path = require("path");
 const { chromium } = require("playwright");
 
 const ROOT = path.join(__dirname, "..");
+const GV = /const GAME_VERSION = "([\d.]+)"/.exec(fs.readFileSync(path.join(ROOT, "js", "ui.js"), "utf8"))[1]; // version du jeu, envoyée par le Bureau
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".webmanifest": "application/manifest+json", ".png": "image/png", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".webp": "image/webp" };
 const server = http.createServer((req, res) => {
   const p = path.normalize(decodeURIComponent(req.url.split("?")[0])).replace(/^(\.\.[/\\])+/, "");
@@ -50,7 +51,7 @@ function fake() {
     const x = st.salon;
     switch (name) {
       case "mono_bureau_etat": return { data: snap() };
-      case "mono_bureau_salons": return { data: [{ id: 3, etat: "ouvert", did: "crypte_kardorim", stasis: 1, chef: "Alice", n: 2, pseudos: ["Alice", "Zoé"], version: "2.1.35" }] };
+      case "mono_bureau_salons": return { data: [{ id: 3, etat: "ouvert", did: "crypte_kardorim", stasis: 1, chef: "Alice", n: 2, pseudos: ["Alice", "Zoé"] }] };
       case "mono_bureau_expeditions": return { data: [] };
       case "mono_bureau_rdv": return { data: { actif: false, creneaux: [] } };
       case "mono_bureau_chercher": st.invitations = [{ id: 1, salon: 10, quoi: "auto", did: a.p_donjons[0], stasis: a.p_stasis, expire: iso(60000), membres: ["Bob"] }]; return ok();
@@ -132,7 +133,7 @@ function fake() {
     // recherche → invitation (bandeau 60 s) → salon
     await page.click('[data-act="bx-go"]'); await page.waitForTimeout(300);
     const ch = await page.evaluate(() => window.__BX.calls.find((c) => c[0] === "mono_bureau_chercher"));
-    if (!ch || !ch[1].p_donjons.length || ch[1].p_version !== "2.1.35" || !ch[1].p_appareil || !ch[1].p_onglet) fail("recherche : paramètres " + JSON.stringify(ch));
+    if (!ch || !ch[1].p_donjons.length || ch[1].p_version !== GV || !ch[1].p_appareil || !ch[1].p_onglet) fail("recherche : paramètres " + JSON.stringify(ch));
     if (!(await page.$("#bxInv [data-act=bx-oui]"))) fail("bandeau d'invitation absent");
     if (!/Bob/.test((await page.textContent("#bxInv")) || "")) fail("bandeau : joueurs de l'invitation");
     await page.click("#bxInv [data-act=bx-oui]"); await page.waitForTimeout(400);

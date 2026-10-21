@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.35.1 « C'est une bêta »
+- Écran des parties : la carte Monocompte dit clairement qu'il s'agit de la bêta fermée (saison de test, bugs possibles, remise à zéro avant la Saison 1).
+- Monocompte : les codes cadeaux du compte ne sont plus redonnés à la partie Monocompte.
+
 ## 2.1.35 « Bêta fermée du Monocompte »
 
 - Monocompte (js/mono.js, monopass, monodofus) et Saison 1 « Les Fragments du Temps » (js/saison1.js, js/saison1ui.js, css/saison1.css) : partie à part (`dofousxen-save-mono`).
