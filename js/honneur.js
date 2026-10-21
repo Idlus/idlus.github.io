@@ -26,12 +26,16 @@
 
   /* ---------- rangs ---------- */
   E.HON_MAX = 20;
-  E.honStep = (r) => Math.round((300 * Math.pow(1.15, r - 1)) / 10) * 10;  // honneur pour passer du rang r-1 au rang r
-  const CUM = [0]; for (let r = 1; r <= E.HON_MAX; r++) CUM[r] = CUM[r - 1] + E.honStep(r);
+  E.HON_STEP_CL = (r) => Math.round((300 * Math.pow(1.15, r - 1)) / 10) * 10;  // honneur pour passer du rang r-1 au rang r
+  const CUM = [0];
+  /* table des rangs : celle du Classique ; une partie Monocompte (une partie par page) pose la sienne au démarrage (js/monoalign.js) */
+  E.honCurve = (step) => { E.honStep = step; CUM.length = 1; for (let r = 1; r <= E.HON_MAX; r++) CUM[r] = CUM[r - 1] + step(r); };
+  E.honCurve(E.HON_STEP_CL);
   E.honCum = (r) => CUM[Math.max(0, Math.min(E.HON_MAX, r))];
   E.honRankOf = (h) => { let r = 0; while (r < E.HON_MAX && h >= CUM[r + 1]) r++; return r; };
   /* ancien niveau d'alignement (0-100) → honneur : un rang tous les 10 niveaux, le reste au prorata */
-  E.honFromLvl = (l) => { l = Math.max(0, Math.min(100, +l || 0)); const r = Math.min(10, Math.floor(l / 10)); return r >= 10 ? CUM[10] : Math.round(CUM[r] + (l % 10) / 10 * E.honStep(r + 1)); };
+  const CL = CUM.slice(); // table du Classique, toujours : l'honneur converti d'une ancienne partie Monocompte est remis sur sa table au démarrage (js/monoalign.js)
+  E.honFromLvl = (l) => { l = Math.max(0, Math.min(100, +l || 0)); const r = Math.min(10, Math.floor(l / 10)); return r >= 10 ? CL[10] : Math.round(CL[r] + (l % 10) / 10 * E.HON_STEP_CL(r + 1)); };
   E.honInit = (S) => {
     const A = S && S.align; if (!A || typeof A !== "object") return null;
     if (!(A.hon >= 0)) { A.hon = E.honFromLvl(A.lvl); A.pur = Math.max(0, +A.pur || 0); }
@@ -256,6 +260,7 @@
     return { win: !!(res && res.win), hon, war, T };
   };
   /* défenses : une équipe adverse attaque la tienne de temps en temps (3 par jour au plus) ; perdre ne coûte rien */
+  E.honDefSize = () => 3; // héros de l'équipe qui attaque (le Monocompte, à un héros, le remplace : js/monoalign.js)
   E.honDefTick = (S) => {
     const A = S && S.align; if (!A || A.pend) return null; E.honInit(S);
     if (!A.ag.defAt) { A.ag.defAt = E.now() + E.ALIGN_HON.defEvery; return null; }
@@ -263,7 +268,7 @@
     A.ag.defAt = E.now() + E.ALIGN_HON.defEvery; A.ag.def++;
     const ids = E.agrTeam(S); if (!ids.length) return null;
     const L = teamLvl(S); const seed = (A.ag.d * 53 + A.ag.def * 11 + 3) >>> 0;
-    const W = E.koliWatch(E.koliGhost(seed, L, 3), E.koliSnap(S, ids), seed, { label: "Défense" });
+    const W = E.koliWatch(E.koliGhost(seed, L, E.honDefSize(S)), E.koliSnap(S, ids), seed, { label: "Défense" });
     boost(W.S2, 1, 0, E.honTal(S, "def") + E.honGearWar(S, "def"));
     for (let g = 0; g < 20000 && !W.done; g++) E.koliWatchStep(W);
     const won = !E.koliResult(W).win; const n = won ? E.honGive(S, E.ALIGN_HON.def, "défense") : 0;
