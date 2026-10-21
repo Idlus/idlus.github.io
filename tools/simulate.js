@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--renaissance N] [--json] | --songe [--niveaux 60,120,200]
+   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--renaissance N] [--gravure N] [--json] | --songe [--niveaux 60,120,200]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
      moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
@@ -126,6 +126,8 @@ const giveMt = (S) => { if (!MTN) return; if (PORTES) E.MT_GATES.forEach((G) => 
     if (best == null) break; let k = best; while (!got.has(k)) { got.add(k); left--; k = prev.get(k); } }
   const M = E.mt(c); M.lvl = MTN; M.t[0] = [...got].filter((x) => x !== T.start); E.refreshSpells(c, E.charStats(S, c)); }); };
 const REN_PLAN = ["fureur", "robu", "lame", "fureur", "classe", "ecorce", "fureur", "robu", "lame", "classe"];
+const GRAV = +arg("gravure", 0); // --gravure N : tous les emplacements gravés au rang N (Gravure runique)
+const giveGrav = (S) => { if (!GRAV) return; S.chars.forEach((c) => { c.grav = {}; E.GRAV.slots.forEach((sl) => (c.grav[sl] = GRAV)); E.refreshSpells(c, E.charStats(S, c)); }); };
 const giveRen = (S) => { if (!REN) return; S.chars.forEach((c) => { c.ren = REN; c.eveils = {}; REN_PLAN.slice(0, REN).forEach((id) => (c.eveils[id] = (c.eveils[id] || 0) + 1)); E.refreshSpells(c, E.charStats(S, c)); }); };
 
 /* ---------- une tentative de donjon ---------- */
@@ -133,7 +135,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });
@@ -156,7 +158,7 @@ if (arg("chasse", "")) {
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
       const S = E.newState("Sim", "iop"); S.chars = [];
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
-      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
       E.startHunt(S, sid); let last = null; const k0 = S.kamas;
       for (let t = 0; t < 3600 * 1000; t += 1000) { E.tick(S, 1000); const F = S.fight; if (F && F.over && F !== last) { last = F; F.result === "win" || F.result === true ? win++ : lose++; } }
       kam += S.kamas - k0;
@@ -189,7 +191,7 @@ if (flag("songe")) {
         for (let ii = 0; ii < E.SG_INT.length; ii++) {
           const S = E.newState("Sim", "iop"); S.chars = [];
           teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
-          S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
+          S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
           E.songe(S).unl = 7; const err = E.expStart(S, ii); if (err) throw new Error(err);
           const r = E.expAutoPlay(S, 600); if (!r.valid) break; top = ii;
         }

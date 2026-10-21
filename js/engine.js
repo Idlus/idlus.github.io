@@ -338,10 +338,39 @@
     for (const k in b.bonus) if (+k <= n && +k > bestN) { best = b.bonus[k]; bestN = +k; }
     return best;
   };
+  /* Gravure runique (choix de Mathis 1A 2A 3A 4C, 21/10/2026) : chaque emplacement d'équipement d'un héros se grave du rang 1 au rang 10
+     (c.grav = { emplacement: rang }, la gravure reste quand on change d'objet). Chaque rang donne +1 % aux caractéristiques positives de
+     l'objet porté (arrondi, jamais PA, PM, Portée ni Invocation). Coût du rang r : 50 000 × 2^(r−1) de poids de runes et 2 M × 2^(r−1) kamas
+     (rang 10 : 25,6 M de poids et 1 milliard ; toute une équipe de 8 au rang 10 : 3,7 milliards de poids et 147 milliards de kamas). */
+  E.GRAV = { max: 10, mult: 2, w0: 50000, k0: 2000000, pct: 1, slots: ["arme", "coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "bouclier"] };
+  E.GRAV_SKIP = { pa: 1, pm: 1, po: 1, inv: 1 };
+  E.gravCost = (r) => { const m = Math.pow(E.GRAV.mult, r - 1); return { w: Math.round(E.GRAV.w0 * m), k: Math.round(E.GRAV.k0 * m) }; };
+  E.gravRank = (c, sl) => Math.max(0, Math.min(E.GRAV.max, (c && c.grav && c.grav[sl]) || 0));
+  E.gravStats = (base, r) => { const o = {}; const f = r * E.GRAV.pct / 100; for (const k in base) { const v = base[k]; if (v > 0 && !E.GRAV_SKIP[k]) { const b = Math.round(v * f); if (b) o[k] = b; } } return o; };
+  /* paiement (choix 4C) : le joueur coche les runes à fondre, ou « Auto » (keys vide) : d'abord les plus gros stocks en poids,
+     jamais les runes Ga (exo), de transcendance, ni celles de PA, PM, Portée et Invocation. Rune par rune jusqu'au poids demandé. */
+  E.gravAuto = (S) => Object.keys(S.runes || {}).filter((k) => { const i = E.runeInfo(k); return S.runes[k] > 0 && !i.exo && !i.trans && !E.GRAV_SKIP[i.stat]; })
+    .sort((a, b) => S.runes[b] * E.runeInfo(b).weight - S.runes[a] * E.runeInfo(a).weight);
+  E.gravPlan = (S, w, keys) => {
+    const L = keys && keys.length ? keys.filter((k) => (S.runes[k] || 0) > 0) : E.gravAuto(S); const take = {}; let got = 0;
+    for (const k of L) { if (got >= w) break; const u = E.runeInfo(k).weight; if (!(u > 0)) continue; const n = Math.min(S.runes[k], Math.ceil((w - got) / u)); if (n > 0) { take[k] = n; got += n * u; } }
+    return { take, weight: got, ok: got >= w };
+  };
+  E.gravUp = (S, cid, sl, keys) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable."; if (!E.GRAV.slots.includes(sl)) return "Emplacement inconnu.";
+    const r = E.gravRank(c, sl); if (r >= E.GRAV.max) return "Rang maximum atteint.";
+    const cost = E.gravCost(r + 1); if ((S.kamas || 0) < cost.k) return "Pas assez de kamas.";
+    const P = E.gravPlan(S, cost.w, keys); if (!P.ok) return keys && keys.length ? "Les runes cochées ne suffisent pas." : "Pas assez de runes.";
+    for (const k in P.take) { S.runes[k] -= P.take[k]; if (!S.runes[k]) delete S.runes[k]; }
+    S.kamas -= cost.k; (c.grav = c.grav || {})[sl] = r + 1;
+    S.cnt = S.cnt || {}; S.cnt.grav = (S.cnt.grav || 0) + 1; S.cnt.gravK = (S.cnt.gravK || 0) + cost.k; S.cnt.gravW = (S.cnt.gravW || 0) + P.weight;
+    E.emit(S, "grav", { cid, sl, r: r + 1 });
+    return { r: r + 1, take: P.take, weight: P.weight, k: cost.k };
+  };
   E.charStats = (S, c, opts = {}) => {
     const st = zeroStats();
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
-    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) { addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); if (it.exo) st[it.exo] = (st[it.exo] || 0) + 1; } }); // 0.1.8.2 : objets parfaits ; 0.1.9.1 : exo
+    Object.entries(c.equip).forEach(([sl, uid]) => { const it = S.items[uid]; if (it) { const base = E.isPerfect(it) ? E.perfectStats(it) : it.stats; addStats(st, base); if (it.exo) st[it.exo] = (st[it.exo] || 0) + 1; const g = c.grav && c.grav[sl]; if (g > 0) addStats(st, E.gravStats(base, g)); } }); // 0.1.8.2 : objets parfaits ; 0.1.9.1 : exo ; Gravure runique (rang de l'emplacement)
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const vt = E.trophyVitrine(S); st.vit += vt.vit; st.sa += vt.sa; // 1.0.20 : Vitrine des trophées, pour tous les héros

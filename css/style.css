@@ -6164,3 +6164,19 @@ body:has(#ctxmenu) .tooltip{display:none!important}
 .recyauto,.recycraft{padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .recycraft{margin:6px 0 8px}
 .recyf label,.recyauto,.recycraft{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5}.recyf label input[type=checkbox],.recyauto input[type=checkbox],.recycraft input[type=checkbox]{margin-top:3px;flex:none}.recyf input[type=number],.recyauto input[type=number],.recycraft input[type=number]{padding:2px 6px}
+
+/* Gravure runique (21/10/2026, js/gravure.js) */
+.gvlay{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:860px){.gvlay{grid-template-columns:1fr}}
+.gvgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.gvslot{display:grid;justify-items:center;gap:3px;padding:10px 6px;border-radius:12px;border:2px solid var(--line);background:color-mix(in srgb,var(--accent) 5%,transparent);color:inherit;font:inherit;cursor:pointer;min-width:0}
+.gvslot.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.gvslot .icobox{width:52px;height:52px}.gvempty{opacity:.3;border:1px dashed var(--line);border-radius:10px}
+.gvsn{font-size:12px;font-weight:800}.gvrk{font-size:12px;font-weight:900;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.3)}
+.gvrk.r1,.gvrk.r2{color:#cfe8a0}.gvrk.r3,.gvrk.r4{color:#9fe06a}.gvrk.r5,.gvrk.r6{color:#6ad0e0}.gvrk.r7,.gvrk.r8{color:#c98cf0}.gvrk.r9,.gvrk.r10{color:#f0c050}
+.gvst{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0}.gvst .num{min-width:60px;text-align:right}.gvnx{color:var(--accent)}
+.gvcost{display:grid;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.gvprice{display:flex;gap:18px;flex-wrap:wrap;font-size:18px}
+.gvpay{display:grid;gap:2px}
+.gvtable{display:grid;gap:0}
+.gvrunes{display:grid;gap:0;max-height:240px;overflow:auto;padding-right:4px}.gvst input[type=checkbox]{flex:none}.gvslot .icobox img{max-width:100%;max-height:100%}

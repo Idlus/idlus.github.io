@@ -118,6 +118,7 @@
         for (const k in c.alloc) { const n = Math.max(0, Math.floor(+c.alloc[k] || 0)); if (n > 5000) return `${nm} : ${n} points en ${k}`; for (let i = 0; i < n; i++) spent += E.pointCost(k, i); }
         if (spent > (c.lvl - 1) * 5 + 5) return `${nm} : ${spent} points de caractéristiques pour ${(c.lvl - 1) * 5} possibles`; }
       for (const k in c.scrolls || {}) if ((+c.scrolls[k] || 0) > (E.SCROLL_MAX || 100)) return `${nm} : ${c.scrolls[k]} parchemins en ${k}`;
+      if (c.grav && E.GRAV) for (const k in c.grav) { const r = c.grav[k]; if (!E.GRAV.slots.includes(k) || !(Number.isInteger(r) && r >= 0 && r <= E.GRAV.max)) return `${nm} : gravure ${String(k).slice(0, 12)} au rang ${String(r).slice(0, 12)}`; } // Gravure runique
     }
     const itemBad = (it) => {
       const T = ITEMS[it.tpl]; if (!T) return `objet inconnu (${String(it.tpl).slice(0, 30)})`;
