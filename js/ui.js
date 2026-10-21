@@ -24,7 +24,7 @@ let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie
 const GAME_VERSION = "2.1.32.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "2.1.32.1", name: "Cristal à l’établi", guide: "fm", items: [
+  { v: "2.1.32.1", name: "Cristal à l’établi", guide: "forgemagie", items: [
     "Forgemagie : utilise un Cristal de Forgemagie directement depuis l’établi, sans retourner dans l’inventaire (suggestion de Ley)",
     "Le stock et le cristal actif sont affichés ; le bouton est désactivé si tu n’as plus de cristal ou si une protection est déjà active. Les effets et les coûts restent identiques",
   ] },
