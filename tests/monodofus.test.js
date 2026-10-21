@@ -22,7 +22,7 @@ const S = E.monoStart(E.newState("Phenix", "iop")); E.monoBoot(S);
   const other = E.DOFUS_ORDER.find((k) => k !== "phenix" && E.DOFUS[k].steps[0] && E.DOFUS[k].steps[0].t !== "gift");
   assert.strictEqual(E.dofusStep(S, other), null, "les autres quêtes de Dofus sont fermées en Monocompte");
   assert.ok(E.dofusStep(E.newState("Classique", "iop"), other), "elles restent ouvertes sur le Classique");
-  assert.deepStrictEqual(E.dofusStepProgress(S, "phenix", 0), [0, 300]);
+  assert.strictEqual(E.DOFUS.phenix.steps[0].k, "hon", "étape 1 : honneur pour ton camp (P-A3, variante B)"); assert.deepStrictEqual(E.dofusStepProgress(S, "phenix", 0), [0, E.DOFUS.phenix.steps[0].n]);
   E.dofusQuest(S, "phenix").step = 5; E.emit(S, "win", { mons: [], sub: null });
   assert.ok(E.dofusOwned(S, "phenix"), "quête finie : le Dofus est donné");
   console.log("ok - quête du Dofus du Phénix");

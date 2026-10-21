@@ -26,6 +26,7 @@ require("../js/mono.js");
 if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/monodofus.js"); E.phxFreeze = 1; } // PHX=n : renaissances du Dofus du Phénix (25 Braise, 100 Flamme, 300 Phénix) // passifs des Dofus pour comparer le 3e Dofus
 if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
 if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
+if (process.env.ALIGN) { require("../js/alignement.js"); require("../js/honneur.js"); require("../js/monoalign.js"); } // ALIGN=bonta|brakmar [RANG=20] : héros aligné à ce rang (bonus de camp, d'ordre et talents ; étape 3)
 if (process.env.MONOGRP) process.env.MONOGRP.split(",").forEach((v, i) => (E.MONO.group[i + 2] = +v)); // MONOGRP="0.9,0.8,0.7" : part du bonus à 2, 3 et 4 joueurs
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -143,6 +144,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.monoStart(E.newState("Sim", "iop")); S.chars = []; if (process.env.PHX) S.mono.phx = +process.env.PHX;
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
+  if (process.env.ALIGN && lvl >= 30) { E.chooseAlign(S, process.env.ALIGN, process.env.ORDRE || "coeur"); E.honGive(S, E.honCum(+process.env.RANG || 20), "", true); }
   S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);

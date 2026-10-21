@@ -35,9 +35,10 @@
   /* ---------- données du serveur ---------- */
   const WARS = { w: -1, data: null, at: 0, busy: false, err: false };
   const CAMP = { u: {}, p: {}, r: {}, list: null, at: 0, busy: false };
-  function syncSide() { const s = S(); E.alignRegSet({ side: linked() && s && s.align ? s.align.side : null }); } // le bonus de région va au camp du compte (pas aux parties solo ni sans compte)
+  const mono = (s) => !!(s && s.mono); // Monocompte : les régions et les camps du Classique ne comptent jamais (js/monoalign.js)
+  function syncSide() { const s = S(); if (mono(s)) return; E.alignRegSet({ side: linked() && s && s.align ? s.align.side : null }); } // le bonus de région va au camp du compte (pas aux parties solo ni sans compte)
   async function warLoad(force) {
-    const o = ONL(); if (!online() || !o.rpc || WARS.busy) return;
+    const o = ONL(); if (!online() || !o.rpc || WARS.busy || mono(S())) return;
     if (!force && WARS.data && Date.now() - WARS.at < 60000) return;
     WARS.busy = true; WARS.at = Date.now();
     try {
@@ -51,7 +52,7 @@
     WARS.busy = false; paint();
   }
   async function campLoad(force) {
-    const o = ONL(); const db = online() && o.db(); if (!db || CAMP.busy) return;
+    const o = ONL(); const db = online() && !mono(S()) && o.db(); if (!db || CAMP.busy) return;
     if (!force && Date.now() - CAMP.at < 600000) return;
     CAMP.busy = true; CAMP.at = Date.now();
     try {
@@ -130,7 +131,7 @@
     const side = `<div class="alr-side pad stack" style="gap:8px"><h3>${h(E.ALIGN_REG[sel])}</h3>
       <div class="small">${hd ? `Tenue par <b class="alr-${cls(sel)}">${E.ALIGN[hd].name}</b>${g && g.since ? ` depuis le ${new Date(g.since).toLocaleDateString("fr-FR")}` : ""}` : "Tenue par personne"}${mine ? ` <span class="tag good">+${E.ALIGN_REG_BONUS} % d'XP et de butin</span>` : ""}</div>
       ${D ? `<div class="alr-tug"><i class="b" style="width:${pb}%"></i><i class="k" style="width:${100 - pb}%"></i></div><div class="row between xs muted"><span>Bonta ${pb} % · ${fmt(b)}</span><span>${fmt(k)} · Brâkmar ${100 - pb} %</span></div>`
-        : `<div class="xs muted">${online() ? (WARS.err ? "Serveur injoignable : réessaie plus tard." : "Chargement des régions…") : "La guerre des régions se joue en ligne, avec un compte."}</div>`}
+        : `<div class="xs muted">${mono(s) ? "Monocompte : les régions tenues arriveront avec le serveur Monocompte ; tes points sont déjà comptés." : online() ? (WARS.err ? "Serveur injoignable : réessaie plus tard." : "Chargement des régions…") : "La guerre des régions se joue en ligne, avec un compte."}</div>`}
       <div class="xs">Le camp qui tient une région y gagne <b>+${E.ALIGN_REG_BONUS} % d'XP et de butin</b>. Chasser ici, y faire des missions ou gagner des agressions avec ce front pousse la jauge. À ${E.ALIGN_REG_FLIP} % des points de la semaine, la région change de camp.</div>
       ${A ? `<div class="xs muted">Tes points ici cette semaine : <b>${fmt(myPts)}</b> · en tout ${fmt(A.war.p)} / ${fmt(E.ALIGN_WAR.cap)}</div>
       <div class="row" style="gap:6px;flex-wrap:wrap">${A.front === sel ? `<span class="tag good">ton front</span>` : `<button class="btn sm primary" data-act="al-front" data-v="${sel}">En faire mon front</button>`}</div>` : ""}
@@ -165,7 +166,7 @@
       ${done.includes(T.i) ? `<span class="tag soft">combattu</span>` : `<button class="btn sm primary" data-act="al-agr" data-v="${T.i}" ${left > 0 && !A.pend ? "" : "disabled"}>Attaquer</button>`}</div>`; }).join("");
     const res = last && last.at > E.now() - 6 * 3600000 ? `<div class="alh-res ${last.win ? "w" : "l"}"><img src="assets/ui/trophee.webp" alt=""><span class="grow"><b>${last.win ? "Victoire" : "Défaite"} contre ${h(last.name)}</b> · ${last.hon > 0 ? "+" : ""}${fmt(last.hon)} honneur${last.win ? ` · +${fmt(last.war)} points pour ${h(E.ALIGN_REG[last.reg] || "")}` : ""}</span></div>` : "";
     return `<section class="panel"><div class="phead"><h2>Agressions</h2><span class="small">${left} / ${E.ALIGN_HON.agrDay} aujourd'hui</span></div><div class="pad stack" style="gap:8px">
-      <span class="xs muted">Des équipes fantômes du camp adverse, comme au Kolizéum, contre ton équipe d'arène. Gagner rapporte de l'honneur et des points à ton front (${h(E.ALIGN_REG[A.front])}).</span>
+      <span class="xs muted">Des équipes fantômes du camp adverse, comme au Kolizéum, contre ${mono(s) ? "ton héros (fantômes à un héros)" : "ton équipe d'arène"}. Gagner rapporte de l'honneur et des points à ton front (${h(E.ALIGN_REG[A.front])}).</span>
       <div class="alh-ags">${rows}</div>${res}</div></section>`;
   }
   const LADDER = [[1, 5, "Les ailes poussent", "Ailes de ta cité, qui grandissent tous les 4 rangs (dans le chat aussi), et un talent d'ordre par rang."],
@@ -176,7 +177,7 @@
   function ladderHtml(s) {
     const r = s.align ? E.alignRankIdx(s) : 0;
     return `<section class="panel"><div class="phead"><h2>Les 20 rangs</h2></div><div class="pad alh-lad">${LADDER.map(([a, b, n, d]) => `<div class="alh-step${b <= r ? " done" : a <= r ? " cur" : ""}"><span class="alh-rr">${a === b ? a : `${a}-${b}`}</span><div class="grow"><b>${n}</b><div class="xs">${d}</div></div></div>`).join("")}
-      <span class="xs muted">Honneur pour passer un rang : ${fmt(E.honStep(1))} au rang 1, puis +15 % par rang (${fmt(E.honCum(20))} pour le rang 20).</span></div></section>`;
+      <span class="xs muted">Honneur pour passer un rang : ${fmt(E.honStep(1))} au rang 1, puis ${mono(s) ? `+${fmt(E.honStep(2) - E.honStep(1))} par rang (table du Monocompte, pour une saison de 56 jours)` : "+15 % par rang"} (${fmt(E.honCum(20))} pour le rang 20).</span></div></section>`;
   }
   function stepRow(s, C, ci, i, state) {
     const st = C.steps[i]; const cur = state === "cur"; const r = E.alStepRew(ci);
@@ -208,7 +209,8 @@
   function whoHtml(s) {
     const L = CAMP.list; const o = ONL();
     const rows = (L || []).slice(0, 8).map((x) => `<div class="li small">${X().cmed(x.main, x.main_lvl)}<span class="al-wing ${short[x.side] || ""}">${h((E.ALIGN[x.side] || {}).name || "")}</span><b class="grow al-nm">${h(x.pseudo || "?")}${o && o.user && x.user_id === o.user.id ? ` <span class="xs muted">(toi)</span>` : ""}</b><span class="xs muted">${h(E.honRankName(x.side, x.ord, x.rank || 0))} · rang ${fmt(x.rank || 0)}</span></div>`).join("");
-    const body = !online() ? `<div class="pad small muted">Hors ligne : connecte-toi à ton compte pour voir le camp des autres joueurs.</div>`
+    const body = mono(s) ? `<div class="pad small muted">Monocompte : le camp des autres joueurs arrivera avec le serveur Monocompte.</div>`
+      : !online() ? `<div class="pad small muted">Hors ligne : connecte-toi à ton compte pour voir le camp des autres joueurs.</div>`
       : L === null ? `<div class="pad small muted">Chargement…</div>` : rows ? `<div class="list">${rows}</div>` : `<div class="pad small muted">Personne n'a encore choisi son camp sur le serveur.</div>`;
     return `<section class="panel"><div class="phead"><h2>Qui est de quel camp</h2>${L && L.length ? `<span class="xs muted">${fmt(L.length)} joueur${L.length > 1 ? "s" : ""}</span>` : ""}</div>${body}<div class="pad xs muted">Le camp s'affiche aussi dans le chat, les profils et les classements.</div></section>`;
   }
@@ -218,22 +220,25 @@
     const sw = A.pend ? `<div class="al-pend"><span class="grow small">Tu as demandé à rejoindre <b>${E.ALIGN[A.pend.side].name}</b> : changement dans <b>${left(E.alSwitchLeft(s))}</b>, puis retour au rang 2 au plus et nouvelles quêtes.</span><button class="btn sm" data-act="al-cancel">Annuler</button></div>`
       : ui.confirm === "traitre" ? `<div class="al-pend"><span class="grow small">Rejoindre ${E.ALIGN[other].name} : 7 jours d'attente, puis ton honneur retombe au rang 2 au plus, ta bourse d'honneur est vidée et les quêtes de ${E.ALIGN[other].name} commencent au chapitre 1. Tu restes ${side.adj} pendant l'attente et tu peux annuler.</span>
           <button class="btn sm danger" data-act="align" data-side="${other}" data-order="coeur">Confirmer</button><button class="btn sm" data-act="al-nope">Garder ${side.name}</button></div>`
+      : E.monoCampLocked && E.monoCampLocked(s) ? `<div class="xs muted">Monocompte : ton camp est choisi pour toute la saison.</div>`
       : `<div class="row"><button class="btn sm" data-act="asktraitre">Changer de camp…</button></div>`;
     return `<section class="panel"><div class="phead"><div class="row"><img src="assets/i/${side.badge}.png" alt="" style="width:48px;height:48px;object-fit:contain"><div><h2>${side.adj} · ${h(O.name)}</h2><div class="small muted">Rang <b style="color:var(--gold2)">${r} / 20</b> · « ${h(E.alignRankName(s))} »</div></div></div></div>
     <div class="pad stack" style="gap:10px">
       <div class="small">Bonus actuels : <b class="plus">+${fmt(2 * Math.min(5, r / 2))} % ${side.bonusName}</b> (camp) · <b class="plus">+${fmt(E.ORDER_BONUS[A.order].per * Math.min(5, r / 2))} % ${h(E.ORDER_BONUS[A.order].txt.replace(/^\+\d+ % (de |d')?/, "").replace(" par rang", ""))}</b> (ordre, complet au rang 10)</div>
-      ${q ? `<div class="qcard cur"><span class="qnum">${IC("combat")}</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Mission d'alignement : ${fmt(Math.max(1, Math.round(q.axp / 10)))} honneur, ${fmt(q.kamas)} kamas, +${E.ALIGN_WAR.mis} points de guerre</div></div>${X().pinBtn({ k: "align" })}${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
+      ${q ? `<div class="qcard cur"><span class="qnum">${IC("combat")}</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Mission d'alignement : ${fmt(Math.max(1, Math.round(q.axp / E.HON_XP_DIV)))} honneur, ${fmt(q.kamas)} kamas, +${E.ALIGN_WAR.mis} points de guerre</div></div>${X().pinBtn({ k: "align" })}${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
       <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
         <span class="xs muted">Insignes : <b>${fmt(s.tokens.insignes || 0)}</b></span><button class="btn sm" data-act="qj-shop" data-v="cite">${X().emo(E.SHOPS.cite.icon)} ${h(E.SHOPS.cite.name)}</button></div>
       ${sw}
     </div></section>`;
   }
-  const NOTE = `Bonta, la cité blanche, ou Brâkmar, la cité sombre. Agressions, missions, quêtes et régions défendues rapportent de l'honneur : 20 rangs, des talents d'ordre et l'Arsenal de ta cité. Les quêtes de ta cité racontent 5 chapitres, du niveau 30 au niveau 180, et finissent par un titre. Les deux camps se disputent les régions de la carte. Un seul camp par compte, pour tous tes héros. Changer de camp : 7 jours d'attente et retour au rang 2.`;
+  const NOTE_CL = `Bonta, la cité blanche, ou Brâkmar, la cité sombre. Agressions, missions, quêtes et régions défendues rapportent de l'honneur : 20 rangs, des talents d'ordre et l'Arsenal de ta cité. Les quêtes de ta cité racontent 5 chapitres, du niveau 30 au niveau 180, et finissent par un titre. Les deux camps se disputent les régions de la carte. Un seul camp par compte, pour tous tes héros. Changer de camp : 7 jours d'attente et retour au rang 2.`;
+  const NOTE_MONO = `Bonta, la cité blanche, ou Brâkmar, la cité sombre, comme sur le Classique : agressions, missions, quêtes et régions défendues rapportent de l'honneur, 20 rangs, des talents d'ordre et l'Arsenal de ta cité. Monocompte : un seul camp pour toute la saison, choisi une fois ; l'honneur repart de 0 à chaque saison ; ton rang et tes équipements de rang restent à ton héros dans l'Éternel.`;
   let orig = null;
   function alignHtml() {
     const s = S(); if (!s) return "";
     syncSide(); warLoad(false); campLoad(false);
-    const foot = `<div class="note xs">Un seul camp par compte, pour tous tes héros. Changer de camp : 7 jours d'attente et retour au rang 2.</div>`;
+    const foot = mono(s) && !(E.monoEternal && E.monoEternal(s)) ? `<div class="note xs">Monocompte : un seul camp par saison. Tu pourras en changer à la saison suivante.</div>` : `<div class="note xs">Un seul camp par compte, pour tous tes héros. Changer de camp : 7 jours d'attente et retour au rang 2.</div>`;
+    const NOTE = mono(s) ? NOTE_MONO : NOTE_CL;
     if (!s.align) return `<p class="note">${NOTE}</p><div class="stack" id="alPage"><div id="alCities">${citiesHtml(s)}</div>${orig ? orig() : ""}<div id="alWar">${warHtml(s)}</div><div id="alWho">${whoHtml(s)}</div>${foot}</div>`;
     E.alInit(s); E.honInit(s);
     return `<p class="note">${NOTE}</p><div class="stack" id="alPage">${honHead(s)}<div id="alCities">${citiesHtml(s)}</div><div id="alWar">${warHtml(s)}</div>
