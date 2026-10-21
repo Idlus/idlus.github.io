@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.32";
+const GAME_VERSION = "2.1.32.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.32.1", name: "Cristal à l’établi", guide: "fm", items: [
+    "Forgemagie : utilise un Cristal de Forgemagie directement depuis l’établi, sans retourner dans l’inventaire (suggestion de Ley)",
+    "Le stock et le cristal actif sont affichés ; le bouton est désactivé si tu n’as plus de cristal ou si une protection est déjà active. Les effets et les coûts restent identiques",
+  ] },
   { v: "2.1.32", name: "Ma rotation", guide: "sorts", items: [
     "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
     "Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou dont la condition n'est pas remplie est passé : le héros lance le suivant. Au bout de la liste, le tour s'arrête. Chaque case peut avoir sa propre condition",
