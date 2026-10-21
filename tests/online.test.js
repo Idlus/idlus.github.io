@@ -493,6 +493,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       d.views.lb_jobs_guild = [{ guild_id: 1, name: "Les Artisans", ic: "combat", col: "#e0a030", job: "tous", members: 4, lvl: 2100, total: 9000000, best: "Kralamour" }, { guild_id: 2, name: "Bwork Team", ic: "dofus", col: "#30a0e0", job: "tous", members: 2, lvl: 900, total: 2000000, best: "Bworkman" }];
       d.views.lb_jobs_guild_week = [];
       localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true, nv13: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // la bulle « Jouer en musique ? » (8 s après le lancement) ne doit pas couvrir les onglets du classement : la course au chronomètre faisait échouer le test selon la vitesse de la machine
     await navClick(page, "ladder");
     // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
     await page.waitForSelector("#lbList .rc-slots", { timeout: 10000 });
