@@ -1,6 +1,19 @@
 {
-  "version": "2.1.31.5",
+  "version": "2.1.32",
   "versions": [
+    {
+      "v": "2.1.32",
+      "name": "Ma rotation",
+      "guide": "sorts",
+      "items": [
+        "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
+        "Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou dont la condition n'est pas remplie est passé : le héros lance le suivant. Au bout de la liste, le tour s'arrête. Chaque case peut avoir sa propre condition",
+        "« Ce que fera ton héros » montre les sorts passés barrés avec la raison, et compare ta rotation à l'Auto. « Copier l'auto » remplit la rotation pour partir d'une bonne base",
+        "« Mon ordre » devient « Ma rotation » : les héros et stratégies réglés en « Mon ordre » reçoivent une rotation équivalente. La rotation suit les stratégies, « Copier le setup » et le Kolizéum",
+        "Auto plus malin : il compte les bonus qui se cumulent (Furia du Zobal, Truanderie du Sram, Cri de l'Ours de l'Osamodas) et lance le bonus avant l'attaque. Le Pandawa évite de cuver trop souvent. Seul contre le Poutch : Zobal +61 %, Osamodas +42 %, Sram +41 %, Pandawa +17 %",
+        "Aperçu des sorts : la ligne « Tour 1 » ne contient plus aussi le début du tour 2"
+      ]
+    },
     {
       "v": "2.1.31.5",
       "name": "Quitter sans ouvrir le combat",

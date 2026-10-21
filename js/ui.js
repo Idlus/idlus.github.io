@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.31.5";
+const GAME_VERSION = "2.1.32";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.32", name: "Ma rotation", guide: "sorts", items: [
+    "Sorts & stratégies : « Ma rotation ». Tu poses tes sorts dans l'ordre exact du tour : une case = un lancer, le même sort peut revenir, l'arme a sa propre case. Tu peux donc forcer ou interdire le corps à corps",
+    "Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou dont la condition n'est pas remplie est passé : le héros lance le suivant. Au bout de la liste, le tour s'arrête. Chaque case peut avoir sa propre condition",
+    "« Ce que fera ton héros » montre les sorts passés barrés avec la raison, et compare ta rotation à l'Auto. « Copier l'auto » remplit la rotation pour partir d'une bonne base",
+    "« Mon ordre » devient « Ma rotation » : les héros et stratégies réglés en « Mon ordre » reçoivent une rotation équivalente. La rotation suit les stratégies, « Copier le setup » et le Kolizéum",
+    "Auto plus malin : il compte les bonus qui se cumulent (Furia du Zobal, Truanderie du Sram, Cri de l'Ours de l'Osamodas) et lance le bonus avant l'attaque. Le Pandawa évite de cuver trop souvent. Seul contre le Poutch : Zobal +61 %, Osamodas +42 %, Sram +41 %, Pandawa +17 %",
+    "Aperçu des sorts : la ligne « Tour 1 » ne contient plus aussi le début du tour 2",
+  ] },
   { v: "2.1.31.5", name: "Quitter sans ouvrir le combat", items: [
     "Menu (PC) : à côté de « Combat en cours », un petit bouton fait rentrer l'équipe de la chasse, ou quitte le donjon sans ouvrir l'écran de combat",
     "Pour le donjon, il faut cliquer deux fois (« Sûr ? ») car la clé est perdue. En quittant un donjon, l'équipe reprend la chasse de sa zone, comme avant",
@@ -6773,7 +6781,7 @@ function spPrevAuto(c, team) { // 2.1.21 : le même aperçu, réglé sur Auto
 }
 function spPreviewOf(c) {
   const team = spPrevTeam(c);
-  const key = JSON.stringify([c.id, c.lvl, c.spells, c.atkMode, c.equip, c.pet, c.mount, c.stats, team, team ? S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job, x.spells, x.equip]) : 0]);
+  const key = JSON.stringify([c.id, c.lvl, c.spells, c.atkMode, c.rot, c.equip, c.pet, c.mount, c.stats, team, team ? S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job, x.spells, x.equip]) : 0]);
   if (spPrevCache.key !== key) { let d = null; try { d = E.poutchPreview(S, c.id, { team }); } catch (e) { console.warn("aperçu des sorts", e); } spPrevCache.key = key; spPrevCache.data = d; }
   return spPrevCache.data;
 }
@@ -6786,6 +6794,12 @@ function spTips(c, P) {
   const top = defs.filter((sp, i) => sp && ATK_KINDS.includes(kinds[i])).sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0))[0];
   // 1) attaques jamais choisies
   const idle = eq.map((x, i) => i).filter((i) => defs[i] && ATK_KINDS.includes(kinds[i]) && !P.casted.has(eq[i].id) && (eq[i].cond || "always") === "always");
+  const rot = c.atkMode === "rot" && (c.rot || []).length; // 2.1.32 : en « Ma rotation », un sort absent de la liste ne part jamais
+  if (rot) { const out = eq.filter((x) => E.spellDef(c.cls, x.id) && !c.rot.some((y) => y.id === x.id));
+    if (out.length) tips.push({ ico: E.spellDef(c.cls, out[0].id), txt: `${out.map((x) => `<b>${h(E.spellDef(c.cls, x.id).name)}</b>`).join(", ")} ${out.length > 1 ? "ne sont" : "n'est"} pas dans ta rotation : ${out.length > 1 ? "ils ne partent" : "il ne part"} jamais.`, btn: "Ajouter", act: `data-act="rotadd" data-id="${out[0].id}"` });
+    const r = P.rounds.find((r) => !r.why && P.paMax - r.pa >= 2 && !(r.skips || []).some((k) => k.why === "pa"));
+    if (r) tips.push({ txt: `Tour ${r.r} : <b>${P.paMax - r.pa} PA non utilisés</b>, ta rotation est finie. Ajoute un sort au bout de la liste pour les dépenser.` });
+    return tips; }
   if (idle.length && top && P.casted.has(top.id)) tips.push({ ico: defs[idle[0]], txt: `${idle.map((i) => `<b>${h(defs[i].name)}</b>`).join(", ")} ${idle.length > 1 ? "ne sont" : "n'est"} jamais choisi${idle.length > 1 ? "s" : ""} : ${h(top.name)} est plus utile ici. Échange ${idle.length > 1 ? "l'un d'eux" : "ce sort"} contre un sort plus utile.`, btn: "Voir", act: `data-act="spsel" data-i="${idle[0]}"` });
   // 2) sorts bloqués par leur condition
   const SAFE = ["self_low", "ally_low", "ally_shield", "no_summon", "always"];
@@ -6817,13 +6831,13 @@ function spTips(c, P) {
   }
   return tips.slice(0, 4);
 }
-/* 2.1.21 : « Mon ordre » comparé à l'auto, avec un bouton pour y revenir (choix 3A) */
+/* 2.1.21 : le réglage du joueur comparé à l'auto, avec un bouton pour y revenir (choix 3A) ; 2.1.32 : pour « Ma rotation » */
 function spCmpHtml(c, P, nR, team) {
-  if (c.atkMode !== "ordre") return "";
+  if (c.atkMode !== "rot" || !(c.rot || []).length) return ""; // 2.1.32 : « Ma rotation » comparée à l'auto
   const A = spPrevAuto(c, team); if (!A || !A.total) return "";
   const me = P.total / Math.max(1, nR), au = A.total / Math.max(1, A.rounds.length); const d = Math.round((me / au - 1) * 100);
-  return `<div class="spcmp ${d < -2 ? "bad" : d > 2 ? "good" : ""}"><div><span class="xs muted">Ton ordre</span><b>${fmt(Math.round(me))}</b><span class="xs muted">par tour</span></div><div class="vs">${d > 0 ? "+" : ""}${d} %</div><div><span class="xs muted">Auto</span><b>${fmt(Math.round(au))}</b><span class="xs muted">par tour</span></div>
-    <span class="txt small">${d < -2 ? `Ton ordre fait <b>${-d} % de dégâts en moins</b> que l'auto contre le Poutch.` : d > 2 ? `Ton ordre fait <b>${d} % de dégâts en plus</b> que l'auto contre le Poutch.` : "Ton ordre fait autant de dégâts que l'auto contre le Poutch."}</span>${d < -2 ? `<button class="btn sm" data-act="atkmode" data-v="">Revenir à l'auto</button>` : ""}</div>`;
+  return `<div class="spcmp ${d < -2 ? "bad" : d > 2 ? "good" : ""}"><div><span class="xs muted">Ta rotation</span><b>${fmt(Math.round(me))}</b><span class="xs muted">par tour</span></div><div class="vs">${d > 0 ? "+" : ""}${d} %</div><div><span class="xs muted">Auto</span><b>${fmt(Math.round(au))}</b><span class="xs muted">par tour</span></div>
+    <span class="txt small">${d < -2 ? `Ta rotation fait <b>${-d} % de dégâts en moins</b> que l'auto contre le Poutch.` : d > 2 ? `Ta rotation fait <b>${d} % de dégâts en plus</b> que l'auto contre le Poutch.` : "Ta rotation fait autant de dégâts que l'auto contre le Poutch."}</span>${d < -2 ? `<button class="btn sm" data-act="atkmode" data-v="">Revenir à l'auto</button>` : ""}</div>`;
 }
 function spPreviewHtml(c) {
   const P = spPreviewOf(c); const canTeam = c.inTeam && !c.job && E.team(S).length > 1; const team = spPrevTeam(c);
@@ -6837,7 +6851,9 @@ function spPreviewHtml(c) {
   const emptyHtml = (r) => r.why && WHY[r.why] ? `<span class="spwhy"><b>${WHY[r.why][0]}</b> ${h(WHY[r.why][1])}</span>` : `<span class="small muted">rien à lancer</span>`;
   // 1.0.12.8 : les PA gagnés en combat (au-delà du maximum) sont dits dans l'infobulle et dessinés en doré
   const pips = (r) => `<span class="pips" data-tip="${r.pa > P.paMax ? `${r.pa} PA utilisés (${P.paMax} + ${r.pa - P.paMax} gagné${r.pa - P.paMax > 1 ? "s" : ""} en combat)` : `${r.pa}/${P.paMax} PA utilisés`}">${Array.from({ length: Math.min(Math.max(P.paMax, r.pa), 14) }, (_, i) => `<i class="${i >= P.paMax ? "plus" : i < r.pa ? "" : "off"}"></i>`).join("")}</span>`;
-  const rows = P.rounds.map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map(castHtml).join("")}${r.late ? `<span class="spcast det late" data-tip="Bombes, glyphes, retardements… posés aux tours d'avant"><b>💥</b><span>Effets posés avant</span><em class="dm">−${fmt(r.late)}</em></span>` : ""}${r.casts.length ? pips(r) : emptyHtml(r)}</div><span class="tot">${r.dmg ? `≈ ${fmt(r.dmg)}` : ""}</span></div>`).join("");
+  const skHtml = (x) => { const o = spOf(x.sp) || (x.sp === "arme" ? { ico: "", name: "Coup d'arme" } : null); if (!o) return ""; return `<span class="spcast det skip" data-tip="${h(o.name)} passé : ${h(ROT_WHY[x.why] || "")}">${o.ico ? `<img src="${o.ico}" alt="">` : "⚔"}<span>${h(ROT_WHY[x.why] || "passé")}</span></span>`; }; // 2.1.32 : sorts passés de « Ma rotation », barrés
+  const castsOf = (r) => { if (!r.skips || !r.skips.length) return r.casts.map(castHtml).join(""); let out = ""; r.casts.forEach((x, i) => { r.skips.filter((k) => k.at === i).forEach((k) => (out += skHtml(k))); out += castHtml(x); }); r.skips.filter((k) => k.at >= r.casts.length).forEach((k) => (out += skHtml(k))); return out; };
+  const rows = P.rounds.map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${castsOf(r)}${r.late ? `<span class="spcast det late" data-tip="Bombes, glyphes, retardements… posés aux tours d'avant"><b>💥</b><span>Effets posés avant</span><em class="dm">−${fmt(r.late)}</em></span>` : ""}${r.casts.length ? pips(r) : emptyHtml(r)}</div><span class="tot">${r.dmg ? `≈ ${fmt(r.dmg)}` : ""}</span></div>`).join("");
   const nR = P.rounds.length; const paAvg = P.rounds.reduce((a, r) => a + r.pa, 0) / Math.max(1, nR);
   const cnt = {}; P.rounds.forEach((r) => r.casts.forEach((x) => { const k = (cnt[x.sp] = cnt[x.sp] || { n: 0, dmg: 0 }); k.n++; k.dmg += x.dmg; }));
   const eq = c.spells.map((x) => x.id).filter((id) => E.spellDef(c.cls, id)); const list = eq.concat(cnt.arme ? ["arme"] : []);
@@ -6871,21 +6887,55 @@ function spOptimize(c) {
 /* 0.1.55.2 « Sorts plus clairs » : la barre en deux groupes. Les sorts de soutien partent dans l'ordre ;
    les attaques n'ont pas d'ordre, le héros prend la meilleure combinaison du tour (planTurn, arme comprise). */
 function spBarGroups(c, slots) {
+  if (c.atkMode === "rot") return `<div class="spgrp">${spAtkHead(c)}<div class="spgl"><b>Tes sorts</b> · ils ne partent que s'ils sont dans ta rotation</div><div class="spbar">${slots}</div></div>`; // 2.1.32
   const tmp = document.createElement("div"); tmp.innerHTML = slots; const sup = [], atk = [];
   [...tmp.children].forEach((x) => (x.dataset.grp === "sup" ? sup : atk).push(x.outerHTML));
   return `<div class="spgrp sup"><div class="spgl"><b>① Soutien</b> · lancés d'abord, <b>dans cet ordre</b>, si leur condition est remplie</div><div class="spbar">${sup.join("") || `<span class="xs muted">Aucun sort de soutien</span>`}</div></div>
     <div class="spgrp atk">${spAtkHead(c)}<div class="spbar">${atk.join("")}</div></div>`;
 }
-/* 2.1.21 « Mon ordre » (idée de Sky, choix de Mathis 1A 2A 3A 4A) : Auto ou dans l'ordre de la barre, une fois chacune puis on recommence */
+/* 2.1.32 « Ma rotation » (demande de Mathis, maquette validée 1A 2A 3A) : la liste exacte des lancers du tour, de gauche à droite.
+   Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou hors condition est passé ; au bout de la liste, le tour s'arrête. */
+const ROT_WHY = { cd: "en recharge", pa: "plus assez de PA", cond: "condition non remplie", max: "déjà lancé le maximum du tour", arme: "pas d'arme équipée", barre: "n'est plus dans la barre", etat: "héros entravé", inutile: "rien à faire" };
+function rotSpOf(c, id) {
+  if (id === "arme") { const it = c.equip.arme && S.items[c.equip.arme]; const w = it && E.weaponSpell(S, c); return w ? { ico: itemImg(it.tpl), name: "Coup d'arme", pa: w.grades[0].pa, el: w.el === "best" ? "n" : w.el, kind: "dmg" } : { ico: "", name: "Coup d'arme", pa: 0, el: "n", off: "Équipe une arme", kind: "dmg" }; }
+  const sp = E.spellDef(c.cls, id); if (!sp) return null; const g = E.spellGrade(sp, c.lvl);
+  return { ico: spellImg(sp.name), name: sp.name, pa: g.pa, cd: g.cd, casts: g.casts, el: spEl(sp), kind: spKindOf(c, sp), off: c.spells.some((x) => x.id === id) ? "" : "Plus dans la barre" };
+}
+function rotCopyAuto(c) { // le tour 1 puis le tour 2 de l'auto : ce qui est en recharge au tour suivant est simplement passé
+  const A = E.poutchPreview(S, c.id, { auto: true, team: spPrevTeam(c) }); if (!A) return [];
+  return A.rounds.slice(0, 2).flatMap((r) => r.casts.map((x) => ({ id: x.sp }))).slice(0, E.ROT_MAX);
+}
+function spRotHtml(c) {
+  if (c.atkMode !== "rot") return ""; const rot = c.rot || []; const paMax = E.charStats(S, c).pa; const sel = ui.rotSel != null && ui.rotSel < rot.length ? ui.rotSel : -1;
+  const cell = (x, i) => { const o = rotSpOf(c, x.id); if (!o) return "";
+    const cond = "cond" in x ? x.cond : (c.spells.find((y) => y.id === x.id) || {}).cond; const cl = cond && cond !== "always" ? COND_SHORT[cond] || cond : "toujours";
+    return `<div class="rotc ${o.off ? "off" : ""}"><span class="rotn">${i + 1}</span><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(o.el)}" data-act="rotsel" data-i="${i}" data-tip="${h(o.name)} · ${o.pa} PA${o.cd ? ` · recharge ${o.cd} tour${o.cd > 1 ? "s" : ""}` : ""}${o.off ? ` · ${o.off}` : ""}" aria-label="Case ${i + 1} : ${h(o.name)}">${o.ico ? `<img src="${o.ico}" alt="">` : "⚔"}<span class="pa">${o.pa}</span></button>
+      <span class="rotcond ${cl !== "toujours" ? "on" : ""}">${h(cl)}</span>${i < rot.length - 1 ? `<span class="rotar">›</span>` : ""}</div>`; };
+  const paUse = rot.reduce((a, x) => a + ((rotSpOf(c, x.id) || {}).pa || 0), 0); const full = rot.length >= E.ROT_MAX;
+  const add = c.spells.map((x) => x.id).concat("arme").map((id) => { const o = rotSpOf(c, id); if (!o) return "";
+    return `<button class="spslot spm ${o.off ? "off" : ""}" style="--c:${elVar(o.el)}" data-act="rotadd" data-id="${id}" ${full || (o.off && id === "arme") ? "disabled" : ""} data-tip="${o.off && id === "arme" ? "Équipe une arme pour l'ajouter" : `Ajouter ${h(o.name)}${sel >= 0 ? ` après la case ${sel + 1}` : ""}`}" aria-label="Ajouter ${h(o.name)}">${o.ico ? `<img src="${o.ico}" alt="">` : "⚔"}</button>`; }).join("");
+  let edit = "";
+  if (sel >= 0) { const x = rot[sel]; const o = rotSpOf(c, x.id) || { name: "?", kind: "dmg" }; const cur = "cond" in x ? x.cond || "always" : "";
+    const opts = [...new Set(["always", ...(COND_BY_ROLE[o.kind] || COND_BY_ROLE.dmg), "first_turn", "boss", "enemy_one", "enemy_many"])];
+    edit = `<div class="rotedit"><b class="small">Case ${sel + 1} · ${h(o.name)}</b><span class="grow"></span>
+      <button class="btn sm" data-act="rotmv" data-i="${sel}" data-d="-1" ${sel ? "" : "disabled"} aria-label="Avancer">◀</button><button class="btn sm" data-act="rotmv" data-i="${sel}" data-d="1" ${sel < rot.length - 1 ? "" : "disabled"} aria-label="Reculer">▶</button>
+      <select class="small" data-act="rotcond" data-i="${sel}" aria-label="Condition de la case"><option value="" ${cur === "" ? "selected" : ""}>Comme le sort</option>${opts.map((k) => `<option value="${k}" ${cur === k ? "selected" : ""}>${h(k === "always" ? "Toujours" : COND_PHRASE[k] || k)}</option>`).join("")}</select>
+      <button class="btn sm" data-act="rotdel" data-i="${sel}">Retirer</button></div>`; }
+  return `<div class="rotbox"><div class="row" style="gap:6px"><b>Ma rotation</b><span class="xs muted">chaque tour, de gauche à droite</span><span class="grow"></span>
+      <span class="rotpa ${paUse > paMax ? "warn" : ""}" data-tip="Somme des PA de la liste. Elle peut dépasser tes PA : un sort en recharge ou trop cher est passé.">${paUse} PA demandés · ${paMax} PA par tour</span></div>
+    <div class="rotrow">${rot.map(cell).join("") || `<span class="small muted">Rotation vide : en attendant, le héros joue en Auto. Ajoute des sorts ci-dessous ou copie l'auto.</span>`}</div>${edit}
+    <div class="rotadd"><span class="xs muted">Ajouter${full ? ` (${E.ROT_MAX} cases au plus)` : ""} :</span>${add}<span class="grow"></span><button class="btn sm" data-act="rotcopy" data-tip="Remplit la rotation avec ce que l'auto joue à ses deux premiers tours">Copier l'auto</button><button class="btn sm" data-act="rotclear" ${rot.length ? "" : "disabled"}>Vider</button></div>
+    <p class="xs muted">Une case = un lancer, le même sort peut revenir plusieurs fois. Un sort en recharge, sans assez de PA ou dont la condition n'est pas remplie est <b>passé</b> : le héros lance le suivant. Au bout de la liste, <b>le tour s'arrête</b>. ${canHover ? "Clique" : "Touche"} une case pour la déplacer, la retirer ou lui donner une condition.</p></div>`;
+}
+/* 2.1.32 : deux réglages, Auto ou « Ma rotation » (« Mon ordre » de la 2.1.21 est devenu une rotation, choix 2A) */
 function spAtkHead(c) {
-  const m = c.atkMode === "ordre";
-  const chips = `<span class="spchips spmode">${[["", "Auto"], ["ordre", "Mon ordre"]].map(([v, n]) => `<button class="spc ${(m ? "ordre" : "") === v ? "on" : ""}" data-act="atkmode" data-v="${v}" aria-pressed="${(m ? "ordre" : "") === v}">${n}</button>`).join("")}</span>`;
-  const txt = m ? `<b>Dans ton ordre</b> : une fois chacune, de gauche à droite, puis il recommence. S'il manque de PA, il passe à la suivante.${canHover ? " Glisse un sort pour changer sa place." : ""}`
-    : `<b>Pas d'ordre</b> : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts (arme comprise), en tenant compte de son passif et des effets de ses sorts`;
-  return `<div class="spgl sphd"><b>② Attaques</b>${chips}</div><div class="spgl">${txt}</div>`;
+  const cur = c.atkMode === "rot" ? "rot" : "";
+  const chips = `<span class="spchips spmode">${[["", "Auto"], ["rot", "Ma rotation"]].map(([v, n]) => `<button class="spc ${cur === v ? "on" : ""}" data-act="atkmode" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
+  if (cur) return `<div class="spgl sphd"><b>Mode de combat</b>${chips}</div>`;
+  return `<div class="spgl sphd"><b>② Attaques</b>${chips}</div><div class="spgl"><b>Auto</b> : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts (arme comprise), en tenant compte de son passif, des effets de ses sorts et des bonus qui se cumulent. « Ma rotation » te laisse choisir chaque lancer.</div>`;
 }
 function spHowHtml() {
-  const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux ou dans ton ordre", "En Auto, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles, passif de classe et effets des sorts compris. En « Mon ordre », il les lance une fois chacune, de gauche à droite, puis recommence."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
+  const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques au mieux, ou ta rotation", "En Auto, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles, passif de classe, effets des sorts et bonus cumulés compris. En « Ma rotation », il lance exactement ta liste, soutiens compris, et passe les sorts impossibles."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
   return `<details class="sphow" ${ui.spHowOpen ? "open" : ""}><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
 }
 function grimNew(c, pairs, eqIds, F) {
@@ -6936,7 +6986,7 @@ function charSpellsView(c) {
     const g = E.spellGrade(sp, c.lvl);
     const atk = ATK_KINDS.includes(spKindOf(c, sp)); const sn = eq.slice(0, i + 1).filter((y) => { const d = E.spellDef(c.cls, y.id); return d && !ATK_KINDS.includes(spKindOf(c, d)); }).length;
     const an = eq.slice(0, i + 1).filter((y) => { const d = E.spellDef(c.cls, y.id); return d && ATK_KINDS.includes(spKindOf(c, d)); }).length;
-    const nb = atk ? (c.atkMode === "ordre" ? `<span class="n an">${an}</span>` : "") : `<span class="n">${sn}</span>`; // 2.1.21 : les attaques sont numérotées en « Mon ordre »
+    const nb = c.atkMode === "rot" || atk ? "" : `<span class="n">${sn}</span>`; // 2.1.32 : en « Ma rotation », c'est la liste qui est numérotée
     return `<div class="spslotw" data-grp="${atk ? "atk" : "sup"}"><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-spdrag="s${i}" draggable="true" data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${nb}${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span class="pa">${g.pa}</span></button><span class="spcl ${COND_SHORT[x.cond] ? "on" : ""}">${COND_SHORT[x.cond] !== undefined ? COND_SHORT[x.cond] : h(CONDITIONS[x.cond] || "")}</span></div>`;
   }).join("");
   // grimoire par paires
@@ -6954,7 +7004,7 @@ function charSpellsView(c) {
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
   <div class="spgrid">
     <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span><span class="grow"></span>${ui.spUndo && ui.spUndo.cid === c.id ? `<button class="btn sm" data-act="spundo">↶ Annuler</button>` : ""}<button class="btn sm" data-act="spopt" data-tip="Essaie tous les ordres des sorts de soutien et garde celui qui fait le plus de dégâts dans l'aperçu">✨ Ranger au mieux</button></div>
-      <div class="pad stack" style="gap:8px">${spBarGroups(c, slots)}${wpBarHtml(c)}
+      <div class="pad stack" style="gap:8px">${spBarGroups(c, slots)}${spRotHtml(c)}${wpBarHtml(c)}
       ${spHowHtml()}</div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
@@ -10243,7 +10293,17 @@ document.addEventListener("click", (ev) => {
     case "spsel": ui.spSel = +d.i; break;
     case "spprev": ui.spPrevMode = d.k; break;
     case "spput": { const r = spPlace(c, d.id, +d.i, true); if (r) { toast(r); return; } ui.spUndo = null; break; }
-    case "atkmode": { if (d.v === "ordre") c.atkMode = "ordre"; else delete c.atkMode; c.activePreset = null; toast(c.atkMode ? "Mon ordre : les attaques partent dans l'ordre de la barre." : "Attaques en auto."); break; } // 2.2
+    case "rotadd": { if (!E.spellDef(c.cls, d.id) && !(d.id === "arme" && E.weaponSpell(S, c))) return; c.rot = c.rot || []; if (c.rot.length >= E.ROT_MAX) { toast(`${E.ROT_MAX} cases au plus.`); return; } // 2.1.32 « Ma rotation »
+      const at = ui.rotSel != null && ui.rotSel < c.rot.length ? ui.rotSel + 1 : c.rot.length; c.rot.splice(at, 0, { id: d.id }); if (ui.rotSel != null && ui.rotSel < c.rot.length - 1) ui.rotSel = at;
+      if (c.atkMode !== "rot") { c.atkMode = "rot"; toast("Ma rotation : le héros lance exactement ta liste."); } c.activePreset = null; break; }
+    case "rotsel": { const i = +d.i; ui.rotSel = ui.rotSel === i ? null : i; break; }
+    case "rotdel": { const i = +d.i; if (!c.rot || !c.rot[i]) return; c.rot.splice(i, 1); ui.rotSel = c.rot.length ? Math.min(i, c.rot.length - 1) : null; c.activePreset = null; break; }
+    case "rotmv": { const i = +d.i, j = i + +d.d; if (!c.rot || !c.rot[i] || !c.rot[j]) return; [c.rot[i], c.rot[j]] = [c.rot[j], c.rot[i]]; ui.rotSel = j; c.activePreset = null; break; }
+    case "rotclear": c.rot = []; ui.rotSel = null; c.activePreset = null; break;
+    case "rotcopy": { c.rot = rotCopyAuto(c); ui.rotSel = null; c.activePreset = null; toast(c.rot.length ? "Rotation remplie avec ce que joue l'auto." : "L'auto ne lance rien pour l'instant."); break; }
+    case "atkmode": { ui.rotSel = null; c.activePreset = null;
+      if (d.v === "rot") { c.atkMode = "rot"; if (!(c.rot || []).length) c.rot = rotCopyAuto(c); toast("Ma rotation : le héros lance exactement ta liste, de gauche à droite."); }
+      else { delete c.atkMode; toast("Combat en Auto."); } break; }
     case "spopt": { const old = c.spells.map((x) => ({ ...x })); const r = spOptimize(c);
       if (!r.best) { toast("La barre est déjà bien rangée pour ce combat."); return; }
       c.spells = r.best; c.spellsManual = true; c.activePreset = null; ui.spUndo = { cid: c.id, spells: old }; ui.spSel = 0; toast(`Barre rangée : +${r.gain} % de dégâts sur 3 tours.`); break; }
@@ -10403,6 +10463,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "plank" || a === "planto" || a === "planrest") { const x = char(+t.dataset.id); const plan = E.planOf(x).map((st) => Object.assign({}, st)); const i = +t.dataset.i;
     if (a === "plank" && plan[i]) plan[i].k = t.value; if (a === "planto" && plan[i]) plan[i].to = +t.value;
     E.setPlan(S, x, plan, a === "planrest" ? t.value : E.planRest(x)); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
+  else if (a === "rotcond") { const x = c && c.rot && c.rot[+t.dataset.i]; if (!x) return; if (t.value === "") delete x.cond; else x.cond = t.value === "always" ? null : t.value; c.activePreset = null; } // 2.1.32 : condition d'une case de « Ma rotation »
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }

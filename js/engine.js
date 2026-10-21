@@ -700,13 +700,13 @@
   E.savePreset = (S, cid, idx, name) => {
     const c = S.chars.find((x) => x.id === cid); if (!c || idx < 0 || idx >= E.MAX_PRESETS) return;
     c.presets[idx] = { name: (name || `Stratégie ${idx + 1}`).slice(0, 24), spells: c.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt })) };
-    if (c.atkMode === "ordre") c.presets[idx].am = "ordre"; // 2.1.21 : « Mon ordre » est gardé dans la stratégie
+    if (c.atkMode === "rot") Object.assign(c.presets[idx], { am: "rot", rot: (c.rot || []).map((x) => ({ ...x })) }); // 2.1.32 : « Ma rotation » est gardée dans la stratégie
     c.activePreset = idx;
   };
   E.applyPreset = (S, cid, idx) => {
     const c = S.chars.find((x) => x.id === cid); const p = c && c.presets[idx]; if (!p) return false;
     c.spells = E.memFit(c, p.spells).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" })); c.spellsManual = true;
-    if (p.am === "ordre") c.atkMode = "ordre"; else delete c.atkMode;
+    if (p.am === "rot") { c.atkMode = "rot"; c.rot = (p.rot || []).map((x) => ({ ...x })); } else delete c.atkMode;
     c.activePreset = idx; return true;
   };
   E.deletePreset = (S, cid, idx) => {
@@ -845,8 +845,8 @@
     if (what.sp && P.same) {
       const cp = (L) => L.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
       c.spells = E.memFit(c, cp(a.spells)).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt || "low" }));
-      c.presets = (a.presets || []).map((p) => (p ? Object.assign({ name: p.name, spells: cp(p.spells || []) }, p.am === "ordre" ? { am: "ordre" } : {}) : null));
-      if (a.atkMode === "ordre") c.atkMode = "ordre"; else delete c.atkMode;
+      c.presets = (a.presets || []).map((p) => (p ? Object.assign({ name: p.name, spells: cp(p.spells || []) }, p.am === "rot" ? { am: "rot", rot: (p.rot || []).map((x) => ({ ...x })) } : {}) : null));
+      if (a.atkMode === "rot") { c.atkMode = "rot"; c.rot = (a.rot || []).map((x) => ({ ...x })); } else delete c.atkMode;
       c.activePreset = a.activePreset != null && c.presets[a.activePreset] ? a.activePreset : null;
       c.zonePreset = Object.assign({}, a.zonePreset || {}); c.spellsManual = true; out.sp = true;
     }
@@ -968,6 +968,24 @@
   };
   E.weaponSpell = (S, c) => { const uid = c && c.equip && c.equip.arme; const it = uid && S.items[uid]; return it && ITEMS[it.tpl] ? E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh) : null; };
   E.WSLOT = { id: "arme", cond: "", tgt: "low", w: true };
+  /* 2.1.32 « Ma rotation » : c.rot = [{ id, cond? }] (id d'un sort de la barre ou "arme"), 16 cases au plus.
+     rotFromOrder : la rotation équivalente à l'ancien « Mon ordre » (soutiens dans l'ordre, puis les attaques une fois chacune, en boucle jusqu'aux PA du tour) */
+  E.ROT_MAX = 16;
+  E.rotFromOrder = (c, pa, wpa) => {
+    const ATK = ["dmg", "aoe", "drain", "dot"]; const sup = [], atk = [];
+    (c.spells || []).forEach((x) => { const sp = E.spellDef(c.cls, x.id); if (!sp) return; const g = E.spellGrade(sp, c.lvl || 1); (ATK.includes(E.spellKind(g)) ? atk : sup).push({ id: x.id, pa: g.pa }); });
+    if (wpa) atk.push({ id: "arme", pa: wpa });
+    const out = sup.map((x) => ({ id: x.id })); let n = sup.reduce((a, x) => a + x.pa, 0);
+    for (let i = 0; atk.length && i < 40 && out.length < E.ROT_MAX && n < (pa || 12) + 4; i++) { const x = atk[i % atk.length]; out.push({ id: x.id }); n += x.pa; }
+    return out;
+  };
+  E.rotConvert = (S, c) => { // héros et stratégies encore en « Mon ordre » → « Ma rotation » ; renvoie le nombre de conversions
+    let pa = 12, wpa = 0; try { pa = E.charStats(S, c).pa || 12; const w = E.weaponSpell(S, c); wpa = w ? w.grades[0].pa : 0; } catch (_) {}
+    let n = 0;
+    if (c.atkMode === "ordre") { c.rot = E.rotFromOrder(c, pa, wpa); c.atkMode = "rot"; n++; }
+    (c.presets || []).forEach((p) => { if (p && p.am === "ordre") { p.rot = E.rotFromOrder({ cls: c.cls, lvl: c.lvl, spells: p.spells || [] }, pa, wpa); p.am = "rot"; n++; } });
+    return n;
+  };
   /* potion de forgemagie élémentaire : change le Neutre de l'arme (réussite garantie, une potion par changement) */
   E.weaponPotion = (S, uid, cons) => {
     const it = S.items[uid]; const T = it && ITEMS[it.tpl]; if (!T || T.slot !== "arme") return { err: "Seules les armes prennent ces potions." };
@@ -1886,13 +1904,13 @@
      il estime les dégâts vraiment utiles : résistances de chaque cible (et peau du boss), PV restants (pas de dégâts perdus
      sur un monstre déjà mort), bonus quand un monstre tombe (coup de grâce), zone seulement s'il y a plusieurs ennemis.
      Il lance ensuite le sort le plus utile de la meilleure combinaison, puis recommence avec la situation nouvelle. */
-  E.PLAN = { kill: 0.3, depth: 5, passifs: !(typeof process !== "undefined" && process.env && process.env.NO_PASSIFS) }; // 2.1.21 : passifs = l'IA connaît le passif de l'Huppermage et la valeur des mécaniques des sorts
+  E.PLAN = { kill: 0.3, depth: 5, cumul: !(typeof process !== "undefined" && process.env && process.env.NO_CUMUL), passifs: !(typeof process !== "undefined" && process.env && process.env.NO_PASSIFS) }; // 2.1.21 : passifs = l'IA connaît le passif de l'Huppermage et la valeur des mécaniques des sorts
   const atkFx = (F, e, g, sp) => { const pui = e.st.pui + buffSum(e, "pui"); const ip = E.PLAN.passifs && E.idPlan && sp ? E.idPlan(F, e, sp) : null;
     const pw = E.classPow(e.cls, e.lvl) * (ip ? ip.m : 1); // 2.1.21 : valeur de la mécanique du sort (cumul, bombe, écho…) dans la situation du moment
     return g.fx.filter((f) => ["dmg", "drain", "dot"].includes(f.k)).map((f) => {
       const el = f.el === "best" ? bestEl(e.st) : f.el || "n"; const E2 = ELEMENTS[el] || ELEMENTS.n;
       const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
-      let v = (((f.min + f.max) / 2) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + (e.st.do || 0) + (e.st[E2.dmg] || 0)) * pw * (f.n > 1 ? 0.85 : 1);
+      let v = (((f.min + f.max) / 2) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + (e.st.do || 0) + (E.PLAN.cumul ? buffSum(e, "do") : 0) + (e.st[E2.dmg] || 0)) * pw * (f.n > 1 ? 0.85 : 1);
       if (f.k === "dot") v *= 0.55 * (f.t || 2) * 0.85; // un poison arrive plus tard : un peu moins utile
       if (f.k === "drain" && e.hp < e.hpMax * 0.7) v *= 1.15;
       return { v, el, n: f.n || 1, dot: f.k === "dot", ip };
@@ -1917,17 +1935,23 @@
     const foes = alive(F, "m"); const hp0 = foes.map((m) => m.hp);
     const fxOf = cands.map((c) => atkFx(F, e, c.g, c.sp));
     const hup = e.cls === "hupper" && E.PLAN.passifs;
-    // 2.1.21 : bonus posés par une attaque (Puissance, PA, vulnérabilité) : l'Osamodas délaissait Cri de l'Ours (+150 Puissance à l'équipe)
-    const bonus = cands.map(() => 0);
+    // 2.1.21 : bonus posés par une attaque (Puissance, PA, vulnérabilité) : l'Osamodas délaissait Cri de l'Ours (+150 Puissance à l'équipe) ;
+    // 2.1.32 : ces bonus se cumulent d'un lancer à l'autre, et les Dommages (Furia du Zobal) comptent aussi
+    const bonus = cands.map(() => 0); const stack = cands.map(() => false); let ivr = 0;
     if (E.PLAN.passifs) {
       const perPa = Math.max(0, ...cands.map((c, k) => fxOf[k].reduce((a, f) => a + f.v * Math.min(f.n, Math.max(1, foes.length)), 0) / Math.max(1, c.g.pa)));
       const turn = perPa * Math.max(1, e.st.pa || 6); const team = 1 + 0.6 * Math.max(0, alive(F, "c").filter((a) => !a.summon).length - 1);
+      const hits = Math.max(1, (e.st.pa || 6) / Math.max(2, Math.min(...cands.map((c) => c.g.pa)))); // coups par tour (pour les bonus de Dommages)
       const EL = ELEMENTS[bestEl(e.st)] || ELEMENTS.n; const base = 100 + Math.max(-50, (e.st[EL.stat] || 0) + buffSum(e, EL.stat) + e.st.pui + buffSum(e, "pui"));
       cands.forEach((c, k) => c.g.fx.forEach((f) => {
         if (f.k === "buff" && f.st === "pa") bonus[k] += f.v * perPa;
-        else if (f.k === "buff" && (f.st === "pui" || f.st === EL.stat) && !(e.buffs || []).some((b) => b.name === c.sp.name && b.turns > 0)) bonus[k] += turn * (f.v / base) * Math.min(2, f.t || 1) * (f.all ? team : 1) * 0.5;
+        else if (f.k === "buff" && (f.st === "pui" || f.st === EL.stat) && (E.PLAN.cumul || !(e.buffs || []).some((b) => b.name === c.sp.name && b.turns > 0))) bonus[k] += turn * (f.v / base) * Math.min(2, f.t || 1) * (f.all ? team : 1) * 0.5;
+        else if (f.k === "buff" && f.st === "do" && E.PLAN.cumul) bonus[k] += hits * f.v * E.classPow(e.cls, e.lvl) * Math.min(2, f.t || 1) * (f.all ? team : 1) * 0.5;
         else if (f.k === "vuln" && !foes.some((m) => (m.debuffs || []).some((d) => d.vuln && d.turns > 0))) bonus[k] += turn * (f.v / 100) * Math.min(2, f.t || 1) * team * 0.5;
+        if (f.k === "buff" && f.st !== "pa" && E.PLAN.cumul) stack[k] = true;
       }));
+      // 2.1.32 : le Pandawa cuve un tour toutes les 5 attaques : chaque lancer coûte un cinquième de tour, il préfère les gros sorts
+      if (e.cls === "panda" && E.PLAN.cumul) ivr = turn / 5;
     }
     let best = { v: -1, first: null };
     const rec = (from, pa, left, hp, total, first, firstGain, depth, lastEl, els) => {
@@ -1937,10 +1961,10 @@
         const c = cands[k]; if (c.g.pa > pa || left[k] <= 0) continue;
         const h2 = hp.slice(); let fx = fxOf[k]; let le = lastEl, es = els;
         if (hup) fx = fx.map((f, i) => { const o = { ...f, v: f.v * (i === 0 ? hupMul(e, f.el, le, es) : le && le !== f.el ? 1.1 : 1) }; if (i === 0 && es.length >= 4) es = []; le = f.el; if (!es.includes(f.el)) es = es.concat(f.el); return o; });
-        const gn = planGain(fx, foes, h2, F) + (left[k] === c.left ? bonus[k] : 0);
+        const gn = planGain(fx, foes, h2, F) + (left[k] === c.left || stack[k] ? bonus[k] : 0) - ivr; // 2.1.32 : un bonus qui se cumule (Furia, Truanderie, Cri de l'Ours) compte à chaque lancer
         if (gn <= 0) continue;
         left[k]--;
-        const f2 = hup ? (first === null ? k : first) : first === null || gn > firstGain ? k : first; // dans la combinaison, on commence par le sort le plus utile
+        const f2 = hup ? (first === null ? k : first) : first === null || (stack[k] && !stack[first]) || (stack[k] === stack[first] && gn > firstGain) ? k : first; // dans la combinaison, on commence par le sort le plus utile ; 2.1.32 : un sort qui pose un bonus part avant (Truanderie puis Attaque Mortelle)
         rec(k, pa - c.g.pa, left, h2, total + gn, f2, f2 === k ? gn : firstGain, depth + 1, le, es);
         left[k]++;
       }
@@ -1977,6 +2001,27 @@
     const bar = e.wsp ? [...c.spells, E.WSLOT] : c.spells; const defOf = (slot) => (slot.w ? e.wsp : E.spellDef(c.cls, slot.id)); // 0.1.53 : coup d'arme
     /* IA v4 : sorts utilitaires dans l'ordre de la barre, puis la meilleure combinaison d'attaques du tour (planTurn) */
     const nCast = {}; const blocked = new Set();
+    /* 2.1.32 « Ma rotation » (demande de Mathis, choix 1A 2A 3A) : la liste exacte des lancers du tour, de gauche à droite.
+       Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou hors condition est passé ; au bout de la liste, le tour s'arrête. */
+    if (c.atkMode === "rot" && Array.isArray(c.rot) && c.rot.length) {
+      const skip = (st, why) => F.fx.push({ seq: F.seq, k: "rskip", s: F.ents.indexOf(e), sp: st.id, why });
+      for (const st of c.rot.slice(0, E.ROT_MAX)) {
+        if (!alive(F, "m").length) return endHeroTurn(S, F, e);
+        const w = st.id === "arme"; const idx = w ? (e.wsp ? bar.length - 1 : -1) : bar.findIndex((x) => !x.w && x.id === st.id); const slot = idx >= 0 ? bar[idx] : null;
+        if (!slot) { skip(st, w ? "arme" : "barre"); continue; }
+        const sp = defOf(slot); if (!sp || sp.lvl > c.lvl) { skip(st, "barre"); continue; } const g = E.spellGrade(sp, c.lvl);
+        if ((e.cd[sp.id] || 0) > 0) { skip(st, "cd"); continue; }
+        if ((nCast[idx] || 0) >= castLimit(g)) { skip(st, "max"); continue; }
+        if (g.pa > pa) { skip(st, "pa"); continue; }
+        if ((e.silence > 0 && g.cd) || (e.rooted > 0 && E.spellKind(g) === "heal")) { skip(st, "etat"); continue; }
+        if (!condOk(F, e, "cond" in st ? st.cond : slot.cond) || chalSkip(S, F, e, c, sp, g) || (F.idol && F.idol.heals === "none" && E.spellKind(g) === "heal")) { skip(st, "cond"); continue; }
+        F.seq++; const r = castSpell(S, F, e, sp, null, slot); if (!r.ok) { skip(st, "inutile"); continue; }
+        nCast[idx] = (nCast[idx] || 0) + 1; pa -= g.pa; pa += r.extraPa || 0; cast++; if (g.cd) e.cd[sp.id] = (e.lg && E.legCd ? E.legCd(e, g.cd) : g.cd) + 1;
+        F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), sp: sp.id });
+      }
+      if (!cast && paStart === undefined) flog(F, `${e.name} passe son tour.`, "dim");
+      e.lastCast = F.seq; return endHeroTurn(S, F, e);
+    }
     for (let guard = 0; guard < 30; guard++) {
       if (!alive(F, "m").length) return endHeroTurn(S, F, e);
       let best = null, bestV = -1;
@@ -2307,7 +2352,7 @@
      st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
-    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), am: c.atkMode === "ordre" ? 1 : 0, st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") + E.mtPass(S, c), lg: E.legOf ? E.legOf(S, c) : null,
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), am: c.atkMode === "rot" ? 2 : 0, ...(c.atkMode === "rot" ? { rot: (c.rot || []).slice(0, E.ROT_MAX).map((x) => ("cond" in x ? { id: x.id, cond: x.cond } : { id: x.id })) } : {}), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") + E.mtPass(S, c), lg: E.legOf ? E.legOf(S, c) : null,
     mt: E.mtFx ? E.mtFx(S, c) : null, bt: E.btFx ? E.btFx(S) : null, // 2.0 : Maîtrise
     dp: E.dofpOf ? E.dofpOf(S, c) : null, dpB: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus
     wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
@@ -2316,7 +2361,7 @@
     const chars = [], ents = [];
     [A, B].forEach((T, tm) => T.forEach((h, i) => {
       const id = tm ? 1000000 + i : (opts.ids && opts.ids[i]) || 900000 + i; const st = Object.assign({}, h.st);
-      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "ordre" : undefined, alloc: {}, equip: {}, eveils: {} }); /* 2.0.10 : les Éveils n'existent plus, une ancienne équipe de défense ne les garde pas */
+      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "rot" : undefined, rot: h.am ? (h.am === 2 && Array.isArray(h.rot) ? h.rot.slice(0, E.ROT_MAX).map((x) => Object.assign({}, x)) : E.rotFromOrder({ cls: h.cls, lvl: h.lvl, spells: h.sp }, (h.st || {}).pa, h.wp && ITEMS[h.wp.t] ? ((E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) || { grades: [{}] }).grades[0].pa || 0) : 0)) : undefined, alloc: {}, equip: {}, eveils: {} }); /* 2.0.10 : les Éveils n'existent plus, une ancienne équipe de défense ne les garde pas ; 2.1.32 : une équipe en « Mon ordre » (am 1) joue la rotation équivalente */
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
         buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.mt ? h.evc || 0 : 0, ev: {}, mt: h.mt || null, bt: h.bt || null,
@@ -2355,7 +2400,7 @@
       let seed = 7919; rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
       const S2 = JSON.parse(JSON.stringify(S)); const c = S2.chars.find((x) => x.id === cid);
       if (o.spells) c.spells = o.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
-      if (o.auto) delete c.atkMode; // 2.1.21 : comparaison de « Mon ordre » avec l'auto
+      if (o.auto) delete c.atkMode; if (o.rot) { c.rot = o.rot; c.atkMode = "rot"; } // 2.1.21 / 2.1.32 : comparaison avec l'auto, essai d'une rotation // 2.1.21 : comparaison de « Mon ordre » avec l'auto
       S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
       const team = o.team && c.inTeam && !c.job;
       if (!team) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
@@ -2371,10 +2416,12 @@
       const R = Array.from({ length: nT }, (_, i) => ({ r: i + 1, casts: [], pa: 0, dmg: 0, late: 0 }));
       let last = F.seq; const seen = new WeakSet(); F.log.forEach((l) => seen.add(l));
       for (let g = 0; g < 4000 && !F.over && F.round <= nT; g++) {
-        const rd = F.round; E.step(S2);
+        E.step(S2);
         F.ents.forEach((e) => { if (e.side === "c" && e.alive) e.hp = e.hpMax; }); // le Poutch ne fait pas mal (et les PV n'influencent pas les conditions)
-        const T = R[Math.min(rd, nT) - 1]; const nf = F.fx.filter((f) => f.seq > last); const bySeq = {};
-        nf.forEach((f) => { if (f.k === "cast" && f.s === hi && f.sp) { const d = f.sp === "arme" ? he.wsp : E.spellDef(c.cls, f.sp); const gr = d && E.spellGrade(d, c.lvl); const x = { sp: f.sp, dmg: 0, mech: [] }; bySeq[f.seq] = x; T.casts.push(x); T.pa += gr ? gr.pa : 0; } });
+        if (F.round > nT) break; // 2.1.32 : le tour qui commence avec ce pas compte pour son propre tour (avant, « Tour 1 » montrait aussi le début du tour 2)
+        const T = R[F.round - 1]; const nf = F.fx.filter((f) => f.seq > last); const bySeq = {};
+        nf.forEach((f) => { if (f.k === "cast" && f.s === hi && f.sp) { const d = f.sp === "arme" ? he.wsp : E.spellDef(c.cls, f.sp); const gr = d && E.spellGrade(d, c.lvl); const x = { sp: f.sp, dmg: 0, mech: [], seq: f.seq }; bySeq[f.seq] = x; T.casts.push(x); T.pa += gr ? gr.pa : 0; } });
+        nf.forEach((f) => { if (f.k === "rskip" && f.s === hi) (T.skips = T.skips || []).push({ sp: f.sp, why: f.why, at: T.casts.filter((x) => x.seq <= f.seq).length }); });
         nf.forEach((f) => {
           if (f.k === "hit" && f.s === hi) { const x = bySeq[f.seq]; T.dmg += f.v || 0; if (x) x.dmg += f.v || 0; else T.late += f.v || 0; }
           else if (f.k === "buff" && f.idx && POUTCH_MECH.includes(f.idx) && bySeq[f.seq] && !bySeq[f.seq].mech.includes(f.idx)) bySeq[f.seq].mech.push(f.idx);
@@ -3989,6 +4036,8 @@
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });
     Object.keys(CRAFT_JOBS).forEach((j) => { if (!S.crafts[j]) S.crafts[j] = fresh.crafts[j]; });
     if (S.sub && !SUBS[S.sub]) { S.sub = null; S.hunting = false; }
+    { let n = 0; S.chars.forEach((c) => (n += E.rotConvert(S, c))); // 2.1.32 (choix 2A) : « Mon ordre » devient « Ma rotation »
+      if (n) report.push(`« Mon ordre » devient « Ma rotation » : tes réglages ont été convertis en une rotation équivalente (onglet Sorts). Tu peux maintenant choisir chaque lancer, l'arme comprise.`); }
     S.chars.forEach((c) => {
       c.spells = c.spells.filter((s) => E.spellDef(c.cls, s.id));
       if (!c.presets) c.presets = []; if (!c.zonePreset) c.zonePreset = {}; if (!c.sex) c.sex = CLASSES[c.cls].sex || "m";

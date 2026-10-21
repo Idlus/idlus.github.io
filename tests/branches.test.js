@@ -44,7 +44,7 @@ A=gat(false);B=gat(true);setBr("L'Artisan");ok("récolte + XP de métier (Artisa
 // pénalités des clés de voûte sur la fiche
 {const base=()=>{noBr("Le Banquier");return E.charStats(S,c);};const s0=base();setBr("Le Banquier");const s1=E.charStats(S,c);ok("PV −10 % (Coffre d'or)",s1.hpMax<s0.hpMax,s0.hpMax+" → "+s1.hpMax);
 noBr("Le Traqueur");const r0=E.charStats(S,c).rf;setBr("Le Traqueur");const r1=E.charStats(S,c).rf;ok("résistances −8 (Grand veneur)",r1===r0-8+ (0),r0+" → "+r1);}
-{const sh=(h)=>{const r=fight(null,{h},1);return r.F.fx.filter(x=>x.k==="buff"&&/Bouclier/.test(x.txt||""))[0].txt;};const a=sh(0),b=sh(-25);ok("boucliers −25 % (Soif de sang)",a!==b,a+" → "+b);}
+{const sh=(h)=>{E.PLAN.cumul=false;const r=fight(null,{h},1);E.PLAN.cumul=true; /* 2.1.32 : sans les cumuls, l'Auto du Iop garde Pression (qui pose le bouclier) au premier tour */return r.F.fx.filter(x=>x.k==="buff"&&/Bouclier/.test(x.txt||""))[0].txt;};const a=sh(0),b=sh(-25);ok("boucliers −25 % (Soif de sang)",a!==b,a+" → "+b);}
 
 // 2.1 : améliorations de la Maîtrise
 {const nts=T.N.filter(n=>n.br&&n.t==="nt"),joys=T.N.filter(n=>n.br&&n.t==="joy");ok("un joyau ◆ à côté de chaque notable de branche (17A)",nts.length>0&&joys.length===nts.length&&joys.every(j=>j.adj.some(y=>T.N[y].t==="nt"&&T.N[y].br===j.br)),nts.length+" notables, "+joys.length+" joyaux");}

@@ -5998,3 +5998,21 @@ button.pset.open{outline:1px solid var(--action)}
 .offc-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:999px;box-shadow:0 0 10px var(--glow);transition:width .25s}
 .offc-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){.offc-bar i{transition:none}}
+
+/* 2.1.32 « Ma rotation » */
+.rotbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--panel2)}
+.rotrow{display:flex;flex-wrap:wrap;gap:10px 4px;align-items:flex-start}
+.rotc{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding-right:12px}
+.rotn{position:absolute;top:-6px;left:-4px;z-index:2;background:var(--accent,#3fae7a);color:#fff;font-size:10px;font-weight:900;border-radius:8px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px}
+.rotar{position:absolute;right:-1px;top:16px;font-weight:900;opacity:.55}
+.rotcond{font-size:10px;font-weight:700;opacity:.6;cursor:pointer;white-space:nowrap}
+.rotcond.on{opacity:1;color:var(--accent,#3fae7a)}
+.rotadd{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rotadd .spslot.off,.rotadd .spslot:disabled{opacity:.35}
+.rotc.off .spslot{opacity:.4;filter:grayscale(1)}
+.rotedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--panel);border-radius:10px;padding:6px 8px}
+.rotedit select{max-width:100%}
+.rotpa{font-size:12px;font-weight:800}.rotpa.warn{color:#d9822b}
+.spcast.skip{opacity:.45;text-decoration:line-through;background:transparent;border:1px dashed var(--line)}
+.spcast.skip span{font-weight:600}
+@media (max-width:600px){.spcast.skip span{display:none}}
