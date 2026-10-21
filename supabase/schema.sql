@@ -63,7 +63,7 @@ create policy "lire sa partie" on public.saves for select to authenticated using
 drop policy if exists "créer sa partie" on public.saves;
 drop policy if exists "modifier sa partie" on public.saves;
 drop policy if exists "effacer sa partie" on public.saves;
-revoke insert, update, delete on public.saves from anon, authenticated;
+revoke insert, update, delete, truncate, references, trigger on public.saves from anon, authenticated;
 
 -- ---------- envoi de la partie ----------
 -- p_expected = date de la version en ligne que l'appareil connaît.
