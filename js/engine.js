@@ -3373,14 +3373,14 @@
   const MON_RES = (() => { const m = new Map(); for (const k in MONSTERS) { const mo = MONSTERS[k]; if (mo.boss || mo.archiOf) continue; mo.drops.forEach(([r, p]) => { if (p >= 8 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); } return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])); })();
   const hsh = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
   const toolReq = (L) => (L <= 10 ? Math.max(1, (L - 1) * 8) : Math.min(200, Math.round(72 + (L - 10) * 6.4)));
-  E.toolRecipe = (job, L) => { // recette pour passer l'outil au niveau L (1..30)
+  E.toolRecipe = (job, L, cap = 200) => { // recette pour passer l'outil au niveau L (1..30) ; cap : niveau maximum du métier (Monocompte hors spécialité : 100)
     const name = `${E.toolName(job, L)} ${L}`;
     if (L > 10) { // 2.1.36 : ressources du niveau demandé, kamas × 1,25 par niveau après le 10
-      const lvl = toolReq(L), at = (j) => GATHER_JOBS[j].items.filter((x) => x[1] <= lvl).pop()[0];
+      const lvl = Math.min(toolReq(L), cap), over = toolReq(L) > cap, at = (j) => GATHER_JOBS[j].items.filter((x) => x[1] <= lvl).pop()[0];
       const other = job === "bucheron" ? "mineur" : "bucheron";
       const pool = MON_RES.filter(([n, l]) => Math.abs(l - lvl) <= 12 && !/^(Puissant |Petit |)Parchemin|^Potion/.test(n)); const mr = (pool.length ? pool : MON_RES)[Math.floor(hsh(job + L) * (pool.length || MON_RES.length))][0];
       const ing = [[at(job), 60 + L * 12], [at(other), 40 + L * 8], [mr, 20 + L * 4], [E.RARE_COMPONENT, (L - 4) * 2]];
-      return { name, mat: ing[0][0], lvl, kamas: Math.round(200 * Math.pow(1.9, 9) * Math.pow(1.25, L - 10)), ing };
+      return { name, mat: ing[0][0], lvl, kamas: Math.round(200 * Math.pow(1.9, 9) * Math.pow(1.25, L - 10) * (over ? 1.5 : 1)), ing }; // métier plafonné : niveau requis = son maximum, kamas × 1,5
     }
     const own = GATHER_JOBS[job].items; const tier = (j) => GATHER_JOBS[j].items[Math.min(GATHER_JOBS[j].items.length - 1, Math.floor((L - 1) / 2))][0];
     const other = job === "bucheron" ? "mineur" : "bucheron";
@@ -3390,10 +3390,10 @@
     const matTier = own[Math.min(own.length - 1, Math.floor((L - 1) / 2))][0];
     return { name, mat: matTier, lvl: toolReq(L), kamas: Math.round(200 * Math.pow(1.9, L - 1)), ing };
   };
-  E.toolCost = (S, job) => E.toolRecipe(job, E.toolLvl(S, job) + 1);
+  E.toolCost = (S, job) => E.toolRecipe(job, E.toolLvl(S, job) + 1, E.jobCap(S, "g", job));
   E.upgradeTool = (S, job) => {
     const l = E.toolLvl(S, job); if (l >= E.TOOL_MAX) return "Outil au niveau maximum.";
-    const R = E.toolRecipe(job, l + 1);
+    const R = E.toolCost(S, job);
     if (S.jobs[job].lvl < R.lvl) return `${GATHER_JOBS[job].name} niveau ${R.lvl} requis.`;
     if (S.kamas < R.kamas) return `Il faut ${R.kamas} kamas.`;
     const miss = R.ing.filter(([r, q]) => (S.res[r] || 0) < q); if (miss.length) return `Il manque : ${miss.map(([r, q]) => `${q - (S.res[r] || 0)} × ${r}`).join(", ")}.`;

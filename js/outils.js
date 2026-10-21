@@ -25,7 +25,7 @@
   };
   E.GRAV_ORDER = ["pro", "sou", "sav"];
   // pierres de gravure : petites (gravures des niveaux 5 à 15), grandes (20 à 30)
-  E.GRAV_DROP = { small: { lvl: 20, p: 1 / 1500 }, big: { lvl: 80, p: 1 / 2500 } };
+  E.GRAV_DROP = { small: { lvl: 20, p: 1 / 3000 }, big: { lvl: 80, p: 1 / 5000 }, mono: 0.5 }; // simulation : ≈ 1 pierre par jour de chasse (équipe de 8 : 75-170 victoires/h ; Monocompte : environ 2 fois plus de victoires, d'où × 0,5)
   if (RES) E.GRAV_ORDER.forEach((k) => { const G = E.GRAV[k]; G.stone.forEach((n, i) => { if (!RES[n]) RES[n] = { id: 0, icon: G.icon, lvl: i ? 80 : 20, price: i ? 2000 : 500, type: -2, nosale: true }; }); }); // pas de vente au jeu : elles servent aux gravures
   E.gravStone = (k, lv) => E.GRAV[k].stone[lv >= 20 ? 1 : 0];
   E.gravOf = (S, job) => (S.grav && Array.isArray(S.grav[job]) ? S.grav[job] : []);
@@ -47,7 +47,7 @@
   /* butin : une chance par combat gagné (chasse, donjon, groupe), selon le niveau du monstre le plus fort */
   E.gravDrop = (S, mons, opts, out) => {
     if (!mons || !mons.length) return;
-    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = rnd();
+    const lvl = Math.max(...mons.map((m) => m.lvl || 0)), r = rnd() / (isMono(S) ? E.GRAV_DROP.mono : 1);
     const T = lvl >= E.GRAV_DROP.big.lvl && r < E.GRAV_DROP.big.p ? 1 : lvl >= E.GRAV_DROP.small.lvl && r < E.GRAV_DROP.big.p + E.GRAV_DROP.small.p ? 0 : -1;
     if (T < 0) return;
     const k = E.GRAV_ORDER[Math.floor(rnd() * E.GRAV_ORDER.length)]; const n = E.GRAV[k].stone[T];
@@ -98,7 +98,7 @@
     const k = E.appCost(S); if (S.kamas < k) return `Il faut ${k.toLocaleString("fr-FR")} kamas.`;
     const left = A.until > E.now() ? A.until - E.now() : 0; if (left > 2 * E.APP.dur) return "Contrat déjà prolongé au maximum (3 jours).";
     const err = E.appSet(S, j, res, true); if (err) return err;
-    S.kamas -= k; S.mono.app.until = Math.max(E.now(), A.until || 0) + E.APP.dur;
+    S.kamas -= k; S.mono.app.until = Math.max(E.now(), A.until || 0) + E.APP.dur; S.mono.app.w = 0; // w : 1 = rappel « plus qu'1 h » donné, 2 = fin annoncée
     E.note(S, `${E.APP.name} engagé${left ? " pour 24 h de plus" : " pour 24 h"} (${k.toLocaleString("fr-FR")} kamas).`, "info");
     return null;
   };
@@ -115,12 +115,22 @@
     A.job = job; A.res = pick; A.prog = A.prog || 0;
     return null;
   };
+  /* rappel 1 h avant la fin du contrat, puis message à la fin (une fois chacun ; pas de rappel pour une fin arrivée hors-ligne) */
+  E.APP_WARN = 3600 * 1000;
+  const appWarn = (S, A, opts) => {
+    if (!A.until) return; const left = A.until - E.now(); const w = A.w || 0;
+    if (left <= 0 && w < 2) { A.w = 2; E.note(S, `Le contrat de l'${E.APP.name} est terminé : réengage-le dans Économie › Métiers › Récolte.`, "info"); }
+    else if (left > 0 && left <= E.APP_WARN && w < 1) { A.w = 1; if (!opts.offline) E.note(S, `Plus qu'1 h de contrat pour l'${E.APP.name} : pense à le prolonger.`, "info"); }
+  };
+  /* pastille sur Métiers : contrat fini (et pas encore réengagé) ou presque fini */
+  E.appAlert = (S) => { const A = E.appState(S); if (!A || !A.until) return 0; const left = A.until - E.now(); return left <= 0 ? ((A.w || 0) < 3 ? 2 : 0) : left <= E.APP_WARN ? 1 : 0; };
+  E.appSeen = (S) => { const A = E.appState(S); if (A && A.until && A.until <= E.now() && (A.w || 0) < 3) A.w = 3; }; // fin vue dans Métiers : la pastille s'en va
   // faux héros passé au moteur de récolte : pas de classe (pas de passif), pas de Maîtrise
   const pseudo = (A) => ({ id: -9, name: E.APP.name, cls: null, job: A });
   /* appelé par le moteur à chaque tic de récolte (E.gatherTick) : l'apprenti fait des coups de 30 s qui comptent pour E.APP.rate */
   E.appTick = (S, dt, opts = {}) => {
     const A = E.appState(S); if (!A || !A.job || !S.jobs[A.job]) return 0;
-    const c = pseudo(A);
+    const c = pseudo(A); appWarn(S, A, opts);
     if (opts.flush) { const t = E.gatherPeriod(S, c); const f = t > 0 ? Math.min(1, (A.prog || 0) / t) : 0; A.prog = 0; return f > 0 ? E.gatherHit(S, c, f * E.APP.rate, { quiet: true, app: true }) : 0; }
     const now = E.now(); const start = now - dt * 1000; const live = Math.max(0, Math.min(dt, (A.until - start) / 1000)); if (live <= 0) return 0;
     const def = E.jobRes(A.job).find((x) => x[0] === A.res); if (!def || def[1] > S.jobs[A.job].lvl) return 0;

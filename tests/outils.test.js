@@ -46,11 +46,13 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
 // pierres de gravure : butin rare, seulement au-delà du niveau 20 / 80
 { const S = E.newState("D", "iop"); let small = 0, big = 0;
   for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 100 }], { offline: true }, o); for (const r in o.res) (RES[r].lvl >= 80 ? big++ : small++); }
-  assert.ok(small > 120 && small < 280, `petites pierres ≈ 200 (${small})`); assert.ok(big > 70 && big < 180, `grandes pierres ≈ 120 (${big})`);
+  assert.ok(small > 60 && small < 145, `petites pierres ≈ 100 (${small})`); assert.ok(big > 30 && big < 95, `grandes pierres ≈ 60 (${big})`);
+  const M = E.monoStart(E.newState("DM", "iop")); let nm = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(M, [{ lvl: 100 }], { offline: true }, o); nm += Object.keys(o.res).length; }
+  assert.ok(nm > (small + big) * 0.3 && nm < (small + big) * 0.75, `Monocompte : moitié moins par victoire (${nm} pour ${small + big})`);
   let low = 0; for (let i = 0; i < 100000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 10 }], { offline: true }, o); low += Object.keys(o.res).length; }
   assert.strictEqual(low, 0, "rien sous le niveau 20");
   let mid = 0; for (let i = 0; i < 300000; i++) { const o = { res: {} }; E.gravDrop(S, [{ lvl: 50 }], { offline: true }, o); for (const r in o.res) { mid++; assert.ok(RES[r].lvl < 80, "pas de grande pierre sous le niveau 80"); } }
-  assert.ok(mid > 120, `petites pierres au niveau 50 (${mid})`); }
+  assert.ok(mid > 60, `petites pierres au niveau 50 (${mid})`); }
 
 // Maîtrise des ressources : étoiles et bonus
 { const S = E.newState("M", "iop"); S.jobs.paysan.lvl = 50; const c = S.chars[0]; c.job = { job: "paysan", res: "Blé", prog: 0 };
@@ -93,4 +95,17 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   assert.ok(!E.appActive(S)); assert.strictEqual(run(S, 3600), 0, "plus rien après le contrat");
   const back = E.deserialize ? E.deserialize(E.serialize(S)) : JSON.parse(E.serialize(S));
   assert.strictEqual(back.mono.app.job, "paysan", "apprenti sauvegardé"); }
+// Monocompte : métier plafonné à 100, l'outil reste améliorable (niveau requis = 100, kamas × 1,5)
+{ const S = E.monoStart(E.newState("O", "iop")); S.jobs.mineur.lvl = 100; S.tools.mineur = 20; S.kamas = 1e12;
+  const R = E.toolCost(S, "mineur"); const C = E.toolRecipe("mineur", 21);
+  assert.strictEqual(R.lvl, 100); assert.ok(C.lvl > 100); assert.strictEqual(R.kamas, Math.round(C.kamas * 1.5));
+  R.ing.forEach(([r, q]) => (S.res[r] = q)); assert.strictEqual(E.upgradeTool(S, "mineur"), null); assert.strictEqual(S.tools.mineur, 21);
+  S.mono.spec = ["mineur", null, null]; assert.ok(E.toolCost(S, "mineur").lvl > 100, "spécialité : niveau requis normal"); }
+// apprenti : rappel 1 h avant la fin, message à la fin, pastille jusqu'à ce que la fin soit vue
+{ const S = E.monoStart(E.newState("W", "iop")); S.chars[0].lvl = 50; S.kamas = 1e7; S.jobs.paysan.lvl = 30;
+  E.appHire(S, "paysan"); const has = (t) => S.journal.some((j) => j.txt.includes(t));
+  assert.strictEqual(E.appAlert(S), 0); run(S, 23 * 3600 + 60); assert.strictEqual(E.appAlert(S), 1, "pastille la dernière heure"); assert.ok(has("Plus qu'1 h"), "rappel 1 h avant");
+  run(S, 3600); assert.strictEqual(E.appAlert(S), 2, "pastille contrat fini"); assert.ok(has("est terminé"), "message de fin");
+  E.appSeen(S); assert.strictEqual(E.appAlert(S), 0, "pastille retirée une fois vue");
+  E.appHire(S); assert.strictEqual(S.mono.app.w, 0, "nouveau contrat : rappels remis à zéro"); }
 console.log("outils : OK");
