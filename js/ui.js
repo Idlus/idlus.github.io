@@ -26,7 +26,7 @@ const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord
 const CHANGELOG = [
   { v: "2.1.35", name: "Bêta fermée du Monocompte", items: [
     "Le serveur Monocompte ouvre sa bêta fermée, réservée aux testeurs invités : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la Saison 1 « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
-    "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta restent sur l'appareil et seront remises à zéro avant l'ouverture de la Saison 1",
+    "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta sont gardées sur le serveur Monocompte et seront remises à zéro avant l'ouverture de la Saison 1",
     "Bureau des Aventuriers : cherche un groupe, rejoins un salon ou invite tes amis, et affrontez ensemble un donjon joué par le serveur, regardé en direct par tout le groupe. Le défi « Rendez-vous du temps » s'y remplit",
     "Amis : demandes, présence en ligne, invitations au Bureau, messages privés et renfort d'un ami en donjon solo (sa copie t'accompagne, jamais en groupe)",
     "Classements de saison et Couronne du Temps : chaque lundi, le meilleur donjon de groupe de la semaine passée porte la couronne",
@@ -8413,7 +8413,7 @@ function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
   if (TESTMODE) html += tchip({ k: "sys", ico: G("bug"), t: "Partie de test", d: "hors ligne, ta vraie partie n'est pas touchée", tip: "Partie de test : sauvegarde séparée, rien n'est envoyé en ligne (chat, Hôtel de vente et classements coupés).", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<button class="tc-act ghost" data-quit-test="1">Revenir à ma partie</button>` });
-  else if (MONO_BETA.on && SLOT === MONO_SLOT) html += tchip({ k: "sys", ico: G("sparkle"), t: "Bêta Monocompte", d: "partie remise à zéro avant la Saison 1", tip: "Bêta fermée du Monocompte : solo et mercenaire, partie gardée sur cet appareil. Les groupes, les échanges et l'HdV arrivent avec le serveur Monocompte. Signale les bugs avec le bouton prévu." });
+  else if (MONO_BETA.on && SLOT === MONO_SLOT) html += tchip({ k: "sys", ico: G("sparkle"), t: "Bêta Monocompte", d: "partie remise à zéro avant la Saison 1", tip: "Bêta fermée du Monocompte : partie vérifiée et gardée par le serveur, Bureau des Aventuriers, amis, échanges et HdV de saison. Signale les bugs avec le bouton prévu." });
   else if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
     html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
