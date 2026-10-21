@@ -118,21 +118,26 @@
       <div class="panel" style="margin-top:14px"><div class="pad stack"><h2 style="margin:0">Coffres de fin de manche</h2>${rows}</div></div>`;
   }
   window.DX.pages.manche = mdPage;
-  /* ---------- Guerre des camps et Boss de saison ---------- */
+  /* ---------- Camp de la saison (alignements du Classique, js/monoalign.js) et Boss de saison ---------- */
   function warPage(main) {
     const s = S(); if (!s || !s.mono) { UI().tab = "home"; X().render(); return; }
     const m = Math.min(4, E.monoManche(s)); const end = E.monoT0(s) + m * E.MONO.jobs.manche - (E.monoDate ? E.monoDate(s) : E.now());
-    const side = s.align && s.align.side; const AL = side ? E.ALIGN[side] : null; const W = E.warState(s);
-    const zones = Object.entries(W.z).sort((a, b) => b[1] - a[1]).slice(0, 6);
-    const zn = (k) => { const z = E.SUBS[k]; return z ? z.name : k; };
+    const side = s.align && s.align.side; const AL = side ? E.ALIGN[side] : null;
+    const top = Math.max(1, ...s.chars.filter((c) => !c.merc).map((c) => c.lvl));
     const def = E.sbDef(); const st = E.sbState(s); const open = E.sbOpen(); const nx = E.sbNext();
     const last = UI().sbLast;
+    let camp;
+    if (side && E.honInit) {
+      const A = E.honInit(s); const r = E.alignRankIdx(s); const lo = E.honCum(r), hi = E.honCum(Math.min(20, r + 1)); const left = E.ALIGN_HON.agrDay - A.ag.n;
+      camp = `<p class="small" style="margin:0">Ton camp : <b style="color:${side === "bonta" ? "#7fb2ff" : "#ff8a6e"}">${h(AL.name)}</b>, pour toute la saison. Rang <b>${r} / 20</b> « ${h(E.alignRankName(s))} ».</p>
+        <div class="bp-q"><div class="row between"><span>Honneur de la saison</span><b>${fmt(A.hon)}</b></div><span class="small muted">${r >= 20 ? "rang maximum" : `${fmt(A.hon - lo)} / ${fmt(hi - lo)} vers le rang ${r + 1}`} · agressions restantes aujourd'hui : ${left} / ${E.ALIGN_HON.agrDay}</span></div>
+        <div class="row" style="gap:8px"><button class="btn sm primary" data-act="nav" data-v="align">Agressions, régions et Arsenal</button></div>`;
+    } else if (top < E.ALIGN_MIN_LVL) camp = `<p class="small" style="margin:0">Au niveau ${E.ALIGN_MIN_LVL}, choisis ton camp, Bonta ou Brâkmar, une fois pour toute la saison (ton héros est niveau ${top}).</p>`;
+    else camp = `<p class="small" style="margin:0">Choisis ton camp, une fois pour toute la saison. Agressions, missions et donjons te donneront alors de l'honneur : 20 rangs, des talents et l'Arsenal de ta cité.</p><div class="row" style="gap:8px"><button class="btn sm" data-act="bp-camp" data-v="bonta">Rejoindre Bonta</button><button class="btn sm" data-act="bp-camp" data-v="brakmar">Rejoindre Brâkmar</button></div>`;
     main.innerHTML = `<div class="pagehead"><h1>Guerre et Boss de saison</h1></div>
-      <div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">⚔ Guerre des alignements · manche ${m}</h2><span class="pill">fin dans ${dur(Math.max(0, end))}</span></div>
-        ${side ? `<p class="small" style="margin:0">Ton camp : <b style="color:${side === "bonta" ? "#7fb2ff" : "#ff8a6e"}">${h(AL.name)}</b>, pour toute la saison. Chaque combat gagné en chasse donne 1 point à ton camp dans sa zone.</p>`
-          : `<p class="small" style="margin:0">Choisis ton camp, une fois pour toute la saison. Chaque combat gagné en chasse donnera alors un point à ton camp dans la zone.</p><div class="row" style="gap:8px"><button class="btn sm" data-act="bp-camp" data-v="bonta">Rejoindre Bonta</button><button class="btn sm" data-act="bp-camp" data-v="brakmar">Rejoindre Brâkmar</button></div>`}
-        <div class="bp-q"><div class="row between"><span>Tes points cette manche</span><b>${fmt(W.tot)}</b></div><span class="small muted">${zones.length ? zones.map(([k, n]) => `${h(zn(k))} ${fmt(n)}`).join(" · ") : "aucun combat gagné en chasse pour l'instant"}</span></div>
-        <span class="xs muted">Avec le serveur Monocompte : les points de tous les joueurs s'additionnent, le camp en tête tient la zone jusqu'à la fin de la manche (+10 % de butin pour lui dans la zone).</span></div></div>
+      <div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">⚔ Bonta contre Brâkmar · manche ${m}</h2><span class="pill">fin dans ${dur(Math.max(0, end))}</span></div>
+        ${camp}
+        <span class="xs muted">Comme sur le Classique : agressions contre des équipes fantômes du camp adverse (ici à un héros), régions de la carte (le camp qui tient une région y gagne +${E.ALIGN_REG_BONUS || 5} % d'XP et de butin), honneur et 20 rangs. L'honneur repart de 0 à chaque saison ; ton rang et tes équipements de rang restent à ton héros dans l'Éternel. Les régions tenues arriveront avec le serveur Monocompte.</span></div></div>
       <div class="panel" style="margin-top:14px"><div class="pad stack" style="text-align:center;align-items:center">
         <span class="pill">BOSS DE SAISON${open ? " · EN DIRECT" : ""}</span>
         <h2 style="margin:0">${def ? `${h(def.name)} ${h(def.line)}` : "Boss de saison"}</h2>
@@ -151,7 +156,7 @@
     const ET = s.mono.eternel, def = E.monoSeasonDef(ET.s), B = E.bpState(s) || { cnt: {}, hf: {}, md: {}, war: {} }, c = s.chars[0] || {};
     const med = [1, 2, 3].map((k) => Object.values(B.hf || {}).filter((v) => v === k).length);
     const md = [1, 2, 3, 4].map((m) => (B.md && B.md[m] ? B.md[m].best : 0));
-    const war = Object.values(B.war || {}).reduce((a, w) => a + (w.tot || 0), 0), AL = s.align && s.align.side ? E.ALIGN[s.align.side] : null;
+    const AL = s.align && s.align.side ? E.ALIGN[s.align.side] : null, rk = ET.al ? ET.al.r : AL && E.alignRankIdx ? E.alignRankIdx(s) : 0;
     const sb = B.sb || { days: {}, best: 0 }, ev = Object.values(sb.days || {}).filter((x) => x.tries > 0).length;
     const tile = (v, l) => `<div class="et-t"><b>${v}</b><span>${l}</span></div>`;
     const date = new Date(ET.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -159,11 +164,11 @@
     main.innerHTML = `<div class="pagehead"><h1>Éternel</h1></div>
       <div class="bp-hero"><div class="bp-lvl"><span>niveau</span><b>${c.lvl || 1}</b><span>héros</span></div>
         <div class="bp-mid"><span class="bp-kick">${h(def.nom)} · finie le ${h(date)}</span><h2>${h(c.name || "")} rejoint l'Éternel</h2>
-          <span class="small">Ton héros garde ses kamas, ses objets, ses montures et ses familiers. Plus de contenu de saison ici : le pass, le Défi de la manche, la guerre et le Boss de saison continuent dans la saison en cours.</span>
+          <span class="small">Ton héros garde ses kamas, ses objets (équipements de rang compris), ses montures et ses familiers. Plus de contenu de saison ici : le pass, le Défi de la manche, la guerre et le Boss de saison continuent dans la saison en cours.</span>
           <div class="bp-tags"><span class="pill">Classement de l'Éternel avec le serveur, sans récompenses</span><span class="pill">Spécialités de métier libres</span></div></div></div>
       <div class="panel"><div class="pad stack"><h2 style="margin:0">Bilan de la ${h(def.nom)}</h2>
         <div class="et-grid">${tile(`${E.bpTier(s)} / ${BP.tiers}`, "paliers du pass")}${tile(E.bpPrestigePts(s), "points Prestige")}${tile(`${med[0]} · ${med[1]} · ${med[2]}`, "hauts faits bronze · argent · or")}
-          ${tile(md.map((x) => x || "–").join(" · "), "Défi de la manche, stasis par manche")}${tile(AL ? `${fmt(war)}` : "–", AL ? `chasses gagnées pour ${h(AL.name)}` : "pas de camp choisi")}${tile(ev ? `${ev} soir${ev > 1 ? "s" : ""}` : "–", `Boss de saison${sb.best ? `, record ${fmt(sb.best)} pts` : ""}`)}</div></div></div>
+          ${tile(md.map((x) => x || "–").join(" · "), "Défi de la manche, stasis par manche")}${tile(AL ? `rang ${rk}` : "–", AL ? `d'honneur pour ${h(AL.name)}` : "pas de camp choisi")}${tile(ev ? `${ev} soir${ev > 1 ? "s" : ""}` : "–", `Boss de saison${sb.best ? `, record ${fmt(sb.best)} pts` : ""}`)}</div></div></div>
       <div class="panel" style="margin-top:14px"><div class="pad row between" style="gap:10px;flex-wrap:wrap"><span><b>${next ? `La ${h(E.monoSeasonDef(next).nom)} est ouverte` : "La prochaine saison arrive bientôt"}</b><br><span class="small muted">${next ? "Un nouveau héros part du niveau 1, avec tes titres et apparences." : "Tu pourras y lancer un nouveau héros, avec tes titres et apparences."}</span></span>${next ? `<button class="btn primary" data-act="sv-menu">Choisir ma partie</button>` : ""}</div></div>`;
   }
   window.DX.pages.eternel = eternelPage;

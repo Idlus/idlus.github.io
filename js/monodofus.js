@@ -1,7 +1,7 @@
 /* ============================================================================
    Monocompte — le Dofus de saison (Mathis 19/10 : 1B un seul Dofus pour tous, 2A quête de saison en plusieurs étapes,
    3 A3 « Second souffle », 4A il reste au héros dans l'Éternel et ne s'obtient plus ensuite).
-   Il n'existe que dans une partie Monocompte : sa quête lit le pass, le Défi de la manche, la guerre et le Boss de saison.
+   Il n'existe que dans une partie Monocompte : sa quête lit le pass, le Défi de la manche, l'honneur de ton camp et le Boss de saison.
    Il ne tombe d'aucun boss. Les autres Dofus ne se gagnent plus par leur quête en Monocompte (un Dofus de quête par saison),
    seulement sur leur boss.
    ========================================================================== */
@@ -12,9 +12,12 @@
   if (!E.MONO || !E.DOFUS || !E.DOFP_LIST) return;
   const pc = (v) => String(Math.round(v * 10) / 10).replace(".", ",");
   const ms = (k, n, x) => Object.assign({ t: "mono", k, n }, x || {});
-  /* étapes : war (chasses gagnées pour ton camp), md (meilleure stasis au Défi de la manche), sb (soirs au Boss de saison),
-     bp (palier du pass), boss (boss de niveau lvl ou plus en stasis n). Mathis 1A 2A 3A 4A : fini vers la manche 3. */
-  const STEPS = [ms("war", 300), ms("md", 6), ms("sb", 4), ms("bp", 25), ms("boss", 7, { lvl: 180 })];
+  /* étapes : hon (honneur gagné pour ton camp dans la saison), md (meilleure stasis au Défi de la manche), sb (soirs au Boss de saison),
+     bp (palier du pass), boss (boss de niveau lvl ou plus en stasis n). Mathis 1A 2A 3A 4A : fini vers la manche 3.
+     P-A3 (étape 3, variante B) : l'ancienne étape « 300 chasses pour ton camp » devient de l'honneur, recalibré par
+     tools/sim_honneur_mono.js pour finir avant la manche 3 chez un joueur actif (voir HON_STEP). */
+  const HON_STEP = 10000;
+  const STEPS = [ms("hon", HON_STEP), ms("md", 6), ms("sb", 4), ms("bp", 25), ms("boss", 7, { lvl: 180 })];
   const SD = (E.MONO.sdofus = { id: "phenix", s: 1, closed: true });
   const id = SD.id, tpl = "dofus_" + id;
   const stats = { vit: 150, sa: 30 };
@@ -77,7 +80,7 @@
   const val = (S, s) => {
     const B = E.bpState ? E.bpState(S) : null; if (!B) return 0;
     switch (s.k) {
-      case "war": return Object.values(B.war || {}).reduce((a, w) => a + (w.tot || 0), 0);
+      case "hon": return S.align && S.align.side ? Math.max(0, Math.floor(S.align.hon || 0)) : 0;
       case "md": return Math.max(0, ...Object.values(B.md || {}).map((r) => r.best || 0));
       case "sb": return Object.values((B.sb && B.sb.days) || {}).filter((d) => d.tries > 0).length;
       case "bp": return E.bpTier(S);
@@ -102,7 +105,7 @@
   const txt0 = E.dofusStepTxt;
   E.dofusStepTxt = function (s) {
     if (s && s.t === "mono") switch (s.k) {
-      case "war": return `Gagner ${s.n} combats de chasse pour ton camp (Bonta ou Brâkmar)`;
+      case "hon": return `Gagner ${s.n.toLocaleString("fr-FR")} points d'honneur pour ton camp (Bonta ou Brâkmar : agressions, missions, donjons)`;
       case "md": return `Atteindre la stasis ${s.n} au Défi de la manche`;
       case "sb": return `Combattre le Boss de saison ${s.n} soirs`;
       case "bp": return `Atteindre le palier ${s.n} du Pass de saison`;

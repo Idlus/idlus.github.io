@@ -6,7 +6,8 @@
      (bronze 1, argent +1, or +1) : la récompense Prestige du palier n demande le palier n atteint et n points.
    - Hauts faits en 4 familles (Solo, Groupe, Artisan, Camp), 6 par famille, plus des hauts faits secrets.
      Famille complète (ses 6 hauts faits au moins en bronze) : un cosmétique. Ceux qui attendent le serveur
-     (groupes en direct, Boss de saison, guerre des camps) sont affichés « à venir ».
+     (groupes en direct, Boss de saison, régions tenues, classement du camp) sont affichés « à venir ».
+     Famille Camp (P-A4, étape 3) : rang d'honneur et agressions gagnées, du système d'alignement du Classique (js/monoalign.js).
    Réglage : 500 points par palier (25 000 pour les 50). Une saison de 8 semaines rapporte jusqu'à
    56 × 300 (jour) + 8 × 1 050 (semaine) = 25 200 points : les 50 paliers demandent de jouer presque chaque jour.
    ========================================================================== */
@@ -139,9 +140,11 @@
     { id: "a_spec", fam: "artisan", n: "Spécialiste", d: "Niveau de ta meilleure spécialité", m: [100, 150, 200], v: (B, S) => Math.max(0, ...E.monoSpecs(S).filter(Boolean).map((j) => ((D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts || {})[j]) || {}).lvl || 0)) },
     { id: "a_jobs", fam: "artisan", n: "Touche-à-tout", d: "Métiers au niveau 100", m: [3, 6, 10], v: (B, S) => Object.values(S.jobs || {}).concat(Object.values(S.crafts || {})).filter((J) => J && J.lvl >= 100).length },
     { id: "a_exo", fam: "artisan", n: "Exotique", d: "Runes exotiques passées", m: [1, 3, 10], v: C("exo") },
-    { id: "c_align", fam: "camp", n: "Fidèle à son camp", d: "Niveau d'alignement", m: [20, 50, 100], v: (B, S) => (S.align && S.align.lvl) || 0 },
+    // P-A4 : l'ancien « niveau d'alignement 20/50/100 » devient le rang d'honneur (5 niveaux par rang : rangs 4, 10, 20)
+    { id: "c_align", fam: "camp", n: "Fidèle à son camp", d: "Rang d'alignement (honneur)", m: [4, 10, 20], v: (B, S) => (S.align && E.alignRankIdx ? E.alignRankIdx(S) : 0) },
     { id: "c_bounty", fam: "camp", n: "Chasseur de primes", d: "Avis de recherche remplis", m: [5, 20, 50], v: C("bounty") },
-    { id: "c_war", fam: "camp", n: "Soldat de la guerre", d: "Combats gagnés pour ton camp", m: [200, 1000, 4000], v: (B) => Object.values(B.war || {}).reduce((a, w) => a + (w.tot || 0), 0) },
+    // l'ancienne guerre (combats de chasse gagnés pour ton camp) devient les agressions gagnées de la saison
+    { id: "c_war", fam: "camp", n: "Soldat de la guerre", d: "Agressions gagnées pour ton camp", m: [25, 100, 200], v: C("agrWin") },
     { id: "c_hold", fam: "camp", n: "Gardien de zone", d: "Jours où ton camp tient une zone", m: [3, 10, 30], v: C("hold"), soon: 1 },
     { id: "c_live", fam: "camp", n: "Rendez-vous de 21 h", d: "Soirées de Boss de saison", m: [1, 5, 15], v: C("live") },
     { id: "c_top", fam: "camp", n: "Fer de lance", d: "Semaines dans le top 10 de ton camp", m: [1, 3, 6], v: C("top"), soon: 1 },
@@ -194,17 +197,15 @@
     if (S && S.mono && S.mono.mdRun && (!S.dungeon || S.dungeon.id !== S.mono.mdRun.did)) { const run = S.mono.mdRun; delete S.mono.mdRun; const SI = E.stasisInfo(S, run.did); if ((SI.max || 0) < run.k) SI.max = run.max0; }
     return r; };
 
-  /* ---------- Guerre Bonta / Brâkmar (partie du jeu ; les totaux du serveur arriveront avec le serveur Monocompte) ----------
-     Le camp (l'alignement) se choisit une fois par saison. Chaque combat gagné en chasse donne 1 point à ton camp dans
-     cette zone pour la manche ; le serveur additionnera les points de tous les joueurs pour savoir qui tient la zone. */
+  /* ---------- Camp de la saison ----------
+     L'ancienne guerre codée (1 point par combat de chasse gagné, B.war) est remplacée par les alignements du Classique
+     (js/honneur.js et js/monoalign.js : un camp par saison, régions, agressions, honneur, rangs). B.war reste dans les
+     anciennes parties, sans effet : aucun objet ni récompense n'en dépendait. */
   const choose1 = E.chooseAlign;
   E.chooseAlign = function (S, side) {
     if (S && E.isMono(S) && !E.monoEternal(S) && S.align && S.align.side && S.align.side !== side) return "Monocompte : un seul camp par saison. Tu pourras changer à la saison suivante.";
     return choose1.apply(this, arguments);
   };
-  E.warState = (S) => { const B = E.bpState(S); if (!B) return null; const m = Math.min(4, E.monoManche(S)); B.war = B.war || {}; return (B.war[m] = B.war[m] || { z: {}, tot: 0 }); };
-  const warWin = (S, d) => { if (!S.align || !S.align.side || !d.sub || d.dungeon) return; const W = E.warState(S); W.z[d.sub] = (W.z[d.sub] || 0) + 1; W.tot++; };
-
   /* ---------- Boss de saison : Comte Harebourg, tous les soirs de 21 h à 22 h (heure de Paris), 3 essais ----------
      Le combat est celui du Boss des mondes (js/wboss.js) ; ici seul ou avec un mercenaire, en groupe avec le serveur.
      Les dégâts de tous les joueurs d'un camp s'additionneront sur le serveur (le camp en tête : +10 % d'XP pour la manche). */
@@ -239,14 +240,15 @@
         const day = E.bpDay(); if (B.cnt.dayK !== day) { B.cnt.dayK = day; B.cnt.dayN = 0; } B.cnt.dayN++; B.cnt.bestDay = Math.max(B.cnt.bestDay || 0, B.cnt.dayN);
         if (d.group) { inc(B, "grp"); B.cnt.grpSt = Math.max(B.cnt.grpSt || 0, d.stasis || 1); if (d.players >= 4) inc(B, "grp4"); }
         else { if (S.mono.merc) inc(B, "merc"); else B.cnt.soloSt = Math.max(B.cnt.soloSt || 0, d.stasis || 1); } }
-      if (t === "win") { (d.mons || []).forEach((m) => { if (m.archi) inc(B, "arch"); }); warWin(S, d); }
+      if (t === "win") (d.mons || []).forEach((m) => { if (m.archi) inc(B, "arch"); });
+      if (t === "agression" && d.win) inc(B, "agrWin");
       if (t === "harvest") inc(B, "harv", d.n || 0);
       if (t === "craft") inc(B, "craft");
       if (t === "fm") inc(B, "fm");
       if (t === "exo") inc(B, "exo");
       if (t === "bounty") inc(B, "bounty");
       onQuest(S, t, d);
-      if (/^(dungeon|win|harvest|craft|fm|exo|bounty|level|joblvl|align|sboss)$/.test(t)) E.hfCheck(S);
+      if (/^(dungeon|win|harvest|craft|fm|exo|bounty|level|joblvl|align|alignrank|agression|sboss)$/.test(t)) E.hfCheck(S);
     } catch (e) {}
     return r;
   };

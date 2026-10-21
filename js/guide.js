@@ -772,7 +772,7 @@
       ["p", "Choisis Bonta ou Brâkmar, puis un des 3 ordres de ta cité. Les agressions, missions, quêtes de cité et régions défendues rapportent des points d'honneur : ils font ton rang, de 1 à 20, et se dépensent à l'Arsenal de ta cité sans jamais faire baisser ton rang."],
       ["h", "Honneur et rangs"],
       ["ul", [
-        `Rang 1 : ${N(() => E.honStep(1))} points d'honneur, puis +15 % par rang ; rang 20 à ${N(() => E.honCum(20))} points.`,
+        `Rang 1 : ${N(() => E.honStep(1))} points d'honneur, puis ${E.HON_STEP_CL && E.honStep !== E.HON_STEP_CL ? `+${N(() => E.honStep(2) - E.honStep(1))} par rang au Monocompte` : "+15 % par rang"} ; rang 20 à ${N(() => E.honCum(20))} points.`,
         `Agression gagnée : +${N(() => E.ALIGN_HON.agrMin)} à +${N(() => E.ALIGN_HON.agrMax)} ; agression lancée et perdue : −${N(() => E.ALIGN_HON.agrLoss)}, sans jamais perdre de rang. Être agressé ne coûte rien (défense gagnée : +${N(() => E.ALIGN_HON.def)}).`,
         `Région tenue par ton camp où tu marques des points : +${N(() => E.ALIGN_HON.regDay)} une fois par jour.`,
         "Bonus de camp (Bonta +1 % de vie, Brâkmar +1 % de dégâts par rang) et d'ordre (Cœur dégâts, Esprit XP, Œil butin), au complet au rang 10.",

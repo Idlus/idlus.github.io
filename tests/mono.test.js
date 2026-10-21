@@ -184,14 +184,14 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   assert.notStrictEqual(E.mdState(S), R, "nouvelle manche, nouveau défi");
   console.log(`ok - défi de la manche (${dg.name})`);
 }
-// 10. Guerre des camps et Boss de saison.
+// 10. Camp de la saison et Boss de saison.
 {
   now = Date.UTC(2030, 0, 9, 12, 0);
   const S = E.monoStart(E.newState("Camp", "iop")); const c = S.chars[0]; c.lvl = 200; c.inTeam = true;
   assert.strictEqual(E.chooseAlign(S, "bonta", "coeur"), null);
   assert.ok(/un seul camp par saison/.test(E.chooseAlign(S, "brakmar", "coeur")), "un camp par saison");
   E.emit(S, "win", { mons: [{ key: "x" }], sub: "ast_cite" }); E.emit(S, "win", { mons: [{ key: "x" }], sub: "ast_cite", dungeon: "d" });
-  assert.strictEqual(E.warState(S).z.ast_cite, 1, "1 point par combat de chasse gagné");
+  assert.ok(!E.warState && !(E.bpState(S).war && Object.keys(E.bpState(S).war).length), "l'ancienne guerre codée (1 point par chasse) n'existe plus : alignements du Classique (js/monoalign.js)");
   assert.ok(E.sbTry(S).err, "fermé hors de 21 h");
   now = Date.UTC(2030, 0, 9, 20, 30); assert.ok(E.sbOpen(), "21 h 30 à Paris (hiver)");
   const r = E.sbTry(S); assert.ok(!r.err, r.err); assert.ok(r.points >= 0 && r.grade);
