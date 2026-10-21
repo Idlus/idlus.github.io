@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, m: [], unreadM: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
   const LP0 = () => ({ id: null, body: "", every: 60, banner: true, chat: true, show: 10, ends: "" }); // 1.1.2.4 : formulaire « Annonces en boucle »
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, lp: LP0(), loops: null, pin: null, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
@@ -24,12 +24,18 @@
   const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const clsName = (c) => ((window.DATA.CLASSES || {})[c] || {}).name || "héros";
   const S = () => window.DX.S;
+  /* Salon « Général Monocompte » (m) : seulement pour un compte qui a accès au Monocompte (réponse de mono_acces, lue par
+     js/online.js) ; le serveur le vérifie aussi (chat_mono_ok de supabase/chat.sql). Le Général (g) devient « Classique ». */
+  const monoOk = () => !!(ON.user && ON.mono && ON.mono.ok);
+  const defTab = () => { const E = window.ENGINE; return monoOk() && E && E.isMono && E.isMono(S()) ? "m" : "g"; };
+  const PUB = ["g", "c", "v", "m"];
 
   /* ---------- démarrage (appelé par ui.js quand la partie est lancée) ---------- */
   async function start() {
     if (C.started) return; C.started = true;
+    C.tab = defTab(); // partie Monocompte affichée : salon Monocompte par défaut, sinon Classique
     mount();
-    ON.onChange((st) => { if (st === "anon" && (C.role || C.p.length)) { C.role = null; C.p = []; C.peer = null; C.tab = "g"; X().renderStatus(); paint(true); } else paintMin(); });
+    ON.onChange((st) => { if (st === "anon" && (C.role || C.p.length)) { C.role = null; C.p = []; C.peer = null; C.m = []; C.unreadM = 0; C.tab = "g"; X().renderStatus(); paint(true); } else paintMin(); });
     ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); }, () => { missed = true; setTimeout(() => catchUp(30000), Math.random() * 15000); }, onDel); // 1.0.9.1 : messages manqués rechargés quand le temps réel revient (1.0.10.2 : salon ouvert seulement, étalé sur 15 s)
     setTimeout(() => { slow = true; if (!C.loaded) paint(true); }, 6000); // 1.0.10.1 : pas de « Connexion au chat… » sans fin
     setInterval(() => { if (ON.chatLost && ON.chatLost()) catchUp(cuWait); }, 15000); // 1.0.10.1 : chat en direct coupé → messages rechargés sans lui (1.0.10.2 : allégé, voir catchUp)
@@ -57,7 +63,7 @@
   let cuAt = 0, cuWait = 60000, cuBusy = false, missed = false; // missed : messages peut-être manqués pendant que le chat était fermé
   async function catchUp(minGap) {
     if (cuBusy || !C.loaded || !C.open || document.hidden || Date.now() - cuAt < minGap) return;
-    const k = C.tab === "p" ? (canWrite() ? "p" : null) : C.tab === "c" || C.tab === "v" ? C.tab : C.tab === "u" || C.tab === "a" ? null : "g"; // la guilde (et l'alliance) a sa propre mise à jour
+    const k = C.tab === "p" ? (canWrite() ? "p" : null) : C.tab === "c" || C.tab === "v" ? C.tab : C.tab === "m" ? (monoOk() ? "m" : null) : C.tab === "u" || C.tab === "a" ? null : "g"; // la guilde (et l'alliance) a sa propre mise à jour
     if (!k) return;
     cuBusy = true; cuAt = Date.now();
     const l = await ON.chatLoad(k);
@@ -74,9 +80,10 @@
     const add = old.filter((m) => (+m.id || 0) > top && !ids.has(m.id)); return add.length ? fresh.concat(add).slice(-200) : fresh;
   }
   async function load() {
-    const [g, p, ign, role, me, c, v, pin] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin()]);
+    const [g, p, ign, role, me, c, v, pin, mo] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin(), monoOk() ? ON.chatLoad("m") : []]);
     if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
-    C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.m = mo ? keepLive(C.m, mo) : C.m; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    if (!C.picked && (C.tab === "g" || C.tab === "m")) C.tab = defTab(); // accès au Monocompte connu après le lancement : salon par défaut revu, tant que le joueur n'a pas choisi
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
@@ -98,7 +105,7 @@
   const mentions = (b) => { const o = []; String(b || "").replace(MRE, (x, a, p) => { o.push(p.toLowerCase()); return x; }); return o; };
   const pingsMe = (m) => { const me = myPs(); return !!me && m.kind === "msg" && !!m.user_id && m.user_id !== myId() && !C.ign.has(m.user_id) && mentions(m.body).slice(0, 3).includes(me); };
   const fmtBody = (b) => { const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
-  const PING = ["g", "c", "v"];
+  const PING = PUB;
   const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;
   const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
   const pingsAll = () => PING.reduce((n, k) => n + pings(k), 0);
@@ -107,13 +114,13 @@
     const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [k]: top }); savePref(); }
   }
   const atNb = (n) => (n ? `<span class="n at" title="On t'a mentionné">@${n > 1 ? n : ""}</span>` : "");
-  const CH_NAME = { g: "Général", c: "Commerce", v: "PvP" };
+  const CH_NAME = { g: "Général", c: "Commerce", v: "PvP", m: "Monocompte" };
   /* Pseudos proposés quand on tape « @ » : auteurs récents du salon, puis des autres salons, puis les joueurs connectés. */
   function cands(q) {
     const me = myPs(), seen = new Set(), out = [];
     const add = (p, u) => { if (!p) return; const l = p.toLowerCase(); if (l === me || seen.has(l) || (u && C.ign.has(u))) return; seen.add(l); out.push(p); };
     const cur = C.tab === "u" && window.GUILD ? window.GUILD.msgs : C.tab === "a" && window.ALLY ? window.ALLY.msgs : C[C.tab] || [];
-    [cur, C.g, C.c, C.v].forEach((L) => [...L].reverse().forEach((m) => { if (m.kind === "msg") add(m.pseudo, m.user_id); }));
+    [cur, C.g, C.c, C.v, C.m].forEach((L) => [...L].reverse().forEach((m) => { if (m.kind === "msg") add(m.pseudo, m.user_id); }));
     (ON.onlinePseudos ? ON.onlinePseudos() : []).forEach((p) => add(p));
     q = q.toLowerCase();
     return out.filter((p) => p.toLowerCase().startsWith(q)).concat(out.filter((p) => !p.toLowerCase().startsWith(q) && p.toLowerCase().includes(q))).slice(0, 6);
@@ -135,17 +142,17 @@
   function acPick(p) { const i = $("#chIn"); if (!i || !C.ac) return; const a = C.ac; C.ac = null; acPaint(); insertAt(i, a.at, a.end, `@${p} `); }
   // 1.2.10.1 : message supprimé (Mathis, salon vidé) : il disparaît aussi de l'écran des joueurs
   function onDel(id) {
-    let hit = false; ["g", "p", "c", "v"].forEach((k) => { const i = C[k].findIndex((x) => x.id === id); if (i >= 0) { C[k].splice(i, 1); hit = true; } });
+    let hit = false; ["g", "p", "c", "v", "m"].forEach((k) => { const i = C[k].findIndex((x) => x.id === id); if (i >= 0) { C[k].splice(i, 1); hit = true; } });
     if (hit) paint(true);
   }
   function onMsg(m) {
     if (!m || !m.id) return;
-    const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : C.g;
+    const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : m.ch === "m" ? C.m : C.g;
     if (list.some((x) => x.id === m.id)) return;
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
     if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) { C.unreadP++; if (C.loaded && window.DX.sndPlay) window.DX.sndPlay("msg"); } }
-    else if (m.ch === "c" || m.ch === "v") { const k = m.ch === "c" ? "unreadC" : "unreadV"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === m.ch)) C[k]++; }
+    else if (m.ch === "c" || m.ch === "v" || m.ch === "m") { const k = m.ch === "c" ? "unreadC" : m.ch === "v" ? "unreadV" : "unreadM"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === m.ch)) C[k]++; }
     else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
@@ -204,8 +211,8 @@
   function paintMin() { if (!C.open) paint(); }
   const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
   function minHtml() {
-    const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
-    const n = C.unread + C.unreadP + C.unreadC + C.unreadV + ((window.GUILD && window.GUILD.unread) || 0);
+    const last = [...(C.tab === "m" && monoOk() ? C.m : C.g)].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
+    const n = C.unread + C.unreadP + C.unreadC + C.unreadV + (monoOk() ? C.unreadM : 0) + ((window.GUILD && window.GUILD.unread) || 0);
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${atNb(pingsAll())}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
@@ -239,7 +246,7 @@
       : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
     const guild = window.GUILD && window.GUILD.inGuild();
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
-      <div class="ch-tabs" role="tablist">${tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
+      <div class="ch-tabs" role="tablist">${monoOk() ? tab("g", "chat", "Classique", C.unread) + tab("m", "sparkle", "Monocompte", C.unreadM) : tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
@@ -316,6 +323,11 @@
       if (!window.GUILD || !window.GUILD.inGuild()) { C.tab = "g"; return listHtml(); }
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
+    if (C.tab === "m") {
+      if (!monoOk()) { C.tab = "g"; return listHtml(); }
+      const rows = C.m.filter((m) => !C.ign.has(m.user_id));
+      return `<div class="sys">Général Monocompte : réservé aux joueurs de la bêta Monocompte. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
+    }
     if (C.tab === "c" || C.tab === "v") {
       const rows = C[C.tab].filter((m) => !C.ign.has(m.user_id));
       const intro = C.tab === "c" ? "Commerce : achat, vente et échange. Un message toutes les 30 secondes ; montrez vos objets avec « Montrer dans le chat »." : "PvP : Kolizéum, défis et adversaires. Les grades Or, Cristal et Diamant y sont annoncés.";
@@ -326,7 +338,7 @@
       return `<div class="sys">Les hauts faits des joueurs : records de stasis, exploits, niveau 200, Renaissances et Dofus.</div>` + (fe.length ? fe.map(msgHtml).join("") : `<div class="sys">Aucun haut fait pour l'instant.</div>`);
     }
     const rows = C.g.filter((m) => !C.ign.has(m.user_id) && !isFeat(m));
-    return `<div class="sys">Bienvenue sur le chat général. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
+    return `<div class="sys">Bienvenue sur le chat général${monoOk() ? " Classique" : ""}. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
   }
   function footHtml(typed) {
     if (C.tab === "h") return `<div class="ch-lock">Les hauts faits s'affichent ici tout seuls.</div>`;
@@ -338,7 +350,7 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "a" ? "Écrire à ton alliance…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "a" ? "Écrire à ton alliance…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : C.tab === "m" ? "Écrire aux joueurs du Monocompte…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
       <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`; // 1.0.12.8 : texte d'aide du PvP raccourci (coupé au téléphone)
   }
 
@@ -357,7 +369,7 @@
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
     if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
-    const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" ? C.tab : null;
+    const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" || C.tab === "m" ? C.tab : null;
     const err = C.tab === "a" && window.ALLY ? await window.ALLY.say(body) : C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
@@ -388,10 +400,10 @@
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
     el.style.top = Math.max(8, r.bottom + 4 + hgt <= bot ? r.bottom + 4 : Math.min(bot, r.top - 4) - hgt) + "px"; // 1.0.12.8 : pas la place dessous : le menu s'ouvre au-dessus du pseudo
   }
-  const msgById = (id) => C.g.concat(C.p, C.c, C.v, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
+  const msgById = (id) => C.g.concat(C.p, C.c, C.v, C.m, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
   function reportSheet(u, p, id) {
-    const m = C.g.concat(C.p, C.c, C.v).find((x) => x.id === id);
+    const m = C.g.concat(C.p, C.c, C.v, C.m).find((x) => x.id === id);
     X().openSheet(`<h2>Signaler ${h(p)}</h2><p class="muted small">Mathis et les modérateurs verront ce message et décideront. ${h(p)} ne saura pas qui l'a signalé.</p>
       ${m ? `<div class="rep-q"><b>${h(p)}</b> · ${hhmm(m.created_at)}<br>${h(m.body || "")}</div>` : ""}
       <div class="rep-opts">${["Insultes ou harcèlement", "Arnaque ou publicité", "Spam", "Autre"].map((r, i) => `<label><input type="radio" name="chRep" value="${h(r)}" ${i ? "" : "checked"}> ${h(r)}</label>`).join("")}</div>
@@ -497,7 +509,7 @@
       <div class="box"><h2>Dernières inscriptions</h2>${(o.signups || []).map((x) => `<button class="ln lnb" data-act="adm-find" data-q="${h(x.pseudo)}">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="t">${when(x.at)}</span></button>`).join("") || `<div class="ln muted">Aucune.</div>`}</div></div>
       ${isAdmin() ? `<div class="box"><h2>Réglages du chat</h2><div class="row small"><label class="row">Niveau minimum pour écrire <select id="admMin">${[0, 10, 20, 30, 50].map((v) => `<option value="${v}" ${+st.min_level === v ? "selected" : ""}>${v ? `héros niveau ${v}` : "aucun"}</option>`).join("")}</select></label>
         <label class="row">Entre deux messages <select id="admSlow">${[0, 4, 10, 30].map((v) => `<option value="${v}" ${+st.slow_s === v ? "selected" : ""}>${v ? `${v} s` : "aucun délai"}</option>`).join("")}</select></label><button class="btn sm primary" data-act="adm-settings">Enregistrer</button></div>
-        <div class="row small" style="margin-top:8px"><button class="btn sm${st.closed ? " primary" : " danger"}" data-act="adm-chclose" data-v="${st.closed ? 0 : 1}">${st.closed ? "Rouvrir le chat" : "Fermer le chat"}</button>${st.closed ? `<span class="st m">Chat fermé : seuls toi et les modérateurs écrivez</span>` : ""}<span class="muted" style="margin-left:auto">Vider :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"]].map(([k, n]) => `<button class="btn sm" data-act="adm-chclear" data-v="${k}" data-n="${n}">${n}</button>`).join("")}</div></div>` : ""}
+        <div class="row small" style="margin-top:8px"><button class="btn sm${st.closed ? " primary" : " danger"}" data-act="adm-chclose" data-v="${st.closed ? 0 : 1}">${st.closed ? "Rouvrir le chat" : "Fermer le chat"}</button>${st.closed ? `<span class="st m">Chat fermé : seuls toi et les modérateurs écrivez</span>` : ""}<span class="muted" style="margin-left:auto">Vider :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"], ["m", "Monocompte"]].map(([k, n]) => `<button class="btn sm" data-act="adm-chclear" data-v="${k}" data-n="${n}">${n}</button>`).join("")}</div></div>` : ""}
       <div class="box"><h2>Journal</h2>${(o.log || []).map((x) => `<div class="ln"><span class="t" style="margin:0;min-width:64px">${hhmm(x.at)}</span><span>${h(x.txt)}${x.who ? ` <span class="xs muted">· ${h(x.who)}</span>` : ""}</span></div>`).join("") || `<div class="ln muted">Rien pour l'instant.</div>`}</div>`;
     }
     if (A.tab === "joueurs") {
@@ -522,7 +534,7 @@
       const a = A.ann; const st = Object.assign({}, C.pin, o.settings); const pn = A.pin || { body: st.pin_body || "", chs: st.pin_chs || "g" }; const on = pn.chs.split(",");
       return `<div class="box"><h2>Message épinglé du chat</h2><p class="small muted">Reste en haut du chat pour tous les joueurs, avec le bouton « Boîte à idées ». 200 caractères au plus. Un joueur qui le ferme le revoit le lendemain, ou tout de suite si tu changes le texte.</p>
         <textarea id="admPin" maxlength="200" placeholder="Ex. : Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées !">${h(pn.body)}</textarea>
-        <div class="row small"><span class="muted">Salons :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"]].map(([k, n]) => `<label class="row"><input type="checkbox" id="admPin${k}" ${on.includes(k) ? "checked" : ""}> ${n}</label>`).join("")}<span class="muted" id="admPinN" style="margin-left:auto">${pn.body.length}/200</span>${st.pin_body ? `<button class="btn sm" data-act="adm-pinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-pin">Enregistrer</button></div></div>
+        <div class="row small"><span class="muted">Salons :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"], ["m", "Monocompte"]].map(([k, n]) => `<label class="row"><input type="checkbox" id="admPin${k}" ${on.includes(k) ? "checked" : ""}> ${n}</label>`).join("")}<span class="muted" id="admPinN" style="margin-left:auto">${pn.body.length}/200</span>${st.pin_body ? `<button class="btn sm" data-act="adm-pinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-pin">Enregistrer</button></div></div>
         <div class="box"><h2>Nouvelle annonce</h2><textarea id="admAnn" maxlength="300" placeholder="Ex. : maintenance ce soir à 22 h, le chat sera coupé 10 minutes.">${h(a.body)}</textarea>
         <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admAnnB" ${a.banner ? "checked" : ""}> Bandeau en haut du jeu</label><label class="row"><input type="checkbox" id="admAnnC" ${a.chat ? "checked" : ""}> Message dans le chat</label></div>
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
@@ -610,11 +622,11 @@
     if (a === "nav" && t.closest("#chat") && matchMedia("(max-width:640px)").matches) { C.open = false; pref.open = false; if ($("#chIn")) pref.draft = $("#chIn").value; savePref(); paint(); return; } // le chat couvre la page sur téléphone : on le réduit (1.0.12.8 : en gardant le message en cours, comme la croix)
     if (!/^(ch|adm)-/.test(a)) return;
     switch (a) {
-      case "ch-open": C.open = true; pref.open = true; savePref(); if (missed) setTimeout(() => catchUp(0), 50); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
+      case "ch-open": C.open = true; pref.open = true; savePref(); if (missed) setTimeout(() => catchUp(0), 50); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; if (C.tab === "m") C.unreadM = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-retry": refresh(); return;
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "a" && window.ALLY) { window.ALLY.chatSeen(); window.ALLY.chatPoll(); } if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.picked = true; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "m") C.unreadM = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "a" && window.ALLY) { window.ALLY.chatSeen(); window.ALLY.chatPoll(); } if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-acpick": acPick(d.p); return;
@@ -649,7 +661,7 @@
       case "adm-search": A.q = ($("#admQ").value || "").trim(); A.sel = null; A.msgs = null; await admLoad(); repaintAdm(); return;
       case "adm-sel": A.sel = (A.list || []).find((x) => x.id === d.id) || null; A.ren = A.sus = null; await admLoad(); repaintAdm(); return;
       case "adm-del": closeMenu(); if (await admDo("adm_msg_del", { p_id: +d.id }, "Message supprimé.")) onDel(+d.id); return; // 1.2.10.1
-      case "adm-purge": closeMenu(); if (!confirm(`Effacer tous les messages publics de ${d.p} ?`)) return; if (await admDo("adm_msg_purge", { p_user: d.u }, `Messages de ${d.p} effacés.`)) { ["g", "c", "v"].forEach((k) => { C[k] = C[k].filter((m) => m.user_id !== d.u || m.kind !== "msg"); }); paint(true); } return;
+      case "adm-purge": closeMenu(); if (!confirm(`Effacer tous les messages publics de ${d.p} ?`)) return; if (await admDo("adm_msg_purge", { p_user: d.u }, `Messages de ${d.p} effacés.`)) { PUB.forEach((k) => { C[k] = C[k].filter((m) => m.user_id !== d.u || m.kind !== "msg"); }); paint(true); } return;
       case "adm-chclear": if (!confirm(`Vider tout le salon ${d.n} ?`)) return; if (await admDo("adm_chat_clear", { p_ch: d.v }, `Salon ${d.n} vidé.`)) { C[d.v] = C[d.v].filter((m) => m.kind !== "msg"); paint(true); } return;
       case "adm-chclose": if (await admDo("adm_chat_close", { p_on: d.v === "1" }, d.v === "1" ? "Chat fermé : les joueurs ne peuvent plus écrire." : "Chat rouvert.")) { C.me.closed = d.v === "1"; paint(true); } return;
       case "adm-mute": if (d.m) closeMenu(); if (await admDo("adm_mute", { p_user: d.u, p_min: +d.v }, +d.v ? "Joueur rendu muet." : "Le joueur peut de nouveau écrire.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
@@ -672,7 +684,7 @@
         return;
       }
       case "adm-pin": case "adm-pinoff": {
-        const b = a === "adm-pinoff" ? "" : ($("#admPin").value || "").trim(); const chs = a === "adm-pinoff" ? (C.pin && C.pin.pin_chs) || "g" : ["g", "c", "v"].filter((k) => $("#admPin" + k).checked).join(",");
+        const b = a === "adm-pinoff" ? "" : ($("#admPin").value || "").trim(); const chs = a === "adm-pinoff" ? (C.pin && C.pin.pin_chs) || "g" : PUB.filter((k) => $("#admPin" + k).checked).join(",");
         if (a === "adm-pin" && !b) return X().toast("Le message est vide. Pour l'enlever, utilise « Retirer ».");
         if (a === "adm-pin" && !chs) return X().toast("Choisis au moins un salon.");
         A.pin = { body: b, chs };
@@ -709,7 +721,7 @@
   function admKeep(id) {
     if (/^admAnn/.test(id)) A.ann = { body: $("#admAnn").value, banner: $("#admAnnB").checked, chat: $("#admAnnC").checked, hours: +$("#admAnnH").value };
     else if (/^admLoop/.test(id)) A.lp = loopRead();
-    else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: ["g", "c", "v"].filter((k) => $("#admPin" + k).checked).join(",") };
+    else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: PUB.filter((k) => $("#admPin" + k).checked).join(",") };
     else if (id === "admQ") A.q = $("#admQ").value.trim();
   }
   document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Loop|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admLoop") { const n = $("#admLoopN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
