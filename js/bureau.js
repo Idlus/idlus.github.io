@@ -9,6 +9,8 @@
      clignote), la transition de 60 s (dernière sauvegarde validée puis confirmation), le combat regardé ensemble en direct (2A) à
      partir de l'heure du serveur, le butin récupéré une seule fois. Pendant le combat de groupe, les activités solo du héros
      s'arrêtent et le Sablier est coupé (3A) ; elles reprennent ensuite.
+   - Séries (idée de joueur validée) : le chef choisit ×1, ×5, ×10 ou un nombre libre de 1 à 10 combats à la suite
+     (mono_bureau_serie) ; le serveur lance seul le combat suivant (« Combat k / N ») ; ici, le cumul du butin de la série.
    - window.Bureau.inviter(userId) : bouton « Inviter » de la page des amis ; window.Bureau.d12() : règle du défi 12.
    ========================================================================== */
 (function () {
@@ -30,7 +32,7 @@
   const mono = (s) => !!(s && s.mono && !s.mono.eternel);
   const live = () => !!(ON && ON.enabled && mono(S()) && ON.monoOn && ON.monoOn() && ON.slot && ON.slot() === 4);
   const me = () => (ON && ON.user && ON.user.id) || null;
-  const B = { st: null, off: 0, at: 0, err: null, tab: "jouer", salons: null, salonsAt: 0, exps: null, rdv: null, V: {}, conf: {}, calc: {}, pris: {}, pend: false, f: null };
+  const B = { st: null, off: 0, at: 0, err: null, tab: "jouer", salons: null, salonsAt: 0, exps: null, rdv: null, V: {}, conf: {}, calc: {}, pris: {}, cumul: {}, pend: false, f: null };
   const now = () => Date.now() + B.off; // heure du serveur
   const left = (iso) => Math.max(0, Math.ceil((Date.parse(iso) - now()) / 1000));
   const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -117,8 +119,9 @@
     const got = BC.butin(s, r.data);
     delete s.mono.live; mark();
     if (got) {
-      const fmt = X().fmt || String;
-      toast(`${r.data.win ? "Victoire" : "Défaite"} en groupe (${dname(r.data.did)}, stasis ${r.data.stasis}) : ${fmt(Math.round(got.xp))} XP, ${fmt(got.kamas)} kamas${got.items.length ? `, ${got.items.length} objet${got.items.length > 1 ? "s" : ""}` : ""}.`, "rare", 7000);
+      const fmt = X().fmt || String, sr = r.data.serie_n > 1 ? ` · combat ${r.data.serie_k} / ${r.data.serie_n}` : "";
+      if (sr) { const k = B.cumul[r.data.serie_id] || (B.cumul[r.data.serie_id] = { n: 0, xp: 0, kamas: 0, items: 0 }); k.n++; k.xp += got.xp || 0; k.kamas += got.kamas || 0; k.items += (got.items || []).length; }
+      toast(`${r.data.win ? "Victoire" : "Défaite"} en groupe (${dname(r.data.did)}, stasis ${r.data.stasis}${sr}) : ${fmt(Math.round(got.xp))} XP, ${fmt(got.kamas)} kamas${got.items.length ? `, ${got.items.length} objet${got.items.length > 1 ? "s" : ""}` : ""}.`, "rare", 7000);
     }
     try { await X().onPush(); } catch (e) {}
     try { if (window.MARKET && window.MARKET.sync) window.MARKET.sync(); } catch (e) {} // clé du donjon retirée par une opération du serveur
@@ -233,9 +236,15 @@
       out += `<div class="row" style="gap:8px;flex-wrap:wrap">${x.did ? `<button class="btn${moi.pret ? "" : " primary"}" data-act="bx-pret" data-v="${moi.pret ? 0 : 1}"${sp}>${moi.pret ? "Plus prêt" : "Prêt"}</button>` : ""}
         ${chef ? `<button class="btn primary" data-act="bx-lancer"${sp}>Lancer le combat</button>` : ""}</div>`;
       if (s.dungeon) out += `<span class="small muted">Ton donjon solo n'est pas fini : tu pourras te mettre « Prêt » ensuite.</span>`;
+      if (x.serie != null && x.did) out += serieHtml(x, chef, sp);
       if (chef && !x.expedition) out += `<div class="bx-chefbox"><span class="small muted">Le chef propose le donjon et la stasis ; tout le monde reconfirme « Prêt ».</span>
         <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${dsel("bxPd", x.did, s)}<label>Stasis <input type="number" id="bxPk" min="1" max="${E.STASIS_MAX}" value="${x.stasis || 1}" style="width:64px"></label><button class="btn" data-act="bx-prop"${sp}>Proposer</button></div>
         <div class="row" style="gap:12px;flex-wrap:wrap"><label><input type="checkbox" data-act="bx-pub"${x.public ? " checked" : ""}${sp}> Salon public</label><label><input type="checkbox" data-act="bx-rempl"${x.remplacants ? " checked" : ""}${sp}> Remplaçants automatiques</label></div></div>`;
+    }
+    if (busy && x.serie_id && c && c.serie_n > 1) {
+      const dedans = (c.membres || []).some((m) => m.user === u);
+      out += `<div class="row bx-serie-on" style="gap:8px;flex-wrap:wrap;align-items:center"><span class="small"><b>Série en cours</b> : ${c.serie_n} combats à la suite${x.serie_stop ? ` · arrêt après ce combat (${h(x.serie_stop)})` : ""}</span>
+        ${dedans && !x.serie_stop ? `<button class="btn small" data-act="bx-sstop"${sp}>Arrêter après ce combat</button>` : ""}</div>`;
     }
     if (c) out += `<div id="bxView" class="bx-view"></div>`;
     out += `</div></div>`;
@@ -246,26 +255,44 @@
     return out;
   }
 
+  /* Série : ×1, ×5, ×10 ou un nombre libre (1 à 10, plafond du serveur) ; le chef choisit, les autres voient le choix */
+  const SERIE_MAX = 10;
+  function serieHtml(x, chef, sp) {
+    const n = Math.max(1, Math.min(SERIE_MAX, x.serie || 1));
+    const btn = (v, t, on, dis, lab) => `<button class="sbtn${on ? " on" : ""}" data-act="bx-serie" data-v="${v}"${dis || sp}${lab ? ` aria-label="${lab}"` : ""}>${t}</button>`;
+    return `<div class="bx-serie"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><b>Enchaîner</b>${chef
+      ? `<div class="chainrow">${[1, 5, 10].map((v) => btn(v, `×${v}`, n === v)).join("")}<span class="chainstep">${btn(n - 1, "−", false, n <= 1 ? " disabled" : "", "Un combat de moins")}<b class="num" id="bxSerieN">${n}</b>${btn(n + 1, "+", false, n >= SERIE_MAX ? " disabled" : "", "Un combat de plus")}</span></div>`
+      : `<span class="pill" id="bxSerieN">×${n}</span>`}</div>
+      <span class="small muted">${n > 1 ? `${n} combats à la suite, une clé chacun : le suivant se lance tout seul. Une défaite, un départ ou une déconnexion arrête la série après le combat en cours ; les combats finis restent acquis.` : "Un seul combat."}${chef ? "" : " Choisi par le chef."}</span></div>`;
+  }
+  const cumulTxt = (c) => { const k = c && c.serie_id && B.cumul[c.serie_id]; if (!k || !k.n) return ""; const fmt = X().fmt || String;
+    return `<span class="small">Butin de la série (${k.n} combat${k.n > 1 ? "s" : ""}) : ${fmt(Math.round(k.xp))} XP, ${fmt(Math.round(k.kamas))} kamas${k.items ? `, ${k.items} objet${k.items > 1 ? "s" : ""}` : ""}</span>`; };
+
   /* l'écran du combat (mis à jour chaque seconde, sans redessiner la page) */
   function view() {
     const el = document.getElementById("bxView"); const d = B.st; if (!el || !d || !d.salon || !d.salon.combat) return;
     const c = d.salon.combat, u = me();
-    let html = "";
+    const ser = c.serie_n > 1, kn = ser ? `Combat ${c.serie_k} / ${c.serie_n} · ` : "";
+    let html = ser ? `<span class="bx-kick" id="bxSerieK">Combat ${c.serie_k} / ${c.serie_n}</span>` : "";
     if (c.etat === "transition") {
-      html = `<b>Lancement : ${left(c.transition_fin)} s</b><span class="small muted">Chacun termine son action solo et sauvegarde ; la photo du héros est prise par le serveur sur sa partie validée.</span>
+      html += `<b>Lancement : ${left(c.transition_fin)} s</b><span class="small muted">Chacun termine son action solo et sauvegarde ; la photo du héros est prise par le serveur sur sa partie validée.</span>
         <div class="bx-ok">${(c.membres || []).map((m) => `<span class="pill${m.ok ? " ok" : ""}">${h(m.pseudo)} ${m.ok ? "✓" : "…"}</span>`).join("")}</div>
         ${(c.membres || []).some((m) => m.user === u) ? "" : `<span class="small muted">Tu attends le combat suivant.</span>`}`;
-    } else if (c.etat === "calcul") html = `<b>Le serveur prépare le combat…</b>`;
+    } else if (c.etat === "calcul") html += `<b>Le serveur prépare le combat…</b>`;
     else if (c.etat === "fini") {
-      const t = now() - Date.parse(c.debut), V = B.V[c.id];
-      if (t >= (c.duree || 0) || !V || V.err) html = `<b>${c.win ? "Victoire" : "Défaite"} : ${h(dname(c.did))}, stasis ${c.stasis}</b><span class="small muted">${t >= (c.duree || 0) ? "Le butin de chacun arrive dans sa partie. Le chef peut proposer de rejouer, changer de stasis ou de donjon." : "Combat en cours…"}</span>`;
-      else if (V.wait) html = `<b>Combat en cours…</b>`;
+      const t = now() - Date.parse(c.debut), V = B.V[c.id], fini = t >= (c.duree || 0);
+      const suite = ser && d.salon.serie_id === c.serie_id && c.serie_k < c.serie_n && c.win && !d.salon.serie_stop;
+      const fin = !ser ? "Le chef peut proposer de rejouer, changer de stasis ou de donjon."
+        : suite ? "Le combat suivant se lance tout seul." : `Série ${c.serie_k >= c.serie_n && c.win ? "terminée" : "arrêtée"} : ${(c.serie_bilan || []).filter((b) => b.win).length} victoire${(c.serie_bilan || []).filter((b) => b.win).length > 1 ? "s" : ""} sur ${c.serie_k} combat${c.serie_k > 1 ? "s" : ""} (${c.serie_n} prévus).`;
+      if (fini || !V || V.err) html += `<b>${c.win ? "Victoire" : "Défaite"} : ${h(dname(c.did))}, stasis ${c.stasis}</b><span class="small muted">${fini ? `Le butin de chacun arrive dans sa partie. ${fin}` : "Combat en cours…"}</span>`;
+      else if (V.wait) html += `<b>${kn}Combat en cours…</b>`;
       else {
         const F = BC.image(V, t) || { ents: [] }; const bar = (e) => `<div class="bx-e${e.hp <= 0 ? " ko" : ""}">${e.s === "m" && e.k && D.MONSTERS[e.k] ? `<img src="assets/m/${h(D.MONSTERS[e.k].img)}.png" alt="" loading="lazy">` : ""}<span>${h(e.n)}</span><i><u style="width:${Math.round((100 * e.hp) / e.mx)}%"></u></i></div>`;
-        html = `<div class="row between"><b>${F.boss ? "Salle du boss" : `Salle ${(F.salle || 0) + 1}`}</b><span class="small muted">${mmss(Math.floor(t / 1000))} / ${mmss(Math.ceil((c.duree || 0) / 1000))}</span></div>
+        html += `<div class="row between"><b>${F.boss ? "Salle du boss" : `Salle ${(F.salle || 0) + 1}`}</b><span class="small muted">${mmss(Math.floor(t / 1000))} / ${mmss(Math.ceil((c.duree || 0) / 1000))}</span></div>
           <div class="bx-fight"><div>${F.ents.filter((e) => e.s !== "m").map(bar).join("")}</div><div>${F.ents.filter((e) => e.s === "m").map(bar).join("")}</div></div>`;
       }
     }
+    if (ser) html += cumulTxt(c);
     if (el.innerHTML !== html) el.innerHTML = html;
   }
 
@@ -351,6 +378,8 @@
     if (a === "bx-pret") { act("mono_bureau_pret", { p_on: v === "1", p_version: VER, p_solo: !!(s && s.dungeon), p_onglet: ONG }); return; }
     if (a === "bx-prop") { const did = (document.querySelector("select[name=bxPd]") || {}).value, k = +(($("bxPk") || {}).value) || 1; act("mono_bureau_proposer", { p_did: did, p_stasis: k, p_cle: BC.cle(did), p_version: VER, p_onglet: ONG }); return; }
     if (a === "bx-lancer") { act("mono_bureau_lancer", { p_onglet: ONG }); return; }
+    if (a === "bx-serie") { const n = Math.max(1, Math.min(SERIE_MAX, +v || 1)); act("mono_bureau_serie", { p_n: n, p_onglet: ONG }); return; }
+    if (a === "bx-sstop") { act("mono_bureau_serie_arreter", { p_onglet: ONG }); return; }
     if (a === "bx-chef") { act("mono_bureau_chef", { p_user: v, p_onglet: ONG }); return; }
     if (a === "bx-say") { say(); return; }
     if (a === "bx-xin" || a === "bx-xout") { act("mono_bureau_exp_inscrire", { p_id: +v, p_on: a === "bx-xin" }).then(() => { B.exps = null; paint(); }); return; }

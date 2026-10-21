@@ -57,7 +57,7 @@ function fake() {
       case "mono_bureau_chercher": st.invitations = [{ id: 1, salon: 10, quoi: "auto", did: a.p_donjons[0], stasis: a.p_stasis, expire: iso(60000), membres: ["Bob"] }]; return ok();
       case "mono_bureau_repondre": {
         const i = st.invitations[0]; st.invitations = []; if (!a.p_oui) return ok();
-        st.salon = { id: 10, etat: "ouvert", did: i.did, stasis: i.stasis, cle: BC.cle(i.did), public: false, remplacants: false, chef: U1, titulaire: U1, provisoire: false, cree: iso(0), attente_fin: iso(120000), seq: 1,
+        st.salon = { id: 10, etat: "ouvert", did: i.did, stasis: i.stasis, cle: BC.cle(i.did), public: false, remplacants: false, chef: U1, titulaire: U1, provisoire: false, cree: iso(0), attente_fin: iso(120000), seq: 1, serie: 1, serie_id: null, serie_stop: null,
           membres: [{ user: U1, pseudo: "Moi", pret: false, present: true, venu: true, chef: true, moi: true }, { user: U2, pseudo: "Bob", pret: true, present: true, venu: true, chef: false, moi: false }],
           invites: [], combat: null, journal: [{ t: "Salon formé à 2 joueurs.", at: iso(0) }], msgs: [] };
         return ok();
@@ -67,9 +67,16 @@ function fake() {
       case "mono_bureau_lancer": x.etat = "transition"; x.combat = { id: 5, etat: "transition", did: x.did, stasis: x.stasis, transition_fin: iso(60000), membres: [{ user: U1, pseudo: "Moi", ok: false }, { user: U2, pseudo: "Bob", ok: true }] }; return ok({ combat: 5 });
       case "mono_bureau_confirmer": x.combat.membres[0].ok = true; x.combat.etat = "calcul"; return ok({ calcul: true, combat: 5 });
       case "mono_bureau_butin": {
-        if (F.pris) return { data: { err: "Butin déjà récupéré." } }; F.pris = true; st.butins = [];
-        return { data: { ok: true, combat: 5, did: x.combat.did, stasis: x.combat.stasis, seed: x.combat.seed, win: x.combat.win, result: JSON.stringify(BC.resume(F.R)), ids: [U2] } };
+        F.pris = F.pris || {}; if (F.pris[a.p_combat]) return { data: { err: "Butin déjà récupéré." } }; F.pris[a.p_combat] = true; st.butins = st.butins.filter((b) => b.combat !== a.p_combat);
+        const c = x.combat;
+        return { data: { ok: true, combat: a.p_combat, did: c.did, stasis: c.stasis, seed: c.seed, win: c.win, result: JSON.stringify(BC.resume(F.R)), ids: [U2], serie_id: c.serie_id || null, serie_k: c.serie_k || 1, serie_n: c.serie_n || 1 } };
       }
+      case "mono_bureau_serie": { // le serveur refuse hors de 1 à 10 et pour un membre qui n'est pas chef
+        if (x.chef !== U1) return { data: { err: "Seul le chef choisit le nombre de combats." } };
+        if (!(Number.isInteger(a.p_n) && a.p_n >= 1 && a.p_n <= 10)) return { data: { err: "De 1 à 10 combats à la suite." } };
+        if (a.p_n !== x.serie) { x.serie = a.p_n; x.membres.forEach((m) => (m.pret = false)); } return ok();
+      }
+      case "mono_bureau_serie_arreter": x.serie_stop = "Moi a demandé l'arrêt"; return ok();
       case "mono_bureau_inviter": return ok();
       default: return { err: "inconnu : " + name };
     }
@@ -174,6 +181,41 @@ function fake() {
     if (after.live) fail("le héros reste « en groupe » après le combat");
     if (!(after.xp !== before.xp || after.lvl !== before.lvl || after.k !== before.k) && (await page.evaluate(() => window.__BX.R.rooms.length))) fail("butin : rien reçu");
     if (!/Victoire|Défaite/.test(after.view)) fail("résultat du combat absent : " + after.view);
+    // série : le chef choisit ×1, ×5, ×10 ou un nombre libre (1 à 10) ; les autres voient le choix
+    await page.evaluate(() => { const x = window.__BX.st.salon; x.etat = "ouvert"; }); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(400);
+    const sb = await page.evaluate(() => { const b = document.querySelector(".bx-serie"); return b ? { txt: b.textContent, btn: [...b.querySelectorAll("[data-act=bx-serie]")].map((e) => e.textContent) } : null; });
+    if (!sb || !/Enchaîner/.test(sb.txt) || !["×1", "×5", "×10"].every((t) => sb.btn.includes(t))) fail("série : choix ×1, ×5, ×10 absent : " + JSON.stringify(sb));
+    await page.click('.bx-serie [data-act="bx-serie"][data-v="5"]'); await page.waitForTimeout(400);
+    if (!/5 combats à la suite/.test(await page.textContent(".bx-serie"))) fail("série ×5 pas affichée");
+    await page.click('.bx-serie [aria-label="Un combat de plus"]'); await page.waitForTimeout(400);
+    const sc = await page.evaluate(() => window.__BX.calls.filter((c) => c[0] === "mono_bureau_serie").map((c) => c[1].p_n));
+    if (JSON.stringify(sc) !== "[5,6]") fail("série : appels au serveur " + JSON.stringify(sc));
+    await page.evaluate(() => { window.__BX.st.salon.serie = 10; }); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(400);
+    if (!(await page.evaluate(() => document.querySelector('.bx-serie [aria-label="Un combat de plus"]').disabled))) fail("série : « + » actif au plafond de 10");
+    await page.evaluate(() => { const x = window.__BX.st.salon; x.serie = 3; x.chef = "00000000-0000-0000-0000-000000000002"; }); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(400);
+    const sm = await page.evaluate(() => { const b = document.querySelector(".bx-serie"); return b ? { txt: b.textContent, n: b.querySelectorAll("[data-act=bx-serie]").length } : null; });
+    if (!sm || sm.n || !/×3/.test(sm.txt) || !/Choisi par le chef/.test(sm.txt)) fail("série vue d'un membre : " + JSON.stringify(sm));
+    await page.evaluate(() => { window.__BX.st.salon.chef = "00000000-0000-0000-0000-000000000001"; });
+    // série en cours : « Combat 1 / 3 », arrêt après ce combat, cumul du butin
+    const serie = () => { const B = window.__BX, x = B.st.salon, c0 = x.combat, t = Date.now();
+      x.combat = Object.assign({}, c0, { id: 6, serie_id: 6, serie_k: 1, serie_n: 3, serie_bilan: [], win: true, debut: new Date(t).toISOString(), fin: new Date(t + c0.duree).toISOString() }); x.etat = "combat"; x.serie_id = 6; x.serie_stop = null;
+      B.st.butins = [{ combat: 6, did: c0.did, stasis: c0.stasis, fin: x.combat.fin, win: true }]; };
+    await page.evaluate(serie); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(800);
+    const sv = await page.evaluate(() => ({ view: (document.querySelector("#bxView") || {}).textContent || "", main: document.querySelector("#main").textContent, stop: !!document.querySelector("[data-act=bx-sstop]") }));
+    if (!/Combat 1 \/ 3/.test(sv.view) || !/Série en cours/.test(sv.main) || !sv.stop) fail("série en cours : " + JSON.stringify(sv).slice(0, 300));
+    await shot(page, "bureau-serie-pc.png");
+    await page.evaluate(() => { const B = window.__BX, c = B.st.salon.combat; c.debut = new Date(Date.now() - c.duree - 2000).toISOString(); c.fin = new Date(Date.now() - 1000).toISOString(); B.st.butins[0].fin = c.fin; });
+    await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(800); await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(500);
+    const sf = await page.evaluate(() => ({ view: (document.querySelector("#bxView") || {}).textContent || "", n: window.__BX.calls.filter((c) => c[0] === "mono_bureau_butin" && c[1].p_combat === 6).length, pris: !!window.DX.S.mono.gpris[6] }));
+    if (sf.n !== 1 || !sf.pris) fail("série : butin du combat 1 / 3 pris une fois " + JSON.stringify(sf));
+    if (!/Butin de la série \(1 combat\)/.test(sf.view) || !/combat suivant se lance tout seul/.test(sf.view)) fail("série : cumul du butin et suite : " + sf.view.slice(0, 300));
+    await page.click("[data-act=bx-sstop]"); await page.waitForTimeout(400);
+    if (!(await page.evaluate(() => window.__BX.calls.some((c) => c[0] === "mono_bureau_serie_arreter")))) fail("série : « Arrêter après ce combat »");
+    if (!/arrêt après ce combat/.test(await page.textContent("#main"))) fail("série : arrêt demandé pas affiché");
+    await page.evaluate(() => { const x = window.__BX.st.salon; x.serie_id = null; x.serie_stop = null; x.etat = "ouvert"; x.combat.serie_k = 1; x.combat.serie_bilan = [{ k: 1, win: x.combat.win }]; });
+    await page.evaluate(() => window.Bureau.actualiser()); await page.waitForTimeout(500);
+    if (!/Série (terminée|arrêtée)/.test(await page.textContent("#bxView"))) fail("série : bilan de fin absent");
+    await noScroll(page, "PC, série");
     // Bureau.inviter (page des amis) et règle du défi 12
     const inv = await page.evaluate(async () => { await window.Bureau.inviter("00000000-0000-0000-0000-000000000003"); return window.__BX.calls.filter((c) => c[0] === "mono_bureau_inviter").map((c) => c[1]); });
     if (inv.length !== 1 || inv[0].p_user !== "00000000-0000-0000-0000-000000000003") fail("Bureau.inviter : " + JSON.stringify(inv));
@@ -200,9 +242,16 @@ function fake() {
     await shot(tel, "bureau-invitation-tel.png");
     await tel.click("#bxInv [data-act=bx-oui]"); await tel.waitForTimeout(400);
     await noScroll(tel, "téléphone, salon");
+    if (!(await tel.$(".bx-serie [data-act=bx-serie]"))) fail("téléphone : choix de la série absent");
+    // série en cours sur téléphone (combat simulé dans le faux serveur)
+    await tel.evaluate(() => { const B = window.__BX, x = B.st.salon, t = Date.now(); x.etat = "combat"; x.serie = 10; x.serie_id = 7;
+      x.combat = { id: 7, etat: "transition", did: x.did, stasis: x.stasis, transition_fin: new Date(t + 60000).toISOString(), membres: [{ user: x.membres[0].user, pseudo: "Moi", ok: true }, { user: x.membres[1].user, pseudo: "Bob", ok: true }], serie_id: 7, serie_k: 4, serie_n: 10 }; });
+    await tel.evaluate(() => window.Bureau.actualiser()); await tel.waitForTimeout(600);
+    if (!/Combat 4 \/ 10/.test((await tel.textContent("#bxView")) || "")) fail("téléphone : « Combat 4 / 10 » absent");
+    await noScroll(tel, "téléphone, série");
     await shot(tel, "bureau-salon-tel.png");
     await tel.close();
   } finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n - " + errors.join("\n - ")); process.exit(1); }
-  console.log("ok - Bureau des Aventuriers : menu Monocompte, recherche, invitation, salon, discussion, transition, combat en direct (même combat que le serveur), héros en groupe, butin une fois, Bureau.inviter, défi 12, PC et téléphone sans erreur console");
+  console.log("ok - Bureau des Aventuriers : menu Monocompte, recherche, invitation, salon, discussion, transition, combat en direct (même combat que le serveur), héros en groupe, butin une fois, Bureau.inviter, défi 12, séries (×1/×5/×10, Combat k / N, cumul, arrêt), PC et téléphone sans erreur console");
 })().catch((e) => { console.error(e); server.close(); process.exit(1); });

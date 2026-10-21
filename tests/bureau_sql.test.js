@@ -11,7 +11,9 @@
    - ORDRE DE CHARGEMENT unique du Monocompte : monocompte.sql → amis.sql → mono_social.sql → mono_bureau.sql (puis
      monocompte.sql relancé) : défi 12, crochets sociaux (classements, renfort) et Bouclier ensemble, aucun crochet effacé ;
    - amis : invitation directe aux amis acceptés non bloqués seulement, salon fermé au joueur bloqué par un membre ;
-   - renfort d'un ami : la copie prêtée (marque rf / renfort) n'entre jamais dans un groupe (fonction serveur et base).
+   - renfort d'un ami : la copie prêtée (marque rf / renfort) n'entre jamais dans un groupe (fonction serveur et base) ;
+   - séries (×1, ×5, ×10 ou 1 à 10 combats) : série de 3 jouée jusqu'au bout, butin une fois par joueur et par combat, plafond 10,
+     arrêt sur départ, déconnexion, défaite, transition ratée ou demande ; triche (rejouer, plus de 10, membre non chef) refusée.
    Lancer : IDLUS_PG="postgresql://postgres@/postgres?host=/chemin/du/socket&port=55432" node tests/bureau_sql.test.js
    Sans IDLUS_PG (ou Node < 22.6), le test est sauté. La base « idlus_mono_bureau » est recréée puis effacée. */
 "use strict";
@@ -417,6 +419,126 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     sa = etat(1).salon; assert(sa.etat === "ouvert", "salon rouvert après les lancements refusés");
     console.log("ok - renfort d'un ami : copie refusée dans un groupe par la fonction serveur et par la base (rf, renfort, mercenaire, photo en plus)");
 
+    /* ---------- séries (idée de joueur validée) : ×1, ×5, ×10 ou un nombre libre de 1 à 10, combats enchaînés par le serveur ---------- */
+    // le salon : 1 (chef), 3, 12 ; une clé par combat : 10 clés de plus pour chacun (opération du serveur)
+    const G = [1, 3, 12];
+    for (const i of G) { q(`select mono.op('${U(i)}', 0, jsonb_build_object('res', jsonb_build_object(${lit(KEY)}, 10)), 'Clés de test (séries)')`); sync(i); const r = await send(i, P[i].S); assert(r.verif && r.verif.ok, "clés reçues " + i + " " + JSON.stringify(r.verif)); }
+    const keys0 = Object.fromEntries(G.map((i) => [i, P[i].S.res[KEY]]));
+    assert.strictEqual(etat(3).salon.serie, 1, "un seul combat par défaut");
+    refuse("série choisie par un membre qui n'est pas chef", () => err(B(3, "serie", 3), /Seul le chef/, "série par un membre"));
+    for (const n of [11, 0, -1, 1000]) refuse("série de " + n + " combats", () => err(B(1, "serie", n), /De 1 à 10/, "série " + n));
+    refuse("plafond de 10 combats dans la table", () => fails(() => q(`update mono.bureau_salons set serie = 11 where id = ${sidA}`), /check constraint/, "serie = 11"));
+    refuse("série écrite directement par un joueur", () => fails(() => as(1, `update mono.bureau_salons set serie = 10`), /permission denied/, "écriture directe"));
+    ok(B(1, "serie", 10), "×10"); ok(B(1, "serie", 5), "×5"); ok(B(1, "serie", 3), "nombre libre : 3");
+    let s3s = etat(3).salon; assert(s3s.serie === 3 && s3s.membres.every((m) => !m.pret), "les membres voient le choix (3) et reconfirment « Prêt » : " + JSON.stringify(s3s.serie));
+    assert(s3s.journal.some((j) => /3 combats à la suite/.test(j.t)), "choix annoncé dans le journal du salon");
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    const lancerSerie = () => { const cid = ok(B(1, "lancer"), "lancement de la série").combat; return cid; };
+    const jouer = async (cid, qui, appelant) => {
+      for (const i of qui) { const r = await send(i, P[i].S); assert(r.verif && r.verif.ok, "sauvegarde " + i + " " + JSON.stringify(r.verif)); ok(B(i, "confirmer"), "confirmer " + i); }
+      const F = await call(U(appelant || qui[0]), { bureau: { combat: cid } }); assert(F.ok && F.combat === cid && F.fin, "combat " + cid + " joué par le serveur : " + JSON.stringify(F));
+      return F;
+    };
+    const finir = (cid) => q(`update mono.bureau_combats set debut_at = debut_at - interval '1 hour', fin_at = now() - interval '1 second' where id = ${cid}`);
+    const prendre = async (cid, qui, k, n) => {
+      for (const i of qui) {
+        const b = ok(B(i, "butin", cid), "butin " + i + " du combat " + cid); assert(b.serie_k === k && b.serie_n === n, "butin numéroté dans la série : " + JSON.stringify([b.serie_k, b.serie_n]));
+        sync(i); assert(BC.butin(P[i].S, b), "butin appliqué " + i); P[i].S.stats.playtime += 300;
+        const r = await send(i, P[i].S); assert(r.verif && r.verif.ok, "Bouclier sans faux refus après le butin " + k + "/" + n + " (" + i + ") : " + JSON.stringify(r));
+        err(B(i, "butin", cid), /déjà récupéré/, "butin pris deux fois");
+      }
+    };
+    // série de 3 jouée jusqu'au bout : chaque combat est un combat normal (transition, confirmation, photos, verrou, butin)
+    const cs = [lancerSerie()];
+    let cc = etat(3).salon.combat; assert(cc.serie_k === 1 && cc.serie_n === 3 && cc.serie_id === cs[0], "Combat 1 / 3 : " + JSON.stringify([cc.serie_k, cc.serie_n]));
+    refuse("changer le nombre pendant le lancement", () => err(B(1, "serie", 5), /pendant le lancement/, "série pendant la transition"));
+    for (let k = 1; k <= 3; k++) {
+      const cid = cs[k - 1];
+      const F = await jouer(cid, G, G[k - 1]); assert(F.win, "victoire au combat " + k);
+      const Fb = await call(U(3), { bureau: { combat: cid } });
+      refuse("rejouer le combat " + k + " (fonction serveur)", () => assert(Fb.ok && Fb.deja && +q(`select count(*) from mono.bureau_butins where combat = ${cid}`) === 3, "rejouer le combat : déjà calculé " + JSON.stringify(Fb)));
+      refuse("rejouer le combat " + k + " (résultat réécrit)", () => assert(/pas en calcul/.test(run(`set role service_role; select mono_srv_bureau_resultat(${cid}, '[]', '{"done": true}', 1000, null, '[]')::text;`))));
+      refuse("lancer pendant la série", () => err(B(1, "lancer"), /Combat déjà en cours/, "lancer pendant la série"));
+      err(B(1, "serie", 10), /fin du combat/, "changer le nombre pendant le combat");
+      assert.strictEqual(+q(`select count(*) from mono.bureau_combats where salon = ${sidA} and etat in ('transition', 'calcul')`), 0, "un combat à la fois");
+      // avant la fin du combat : pas de combat suivant
+      etat(1); assert.strictEqual(+q(`select count(*) from mono.bureau_combats where serie_id = ${cs[0]}`), k, "le suivant attend la fin du combat");
+      finir(cid);
+      const s1x = etat(1).salon;
+      if (k < 3) {
+        const nx = s1x.combat; assert(s1x.etat === "transition" && nx.serie_k === k + 1 && nx.serie_n === 3 && nx.serie_id === cs[0] && nx.id !== cid, "Combat " + (k + 1) + " / 3 lancé tout seul : " + JSON.stringify([s1x.etat, nx.serie_k]));
+        assert.deepStrictEqual(nx.membres.map((m) => m.user).sort(), G.map(U).sort(), "mêmes joueurs");
+        assert(s1x.journal.some((j) => new RegExp(`Combat ${k + 1} / 3 : lancement automatique`).test(j.t)), "lancement automatique annoncé");
+        cs.push(nx.id);
+      } else {
+        assert(s1x.etat === "ouvert" && !s1x.serie_id && s1x.membres.every((m) => !m.pret), "série finie : salon ouvert, chacun reconfirme « Prêt »");
+        assert(s1x.journal.some((j) => /Série terminée : 3 combats sur 3/.test(j.t)), "fin de série annoncée");
+        assert.deepStrictEqual(s1x.combat.serie_bilan.map((b) => [b.k, b.win]), [[1, true], [2, true], [3, true]], "bilan de la série");
+      }
+      await prendre(cid, G, k, 3);
+    }
+    assert.strictEqual(+q(`select count(*) from mono.bureau_combats where serie_id = ${cs[0]}`), 3, "exactement 3 combats");
+    assert.strictEqual(+q(`select count(*) from mono.bureau_butins where combat = any(array[${cs}]::bigint[]) and pris_at is not null`), 9, "un butin par joueur et par combat, pris une fois");
+    for (const i of G) {
+      // bons « donjons en groupe » : un par combat au plus, et les mêmes plafonds que sans série (mono.act_regles : 2 par jour)
+      assert(+q(`select count(*) from mono.bons where user_id = '${U(i)}' and combat = any(array[${cs.map((c) => `'g:${c}'`)}])`) >= 1, "bons de la série " + i);
+      assert.strictEqual(+q(`select count(*) from mono.bons where user_id = '${U(i)}' and kind = 'grp'`), +q(`select max_jour from mono.act_regles where kind = 'grp'`), "plafond du jour des bons de groupe atteint, jamais dépassé " + i);
+      sync(i); assert.strictEqual(P[i].S.res[KEY], keys0[i] - 3, "une clé par combat " + i);
+    }
+    refuse("rejouer un numéro de la série (base)", () => fails(() => q(`insert into mono.bureau_combats (salon, saison, did, stasis, seed, transition_fin, serie_id, serie_k, serie_n) values (${sidA}, 0, '${DJ}', 1, 1, now(), ${cs[0]}, 2, 3)`), /bureau_serie_k|duplicate/, "même numéro deux fois"));
+    refuse("combat k au-delà de N (base)", () => fails(() => q(`insert into mono.bureau_combats (salon, saison, did, stasis, seed, transition_fin, serie_k, serie_n) values (${sidA}, 0, '${DJ}', 1, 1, now(), 4, 3)`), /check constraint/, "k > N"));
+    console.log("ok - série de 3 : combats enchaînés par le serveur (Combat k / 3), butin une fois par joueur et par combat, une clé par combat, bons sous le plafond du jour, fin de série");
+
+    // arrêt quand un joueur quitte le groupe (après le combat en cours ; les combats finis restent acquis)
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    let cx = lancerSerie(); await jouer(cx, G);
+    ok(B(12, "quitter"), "12 quitte pendant le combat 1 / 3");
+    assert(/Joueur12 a quitté le groupe/.test(etat(1).salon.serie_stop), "arrêt prévu après le combat en cours");
+    finir(cx); let sx = etat(1).salon;
+    assert(sx.etat === "ouvert" && !sx.serie_id && +q(`select count(*) from mono.bureau_combats where serie_id = ${cx}`) === 1, "série arrêtée sur le départ d'un joueur : " + JSON.stringify(sx.etat));
+    assert(sx.journal.some((j) => /Série arrêtée après le combat 1 \/ 3 \(Joueur12 a quitté le groupe\)/.test(j.t)), "arrêt annoncé");
+    await prendre(cx, G, 1, 3); // le butin de celui qui est parti l'attend
+    ok(B(12, "rejoindre", sidA, VER, app(12)), "12 revient");
+    // arrêt sur déconnexion (même règle de présence que l'existant)
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    cx = lancerSerie(); await jouer(cx, G);
+    q(`update mono.bureau_membres set vu_at = now() - interval '30 seconds' where user_id = '${U(3)}'`);
+    finir(cx); sx = etat(1).salon;
+    assert(sx.etat === "ouvert" && !sx.serie_id && sx.journal.some((j) => /Joueur03 est déconnecté/.test(j.t)), "série arrêtée sur la déconnexion d'un joueur");
+    await prendre(cx, G, 1, 3);
+    // arrêt sur défaite (le résultat du serveur dit défaite)
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    cx = lancerSerie();
+    for (const i of G) { await send(i, P[i].S); ok(B(i, "confirmer"), "confirmer " + i); }
+    const pd = JSON.parse(run(`set role service_role; select mono_srv_bureau_photos('${U(1)}', ${cx})::text;`));
+    const hd = BC.combat(V.mono, pd.membres, pd.did, pd.stasis, pd.seed, pd.at); assert(hd.snaps, JSON.stringify(hd.exclus || hd.err));
+    const rd = JSON.parse(run(`set role service_role; select mono_srv_bureau_resultat(${cx}, ${lit(hd.snaps)}, ${lit(JSON.stringify(Object.assign({}, hd.R, { done: false })))}, ${hd.duree}, ${lit(hd.cle)}, '[]')::text;`));
+    assert(rd.ok && rd.win === false, "défaite enregistrée : " + JSON.stringify(rd));
+    finir(cx); sx = etat(1).salon;
+    assert(sx.etat === "ouvert" && !sx.serie_id && sx.journal.some((j) => /Série arrêtée après le combat 1 \/ 3 \(défaite\)/.test(j.t)), "série arrêtée sur une défaite");
+    assert.strictEqual(+q(`select count(*) from mono.bureau_combats where serie_id = ${cx}`), 1, "pas de combat après une défaite");
+    // un joueur demande l'arrêt ; une transition ratée au combat 2 arrête aussi la série (pas de reprise automatique)
+    err(B(3, "serie_arreter"), /Aucune série/, "arrêt sans série");
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    cx = lancerSerie(); await jouer(cx, G); finir(cx);
+    const c2x = etat(1).salon.combat; assert(c2x.serie_k === 2, "combat 2 / 3 en transition");
+    q(`update mono.bureau_combats set transition_fin = now() - interval '1 second' where id = ${c2x.id}`);
+    sx = etat(1).salon; assert(sx.etat === "ouvert" && !sx.serie_id && sx.journal.some((j) => /Série arrêtée au combat 2 \/ 3/.test(j.t)), "transition ratée : série arrêtée, pas de reprise");
+    for (const i of G) ok(B(i, "butin", cx), "butin du combat fini " + i);
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    cx = lancerSerie(); await jouer(cx, G);
+    // un joueur arrivé pendant la série attend la fin : il ne l'arrête pas, et son départ non plus
+    ok(B(2, "rejoindre", sidA, VER, app(2)), "2 arrive pendant la série");
+    refuse("arrêter une série qu'on ne joue pas", () => err(B(2, "serie_arreter"), /ne joues pas/, "arrêt par un joueur hors série"));
+    ok(B(2, "quitter"), "2 repart"); assert.strictEqual(etat(1).salon.serie_stop, null, "le départ d'un joueur hors série ne l'arrête pas");
+    ok(B(3, "serie_arreter"), "3 arrête la série"); finir(cx); sx = etat(1).salon;
+    assert(sx.etat === "ouvert" && !sx.serie_id && sx.journal.some((j) => /Joueur03 a demandé l'arrêt/.test(j.t)), "arrêt demandé par un joueur");
+    for (const i of G) ok(B(i, "butin", cx), "butin " + i);
+    for (const i of G) sync(i);
+    ok(B(1, "serie", 1), "retour à ×1");
+    for (const i of G) ok(B(i, "pret", true, VER, false), "prêt " + i);
+    console.log("ok - série arrêtée après le combat en cours : départ, déconnexion, défaite, transition ratée, arrêt demandé ; combats finis acquis");
+
     /* ---------- chef déconnecté (8C) : chef provisoire immédiat, rôle rendu au retour, place libérée après 2 min ---------- */
     q(`update mono.bureau_membres set vu_at = now() - interval '30 seconds' where user_id = '${U(1)}'`);
     let s12 = etat(12).salon; assert(s12.chef === U(3) && s12.provisoire && s12.titulaire === U(1), "chef provisoire = le plus ancien connecté : " + JSON.stringify([s12.chef, s12.titulaire]));
@@ -543,6 +665,13 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     q(`delete from public.chat_sanctions`); // joueur muet de ce test (supabase/chat.sql)
     // monocompte.sql relancé en fin de parcours : le défi 12 reste celui du Bureau
     file(path.join(ROOT, "supabase", "monocompte.sql")); verifCrochets("monocompte.sql relancé en fin de parcours");
+    // mono_bureau.sql relancé avec des séries enregistrées : rien n'est perdu
+    const series0 = q(`select string_agg(id || ':' || serie_id || ':' || serie_k || '/' || serie_n, ',' order by id) from mono.bureau_combats where serie_n > 1`);
+    const choix0 = q(`select string_agg(id || ':' || serie, ',' order by id) from mono.bureau_salons`);
+    assert(series0 && series0.split(",").length >= 9, "séries enregistrées : " + series0);
+    file(path.join(ROOT, "supabase", "mono_bureau.sql"));
+    assert.strictEqual(q(`select string_agg(id || ':' || serie_id || ':' || serie_k || '/' || serie_n, ',' order by id) from mono.bureau_combats where serie_n > 1`), series0, "séries gardées après relance");
+    assert.strictEqual(q(`select string_agg(id || ':' || serie, ',' order by id) from mono.bureau_salons`), choix0, "choix des salons gardés après relance");
     assert.strictEqual(q(`select mono.defi_prog('${U(1)}', 0, 'd12') = mono.bureau_d12('${U(1)}', 0)`), "t", "défi 12 lu au Bureau après la relance");
     assert.strictEqual(snap(), before, "schéma public toujours identique");
   } finally { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} run(`drop database if exists ${DB}`, URL0); }
