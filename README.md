@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.35.4 « Profils séparés »
+- Chat Monocompte : héros et titre Monocompte à la place du profil Classique (`chat_mono_hero`, `chat_mono_profil` dans `supabase/chat.sql`) ; clic sur un pseudo = carte Monocompte.
+
 ## 2.1.35.3 « Panoplies à découvrir »
 - Encyclopédie › Panoplies : filtre « Non commencées » (aucune pièce obtenue), à côté de « Commencées » (`js/collui.js`). Idée de SegFault.
 

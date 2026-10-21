@@ -1,6 +1,14 @@
 {
-  "version": "2.1.35.3",
+  "version": "2.1.35.4",
   "versions": [
+    {
+      "v": "2.1.35.4",
+      "name": "Profils séparés",
+      "items": [
+        "Chat Monocompte : chaque joueur y apparaît avec son héros et son titre Monocompte, plus avec son profil Classique",
+        "Un clic sur un pseudo dans le chat Monocompte ouvre sa carte Monocompte"
+      ]
+    },
     {
       "v": "2.1.35.3",
       "name": "Panoplies à découvrir",
