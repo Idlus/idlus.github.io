@@ -373,6 +373,7 @@
     el.innerHTML = `<div class="hd"><b>${h(p)}</b></div>
       ${msgById(id) && msgById(id).body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
       <button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>
+      ${!mine && window.AMIS ? window.AMIS.menuBtn(u, p, "chat") : ""}
       ${!mine && canWrite() && !C.me.banned && C.tab !== "p" && C.tab !== "h" ? `<button data-act="ch-ment" data-p="${h(p)}"><b class="at">@</b> Le mentionner</button>` : ""}
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
       ${window.MARKET ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}

@@ -1,0 +1,83 @@
+/* Amis (js/amis.js) et écrans « Saison plus » du Monocompte (js/monoplusui.js) : maquette validée le 21/10/2026 */
+:root{--mp-green:#3d7a24;--mp-green-bg:rgba(79,138,43,.16);--mp-gold-ink:#8a6410;--mp-gold-bg:rgba(201,154,46,.18);--mp-violet:#6c48c9;--mp-violet-bg:rgba(108,72,201,.14);--mp-cyan:#1f7f99;--mp-cyan-bg:rgba(31,127,153,.14);--mp-iron:#5f7584;--mp-iron-bg:rgba(95,117,132,.16);--mp-on:#4fb43a;--mp-off:#9a8b76}
+:root[data-theme="dark"],:root[data-theme="emerald"]{--mp-green:#a6e07e;--mp-green-bg:rgba(110,190,90,.2);--mp-gold-ink:#e8c45a;--mp-gold-bg:rgba(232,196,90,.2);--mp-violet:#c9b2ff;--mp-violet-bg:rgba(160,120,255,.22);--mp-cyan:#7fe6ff;--mp-cyan-bg:rgba(127,230,255,.18);--mp-iron:#c6d6e2;--mp-iron-bg:rgba(159,180,196,.18);--mp-on:#6fdc5a;--mp-off:#777}
+
+/* ---------- Amis ---------- */
+.am-crown,.mp-crown{width:16px;height:16px;flex:none;vertical-align:-3px}
+.am-cw{display:inline-flex;margin-left:3px}
+.am-cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.am-main,.am-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.am-card,.am-add{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.am-add{flex-direction:row;flex-wrap:wrap;align-items:center}
+.am-add input{flex:1 1 180px;min-width:0}
+.am-add .xs{flex-basis:100%}
+.am-ct,.mp-ct{font-weight:800;font-size:13px;display:flex;gap:6px;align-items:center;margin-top:2px}
+.am-n{font-size:11px;background:var(--panel2);padding:0 7px;border-radius:99px}
+.am-fr,.mp-lr{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px;border-radius:10px;background:var(--panel2)}
+.am-fr.off{opacity:.65}
+.am-fr.sm,.mp-lr.sm{padding:6px 8px}
+.am-fr .cm,.mp-lr .cm{flex:none}
+.am-dot{position:absolute;left:36px;top:34px;width:10px;height:10px;border-radius:50%;background:var(--mp-off);border:2px solid var(--panel2)}
+.am-dot.on{background:var(--mp-on)}
+.am-fi,.mp-fi{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 140px}
+.am-fi b,.mp-fi b{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.am-acts{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.am-o,.mp-o{font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:99px;white-space:nowrap}
+.am-cl,.mp-cl{background:var(--mp-green-bg);color:var(--mp-green)}
+.am-mo,.mp-mo{background:var(--mp-gold-bg);color:var(--mp-gold-ink)}
+.am-grp{background:var(--mp-cyan-bg);color:var(--mp-cyan)}
+.mp-pa{background:var(--mp-violet-bg);color:var(--mp-violet)}
+.mp-fer{background:var(--mp-iron-bg);color:var(--mp-iron)}
+.am-tg{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px}
+.am-tg:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+.am-sw{width:32px;height:18px;border-radius:99px;background:var(--mp-off);position:relative;flex:none}
+.am-sw.on{background:var(--mp-on)}
+.am-sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s}
+.am-sw.on::after{left:16px}
+.am-note{font-size:12.5px;border-left:3px solid var(--gold)}
+
+/* ---------- Saison plus (Monocompte) ---------- */
+.mp-card{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);margin-bottom:12px}
+.mp-k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:800}
+.mp-crownbox{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px;margin-bottom:12px;border-radius:16px;border:1px solid var(--gold);background:linear-gradient(120deg,var(--mp-gold-bg),var(--panel) 60%)}
+.mp-crown.big{width:54px;height:54px;filter:drop-shadow(0 0 10px rgba(232,196,90,.6))}
+.mp-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.mp-tabs button{all:unset;cursor:pointer;white-space:nowrap;padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:700;font-size:13px}
+.mp-tabs button.on{background:var(--gold);color:#1a1405}
+.mp-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.mp-lr.me{box-shadow:0 0 0 1px var(--gold) inset}
+.mp-rk{width:24px;text-align:center;font-weight:900;color:var(--gold)}
+.mp-sc{margin-left:auto;font-variant-numeric:tabular-nums}
+.mp-sep{text-align:center;opacity:.5}
+.mp-oaths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:12px}
+.mp-oaths .mp-card{margin:0}
+.mp-oath ul{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.mp-oath b{font-size:17px}
+.mp-oath.cur{box-shadow:0 0 0 2px var(--gold) inset}
+.mp-oath.iron{border-color:var(--mp-iron);box-shadow:0 0 0 1px var(--mp-iron) inset,0 0 24px rgba(159,180,196,.25);background:linear-gradient(160deg,var(--mp-iron-bg),var(--panel) 55%)}
+.mp-oath.iron .mp-k{color:var(--mp-iron)}
+.mp-big{font-size:22px;font-family:Kavoon,serif;font-weight:400;color:var(--title)}
+.mp-mut{border-color:var(--mp-on);background:linear-gradient(140deg,var(--mp-green-bg),var(--panel) 60%)}
+.mp-mut p{margin:0;font-size:14px}
+.mp-bar{height:8px;border-radius:99px;background:var(--panel3);overflow:hidden;margin:4px 0}
+.mp-bar div{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.mp-bilan{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:center;padding:16px;border-radius:18px;border:1px solid var(--gold);background:radial-gradient(circle at 20% 30%,var(--mp-cyan-bg),var(--panel) 65%)}
+.mp-bl .hcard{width:250px;max-width:100%;margin:auto}
+.mp-bilan.fer .mp-bl .hcard{box-shadow:0 0 0 2px var(--mp-iron),0 0 26px rgba(198,214,226,.55)}
+.mp-br{display:flex;flex-direction:column;gap:12px;min-width:0}
+.mp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mp-stats div{display:flex;flex-direction:column;padding:10px;border-radius:12px;background:var(--panel2);min-width:0}
+.mp-stats b{font-size:18px;color:var(--gold);overflow-wrap:anywhere}
+.mp-stats span{font-size:12px;opacity:.75}
+.mp-stats.sm b{font-size:16px}
+.mp-mutl{border-color:var(--mp-on)}
+.mp-oathl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-color:var(--mp-iron)}
+.mp-ferbox{border-color:var(--mp-iron)}
+.mp-renf{display:flex;gap:6px;flex-wrap:wrap}
+.mp-renf button{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:700;font-size:13px}
+.mp-renf button[disabled]{opacity:.5;cursor:not-allowed}
+.mp-renf button:focus-visible{outline:2px solid var(--gold)}
+/* aura du Serment de fer (gardée dans l'Éternel) */
+.hcard.fer-aura{box-shadow:0 0 0 2px #9fb4c4,0 0 18px rgba(159,180,196,.55)}
+.hcard.fer-aura .art{filter:drop-shadow(0 0 5px rgba(198,214,226,.9))}
+@media (max-width:760px){.am-cols,.mp-oaths,.mp-bilan{grid-template-columns:minmax(0,1fr)}.am-acts{margin-left:46px}.mp-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
