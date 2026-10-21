@@ -8,3 +8,4 @@ node_modules/
 /upd_*.png
 /t*.png
 supabase/functions/record/game.js
+supabase/functions/mono/game.js

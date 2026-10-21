@@ -13,3 +13,13 @@ out.push("export const E = globalThis.ENGINE, V = globalThis.VERIFY, D = globalT
 const dest = path.join(ROOT, "supabase", "functions", "record", "game.js");
 fs.writeFileSync(dest, out.join("\n"));
 console.log(`${path.relative(ROOT, dest)} : ${(fs.statSync(dest).size / 1e6).toFixed(2)} Mo`);
+// Bouclier Monocompte (étape 5) : la fonction « mono » a son propre module, le moteur du Classique plus celui du Monocompte
+// (déployée à la main avec monocompte.sql, jamais par le workflow ; le module de « record » ne change pas)
+const MONO = ["mono", "monopass", "monodofus", "monoalign", "saison1", "verify_mono"];
+const outM = out.slice(0, -1);
+for (const f of MONO) outM.push(`/* ---- js/${f}.js ---- */`, fs.readFileSync(path.join(ROOT, "js", f + ".js"), "utf8"));
+outM.push("export const E = globalThis.ENGINE, V = globalThis.VERIFY, D = globalThis.DATA;");
+const destM = path.join(ROOT, "supabase", "functions", "mono", "game.js");
+fs.mkdirSync(path.dirname(destM), { recursive: true });
+fs.writeFileSync(destM, outM.join("\n"));
+console.log(`${path.relative(ROOT, destM)} : ${(fs.statSync(destM).size / 1e6).toFixed(2)} Mo`);

@@ -102,7 +102,8 @@
   };
 
   /* Ce qu'aucune partie honnête ne peut contenir, quel que soit le temps de jeu. Renvoie la raison, ou null. */
-  V.impossible = (E, S, nu0) => { // nu0 : objets nés avant le bouclier (uid plus petit) : marge plus large (anciens jets d'avant un rééquilibrage)
+  V.impossible = (E, S, nu0, P) => { // nu0 : objets nés avant le bouclier (uid plus petit) : marge plus large (anciens jets d'avant un rééquilibrage)
+    // P (Monocompte, js/verify_mono.js) : { mtT0, sabT0, sabH0 } : la Maîtrise et le Sablier comptés depuis le début de la saison ; sans P, rien ne change au Classique
     const D = root.DATA || E.DATA || {}; const ITEMS = D.ITEMS || {}, STATS = D.STATS || {};
     const MAX = E.MAX_LVL || 200;
     for (const c of S.chars || []) {
@@ -135,7 +136,7 @@
     if (!(+S.kamas >= 0) || +S.kamas > 1e13) return `kamas illisibles (${S.kamas})`;
     { /* 2.1.17 : Maîtrise plafonnée par le temps écoulé depuis le reset de la Maîtrise lente (2.1.15, 16/10 18:15 Paris) : sans ça,
          une partie retouchée envoyée pour la première fois (ou après une coupure) passait, VERIFY.check ne comparant qu'à la partie validée d'avant */
-      const h = Math.max(0, ((V.now ? V.now() : Date.now()) - V.MT_T0) / 3600000) * V.RES_RATE;
+      const h = Math.max(0, ((V.now ? V.now() : Date.now()) - (P && P.mtT0 != null ? P.mtT0 : V.MT_T0)) / 3600000) * V.RES_RATE;
       // 2.1.25 : plafond par héros tiré du coût réel des points (Maîtrise lente) : 225 fois l'XP du niveau 199 par heure, 4 fois le meilleur
       // joueur vérifié mesuré le 18/10 (91 points en 48 h, soit environ 56 fois cette XP par heure), + 20 points de marge
       const X = V.MT_XP_H * h, hero = E.MT_LENT && E.mtXpTot ? Math.floor((-20.1 + Math.sqrt(20.1 * 20.1 + 0.4 * X)) / 0.2) + V.MT_PAD : Math.floor(V.MT_HERO0 + V.MT_HERO_H * h);
@@ -146,8 +147,8 @@
       if (tot > team) return `${tot} points de Maîtrise dans l'équipe (au plus ${team} depuis le reset)`; }
     { /* 2.1.27 « Maîtrise du temps » : l'XP du Sablier vient de la réserve utilisée (1 par minute). Au plus la réserve de départ
          (73 h) plus 30 h par jour depuis sa sortie : le plus gros joueur honnête (recharge, Défi, boss, Horloger, comptoirs) en gagne environ 18 */
-      const xp = Math.max(0, +(S.sabMt && S.sabMt.xp) || 0), d = Math.max(0, ((V.now ? V.now() : Date.now()) - V.SAB_T0) / 86400000);
-      const cap = Math.floor((V.SAB_H0 + V.SAB_H_DAY * d) * 60);
+      const xp = Math.max(0, +(S.sabMt && S.sabMt.xp) || 0), d = Math.max(0, ((V.now ? V.now() : Date.now()) - (P && P.sabT0 != null ? P.sabT0 : V.SAB_T0)) / 86400000);
+      const cap = Math.floor(((P && P.sabH0 != null ? P.sabH0 : V.SAB_H0) + V.SAB_H_DAY * d) * 60);
       if (xp > cap) return `Maîtrise du temps : ${Math.floor(xp).toLocaleString("fr-FR")} XP (au plus ${cap.toLocaleString("fr-FR")} depuis sa sortie)`; }
     return null;
   };
