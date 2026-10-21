@@ -27,7 +27,8 @@ const CHANGELOG = [
   { v: "2.1.35.7", name: "Un panel par serveur", items: [
     "Panel Xener : sélecteur Classique | Monocompte, chaque page n'agit que sur le serveur choisi",
     "Monocompte : vue d'ensemble, testeurs, clés bêta, Bouclier, remise d'une partie, Bureau, chat et annonces à part",
-    "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement" ] },
+    "Les annonces du Classique ne s'affichent plus dans le Monocompte, et inversement",
+    "Bureau des Aventuriers : le chef du groupe peut enchaîner ×1, ×5, ×10 ou jusqu'à 10 combats d'affilée (idée de Bsasuk), avec le cumul du butin et un bouton « Arrêter après ce combat »" ] },
   { v: "2.1.35.6", name: "Vérification plus juste", items: [
     "Serveur : les meilleurs joueurs avec le ×2 illimité de la Maîtrise du temps ne sont plus mis en vérification à tort pour leur Maîtrise" ] },
   { v: "2.1.35.5", name: "Points de Maîtrise signalés", guide: "maitrise", items: [
