@@ -7,6 +7,9 @@
 // objets numérotés, copie du registre des Éclats), puis gains depuis la dernière partie validée (rythmes du Classique, partie
 // reculée, défis). Acceptée : mono.parties_ok (résumé calculé ici), bons de butin, défis payés, mono.apres_validation.
 // Refusée : notée pour le panel de Mathis (mono_adm_bouclier), la partie validée ne change pas.
+// - { bureau: { combat: id } } : Bureau des Aventuriers, combat de groupe en direct (supabase/mono_bureau.sql, js/bureau_combat.js) :
+//   photos des héros tirées de leurs parties validées (jamais envoyées par le jeu), graine de la base, combat joué ici,
+//   résultat enregistré par la base (butin, clés, bons, défis). Un seul calcul par combat (verrou dans la base).
 // La base ne laisse appeler les fonctions mono_srv_* qu'au rôle service_role (cette fonction).
 // game.js est assemblé par tools/build_server.js (moteur du Classique + Monocompte + js/verify_mono.js).
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -28,7 +31,7 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
   // deno-lint-ignore no-explicit-any
-  let body: { push?: any; verif?: number } = {};
+  let body: { push?: any; verif?: number; bureau?: any } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.push) {
     const p = body.push;
@@ -41,6 +44,7 @@ Deno.serve(async (req) => {
     return json({ ok: true, at, verif });
   }
   if (body.verif) { try { return json(await validate(db, user.id)); } catch (_) { return json({ ok: false, err: "vérification impossible" }); } }
+  if (body.bureau) { try { return json(await bureau(db, user.id, body.bureau)); } catch (_) { return json({ ok: false, err: "combat impossible" }); } }
   return json({ ok: false, err: "demande inconnue" }, 400);
 });
 
@@ -68,4 +72,26 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
   if (e2 || !v) return { ok: false, err: "écriture impossible" };
   if (v.err) return { ok: false, err: v.err };
   return { ok: true, registre: v, bons: v.bons, payes: v.payes };
+}
+
+// Bureau des Aventuriers : joue le combat de groupe une seule fois (la base verrouille le combat ; les autres appels attendent)
+// deno-lint-ignore no-explicit-any
+async function bureau(db: any, uid: string, b: any): Promise<Record<string, unknown>> {
+  const id = Number(b && b.combat);
+  if (!(id > 0)) return { ok: false, err: "combat inconnu" };
+  const { data: ph, error } = await db.rpc("mono_srv_bureau_photos", { p_user: uid, p_combat: id });
+  if (error || !ph) return { ok: false, err: "serveur indisponible" };
+  if (ph.err) return { ok: false, err: ph.err };
+  if (ph.deja || ph.attente) return { ok: true, deja: !!ph.deja, attente: !!ph.attente, combat: id };
+  const t0 = Date.now();
+  // deno-lint-ignore no-explicit-any
+  let r: any;
+  try { r = E.BUREAU.combat(V.mono, ph.membres || [], String(ph.did), Number(ph.stasis), Number(ph.seed), Number(ph.at)); } catch (_) { r = { err: "combat impossible" }; }
+  // deno-lint-ignore no-explicit-any
+  if (r.err) r = { exclus: (ph.membres || []).map((m: any) => ({ user: m.user, why: r.err })) };
+  const { data: v, error: e2 } = await db.rpc("mono_srv_bureau_resultat", {
+    p_combat: id, p_snaps: r.snaps || null, p_result: r.R ? JSON.stringify(r.R) : null, p_duree_ms: r.duree == null ? null : r.duree, p_cle: r.cle || null, p_exclus: r.exclus || [],
+  });
+  if (e2 || !v) return { ok: false, err: "écriture impossible" };
+  return Object.assign({ ms: Date.now() - t0 }, v);
 }
