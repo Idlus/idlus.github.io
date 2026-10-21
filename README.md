@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.34 « Grand écran »
+
+- Choix 1B et 2A de la maquette PC (Mathis 21/10). Au moins 1600 px : colonne fixe #livecol (.lcol, liveColTick dans la boucle, arène via FORMUI.box) et chat ancré dessous (CHAT.dock) ; option S.settings.liveCol.
+- Inventaire (au moins 1100 px avec souris) : panneau du héros (.ihp, invHeroHtml) à côté du sac, glisser-déposer vers une case ou une tête ; option S.settings.invHero. Aucun changement de sauvegarde ni de serveur.
+
 ## 2.1.33 « Interface plus pratique »
 
 - Lot ergonomie (Mathis 21/10) : Donjons (encadré d'absence replié, S.settings.dghOpen), Équipe (Les 19 classes repliées par défaut, c19Shut !== false), Forgemagie au téléphone (métiers sur une ligne), page Combat sans combat (.cside.cidle).

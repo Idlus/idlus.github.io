@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.33";
+const GAME_VERSION = "2.1.34";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.34", name: "Grand écran", items: [
+    "PC grand écran (1600 px et plus) : une colonne « Combat en direct » à droite montre le combat en cours, le tour, le dernier butin et les boutons Voir le combat / Rentrer / Quitter le donjon",
+    "Sous cette colonne, le chat reste ouvert en permanence : plus besoin de l'ouvrir et de le fermer",
+    "Inventaire sur PC : l'équipement du héros choisi s'affiche à côté du sac ; glisse un objet sur une case ou sur la tête d'un héros pour l'équiper, les cases compatibles s'éclairent avec le gain",
+    "Les deux se coupent dans Options › Affichage (« Colonne Combat en direct » et « Héros à côté du sac »)",
+  ] },
   { v: "2.1.33", name: "Interface plus pratique", items: [
     "Aventure › Donjons : « Donjon pendant ton absence » tient sur une ligne, « Régler » le déplie ; la liste des donjons arrive tout de suite",
     "Héros › Équipe : « Les 19 classes » sont repliées par défaut (« Voir » les ouvre), les héros d'abord",
