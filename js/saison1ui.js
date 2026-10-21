@@ -43,7 +43,18 @@
   function card(s, x) {
     const p = E.tfProgress(s, x), top = x.need[2], on = E.tfDefiOpen(s, x);
     return `<div class="tf-card${on ? "" : " lock"}"><span class="tf-cat">${IC(CAT_IC[x.c])}${h(TF.CATS[x.c])}</span><h3>${h(x.n)}</h3><p>${h(x.d)}</p>
-      <div class="tf-bar"><div style="width:${Math.min(100, (p / top) * 100)}%"></div></div><span class="xs muted">${fmt(p)} / ${fmt(top)}${x.u ? " " + x.u : ""}${x.soon ? ` · se remplit ${h(x.soon)}` : ""}</span>${tiers(s, x)}</div>`;
+      <div class="tf-bar"><div style="width:${Math.min(100, (p / top) * 100)}%"></div></div><span class="xs muted">${fmt(p)} / ${fmt(top)}${x.u ? " " + x.u : ""}${soon(x)}</span>${tiers(s, x)}${bureau(x)}</div>`;
+  }
+  /* défi 12 « Rendez-vous du temps » : la règle vient du Bureau des Aventuriers (window.Bureau.d12, compté par le serveur) */
+  const BU = () => (window.Bureau && window.Bureau.d12 ? window.Bureau : null);
+  function soon(x) {
+    if (x.id === "d12" && BU()) { let R = null; try { R = BU().d12(); } catch (e) { R = null; } if (R && R.texte) return ` · ${h(R.texte)}`; }
+    return x.soon ? ` · se remplit ${h(x.soon)}` : "";
+  }
+  function bureau(x) {
+    if (x.id !== "d12" || !BU()) return "";
+    let on = false; try { on = !!(BU().ouvert && BU().ouvert()); } catch (e) { on = false; }
+    return on ? `<div class="tf-side"><button class="btn sm" data-act="tf-go" data-v="bureau">Bureau des Aventuriers</button></div>` : "";
   }
   const ORIG = { defi: "Défis de la saison", act: "Activités (combats, donjons, métiers)", recu: "Reçus d'autres joueurs (HdV, échanges)", achat: "Dépensés en boutique" };
   function ledger(s) {

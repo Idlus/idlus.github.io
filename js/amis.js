@@ -5,7 +5,7 @@
      jamais une table : il appelle les fonctions amis_* (security definer, droits vérifiés côté serveur).
    - Ajouter : par pseudo (page Amis), ou depuis un pseudo du chat, des classements ou de la guilde.
    - Présence : en ligne, mode (Classique ou Monocompte), niveau et « cherche un groupe » ; un battement par minute.
-   - Inviter dans un groupe (Monocompte) ; rendez-vous du Bureau prévu (bouton inactif) ; message privé = MP du chat.
+   - Inviter dans un groupe (Monocompte) : window.Bureau.inviter (Bureau des Aventuriers) ; rendez-vous du Bureau prévu (bouton inactif) ; message privé = MP du chat.
    - Renfort (Monocompte) : la copie validée du héros d'un ami remplace le mercenaire dans un donjon solo
      (supabase/mono_social.sql : mono_renfort_publier, mono_renforts, mono_renfort_prendre ; copie construite par le serveur
      depuis la partie validée de l'ami ; aucun gain pour l'ami).
@@ -128,7 +128,9 @@
     if (a === "am-del") { if (!confirm(`Retirer ${d.p} de tes amis ?`)) return; return done(await rpc("amis_retirer", { p_ami: d.u }), `${d.p} n'est plus dans tes amis.`); }
     if (a === "am-blk") return done(await rpc("amis_bloquer", { p_user: d.u, p_pseudo: null, p_on: d.v === "1" }), d.v === "1" ? "Joueur bloqué." : "Joueur débloqué.");
     if (a === "am-set") { const on = d.v === "1"; const r = await rpc("amis_reglages", d.k === "vis" ? { p_invisible: !on, p_cherche: null } : { p_invisible: null, p_cherche: on }); return done(r); }
-    if (a === "am-inv") return done(await rpc("amis_inviter", { p_ami: d.u, p_quoi: d.v, p_data: null }), "Invitation envoyée.");
+    // groupe en direct : le Bureau des Aventuriers (salon privé créé s'il le faut, invitation de 60 s ; amis acceptés seulement)
+    if (a === "am-inv") { if (window.Bureau && window.Bureau.inviter) { t.disabled = true; try { await window.Bureau.inviter(d.u); } finally { t.disabled = false; } return; }
+      return done(await rpc("amis_inviter", { p_ami: d.u, p_quoi: d.v, p_data: null }), "Invitation envoyée."); }
     if (a === "am-invok") { const r = await rpc("amis_invit_repondre", { p_id: +d.id, p_ok: d.v === "1" }); if (!done(r, d.v === "1" ? "Invitation acceptée : écris-lui pour lancer le groupe." : "Invitation refusée.")) return;
       if (d.v === "1" && r.data && r.data.de) { const f = (A.list.amis || []).find((x) => x.u === r.data.de); openPm(r.data.de, f ? f.p : ""); } return; }
     if (a === "am-pm") return openPm(d.u, d.p);
