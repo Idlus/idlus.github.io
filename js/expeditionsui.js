@@ -120,6 +120,8 @@
     const SI = did ? E.stasisInfo(s, did) : null;
     const ksel = H.did && SI && SI.max >= 1 ? `<select data-ex="k" aria-label="Stasis">${[0].concat(Array.from({ length: SI.max }, (_, i) => i + 1)).map((k) => `<option value="${k}" ${(H.k || 0) === k ? "selected" : ""}>${k ? `stasis ${k}` : `stasis choisie au donjon (${Math.min(SI.sel || SI.max, SI.max)})`}</option>`).join("")}</select>` : "";
     const tog = `<label class="dgh-tog"><input type="checkbox" data-act="ex-dghon" ${H.on ? "checked" : ""}><i></i>Continuer quand je pars</label>`;
+    // lot ergonomie (21/10) : replié par défaut sur une ligne, la liste des donjons d'abord ; « Régler » déplie (S.settings.dghOpen)
+    if (!s.settings.dghOpen) return `<section class="panel dgh-pan dgh-mini"><div class="dgh-line"><span class="dgh-hg" aria-hidden="true">⏳</span><span class="stack grow" style="gap:0;min-width:0"><b>Donjon pendant ton absence</b><span class="xs muted">${hrs(H.b)} sur ${hrs(E.DGH.max)} · ${H.on ? (dg ? `${h(dg.name)}${T.k ? ` · stasis ${T.k}` : ""}` : "le donjon en cours quand tu pars") : "coupé : l'équipe chasse"}</span></span>${tog}<button class="btn sm" data-act="ex-dghfold" aria-expanded="false">Régler</button></div></section>`;
     let box, rows = [];
     if (dg && T.k) {
       const keys = s.res[dg.key] || 0; const est = E.dghEst(s, did, T.k); const P = E.dghPlan(s, did, T.k, rate);
@@ -132,7 +134,7 @@
     rows.push(["Dofus", "même chance par course qu'en jeu, aucun bonus"]);
     const L = H.last;
     const last = L && L.did && D.DUNGEONS[L.did] ? `<div class="xs dgh-last">Dernière absence (${hrs(L.sec)}) : ${L.runs ? `${L.runs} ${pl(L.runs, "course")}, ${L.wins} ${pl(L.wins, "victoire")}, ${L.keys} ${pl(L.keys, "clé")}, ${L.items} ${pl(L.items, "objet")}, ${L.dofus} Dofus` : "aucune course"}${L.why && E.DGH_WHY[L.why] ? ` (${h(E.DGH_WHY[L.why])})` : ""} · ${h(D.DUNGEONS[L.did].name)}.</div>` : "";
-    return `<section class="panel dgh-pan"><div class="phead"><h2>Donjon pendant ton absence</h2><span class="tag good">nouveau</span></div><div class="pad stack" style="gap:10px">
+    return `<section class="panel dgh-pan"><div class="phead"><h2>Donjon pendant ton absence</h2><button class="btn sm" data-act="ex-dghfold" aria-expanded="true">Replier</button></div><div class="pad stack" style="gap:10px">
       <div class="dgh-bank"><span class="dgh-hg" aria-hidden="true">⏳</span><div class="stack grow" style="gap:4px;min-width:200px"><b>Heures de donjon : ${hrs(H.b)} sur ${hrs(E.DGH.max)} ${window.GUIDE ? GUIDE.q("expeditions#heures-de-donjon") : ""}</b><div class="gbar dgh-g"><i style="width:${Math.round(H.b / E.DGH.max * 100)}%"></i></div><span class="xs muted dgh-bs">+2 h chaque jour à minuit, gardées jusqu'à 8 h</span></div></div>
       <div class="dgh-ch">${sel}${ksel}</div>
       ${box}
@@ -168,6 +170,7 @@
       case "ex-recall": { const id = +d.id; if (st.conf !== id || Date.now() - st.confT > 5000) { st.conf = id; st.confT = Date.now(); X().render(); setTimeout(() => { if (st.conf === id) { st.conf = null; if (ui.tab === "home" && ui.home === "expe") X().render(); } }, 5000); return; }
         st.conf = null; const r = E.act(s, "misRecall", id); if (r) { X().toast(r, "warn"); return; } X().toast("Le héros est rentré."); repaint(); return; }
       case "ex-room": { const r = E.act(s, "misBuildRoom"); if (r) { X().toast(r, "warn"); return; } X().toast("Salle des cartes construite : une place d'expédition de plus !", "rare"); repaint(); return; }
+      case "ex-dghfold": s.settings.dghOpen = !s.settings.dghOpen; X().render(); return;
       case "ex-dghon": { const r = E.act(s, "dghSet", { on: !!t.checked }); if (r) { X().toast(r, "warn"); return; } X().toast(t.checked ? "L'équipe continuera le donjon quand tu pars." : "Pendant ton absence, l'équipe chassera."); repaint(); return; }
     }
   }

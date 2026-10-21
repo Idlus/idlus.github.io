@@ -214,7 +214,14 @@
   };
 
   /* ---------- quêtes des Dofus ---------- */
-  const dq = (S, id) => { S.dofusQ = S.dofusQ || {}; return (S.dofusQ[id] = S.dofusQ[id] || { step: 0, prog: 0, done: 0 }); };
+  const dq = (S, id) => {
+    S.dofusQ = S.dofusQ || {}; const Q = (S.dofusQ[id] = S.dofusQ[id] || { step: 0, prog: 0, done: 0 });
+    // Le dernier palier a déjà donné l'Ocre : réparer aussi les anciennes parties, sans rejouer la récompense.
+    if (id === "ocre" && !Q.done && E.ocreTier(S) >= E.OCRE_TIERS.length) {
+      Q.step = E.DOFUS.ocre.steps.length; Q.prog = 0; Q.done = E.now();
+    }
+    return Q;
+  };
   E.dofusQuest = (S, id) => dq(S, id);
   E.dofusStep = (S, id) => { const Q = dq(S, id); return Q.done ? null : E.DOFUS[id].steps[Q.step] || null; };
   const perfects = (S) => Object.values(S.items || {}).filter((it) => E.isPerfect && E.isPerfect(it)).length;

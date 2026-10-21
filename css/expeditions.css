@@ -53,3 +53,8 @@
 .exm-card h3 .xs{font-family:var(--font-body);font-weight:700}
 .gbar.dgh-g{height:12px}
 .gbar.exm-bar b{color:#fff;text-shadow:0 0 2px #000,0 0 3px #000,0 0 4px #000,0 1px 2px #000}
+/* lot ergonomie (21/10) : « Donjon pendant ton absence » replié sur une ligne */
+.dgh-mini .dgh-line{display:flex;align-items:center;gap:10px;padding:8px 12px;flex-wrap:wrap}
+.dgh-mini .dgh-hg{font-size:20px}
+@media (max-width:700px){.dgh-mini .dgh-line .dgh-tog{order:3}.dgh-mini .dgh-line .btn{order:2}}
+.dgh-mini .dgh-line>.stack{flex:1 1 200px}

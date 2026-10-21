@@ -9,11 +9,21 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
-## 2.1.33 « Bêta fermée du Monocompte »
+## 2.1.34 « Bêta fermée du Monocompte »
 
 - Monocompte (js/mono.js, monopass, monodofus) et lot 1 de la Saison 1 « Les Fragments du Temps » (js/saison1.js, js/saison1ui.js, css/saison1.css) : partie à part (`dofousxen-save-mono`), cachée derrière un code testeur (Options › Compte, drapeau `idlus-mono-beta`), visible aussi des admins et sur localhost.
 - Éclats du Temps tenus par un registre provisoire dans la partie, en attendant le registre du serveur ; horloge accélérée réservée à la bêta. Parties de bêta remises à zéro avant la Saison 1.
 - Classique inchangé (simulations identiques, sauvegarde protégée). Aucun changement de base de données.
+## 2.1.33 « Interface plus pratique »
+
+- Lot ergonomie (Mathis 21/10) : Donjons (encadré d'absence replié, S.settings.dghOpen), Équipe (Les 19 classes repliées par défaut, c19Shut !== false), Forgemagie au téléphone (métiers sur une ligne), page Combat sans combat (.cside.cidle).
+- Menu : épinglés PC avec leur nom, lettre du raccourci au survol (navHotkey), menu du téléphone par famille (nsOpen, ui.nsFams).
+- Téléphone : bulle du chat cachée au défilement (body.scrolldn), « Mieux pour… » dans #lootdock au-dessus de la barre du bas, flèche .tr-mv décalée.
+- Inventaire PC : double-clic (détecté à la main, le premier clic redessine) et menu du clic droit (#ctxmenu, Briser en deux temps). Aucun changement de sauvegarde ni de serveur.
+
+## 2.1.32.2 « Ocre terminé »
+
+- Corrige le statut de la quête Ocre après les six paliers, y compris les anciennes parties, sans redonner de récompense (ticket #129, Akileuss). Tests moteur et interface PC/mobile.
 
 ## 2.1.32 « Ma rotation »
 

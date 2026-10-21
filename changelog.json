@@ -1,13 +1,45 @@
 {
-  "version": "2.1.33",
+  "version": "2.1.34",
   "versions": [
     {
-      "v": "2.1.33",
+      "v": "2.1.34",
       "name": "Bêta fermée du Monocompte",
       "items": [
         "Le serveur Monocompte ouvre sa bêta fermée, réservée aux testeurs invités : un seul héros, mercenaire, Pass de saison, Dofus du Phénix et la Saison 1 « Les Fragments du Temps » (Carnet des Fragments, Boutique temporelle)",
         "Les testeurs entrent leur code dans Options › Compte. Les parties de la bêta restent sur l'appareil et seront remises à zéro avant l'ouverture de la Saison 1",
         "Ta partie Classique ne change pas : chaque serveur garde sa propre partie"
+      ]
+    },
+    {
+      "v": "2.1.33",
+      "name": "Interface plus pratique",
+      "items": [
+        "Aventure › Donjons : « Donjon pendant ton absence » tient sur une ligne, « Régler » le déplie ; la liste des donjons arrive tout de suite",
+        "Héros › Équipe : « Les 19 classes » sont repliées par défaut (« Voir » les ouvre), les héros d'abord",
+        "Forgemagie au téléphone : les 6 métiers tiennent sur une ligne qu'on fait glisser, l'établi remonte",
+        "Menu du téléphone : une ligne par famille, celle de la page ouverte est dépliée ; tout tient sur un écran",
+        "Téléphone : la bulle du chat est plus petite et se cache quand tu descends dans une page ; « Mieux pour… » s'affiche au-dessus de la barre du bas",
+        "PC : les épinglés du menu ont leur nom, et la lettre du raccourci clavier de chaque page s'affiche au survol",
+        "Inventaire sur PC : double-clic sur un objet pour l'équiper (héros choisi dans « Pour », sinon celui pour qui il est ▲ mieux) ; clic droit pour un petit menu : équiper, Forgemagie, vendre, cadenas, briser (avec confirmation)",
+        "Combat : sans combat en cours, les cadres Butin et Statistiques vides ne s'affichent plus",
+        "Téléphone : la flèche « devant / derrière » ne cache plus le niveau des héros"
+      ]
+    },
+    {
+      "v": "2.1.32.2",
+      "name": "Ocre terminé",
+      "items": [
+        "Héros › Dofus › Collection : une Éternelle moisson terminée disparaît de « À faire maintenant » et sa fiche affiche 100 %, sans palier 7 sur 6 (signalé par Akileuss)",
+        "Les parties existantes sont corrigées automatiquement à la consultation. Aucune récompense supplémentaire : les six paliers restent la condition pour terminer la quête"
+      ]
+    },
+    {
+      "v": "2.1.32.1",
+      "name": "Cristal à l’établi",
+      "guide": "forgemagie",
+      "items": [
+        "Forgemagie : utilise un Cristal de Forgemagie directement depuis l’établi, sans retourner dans l’inventaire (suggestion de Ley)",
+        "Le stock et le cristal actif sont affichés ; le bouton est désactivé si tu n’as plus de cristal ou si une protection est déjà active. Les effets et les coûts restent identiques"
       ]
     },
     {
