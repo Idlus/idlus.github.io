@@ -70,7 +70,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 ## 7. Problèmes connus
 
 - **Rentabilité et Ankama :** toute vente dans le jeu (boutique, abonnement, objets) peut faire perdre le droit d'utiliser les ressources DOFUS 3. Même les dons sont à faire confirmer par Ankama. L'accord ne dit pas clairement si l'extraction du client DOFUS 3 est couverte.
-- **Tickets de bug :** 18 ouverts au 22/10 au soir après le tri (4 déjà corrigés fermés : #124, #129, #132, #149). Les fils commentaient « Corrigé dans la … » sans fermer le ticket. Le tri complet est dans `/mnt/project-files/synthese/tri-tickets-2210.md` (dossier du projet).
+- **Tickets de bug :** 13 ouverts au 22/10 au soir après le tri (9 fermés : 8 déjà corrigés, 1 qui n'était pas un bug). Les fils commentaient « Corrigé dans la … » sans fermer le ticket. Le tri complet est dans `/mnt/project-files/synthese/tri-tickets-2210.md` (dossier du projet).
 - **Complexité :** `js/ui.js` à 1,7 Mo, beaucoup de systèmes qui se croisent (Classique / Monocompte, HdV, Bouclier). Les fuites de kamas du Classique vers le Monocompte (22/10) en sont un exemple.
 - **Triche :** les sauvegardes sont modifiables côté joueur ; tout repose sur le Bouclier du serveur et sur les décisions de Mathis.
 - **Dépendance à une seule personne :** Mathis valide tout, en plein temps ; risque de fatigue (il a demandé le 22/10 au soir moins de messages éparpillés).
