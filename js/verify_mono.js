@@ -209,7 +209,8 @@
   };
   // curseur au-delà du registre Monocompte : les parties sautées avant le 22/10 (asc_claim) gardent un curseur du Classique
   // tant qu'il n'est pas remis à 0 sur le serveur ; d'ici là, une note au panel, jamais un refus (VM.CURSEUR_REFUS)
-  VM.CURSEUR_REFUS = false;
+  // 22/10 15:05Z : le Plan directeur a remis à 0 le dernier curseur, la règle refuse de nouveau (après l'observation)
+  VM.CURSEUR_REFUS = true;
   VM.curseur = (S, ctx) => { const op = n0(S.hdv && S.hdv.op);
     return ctx && ctx.opMax != null && op > n0(ctx.opMax) ? `opérations du serveur Classique dans la partie (curseur ${op}, registre Monocompte ${n0(ctx.opMax)})` : null; };
   // V.check avec les rythmes et la réserve du héros seul
