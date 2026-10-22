@@ -3,6 +3,7 @@
 Idle game de fan inspiré de DOFUS, par Mathis. Jeu : https://idlus.github.io/ (ancienne adresse mathiss29.github.io/idlus, redirigée) · dépôt : idlus/idlus.github.io.
 
 ## Fonctionnement
+- Synthèse du projet (objectif, état, décisions, hypothèses, problèmes, priorités) : `SYNTHESE.md`, à mettre à jour à chaque étape importante.
 - SPA en JavaScript sans build : `index.html`, `css/style.css`, `js/gamedata.js`, `js/looks.js`, `js/data.js`, `js/engine.js` (combat, stasis, équilibrage), `js/systems.js`, `js/ui.js` (rendu, CHANGELOG, GAME_VERSION).
 - Sauvegarde dans localStorage sous la clé `dofousxen-save` (ne pas renommer). Migrations via `E.VERSION` dans engine.js.
 - PWA : `sw.js` (VERSION = version du jeu ; MEDIA = cache des images, à incrémenter si une image change de contenu sans changer de nom), `manifest.webmanifest`, `icons/`.
