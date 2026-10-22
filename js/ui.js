@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37";
+const GAME_VERSION = "2.1.37.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.1", name: "Invocations remplacées", items: [
+    "Une invocation tuée laisse sa place à la suivante : fini la colonne d'invocations mortes qui s'empilent pendant les longs combats",
+  ] },
   { v: "2.1.37", name: "Outils de récolte", guide: "metiers", items: [
     "Monocompte : engage un Apprenti récolteur (24 h, 4 000 kamas × niveau du héros) qui récolte à 50 % du rythme de ton héros pendant qu'il combat, même hors-ligne. Idée de SegFault",
     "Outils de récolte jusqu'au niveau 30 (+140 % de ressources au maximum), avec le nom et l'apparence d'un vrai outil DOFUS à chaque palier",

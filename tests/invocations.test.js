@@ -1,4 +1,4 @@
-/* 2.1.36.1 : une invocation morte est remplacée par la suivante au lieu de s'empiler dans le combat.
+/* 2.1.37.1 : une invocation morte est remplacée par la suivante au lieu de s'empiler dans le combat.
    Lancer : node tests/invocations.test.js */
 "use strict";
 const assert = require("assert");

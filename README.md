@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.1 « Invocations remplacées »
+- Capture de Mathis (22/10) : les invocations mortes restaient dans `F.ents` et s'empilaient. `makeSummon` réutilise la place d'une invocation morte du même lanceur (et la retire de la suite du tour avant de la remettre en fin d'ordre) ; limite d'invocations vivantes inchangée. Simulation osa/sadi/steam/roub, bon équipement : +0,07 / −0,05 stasis selon la graine (bruit). Test `tests/invocations.test.js`.
+
 ## 2.1.37 « Outils de récolte »
 - Choix de Mathis (21/10, idée de SegFault) : apprenti 1A 2A 3A 4A, menu Récolte 1A 2A 3A 4A, outils 1A à 6A, pierres de gravure à looter, puis améliorations 1 à 4.
 - Outils : `E.TOOL_MAX` 30, `E.toolPct` (+8 % par niveau jusqu'au 10, puis +3 %), `E.TOOL_TIERS` (nom et icône de vrais objets DOFUS), recettes au-delà du 10 dans `E.toolRecipe` ; métier plafonné (Monocompte hors spécialité) : niveau requis = maximum du métier, kamas × 1,5 (`E.toolCost`).

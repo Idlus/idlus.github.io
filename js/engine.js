@@ -1821,7 +1821,7 @@
       dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) * (e.cls === "cra" ? 0.35 : e.cls === "roub" ? 0.6 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e), // 0.1.12.4 : les balises du Crâ sont des outils, pas des combattants ; 0.1.14.4 : bombes du Roublard un peu moins fortes
       turret: e.cls === "steam", tree: e.cls === "sadi", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
     if (F.pvp) s.dmg *= e.kp || 1;
-    // 2.1.36.1 : la nouvelle invocation prend la place d'une invocation morte du même lanceur (plus d'empilement infini)
+    // 2.1.37.1 : la nouvelle invocation prend la place d'une invocation morte du même lanceur (plus d'empilement infini)
     const dead = F.ents.findIndex((a) => a.summon && !a.alive && a.owner === own && a.recruit === undefined && !a.soul);
     if (dead >= 0) { F.ents[dead] = s; F.order = F.order.filter((x, k) => k < F.oi || x !== dead); F.order.push(dead); }
     else { F.ents.push(s); F.order.push(F.ents.indexOf(s)); }

@@ -1,6 +1,13 @@
 {
-  "version": "2.1.37",
+  "version": "2.1.37.1",
   "versions": [
+    {
+      "v": "2.1.37.1",
+      "name": "Invocations remplacées",
+      "items": [
+        "Une invocation tuée laisse sa place à la suivante : fini la colonne d'invocations mortes qui s'empilent pendant les longs combats"
+      ]
+    },
     {
       "v": "2.1.37",
       "name": "Outils de récolte",
