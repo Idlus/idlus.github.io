@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-enquete]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-enquete, monocompte-retrait]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -346,6 +346,21 @@ jobs:
           echo '== Comparaison (tous les comptes de la saison, sans pseudo)'
           bash tools/serveur/vps_sql.sh lecture "select round((bilan->>'k')::numeric / 1e6, 1) mk, round((bilan->>'pt')::numeric, 1) h, bilan->'lv' lv, accept from mono.parties_ok where saison = 0 order by (bilan->>'k')::numeric desc limit 20"
           bash tools/serveur/vps_sql.sh lecture "select id, status, (a = $U) est_a, offer_a->'k' kamas_a, offer_b->'k' kamas_b, jsonb_array_length(coalesce(offer_a->'items','[]')) objets_a, jsonb_array_length(coalesce(offer_b->'items','[]')) objets_b from mono.echanges where a = $U or b = $U order by id desc limit 10"
+      - name: Monocompte, retrait des gains du Classique (Ley, Zoubilus)
+        # 22/10/2026, choix écrit de Mathis : « 2 » (retirer seulement les kamas en trop) puis « a et préviens les » (Ley : Havre-Sac).
+        # domaine = essai (rien n'est écrit) ou vrai (sauvegarde de la base, écriture, messages privés de Xener).
+        if: inputs.etape == 'monocompte-retrait'
+        env:
+          CIBLES: '{"Zoubilus":{"kamas":202650000},"Ley":{"havre":65000000}}'
+        run: |
+          echo "SSHO=$SSHO" >> "$GITHUB_ENV"
+          f="$RUNNER_TEMP/r.json"
+          bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(user_id) pseudo, user_id, data, to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') updated_at from mono.parties where saison = 0 and user_id in (select id from public.profiles where lower(pseudo) in ('ley', 'zoubilus'))" > "$f"
+          if [ "${{ inputs.domaine }}" != vrai ]; then node tools/mono_retrait.js "$f"; rm -f "$f"; echo "Essai : rien n'est écrit."; exit 0; fi
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; f=/opt/idlus/sauvegardes/avant-mono-retrait-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
+          node tools/mono_retrait.js "$f" "$RUNNER_TEMP/r.sql"; rm -f "$f"
+          bash tools/serveur/vps_sql.sh fichier "$RUNNER_TEMP/r.sql"; rm -f "$RUNNER_TEMP/r.sql"
+          bash tools/serveur/vps_sql.sh fichier tools/serveur/mono_retrait_mp.sql
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
