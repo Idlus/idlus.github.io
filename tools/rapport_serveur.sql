@@ -1,7 +1,20 @@
 -- Rapport du serveur (lecture seule) : uniquement des nombres et des tailles, aucune donnée personnelle.
 -- Lancé par le workflow « Rapport du serveur » (.github/workflows/rapport-serveur.yml).
 -- « Aujourd'hui » = depuis minuit, heure de Paris.
-with jour as (select date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris' as debut)
+with jour as (select date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris' as debut),
+-- Rétention (demande de Mathis, 22/10/2026) : par compte, seulement des dates et le niveau du héros principal (déjà public au classement).
+-- Dernière activité = dernier envoi de partie, Classique (public.saves) ou Monocompte (mono.parties).
+auj as (select (now() at time zone 'Europe/Paris')::date as d),
+comptes as (
+  select (u.created_at at time zone 'Europe/Paris')::date as j0,
+    greatest(s.updated_at, m.der) as der,
+    l.main_lvl, l.playtime
+  from auth.users u
+  left join public.saves s on s.user_id = u.id
+  left join (select user_id, max(updated_at) as der from mono.parties group by 1) m on m.user_id = u.id
+  left join public.ladder l on l.user_id = u.id
+),
+partis as (select c.* from comptes c, auj where c.j0 <= auj.d - 3 and (c.der is null or c.der < now() - interval '3 days'))
 select
   to_char(now() at time zone 'Europe/Paris', 'DD/MM/YYYY HH24:MI') as heure_paris,
   (select count(*) from auth.users) as comptes,
@@ -49,4 +62,24 @@ select
     select coalesce(payload->>'action', '?') as a, count(*) as n from auth.audit_log_entries
     where created_at >= now() - interval '1 hour' group by 1) j) as journal_connexions_derniere_heure,
   (select count(*) from auth.audit_log_entries) as journal_connexions_total,
+  -- Rétention des nouveaux comptes (comptages seulement) :
+  -- créés il y a 2 à 8 jours et revenus jouer au moins un autre jour que celui de leur création ;
+  (select count(*) filter (where (der at time zone 'Europe/Paris')::date > j0) || ' / ' || count(*)
+     || coalesce(' (' || round(100.0 * count(*) filter (where (der at time zone 'Europe/Paris')::date > j0) / nullif(count(*), 0)) || ' %)', '')
+   from comptes, auj where j0 between auj.d - 8 and auj.d - 2) as nouveaux_revenus_un_autre_jour,
+  -- créés il y a 8 à 30 jours et encore là (une partie envoyée dans les 48 dernières heures).
+  (select count(*) filter (where der >= now() - interval '48 hours') || ' / ' || count(*)
+     || coalesce(' (' || round(100.0 * count(*) filter (where der >= now() - interval '48 hours') / nullif(count(*), 0)) || ' %)', '')
+   from comptes, auj where j0 between auj.d - 30 and auj.d - 8) as comptes_8_30_jours_encore_actifs,
+  -- Partis : comptes de plus de 3 jours sans partie envoyée depuis 3 jours (dont jamais aucune partie envoyée),
+  -- niveau médian du héros principal et temps de jeu médian (heures) au départ, répartition par niveau.
+  (select count(*) from partis) as comptes_partis,
+  (select count(*) from partis where der is null) as partis_sans_aucune_partie,
+  (select percentile_disc(0.5) within group (order by main_lvl) from partis where main_lvl is not null) as partis_niveau_median,
+  (select round((percentile_disc(0.5) within group (order by playtime)) / 3600.0, 1) from partis where playtime is not null) as partis_heures_de_jeu_mediane,
+  (select coalesce(string_agg(t || ' : ' || n, ', ' order by o), '') from (
+    select case when main_lvl < 20 then 1 when main_lvl < 60 then 2 when main_lvl < 120 then 3 when main_lvl < 200 then 4 else 5 end as o,
+      case when main_lvl < 20 then '1-19' when main_lvl < 60 then '20-59' when main_lvl < 120 then '60-119' when main_lvl < 200 then '120-199' else '200' end as t,
+      count(*) as n
+    from partis where main_lvl is not null group by 1, 2) b) as partis_par_niveau,
   to_char(now() at time zone 'UTC', 'HH24:MI:SS') as heure_serveur_utc;
