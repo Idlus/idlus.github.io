@@ -945,7 +945,7 @@
         "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées (l'air d'un endroit se trouve après 5 s passées là-bas, même sans musique ; celui de la Renaissance du Phénix est sur la page Maîtrise).",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",
         "**Sauvegarde** : la partie est enregistrée dans le navigateur toutes les 15 s et des copies de secours sont gardées. « Changer d'appareil » exporte et importe la partie.",
-        "**Compte en ligne** : la partie 1 se synchronise avec le serveur (Hôtel de vente, guilde, classements…). Les parties 2 et 3 restent sur l'appareil. La partie Monocompte (bêta, sur invitation) est gardée et vérifiée par le serveur Monocompte.",
+        "**Compte en ligne** : la partie 1 se synchronise avec le serveur (Hôtel de vente, guilde, classements…). Les parties 2 et 3 restent sur l'appareil. La partie Monocompte (bêta, sur invitation) est gardée et vérifiée par le serveur Monocompte. Le bouton ⇄ de la barre du haut passe du Classique au Monocompte et inversement : la partie en cours est sauvegardée avant.",
         "**Aide** : Carnet des découvertes, recherche, notes de mise à jour, Discord.",
       ]],
     ] });

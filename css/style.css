@@ -6215,3 +6215,11 @@ body:has(#ctxmenu) .tooltip{display:none!important}
 .lbr.jlb-g.glb.clk{cursor:pointer}
 .pgld{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;margin:2px 0 4px;padding:0;background:none;border:0;color:var(--ink);font:inherit;text-align:left;flex-wrap:wrap}
 button.pgld{cursor:pointer}button.pgld:hover b{text-decoration:underline}
+/* 2.1.37.11 : bascule Classique ⇄ Monocompte dans la barre du haut */
+#status .swapb{gap:4px;padding:2px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.22);color:inherit;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+#status .swapb.to-mo{border-color:#a9cf4c;color:#f3ffd0}
+#status .swapb:hover{border-color:var(--gold)}
+#status .swapb:disabled{opacity:.55;cursor:wait}
+#status .swapb .sw-lg{display:none}
+@container (min-width:1100px){#status .swapb .sw-lg{display:inline}#status .swapb .sw-sm{display:none}}
+@media (max-width:600px){#status .swapb{padding:1px 7px}}

@@ -1,6 +1,15 @@
 {
-  "version": "2.1.37.10",
+  "version": "2.1.37.11",
   "versions": [
+    {
+      "v": "2.1.37.11",
+      "name": "Bascule de serveur",
+      "items": [
+        "Nouveau bouton ⇄ dans la barre du haut : passe du Classique au Monocompte et inversement en un clic (idée de Zoubilus)",
+        "Ta partie est sauvegardée et envoyée avant de changer : chaque serveur garde sa propre partie, rien ne passe de l'un à l'autre",
+        "Depuis le Monocompte, le bouton te ramène à la dernière partie Classique jouée (1, 2 ou 3)"
+      ]
+    },
     {
       "v": "2.1.37.10",
       "name": "Chat bien en bas",

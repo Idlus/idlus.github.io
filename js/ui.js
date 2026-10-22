@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.10";
+const GAME_VERSION = "2.1.37.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.11", name: "Bascule de serveur", items: [
+    "Nouveau bouton ⇄ dans la barre du haut : passe du Classique au Monocompte et inversement en un clic (idée de Zoubilus)",
+    "Ta partie est sauvegardée et envoyée avant de changer : chaque serveur garde sa propre partie, rien ne passe de l'un à l'autre",
+    "Depuis le Monocompte, le bouton te ramène à la dernière partie Classique jouée (1, 2 ou 3)" ] },
   { v: "2.1.37.10", name: "Chat bien en bas", items: [
     "Grand écran : le chat ne remonte plus par à-coups quand la colonne « Combat en direct » change de taille, et il redescend tout seul aux nouveaux messages (merci Zoubilus)" ] },
   { v: "2.1.37.9", name: "Guildes au classement", items: [
@@ -3033,6 +3037,7 @@ function statusHtml() {
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
     ${S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐ <b>Monocompte</b><span class="hide-sm">&nbsp;· ${h(E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom)}</span></span>` : ""}
+    ${swapBtn()}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     ${sabHtml()}
     ${S.mono ? "" : `<span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>`}
@@ -3044,6 +3049,12 @@ function statusHtml() {
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
 }
+/* 2.1.37.11 (idée de Zoubilus) : passer du Classique au Monocompte et inversement en un clic depuis la barre du haut.
+   La partie en cours est sauvegardée et envoyée, puis la page se recharge sur l'autre partie (chaque partie garde sa clé :
+   rien ne passe d'un serveur à l'autre, et le Monocompte retrouve ses pages et modules scellés au chargement). */
+const swapTo = () => { if (!S || !menuOn() || TESTMODE) return 0; if (monoSlot(SLOT)) { const c = +menuPref().lastCl; return [1, 2, 3].includes(c) ? c : 1; } return monoOk() ? MONO_SLOT : 0; };
+const swapBtn = () => { const to = swapTo(); if (!to) return ""; const mo = to === MONO_SLOT;
+  return `<button class="it swapb ${mo ? "to-mo" : "to-cl"}" data-act="sv-swap" data-tip="${h(mo ? "Passer au serveur Monocompte : ta partie Classique est sauvegardée et envoyée avant." : `Revenir au serveur Classique (${partName(to)}) : ta partie Monocompte est sauvegardée et envoyée avant.`)}" aria-label="${mo ? "Passer au Monocompte" : "Revenir au Classique"}">⇄ <span class="sw-lg">${mo ? "⭐ Monocompte" : "🌍 Classique"}</span><span class="sw-sm">${mo ? "⭐" : "🌍"}</span></button>`; };
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabMal = (v, l) => `−${Math.round((1 - E.sabLootAt(v, l == null ? E.sabMtLvl(S) : l)) * 100)} %`; // 2.1.22 : malus de butin du Sablier (2.1.27 : selon la Maîtrise du temps)
 const sabSpds = () => [1, 2, 3, 4].slice(0, E.sabMaxSpd(S));
@@ -11199,7 +11210,7 @@ function menuCopies(n) {
 }
 async function svPlay(n, which) {
   const sl = MENU.slots.find((x) => x.n === n) || slotRead(n); if (MENU.busy) return; MENU.busy = true;
-  setSlot(n); setMenuPref({ last: n }); closeSheet();
+  setSlot(n); setMenuPref(monoSlot(n) ? { last: n } : { last: n, lastCl: n }); closeSheet();
   if (menuStuck()) setTimeout(() => toast("Serveur injoignable : tu joues sur la partie de cet appareil. Recharge la page quand il reviendra pour retrouver ton compte."), 800);
   if (!menuLive() || !ON.slotOnline(n)) return bootGame();
   const uid = ON.user.id, rem = sl.rem;
@@ -11258,6 +11269,9 @@ async function svAct(a, t) {
         ON.monoCle(v).then((r) => { if (!r || r.err) { toast((r && r.err) || "Clé refusée."); return; } try { localStorage.setItem(MONO_BETA.key, "1"); } catch (e) {} toast(`${r.msg || "Bêta Monocompte débloquée."} Options › Compte › Changer de partie.`); optionsSheet(); })
           .catch(() => toast("Pas de connexion au serveur.")).finally(() => { monoCleBusy = false; }); return; }
       if (codeHash(v) !== MONO_BETA.hash) { toast("Code inconnu."); return; } try { localStorage.setItem(MONO_BETA.key, "1"); } catch (e) {} toast("Bêta Monocompte débloquée : Options › Compte › Changer de partie."); optionsSheet(); return; }
+    case "sv-swap": { const to = swapTo(); if (!to || t.disabled) return; t.disabled = true; // 2.1.37.11 : bascule Classique ⇄ Monocompte
+      if (S) { saveNow(); if (onLive() && ON.state !== "conflict") { try { await onPush(); } catch (e) {} } saveNow(); }
+      try { sessionStorage.setItem("idlus-reprise", String(to)); } catch (e) {} location.reload(); return; }
     case "sv-menu": { if (S) { saveNow(); if (onLive() && ON.state !== "conflict") { t.disabled = true; try { await onPush(); } catch (e) {} } } reloadTo(true); return; }
     case "sv-logout": { t.disabled = true; if (ON) { await ON.signOut(); } try { sessionStorage.setItem("idlus-menu", "1"); } catch (e) {} location.reload(); return; }
   }
