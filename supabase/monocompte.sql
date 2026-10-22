@@ -1355,7 +1355,11 @@ as $$ declare s int := mono.saison_ouverte(); k mono.parties_ok; op0 bigint; beg
     'objets', coalesce((select jsonb_object_agg(sn::text, op) from mono.sortis where user_id = p_user and saison = s and sn is not null), '{}'::jsonb)
       || coalesce((select jsonb_object_agg(sn::text, true) from mono.objets where owner = p_user and saison = s), '{}'::jsonb),
     'sortis', coalesce((select jsonb_agg(jsonb_build_object('uid', uid, 'tpl', tpl, 'op', op)) from mono.sortis where user_id = p_user and saison = s and uid > 0), '[]'::jsonb),
-    'ops', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'p', payload) order by id) from (select * from mono.ops where user_id = p_user and saison = s and id > op0 order by id limit 2000) z), '[]'::jsonb))
+    'ops', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'p', payload) order by id) from (select * from mono.ops where user_id = p_user and saison = s and id > op0 order by id limit 2000) z), '[]'::jsonb),
+    -- 22/10 (Mathis, 2A) : dernière opération du registre Monocompte (un curseur plus loin = opérations du Classique dans la partie)
+    -- et kamas versés par l'HdV de saison et les échanges depuis le début de la saison (plafond absolu des kamas, js/verify_mono.js)
+    'op_max', (select coalesce(max(id), 0) from mono.ops where user_id = p_user and saison = s),
+    'ops_k', (select coalesce(sum(greatest(0, (payload ->> 'k')::numeric)), 0) from mono.ops where user_id = p_user and saison = s and (payload ->> 'k') ~ '^-?\d{1,15}(\.\d+)?$'))
     || coalesce(mono.etat_social(p_user, s), '{}'::jsonb); -- renforts pris par ce compte (supabase/mono_social.sql)
 end $$;
 -- Partie acceptée : elle devient la partie validée (seulement si c'est bien celle qui a été vérifiée), puis bons de butin,

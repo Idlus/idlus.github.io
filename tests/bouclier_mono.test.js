@@ -110,6 +110,18 @@ RES.push(cheat("objet numéroté d'un autre joueur", (T) => { const it = E.rollI
   assert(!r.ok && /reculée/.test(r.why), "partie reculée acceptée : " + JSON.stringify(r)); console.log(`ok - refusé : partie reculée (${r.why})`); RES.push(r); }
 { const T = VM.load(E, H.ok.txt); T.hdv = { op: 5 }; const r = VM.verifier(E, E.serialize(T), { prev: Object.assign({}, H.ok, { bilan: Object.assign({}, H.ok.bilan, { op: 20 }) }), at: now + 60e3, ctx: ctx(), reg: regOf(T) }); E.setClock(() => now);
   assert(!r.ok && /reculée/.test(r.why), "opérations du serveur reculées : " + JSON.stringify(r)); console.log(`ok - refusé : opérations du serveur en arrière (${r.why})`); RES.push(r); }
+// lot 3 (choix 2A) : plafond absolu des kamas à chaque envoi, premier envoi compris, et curseur des opérations du Classique
+const J1 = { debut: DEBUT, date: DEBUT + 20 * 3600e3 };
+const one = (fn, o) => { const T = VM.load(E, good); fn(T); const r = VM.verifier(E, E.serialize(T), Object.assign({ prev: null, at: now, ctx: J1, reg: regOf(T) }, o)); E.setClock(() => now); return r; };
+RES.push(cheat("226 M de kamas au jour 1", (T) => { T.kamas = 226e6; }, { ctx: J1 }));
+assert(/kamas au jour 1/.test(RES[RES.length - 1].why), "226 M : mauvaise règle " + RES[RES.length - 1].why);
+{ const r = one((T) => { T.kamas = 200e6; }); assert(!r.ok && /kamas au jour 1/.test(r.why), "premier envoi à 200 M accepté : " + JSON.stringify(r)); console.log(`ok - refusé : premier envoi à 200 M de kamas (${r.why})`); RES.push(r); }
+{ const r = one((T) => { T.hdv = { op: 500, log: [] }; }, { ctx: Object.assign({ opMax: 3 }, J1) }); assert(!r.ok && /Classique/.test(r.why), "curseur du Classique accepté : " + JSON.stringify(r)); console.log(`ok - refusé : opérations du Classique dans la partie (${r.why})`); RES.push(r); }
+{ const r = one((T) => { T.kamas = 20e6; }, { ctx: Object.assign({ opsK: 30e6 }, J1) }); assert(r.ok, "ventes de l'HdV de saison refusées : " + JSON.stringify(r)); console.log("ok - 20 M au jour 1 acceptés quand l'HdV de saison en a versé 30 M"); }
+{ const r = one((T) => { T.kamas = 200e6; }, { accept: true }); assert(r.ok, "« C'est bon » de Mathis refusé : " + JSON.stringify(r)); console.log("ok - « C'est bon » du panel passe le plafond absolu"); }
+{ const f0 = VM.OBS_FIN; VM.OBS_FIN = now + 48 * 3600e3;
+  const r = one((T) => { T.kamas = 200e6; }); VM.OBS_FIN = f0;
+  assert(r.ok && /kamas au jour 1/.test(r.note || ""), "observation : " + JSON.stringify({ ok: r.ok, why: r.why, note: r.note })); console.log(`ok - 48 h d'observation : accepté avec la note « ${r.note} »`); }
 assert(RES.every((r) => !r.ok), "100 % de refus");
 console.log(`ok - ${RES.length} parties trichées, ${RES.length} refusées (100 %)`);
 // une partie du Classique ou de l'Éternel n'entre jamais dans la saison

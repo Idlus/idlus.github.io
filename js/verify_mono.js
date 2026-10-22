@@ -185,8 +185,38 @@
     return null;
   };
 
+  /* 22/10 (Mathis, « 2A ») : plafonds propres au héros seul, réglés par simulation (tools/sim_mono.js --chasse, héros seul optimisé,
+     bonus Héros unique : 71 000 / 272 000 / 368 000 / 607 000 kamas et 2 500 à 4 600 ressources par heure de chasse aux niveaux
+     20 / 60 / 120 / 200 ; semaine normale de tests/bouclier_mono.test.js : niveau 72 et 2,4 M de kamas au jour 7).
+     Kamas : optimisé × 5 (donjons, Almanax, quêtes, coffres) ; ressources 100 000 par heure (récolte comprise, large) ;
+     réserve de 24 h (au lieu de 72) ; plafond absolu par jour de saison contrôlé à CHAQUE envoi, premier envoi compris
+     (kamas ≤ 5 M + 35 M par jour de saison + ventes de l'HdV de saison) ; curseur des opérations au-delà du registre
+     Monocompte = opérations du Classique appliquées à la partie. Avant VM.OBS_FIN, ces règles notent sans refuser
+     (« [observation] » au panel Bouclier Monocompte) et les règles d'avant s'appliquent. */
+  VM.KAMAS_PTS = [[1, 50000], [20, 360000], [60, 1360000], [120, 1840000], [200, 3030000]];
+  VM.RES_H = 100000; VM.MT_H = 60; VM.RES_MAX = 24;
+  VM.K0 = 5e6; VM.K_D = 35e6;
+  VM.OBS_FIN = Date.UTC(2026, 9, 25, 12, 0); // fin des 48 h d'observation : à régler le jour de l'installation
+  VM.rates = (lv) => { const l = Math.max(1, Math.min(200, lv || 1)), P = VM.KAMAS_PTS; let k = P[P.length - 1][1];
+    for (let i = 1; i < P.length; i++) if (l <= P[i][0]) { const [a, x] = P[i - 1], [b, y] = P[i]; k = x + (y - x) * (l - a) / (b - a); break; }
+    return { k, r: VM.RES_H, mt: VM.MT_H, lv: 960 }; };
+  VM.kamasCap = (ctx) => Math.floor(VM.K0 + VM.K_D * days(ctx) + Math.max(0, +(ctx && ctx.opsK) || 0));
+  // plafonds absolus (premier envoi compris) : kamas par jour de saison, curseur des opérations dans le registre Monocompte
+  VM.absolu = (E, S, ctx) => {
+    const k = Math.floor(+S.kamas || 0), cap = VM.kamasCap(ctx);
+    if (k > cap) return `${k.toLocaleString("fr-FR")} kamas au jour ${Math.floor(days(ctx)) + 1} (au plus ${cap.toLocaleString("fr-FR")})`;
+    const op = n0(S.hdv && S.hdv.op);
+    if (ctx && ctx.opMax != null && op > n0(ctx.opMax)) return `opérations du serveur Classique dans la partie (curseur ${op}, registre Monocompte ${n0(ctx.opMax)})`;
+    return null;
+  };
+  // V.check avec les rythmes et la réserve du héros seul
+  VM.checkSolo = (E, prev, cur, hours, gift, res0, top, sure) => {
+    const r0 = V.rates, m0 = V.RES_MAX; V.rates = VM.rates; V.RES_MAX = VM.RES_MAX;
+    try { return V.check(E, prev, cur, hours, gift, res0 == null ? null : Math.min(VM.RES_MAX, res0), top, sure); } finally { V.rates = r0; V.RES_MAX = m0; }
+  };
+
   /* Gains depuis la dernière partie validée : V.check du Classique, plus la partie reculée et les défis */
-  VM.check = (E, prev, cur, hours, gift, res0, top, sure) => {
+  VM.check = (E, prev, cur, hours, gift, res0, top, sure, solo) => {
     const h = Math.max(0, hours);
     if (prev.op != null && cur.op < prev.op) return { ok: false, why: `partie reculée : opérations du serveur ${cur.op} après ${prev.op}` };
     if (prev.acts != null && cur.acts < prev.acts) return { ok: false, why: `partie reculée : ${cur.acts} Éclats d'activité après ${prev.acts}` };
@@ -201,7 +231,7 @@
     for (const id in cur.def || {}) { const a = (prev.def || {})[id] || 0, b = cur.def[id];
       if (b < a) return { ok: false, why: `partie reculée : défi ${id}` };
       if (VM.DEFI_H[id] && b - a > 5 + VM.DEFI_H[id] * h) return { ok: false, why: `défi ${id} : +${b - a} en ${(Math.round(h * 10) / 10).toLocaleString("fr-FR")} h` }; }
-    return V.check(E, prev, cur, hours, gift, res0, top, sure);
+    return (solo ? VM.checkSolo : V.check)(E, prev, cur, hours, gift, res0, top, sure);
   };
 
   /* Ce que le serveur a donné entre la partie validée (op0) et la partie envoyée (op1) : opérations de l'HdV de saison et
@@ -218,7 +248,7 @@
   };
 
   /* Vérification complète d'un envoi (appelée par la fonction serveur « mono » et par les tests).
-     o : { prev: { bilan, res, at } (dernière partie validée) | null, at (date de l'envoi), ctx: { debut, date, objets, sortis },
+     o : { prev: { bilan, res, at } (dernière partie validée) | null, at (date de l'envoi), ctx: { debut, date, objets, sortis, opMax (dernière opération du registre Monocompte), opsK (kamas versés par l'HdV de saison) },
            gift (ce que le serveur a donné entre-temps) ou ops (opérations du serveur depuis la partie validée), reg (registre des Éclats), admin, accept (« C'est bon » de Mathis), sure }
      Renvoie { ok: false, why } ou { ok: true, bilan, res, resume, acts }. */
   VM.verifier = (E, txt, o) => {
@@ -229,19 +259,25 @@
     let bil, why = null, res = prev ? prev.res : null;
     try { bil = VM.bilan(E, S); bil.jour = VM.withClock(E, S, ctx, () => (E.monoDay ? E.monoDay(S) : 0)); } catch (e) { return { ok: false, why: "partie illisible" }; }
     const nu0 = prev && prev.bilan ? +prev.bilan.nu0 || 0 : +S.nextUid || 0;
+    let note = null;
     if (!o.admin) {
       why = VM.impossible(E, S, ctx, nu0) || VM.registre(E, S, o.reg);
+      const obs = (o.at || 0) < VM.OBS_FIN; // 48 h d'observation : les nouvelles règles notent, les anciennes décident
+      const abs = why ? null : VM.absolu(E, S, ctx);
+      if (abs && !o.accept) { if (obs) note = abs; else why = abs; }
       if (!why && prev && prev.bilan && !o.accept) {
         const hours = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000);
         const top = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
         const gift = o.gift || (o.ops ? VM.gift(o.ops, n0(prev.bilan.op), n0(bil.op)) : {});
-        const c = VM.check(E, prev.bilan, bil, hours, gift, res, top, !!o.sure);
+        const cs = VM.check(E, prev.bilan, bil, hours, gift, res, top, !!o.sure, true);
+        const c = obs ? VM.check(E, prev.bilan, bil, hours, gift, res, top, !!o.sure) : cs;
+        if (obs && !cs.ok && !note) note = cs.why;
         if (!c.ok) why = c.why; else res = c.res;
       }
     }
     if (why) return { ok: false, why };
     bil.nu0 = nu0;
-    return { ok: true, bilan: bil, res: res == null ? V.RES_MAX : res, resume: VM.resume(E, S, ctx), acts: VM.acts(E, S) };
+    return Object.assign({ ok: true, bilan: bil, res: res == null ? VM.RES_MAX : res, resume: VM.resume(E, S, ctx), acts: VM.acts(E, S) }, note ? { note } : {});
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = VM;

@@ -61,13 +61,14 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
   const s = st.saison || {};
   const r = V.mono.verifier(E, st.partie.data, {
     prev, at: st.partie.ms, admin: !!st.admin, accept: !!(ok && ok.accept), ops: st.ops || [], reg: st.reg,
-    ctx: { debut: s.debut, date: s.date, objets: st.objets || {}, sortis: st.sortis || [], renforts: st.renforts || [] }, // renforts : copies rendues par mono_renfort_prendre
+    ctx: { debut: s.debut, date: s.date, objets: st.objets || {}, sortis: st.sortis || [], renforts: st.renforts || [], opMax: st.op_max, opsK: st.ops_k }, // renforts : copies rendues par mono_renfort_prendre
   });
   E.setClock(null); // la vérification a réglé l'horloge du moteur sur la date de saison
   if (!r.ok) {
     await db.rpc("mono_srv_refus", { p_user: uid, p_why: r.why });
     return { ok: false, held: true };
   }
+  if (r.note) await db.rpc("mono_srv_refus", { p_user: uid, p_why: "[observation] " + r.note }); // 22/10 : nouveaux plafonds, 48 h sans refuser
   const { data: v, error: e2 } = await db.rpc("mono_srv_valider", { p_user: uid, p_src_at: st.partie.at, p_resume: r.resume, p_bilan: r.bilan, p_res: r.res, p_acts: r.acts });
   if (e2 || !v) return { ok: false, err: "écriture impossible" };
   if (v.err) return { ok: false, err: v.err };
