@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, rendre-xp-tous-essai, rendre-xp-tous]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -231,6 +231,17 @@ jobs:
           if [ "${{ inputs.etape }}" = rendre-xp-metier ]; then
             sed -i "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'RENDS L XP DE METIER'|" "$f"
             grep -qx "\\\\set CONFIRMATION 'RENDS L XP DE METIER'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+            echo "Sauvegarde complète de la base avant l'envoi :"
+            bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
+          fi
+          bash tools/serveur/vps_sql.sh fichier "$f"
+      - name: XP de récolte rendue à tous les joueurs (essai ou pour de vrai, ticket #146)
+        if: inputs.etape == 'rendre-xp-tous-essai' || inputs.etape == 'rendre-xp-tous'
+        run: |
+          f="$RUNNER_TEMP/rendre_xp_metiers_tous.sql"; cp tools/serveur/rendre_xp_metiers_tous.sql "$f"
+          if [ "${{ inputs.etape }}" = rendre-xp-tous ]; then
+            sed -i "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'RENDS L XP DE TOUS'|" "$f"
+            grep -qx "\\\\set CONFIRMATION 'RENDS L XP DE TOUS'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
             echo "Sauvegarde complète de la base avant l'envoi :"
             bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
           fi
