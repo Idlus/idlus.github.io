@@ -2,7 +2,7 @@
 -- Ticket #146 (suite) : rend à TOUS les joueurs l'XP des métiers de récolte perdue au niveau 200 entre la 2.1.35 et la 2.1.37.7
 -- (l'XP au-delà du 200 était ramenée à 110 589). Métiers : paysan, bûcheron, mineur, alchimiste, pêcheur.
 -- Pour chaque joueur et métier, on suit ses copies du serveur dans l'ordre (copies du jour, partie validée, partie en ligne) :
--- la première copie au niveau 200 dont l'XP est plus basse qu'une copie d'avant marque la perte ; XP rendue = la plus haute XP
+-- la première copie au niveau 200, depuis la 2.1.35, dont l'XP est retombée près de 110 589 sous une copie d'avant marque la perte ; XP rendue = la plus haute XP
 -- d'avant cette copie moins 110 589. L'XP gagnée entre la dernière copie et le blocage ne se retrouve pas.
 -- Envoi par le registre de l'HdV (p.jx, js/market.js, 2.1.38.4), point de départ de la semaine des métiers relevé d'autant,
 -- un message privé de Xener par joueur. Déjà rendu (même marque que tools/serveur/rendre_xp_metier.sql) : sauté.
@@ -26,6 +26,9 @@ create temp table suite on commit drop as
 create temp table perte on commit drop as
   select distinct on (user_id, job) user_id, job, avant - 110589 as n, at as le
   from suite where lvl = 200 and avant is not null and xp < avant and avant > 110589
+    -- le blocage : à partir de la 2.1.35 (21/10 15:00 UTC), l'XP retombe à 110 589 puis remonte à peine. Une remise de partie
+    -- (JustEver au 17/10) ou un refus du Bouclier ramène à une copie plus ancienne : ce n'est pas le blocage, on ne rend rien.
+    and at >= timestamptz '2026-10-21 15:00:00+00' and xp between 110589 and 110589 + 20000000
   order by user_id, job, at;
 -- déjà rendu, ou pas de partie récente au bon niveau de jeu
 create temp table envoi on commit drop as
