@@ -337,6 +337,8 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select at, why from mono.bouclier where user_id = $U order by at desc limit 15"
           bash tools/serveur/vps_sql.sh lecture "select count(*) ops, sum(coalesce((payload->>'k')::numeric, 0)) kamas_ops, min(at), max(at) from mono.ops where user_id = $U"
           bash tools/serveur/vps_sql.sh lecture "select 'vendu' sens, count(*), coalesce(sum(price), 0) kamas from mono.ventes where seller = $U union all select 'achete', count(*), coalesce(sum(price), 0) from mono.ventes where buyer = $U"
+          echo '== Comparaison (tous les comptes de la saison, sans pseudo)'
+          bash tools/serveur/vps_sql.sh lecture "select round((bilan->>'k')::numeric / 1e6, 1) mk, round((bilan->>'pt')::numeric, 1) h, bilan->'lv' lv, accept from mono.parties_ok where saison = 0 order by (bilan->>'k')::numeric desc limit 20"
           bash tools/serveur/vps_sql.sh lecture "select id, status, (a = $U) est_a, offer_a->'k' kamas_a, offer_b->'k' kamas_b, jsonb_array_length(coalesce(offer_a->'items','[]')) objets_a, jsonb_array_length(coalesce(offer_b->'items','[]')) objets_b from mono.echanges where a = $U or b = $U order by id desc limit 10"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
