@@ -205,10 +205,13 @@
   VM.absolu = (E, S, ctx) => {
     const k = Math.floor(+S.kamas || 0), cap = VM.kamasCap(ctx);
     if (k > cap) return `${k.toLocaleString("fr-FR")} kamas au jour ${Math.floor(days(ctx)) + 1} (au plus ${cap.toLocaleString("fr-FR")})`;
-    const op = n0(S.hdv && S.hdv.op);
-    if (ctx && ctx.opMax != null && op > n0(ctx.opMax)) return `opérations du serveur Classique dans la partie (curseur ${op}, registre Monocompte ${n0(ctx.opMax)})`;
     return null;
   };
+  // curseur au-delà du registre Monocompte : les parties sautées avant le 22/10 (asc_claim) gardent un curseur du Classique
+  // tant qu'il n'est pas remis à 0 sur le serveur ; d'ici là, une note au panel, jamais un refus (VM.CURSEUR_REFUS)
+  VM.CURSEUR_REFUS = false;
+  VM.curseur = (S, ctx) => { const op = n0(S.hdv && S.hdv.op);
+    return ctx && ctx.opMax != null && op > n0(ctx.opMax) ? `opérations du serveur Classique dans la partie (curseur ${op}, registre Monocompte ${n0(ctx.opMax)})` : null; };
   // V.check avec les rythmes et la réserve du héros seul
   VM.checkSolo = (E, prev, cur, hours, gift, res0, top, sure) => {
     const r0 = V.rates, m0 = V.RES_MAX; V.rates = VM.rates; V.RES_MAX = VM.RES_MAX;
@@ -265,6 +268,8 @@
       const obs = (o.at || 0) < VM.OBS_FIN; // 48 h d'observation : les nouvelles règles notent, les anciennes décident
       const abs = why ? null : VM.absolu(E, S, ctx);
       if (abs && !o.accept) { if (obs) note = abs; else why = abs; }
+      const cur = why || abs ? null : VM.curseur(S, ctx);
+      if (cur && !o.accept) { if (obs || !VM.CURSEUR_REFUS) note = cur; else why = cur; }
       if (!why && prev && prev.bilan && !o.accept) {
         const hours = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000);
         const top = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
