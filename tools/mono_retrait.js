@@ -20,6 +20,7 @@ const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 let ok = true;
 for (const r of R) {
   const c = CIBLES[r.pseudo]; if (!c) continue;
+  console.log(`-- ${r.pseudo} : version du jeu ${r.game_version}`);
   const S = JSON.parse(r.data); const k0 = Math.floor(+S.kamas || 0); const h0 = JSON.stringify(S.havre || {});
   if (c.kamas) { const n = Math.min(k0, Math.floor(c.kamas)); S.kamas = k0 - n; console.log(`== ${r.pseudo} : kamas ${fm(k0)} → ${fm(S.kamas)} (−${fm(n)})`); }
   // { "total": n, "garde": g } : retire n kamas de gain du Classique, d'abord dans la bourse (en laissant g kamas), puis en niveaux de Havre-Sac

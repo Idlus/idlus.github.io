@@ -351,11 +351,11 @@ jobs:
         # domaine = essai (rien n'est écrit) ou vrai (sauvegarde de la base, écriture, messages privés de Xener).
         if: inputs.etape == 'monocompte-retrait'
         env:
-          CIBLES: '{"Zoubilus":{"kamas":202650000},"Ley":{"havre":65000000}}'
+          CIBLES: '{"Zoubilus":{"total":190894648,"garde":14700000},"Ley":{"total":680904966}}'
         run: |
           echo "SSHO=$SSHO" >> "$GITHUB_ENV"
           f="$RUNNER_TEMP/r.json"
-          bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(p.user_id) pseudo, p.user_id, p.data, to_char(p.updated_at at time zone 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') updated_at, (select coalesce(jsonb_agg(jsonb_build_object('id', o.id, 'at', o.at, 'k', o.payload -> 'k') order by o.id), '[]') from mono.ops o where o.user_id = p.user_id and o.saison = 0) ops, (select max(id) from mono.ops) op_max from mono.parties p where p.saison = 0 and p.user_id in (select id from public.profiles where lower(pseudo) in ('ley', 'zoubilus'))" > "$f"
+          bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(p.user_id) pseudo, p.user_id, p.game_version, p.data, to_char(p.updated_at at time zone 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') updated_at, (select coalesce(jsonb_agg(jsonb_build_object('id', o.id, 'at', o.at, 'k', o.payload -> 'k') order by o.id), '[]') from mono.ops o where o.user_id = p.user_id and o.saison = 0) ops, (select max(id) from mono.ops) op_max from mono.parties p where p.saison = 0 and p.user_id in (select id from public.profiles where lower(pseudo) in ('ley', 'zoubilus'))" > "$f"
           if [ "${{ inputs.domaine }}" != vrai ]; then node tools/mono_retrait.js "$f"; rm -f "$f"; echo "Essai : rien n'est écrit."; exit 0; fi
           bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; f=/opt/idlus/sauvegardes/avant-mono-retrait-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
           node tools/mono_retrait.js "$f" "$RUNNER_TEMP/r.sql"; rm -f "$f"
