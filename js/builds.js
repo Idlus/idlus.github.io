@@ -164,7 +164,7 @@
     const cls = `<div class="bd-cls" role="group" aria-label="Classe">${D.CLASS_ORDER.filter((c) => CLASSES[c]).map((c) => `<button class="${F.cls === c ? "on" : ""}" style="--cc:${CLASSES[c].color}" data-act="bd-f" data-k="cls" data-v="${c}" data-tip="${h(CLASSES[c].name)}" aria-pressed="${F.cls === c}"><img src="${X().symImg(c)}" alt="${h(CLASSES[c].name)}"></button>`).join("")}</div>`;
     const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="bd-f" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
     const sort = `<select id="bdSort" aria-label="Trier">${SORTS.map(([v, n]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>${n}</option>`).join("")}</select>`;
-    /* 2.1.39 (Mathis 2A des onglets) : niveau, élément et budget derrière « Filtres » (toujours ouverts avec « Affichage détaillé ») */
+    /* 2.1.40 (Mathis 2A des onglets) : niveau, élément et budget derrière « Filtres » (toujours ouverts avec « Affichage détaillé ») */
     const s = window.DX.S; const fold = !(s && s.settings.detail); const nf = ["br", "el", "bud"].filter((k) => F[k]).length; const open = !fold || FO.open;
     return `<div class="panel pad stack bd-filt">${cls}
       ${fold ? `<div class="row"><button class="btn sm ${nf ? "primary" : ""}" data-act="bd-fo" aria-expanded="${!!open}">${X().G("search")} Filtres · ${nf}</button></div>` : ""}<div class="stack bd-more" ${open ? "" : "hidden"}>

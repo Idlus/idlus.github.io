@@ -373,7 +373,7 @@
     const valid = ["jour", "shops"].concat(FAMS.flatMap((F) => F.pages.map((p) => p[0])), COL.map((p) => p[0]));
     if (!valid.includes(ui.qt)) ui.qt = "jour";
     const qt = ui.qt;
-    /* 2.1.39 (Mathis 1A des onglets) : Quêtes, Succès et Ornements sur une seule rangée d'onglets (plus de rangée sous le bandeau) */
+    /* 2.1.40 (Mathis 1A des onglets) : Quêtes, Succès et Ornements sur une seule rangée d'onglets (plus de rangée sous le bandeau) */
     const mergeTab = `<button class="mg-tab" data-act="nav" data-v="quests" aria-pressed="false">Quêtes</button>`;
     if (qt === "ach" || qt === "orn") { // page Succès : succès et ornements, sans le journal
       // la recherche garde le curseur malgré le rafraîchissement de la page

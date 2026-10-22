@@ -6247,7 +6247,7 @@ button.pgld{cursor:pointer}button.pgld:hover b{text-decoration:underline}
 .pt-mons{display:flex;gap:2px}.pt-mons img{width:34px;height:34px;object-fit:contain}
 .pt-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}.pt-cnt{font-weight:900}
 @media (max-width:700px){.pt-card{grid-template-columns:auto minmax(0,1fr)}.pt-mons{display:none}.pt-side{grid-column:1/-1;align-items:stretch;text-align:left}.pt-side .row{justify-content:flex-start!important}}
-/* ---------- 2.1.39 « Refonte des menus » (Mathis 1B 3A 4A 5A 6B 7A) ---------- */
+/* ---------- 2.1.40 « Refonte des menus » (Mathis 1B 3A 4A 5A 6B 7A) ---------- */
 /* 1B : rail d'icônes avec leur nom sur PC */
 @media (min-width:860px){
   body.hasnav.navrail,body.hasnav.navrail.chat-open{padding-left:96px}
@@ -6300,7 +6300,8 @@ body.tb1.bellopen #topchips>#annbar{display:block!important}
 body.tb1.bellopen #topchips>#annbar .annbar{margin:0}
 body.tb1.bellopen #topchips .tchip{max-width:none;width:100%;flex:none}
 body.tb1.bellopen #topchips .tchip .tc-t{max-width:none}
-@media (max-width:600px){body.tb1 .status{gap:7px;padding:8px 10px}body.tb1 .status .brand .blogo{width:26px;height:26px}body.tb1 .status .cloud>span:not(.dot){display:none}body.tb1 .status .sabpill .seg{display:none}body.tb1 .status .ic-btn{padding:4px 6px}body.tb1 .status .tb-acc .tb-dn{display:none}}
+@media (max-width:600px){body.tb1 .status{gap:7px;padding:8px 10px}body.tb1 .status .brand .blogo{width:26px;height:26px}body.tb1 .status .cloud>span:not(.dot){display:none}body.tb1 .status .sabpill .seg{display:none}body.tb1 .status .ic-btn{padding:4px 6px}body.tb1 .status .tb-acc .tb-dn{display:none}body.tb1 .status>.admbtn,body.tb1 .status>.sabpill.lock{display:none}}
+.tb-adm:empty{display:none}@media (min-width:601px){.tb-adm{display:none}}
 /* 7A : le Menu du téléphone, une tuile par famille */
 .ns-fams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ns-ft{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;border:2px solid var(--frame);background:var(--panel2);border-radius:14px;padding:12px;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
@@ -6326,6 +6327,7 @@ body.tb1.bellopen #topchips .tchip .tc-t{max-width:none}
 .hd-card{display:flex;align-items:center;gap:12px;min-width:0;border:2px solid var(--frame);background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--ink);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit}
 .hd-card .med,.hd-card .hd-m{width:40px;height:40px;flex:none;object-fit:contain}.hd-card .med img{width:28px;height:28px}
 .hd-card .grow{min-width:0}.hd-card b{display:block;font-size:15px}
+.hd-card small b{display:inline;font-size:inherit}
 .hd-card small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hd-card .chev{font-style:normal;color:var(--muted);font-size:20px}
 .hd-card.sea{border-color:var(--gold);background:linear-gradient(90deg,rgba(241,207,110,.16),var(--panel))}
@@ -6336,7 +6338,7 @@ body.dense #main .pagehead:not(.combathead):has(>h1:only-child){display:none}
 body.dense #main .dgfoldall,body.dense #main .dg-note{display:none}
 .dg-mutline{display:flex;align-items:center;gap:10px;width:100%;border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:12px;padding:9px 12px;text-align:left;font:inherit;font-size:14px;cursor:pointer}
 .dg-mutline .uico{width:18px;height:18px;flex:none}
-/* 2.1.39 : onglets des pages (Mathis 1A à 7A) */
+/* 2.1.40 : onglets des pages (Mathis 1A à 7A) */
 .pg-mtabs{margin-bottom:12px}
 .subtabs .mg-tab:not([aria-pressed="true"]),.seg .mg-tab:not([aria-pressed="true"]){box-shadow:inset 0 0 0 2px rgba(241,207,110,.45)}
 .lb-sub,.enc-sub,.as-sub{margin:6px 0 10px}

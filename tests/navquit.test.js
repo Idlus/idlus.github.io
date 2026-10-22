@@ -78,7 +78,7 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => { const b = document.querySelector("#nav .sn-side .sn-quit"); return b && !b.classList.contains("ask"); }, null, { timeout: 9000 }).catch(() => fail("donjon : « Sûr ? » ne retombe pas"));
     if (!(await page.evaluate(() => !!window.DX.S.dungeon))) fail("donjon : quitté sans second clic");
 
-    // 2.1.39 : rail d'icônes : le bouton tient dans le coin du bouton Combat, sans déborder du rail
+    // 2.1.40 : rail d'icônes : le bouton tient dans le coin du bouton Combat, sans déborder du rail
     const fit = await page.evaluate(() => { const q = document.querySelector("#nav .rl-frow .sn-quit"), f = document.querySelector("#nav .rl-frow .rl-fight"), s = document.querySelector("#nav .sn-side"); if (!q || !f) return null; const a = q.getBoundingClientRect(), b = f.getBoundingClientRect(), r = s.getBoundingClientRect(); return a.right <= r.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1; });
     if (!fit) fail(`rail : le bouton Quitter déborde du bouton Combat (${fit})`);
 

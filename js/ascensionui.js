@@ -306,7 +306,7 @@
   function rulesHtml() {
     return `<p class="note">Chaque étage de combat a sa règle (sauf les paliers et les boss). Elles changent chaque mois. Tous les 5 étages, le palier offre un sort puis une relique (3 proposées, 1 gardée, 6 portées au plus, une par emplacement) : dans la tour, la Vitalité donne des PV, la Puissance de la puissance, l'Esquive et les PM de l'esquive, la Sagesse des Fragments.</p><div class="as-g2">${Object.entries(E.ASC_RULES).filter(([, r]) => !r.hal || (E.halWin && E.halWin(E.now()))).map(([, r]) => `<div class="as-offer"><b>${r.ic} ${h(r.name)}</b><span class="xs muted">${h(r.d)}</span></div>`).join("")}</div>`;
   }
-  /* 2.1.39 (Mathis 5A des onglets) : 4 onglets. Écus et Reliquaire dans Boutique ; Historique et Règles dans le bouton « ? » de la rangée */
+  /* 2.1.40 (Mathis 5A des onglets) : 4 onglets. Écus et Reliquaire dans Boutique ; Historique et Règles dans le bouton « ? » de la rangée */
   const TABS = [["prog", "Progression"], ["shop", "Boutique", ["shop", "rel"]], ["best", "Bestiaire"], ["rank", "Classement"]];
   const SUB = { shop: "Écus", rel: "Reliquaire" };
   function tabsHtml(s) {

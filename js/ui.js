@@ -2750,7 +2750,7 @@ const ICONS = {
    recherche « Aller à une page », épinglés, étiquette « nouveau », Options et Signaler un bug en bas du menu.
    Les pages rangées dans une autre (NAV_MERGE) restent dans NAV (raccourcis, noms) mais s'ouvrent en onglets au-dessus de la page. */
 const navOnline = () => !!(window.ONLINE && window.ONLINE.enabled);
-/* 2.1.39 « Refonte des menus » (Mathis 2A) : 5 familles. Les défis rejoignent Aventure (Ascension, Défi du jour, Boss des mondes)
+/* 2.1.40 « Refonte des menus » (Mathis 2A) : 5 familles. Les défis rejoignent Aventure (Ascension, Défi du jour, Boss des mondes)
    et Joueurs (Kolizéum, Alignement) ; Guide, Suggestions et Signaler un bug passent dans le bouton Aide (NAV_HELP) */
 const NAV = [
   { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["wb", "Boss des mondes", "couronne"]] },
@@ -2775,7 +2775,7 @@ function monoSeal() {
   if (!E.monoPageOk(ui.tab)) ui.tab = "home";
 }
 function monoNav() { monoNav0(); monoSeal(); }
-/* 2.1.39 (Mathis 6B) : en Monocompte, les pages de la saison forment la famille « df », montrée comme une seule entrée « Saison » sous le Havre-Sac */
+/* 2.1.40 (Mathis 6B) : en Monocompte, les pages de la saison forment la famille « df », montrée comme une seule entrée « Saison » sous le Havre-Sac */
 function monoNav0() {
   let F = NAV.find((x) => x.id === "df");
   if (!F) { F = { id: "df", n: "Saison", ic: "ailes", season: true, pages: [] }; NAV.unshift(F); }
@@ -2785,13 +2785,13 @@ function monoNav0() {
   NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines";
 }
 const navSeason = () => NAV.find((F) => F.season) || null; // Monocompte seulement
-/* 2.1.39 (Mathis 7A des onglets) : la page Saison en 5 onglets ; un onglet à plusieurs pages montre ses pages juste dessous */
+/* 2.1.40 (Mathis 7A des onglets) : la page Saison en 5 onglets ; un onglet à plusieurs pages montre ses pages juste dessous */
 const SEASON_GRP = [["Progression", ["pass", "fragments"]], ["Défis", ["manche", "mutation", "serment"]], ["Guerre", ["guerre"]], ["Boutique", ["boutique"]], ["Classements", ["saisonlb"]]];
 const seasonGroups = () => SEASON_GRP.map(([n, L]) => [n, L.filter((k) => navPage(k))]).filter(([, L]) => L.length);
 const seasonName = () => (S && S.mono ? (E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom) : "Saison");
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
-const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"], ladder: ["builds"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.39 : Gravure dans Forgemagie, Builds dans Classements
+const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"], ladder: ["builds"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.40 : Gravure dans Forgemagie, Builds dans Classements
 /* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
 const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
@@ -2985,7 +2985,7 @@ function renderNav() {
   const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
   const famCount = (F) => { let n = 0, coin = false; navFamPages(F).forEach((p) => { const b = badge(p[0]); const m = /navcnt[^>]*>(\d+)</.exec(b); if (m) n += +m[1]; else if (/navcoin/.test(b)) coin = true; else if (b) n += 1; }); return { n, coin }; };
   const famBadge = (F) => { const c = famCount(F); return c.n ? `<span class="navcnt" title="${c.n} chose${c.n > 1 ? "s" : ""} à faire">${c.n}</span>` : c.coin ? '<span class="navcoin" title="Vous pouvez recruter un héros"></span>' : ""; }; // 8A : le total des pastilles d'une famille repliée
-  /* 2.1.39 (Mathis 1B) : sur PC, un rail d'icônes avec leur nom : Combat, Havre-Sac, (Saison), les 5 familles, Options et Aide.
+  /* 2.1.40 (Mathis 1B) : sur PC, un rail d'icônes avec leur nom : Combat, Havre-Sac, (Saison), les 5 familles, Options et Aide.
      Une famille ouvre sa dernière page vue ; ses pages sont les onglets du bandeau en haut de la page */
   const SEA = navSeason(); const seaOn = !!(SEA && curFam === SEA) && !fight;
   const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
@@ -3016,7 +3016,7 @@ function renderNav() {
     if (curFam.season) { const G2 = seasonGroups(); const g = G2.find((x) => x[1].includes(kk));
       if (g) { strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(seasonName())}</span></span>${G2.map((x) => { const p = navPage(x[1][0]); return `<button data-act="nav" data-v="${x[1][0]}" data-nk="${x[1][0]}" ${x === g ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(x[0])}</span>${x[1].map((y) => badge(y)).find(Boolean) || ""}</button>`; }).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button></div>`;
         if (g[1].length > 1) strip += `<div class="sn-tabs">${g[1].map((y) => { const p = navPage(y); return `<button data-act="nav" data-v="${y}" data-nk="${y}" ${y === kk ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[y] || ""}</button>`; }).join("")}</div>`; } }
-    const tabs = null; // 2.1.39 (Mathis 1A des onglets) : les pages rangées ensemble sont des onglets de la page (pageTabs), plus de 2e rangée
+    const tabs = null; // 2.1.40 (Mathis 1A des onglets) : les pages rangées ensemble sont des onglets de la page (pageTabs), plus de 2e rangée
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   sub.innerHTML = strip;
@@ -3041,7 +3041,7 @@ function navMenuSheet() {
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const tile = (key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key || kk === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || (navIsNew(key) ? '<span class="sn-new t">nouveau</span>' : "")}</button>` : ""; };
   const hit = (p) => `<button class="ns-hit" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${k === p[0] ? 'aria-current="page"' : ""}>${icon(p[2])}<span class="sn-l">${h(p[1])}<small>${h(NAV_DESC[p[0]] || "")}</small></span>${B[p[0]] || ""}</button>`;
-  /* 2.1.39 (Mathis 7A) : une grande tuile par famille, tout tient sur un écran ; la famille ouvre sa dernière page vue */
+  /* 2.1.40 (Mathis 7A) : une grande tuile par famille, tout tient sur un écran ; la famille ouvre sa dernière page vue */
   const cnt = (F) => navFamPages(F).reduce((n, p) => { const b = B[p[0]] || (NAV_MERGE[p[0]] || []).map((x) => B[x] || "").find(Boolean) || ""; const m = /navcnt[^>]*>(\d+)</.exec(b); return n + (m ? +m[1] : b ? 1 : 0); }, 0);
   const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
   const ft = (F, cls) => { const L = navFamPages(F); const n = cnt(F); return `<button class="ns-ft${cls ? " " + cls : ""}${curF === F ? " cur" : ""}" data-act="nav" data-v="${famPage(F)}" data-nk="${famPage(F)}">${icon(F.ic)}<span><b>${h(F.season ? seasonName() : F.n)}</b><small>${L.slice(0, 3).map((p) => h(p[1])).join(" · ")}${L.length > 3 ? "…" : ""}</small></span>${n ? `<span class="navcnt">${n}</span>` : ""}</button>`; };
@@ -3051,7 +3051,7 @@ function navMenuSheet() {
       : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
-/* 2.1.39 (Mathis 2A) : le bouton Aide regroupe le guide, les suggestions et le signalement de bug */
+/* 2.1.40 (Mathis 2A) : le bouton Aide regroupe le guide, les suggestions et le signalement de bug */
 function helpSheet() {
   const row = (act, ic, t, d) => `<button class="hp-row" ${act}>${ic}<span class="grow"><b>${t}</b><small>${d}</small></span><i class="chev">›</i></button>`;
   openSheet(`<div class="helpsheet"><h2><b class="sn-gq" aria-hidden="true">?</b> Aide</h2>
@@ -3086,7 +3086,7 @@ function updNavLive() {
   const el = $("#navlive"); if (!el) return; const v = navLiveTxt(); if (el.dataset.v === v) return; el.dataset.v = v;
   el.textContent = v; const b = el.closest(".rl-fight"); if (b) { b.classList.toggle("on", !!v); b.title = v ? "Combat en cours : " + v : "Combat"; }
 }
-/* 2.1.39 (Mathis 3A) : une seule barre en haut. Kamas, Sablier, la chasse en cours, l'état de la sauvegarde (et le panel de Xener) ; la cloche ouvre les pastilles du jeu
+/* 2.1.40 (Mathis 3A) : une seule barre en haut. Kamas, Sablier, la chasse en cours, l'état de la sauvegarde (et le panel de Xener) ; la cloche ouvre les pastilles du jeu
    (objectifs suivis, événements, annonce de Xener, nouveautés) ; le portrait ouvre le compte (serveur, sauvegarde, son, bonus).
    Options › Affichage › « Affichage détaillé » remet l'ancienne barre et sa ligne de pastilles. */
 const detailOn = () => !!(S && S.settings.detail);
@@ -3114,7 +3114,7 @@ function accPanelHtml() {
     E.almOn(S) ? `<span class="it boostchip" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""].filter(Boolean).join("");
   const c = mainHero();
   return `<div class="tb-pop tb-accp" role="dialog" aria-label="Mon compte"><div class="tb-ph">${heroMed()}<span class="grow"><b>${h(c ? c.name : "")}</b><small>${S.mono ? `Monocompte · ${h(seasonName())}` : `Classique · ${team.length}/8 héros`}</small></span></div>
-    <div class="tb-row">${swapBtn()}${sndBtn()}</div>
+    <div class="tb-row">${swapBtn()}${sndBtn()}${ON && window.CHAT ? `<span class="tb-adm">${window.CHAT.adminBtn()}</span>` : ""}</div>
     ${bon ? `<h4>Bonus en cours</h4><div class="tb-row">${bon}</div>` : ""}
     <div class="tb-row xs muted"><span class="it" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> monstres</span><span class="it">${(S.hunting && team.length) || S.dungeon || E.expActive(S) ? "équipe en chasse" : "équipe au repos"}</span></div>
     <div class="tb-row"><button class="btn sm" data-act="options">${G("gear")} Options</button><button class="btn sm" data-act="changelog">${G("sparkle")} Nouveautés ${h(GAME_VERSION)}</button></div></div>`;
@@ -3502,7 +3502,7 @@ function homeHtml() {
   </section>
   ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
 }
-/* 2.1.39 (Mathis 5A) : Havre-Sac en tableau de bord. Le bandeau, « À faire maintenant » (3 tuiles, les plus urgentes d'abord, « Tout voir »),
+/* 2.1.40 (Mathis 5A) : Havre-Sac en tableau de bord. Le bandeau, « À faire maintenant » (3 tuiles, les plus urgentes d'abord, « Tout voir »),
    puis une carte par sujet : Ma maison, le mutateur de l'heure, la quête (et la saison en Monocompte). « Affichage détaillé » remet l'ancien accueil. */
 function homeDash(o) {
   const { deco, main, card, act, rl, lf, heads, team, T } = o;
@@ -4067,7 +4067,7 @@ function weeklyBanner() {
   const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
   return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de l'heure</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>${nextHourlyTxt() ? `<div class="xs muted wknext">${nextHourlyTxt()}</div>` : ""}`;
 }
-/* 2.1.39 (Mathis 4A) : les deux mutateurs tiennent sur une ligne, « Voir » les ouvre */
+/* 2.1.40 (Mathis 4A) : les deux mutateurs tiennent sur une ligne, « Voir » les ouvre */
 function dgMutLine() {
   const W = E.weekly(S); const L = E.flash(S); if (!W && !L.length) return "";
   const dg = W && DUNGEONS[W.did];
@@ -4128,7 +4128,7 @@ function dgFilterBar(F, nShown, nHid) {
   if (F.lv !== "me" && !F.q) chips.push(["lv", F.lv === "all" ? "Tous les niveaux" : "Niveau " + DG_LV.find((x) => x[0] === F.lv)[1]]);
   if (F.st !== "all") chips.push(["st", F.st === "open" ? "Accessibles" : "Fermés"]); if (F.sk !== "all") chips.push(["sk", DG_SK.find((x) => x[0] === F.sk)[1]]);
   if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.h15) chips.push(["h15", `Sans les stasis ${E.STASIS_MAX}`]); if (F.q) chips.push(["q", `« ${F.q} »`]);
-  const nf = chips.filter(([k]) => k !== "q").length; const fold = narrow() || !detailOn(); const open = !fold || (ui.fltOpen && ui.fltOpen.dg); // 2.1.39 (Mathis 2A des onglets) : sur PC aussi, les filtres derrière « Filtres »
+  const nf = chips.filter(([k]) => k !== "q").length; const fold = narrow() || !detailOn(); const open = !fold || (ui.fltOpen && ui.fltOpen.dg); // 2.1.40 (Mathis 2A des onglets) : sur PC aussi, les filtres derrière « Filtres »
   return `<div class="dgsearch"><span class="dgq">${G("search")}<input type="search" id="dgq" data-act="dgq" placeholder="Donjon, boss ou zone…" autocomplete="off" spellcheck="false" value="${h(F.q)}"></span>
       ${fold ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg" aria-expanded="${!!open}">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
     <div class="dgtools" ${open ? "" : "hidden"}>
@@ -4395,7 +4395,7 @@ function encyclopediaHtml() {
   const souls = E.soulCount(S), st = E.stones(S);
   const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>` + (window.CHROMA ? window.CHROMA.kpi() : ""); // 1.0.33 : album chromatique (js/chromaui.js)
   const head = `<div class="enckpis k6 k7${window.CHROMA ? " k8" : ""}">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>`
-    + encTabsHtml(enc) // 2.1.39 (Mathis 4A des onglets) : 4 onglets, les sous-pages en pastilles
+    + encTabsHtml(enc) // 2.1.40 (Mathis 4A des onglets) : 4 onglets, les sous-pages en pastilles
     + (enc.tab === "sets" && window.COLL ? "" : `<div class="encsrch">${G("search")}<input class="encq" id="encQ" type="search" data-act="encsearch" placeholder="${ENC_Q_PH[enc.tab] || ENC_Q_PH.best}" value="${h(enc.q || "")}" autocomplete="off" spellcheck="false" enterkeyhint="search">${enc.q ? `<button class="encqx" data-act="encqclear" aria-label="Effacer la recherche" data-tip="Effacer la recherche">✕</button>` : ""}</div>`);
   return head + (enc.tab === "chroma" && window.CHROMA ? window.CHROMA.html(enc) : enc.tab === "sets" && window.COLL ? window.COLL.setsHtml() : enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
 }
@@ -6288,7 +6288,7 @@ function teamTopHtml() {
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button>
     ${!board && S.chars.length < E.HERO_MAX ? `<span class="trec">${recruitBtn()}</span>` : ""}${!board && !detailOn() ? `<button class="btn sm ghost" data-act="teammore" aria-expanded="${!!ui.teamMore}">Classes, compositions, idoles ${ui.teamMore ? "▴" : "▾"}</button>` : ""}</div>`;
   if (board) return head1;
-  if (!detailOn() && !ui.teamMore) return head1; // 2.1.39 (Mathis 4A) : les 19 classes et les compositions sous un bouton
+  if (!detailOn() && !ui.teamMore) return head1; // 2.1.40 (Mathis 4A) : les 19 classes et les compositions sous un bouton
   const K = S.comps || []; const cur = E.compMatch(S);
   return `${head1}${classesBoardHtml()}<div class="tbar"><span class="xs muted">Compositions</span>${K.map((k, i) => `<button class="tcomp ${i === cur ? "on" : ""}" data-act="compuse" data-i="${i}" ${i === cur || S.dungeon ? "disabled" : ""} data-tip="${h(`${k.ids.length} héros · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}`)}">${i === cur ? "✓ " : ""}${h(k.name)}</button>`).join("")}
     ${K.length < E.COMP_MAX ? `<button class="tcomp add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe</button>` : ""}${K.length ? `<button class="tcomp add" data-act="teamboard">Gérer</button>` : ""}
@@ -7408,7 +7408,7 @@ const invStats = () => (ui.invStats || []).concat(statOfQ(E.searchNorm(ui.invSea
 let invStatCnt = {};
 const statOfQ = (q) => (q ? Object.keys(STATS).find((k) => E.searchNorm(STATS[k].name) === q || E.searchNorm(STATS[k].short || "") === q || E.searchNorm(STATS[k].name).startsWith(q) && q.length >= 3) : null);
 let invCnt = {}; let invOwn = new Set(); let invTrash = new Set();
-const INV_CHIP_TOP = ["all", "up", "new", "radiant", "trash"]; // 2.1.39 (Mathis 6A des onglets) : 4 ou 5 pastilles, le reste dans le menu « Type »
+const INV_CHIP_TOP = ["all", "up", "new", "radiant", "trash"]; // 2.1.40 (Mathis 6A des onglets) : 4 ou 5 pastilles, le reste dans le menu « Type »
 function invGroups() {
   const q = E.searchNorm(ui.invSearch); const filt = ui.slotFilter;
   const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
@@ -8822,7 +8822,7 @@ function renderUpdBar() {
   if (S && E.honorCls && S.honorHide !== E.honorIdx()) { const k = E.honorCls(), C = CLASSES[k], hh = Math.max(1, Math.ceil((E.honorEnd() - E.now()) / 3600e3)), left = hh >= 24 ? `${Math.floor(hh / 24)} j` : `${hh} h`, mine = S.chars.some((c) => c.cls === k);
     html += tchip({ k: "ev", ico: `<img src="${symImg(k)}" alt="" style="width:18px;height:18px">`, t: `${h(C.name)} à l'honneur`, d: `+${E.HONOR_PCT} % XP et butin`, s: `+${E.HONOR_PCT} % · ${left}`, tip: `La classe à l'honneur : cette semaine, les héros ${h(C.name)} gagnent +${E.HONOR_PCT} % d'XP (Maîtrise comprise), et une équipe avec au moins un ${h(C.name)} a +${E.HONOR_PCT} % de butin. ${mine ? "Tu en as un !" : "Tu n'en as pas encore."} Encore ${left}, puis une autre classe peu jouée prend le relais.`, x: `data-act="honorhide"`, xt: "Masquer cette semaine" }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
-  if (S && !detailOn() && S.seenVersion !== GAME_VERSION) html += tchip({ k: "sys", ico: G("sparkle"), t: `Nouveautés ${h(GAME_VERSION)}`, d: "ce qui a changé", go: `data-act="changelog"`, tip: "Voir les nouveautés de la mise à jour" }); // 2.1.39 (3A) : la pastille des nouveautés passe dans la cloche
+  if (S && !detailOn() && S.seenVersion !== GAME_VERSION) html += tchip({ k: "sys", ico: G("sparkle"), t: `Nouveautés ${h(GAME_VERSION)}`, d: "ce qui a changé", go: `data-act="changelog"`, tip: "Voir les nouveautés de la mise à jour" }); // 2.1.40 (3A) : la pastille des nouveautés passe dans la cloche
   if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
   if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }
@@ -8860,8 +8860,8 @@ function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
-  if (S.navv !== 3) { S.navv = 3; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 puis 2.1.39 : nouveau menu, bulle pour les parties déjà commencées
-  clearDonePins(); document.body.classList.toggle("dense", !detailOn()); renderNav(); renderStatus(); renderUpdBar(); // 2.1.39 (4A) : pages resserrées sauf « Affichage détaillé »
+  if (S.navv !== 3) { S.navv = 3; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 puis 2.1.40 : nouveau menu, bulle pour les parties déjà commencées
+  clearDonePins(); document.body.classList.toggle("dense", !detailOn()); renderNav(); renderStatus(); renderUpdBar(); // 2.1.40 (4A) : pages resserrées sauf « Affichage détaillé »
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
@@ -8916,7 +8916,7 @@ function backChip() {
 const tabScroll = {};
 const tabRows = () => [...document.querySelectorAll("#main .subtabs, #main .catchips")];
 const tabKey = (el) => ui.tab + ":" + tabRows().indexOf(el);
-/* 2.1.39 (Mathis 1A des onglets) : une seule rangée d'onglets. La page mère reçoit les pages rangées avec elle au bout de sa rangée
+/* 2.1.40 (Mathis 1A des onglets) : une seule rangée d'onglets. La page mère reçoit les pages rangées avec elle au bout de sa rangée
    (HdV + Cours, Forgemagie + Gravure, Familiers + Élevage) ; une page rangée reçoit la page mère en tête. Quêtes et Succès : js/questui.js */
 const MERGE_HOST = { hdv: ".subtabs", forge: ".subtabs", pets: ".seg" };
 { const mm = document.getElementById("main"); if (mm && window.MutationObserver) { let q = 0; new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; pageTabs(); }); }).observe(mm, { childList: true, subtree: true }); } } // les modules redessinent leur page eux-mêmes
@@ -9140,7 +9140,7 @@ function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
   return optSec("Menus", "",
-      optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.39 (Mathis 4A)
+      optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
       optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
     + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
@@ -10456,7 +10456,7 @@ document.addEventListener("click", (ev) => {
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
   if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
-  if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.39 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
+  if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.40 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   backMark(t);
@@ -12023,7 +12023,7 @@ function raceChip() {
     s: me ? `${raceOrd(R.rank)} · ${pl}` : pl, go: `data-act="race-open"`,
     tip: `Course de lancement de L'Ascension : les 10 premiers comptes à l'étage ${ASC_TOP} en Difficile gagnent le titre « Légende de la 1.1 ». Encore ${pl}.${me ? ` Tu es ${raceOrd(R.rank)} en course (étage ${R.fl}/${ASC_TOP}).` : ""} Toucher pour voir la course.` });
 }
-/* 2.1.39 (Mathis 3A des onglets) : 6 groupes au lieu de 11 onglets, les classements du groupe en pastilles ;
+/* 2.1.40 (Mathis 3A des onglets) : 6 groupes au lieu de 11 onglets, les classements du groupe en pastilles ;
    l'Ascension et le Kolizéum y sont rangés (leur page garde « Ton rang »), Builds devient le 6e groupe */
 const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds", ["#builds"]]];
 function lbGroupsHtml() {

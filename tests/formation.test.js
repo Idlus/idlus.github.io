@@ -95,7 +95,7 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(600);
     if ((await page.$$("#arena .ent.tk")).length !== (await page.evaluate(() => window.DX.S.fight.ents.length))) fail("Formation : combattants perdus après un aller-retour de vue");
 
-    // 2.1.39 (Mathis 1B) : le rail d'icônes du PC n'a pas la place du petit module ; le bouton Combat s'allume pendant un combat
+    // 2.1.40 (Mathis 1B) : le rail d'icônes du PC n'a pas la place du petit module ; le bouton Combat s'allume pendant un combat
     await page.click('#nav .sn-side [data-nk="home"]'); await page.waitForTimeout(900); await clean();
     if (await page.evaluate(() => { const b = document.querySelector("#navmf"); return !!(b && !b.hidden); })) fail("petit module (PC) : il ne doit plus être dans le rail");
     if (!(await page.$("#nav .rl-fight.on"))) fail("rail : le bouton Combat ne s'allume pas pendant le combat");

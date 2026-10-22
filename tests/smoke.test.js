@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
 });
 
 /* 1.2 : une page peut être repliée dans sa famille : on ouvre la famille puis on clique (comme un joueur), sinon DX.go */
-/* 2.1.39 : rail des familles sur PC ; une page s'ouvre par sa famille (rail) puis son onglet dans le bandeau, sinon DX.go */
+/* 2.1.40 : rail des familles sur PC ; une page s'ouvre par sa famille (rail) puis son onglet dans le bandeau, sinon DX.go */
 const NAV_HOW = (k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); const q = (s) => document.querySelector(s); let b = q(`#nav .sn-side [data-nk="${k}"]`) || q(`#subnav .sn-strip [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && q(`#nav .sn-side [data-fam="${F.id}"]`); if (fh) { fh.click(); const w = q("#wtip"); if (w) w.remove(); } b = q(`#subnav .sn-strip [data-nk="${k}"]`); return vis(b) ? "strip" : "go"; };
 const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"], #subnav .sn-strip [data-nk="${k}"]`); else if (how === "strip") await page.click(`#subnav .sn-strip [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
@@ -84,14 +84,14 @@ const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k
     if (!(await page.$("#fiche .hmenu"))) errors.push("Équipe et héros : le menu « Plus » ne s'ouvre pas");
     await page.click("#tlist .tgt"); await page.waitForTimeout(150);
     if (await page.$("#fiche .hmenu")) errors.push("Équipe et héros : le menu « Plus » ne se referme pas");
-    // 2.1.39 : rail d'icônes (84 px) et bouton Aide (guide, suggestions, Signaler un bug)
+    // 2.1.40 : rail d'icônes (84 px) et bouton Aide (guide, suggestions, Signaler un bug)
     if (!(await page.evaluate(() => document.body.classList.contains("navrail") && document.querySelector("#nav").getBoundingClientRect().width <= 90))) errors.push("menu : rail d'icônes absent");
     if ((await page.$$("#nav .sn-rail [data-fam]")).length !== 5) errors.push("menu : il faut 5 familles dans le rail");
     await noTip(); await page.click('#nav [data-act="navhelp"]'); await page.waitForSelector("#sheet .helpsheet", { timeout: 3000 });
     await page.click('#sheet .helpsheet [data-v="bug"]'); await page.waitForTimeout(300);
     if (!(await page.$("#sheet #bgWhat"))) errors.push("Aide › Signaler un bug : fenêtre absente");
     await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; });
-    // 2.1.39 : la cloche ouvre les pastilles, le portrait ouvre le compte
+    // 2.1.40 : la cloche ouvre les pastilles, le portrait ouvre le compte
     await noTip(); await page.click("#status .tb-bell"); await page.waitForTimeout(150);
     if (!(await page.evaluate(() => { const t = document.querySelector("#topchips"); return document.body.classList.contains("bellopen") && !!(t.offsetWidth || t.offsetHeight); }))) errors.push("barre du haut : la cloche ne s'ouvre pas");
     await page.mouse.click(700, 700); await page.waitForTimeout(150);
@@ -126,7 +126,7 @@ const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k
     // 0.1.42 : accueil du jour (tuiles, journal à onglets, têtes des héros)
     await page.evaluate(() => { const { E, S } = window.DX; delete S.cons.coffre_douze; E.addCons(S, "coffre_bois"); window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); });
     await noTip();
-    // 2.1.39 (5A) : tableau de bord, 3 tuiles « À faire maintenant » puis « Tout voir »
+    // 2.1.40 (5A) : tableau de bord, 3 tuiles « À faire maintenant » puis « Tout voir »
     if ((await page.$$(".hd-todo .ac-td")).length !== 3) errors.push("accueil : « À faire maintenant » doit montrer 3 tuiles");
     if ((await page.$$(".hd-cards .hd-card")).length < 2) errors.push("accueil : cartes du tableau de bord absentes");
     await page.click('[data-act="homeall"]'); await page.waitForTimeout(150);

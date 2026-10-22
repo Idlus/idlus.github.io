@@ -61,7 +61,7 @@ function fake() {
       await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
       await page.click('[data-act="startgame"]');
       await ready(page, false);
-      // 2.1.39 (3A) : le bouton ⇄ est dans le panneau du portrait (Mon compte)
+      // 2.1.40 (3A) : le bouton ⇄ est dans le panneau du portrait (Mon compte)
       const acc = () => page.evaluate(() => { const q = (x) => document.querySelector(x); if (!q("#status .tb-accp") && q("#status .tb-acc")) q("#status .tb-acc").click(); });
       // 1. pas d'accès au Monocompte : pas de bouton
       await acc(); if (await page.$('#status [data-act="sv-swap"]')) fail(`${w} px : bouton ⇄ montré sans accès au Monocompte`);

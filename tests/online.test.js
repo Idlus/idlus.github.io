@@ -413,7 +413,7 @@ const MOCK = () => {
 };
 
 /* 1.2 : une page peut être repliée dans sa famille (ou rangée en onglet) : on ouvre la famille puis on clique, sinon DX.go */
-/* 2.1.39 : les classements sont rangés en 6 groupes ; un classement hors du groupe affiché s'ouvre par son groupe */
+/* 2.1.40 : les classements sont rangés en 6 groupes ; un classement hors du groupe affiché s'ouvre par son groupe */
 const lbTab = async (page, v) => { if (await page.$(`[data-act="lb-tab"][data-v="${v}"]`)) return page.click(`[data-act="lb-tab"][data-v="${v}"]`); await page.evaluate((v) => { const b = document.createElement("button"); b.dataset.act = "lb-tab"; b.dataset.v = v; document.body.appendChild(b); b.click(); b.remove(); }, v); await page.waitForSelector(`[data-act="lb-tab"][data-v="${v}"][aria-pressed="true"]`, { timeout: 5000 }); };
 const navClick = async (page, k) => { const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "go"; }, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
