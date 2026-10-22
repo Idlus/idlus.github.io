@@ -861,7 +861,7 @@ as $$ declare d jsonb; m text := mono.monde(p_s); begin
   if public.susp(u) then raise exception 'Compte suspendu.'; end if;
   if m is null then raise exception 'Pas d''hôtel de vente pour cette saison.'; end if;
   if m = 's' then
-    if exists (select 1 from mono.bouclier b where b.user_id = u and b.saison = p_s and b.at > coalesce((select k.at from mono.parties_ok k where k.user_id = u and k.saison = p_s), '-infinity'::timestamptz)) then
+    if exists (select 1 from mono.bouclier b where b.user_id = u and b.saison = p_s and left(b.why, 13) <> '[observation]' and b.at > coalesce((select k.at from mono.parties_ok k where k.user_id = u and k.saison = p_s), '-infinity'::timestamptz)) then
       raise exception 'Ta partie est en vérification : les échanges sont bloqués en attendant.'; end if;
     select data::jsonb into d from mono.parties_ok where user_id = u and saison = p_s;
     if d is null then raise exception 'Ta partie n''est pas encore validée par le serveur : attends quelques secondes.'; end if;
@@ -1417,7 +1417,7 @@ as $$ declare s int; x mono.saisons%rowtype; t timestamptz; begin
     'parties', (select count(*) from mono.parties where saison = s),
     'validees', (select count(*) from mono.parties_ok where saison = s),
     'actives', (select count(*) from mono.parties where saison = s and updated_at > now() - interval '24 hours'),
-    'refus', (select count(distinct user_id) from mono.bouclier where at > now() - interval '7 days'),
+    'refus', (select count(distinct user_id) from mono.bouclier where left(why, 13) <> '[observation]' and at > now() - interval '7 days'),
     'derniers', (select coalesce(jsonb_agg(jsonb_build_object('user', b.user_id, 'pseudo', mono.pseudo(b.user_id), 'why', b.why, 'at', b.at) order by b.at desc), '[]'::jsonb)
       from (select * from mono.bouclier order by at desc limit 5) b));
 end $$;

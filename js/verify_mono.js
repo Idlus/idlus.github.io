@@ -196,7 +196,7 @@
   VM.KAMAS_PTS = [[1, 50000], [20, 360000], [60, 1360000], [120, 1840000], [200, 3030000]];
   VM.RES_H = 100000; VM.MT_H = 60; VM.RES_MAX = 24;
   VM.K0 = 5e6; VM.K_D = 35e6;
-  VM.OBS_FIN = Date.UTC(2026, 9, 25, 12, 0); // fin des 48 h d'observation : à régler le jour de l'installation
+  VM.OBS_FIN = Date.UTC(2026, 9, 24, 11, 0); // fin des 48 h d'observation (installé le 22/10 vers 11 h UTC)
   VM.rates = (lv) => { const l = Math.max(1, Math.min(200, lv || 1)), P = VM.KAMAS_PTS; let k = P[P.length - 1][1];
     for (let i = 1; i < P.length; i++) if (l <= P[i][0]) { const [a, x] = P[i - 1], [b, y] = P[i]; k = x + (y - x) * (l - a) / (b - a); break; }
     return { k, r: VM.RES_H, mt: VM.MT_H, lv: 960 }; };

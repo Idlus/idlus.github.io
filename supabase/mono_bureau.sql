@@ -246,7 +246,7 @@ as $$ declare k mono.parties_ok%rowtype; begin
   if public.susp(u) then return 'Compte suspendu.'; end if;
   select * into k from mono.parties_ok where user_id = u and saison = p_s;
   if k.user_id is null then return 'Ton héros n''est pas encore validé par le serveur : attends quelques secondes.'; end if;
-  if exists (select 1 from mono.bouclier b where b.user_id = u and b.saison = p_s and b.at > k.at) then return 'Ta partie est en vérification : le Bureau attend la décision.'; end if;
+  if exists (select 1 from mono.bouclier b where b.user_id = u and b.saison = p_s and left(b.why, 13) <> '[observation]' and b.at > k.at) then return 'Ta partie est en vérification : le Bureau attend la décision.'; end if;
   return null;
 end $$;
 
