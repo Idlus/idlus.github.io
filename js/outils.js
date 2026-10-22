@@ -1,5 +1,5 @@
 /* ============================================================================
-   OUTILS DE RÉCOLTE — Idlus 2.1.36 (Mathis, 21/10 : apprenti 1A 2A 3A 4A, menu 1A 2A 3A 4A, outils 1A à 6A)
+   OUTILS DE RÉCOLTE — Idlus 2.1.37 (Mathis, 21/10 : apprenti 1A 2A 3A 4A, menu 1A 2A 3A 4A, outils 1A à 6A)
    - Gravures : aux niveaux 5, 10, 15, 20, 25 et 30 d'un outil, on grave Prospecteur, Sourcier ou Savant (la même plusieurs fois
      si on veut). Chaque gravure demande une pierre de gravure, objet rare des combats (niveau 20+ pour les petites, 80+ pour les grandes).
    - Maîtrise des ressources : étoile bronze, argent, or à 1 000, 10 000, 100 000 récoltes d'une ressource (+5, +10, +15 %).

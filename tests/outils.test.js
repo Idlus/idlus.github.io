@@ -1,4 +1,4 @@
-/* Outils de récolte 2.1.36 : outils 30 niveaux, gravures (pierres rares des combats), Maîtrise des ressources,
+/* Outils de récolte 2.1.37 : outils 30 niveaux, gravures (pierres rares des combats), Maîtrise des ressources,
    Potion de récolte et apprenti récolteur du Monocompte.
    Lancer : node tests/outils.test.js */
 "use strict";

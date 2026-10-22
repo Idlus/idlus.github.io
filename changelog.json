@@ -1,6 +1,19 @@
 {
-  "version": "2.1.36",
+  "version": "2.1.37",
   "versions": [
+    {
+      "v": "2.1.37",
+      "name": "Outils de récolte",
+      "guide": "metiers",
+      "items": [
+        "Monocompte : engage un Apprenti récolteur (24 h, 4 000 kamas × niveau du héros) qui récolte à 50 % du rythme de ton héros pendant qu'il combat, même hors-ligne. Idée de SegFault",
+        "Outils de récolte jusqu'au niveau 30 (+140 % de ressources au maximum), avec le nom et l'apparence d'un vrai outil DOFUS à chaque palier",
+        "Gravures d'outil tous les 5 niveaux : Prospecteur (trouvailles ×2), Sourcier (filons +50 %) ou Savant (+15 % d'XP de métier), avec des pierres rares à looter en combat",
+        "Maîtrise des ressources : étoiles bronze, argent et or à 1 000, 10 000 et 100 000 récoltes d'une ressource (+5, +10, +15 %)",
+        "L'Alchimiste niveau 40 prépare la Potion de récolte : +20 % de ressources pendant 1 h",
+        "Nouveau bandeau « Améliorer ma récolte » en haut de Métiers › Récolte : tous tes bonus et les prochaines améliorations"
+      ]
+    },
     {
       "v": "2.1.36",
       "name": "Recycleur et Gravure",

@@ -256,7 +256,7 @@ function act(a, d) {
     case "fm100": { const J = E.fmJobs(s); for (const j in E.FM_JOBS) { J[j].lvl = E.FM_MAX; J[j].xp = 0; } J.old = 1; done("Les 6 métiers de forgemagie sont niveau 200."); return; }
     case "tarunes": Object.keys(E.TRANS).forEach((k) => { const key = E.transKey(k); s.runes[key] = (s.runes[key] || 0) + 2; }); done("2 runes de transcendance de chaque sorte."); return;
     case "prot": { const c = s.chars.find((x) => x.job); if (!c) { DX.toast("Envoyez d'abord un héros récolter."); return; } s.protector = null; s.protCalm = 0; const r = Math.random; Math.random = () => 0; try { E.protSpawn(s, c, c.job); } finally { Math.random = r; } done(s.protector ? "Un protecteur attend l'équipe." : "Aucun protecteur pour cette ressource."); return; }
-    case "gravst": E.TGRAV_ORDER.forEach((k) => E.TGRAV[k].stone.forEach((n) => E.addRes(s, n, 10))); done("10 pierres de gravure de chaque sorte."); return; // 2.1.36 : outils de récolte
+    case "gravst": E.TGRAV_ORDER.forEach((k) => E.TGRAV[k].stone.forEach((n) => E.addRes(s, n, 10))); done("10 pierres de gravure de chaque sorte."); return; // 2.1.37 : outils de récolte
     case "tool20": case "tool30": { const L = a === "tool30" ? 30 : 20; for (const j in D.GATHER_JOBS) s.tools[j] = Math.max(E.toolLvl(s, j), L); done(`Outils de récolte niveau ${L}.`); return; }
     case "app": { if (!s.mono) { DX.toast("Réservé au Monocompte."); return; } s.kamas += E.appCost(s); const j = (E.appState(s) || {}).job || "paysan"; E.appHire(s, j); s.mono.app.until = E.now() + 2 * 60e3; s.mono.app.w = 0; done("Apprenti engagé : son contrat finit dans 2 minutes (rappel puis fin)."); return; }
     case "births": E.enclosTick(s, 48 * 3600e3); done("Naissances faites."); return;

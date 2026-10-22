@@ -3253,7 +3253,7 @@ details>summary.alx-h{cursor:pointer}
 .pwork{display:flex;align-items:center;gap:8px}
 .pslot{border:2px dashed var(--line);background:transparent;border-radius:12px;padding:8px;color:var(--muted);font-weight:700;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center}
 .ptool{padding:6px 8px;border-radius:10px;background:var(--panel2)}
-/* 2.1.36 « Outils de récolte » : jauge d'outil, gravures, étoiles de Maîtrise, bandeau « Améliorer ma récolte », apprenti */
+/* 2.1.37 « Outils de récolte » : jauge d'outil, gravures, étoiles de Maîtrise, bandeau « Améliorer ma récolte », apprenti */
 .ptool2{display:grid;gap:6px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
 .ptl{gap:10px;align-items:center}
 .ptlg{min-width:0}

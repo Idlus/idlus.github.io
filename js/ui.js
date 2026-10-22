@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.36";
+const GAME_VERSION = "2.1.37";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37", name: "Outils de récolte", guide: "metiers", items: [
+    "Monocompte : engage un Apprenti récolteur (24 h, 4 000 kamas × niveau du héros) qui récolte à 50 % du rythme de ton héros pendant qu'il combat, même hors-ligne. Idée de SegFault",
+    "Outils de récolte jusqu'au niveau 30 (+140 % de ressources au maximum), avec le nom et l'apparence d'un vrai outil DOFUS à chaque palier",
+    "Gravures d'outil tous les 5 niveaux : Prospecteur (trouvailles ×2), Sourcier (filons +50 %) ou Savant (+15 % d'XP de métier), avec des pierres rares à looter en combat",
+    "Maîtrise des ressources : étoiles bronze, argent et or à 1 000, 10 000 et 100 000 récoltes d'une ressource (+5, +10, +15 %)",
+    "L'Alchimiste niveau 40 prépare la Potion de récolte : +20 % de ressources pendant 1 h",
+    "Nouveau bandeau « Améliorer ma récolte » en haut de Métiers › Récolte : tous tes bonus et les prochaines améliorations" ] },
   { v: "2.1.36", name: "Recycleur et Gravure", guide: "gravure", items: [
     "Inventaire : le sac de base passe de 3 000 à 4 000 places",
     "Nouvel onglet ♻ Recycleur : recycle d'un coup en runes tout ce qui correspond à tes règles (niveau, jet, doublons), recyclage automatique quand le sac est plein",
@@ -7608,7 +7615,7 @@ function resGrid(id) {
     const mt = lock ? "" : ` · Maîtrise : ${fmt(E.resMastN(S, r))} récoltées${st ? `, étoile ${ST[st]} (+${E.RES_MAST[st - 1][1]} %)` : ""}${nx ? `, ${ST[st + 1]} à ${fmt(nx[0])}` : ""}`;
     return `<span class="pres ${lock ? "lock" : ""}" data-tip="${h(r)} · niv. ${l}${lock ? "" : ` · ${fmt(S.res[r] || 0)} en stock`}${h(mt)}">${im(resImg(r), "", r)}<b class="num">${lock ? l : fmtK(S.res[r] || 0)}</b>${st ? `<i class="pstar s${st}" aria-label="étoile ${ST[st]}">★</i>` : ""}</span>`; }).join("")}</div>`;
 }
-/* ---------- 2.1.36 « Outils de récolte » : bandeau d'améliorations, jauge d'outil, gravures, apprenti (Monocompte) ---------- */
+/* ---------- 2.1.37 « Outils de récolte » : bandeau d'améliorations, jauge d'outil, gravures, apprenti (Monocompte) ---------- */
 const toolImg = (job, L) => imgI(E.toolTier(job, Math.max(1, L))[1]);
 function toolGauge(id) {
   const L = E.toolLvl(S, id), T = E.TOOL_TIERS[id], max = E.TOOL_MAX;

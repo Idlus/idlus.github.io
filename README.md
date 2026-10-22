@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37 « Outils de récolte »
+- Choix de Mathis (21/10, idée de SegFault) : apprenti 1A 2A 3A 4A, menu Récolte 1A 2A 3A 4A, outils 1A à 6A, pierres de gravure à looter, puis améliorations 1 à 4.
+- Outils : `E.TOOL_MAX` 30, `E.toolPct` (+8 % par niveau jusqu'au 10, puis +3 %), `E.TOOL_TIERS` (nom et icône de vrais objets DOFUS), recettes au-delà du 10 dans `E.toolRecipe` ; métier plafonné (Monocompte hors spécialité) : niveau requis = maximum du métier, kamas × 1,5 (`E.toolCost`).
+- `js/outils.js` : gravures `E.TGRAV` / `S.tgrav` (Prospecteur, Sourcier, Savant aux niveaux 5 à 30, pierres « Gravure de … » non vendables, butin `E.tgravDrop` ≈ 1 par jour de chasse, tirage hors du générateur du moteur pour les combats rejoués), Maîtrise des ressources `S.resMast` (+5/10/15 %), Potion de récolte (`E.brewPotion`, Alchimiste 40), Apprenti récolteur `S.mono.app` (`E.appHire`, `E.appTick`, 50 %, 24 h, 3 jours au plus, rappel et pastille). Simulations dans le dossier du projet `monocompte/recolte-combat/`.
+- Interface : bandeau « Améliorer ma récolte » (`recBand`), jauge et fenêtre d'outil (`toolGauge`, `toolSheet`), apprenti (`appBlock`, `appSheet`), panneau de test. Test `tests/outils.test.js`.
+
 ## 2.1.36 « Recycleur et Gravure »
 - Recycleur (choix de Mathis 1C 2A 3A) : `E.ITEM_CAP` 3 000 → 4 000 ; `E.recyCfg` (`S.settings.recy`), `E.recyList`, `E.recycle` (brisage, même coefficient), `E.recyEstimate` (aperçu sans hasard) ; recyclage automatique dans `E.bagFlush` ; « Recycler aussitôt » (`E.recyKeepBest`) dans `E.craftItem`, trop-plein compris. Onglet Inventaire › ♻ Recycleur (`recyHtml`). Test `tests/recycleur.test.js`.
 - Gravure runique (choix 1A 2A 3A 4C + Auto) : `c.grav` = rang par emplacement, `E.GRAV` (rang 10, ×2, 50 000 de poids et 2 M de kamas au rang 1), bonus dans `E.charStats` (`E.gravStats`, +1 % par rang, sans PA/PM/Po/Invo), paiement `E.gravUp` / `E.gravPlan` / `E.gravAuto`. Page `js/gravure.js` (Héros › Gravure runique). Bouclier : rang 0 à 10 sur un emplacement connu. Simulation `tools/simulate.js --gravure N` : tout au rang 10 ≈ +0,45 stasis. Test `tests/gravure.test.js`.

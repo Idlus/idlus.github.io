@@ -2736,7 +2736,7 @@
     if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
-    if (E.tgravDrop) E.tgravDrop(S, mons, opts, out); // 2.1.36 : gravures d'outil (js/outils.js)
+    if (E.tgravDrop) E.tgravDrop(S, mons, opts, out); // 2.1.37 : gravures d'outil (js/outils.js)
     return out;
   };
   E.giveRewards = giveRewards;
@@ -3352,7 +3352,7 @@
   /* passif de métier : seulement pour le héros qui récolte lui-même */
   E.gatherMult = (S, job, c) => (c && c.cls === "sadi" && (job === "bucheron" || job === "alchimiste") ? 0.8 : 1) * (c && c.cls === "steam" && job === "pecheur" ? 0.75 : 1);
   /* ---- Outils : vraies recettes (ressources de plusieurs métiers + ressources de monstres + composants rares) ---- */
-  /* 2.1.36 « Outils de récolte » (Mathis, 1A à 6A) : 30 niveaux (+8 % par niveau jusqu'au 10, puis +3 %, +140 % au niveau 30).
+  /* 2.1.37 « Outils de récolte » (Mathis, 1A à 6A) : 30 niveaux (+8 % par niveau jusqu'au 10, puis +3 %, +140 % au niveau 30).
      Chaque palier porte le nom et l'icône d'un vrai objet de DOFUS du même type (TOOL_TIERS) ; les niveaux 11 à 30 demandent
      un métier de plus en plus haut (jusqu'au 200) et coûtent 1,25 fois plus de kamas à chaque niveau. */
   E.TOOL_MAX = 30;
@@ -3375,7 +3375,7 @@
   const toolReq = (L) => (L <= 10 ? Math.max(1, (L - 1) * 8) : Math.min(200, Math.round(72 + (L - 10) * 6.4)));
   E.toolRecipe = (job, L, cap = 200) => { // recette pour passer l'outil au niveau L (1..30) ; cap : niveau maximum du métier (Monocompte hors spécialité : 100)
     const name = `${E.toolName(job, L)} ${L}`;
-    if (L > 10) { // 2.1.36 : ressources du niveau demandé, kamas × 1,25 par niveau après le 10
+    if (L > 10) { // 2.1.37 : ressources du niveau demandé, kamas × 1,25 par niveau après le 10
       const lvl = Math.min(toolReq(L), cap), over = toolReq(L) > cap, at = (j) => GATHER_JOBS[j].items.filter((x) => x[1] <= lvl).pop()[0];
       const other = job === "bucheron" ? "mineur" : "bucheron";
       const pool = MON_RES.filter(([n, l]) => Math.abs(l - lvl) <= 12 && !/^(Puissant |Petit |)Parchemin|^Potion/.test(n)); const mr = (pool.length ? pool : MON_RES)[Math.floor(hsh(job + L) * (pool.length || MON_RES.length))][0];
@@ -3411,7 +3411,7 @@
   /* ressources attendues à la fin du coup (affichage) */
   E.hitQty = (S, c, frac = 1) => { if (!c.job) return 0; const L = S.jobs[c.job.job].lvl; return frac * E.hitScale(S, c) * (1 + L / 200) * (1 + 4 * E.findChance(S, c.job.job)) * E.gatherYield(L) * E.almMult(S, "gather", c.job.job) * (E.filonOn(S, c.job.res) ? 2 : 1) * E.protMult(S, c.job.res) * E.resMastMult(S, c.job.res); };
   E.FIND_CHANCE = 0.01;
-  /* 2.1.36 : gravures des outils (js/outils.js) : trouvailles, filons et XP de métier ; Maîtrise des ressources (étoiles) */
+  /* 2.1.37 : gravures des outils (js/outils.js) : trouvailles, filons et XP de métier ; Maîtrise des ressources (étoiles) */
   E.tgravFx = () => ({ find: 0, filon: 0, xp: 0 });
   E.findChance = (S, job) => E.FIND_CHANCE * (1 + E.tgravFx(S, job).find);
   E.resMastMult = () => 1;
@@ -3462,7 +3462,7 @@
     const fe = k * E.FIND_CHANCE * (1 + gf.find); const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
     let v = (k + 4 * finds) * (1 + J.lvl / 200) * y * E.almMult(S, "gather", W.job); // Almanax « Récolte abondante »
     if (E.mtOwn && !opts.app) v *= E.mtOwn(S, c, "rec"); // 2.1 : Artisan (récolte) ; l'apprenti du Monocompte n'a pas de Maîtrise
-    v *= E.resMastMult(S, W.res); // 2.1.36 : Maîtrise des ressources
+    v *= E.resMastMult(S, W.res); // 2.1.37 : Maîtrise des ressources
     if (E.filonOn(S, W.res)) v *= 2;
     v *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
     v *= E.sabLoot(); // 2.1.22 : Sablier ×2 / ×3
@@ -3470,7 +3470,7 @@
     let q = Math.floor(v); if (rnd() < v - q) q++;
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
     if (q) { addRes(S, W.res, q); E.resMastAdd(S, W.res, q); }
-    J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn && !opts.app ? E.mtOwn(S, c, "xpj") : 1) * (1 + gf.xp); // 2.1 : Artisan (XP de métier) ; 2.1.36 : gravure Savant
+    J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn && !opts.app ? E.mtOwn(S, c, "xpj") : 1) * (1 + gf.xp); // 2.1 : Artisan (XP de métier) ; 2.1.37 : gravure Savant
     const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
     while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
@@ -3487,7 +3487,7 @@
       let n = 0;
       while (W.prog >= E.gatherPeriod(S, c) && n < 200000) { W.prog -= E.gatherPeriod(S, c); n++; total += gatherHit(S, c, 1, opts); }
     });
-    if (E.appTick) total += E.appTick(S, dt, opts); // 2.1.36 : apprenti récolteur du Monocompte (js/outils.js)
+    if (E.appTick) total += E.appTick(S, dt, opts); // 2.1.37 : apprenti récolteur du Monocompte (js/outils.js)
     return total;
   };
   E.gatherTick = gatherTick;
