@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38.4";
+const GAME_VERSION = "2.1.38.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38.5", name: "Donjons enchaînés avec mercenaire", items: [
+    "Monocompte : un donjon lancé avec un mercenaire s'enchaîne enfin (et la montée de stasis marche aussi). Le mercenaire reste jusqu'au bout, payé à chaque donjon ; sans assez de kamas, l'enchaînement s'arrête. Merci Vector" ] },
   { v: "2.1.38.4", name: "XP de métier rendue", items: [
     "Le serveur peut rendre de l'XP de métier perdue : elle arrive dans la partie comme un gain de l'hôtel de vente (première utilisation : l'XP de récolte bloquée au niveau 200, ticket #146)" ] },
   { v: "2.1.38.3", name: "Guilde sur le profil", items: [
@@ -4162,7 +4164,7 @@ function monoDgBox() {
   return `${MP ? MP.mutLine() : ""}<div class="smallbox monobox">${G("shield")} <span><b>Bonus Héros unique${mc ? " (avec mercenaire)" : ""}</b> : +${Math.round(sm.hp)} % de PV, ${Math.round(sm.dr)} % de dégâts subis en moins, +${dmg} % de dégâts. Il baisse à chaque joueur ajouté au groupe.</span></div>
     <div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Mercenaire</b><span class="xs muted">${fmt(cost)} kamas par donjon · compte pour un demi-joueur · ne prend ni XP ni butin</span></div>
       <div class="mercpick"><button class="${mc ? "" : "on"}" data-act="mercpick" data-v="" aria-pressed="${!mc}">Seul</button>${CLASS_ORDER.map((k) => `<button class="${mc === k ? "on" : ""}" data-act="mercpick" data-v="${k}" aria-pressed="${mc === k}" ${poor ? "disabled" : ""} data-tip="${h(E.monoMercName(k))}" style="--cc:${CLASSES[k].color}"><img src="${symImg(k)}" alt="${h(CLASSES[k].name)}"></button>`).join("")}</div>
-      ${mc ? `<span class="xs">${h(E.monoMercName(mc))} niveau ${me.lvl}, équipement correct de son niveau. Il repart à la fin du donjon.</span>` : poor ? `<span class="xs muted">Il faut ${fmt(cost)} kamas pour engager un mercenaire.</span>` : ""}
+      ${mc ? `<span class="xs">${h(E.monoMercName(mc))} niveau ${me.lvl}, équipement correct de son niveau. Il repart à la fin du donjon, ou de l'enchaînement (${fmt(cost)} kamas à chaque donjon).</span>` : poor ? `<span class="xs muted">Il faut ${fmt(cost)} kamas pour engager un mercenaire.</span>` : ""}
       <span class="xs muted">Le mercenaire est réservé au jeu en solo : pas de mercenaire dans les groupes de joueurs (jusqu'à ${E.MONO.groupMax}, avec le serveur Monocompte).</span></div>${MP ? MP.renfortPick() : ""}`;
 }
 /* Monocompte : entrer en donjon solo avec le renfort d'un ami. Le serveur vérifie et rend sa copie du héros de l'ami
@@ -10586,7 +10588,7 @@ document.addEventListener("click", (ev) => {
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": if (window.COLL) { ui.tab = "world"; ui.world = "enc"; ui.zoneView = null; (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "sets"; break; } ui.tab = "inv"; ui.inv = "sets"; break; // 1.0.30 : la Collection de panoplies est dans l'Encyclopédie
     case "enterdg": { if (S.mono && typeof ui.mercCls === "string" && ui.mercCls.startsWith("ami:")) { enterRenfort(d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls.slice(4)); return; } // renfort d'un ami : copie rendue par le serveur
-      const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id && !merc ? chainCount(d.id) : 1; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+      const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id ? chainCount(d.id) : 1; const cl = ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls, cn, cl) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null;
       /* 1.0.32.3 : depuis une étape de quête « en stasis N », la fiche propose déjà la montée de la meilleure stasis jusqu'à N */
       if (d.k && DUNGEONS[d.id]) { dgPick(d.id); const SI = E.stasisInfo(S, d.id); const T = +d.k; if (SI.max < T) { ui.dgStasis = Math.min(T, SI.max + 1); if (ui.dgStasis < T) ui.dgClimb = T; } }

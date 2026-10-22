@@ -1,6 +1,13 @@
 {
-  "version": "2.1.38.4",
+  "version": "2.1.38.5",
   "versions": [
+    {
+      "v": "2.1.38.5",
+      "name": "Donjons enchaînés avec mercenaire",
+      "items": [
+        "Monocompte : un donjon lancé avec un mercenaire s'enchaîne enfin (et la montée de stasis marche aussi). Le mercenaire reste jusqu'au bout, payé à chaque donjon ; sans assez de kamas, l'enchaînement s'arrête. Merci Vector"
+      ]
+    },
     {
       "v": "2.1.38.4",
       "name": "XP de métier rendue",

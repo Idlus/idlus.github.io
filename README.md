@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38.5 « Donjons enchaînés avec mercenaire »
+- Ticket #151 (Vector) : la fiche du donjon envoie le nombre de courses et la montée de stasis à `E.monoEnter` même avec un mercenaire (`js/ui.js`, `enterdg`). `E.monoEnter(S, did, stasis, mercCls, chain, climb)`.
+- `js/mono.js` : `E.enterDungeon` enveloppé, le mercenaire (pas le renfort d'un ami) reste pour la course suivante et coûte `E.MONO.merc.cost` à chaque nouvelle entrée ; sans les kamas, l'enchaînement s'arrête (clé gardée) et il repart.
+- Tests : `tests/mono.test.js`, `tests/mono_merc_chaine_ui.test.js` (PC 1280 px, téléphone 390 px).
+
 ## 2.1.38.4 « XP de métier rendue »
 
 Le registre de l'HdV peut porter de l'XP de métier (`jx`, `E.addJobXp`) ; étape « rendre-xp-metier » du workflow Serveur OVH (`tools/serveur/rendre_xp_metier.sql`, sauvegarde de la base avant l'envoi) pour rendre l'XP de récolte perdue au niveau 200 (ticket #146).

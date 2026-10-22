@@ -168,8 +168,8 @@
   };
   E.monoMercOf = (S) => S.chars.find((c) => c.merc);
   /* solo : engager un mercenaire pour un donjon (payé à l'entrée, il repart à la fin) */
-  E.monoEnter = (S, did, stasis, mercCls) => {
-    if (!E.isMono(S)) return E.enterDungeon(S, did, stasis);
+  E.monoEnter = (S, did, stasis, mercCls, chain, climb) => {
+    if (!E.isMono(S)) return E.enterDungeon(S, did, stasis, chain, climb);
     if (mercCls) {
       if (!D.CLASSES[mercCls]) return "Classe inconnue.";
       if (S.kamas < M.merc.cost) return `Il faut ${kam(M.merc.cost)} kamas pour le mercenaire.`;
@@ -177,12 +177,22 @@
       E.monoMercClear(S);
       const c = E.addChar(S, mercCls, E.monoMercName(mercCls), me.lvl); c.merc = 1; c.inTeam = true; mercGear(S, c, () => E.rnd());
       E.autoAllocate(S, c); c.spellsManual = false; E.refreshSpells(c, E.charStats(S, c)); E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
-      const err = E.enterDungeon(S, did, stasis);
+      const err = E.enterDungeon(S, did, stasis, chain, climb);
       if (err) { E.monoMercClear(S); return err; }
       S.kamas -= M.merc.cost; S.mono.merc = c.id; E.note(S, `${c.name} rejoint ${me.name} pour ce donjon (${kam(M.merc.cost)} kamas).`, "info");
       return null;
     }
-    return E.enterDungeon(S, did, stasis);
+    return E.enterDungeon(S, did, stasis, chain, climb);
+  };
+  /* 2.1.38.x : donjons enchaînés avec mercenaire : il reste pour la course suivante, payée à chaque nouvelle entrée (le renfort d'un ami ne coûte rien) */
+  const enterDg0 = E.enterDungeon;
+  E.enterDungeon = function (S, did) {
+    const c = S && S.mono && S.mono.merc != null && !S.dungeon ? S.chars.find((x) => x.merc && x.id === S.mono.merc) : null;
+    if (!c || c.renfort) return enterDg0.apply(this, arguments);
+    if (S.kamas < M.merc.cost) return `il faut ${kam(M.merc.cost)} kamas pour garder le mercenaire.`;
+    const r = enterDg0.apply(this, arguments);
+    if (!r) S.kamas -= M.merc.cost;
+    return r;
   };
   E.monoMercClear = (S) => {
     Object.keys(S.items || {}).forEach((u) => { if (S.items[u].merc) delete S.items[u]; }); // même un objet du mercenaire déséquipé en route

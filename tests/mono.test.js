@@ -93,6 +93,18 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   assert.ok(!S.dungeon && !E.monoMercOf(S) && !S.mono.merc, "il repart à la fin du donjon");
   assert.ok(!Object.values(S.items).some((it) => it.merc), "son équipement repart avec lui");
   assert.ok(E.recruit(S, "cra", "X"), "toujours un seul héros"); void x0;
+  // donjons enchaînés avec mercenaire (ticket #151) : il reste, payé à chaque course ; plus de kamas = fin de l'enchaînement
+  S.res[D.DUNGEONS[did].key] = 3; S.kamas = 1e6; me.hp = 1e9;
+  assert.strictEqual(E.monoEnter(S, did, 1, "eni", 3), null); assert.strictEqual(S.dungeon.chain, 3);
+  let runs = 1, guard = 0; const id0 = S.dungeon;
+  for (let last = S.dungeon; S.dungeon && guard < 20000; guard++) { E.tick(S, 1000); if (S.dungeon && S.dungeon !== last) { runs++; last = S.dungeon; assert.ok(E.monoMercOf(S), "le mercenaire reste pour la course suivante"); } }
+  assert.strictEqual(runs, 3, "trois donjons enchaînés"); void id0;
+  assert.strictEqual(S.kamas >= 1e6 - 3 * E.MONO.merc.cost - 1, true); assert.ok(!E.monoMercOf(S), "il repart à la fin de l'enchaînement");
+  S.res[D.DUNGEONS[did].key] = 2; S.kamas = E.MONO.merc.cost; // une seule course payable
+  assert.strictEqual(E.monoEnter(S, did, 1, "eni", 2), null); guard = 0; let k1 = S.kamas;
+  while (S.dungeon && guard++ < 20000) E.tick(S, 1000);
+  assert.ok(!S.dungeon && S.res[D.DUNGEONS[did].key] === 1 && !E.monoMercOf(S), "sans kamas, l'enchaînement s'arrête et la clé reste");
+  console.log("ok - donjons enchaînés avec mercenaire (payé à chaque course)"); void k1;
   // groupe : même graine, même combat ; 5 joueurs, mercenaire dans un groupe ou 2 mercenaires refusés
   const snap = (cls) => { const T = E.monoStart(E.newState("G" + cls, cls)); T.chars[0].lvl = 60; return E.monoSnap(T, T.chars[0]); };
   const grp = [snap("iop"), snap("eni"), snap("cra")];
