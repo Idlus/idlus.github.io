@@ -1,6 +1,13 @@
 {
-  "version": "2.1.38.2",
+  "version": "2.1.38.3",
   "versions": [
+    {
+      "v": "2.1.38.3",
+      "name": "Guilde sur le profil",
+      "items": [
+        "Idée de Gagou : le profil d'un joueur (Classements, chat) montre sa guilde, son niveau et son rang ; un clic ouvre la fiche de la guilde"
+      ]
+    },
     {
       "v": "2.1.38.2",
       "name": "Renfort bien équipé",

@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38.2";
+const GAME_VERSION = "2.1.38.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38.3", name: "Guilde sur le profil", items: [
+    "Idée de Gagou : le profil d'un joueur (Classements, chat) montre sa guilde, son niveau et son rang ; un clic ouvre la fiche de la guilde" ] },
   { v: "2.1.38.2", name: "Renfort bien équipé", items: [
     "Monocompte, renfort d'un ami : sa copie arrive avec ses sorts et sa rotation à lui, son arme, et sa fiche affiche ses vraies caractéristiques, équipement compris (merci Jeremygnon)",
     "On ne peut plus passer les objets de ton héros à la copie de l'ami : elle garde les siens (« Tout équiper au mieux » l'ignore)",

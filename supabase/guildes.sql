@@ -222,6 +222,13 @@ as $$ begin
 end $$;
 grant execute on function public.guild_list(text) to anon, authenticated;
 
+-- 2.1.38.3 (idée de Gagou) : la guilde d'un joueur sur sa fiche (Classements, chat). Nom, emblème, niveau et rang : déjà publics
+-- dans la fiche de la guilde (guild_view). Rien pour un compte sans guilde. Classique seulement (pas de guildes en Monocompte).
+create or replace function public.guild_of(p_user uuid) returns jsonb language sql stable security definer set search_path = public
+as $$ select jsonb_build_object('id', g.id, 'name', g.name, 'ic', g.ic, 'col', g.col, 'lvl', g.lvl, 'rank', g_rname(m.rank))
+  from guild_members m join guilds g on g.id = m.guild_id where m.user_id = p_user $$;
+grant execute on function public.guild_of(uuid) to anon, authenticated;
+
 -- Ma guilde (ou mes invitations si je n'en ai pas).
 create or replace function public.guild_me() returns jsonb language plpgsql security definer set search_path = public
 as $$
