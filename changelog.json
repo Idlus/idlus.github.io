@@ -1,6 +1,13 @@
 {
-  "version": "2.1.38",
+  "version": "2.1.38.1",
   "versions": [
+    {
+      "v": "2.1.38.1",
+      "name": "« C'est bon » du Bouclier",
+      "items": [
+        "Bouclier Monocompte : quand Xener valide une partie refusée (« C'est bon »), un héros en avance sur le niveau du jour passe aussi, et cette avance reste acquise aux sauvegardes suivantes"
+      ]
+    },
     {
       "v": "2.1.38",
       "name": "Boss ultimes",

@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38";
+const GAME_VERSION = "2.1.38.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38.1", name: "« C'est bon » du Bouclier", items: [
+    "Bouclier Monocompte : quand Xener valide une partie refusée (« C'est bon »), un héros en avance sur le niveau du jour passe aussi, et cette avance reste acquise aux sauvegardes suivantes" ] },
   { v: "2.1.38", name: "Boss ultimes", items: [
     "Stasis 11 à 15 : les boss deviennent des boss ultimes, avec une règle de plus à chaque palier. 11 : phase ultime, à 50 % de vie le boss se relève avec une mécanique de plus. 12 : enrage, ses dégâts montent à chaque tour dès le 15e. 13 : une onde ultime frappe toute l'équipe tous les 3 tours. 14 : deux gardiens le rendent invulnérable tant qu'ils sont debout. 15 : forme finale, une seconde phase ultime à 25 %",
     "Le boss ultime a aussi bien plus de vie (+40 % à +240 %) et de dégâts (+10 % à +50 %) selon le palier. La stasis 15 devient un vrai sommet",

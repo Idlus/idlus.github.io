@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38.1 « « C'est bon » du Bouclier »
+- Bouclier Monocompte (js/verify_mono.js) : `VM.impossible` reçoit une avance de niveau tolérée ; « C'est bon » (accept) la porte au niveau du meilleur héros et la garde dans `bilan.lvx`, les sauvegardes suivantes la reprennent. Les Maîtrises impossibles restent refusées. Fonction « mono » redéployée (étape monocompte-fonction). Texte de la page Bouclier Monocompte du panel (js/admin.js) mis à jour.
+- Tests : `tests/bouclier_mono.test.js`.
+
 ## 2.1.38 « Boss ultimes »
 - Pool d'idées du 21/10, choix de Mathis 1A 2A 3A 4A : boss ultimes en stasis 11 à 15 (`E.ULT`, `E.ULT_TIERS`, `ultTurn` dans `js/engine.js`) : phase ultime, enrage, onde ultime, gardiens, forme finale ; vie ×1,4 à ×3,4 et dégâts ×1,1 à ×1,5 (simulation : équipe au maximum du jeu bloquée en 12-13).
 - Sceaux ultimes (`S.ult`, `E.ultBuy`) : 1/1/2/2/3 par victoire, 3 000 pour un légendaire au choix, 1 200 pour une copie ; titre `E.ultTitle` « Fléau de… » en stasis 15.
