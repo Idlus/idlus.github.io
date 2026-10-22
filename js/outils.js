@@ -83,7 +83,7 @@
     S.kamas -= P.kamas; P.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
     E.addCons(S, "potion_recolte"); const J = S.jobs.alchimiste; J.xp += P.xp;
     const cap = E.jobCap(S, "g", "alchimiste"); while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; }
-    if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
+    if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
     E.note(S, "L'Alchimiste prépare une Potion de récolte.", "up"); return null;
   };
 

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.7 « XP de récolte rendue au 200 »
+
+Un métier de récolte au niveau 200 garde de nouveau l'XP gagnée en plus (classement des métiers) ; seul le plafond du Monocompte (niveau 100 hors spécialité) la bloque encore (ticket #146).
+
 ## 2.1.37.6 « Journal du Bouclier »
 - Demande de Mathis (22/10) : table `mono.verifs` (supabase/monocompte.sql) remplie par `mono_srv_valider` (acceptée, niveau, kamas) et `mono_srv_refus` (refus, ou note « [observation] ») via `mono.verif_log` ; envois identiques regroupés (n) sur 30 min, 7 jours gardés.
 - Panel Monocompte › Joueurs › « Journal du Bouclier » (`js/admin.js`, `mono_adm_journal`) : 300 dernières vérifications, filtres par état et par compte.

@@ -3488,7 +3488,7 @@
     if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
     if (q) { addRes(S, W.res, q); E.resMastAdd(S, W.res, q); }
     J.xp += (10 + def[1] * 1.0) * y * k * (E.mtOwn && !opts.app ? E.mtOwn(S, c, "xpj") : 1) * (1 + gf.xp); // 2.1 : Artisan (XP de métier) ; 2.1.37 : gravure Savant
-    const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
+    const cap = E.jobCap(S, "g", W.job); if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1)); // 2.1.37.7 : au niveau 200, l'XP continue de compter (classement), comme avant la 2.1.35
     while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
     if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
     return q;

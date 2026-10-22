@@ -112,4 +112,9 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   run(S, 3600); assert.strictEqual(E.appAlert(S), 2, "pastille contrat fini"); assert.ok(has("est terminé"), "message de fin");
   E.appSeen(S); assert.strictEqual(E.appAlert(S), 0, "pastille retirée une fois vue");
   E.appHire(S); assert.strictEqual(S.mono.app.w, 0, "nouveau contrat : rappels remis à zéro"); }
+// ticket #146 : un métier de récolte au niveau 200 garde l'XP en plus (classement) ; seul un plafond sous 200 (Monocompte) la bloque
+{ const S = E.newState("T", "iop"); S.jobs.paysan.lvl = 200; S.jobs.paysan.xp = 40e6; S.chars[0].job = { job: "paysan", res: "Blé", prog: 0 };
+  run(S, 600); assert.strictEqual(S.jobs.paysan.lvl, 200); assert.ok(S.jobs.paysan.xp > 40e6, `XP au-delà du 200 conservée (${S.jobs.paysan.xp})`);
+  const M = E.newState("M", "iop"); M.mono = { spec: [] }; M.jobs.paysan.lvl = 100; M.jobs.paysan.xp = 0; M.chars[0].job = { job: "paysan", res: "Blé", prog: 0 };
+  run(M, 3600); assert.strictEqual(M.jobs.paysan.lvl, 100); assert.ok(M.jobs.paysan.xp < E.jobXpNeed(100), "Monocompte hors spécialité : bloqué au 100"); }
 console.log("outils : OK");
