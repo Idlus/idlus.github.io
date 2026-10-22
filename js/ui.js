@@ -26,6 +26,7 @@ const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord
 const CHANGELOG = [
   { v: "2.1.37.5", name: "Clés à l'atelier", items: [
     "Les monstres ne donnent plus de clés, en Classique comme en Monocompte : chaque clé de donjon se fabrique chez le Bricoleur avec les ressources de la zone du donjon",
+    "Mégalithe de Fraktale et Aquadôme de Merkator : les ingrédients de leur clé qui ne tombaient que dans le donjon (Pixels, Carapace de Krabouilleur) tombent maintenant aussi sur les monstres du Jour présent et des Salles des Embruns",
     "Les clés s'obtiennent aussi toujours en boutique (Trousseau de clés), dans les coffres des chasses au trésor et en récompense de certaines quêtes" ] },
   { v: "2.1.37.4", name: "Monocompte séparé", items: [
     "Monocompte : le menu ne montre plus que les pages du Monocompte, plus rien du serveur Classique, même en lecture (guildes, Foire, pluie, vente directe, classements du Classique…)",

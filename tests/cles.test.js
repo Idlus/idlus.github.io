@@ -16,6 +16,10 @@ const KEYS = new Set(Object.values(D.DUNGEONS).map((d) => d.key));
 assert.deepStrictEqual(Object.keys(D.DUNGEONS).filter((d) => !D.SPECIAL_CRAFTS[D.DUNGEONS[d].key]), [], "donjon sans recette de clé");
 // les ingrédients des clés tombent toujours (ex. Crypte de Kardorim)
 assert.ok(Object.values(D.MONSTERS).some((m) => m.drops.some(([r]) => r === "Relique d'Incarnam")), "ingrédient de la Clef de la Crypte de Kardorim toujours en butin");
+// Fraktale et Merkator : chaque ingrédient de la clé tombe hors du donjon (sous-zone d'accès) ou se récolte
+{ const GATH = new Set(); Object.values(D.GATHER_JOBS).forEach((j) => j.items.forEach(([r]) => GATH.add(r)));
+  for (const did of ["megalithe_fraktale", "aquadome_merkator"]) { const mons = new Set(Object.values(E.SUBS).filter((s) => (s.dungeons || [s.dungeon]).includes(did)).flatMap((s) => s.monsters));
+    D.SPECIAL_CRAFTS[D.DUNGEONS[did].key].ing.forEach(([r]) => assert.ok(GATH.has(r) || [...mons].some((k) => D.MONSTERS[k].drops.some(([x]) => x === r)), `${did} : ${r} introuvable hors du donjon`)); } }
 // chasse dans une sous-zone d'accès à un donjon : aucune clé
 { const sub = Object.values(E.SUBS).find((s) => s.dungeon && s.monsters.length && !s.hidden); assert.ok(sub, "une sous-zone avec donjon");
   const S = E.newState("Cle", "iop"); S.sub = sub.id; S.hunting = true;

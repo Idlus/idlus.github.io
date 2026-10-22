@@ -11,6 +11,7 @@ La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvo
 
 ## 2.1.37.5 « Clés à l'atelier »
 - `js/data.js` : `keyDrop` mis à 0 sur tous les donjons et clés (clés de donjon + « Clefs secrètes » sans usage) retirées des butins de monstres au chargement, pour le Classique et le Monocompte. Les 121 donjons gardent leur recette au Bricoleur ; Trousseau de clés (Koli, comptoirs), coffres de chasse au trésor et quêtes inchangés. Guide et fiche de donjon ne parlent plus de clé en chasse. Test `tests/cles.test.js`.
+- Mathis : les 4 Pixels (Mégalithe de Fraktale) et la Carapace de Krabouilleur (Aquadôme de Merkator), qui ne tombaient que dans leur donjon, tombent aussi (12 %) sur les monstres de la sous-zone d'accès (Jour présent, Salles des Embruns).
 
 ## 2.1.37.4 « Monocompte séparé »
 - Choix de Mathis 1A 3B 2A (22/10) : la partie Monocompte (emplacement 4 et Éternel) n'a plus que les pages et fonctions serveur de la liste blanche (`js/mono.js` : `M.PAGES`, `M.RPC`, `E.monoPageOk`, `E.monoRpcOk`) ; `ON.rpc` refuse tout le reste, les modules du Classique sont éteints (`monoSeal` dans `js/ui.js`), chat seulement sur le salon `m`.

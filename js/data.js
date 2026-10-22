@@ -471,6 +471,12 @@
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
+  /* 2.1.37.5 (Mathis) : les ingrédients des clés du Mégalithe de Fraktale et de l'Aquadôme de Merkator qui ne tombaient que dans le donjon
+     tombent aussi sur les monstres de la sous-zone d'accès (même taux que leurs voisins), pour fabriquer la première clé */
+  { const ADD = { megalithe_fraktale: [["Pixel d'Éklatleth", 12], ["Pixel de Gromorso", 12], ["Pixel de Brikablak", 12], ["Pixel de Farfacette", 12]],
+      aquadome_merkator: [["Carapace de Krabouilleur", 12]] };
+    for (const [did, L] of Object.entries(ADD)) G.ZONES.forEach((z) => z.subs.forEach((sub) => { if (!G.DUNGEONS[did] || !(sub.dungeons || [sub.dungeon]).includes(did)) return;
+      sub.monsters.forEach((k) => { const m = G.MONSTERS[k]; if (m) L.forEach(([res, rate]) => { if (!m.drops.some(([r]) => r === res)) m.drops.push([res, rate]); }); }); })); }
   /* 2.1.37.5 : plus aucune clé ne tombe sur les monstres (Classique et Monocompte) : les clés de donjon se fabriquent chez le Bricoleur
      (ou s'achètent en boutique, ou viennent des quêtes) ; les « Clefs secrètes » sans usage disparaissent aussi des butins */
   { const KEYS = new Set(Object.values(G.DUNGEONS).map((d) => d.key)); Object.values(G.DUNGEONS).forEach((d) => { d.keyDrop = 0; });
