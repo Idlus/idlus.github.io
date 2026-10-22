@@ -6347,3 +6347,28 @@ body.dense #main .dgfoldall,body.dense #main .dg-note{display:none}
 .invtype{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px;color:var(--muted)}
 .invtype select{font:inherit;font-weight:700;padding:4px 8px;border-radius:999px;color:var(--ink);background:var(--panel2);border:2px solid var(--line)}
 .invtype.on select{border-color:var(--gold);color:var(--gold2)}
+/* 2.1.40 refonte visuelle (réponses 1A 2A 3A 4A 5A 6A 7A de Mathis) */
+/* 1A : un liseré fin au lieu du double cadre */
+:root[data-theme] .panel{border-width:1px;border-color:color-mix(in srgb,var(--gold) 22%,transparent);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+:root[data-theme] .panel::after{display:none}
+.ac-td,.hd-card{border-width:1px;border-color:color-mix(in srgb,var(--gold) 20%,transparent)}
+body.tb1 .status,.sn-strip{border-width:1px;border-color:color-mix(in srgb,var(--gold) 22%,transparent)}
+/* 2A : une seule chose brille, la première tuile urgente */
+.tdjban{border-color:color-mix(in srgb,var(--gold) 22%,transparent)!important}
+.ac-tds .ac-td.hot~.ac-td.hot{border-color:color-mix(in srgb,var(--gold) 20%,transparent);box-shadow:none}
+/* 3A : pastilles du menu aux couleurs du thème (le rouge reste aux alertes du jeu) */
+.navcnt{background:var(--gold);color:#13200a;box-shadow:0 0 0 2px var(--panel);font-size:10px;min-width:16px;height:16px;line-height:16px;padding:0 4px}
+.navdot{background:var(--gold);box-shadow:0 0 0 2px var(--panel)}
+/* 4A : explications sur une ligne (Options › Affichage détaillé les remet en entier) */
+body.dense #main .panel .grow>.xs.muted,body.dense #main .panel .grow>.xs,body.dense #main .tdjban .grow>div:not(:first-child),body.dense #main .hd-card small,body.dense #main .ac-td small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.dense #main .tdjban .grow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+body.dense #main .tdjban .grow>div:not(:first-child){flex-basis:100%;min-width:0}
+/* 5A : au téléphone, la rangée d'onglets ne garde que les onglets (guide et épinglage dans Menu › Aide et la recherche) */
+@media (max-width:600px){
+  nav.subnav .sn-strip .sn-sf,nav.subnav .sn-strip .sn-guide,nav.subnav .sn-strip .sn-star{display:none}
+  .sn-strip{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:24px}
+}
+/* 7A : le Chat passe dans la barre du haut, à côté de la cloche */
+body.tb1 #chat .chmin{display:none}
+.tb-chat{position:relative}
+.tb-chat .navcnt{top:-6px;right:-6px}

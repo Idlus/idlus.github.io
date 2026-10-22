@@ -3101,6 +3101,7 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>${dust}${sabHtml()}
     <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span><span class="tb-grow"></span>${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
     <button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>
+    ${window.CHAT && window.CHAT.on ? `<button class="ic-btn tb-chat" data-act="ch-open" title="Chat" aria-label="Ouvrir le chat">${G("chat")}<span class="navcnt" id="tbChatN" hidden></span></button>` : ""}
     <button class="ic-btn tb-bell${op === "bell" ? " on" : ""}" data-act="tb-bell" aria-expanded="${op === "bell"}" title="Notifications : objectifs suivis, événements, annonces" aria-label="Notifications">${TB_BELL}<span class="navcnt" id="tbBellN" hidden></span></button>
     <button class="tb-acc${op === "acc" ? " on" : ""}" data-act="tb-acc" aria-expanded="${op === "acc"}" title="Mon compte : serveur, sauvegarde, son, bonus" aria-label="Mon compte">${heroMed()}<i class="tb-dn" aria-hidden="true"></i></button>
     ${op === "acc" ? accPanelHtml() : ""}`;
@@ -3278,7 +3279,7 @@ function sabGo(v) {
   if (v.startsWith("cpt:") && window.CPTUI) { window.CPTUI.open(v.slice(4)); return; }
   navGo(v); render(); window.scrollTo(0, 0);
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); tbBellSync(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); tbBellSync(); if (window.CHAT && window.CHAT.tbSync) window.CHAT.tbSync(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { dof: "dofus", quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -8861,7 +8862,7 @@ function render() {
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
   if (S.navv !== 3) { S.navv = 3; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 puis 2.1.40 : nouveau menu, bulle pour les parties déjà commencées
-  clearDonePins(); document.body.classList.toggle("dense", !detailOn()); renderNav(); renderStatus(); renderUpdBar(); // 2.1.40 (4A) : pages resserrées sauf « Affichage détaillé »
+  clearDonePins(); document.body.classList.toggle("dense", !detailOn()); if (window.AMB && ambWas !== ambPage()) applyAmbiance(); renderNav(); renderStatus(); renderUpdBar(); // 2.1.40 (4A) : pages resserrées sauf « Affichage détaillé »
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
@@ -9094,12 +9095,15 @@ function applySkin(t) { t = themeId(t); const r = document.documentElement; r.da
 function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced) || ecoOn()); document.body.classList.toggle("eco", ecoOn()); applyDisplay(); applyHal(); applyAmbiance(); }
 /* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
 const BG_FX = "mix"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse, mix = Aurore + rideau de temps en temps), réglé au choix de Mathis
+/* 2.1.40 (6A) : les lucioles restent sur le Havre-Sac et en combat ; les pages de gestion n'en ont plus (on aurait dit des poussières sur l'écran) */
+const ambPage = () => !!S && (ui.tab === "home" || ui.tab === "combat");
+let ambWas = null;
 function applyAmbiance() {
   const a = S && S.settings.ambiance || "soft"; const r = document.documentElement;
   const fx = !!S && a !== "off" && animLvl() === "full" && !calm(); if (fx) r.dataset.bgfx = BG_FX; else delete r.dataset.bgfx; // le fond suit le même réglage que l'ambiance
   if (!window.AMB) return;
   window.AMB.bg(fx); // 1.2.6.2 : le fond G est peint dans une petite toile (js/ambiance.js), bien plus léger que les deux couches CSS géantes
-  const on = !!S && a !== "off" && animLvl() === "full" && !calm() && !halOn();
+  const on = !!S && a !== "off" && animLvl() === "full" && !calm() && !halOn() && ambPage(); ambWas = ambPage();
   if (!on) return window.AMB.stop();
   window.AMB.start(THEMES.find((x) => x[0] === themeId(S.settings.theme))[3], a === "strong" ? 1 : .55);
 }

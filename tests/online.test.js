@@ -660,8 +660,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
         { id: 2, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, kind: "ann", data: { t: "first", label: "Premier héros au niveau 200" }, created_at: t }];
       d.views.chat_settings = [{ id: 1, pin_body: "💡 Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées !", pin_chs: "g", pin_at: "2026-10-13T10:00:00Z" }];
       localStorage.setItem("__mock", JSON.stringify(d)); });
-    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
-    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000, state: "attached" });
+    // 2.1.40 (7A) : le chat s'ouvre depuis la bulle de la barre du haut (le bouton flottant est caché en barre compacte)
+    await page.waitForSelector("#status .tb-chat", { timeout: 5000 }); await page.click("#status .tb-chat"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
     // 0.1.50.2 : message épinglé en haut du Général (ampoule du jeu à la place de l'emoji), absent du Commerce, la croix le cache jusqu'au lendemain
     if (!(await page.$("#chat .ch-pin .pi"))) fail("chat : message épinglé absent du Général");
     else if (/💡/.test(await page.textContent("#chat .ch-pin")) || !/Une idée pour améliorer Idlus \?/.test(await page.textContent("#chat .ch-pin b"))) fail("chat : message épinglé mal affiché");
@@ -1368,7 +1369,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle de découverte du tutoriel (comme en 7f)
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
-    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
+    await page.click("#status .tb-chat"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
     const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-mob.png" });
     await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.evaluate(() => window.__chatEmit({ id: 900, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Copie-moi", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);

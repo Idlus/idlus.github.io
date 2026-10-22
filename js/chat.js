@@ -170,13 +170,13 @@
   /* ---------- affichage ---------- */
   function mount() {
     if ($("#chat")) return;
-    const el = document.createElement("div"); el.id = "chat"; document.body.appendChild(el);
+    const el = document.createElement("div"); el.id = "chat"; document.body.appendChild(el); if (S()) X().renderStatus();
     const b = document.createElement("div"); b.id = "annbar"; const up = $("#topchips") || $("#updbar"); if (up) up.after(b); else document.body.prepend(b); // 0.1.57.2 : hors de la ligne de pastilles (sinon le bandeau, très haut, y écrasait la page sur téléphone)
   }
   function paint(keepScroll) {
     const el = $("#chat"); if (!el || !S()) { if (el) el.innerHTML = ""; document.body.classList.remove("chat-open"); return; }
     const was = document.body.classList.contains("chat-open"); document.body.classList.toggle("chat-open", C.open); if (was !== C.open && DX.nav && S()) DX.nav(); // 1.2 : le menu passe en icônes quand le chat prend la place
-    if (!C.open) { el.className = ""; el.innerHTML = minHtml(); return; }
+    if (!C.open) { el.className = ""; el.innerHTML = minHtml(); tbSync(); return; }
     // 0.1.31.1 : la position de lecture est lue AVANT de redessiner (l'ancienne liste, une fois retirée, répondait 0 et le chat remontait tout en haut)
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
     // 1.0.3.3 : un texte surligné dans le chat (pour le copier) n'est pas effacé par un nouveau message : on redessine quand la sélection est finie
@@ -217,9 +217,11 @@
   function paintHead() { const e = $("#chat .ch-on"); if (e) e.innerHTML = onlineTxt(); }
   function paintMin() { if (!C.open) paint(); }
   const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
+  const minN = () => monoGame() ? (monoOk() ? C.unreadM : 0) : C.unread + C.unreadP + C.unreadC + C.unreadV + (monoOk() ? C.unreadM : 0) + ((window.GUILD && window.GUILD.unread) || 0);
+  function tbSync() { const b = $("#tbChatN"); if (!b) return; const n = minN() + pingsAll(); b.textContent = n > 99 ? "99+" : n; b.hidden = !n; } // 2.1.40 (7A) : le bouton Chat de la barre du haut porte les non-lus
   function minHtml() {
     const last = [...(C.tab === "m" && monoOk() ? C.m : C.g)].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
-    const n = monoGame() ? (monoOk() ? C.unreadM : 0) : C.unread + C.unreadP + C.unreadC + C.unreadV + (monoOk() ? C.unreadM : 0) + ((window.GUILD && window.GUILD.unread) || 0);
+    const n = minN();
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${atNb(pingsAll())}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
@@ -807,6 +809,6 @@
   }
   document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Loop|Q|MAnn|MPin)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admMPin") { const n = $("#admMPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admLoop") { const n = $("#admLoopN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
-  window.CHAT = { dock: () => { if (pref.docked || !S()) return; pref.docked = true; C.open = true; pref.open = true; savePref(); paint(); }, start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; },
+  window.CHAT = { tbSync, get on() { return !!$("#chat") && !!S(); }, dock: () => { if (pref.docked || !S()) return; pref.docked = true; C.open = true; pref.open = true; savePref(); paint(); }, start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; },
     adm: { get A() { return A; }, body: () => admBody(), load: () => admLoad(), tabs: () => ATABS(), repaint: () => repaintAdm(), keepFocus, isAdmin } }; // 1.0.30 : pour le Panel Xener (js/panel.js)
 })();
