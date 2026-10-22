@@ -101,7 +101,7 @@
   });
 
   /* Ce qu'aucune partie Monocompte honnête ne peut contenir. ctx : { debut, date (date de saison), objets, sortis } */
-  VM.impossible = (E, S, ctx, nu0) => {
+  VM.impossible = (E, S, ctx, nu0, lvx) => {
     if (!S || !S.mono) return "partie du serveur Classique";
     const M = E.MONO;
     const w = V.impossible(E, S, nu0, { mtT0: ctx.debut, sabT0: ctx.debut, sabH0: (M.sabStart || 3 * 3600) / 3600 });
@@ -128,7 +128,7 @@
       const jobs = Object.assign({}, S.jobs || {}, S.crafts || {});
       for (const j in jobs) { const J = jobs[j]; const cap = sp.includes(j) ? 200 : M.jobs.cap; if ((+(J && J.lvl) || 1) > cap) return `métier ${(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j] || { name: j }).name} au niveau ${J.lvl} (au plus ${cap}${sp.includes(j) ? "" : " hors spécialité"})`; }
       // niveau, honneur, pass : plafonnés par la date de saison
-      const L = VM.lvlCap(ctx); if ((c.lvl || 1) > L) return `${nm} : niveau ${c.lvl} au jour ${Math.floor(days(ctx)) + 1} (au plus ${L})`;
+      const L = VM.lvlCap(ctx) + Math.max(0, +lvx || 0); if ((c.lvl || 1) > L) return `${nm} : niveau ${c.lvl} au jour ${Math.floor(days(ctx)) + 1} (au plus ${L})`;
       if ((+c.ren || 0) > 0) return `${nm} : renaissance dans une partie Monocompte`;
       if (S.align) { const h = +S.align.hon || 0, cap = VM.honCap(ctx); if (!(h >= 0) || h > cap) return `${Math.round(h).toLocaleString("fr-FR")} honneur (au plus ${cap.toLocaleString("fr-FR")} au jour ${Math.floor(days(ctx)) + 1})`; }
       const B = E.bpState ? E.bpState(S) : null;
@@ -264,7 +264,11 @@
     const nu0 = prev && prev.bilan ? +prev.bilan.nu0 || 0 : +S.nextUid || 0;
     let note = null;
     if (!o.admin) {
-      why = VM.impossible(E, S, ctx, nu0) || VM.registre(E, S, o.reg);
+      // 22/10 (Mathis, « C'est bon » passe aussi le niveau) : l'avance de niveau acceptée reste acquise (bilan.lvx)
+      const lvx0 = prev && prev.bilan ? Math.max(0, +prev.bilan.lvx || 0) : 0;
+      why = VM.impossible(E, S, ctx, nu0, o.accept ? Infinity : lvx0) || VM.registre(E, S, o.reg);
+      const top0 = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
+      bil.lvx = o.accept ? Math.max(lvx0, top0 - VM.lvlCap(ctx)) : lvx0; if (!(bil.lvx > 0)) delete bil.lvx;
       const obs = (o.at || 0) < VM.OBS_FIN; // 48 h d'observation : les nouvelles règles notent, les anciennes décident
       const abs = why ? null : VM.absolu(E, S, ctx);
       if (abs && !o.accept) { if (obs) note = abs; else why = abs; }

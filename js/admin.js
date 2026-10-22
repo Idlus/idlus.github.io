@@ -422,7 +422,7 @@ async function load() {
 function html() {
   if (st.err) return `<div class="box"><div class="empty">${h(st.err)}</div></div>`;
   if (!st.L) return `<div class="box"><div class="empty">Chargement…</div></div>`;
-  return `<div class="box"><h2>Bouclier Monocompte</h2><span class="xs muted">Parties Monocompte refusées par le serveur. « C'est bon » laisse passer les gros gains à la prochaine sauvegarde, jamais un niveau ou une Maîtrise impossible.</span>
+  return `<div class="box"><h2>Bouclier Monocompte</h2><span class="xs muted">Parties Monocompte refusées par le serveur. « C'est bon » laisse passer les gros gains et un niveau en avance (gardé ensuite) à la prochaine sauvegarde, jamais une Maîtrise impossible.</span>
     ${st.L.length ? st.L.map((x) => `<div class="ln"><b>${h(x.pseudo || "?")}</b><span class="xs muted">${h(x.why)}${x.n > 1 ? ` · ${x.n} refus` : ""}</span><span class="t">${h(date(x.at))}</span><button class="btn sm" data-act="mbcl-ok" data-v="${h(x.user)}" ${st.busy ? "disabled" : ""}>C'est bon</button></div>`).join("") : `<div class="empty">Aucune partie Monocompte en vérification.</div>`}</div>`;
 }
 async function act(a, v) {

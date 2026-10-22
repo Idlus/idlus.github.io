@@ -124,6 +124,15 @@ assert(/kamas au jour 1/.test(RES[RES.length - 1].why), "226 M : mauvaise règle
 { const f0 = VM.OBS_FIN; VM.OBS_FIN = now + 48 * 3600e3;
   const r = one((T) => { T.kamas = 200e6; }); VM.OBS_FIN = f0;
   assert(r.ok && /kamas au jour 1/.test(r.note || ""), "observation : " + JSON.stringify({ ok: r.ok, why: r.why, note: r.note })); console.log(`ok - 48 h d'observation : accepté avec la note « ${r.note} »`); }
+// « C'est bon » de Mathis sur un niveau en avance : accepté, l'avance reste acquise, pas plus
+{ const ctx1 = { debut: DEBUT, date: DEBUT + 20 * 3600e3 }; const T = VM.load(E, good); hero(T).lvl = 150; const tx = E.serialize(T);
+  const v = (o) => { const r = VM.verifier(E, tx, Object.assign({ prev: null, at: now, ctx: ctx1, reg: regOf(T) }, o)); E.setClock(() => now); return r; };
+  assert(!v({}).ok, "niveau 150 au jour 1 sans « C'est bon »");
+  const a = v({ accept: true }); assert(a.ok && a.bilan.lvx > 0, "« C'est bon » : niveau en avance accepté " + JSON.stringify({ ok: a.ok, why: a.why }));
+  const b = v({ prev: { bilan: a.bilan, res: a.res, at: now - 60e3 } }); assert(b.ok && b.bilan.lvx === a.bilan.lvx, "après « C'est bon » : même niveau accepté, avance gardée " + JSON.stringify({ ok: b.ok, why: b.why }));
+  const T2 = VM.load(E, tx); hero(T2).lvl = 190; const c = VM.verifier(E, E.serialize(T2), { prev: { bilan: a.bilan, res: a.res, at: now - 60e3 }, at: now, ctx: ctx1, reg: regOf(T2) }); E.setClock(() => now);
+  assert(!c.ok && /niveau 190/.test(c.why), "après « C'est bon » : 40 niveaux de plus refusés " + JSON.stringify(c));
+  console.log("ok - « C'est bon » sur un niveau en avance : accepté, avance gardée ensuite, pas au-delà"); }
 assert(RES.every((r) => !r.ok), "100 % de refus");
 console.log(`ok - ${RES.length} parties trichées, ${RES.length} refusées (100 %)`);
 // une partie du Classique ou de l'Éternel n'entre jamais dans la saison
