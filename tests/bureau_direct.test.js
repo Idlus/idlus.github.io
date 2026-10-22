@@ -131,7 +131,7 @@ function setup() {
       if (!end.done || !/Victoire|Défaite/.test(end.txt) || !/Revoir le combat/.test(end.txt) || !/Retour au salon/.test(end.txt)) fail(`${dev} : fin du combat ${JSON.stringify(end).slice(0, 300)}`);
       if (end.gain && !/Ton butin/.test(end.txt)) fail(`${dev} : butin reçu mais absent de la fin du combat : ${end.txt}`);
       if (!end.gain) fail(`${dev} : butin pas récupéré`);
-      await page.evaluate(() => { document.getElementById("watchEnd").scrollIntoView({ block: "center" }); const b = document.querySelector('[data-act="bxd-revoir"]').getBoundingClientRect(), a = document.querySelector(".arenasticky").getBoundingClientRect(); if (b.top < a.bottom + 8) window.scrollBy(0, b.top - a.bottom - 16); }); await shot(page, `fin-${dev}.png`); // au téléphone, l'arène reste collée en haut : on amène le bouton juste en dessous
+      await page.evaluate(() => document.getElementById("watchEnd").scrollIntoView({ block: "center" })); await shot(page, `fin-${dev}.png`);
       await page.click('[data-act="bxd-revoir"]'); await page.waitForTimeout(1200);
       st = await page.evaluate(() => { const w = window.DX.ui.watch; return { revoir: !!(w && w.ext && !w.ext.direct), spd: document.querySelectorAll('[data-act="sm-wspd"]').length, t: w ? w.W.t : -1 }; });
       if (!st.revoir || st.spd !== 3 || st.t > 6000) fail(`${dev} : « Revoir » ${JSON.stringify(st)}`);

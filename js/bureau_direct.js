@@ -180,7 +180,7 @@
     const w0 = UI().watch;
     if (c && w0 && w0.ext && w0.ext.end === fin && w0.ext.direct && w0.W.done && w0.ext.combat !== c.id && !BD.vus[c.id] && !document.hidden) BD.regarder(c);
     const w = UI().watch; // le butin arrive après la fin : on récrit la fin quand il est là
-    if (w && w.ext && w.ext.end === fin && w.W.done) { const el = document.getElementById("watchEnd"), v = fin(w); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; } }
+    if (w && w.ext && w.ext.end === fin && w.W.done) { const el = document.getElementById("watchEnd"), v = fin(w); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; const st = document.querySelector(".arenasticky.stick"); if (st) st.classList.remove("stick"); } }
   }, 1000);
 
   document.addEventListener("click", (ev) => {

@@ -6368,6 +6368,7 @@ body.dense #main .tdjban .grow>div:not(:first-child){flex-basis:100%;min-width:0
   nav.subnav .sn-strip .sn-sf,nav.subnav .sn-strip .sn-guide,nav.subnav .sn-strip .sn-star{display:none}
   .sn-strip{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:24px}
 }
+body.dense .phead>.num[data-tip]{white-space:nowrap}
 /* 7A : le Chat passe dans la barre du haut, à côté de la cloche */
 body.tb1 #chat .chmin{display:none}
 .tb-chat{position:relative}

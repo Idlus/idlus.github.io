@@ -3056,6 +3056,7 @@ function helpSheet() {
   const row = (act, ic, t, d) => `<button class="hp-row" ${act}>${ic}<span class="grow"><b>${t}</b><small>${d}</small></span><i class="chev">›</i></button>`;
   openSheet(`<div class="helpsheet"><h2><b class="sn-gq" aria-hidden="true">?</b> Aide</h2>
     ${row('data-act="gd-open"', '<b class="sn-gq hp-q" aria-hidden="true">?</b>', "Guide de cette page", "Ce que fait la page affichée, en quelques lignes")}
+    ${(() => { const k = navKey(); if (!navPage(k)) return ""; const on = navPins().includes(k); return row(`data-act="navpin" data-v="${k}"`, `<b class="sn-gq hp-q" aria-hidden="true">${on ? "★" : "☆"}</b>`, on ? "Retirer cette page des épinglés" : "Épingler cette page", on ? "Elle quitte la rangée « Épinglés » du menu" : "Elle s'ajoute à la rangée « Épinglés » du menu"); })()}
     ${row('data-act="nav" data-v="guide"', med("almanax"), "Guide complet", h(NAV_DESC.guide))}
     ${row('data-act="nav" data-v="sugg"', med("idee"), "Suggestions", h(NAV_DESC.sugg))}
     ${row('data-act="nav" data-v="bug"', med("bug"), "Signaler un bug", h(NAV_DESC.bug))}
@@ -3809,8 +3810,9 @@ function worldHtml() {
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
   else body = encyclopediaHtml();
+  const dgDense = solo && ui.world === "dungeons" && !detailOn(); // 2.1.40 : la pastille Âmes monte dans le titre « Donjons »
   return `
-<div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
+<div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${dgDense && !S.dungeon ? "" : `${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}`}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
     <div class="stack">${body}</div>`;
 }
@@ -4164,7 +4166,8 @@ function dungeonsHtml() {
     body = `${forced ? "" : `<div class="row dgfoldall" style="gap:6px;justify-content:flex-end"><button class="btn sm ghost" data-act="dgzall" data-v="1">Tout ouvrir</button><button class="btn sm ghost" data-act="dgzall" data-v="0">Tout replier</button></div>`}`
       + groups.map(([z, ids]) => dgGroup(z, ids, forced || (z.id in O ? !!O[z.id] : def(z)), forced)).join("");
   }
-  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10${s15 ? ` · ${s15} en stasis ${E.STASIS_MAX}` : ""}</span></div>
+  const dgFull = `${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10${s15 ? ` · ${s15} en stasis ${E.STASIS_MAX}` : ""}`; // 2.1.40 : version courte (détail dans la bulle) et Âmes dans ce titre, sauf « Affichage détaillé »
+  return `<section class="panel"><div class="phead"><h2>Donjons</h2>${detailOn() ? `<span class="small muted">${dgFull}</span>` : `<span class="small muted num" data-tip="${h(dgFull)}">${done}/${all.length} · ★ ${s5} · ★★ ${s10}</span><span class="grow"></span>${archiBtn()}`}</div>
     <div class="pad stack" style="gap:10px">
       ${defiLine()}
       ${detailOn() || ui.dgMut ? weeklyBanner() + flashBanner() : dgMutLine()}
@@ -4629,7 +4632,7 @@ function arenaLayout(F) {
   return { h, plate: 0, w, pos, H, tw };
 }
 /* l'arène reste visible en haut (mobile) seulement si elle laisse de la place au reste */
-function stickyCheck() { const st = document.querySelector(".arenasticky"); if (!st) return; st.classList.toggle("stick", st.offsetHeight < window.innerHeight * 0.58); }
+function stickyCheck() { const st = document.querySelector(".arenasticky"); if (!st) return; const we = document.getElementById("watchEnd"); const end = !!(we && we.textContent.trim()); st.classList.toggle("stick", !end && st.offsetHeight < window.innerHeight * 0.58); } // 2.1.40 : combat fini, l'arène se décolle (au téléphone elle cachait « Revoir le combat »)
 function placeEnts(F) {
   const A = ui.arena; if (!A || A.view !== "scene" || !F) return;
   const L = arenaLayout(F); A.el.style.height = L.H + "px";
@@ -9172,12 +9175,19 @@ function tipTick() {
   tipRing();
   if (!S || tipShown || !booted || $("#wtip")) return; // une bulle relue (Carnet) n'est pas remplacée par une autre
   if ($("#sheet").innerHTML || $("#wsearch") || $("#cele").innerHTML || document.querySelector(".bossintro") || (ui.tab === "combat" && S.settings.manual) || !S.chars.length) return;
-  if (S.navNews) return showTipBubble(NAV_NEWS);
+  if (S.navNews) return showTipBubble(NAV_TOUR[S.navNews - 1] || NAV_NEWS);
   const t = E.tipDue(S, tipCtx()); if (t) showTipBubble(t);
 }
 /* 0.1.31 : une bulle, une seule fois, pour les joueurs qui connaissaient l'ancien menu */
-const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav .rl-i[data-fam="av"], #nav [data-nk="menu"]',
-  txt: "Moins d'informations partout : 5 familles (Aventure, Héros, Économie, Joueurs, Journal), leurs pages en onglets en haut de chaque page. La cloche en haut réunit les objectifs, événements et annonces ; ton portrait ouvre le compte. Options › Affichage › « Affichage détaillé » remet l'ancien affichage." };
+/* 2.1.40 : visite en 3 bulles des nouveaux menus (menu, cloche, compte) */
+const NAV_TOUR = [
+  { id: "navnews", name: "Les menus ont changé", anchor: '#nav .rl-i[data-fam="av"], #nav [data-nk="menu"]',
+    txt: "Le menu tient en 5 familles : Aventure, Héros, Économie, Joueurs, Journal. Les pages d'une famille sont des onglets en haut de chaque page." },
+  { id: "navnews2", name: "La cloche", anchor: "#status .tb-bell",
+    txt: "La cloche réunit tes objectifs suivis, les événements, les annonces et les nouveautés. La bulle juste à côté ouvre le Chat." },
+  { id: "navnews3", name: "Ton compte", anchor: "#status .tb-acc",
+    txt: "Ton portrait ouvre le compte : serveur, son, bonus, Options. Options › Affichage › « Affichage détaillé » remet l'ancien affichage." }];
+const NAV_NEWS = NAV_TOUR[0];
 const tipVis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
 /* 1.0.12.8 : le menu et la page se redessinent (toutes les 3 s sur Quêtes et l'Accueil) : on remet l'anneau doré sur le bouton visé */
 function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = tipEls(tipAnchor).find(tipVis); if (a && !a.classList.contains("wl-target")) a.classList.add("wl-target"); }
@@ -9185,10 +9195,10 @@ function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = tipEls(tip
 function tipEls(sel) { const out = [...document.querySelectorAll(sel)]; (sel.match(/data-nk="([a-z]+)"/g) || []).forEach((m) => { const F = navFam(m.slice(9, -1)); if (F) out.push(...document.querySelectorAll(`#nav .rl-i[data-fam="${F.id}"]`)); }); return out; }
 function showTipBubble(t, again) {
   tipHide(); tipShown = t.id; tipAnchor = t.anchor || null;
-  const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
+  const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = NAV_TOUR.includes(t); const ns = NAV_TOUR.indexOf(t) + 1;
   const d = document.createElement("div"); d.id = "wtip"; d.className = "wtip"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Découverte");
   d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${hOpt(t.txt)}</div>
-    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${window.GUIDE && GUIDE.forTip(t.id) ? `<button class="btn sm ghost" data-act="tipguide" data-v="${h(GUIDE.forTip(t.id))}">En savoir plus</button>` : ""}${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
+    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)} · ${ns} sur ${NAV_TOUR.length}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${window.GUIDE && GUIDE.forTip(t.id) ? `<button class="btn sm ghost" data-act="tipguide" data-v="${h(GUIDE.forTip(t.id))}">En savoir plus</button>` : ""}${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">${news && ns < NAV_TOUR.length ? "Suivant" : "Compris"}</button></span></div>`;
   document.body.appendChild(d);
   const a = t.anchor ? tipEls(t.anchor).find(tipVis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
   if (a) { a.classList.add("wl-target"); place(a.getBoundingClientRect()); }
@@ -9207,7 +9217,7 @@ function showTipBubble(t, again) {
   tipSince = E.now();
 }
 function tipHide() { const d = $("#wtip"); if (d) d.remove(); document.querySelectorAll(".wl-target").forEach((n) => n.classList.remove("wl-target")); tipShown = null; tipAnchor = null; }
-function tipOk() { if (tipShown === NAV_NEWS.id) S.navNews = 0; else if (tipShown) E.tipSeen(S, tipShown); dirty = true; tipHide(); }
+function tipOk() { const ti = NAV_TOUR.findIndex((x) => x.id === tipShown); if (ti >= 0) { S.navNews = ti + 1 < NAV_TOUR.length ? ti + 2 : 0; dirty = true; tipHide(); if (S.navNews) showTipBubble(NAV_TOUR[S.navNews - 1]); return; } if (tipShown) E.tipSeen(S, tipShown); dirty = true; tipHide(); }
 function tipLater() { if (tipShown) E.tipLater(S, tipShown); dirty = true; tipHide(); }
 function tipsSheet() {
   const T = E.tipState(S, tipCtx()); const L = E.tipList(S); const [seen, total] = E.tipCount(S);
@@ -9878,7 +9888,7 @@ function watchTick() {
   const r = w.ext ? w.ext.step(w.W) : w.koli ? E.koliWatchStep(w.W) : E.defiWatchStep(w.W);
   if (r === "start") ui.arena = null;
   updateCombat(r === "start"); watchHead();
-  if (r === "end" || w.W.done) { watchEnd(); return; }
+  if (r === "end" || w.W.done) { watchEnd(); stickyCheck(); return; }
   w.timer = setTimeout(watchTick, (r === "over" ? E.PAUSE_MS * 1.3 : E.STEP_MS) / w.spd);
 }
 function watchHead() {
@@ -9891,7 +9901,7 @@ function watchEnd() {
     <span class="row" style="gap:6px"><button class="btn sm" data-act="sm-watch" data-v="${w.tid}">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au défi</button></span></div>`;
 }
 function renderWatch() {
-  const w = ui.watch; const W = w.W; if (w.ext) { $("#main").innerHTML = w.ext.html(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
+  const w = ui.watch; const W = w.W; if (w.ext) { $("#main").innerHTML = w.ext.html(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) { watchEnd(); stickyCheck(); } return; } if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
   $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} ${W.def.sun ? "Grand défi du dimanche" : "Défi du jour"} · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Stasis ${W.def.k}</span>${W.def.mods.map(modChip).join("")}
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
@@ -9906,7 +9916,7 @@ function renderWatch() {
     <div class="log" id="flog"></div>
     <div hidden><span id="fres"></span><div id="floot"></div></div>
   </section>`;
-  ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd();
+  ui.arena = null; updateCombat(true); watchHead(); if (W.done) { watchEnd(); stickyCheck(); }
 }
 /* ===================== lot Suivi : carnet de bord et chasse au trésor (logique dans js/suivi.js) ===================== */
 const SU = { days: 7, met: "xp", role: undefined, tq: false };
@@ -10782,7 +10792,7 @@ document.addEventListener("click", (ev) => {
     case "navhelp": helpSheet(); return;
     case "tb-bell": case "tb-acc": { const w = a === "tb-bell" ? "bell" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
- toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); return; }
+ toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); if (t.closest(".helpsheet")) helpSheet(); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */
