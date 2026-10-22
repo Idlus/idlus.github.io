@@ -21,9 +21,25 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.39.2";
+const GAME_VERSION = "2.1.40";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40", name: "Les nouveaux menus", guide: "menus", items: [
+    "Menus : moins d'informations partout. Le jeu tient en 5 familles (Aventure, Héros, Économie, Joueurs, Journal) et les pages d'une famille sont des onglets en haut de chaque page",
+    "PC : une colonne à gauche avec Combat, Havre-Sac, les 5 familles, Options et Aide. Une famille rouvre la dernière page visitée",
+    "Téléphone : Havre-Sac, Aventure, Combat, Héros et Menu en bas ; Menu montre la recherche, les familles en grandes tuiles et tes épinglés",
+    "Barre du haut : la cloche réunit objectifs suivis, événements, annonces et nouveautés ; la bulle ouvre le Chat ; ton portrait ouvre le compte (serveur, son, bonus, Options)",
+    "Havre-Sac : un tableau de bord avec « À faire maintenant » (les 3 choses les plus utiles) et des cartes Ma maison, Mutateur de l'heure, Quête",
+    "Pages réunies : Hôtel de vente et Cours des ressources, Forgemagie et Gravure, Familiers et Élevage, Quêtes, Succès et Ornements, Classements et Builds",
+    "Classements en 6 groupes (Progression, Combat, Collection, Métiers, Guildes, Builds) ; Encyclopédie en 4 onglets ; L'Ascension en 4 onglets (Règles et Historique dans ?) ; Inventaire : 4 pastilles et un menu « Type »",
+    "Donjons et Builds : les filtres sont derrière un bouton « Filtres » sur PC aussi",
+    "Monocompte : une entrée Saison réunit Progression, Défis, Guerre, Boutique et Classements de la saison",
+    "Visuel plus calme : liseré fin autour des panneaux, une seule chose qui brille à la fois, pastilles du menu aux couleurs du thème, explications sur une ligne, lucioles seulement au Havre-Sac et en combat",
+    "Aide (en bas du menu) : guide de la page, guide complet, suggestions, signaler un bug, Discord et « Épingler cette page »",
+    "Tu préfères l'ancien affichage ? Options › Affichage › « Affichage détaillé » remet l'ancienne barre du haut, l'ancien accueil et les textes en entier",
+    "Une visite en 3 bulles présente les nouveaux menus, et le guide a un chapitre « Les menus »",
+    "Combat au téléphone : à la fin d'un combat revu, l'arène ne cache plus les boutons « Revoir le combat » et « Retour au salon »",
+  ] },
   { v: "2.1.39.2", name: "Donjon pendant l'absence réparé", guide: "donjons", items: [
     "Donjons : le réglage « Donjon pendant ton absence » déplié ne faisait plus s'ouvrir la page des donjons (retour au Havre-Sac) ; c'est réparé (merci pour le signalement)",
   ] },

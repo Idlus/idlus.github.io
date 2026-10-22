@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40 « Les nouveaux menus »
+- Refonte des menus, des onglets et du visuel (choix de Mathis le 22/10 : menus 1B 2A 3A 4A 5A 6B 7A, onglets 1A à 7A, visuel 1A à 7A, retouches 1 à 5). `js/ui.js` : `NAV` en 5 familles, `NAV_HELP`, `NAV_MERGE` et `pageTabs()` (onglets réunis), colonne PC (`.sn-rail`), barre du haut compacte (`statusHtml`, cloche `tbBellSync`, compte), accueil `homeDash()`, `detailOn()` (Options › Affichage › « Affichage détaillé »), visite `NAV_TOUR`, `ambPage()` (lucioles au Havre-Sac et en combat). `js/chat.js` : bouton Chat de la barre du haut (`tbSync`). `js/guide.js` : chapitre « Les menus ». CSS en fin de `css/style.css`.
+- Classements (`LB_GRP`), Encyclopédie (`ENC_GRP`), L'Ascension (`js/ascensionui.js`), Inventaire (`INV_CHIP_TOP`), filtres de Builds (`js/builds.js`), saison Monocompte (famille `df`, `SEASON_GRP`). Chemins « Famille › Page » des textes mis à jour (vérifiés par `tests/chemins.test.js`).
+- Fin de combat revu au téléphone : `stickyCheck()` décolle l'arène quand `#watchEnd` est rempli.
+
 ## 2.1.39.2 « Donjon pendant l'absence réparé »
 - Bug n°45 (ticket #155) : dans `js/expeditionsui.js` (`dghPanel`), la ligne `const P = E.dghPlan(...)` s'était retrouvée au bout d'un commentaire en 2.1.39 ; le panneau déplié plantait (« P is not defined ») et la page Donjons ne s'ouvrait plus. Test `tests/absence_donjon_ui.test.js` (PC 1280 px, téléphone 390 px).
 

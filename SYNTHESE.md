@@ -83,4 +83,4 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **Revenus : en attente (décision de Mathis, 22/10).** Pas de piste de revenus pour l'instant, donc pas de demande à Ankama sur les dons pour le moment.
 
-Chantiers en cours au 22/10 : refonte des menus (en attente du feu vert de Mathis), fin de l'observation du Bouclier Monocompte le 24/10 à 11:00 UTC, extraction des animations DOFUS 3 sur le PC de Mathis (en attente).
+Chantiers en cours au 22/10 : refonte des menus publiée en 2.1.40 (5 familles, onglets réunis, barre du haut avec cloche et compte, visuel plus calme ; « Affichage détaillé » remet l'ancien), maquettes suivantes : déblocage progressif par chapitres et réduction des monnaies ; fin de l'observation du Bouclier Monocompte le 24/10 à 11:00 UTC ; extraction des animations DOFUS 3 sur le PC de Mathis arrêtée (programmes prêts, 8 animations par classe retenues, accord d'Ankama à confirmer pour un dépôt public).
