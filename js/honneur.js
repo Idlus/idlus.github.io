@@ -46,7 +46,8 @@
     A.xp = 0;
     return A;
   };
-  E.dayIdx = E.dayIdx || ((t) => Math.floor((t || E.now()) / 86400000));
+  /* jour à l'heure de Paris, comme le défi du jour (js/defi.js) : les agressions reviennent à minuit et non à 2 h (ticket #147) */
+  E.dayIdx = E.dayIdx || ((t) => (E.defiDay ? E.defiDay(t || E.now()) : Math.floor((t || E.now()) / 86400000)));
   E.alignRankIdx = (S) => (S && S.align ? E.honRankOf(E.honInit(S).hon) : 0);
   const ROM = ["I", "II", "III", "IV"];
   E.honRankName = (side, ord, r) => {

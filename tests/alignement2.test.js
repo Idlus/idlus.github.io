@@ -180,3 +180,19 @@ console.log("alignement2.test.js : tout est bon");
     console.log("ok 10 équipement de rang rendu après vieil onglet");
   }
 }
+
+// 11. Ticket #147 : les agressions reviennent à minuit, heure de Paris (et non à 2 h, minuit UTC).
+{
+  const keep = now; const S = team(200); E.chooseAlign(S, "bonta", "coeur");
+  now = Date.UTC(2030, 5, 10, 21, 30); // 23 h 30 à Paris (heure d'été)
+  E.honInit(S).ag.n = E.ALIGN_HON.agrDay; S.align.ag.dd = S.align.ag.d; S.align.ag.done = [0, 1, 2, 3, 4];
+  now = Date.UTC(2030, 5, 10, 22, 22); // 0 h 22 à Paris, encore la veille en UTC
+  assert.strictEqual(E.honInit(S).ag.n, 0, "5 agressions rendues à minuit, heure de Paris");
+  assert.ok(!E.agrFight(S, 0).err, "on peut attaquer dès minuit");
+  now = Date.UTC(2030, 5, 11, 1, 0); // 3 h à Paris : pas de seconde remise à 2 h
+  assert.strictEqual(E.honInit(S).ag.n, 1, "pas de seconde remise à 2 h");
+  now = Date.UTC(2030, 11, 10, 23, 5); // 0 h 05 à Paris (heure d'hiver)
+  assert.strictEqual(E.honInit(S).ag.n, 0, "minuit à Paris en hiver aussi");
+  now = keep;
+  console.log("ok 11 agressions remises à minuit, heure de Paris (#147)");
+}

@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.8 « Agressions à minuit »
+- `js/honneur.js` : `E.dayIdx` suit le jour de Paris (`E.defiDay`, js/defi.js) au lieu du jour UTC : agressions, défenses et région défendue se remettent à zéro à minuit à Paris et non à 2 h (1 h en hiver). Ticket #147. Test 11 de `tests/alignement2.test.js`.
+
 ## 2.1.37.7 « XP de récolte rendue au 200 »
 
 Un métier de récolte au niveau 200 garde de nouveau l'XP gagnée en plus (classement des métiers) ; seul le plafond du Monocompte (niveau 100 hors spécialité) la bloque encore (ticket #146).

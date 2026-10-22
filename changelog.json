@@ -1,6 +1,13 @@
 {
-  "version": "2.1.37.7",
+  "version": "2.1.37.8",
   "versions": [
+    {
+      "v": "2.1.37.8",
+      "name": "Agressions à minuit",
+      "items": [
+        "Alignement : les 5 agressions du jour reviennent à minuit, heure de Paris, comme le défi du jour (elles revenaient à 2 h du matin). Les défenses et le bonus de région défendue suivent la même heure"
+      ]
+    },
     {
       "v": "2.1.37.7",
       "name": "XP de récolte rendue au 200",
