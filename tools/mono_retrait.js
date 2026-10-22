@@ -22,6 +22,8 @@ for (const r of R) {
   const c = CIBLES[r.pseudo]; if (!c) continue;
   const S = JSON.parse(r.data); const k0 = Math.floor(+S.kamas || 0); const h0 = JSON.stringify(S.havre || {});
   if (c.kamas) { const n = Math.min(k0, Math.floor(c.kamas)); S.kamas = k0 - n; console.log(`== ${r.pseudo} : kamas ${fm(k0)} → ${fm(S.kamas)} (−${fm(n)})`); }
+  // { "total": n, "garde": g } : retire n kamas de gain du Classique, d'abord dans la bourse (en laissant g kamas), puis en niveaux de Havre-Sac
+  if (c.total) { const n = Math.max(0, Math.min(k0 - (c.garde || 0), c.total)); S.kamas = k0 - n; c.havre = c.total - n; console.log(`== ${r.pseudo} : kamas ${fm(k0)} → ${fm(S.kamas)} (−${fm(n)}), reste ${fm(c.havre)} à retirer en Havre-Sac`); }
   if (c.havre) {
     let rest = c.havre; const H = E.HAVRE; const pris = {};
     while (rest > 0) {
