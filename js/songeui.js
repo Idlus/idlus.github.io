@@ -402,6 +402,7 @@
   }
   async function sgClaim() {
     const o = ONL(); const s = S(); if (!s || !linked() || !window.MARKET) return;
+    if ((o.monoPart && o.monoPart()) || s.mono) return; // 2.1.37.x : lots du Songe = partie Classique ; la clé idlus-songe-lots n'est jamais posée depuis le Monocompte
     const k = `${o.user.id}:${E.weekIdx()}`; if (RANK.claimed === k) return; RANK.claimed = k;
     try { if (localStorage.getItem("idlus-songe-lots") === k) return; } catch (e) {}
     const r = await o.rpc("songe_claim", { p_after: (s.hdv && s.hdv.op) || 0 });

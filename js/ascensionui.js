@@ -402,7 +402,9 @@
   /* lots du top 10 (mois et semaines passés) et course de lancement de la 1.1 (10 premiers à l'étage 100 en Difficile) */
   let claimAt = 0, raceAt = 0;
   function claim() {
-    const s = S(); if (!s || !s.asc || !(ON && ON.user && ON.rpc) || Date.now() - claimAt < 3600000) return; claimAt = Date.now();
+    const s = S(); if (!s || !s.asc || !(ON && ON.user && ON.rpc) || Date.now() - claimAt < 3600000) return;
+    if ((ON.monoPart && ON.monoPart()) || (E.isMono && E.isMono(s))) return; // 2.1.37.x : lots du classement de l'Ascension = partie Classique (avant, leur réponse versait les opérations du Classique dans le Monocompte)
+    claimAt = Date.now();
     ON.rpc("asc_claim", { p_after: (s.hdv && s.hdv.op) || 0 }).then((r) => { if (!r || r.err || !r.data || r.data.err) return;
       if (r.data.ops && window.MARKET) window.MARKET.apply(r.data.ops, true);
       if (r.data.ok) X().toast(`Classement de L'Ascension : +${r.data.fioles} Fioles de Volonté${r.data.kamas ? ` et ${fmt(r.data.kamas)} kamas` : ""}, et ton titre !`, "rare"); }).catch(() => {});

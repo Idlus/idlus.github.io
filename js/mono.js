@@ -61,13 +61,16 @@
     return got;
   };
   /* Ce que la nouvelle saison garde du compte : titres et apparences (ornements, cadres, ailes, palettes, aura). */
-  E.monoLegacy = (S) => ({ t: (S.titlesExtra || []).slice(), u: Object.keys(S.unlocks || {}).filter((k) => /^(gift_o_|gift_f_|wing_|teint_|tf_)/.test(k)),
+  /* 2.1.37.x : ornements et cadres (gift_o_, gift_f_) du Monocompte seulement (pass, saison : mono_, tf_) ; ceux des codes cadeaux
+     du Classique ne passent pas d'une saison à l'autre */
+  E.monoLegacyKey = (k) => /^(gift_[of]_(mono_|tf_)|wing_|teint_|tf_)/.test(k);
+  E.monoLegacy = (S) => ({ t: (S.titlesExtra || []).slice(), u: Object.keys(S.unlocks || {}).filter((k) => E.monoLegacyKey(k)),
     aura: !!(S.chroma && S.chroma.shop && S.chroma.shop.aura) });
   E.monoLegacyMerge = (a, b) => ({ t: [...new Set([...(a && a.t) || [], ...(b && b.t) || []])], u: [...new Set([...(a && a.u) || [], ...(b && b.u) || []])], aura: !!((a && a.aura) || (b && b.aura)) });
   E.monoApplyLegacy = (S, L) => {
     if (!L) return 0; let n = 0; S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
     (L.t || []).forEach((t) => { if (!S.titlesExtra.includes(t)) { S.titlesExtra.push(t); n++; } });
-    (L.u || []).forEach((k) => { if (!S.unlocks[k]) { S.unlocks[k] = 1; n++; } });
+    (L.u || []).forEach((k) => { if (/^gift_/.test(k) && !E.monoLegacyKey(k)) return; /* 2.1.37.x : codes cadeaux du Classique, même dans un ancien relevé */ if (!S.unlocks[k]) { S.unlocks[k] = 1; n++; } });
     if (L.aura && E.GIFT_X && E.GIFT_X.aura) { E.GIFT_X.aura.give(S); n++; }
     return n;
   };

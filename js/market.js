@@ -86,13 +86,19 @@
   /* ---------- opérations du serveur appliquées à la partie ---------- */
   const cursor = () => { const s = S(); return (s && s.hdv && s.hdv.op) || 0; };
   const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id && (!(ON.solo && ON.solo()) || monoM())); // 1.0.11 : pas de vente ni d'achat depuis une partie solo ; 6a : sauf la partie Monocompte en ligne (HdV de saison)
-  function apply(ops, quiet) {
+  /* 2.1.37.x « Monocompte étanche » : src dit d'où viennent les opérations. Une partie Monocompte n'applique que celles de son
+     serveur (src « mono » : HdV de saison et échanges, renvoyés quand monoM()) ; celles du Classique (registre hdv_ops : vente
+     directe, Foire, pluie, guilde, Percepteurs, Ascension, Songe…) restent sur le serveur pour la partie Classique, et le curseur
+     S.hdv.op du Monocompte n'avance pas. Une partie Classique n'applique jamais celles du Monocompte. */
+  const srcNow = () => (monoM() ? "mono" : "classic");
+  function apply(ops, quiet, src) {
     const s = S(); if (!s || !ops || !ops.length || !mine()) return 0;
+    if ((src || "classic") !== (E.isMono(s) ? "mono" : "classic") || (src === "mono" && !monoM())) return 0;
     s.hdv = s.hdv || { op: 0, log: [] }; s.hdv.log = s.hdv.log || [];
     let n = 0, got = false;
     ops.slice().sort((a, b) => a.id - b.id).forEach((o) => {
       if (o.id <= (s.hdv.op || 0)) return;
-      const p = o.p || {};
+      const p = o.p || {}; const k0 = s.kamas || 0;
       if (p.k) s.kamas = Math.max(0, Math.round((s.kamas || 0) + Number(p.k)));
       ["res", "runes", "cons"].forEach((b) => { if (!p[b]) return; s[b] = s[b] || {}; for (const k in p[b]) { const v = (s[b][k] || 0) + Number(p[b][k]); if (v > 0) s[b][k] = v; else delete s[b][k]; } });
       (p.rm || []).forEach((uid) => { uid = +uid; delete s.items[uid]; s.chars.forEach((c) => { for (const sl in c.equip) if (c.equip[sl] === uid) delete c.equip[sl]; }); });
@@ -104,7 +110,7 @@
       if (p.col && E.tfState) { const T = E.tfState(s); if (T) for (const k in p.col) { const v = (T.col[k] || 0) + Number(p.col[k]); if (v > 0) T.col[k] = v; else delete T.col[k]; } } // 6a : objets de collection de la Boutique temporelle
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
-      if (E.carnetOp) E.carnetOp(s, p, o.t); // 2.1.29.6 : chaque opération dans sa case du carnet (vente directe, guilde, Foire…)
+      if (E.carnetOp) E.carnetOp(s, p.k ? Object.assign({}, p, { k: (s.kamas || 0) - k0 }) : p, o.t); // 2.1.37.x : ce qui a vraiment bougé (un retrait plus gros que la bourse s'arrête à 0 ; avant, l'écart revenait en « Autres ») // 2.1.29.6 : chaque opération dans sa case du carnet (vente directe, guilde, Foire…)
       // 1.0.30 : la vente directe (p.vd, js/venteui.js) a son propre journal (le surplus part toutes les 10 minutes) ; le Jackpot du Trool (p.jack) s'annonce
       if (o.t && p.vd) { s.venteLog = (Array.isArray(s.venteLog) ? s.venteLog : []); s.venteLog.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); s.venteLog = s.venteLog.slice(0, 20); }
       else if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got || p.jack || p.rain)) X().toast(o.t, "rare"); }
@@ -117,9 +123,9 @@
   /* 6a : registre des Éclats du Temps renvoyé par l'HdV de saison (Éclats vendus, achetés, échangés) : le sac le recopie */
   const reg = (d) => { if (d && d.registre && d.registre.solde != null && E.tfSrvSet && S()) { E.tfSrvSet(S(), d.registre); X().markDirty(); } };
   async function sync() {
-    if (!mine()) return;
+    if (!mine()) return; const src = srcNow();
     const r = await ON.rpc("hdv_sync", { p_after: cursor() });
-    if (r.data && r.data.ops) apply(r.data.ops);
+    if (r.data && r.data.ops) apply(r.data.ops, false, src);
     reg(r.data);
   }
   async function act(name, args, okTxt) {
@@ -128,11 +134,11 @@
     M.busy = true; paint();
     /* la partie en ligne doit être à jour : le serveur vérifie les kamas et le sac dedans */
     if (name === "hdv_list" || name === "hdv_buy" || name === "hdv_order_new" || name === "hdv_order_fill") { try { await X().onPush(); } catch (e) {} }
-    const r = await ON.rpc(name, Object.assign({ p_after: cursor() }, args));
+    const src = srcNow(); const r = await ON.rpc(name, Object.assign({ p_after: cursor() }, args));
     M.busy = false;
     if (r.err) { X().toast(/connexion/i.test(r.err) ? r.err : "Refusé par le serveur : " + r.err); paint(); return null; }
     if (r.data && r.data.err) { X().toast(r.data.err); paint(); return null; }
-    if (r.data && r.data.ops) apply(r.data.ops, true);
+    if (r.data && r.data.ops) apply(r.data.ops, true, src);
     reg(r.data);
     if (okTxt) X().toast(okTxt);
     return r.data;
@@ -742,8 +748,8 @@
           else if (x.uid) { o.items = o.items || []; const i = o.items.indexOf(x.uid); if (i >= 0) o.items.splice(i, 1); else o.items.push(x.uid); } else { const b = bucket(x.cat); o[b] = o[b] || {}; if (o[b][x.key]) delete o[b][x.key]; else o[b][x.key] = x.n; } }); return; }
       case "mk-tq": { const [b, k] = d.v.split("|"); const inp = document.querySelector(`[data-tq="${CSS.escape(d.v)}"]`); const v = Math.max(0, Math.round(+(inp ? inp.value : 0))); tradeSet((o) => { o[b] = o[b] || {}; if (v) o[b][k] = v; else delete o[b][k]; }); return; }
       case "mk-tk": { const v = Math.max(0, Math.round(+String(($("#mkTK") || {}).value || 0).replace(/\s/g, ""))); tradeSet((o) => { o.k = v; }); return; }
-      case "mk-tok": { const t2 = M.trade; if (!t2) return; try { await X().onPush(); } catch (e) {} const r = await ON.rpc("trade_ok", { p_id: t2.id, p_ver: t2.ver, p_after: cursor() });
-        if (r.err || (r.data && r.data.err)) X().toast(r.err || r.data.err); else { if (r.data && r.data.ops) apply(r.data.ops, true); reg(r.data); } await tradePoll(); return; }
+      case "mk-tok": { const t2 = M.trade; if (!t2) return; try { await X().onPush(); } catch (e) {} const src = srcNow(); const r = await ON.rpc("trade_ok", { p_id: t2.id, p_ver: t2.ver, p_after: cursor() });
+        if (r.err || (r.data && r.data.err)) X().toast(r.err || r.data.err); else { if (r.data && r.data.ops) apply(r.data.ops, true, src); reg(r.data); } await tradePoll(); return; }
       case "mk-tcancel": { const t2 = M.trade; if (t2) await ON.rpc("trade_cancel", { p_id: t2.id }); await tradePoll(); X().closeSheet(); return; }
       case "mk-oview": M.oView = d.v; if (d.v === "all") M.orders = null; else M.oMine = null; render($("#main")); return;
       case "mk-ocat": M.oCat = d.v; paint(); return;

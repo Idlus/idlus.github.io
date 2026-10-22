@@ -33,6 +33,7 @@
 
   const online = () => !!(ON && ON.enabled && ON.db && ON.db());
   const logged = () => !!(ON && ON.user);
+  const monoP = () => !!(ON && ON.monoPart && ON.monoPart()); // 2.1.37.x : les builds sont ceux du serveur Classique : pas de publication depuis le héros Monocompte
   const F = { cls: "", br: "", el: "", bud: "", q: "", sort: "week" };
   /* 1.0.25.2 : onglet « Mes builds » (ses builds publiés, sans filtre) */
   const MINE = { cls: "", br: "", el: "", bud: "", q: "", sort: "mine" };
@@ -191,7 +192,7 @@
     const top = `<div class="panel pad row bd-mine"><span class="grow stack" style="gap:5px"><b>${n === null ? "Tes builds publiés" : `${n} build${n > 1 ? "s" : ""} publié${n > 1 ? "s" : ""} sur ${MAX}`}</b>
       <span class="bar"><i style="width:${n === null ? 0 : Math.min(100, Math.round((100 * n) / MAX))}%"></i></span>
       <span class="xs muted">${full ? `Tu as atteint ${MAX} builds : supprimes-en un pour en publier un autre.` : "Quand un héros change, mets son build à jour ici ou depuis son menu ⋯. Supprimer un build retire aussi ses ❤ et ses vues."}</span></span>
-      <button class="btn primary sm" data-act="bd-pub" ${full ? "disabled" : ""}>＋ Publier un build</button></div>`;
+      ${monoP() ? `<span class="xs muted">Réservé au serveur Classique</span>` : `<button class="btn primary sm" data-act="bd-pub" ${full ? "disabled" : ""}>＋ Publier un build</button>`}</div>`;
     return top + gridHtml("Tu n'as encore publié aucun build. Touche « Publier un build », ou ouvre un héros : menu ⋯ Plus, « Partager ou publier le build ».");
   }
   const key = () => { const q = Q(); return JSON.stringify([q.cls, q.br, q.el, q.bud, fold(q.q.trim()), q.sort, q.sort === "fav" ? favs().join(",") : ""]); };
@@ -294,7 +295,7 @@
   function html() {
     const u = U(); const x = u.bdOpen && CACHE[u.bdOpen];
     if (u.bdOpen && !x) u.bdOpen = null;
-    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">Les builds partagés par les joueurs d'Idlus</span>${online() && !(tab() === "mine" && !u.bdOpen) ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`; // « Mes builds » a le sien
+    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">Les builds partagés par les joueurs d'Idlus${monoP() ? " · publier : réservé au serveur Classique" : ""}</span>${online() && !monoP() && !(tab() === "mine" && !u.bdOpen) ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`; // « Mes builds » a le sien
     if (!online()) return `<div id="bdPage">${head}<div class="empty">Les builds des joueurs sont sur le serveur d'Idlus, qui n'est pas joignable ici. Tu peux toujours partager un build avec son code (héros, menu ⋯ Plus).</div></div>`;
     const n = logged() ? myCount() : null;
     const tabs = `<div class="subtabs bd-tabs" role="tablist"><button data-act="bd-tab" data-v="all" aria-pressed="${tab() === "all"}">Tous les builds</button><button data-act="bd-tab" data-v="mine" aria-pressed="${tab() === "mine"}">Mes builds${n !== null ? ` <span class="num">${n}/${MAX}</span>` : ""}</button></div>`;
@@ -326,7 +327,7 @@
   }
   /* un build supprimé (par son auteur sur un autre appareil, ou par l'équipe) n'est plus relié au héros */
   function linkCheck() { const s = S(); if (!s || !ME) return; s.chars.forEach((c) => { if (c.bd && !ME.some((x) => x.id === c.bd)) { c.bd = null; c.bdH = null; X().markDirty(); } }); }
-  const changed = (c) => !!(c && c.bd && c.bdH && hash(E().buildCode(S(), c)) !== c.bdH);
+  const changed = (c) => !monoP() && !!(c && c.bd && c.bdH && hash(E().buildCode(S(), c)) !== c.bdH);
 
   /* ---------- publier (5A, depuis « Partager le build ») ---------- */
   const P = { cid: null, title: "", el: "", tags: [], note: "", err: "", busy: false, ok: "" };
@@ -339,6 +340,7 @@
   function readPub() { const t = $("#bdPT"), n = $("#bdPN"); if (t) P.title = t.value; if (n) P.note = n.value; }
   function pubHtml(c) {
     if (!online() || !c) return "";
+    if (monoP()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Communauté › Builds</b><p class="small" style="margin:6px 0">Réservé au serveur Classique : les builds publiés sont ceux des héros du Classique. Tu peux toujours partager le build de ton héros Monocompte avec son code.</p></div>`;
     const C = CLASSES[c.cls];
     if (!logged()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Communauté › Builds</b>
       <p class="small" style="margin:6px 0">Pour publier, il faut être connecté avec Discord (une seule fois). Sans compte, tu peux tout de même regarder et copier les builds des autres.</p>
@@ -373,6 +375,7 @@
   function pubOpen(c) { if (!online() || !logged()) return; if (P.cid !== c.id) P.cid = null; mine().then(() => { if (P.cid === c.id && ME) { const pub = c.bd && ME.find((x) => x.id === c.bd); if (pub) { P.cid = null; pubInit(c); } } pubRefresh(); }); }
   async function send(cid, quick) {
     const c = hero(cid); if (!c || P.busy) return;
+    if (monoP()) { X().toast(ON.CLASSIC_ERR || "Réservé au serveur Classique."); return; }
     if (!logged()) { X().toast("Connecte-toi avec Discord pour publier un build."); return; }
     if (!quick) { readPub(); const t = P.title.trim(); if (t.length < 4) { P.err = "Donne un titre à ton build (4 caractères au moins)."; return pubRefresh(); } }
     const code = E().buildCode(S(), c); const b = E().parseBuild(code);

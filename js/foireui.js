@@ -64,6 +64,7 @@
     const s = S(); const d = J.data;
     const head = `<div class="phead"><h2>${X().IC("bourse")} Jackpot du serveur</h2><span class="tag soft">tirage toutes les heures</span></div>`;
     const rule = `<span class="small fo-c">Chaque ticket coûte 10 000 k : 9 000 k vont au pot, 1 000 k sortent du jeu. Un gagnant tiré au sort toutes les heures parmi les tickets de l'heure.</span>`;
+    if (online() && ON.monoPart && ON.monoPart()) return `<section class="panel" id="foJack">${head}<div class="pad stack">${rule}${X().soloPanel("le Jackpot")}</div></section>`; // 2.1.37.x : Jackpot du Classique, rien depuis le Monocompte
     if (!online()) return `<section class="panel" id="foJack">${head}<div class="pad stack">${rule}<div class="empty">Hors ligne : le Jackpot passe par le serveur, il revient avec la connexion.</div></div></section>`;
     if (!d) {
       if (!J.loading && !J.err) jLoad().then(() => paintJack());

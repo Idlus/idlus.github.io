@@ -75,6 +75,11 @@
      101… : Éternel, sur l'appareil (le serveur le garde en lecture seule après la fin de saison) */
   ON.slotOnline = (n) => { n = n || SLOT; return n === 1 || (n < 4 && ON.slotsOk) || (n === MONO_N && ON.monoOn()); };
   ON.setSlot = (n, key) => { SLOT = n; KEY = key; };
+  /* 2.1.37.x « Monocompte étanche » : partie Monocompte (4), de l'Éternel (101, 102…) ou partie affichée du Monocompte. Rien du
+     serveur Classique n'y entre ni n'en sort (voir CLASSIC_RPC plus bas) */
+  ON.monoPart = () => { if (SLOT === MONO_N || SLOT > 100) return true; try { const s = root.DX && root.DX.S; return !!(s && s.mono); } catch (e) { return false; } };
+  const CLASSIC_ERR = "Réservé au serveur Classique : ta partie Monocompte n'y prend pas part.";
+  ON.CLASSIC_ERR = CLASSIC_ERR;
   const SOLO_ERR = "Partie solo : les classements, le Kolizéum classé, l'Hôtel de vente, la guilde et les boss se jouent avec ta partie 1.";
   ON.SOLO_ERR = SOLO_ERR;
 
@@ -315,6 +320,7 @@
      Renvoie la réponse du serveur, ou { net: true } s'il faut réessayer plus tard. */
   ON.submitRecord = async (did) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR }; // le serveur rejoue avec la partie 1 : jamais pour une partie solo
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { did } }), 30000);
@@ -326,6 +332,7 @@
      (fonction « record ») avant d'annoncer ; { net: true } s'il faut réessayer plus tard. Jamais pour une partie solo. */
   ON.dofusAnn = async (o) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { dofus: { uid: o.uid, did: o.did, k: o.k } } }), 30000);
@@ -338,8 +345,16 @@
      Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
   const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_|vente_sell$|foire_jackpot_buy$)/; // 1.0.30 : vente directe et Jackpot du Trool
   const MONO_RPC = /^(hdv_(sync|list|buy|cancel|reprice|market|offers|history|mine|bought|order_new|order_cancel|order_fill|orders_list|orders_mine)|trade_(start|state|offer|ok|cancel))$/;
+  /* 2.1.37.x : fonctions du serveur Classique qui donnent ou prennent des kamas, objets ou ressources à la partie (registre hdv_ops,
+     curseur S.hdv.op), ou qui l'inscrivent dans un système du Classique (guilde, alliance, Percepteurs, Kolizéum, vente directe,
+     Foire, pluie de kamas, lots des classements de l'Ascension et du Songe, boss de guilde, codes cadeaux). Jamais depuis une partie
+     Monocompte : leurs réponses (« ops ») portaient les opérations du Classique, appliquées à la partie Monocompte, et
+     faisaient avancer son curseur. Toute autre fonction qui reçoit p_after (curseur des opérations) hors mono_ est refusée aussi. */
+  const CLASSIC_RPC = /^(hdv_(sync|list|buy|cancel|reprice|mine|bought|order_new|order_cancel|order_fill|orders_mine)|trade_|guild_|gboss_|perco_|prism_|ally_|koli_|brisage_|vente_sell$|foire_jackpot|rain_|adm_rain_|songe_claim$|asc_claim$|defi_guild_prize$|gift_redeem$|gift_mine$|build_publish$)/;
+  ON.classicRpc = (name, args) => !/^mono_/.test(name) && (CLASSIC_RPC.test(name) || !!(args && Object.prototype.hasOwnProperty.call(args, "p_after")));
   const rpc = async (name, args) => {
     if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
+    else if (ON.monoPart() && ON.classicRpc(name, args)) return { err: CLASSIC_ERR };
     else if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
     try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
     catch (e) { return { err: "Pas de connexion au serveur." }; }
@@ -399,6 +414,7 @@
   /* 0.1.19 : défi du jour, rejoué par la même fonction serveur avec la partie en ligne. */
   ON.submitDefi = async (tier) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { defi: tier } }), 30000);
@@ -409,6 +425,7 @@
   /* 0.1.22 : boss de guilde ({ gboss: 1 }) et défense de Percepteur ({ perco: id }), rejoués par la même fonction serveur. */
   ON.submitGuild = async (body) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body }), 30000);

@@ -9490,7 +9490,7 @@ async function lbDefiFetch(out) {
     return;
   }
   if (v === "g") { /* les guildes : la récompense de la semaine passée se distribue à la première lecture du lundi */
-    if (me && S && S.defiGPChk !== wk) { try { await db.rpc("defi_guild_prize"); S.defiGPChk = wk; } catch (e) {} }
+    if (me && S && !S.mono && S.defiGPChk !== wk) { try { await db.rpc("defi_guild_prize"); /* 2.1.37.x : prix des guildes du Classique, jamais depuis le Monocompte */ S.defiGPChk = wk; } catch (e) {} }
     const cols = "guild_id,name,ic,col,lvl,score,members,r";
     const [{ data }, { data: lw }] = await Promise.all([db.from("lb_defi_guild_week").select(cols).eq("week", wk).eq("tier", tier).order("r", { ascending: true }).limit(30),
       db.from("lb_defi_guild_week").select("name").eq("week", wk - 1).eq("tier", tier).eq("r", 1).limit(1)]);

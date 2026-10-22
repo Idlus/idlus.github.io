@@ -21,7 +21,9 @@
   const open = () => !!(P.st && P.st.st === "open" && left() > 0);
   const est = () => (P.st ? Math.floor(P.st.total / Math.max(1, P.st.n + (P.st.in ? 0 : 1))) : 0); // part si je participe maintenant
 
+  const monoP = () => !!(ON.monoPart && ON.monoPart()); // 2.1.37.x : la pluie de kamas est du serveur Classique (parts versées par hdv_ops) : rien dans une partie Monocompte
   async function poll() {
+    if (monoP()) { if (P.st) { P.st = null; paint(); } return; }
     if (!ON.rpc || ON.state === "offline") return;
     P.last = Date.now();
     const r = await ON.rpc("rain_state"); if (r.err) return;
@@ -53,11 +55,11 @@
       ${got ? `<span class="xs muted">Les kamas sont dans ta partie (journal de l'hôtel de vente).</span>` : !t.mine && t.n ? `<span class="xs muted">Garde un œil sur le chat : la prochaine pluie y est annoncée.</span>` : ""}</div></section>`;
   }
   /* accueil (appelé par homeHtml dans js/ui.js) ; rien quand il n'y a pas de pluie */
-  const homeHtml = () => (P.st ? cardHtml() : "");
+  const homeHtml = () => (P.st && !monoP() ? cardHtml() : "");
   function pill() {
     let el = $("#plpill");
     const ui = window.DX.ui || {};
-    const show = open() && !P.st.in && !P.st.mine && !(ui.tab === "home" && ui.home !== "havre" && ui.home !== "expe");
+    const show = !monoP() && open() && !P.st.in && !P.st.mine && !(ui.tab === "home" && ui.home !== "havre" && ui.home !== "expe");
     if (!show) { if (el) el.remove(); return; }
     if (!el) { el = document.createElement("button"); el.id = "plpill"; el.className = "pl-pill"; el.dataset.act = "pl-join"; document.body.appendChild(el); }
     const txt = `${X().IC("kamas")}<span><b>Pluie de kamas</b> · <span class="num" data-pl="left">${mmss(left())}</span></span><span class="pl-go">Je participe</span>`;
@@ -74,6 +76,7 @@
     if (ui.tab === "admin" && P.adm !== null && !(a && a.closest && a.closest("#plAdm"))) repaintAdm(); // pas pendant qu'on tape
   }
   async function join() {
+    if (monoP()) { X().toast(ON.CLASSIC_ERR); return; }
     if (P.busy || !open()) return;
     if (!ON.user) { X().toast("Connecte-toi à un compte (gratuit) pour participer à la pluie de kamas : Options › Compte."); return; }
     P.busy = true; paint();
@@ -91,6 +94,7 @@
   }
   const total = () => Math.floor(Number(String(P.f.total).replace(/[^\d]/g, "")) || 0);
   function adminBox() {
+    if (monoP()) return `<div class="box"><h2>Pluie de kamas</h2><p class="small muted">Réservé au serveur Classique : ouvre ta partie Classique pour lancer une pluie (les kamas viennent de cette partie).</p></div>`;
     const t = P.st && P.st.st === "open" ? P.st : null; const k = Math.floor((S() && S().kamas) || 0);
     const cur = t ? `<div class="ln"><span class="grow"><b>En cours :</b> ${fmt(t.total)} kamas · ${fmt(t.n)} participant${t.n > 1 ? "s" : ""} · fin dans <span class="num" data-pl="left">${mmss(left())}</span></span>
         <button class="btn sm" data-act="pl-stop" data-v="1">Partager maintenant</button><button class="btn sm" data-act="pl-stop" data-v="0">Annuler (tout te revient)</button></div>` : "";
@@ -107,6 +111,7 @@
   }
   function repaintAdm() { const b = $("#plAdm"); if (b) { readForm(); b.innerHTML = adminBox(); } }
   async function admOpen() {
+    if (monoP()) { X().toast(ON.CLASSIC_ERR); return; }
     readForm(); const T = total(); if (P.busy) return; P.busy = true;
     try { await X().onPush(); } catch (e) {}
     const r = await ON.rpc("adm_rain_open", { p_total: T, p_min: P.f.min, p_msg: P.f.msg || "", p_announce: !!P.f.ann }); P.busy = false; P.confirm = false;

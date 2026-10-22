@@ -71,6 +71,7 @@
     else if (ui.tab === "world" && !document.querySelector("#sheet .sheet")) window.DX.render();
   }
   async function claim() {
+    if (ON.monoPart && ON.monoPart()) return; // 2.1.37.x : alliances = serveur Classique
     A.claiming = true;
     const r = await ON.rpc("ally_claim", { p_after: (S().hdv && S().hdv.op) || 0 });
     A.claiming = false;
