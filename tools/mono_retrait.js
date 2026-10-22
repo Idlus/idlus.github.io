@@ -25,8 +25,9 @@ for (const r of R) {
   if (c.havre) {
     let rest = c.havre; const H = E.HAVRE; const pris = {};
     while (rest > 0) {
-      let best = null; for (const x of H) { const l = (S.havre || {})[x.id] || 0; if (l > 0) { const v = Math.round(x.base * Math.pow(x.g, l - 1)); if (!best || v > best.v) best = { id: x.id, v }; } }
-      if (!best) { console.log("   plus aucun niveau à retirer"); break; }
+      // le niveau le plus cher qui ne dépasse pas ce qu'il reste à retirer : jamais plus que la cible
+      let best = null; for (const x of H) { const l = (S.havre || {})[x.id] || 0; if (l > 0) { const v = Math.round(x.base * Math.pow(x.g, l - 1)); if (v <= rest && (!best || v > best.v)) best = { id: x.id, v }; } }
+      if (!best) { if (rest > 0) console.log(`   reste ${fm(rest)} kamas, sous le prix du plus petit niveau : laissés`); break; }
       S.havre[best.id]--; if (!S.havre[best.id]) delete S.havre[best.id]; rest -= best.v; pris[best.id] = (pris[best.id] || 0) + 1;
     }
     const val = c.havre - rest;
