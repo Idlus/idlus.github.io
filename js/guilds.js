@@ -723,6 +723,8 @@
     }, 4000);
   }
 
-  window.GUILD = { start, render, sync, load, loadEx, say, adminHtml, chatSeen, inGuild, paint, call, // paint, call, loadEx : js/chasse.js
+  /* 2.1.37.7 : fiche d'une guilde ouverte depuis Classements › Guildes ou le profil d'un joueur */
+  const show = (id) => { if (!mine() || !id) return; G.atk = null; openView(id); if (G.me && G.me.g) G.tab = "others"; };
+  window.GUILD = { start, render, sync, load, loadEx, say, adminHtml, chatSeen, inGuild, paint, call, show, // paint, call, loadEx : js/chasse.js
     get msgs() { return G.chat; }, get unread() { return G.unread; }, G };
 })();

@@ -1,6 +1,13 @@
 {
-  "version": "2.1.37.6",
+  "version": "2.1.37.7",
   "versions": [
+    {
+      "v": "2.1.37.7",
+      "name": "Guildes au classement",
+      "items": [
+        "Idée de Gagou : Classements › nouvel onglet « Guildes », toutes les guildes du serveur Classique rangées par niveau ; un clic ouvre la fiche de la guilde"
+      ]
+    },
     {
       "v": "2.1.37.6",
       "name": "Journal du Bouclier",

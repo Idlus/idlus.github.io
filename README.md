@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.7 « Guildes au classement »
+- Idée de Gagou (22/10) : le profil d'un joueur (`lbProfile`, js/ui.js) demande sa guilde à `guild_of(p_user)` (lecture seule : nom, emblème, niveau et rang, déjà publics dans `guild_view`) et l'affiche ; un clic ouvre la fiche de la guilde (`GUILD.show`, js/guilds.js). La fonction SQL attend l'accord de Mathis pour le serveur (branche claude/project-thread-fr7ayx) : sans elle, le profil s'affiche sans guilde et ne la redemande plus (`LB.gof`).
+- Classements › Guildes : `guild_list` déjà existante, rangée par niveau puis membres. Classique seulement : en Monocompte, pas de guildes (fonctions `guild_*` refusées par js/online.js, page Classements = classements de saison).
+- Tests : `tests/online.test.js` (profil avec et sans guilde, onglet, clic vers la fiche, téléphone 390 px), `tests/mono_separation.test.js` (`guild_of` rangée Classique).
+
 ## 2.1.37.6 « Journal du Bouclier »
 - Demande de Mathis (22/10) : table `mono.verifs` (supabase/monocompte.sql) remplie par `mono_srv_valider` (acceptée, niveau, kamas) et `mono_srv_refus` (refus, ou note « [observation] ») via `mono.verif_log` ; envois identiques regroupés (n) sur 30 min, 7 jours gardés.
 - Panel Monocompte › Joueurs › « Journal du Bouclier » (`js/admin.js`, `mono_adm_journal`) : 300 dernières vérifications, filtres par état et par compte.

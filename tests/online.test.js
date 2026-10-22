@@ -64,6 +64,7 @@ const MOCK = () => {
     const pseudo = (me && me.pseudo) || "Moi";
     if (name === "gift_redeem") { if (a.p_code !== "GUILDES" || !gm.gift) return ok({ err: "Ce code n'existe pas." }); gm.gift = false; return ok({ reward: { k: 300000, s: 6 }, msg: "Refonte des guildes" }); }
     if (name === "guild_list") return ok([Object.assign({ open: true, motd: "", n: gm.in ? 5 : 4, cap: 5, chef: "Kralamour", shield: null, w: 6, l: 2, percos: 2 }, G3), Object.assign({ open: false, motd: "", n: 12, cap: 12, chef: "Kraken", shield: null, w: 18, l: 4, percos: 2 }, G4), Object.assign({ open: true, motd: "", n: 3, cap: 5, chef: "Nyx", shield: iso(70 * 60e3), w: 0, l: 0, percos: 0 }, G5, { lvl: 1 })]);
+    if (name === "guild_of") return ok(a.p_user === "u9" ? Object.assign({ rank: "Meneur" }, G4) : null); // 2.1.37.7 : guilde sur le profil
     if (name === "guild_me") {
       if (!gm.in) return ok({ g: null, gift: gm.gift, invites: [Object.assign({ gid: 3, n: 4, cap: 5, by: "Kralamour" }, G3)], asks: [] });
       const base = 450000 * 13 * 14 * 27 / 6, next = 450000 * 14 * 15 * 29 / 6;
@@ -554,6 +555,22 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-classe.png" });
     await page.selectOption('[data-act="lb-cls"]', ""); await page.waitForTimeout(300);
     // 1.0.8 : classement des métiers (tuiles, « Tous les métiers », un métier, ma ligne, Premiers)
+    // 2.1.37.7 (idée de Gagou) : guilde sur le profil (guild_of) et classement des guildes par niveau
+    await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 });
+    { const t = (await page.textContent(".sheet")).replace(/\s+/g, " "); if (!(await page.$(".sheet .pgld .gemb")) || !/Ordre du Kralamour\s*niv\. 22 · Meneur/.test(t)) fail("profil : la guilde du joueur n'apparaît pas : " + t.slice(0, 160)); }
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/profil-guilde.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/profil-guilde-mob.png" }); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail("profil-guilde : défilement de côté sur téléphone"); await page.setViewportSize(vp); await page.waitForTimeout(300); }
+    await page.click('[data-act="closesheet"].btn');
+    await page.click('.pod.p2'); await page.waitForSelector(".sheet .tm", { timeout: 5000 });
+    if (await page.$(".sheet .pgld")) fail("profil : une guilde apparaît pour un joueur sans guilde");
+    await page.click('[data-act="closesheet"].btn');
+    await page.click('[data-act="lb-tab"][data-v="gld"]'); await page.waitForSelector("#lbList .lbr.glb", { timeout: 10000 });
+    { const r = await page.$$eval("#lbList .lbr.glb", (l) => l.map((e) => e.textContent.replace(/\s+/g, " ")));
+      if (r.length !== 3 || !/Ordre du Kralamour/.test(r[0]) || !/Niveau 22/.test(r[0]) || !/12 \/ 12 membres/.test(r[0]) || !/Les Tofus Enragés/.test(r[2])) fail("classement des guildes incorrect : " + r.join(" | ")); }
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-guildes.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/lb-guildes-mob.png" }); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail("lb-guildes : défilement de côté sur téléphone"); await page.setViewportSize(vp); await page.waitForTimeout(300); }
+    await page.click("#lbList .lbr.glb"); await page.waitForTimeout(600);
+    if (await page.evaluate(() => window.GUILD.G.view && window.GUILD.G.view.id) !== 4 || !/Ordre du Kralamour/.test(await page.textContent("#main"))) fail("classement des guildes : la ligne n'ouvre pas la fiche de la guilde");
+    await page.click('[data-act="g-vback"]'); await page.waitForTimeout(200);
+    await navClick(page, "ladder"); await page.waitForTimeout(300);
     await page.click('[data-act="lb-tab"][data-v="job"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
     if ((await page.$$(".jlb-tiles button")).length !== 8) fail("métiers : il faut 8 tuiles (tous + 7 métiers)");
     if (!(await page.$("#lbList .jlb-mini"))) fail("métiers : meilleurs métiers absents sous le nom");
