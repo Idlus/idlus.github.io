@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -324,6 +324,18 @@ jobs:
             done
           done
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from pg_proc where proname in ('mono_adm_vue','mono_adm_copies','mono_bureau_serie')) fonctions, (select count(*) from mono.testeurs) testeurs"
+      - name: Monocompte, fonction « mono » seule (moteur du jeu à jour, sans toucher à la base)
+        # 22/10/2026 : 2.1.37.2 (bouclier de l'Eniripsa) ; ordre écrit de Mathis « mets à jour la fonction Monocompte ». Relançable.
+        if: inputs.etape == 'monocompte-fonction'
+        run: |
+          echo "SSHO=$SSHO" >> "$GITHUB_ENV"
+          node tools/build_server.js
+          d=$(sshpass -e ssh $SSHO "$UTIL@$HOTE" 'mktemp -d /tmp/idlus-mono.XXXXXX')
+          sshpass -e scp -q $SSHO supabase/functions/mono/index.ts supabase/functions/mono/game.js "$UTIL@$HOTE:$d/"
+          bash tools/serveur/vps_sql.sh commande "set -e; mkdir -p volumes/functions/mono; cp $d/index.ts $d/game.js volumes/functions/mono/; rm -rf $d; docker compose restart functions >/dev/null; echo 'Fonction mono en place.'"
+          sleep 15
+          echo '== Fonctions record et mono (erreurs au démarrage)'
+          bash tools/serveur/vps_sql.sh commande 'docker logs --since 1m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception|boot" | tail -20'
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
