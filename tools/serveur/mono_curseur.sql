@@ -19,5 +19,12 @@ update mono.parties p set data = jsonb_set(p.data::jsonb, '{hdv,op}', '0')::text
   from _c c where p.user_id = c.user_id and p.saison = c.saison;
 update mono.parties_ok k set data = jsonb_set(k.data::jsonb, '{hdv,op}', '0')::text
   from _c c where k.user_id = c.user_id and k.saison = c.saison and mono.cursor(k.data::jsonb) > coalesce((select max(id) from mono.ops), 0);
+-- bilan.op de la copie vérifiée : le Bouclier compare le curseur envoyé avec lui (« partie reculée ») ; remis à 0 pour toute partie
+-- dont le curseur a déjà été remis à 0 (y compris celles des passages précédents).
+update mono.parties_ok k set bilan = jsonb_set(k.bilan, '{op}', '0')
+  from mono.parties p where p.user_id = k.user_id and p.saison = k.saison and k.saison = 0
+    and coalesce(case when (k.bilan ->> 'op') ~ '^\d{1,15}$' then (k.bilan ->> 'op')::bigint end, 0) > coalesce((select max(id) from mono.ops), 0)
+    and mono.cursor(p.data::jsonb) <= coalesce((select max(id) from mono.ops), 0);
+select count(*) as bilans_restants from mono.parties_ok k where k.saison = 0 and coalesce(case when (k.bilan ->> 'op') ~ '^\d{1,15}$' then (k.bilan ->> 'op')::bigint end, 0) > coalesce((select max(id) from mono.ops), 0);
 select count(*) as restant from mono.parties p where p.saison = 0 and mono.cursor(p.data::jsonb) > coalesce((select max(id) from mono.ops), 0);
 commit;
