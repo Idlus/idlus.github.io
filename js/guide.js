@@ -47,7 +47,7 @@
       ]],
       ["p", "Même jeu fermé, l'équipe continue à progresser (voir « Absence et hors-ligne »)."],
       ["kv", [["Niveau maximum d'un héros", N(() => E.MAX_LVL)], ["Héros au plus", N(() => E.HERO_MAX)], ["Héros qui combattent", N(() => E.TEAM_MAX)], ["Classes", N(() => D.CLASS_ORDER.length)]]],
-      ["tip", "Le bouton **?** dans le bandeau en haut de chaque page ouvre le chapitre du guide de cette page ; « Guide » est aussi en bas du menu. La loupe (Ctrl + K sur PC) cherche n'importe quoi dans le jeu."],
+      ["tip", "Le bouton **Aide** en bas du menu ouvre le guide de la page affichée, le guide complet, les suggestions et le signalement de bug. La loupe (Ctrl + K sur PC) cherche n'importe quoi dans le jeu."],
     ] });
 
   add({ id: "absence", f: "Bien débuter", n: "Absence et hors-ligne", ic: "phenix", page: null, k: "hors ligne offline absence retour consignes",
@@ -117,13 +117,37 @@
       ]],
     ] });
 
+  /* 2.1.40 : refonte des menus (choix de Mathis 22/10 : menus 1B 2A 3A 4A 5A 6B 7A, onglets 1A-7A, visuel 1A-7A) */
+  add({ id: "menus", f: "Bien débuter", n: "Les menus", ic: "carte", page: null, k: "menu familles onglets cloche compte notifications epingler affichage detaille aide chat",
+    ou: "le menu à gauche (PC) ou en bas (téléphone)", de: "dès le début",
+    voir: ["recherche", "home"],
+    b: () => [
+      ["p", "Le jeu tient en **5 familles** : Aventure, Héros, Économie, Joueurs et Journal. Les pages d'une famille sont des **onglets** en haut de chaque page ; les pages proches sont réunies dans une seule (Hôtel de vente et Cours des ressources, Forgemagie et Gravure, Familiers et Élevage, Quêtes, Succès et Ornements, Classements et Builds)."],
+      ["ul", [
+        "**Sur PC** : une colonne à gauche avec Combat, Havre-Sac, les 5 familles, puis Options et Aide en bas. Une famille rouvre la dernière page visitée.",
+        "**Au téléphone** : Havre-Sac, Aventure, Combat, Héros et **Menu** en bas de l'écran. Menu montre la recherche, les familles en grandes tuiles et tes épinglés.",
+        "**En Monocompte** : l'entrée **Saison** réunit Progression, Défis, Guerre, Boutique et Classements de la saison.",
+      ]],
+      ["h", "La barre du haut"],
+      ["ul", [
+        "**La cloche** réunit tes objectifs suivis, les événements, les annonces et les nouveautés ; le chiffre compte ce qui attend.",
+        "**La bulle** à côté ouvre le Chat, avec le nombre de messages non lus.",
+        "**Ton portrait** ouvre le compte : changement de serveur, son, bonus, Options et nouveautés.",
+      ]],
+      ["h", "Aide et épinglés"],
+      ["ul", [
+        "**Aide** (en bas du menu) : guide de la page affichée, guide complet, suggestions, signaler un bug, Discord, et **Épingler cette page**.",
+        "Les épinglés apparaissent dans le Menu du téléphone et dans la recherche ; sur PC, l'étoile ★ de la rangée d'onglets épingle aussi.",
+      ]],
+      ["tip", "Tu préfères l'ancien affichage, avec toutes les explications ? **Options › Affichage › « Affichage détaillé »** le remet : ancienne barre du haut, ancien accueil et textes en entier."],
+    ] });
   add({ id: "recherche", f: "Bien débuter", n: "Recherche et raccourcis", ic: "carte", page: null, k: "ctrl k loupe clavier raccourcis",
     ou: "la loupe en haut de l'écran", de: "dès le début",
     b: () => [
       ["p", "La loupe cherche dans tout le jeu : pages, donjons, zones, objets, panoplies, ressources, monstres, Dofus, idoles, familiers, montures, consommables et succès. Les accents, majuscules et une faute de frappe sont tolérés."],
       ["ul", [
         "Sur PC : **Ctrl + K** ou **/** ouvre la recherche.",
-        "Sur PC, une lettre ouvre une page (H Havre-Sac, M Monde, D Donjons, C Combat, E Équipe, I Inventaire, Q Quêtes…) ; les flèches gauche et droite passent d'une page à l'autre ; **?** affiche la liste des raccourcis ; **O** ouvre les options. Au survol d'une page du menu, sa lettre s'affiche à droite.",
+        "Sur PC, une lettre ouvre une page (H Havre-Sac, M Monde, D Donjons, C Combat, E Équipe, I Inventaire, Q Quêtes…) ; les flèches gauche et droite passent d'une page à l'autre ; **?** affiche la liste des raccourcis ; **O** ouvre les options.",
         "Options › Aide : le Carnet des découvertes relit toutes les bulles d'aide déjà vues.",
       ]],
     ] });
@@ -933,11 +957,11 @@
     ] });
 
   add({ id: "aide", f: "Communauté", n: "Suggestions, bugs et codes cadeaux", ic: "idee", page: "sugg", k: "suggestion idee bug signaler code cadeau discord pluie de kamas cagnotte",
-    ou: "Aide › Suggestions · « Signaler un bug » en bas du menu · Options › Jeu › Code cadeau", de: "dès le début",
+    ou: "Aide › Suggestions · Aide › Signaler un bug · Options › Jeu › Code cadeau", de: "dès le début",
     b: () => [
       ["ul", [
         "**Suggestions** : propose une idée (titre et texte courts) ; sans serveur, elle est copiée et le Discord s'ouvre.",
-        "**Signaler un bug** (en bas du menu) : décris ce qui s'est passé ; le diagnostic (version, appareil, page, dernières erreurs) peut être joint. Le rapport part directement pour être corrigé.",
+        "**Signaler un bug** (bouton Aide, en bas du menu) : décris ce qui s'est passé ; le diagnostic (version, appareil, page, dernières erreurs) peut être joint. Le rapport part directement pour être corrigé.",
         "**Codes cadeaux** : dans Options › Jeu, un code par partie. Ils sont annoncés en jeu et sur le Discord. Les codes à nombre limité demandent d'être connecté à un compte.",
         "**Pluie de kamas** : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes (annoncé dans le bandeau et le chat). Clique « Je participe » sur l'accueil : à la fin, la pluie est partagée à parts égales entre tous les participants. Il faut un compte.",
       ]],
@@ -1293,7 +1317,7 @@
       ["more", "Combien de chance pour une monture ?", ["p", "La chance est par victoire dans la zone sauvage de l'espèce, pas par héros, et les bonus de butin ne la changent pas. Les chiffres sont dans le chapitre Montures."]],
       ["more", "Ma partie est-elle sauvegardée en ligne ?", ["p", "Avec un compte, la partie 1 se synchronise avec le serveur, et la partie Monocompte avec le serveur Monocompte. Sans compte, elle reste sur l'appareil : Options › Sauvegarde permet de l'exporter."]],
       ["more", "Pourquoi mon compte n'est plus au classement ?", ["p", "Le serveur ne classe que des parties qu'il a validées. Une progression impossible pour le temps joué est signalée à Xener ; un compte suspendu sort des classements jusqu'à la fin de sa suspension. Détails dans le chapitre Classements."]],
-      ["more", "Comment signaler un bug ?", ["p", "« Signaler un bug » en bas du menu : le signalement part directement à l'équipe du jeu, avec ce qu'il faut pour le corriger."]],
+      ["more", "Comment signaler un bug ?", ["p", "« Signaler un bug » dans Aide, en bas du menu : le signalement part directement à l'équipe du jeu, avec ce qu'il faut pour le corriger."]],
     ] });
 
   /* ---------- astuce du jour dans le Havre-Sac (idée 22A) : une astuce tirée des chapitres, la même toute la journée ---------- */
@@ -1469,7 +1493,7 @@
 
   /* bulles de découverte (idée 9A) : le chapitre qui en dit plus */
   const TIP = { combat: "combat", equip: "equipement", stats: "caracs", harvest: "metiers", protector: "metiers", keys: "donjons#la-stasis", offline: "absence", loss: "combat#defaite",
-    guide: "parcours", havre: "home", almanax: "quetes", pets: "familiers", stars: "world", align: "alignement", fm: "forgemagie", mounts: "montures", archis: "archis", idols: "idoles", account: "options", ren: "maitrise", maitrise: "maitrise", navnews: "recherche" };
+    guide: "parcours", havre: "home", almanax: "quetes", pets: "familiers", stars: "world", align: "alignement", fm: "forgemagie", mounts: "montures", archis: "archis", idols: "idoles", account: "options", ren: "maitrise", maitrise: "maitrise", navnews: "menus", navnews2: "menus", navnews3: "menus" };
   const forTip = (id) => TIP[id] || null;
 
   if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "guide")) E.SEARCH_PAGES.push(["guide", "Guide", "Aide › Guide : le détail de chaque fonctionnalité, avec les chiffres"]);
