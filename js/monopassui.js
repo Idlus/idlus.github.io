@@ -1,6 +1,6 @@
 /* ============================================================================
    Monocompte — page « Pass de saison » (moteur : js/monopass.js), d'après la maquette validée le 18/10/2026.
-   Défis › Pass de saison, seulement dans une partie Monocompte : en-tête du palier, piste des 50 paliers
+   Saison › Pass de saison, seulement dans une partie Monocompte : en-tête du palier, piste des 50 paliers
    (Gratuit et Prestige), quêtes de saison du jour et de la semaine, hauts faits de saison par famille.
    ========================================================================== */
 (function () {

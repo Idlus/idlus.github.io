@@ -330,7 +330,7 @@
     if (E.misRun(S, c.id)) return `${c.name} est déjà en expédition.`;
     if (M.runs.length >= E.misSlots(S)) return `Toutes les places d'expédition sont prises (${E.misSlots(S)}).`;
     if (c.inTeam && !c.job) return `${c.name} est dans l'équipe : seuls les héros hors de l'équipe partent en expédition.`;
-    if (E.koliState && E.koliState(S).team.includes(c.id)) return `${c.name} est dans l'équipe d'arène : retire-le d'abord (Défis › Kolizéum).`;
+    if (E.koliState && E.koliState(S).team.includes(c.id)) return `${c.name} est dans l'équipe d'arène : retire-le d'abord (Joueurs › Kolizéum).`;
     if (c.lvl < m.lvl - E.misGap(m.lvl)) return `Niveau ${m.lvl - E.misGap(m.lvl)} au moins pour cette mission.`;
     if (c.job) { E.gatherPartial(S, c); c.job = null; }
     c.inTeam = false;

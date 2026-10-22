@@ -113,11 +113,11 @@
 
   /* 1.0.30 : alertes (monstres pour tous ; attaques de guilde avec la Vigie) */
   function alerts() {
-    (G.ex.percos || []).forEach((p) => { if (p.atk && !G.atkSeen[p.id + p.atk.at]) { G.atkSeen[p.id + p.atk.at] = 1; if (!p.atk.done) X().toast(`⚔ Le Percepteur de ${p.name} est attaqué ! Défends-le dans Communauté › Guilde › Percepteurs.`, "rare"); } });
+    (G.ex.percos || []).forEach((p) => { if (p.atk && !G.atkSeen[p.id + p.atk.at]) { G.atkSeen[p.id + p.atk.at] = 1; if (!p.atk.done) X().toast(`⚔ Le Percepteur de ${p.name} est attaqué ! Défends-le dans Joueurs › Guilde › Percepteurs.`, "rare"); } });
     const vig = +((G.ex.ups || {}).vigie) > 0;
     (G.ex.raids_in || []).forEach((x) => {
       if (x.st !== "open" || G.raidSeen[x.id]) return; G.raidSeen[x.id] = 1;
-      if (vig) X().toast(`⚔ Vigie : ${x.ag ? x.ag.name : "une guilde"} attaque votre Percepteur de ${x.zone} ! Repoussez l'attaque dans Communauté › Guilde › Percepteurs (encore ${left(Date.parse(x.ends) - srvNow())}).`, "rare");
+      if (vig) X().toast(`⚔ Vigie : ${x.ag ? x.ag.name : "une guilde"} attaque votre Percepteur de ${x.zone} ! Repoussez l'attaque dans Joueurs › Guilde › Percepteurs (encore ${left(Date.parse(x.ends) - srvNow())}).`, "rare");
     });
   }
   /* 1.0.30 : fin d'une attaque (personne ne l'a repoussée) : l'attaquant lance tout de suite le dernier combat,

@@ -95,27 +95,19 @@ const server = http.createServer((req, res) => {
     await page.waitForTimeout(600);
     if ((await page.$$("#arena .ent.tk")).length !== (await page.evaluate(() => window.DX.S.fight.ents.length))) fail("Formation : combattants perdus après un aller-retour de vue");
 
-    // petit module (PC) : sous « Combat en cours », hors de l'onglet Combat ; un clic ouvre le combat
+    // 2.1.39 (Mathis 1B) : le rail d'icônes du PC n'a pas la place du petit module ; le bouton Combat s'allume pendant un combat
     await page.click('#nav .sn-side [data-nk="home"]'); await page.waitForTimeout(900); await clean();
-    const mf = await page.evaluate(() => { const b = document.querySelector("#navmf"), f = document.querySelector("#nav .sn-frow") || document.querySelector("#nav .sn-fight"); return b ? { vis: !b.hidden && b.offsetHeight > 0, txt: b.innerText, after: f && f.nextElementSibling === b, units: b.querySelectorAll(".mf-u").length } : null; });
-    if (!mf || !mf.vis || !mf.after || !/Château Ensablé/.test(mf.txt) || !/tour \d/.test(mf.txt) || mf.units < 2) fail(`petit module (PC) absent ou incomplet (${JSON.stringify(mf)})`);
-    if (SHOTS) await shot("petit-module-pc.png", { x: 0, y: 0, width: 640, height: 420 });
-    // 1.0.30.7 : un Dopeul (monstre de la zone déguisé, il garde e.img) montre sa tête de classe, pas le monstre
-    const dopPic = await page.evaluate(() => { const F = window.DX.S.fight, i = F.ents.findIndex((e) => e.side !== "c"); F.ents[i].dop = { cls: "iop", sex: "m", head: 0 }; const b = document.querySelector("#navmf"); b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); const u = b.querySelector(`.mf-u[data-mi="${i}"] img`); const src = u ? u.getAttribute("src") : null; delete F.ents[i].dop; b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); return src; });
-    if (!dopPic || !/assets\/h\/iop_m/.test(dopPic)) fail(`petit module : le Dopeul montre l'image d'un monstre (${dopPic})`);
-    await page.click("#navmf"); await page.waitForTimeout(400);
-    if ((await page.evaluate(() => window.DX.ui.tab)) !== "combat") fail("petit module (PC) : le clic n'ouvre pas le combat");
-    if (await page.evaluate(() => { const b = document.querySelector("#navmf"); return b && !b.hidden; })) fail("petit module (PC) : encore affiché dans l'onglet Combat");
-    // option « Petit module de combat » (Options › Affichage) : coupé, il disparaît
-    await page.evaluate(() => { window.DX.S.settings.miniFight = false; window.DX.ui.tab = "home"; window.DX.render(); }); await page.waitForTimeout(400);
-    if (await page.evaluate(() => { const b = document.querySelector("#navmf"); return !!(b && !b.hidden); })) fail("petit module : toujours là une fois coupé dans les options");
-    await page.evaluate(() => { window.DX.S.settings.miniFight = true; window.DX.render(); }); await page.waitForTimeout(400);
+    if (await page.evaluate(() => { const b = document.querySelector("#navmf"); return !!(b && !b.hidden); })) fail("petit module (PC) : il ne doit plus être dans le rail");
+    if (!(await page.$("#nav .rl-fight.on"))) fail("rail : le bouton Combat ne s'allume pas pendant le combat");
 
     // téléphone : bande au-dessus de la barre du bas, repliable, un toucher ouvre le combat
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800); await clean();
     const st = await page.evaluate(() => { const s = document.querySelector("#mfstrip"), bar = document.querySelector("#nav .sn-mob"); if (!s) return null; const r = s.getBoundingClientRect(), b = bar.getBoundingClientRect(); return { above: r.bottom <= b.top + 1, inside: r.left >= 0 && r.right <= 390, txt: s.innerText, h: r.height }; });
     if (!st || !st.above || !st.inside || !/Château Ensablé/.test(st.txt)) fail(`petit module (téléphone) : bande absente ou mal placée (${JSON.stringify(st)})`);
     if (await page.evaluate(() => document.documentElement.scrollWidth > 390)) fail("téléphone : la page déborde en largeur");
+    // 1.0.30.7 : un Dopeul (monstre de la zone déguisé, il garde e.img) montre sa tête de classe, pas le monstre
+    const dopPic = await page.evaluate(() => { const F = window.DX.S.fight, M = F.ents.filter((e) => e.side !== "c"); M.forEach((e) => { e.dop = { cls: "iop", sex: "m", head: 0 }; }); const b = document.querySelector("#mfstrip"); b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); const u = [...b.querySelectorAll(".mf-ics img")].map((x) => x.getAttribute("src")).find((x) => /assets\/h\/iop_m/.test(x)) || null; M.forEach((e) => { delete e.dop; }); b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); return u; });
+    if (!dopPic || !/assets\/h\/iop_m/.test(dopPic)) fail(`petit module : le Dopeul montre l'image d'un monstre (${dopPic})`);
     if (SHOTS) await shot("petit-module-tel.png");
     await page.click("#mfstrip .mf-fold"); await page.waitForTimeout(300);
     const fo = await page.evaluate(() => ({ fold: window.DX.S.settings.mfFold, cls: document.querySelector("#mfstrip").className, h: document.querySelector("#mfstrip").getBoundingClientRect().height, tab: window.DX.ui.tab }));

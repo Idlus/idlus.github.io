@@ -1,6 +1,6 @@
 /* ============================================================================
    KOLIZÉUM — interface (0.1.44). La logique est dans js/koli.js, le combat dans le moteur.
-   Page Défis › Kolizéum : grade et cote, tickets, 3 adversaires (chance sur 20 combats d'essai),
+   Page Joueurs › Kolizéum : grade et cote, tickets, 3 adversaires (chance sur 20 combats d'essai),
    équipe d'arène, journal (combats à revoir), récompenses de la semaine, classement, boutique.
    Le combat se regarde sur l'écran de combat (koliWatchStart dans ui.js).
    En ligne (compte) : le serveur choisit les adversaires (vrais joueurs, Fantômes pour compléter) et joue le combat.

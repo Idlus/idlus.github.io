@@ -257,6 +257,8 @@ function fake() {
       ab = await annbar(page);
       if (!/Nouvelle saison de test lundi/.test(ab) || /Annonce du Classique/.test(ab)) fail("partie Monocompte : bandeau attendu « Nouvelle saison… » seul : " + ab);
       await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(200);
+      // 2.1.39 (3A) : l'annonce est dans la cloche de la barre du haut
+      if (!(await page.evaluate(() => document.body.classList.contains("bellopen")))) { await page.click("#status .tb-bell"); await page.waitForTimeout(200); }
       await page.click('#annbar [data-act="ch-annok"]'); await page.waitForTimeout(400);
       if (await annbar(page)) fail("partie Monocompte : bandeau fermé encore là (et pas de bandeau Classique à la place)");
       await shot(page, `panel-mono-bandeau-${w}.png`);

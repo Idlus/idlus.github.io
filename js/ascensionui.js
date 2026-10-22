@@ -1,6 +1,6 @@
 /* ============================================================================
    L'ASCENSION — interface (1.1). La logique est dans js/ascension.js.
-   Page Défis › L'Ascension : Volonté et Fioles, nouvelle montée (3 classes, mode Normal / Difficile / Au-delà),
+   Page Aventure › L'Ascension : Volonté et Fioles, nouvelle montée (3 classes, mode Normal / Difficile / Au-delà),
    les choix en attente (3 sorts de départ, palier, âme, glyphe, événement, marchand, autel), la tour autour de
    l'étage en cours, le combat joué sous les yeux (rayures = PV retirés aux essais précédents), la montée (sorts,
    Sursis, recrues, échos), puis Progression (Fragments), Boutique des Écus, Bestiaire, Classements, Historique.

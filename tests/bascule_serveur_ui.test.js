@@ -61,21 +61,23 @@ function fake() {
       await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
       await page.click('[data-act="startgame"]');
       await ready(page, false);
+      // 2.1.39 (3A) : le bouton ⇄ est dans le panneau du portrait (Mon compte)
+      const acc = () => page.evaluate(() => { const q = (x) => document.querySelector(x); if (!q("#status .tb-accp") && q("#status .tb-acc")) q("#status .tb-acc").click(); });
       // 1. pas d'accès au Monocompte : pas de bouton
-      if (await page.$('#status [data-act="sv-swap"]')) fail(`${w} px : bouton ⇄ montré sans accès au Monocompte`);
+      await acc(); if (await page.$('#status [data-act="sv-swap"]')) fail(`${w} px : bouton ⇄ montré sans accès au Monocompte`);
       // 2. une partie Monocompte existe sur l'appareil : le bouton apparaît dans la partie Classique
       await page.evaluate(() => { const { E } = window.DX; const N = E.newState("Mono", "cra"); E.monoStart(N); N.kamas = 777; localStorage.setItem("dofousxen-save-mono", E.serialize(N)); window.DX.S.kamas = 12345; window.DX.social.renderStatus(); });
-      await page.waitForSelector('#status [data-act="sv-swap"].to-mo', { timeout: 5000 }).catch(() => fail(`${w} px : bouton ⇄ Monocompte absent de la partie Classique`));
+      await acc(); await page.waitForSelector('#status [data-act="sv-swap"].to-mo', { timeout: 5000 }).catch(() => fail(`${w} px : bouton ⇄ Monocompte absent de la partie Classique`));
       await shot(page, `bascule-classique-${w}.png`); await noScroll(page, `${w} px, partie Classique`);
       await Promise.all([page.waitForEvent("load"), page.click('#status [data-act="sv-swap"]')]);
       await ready(page, true);
       const m = await page.evaluate(() => [window.ONLINE.slot(), window.DX.S.kamas]);
       if (m[0] !== 4 || m[1] !== 777) fail(`${w} px : après ⇄, partie Monocompte (emplacement 4, 777 kamas) attendue : ` + JSON.stringify(m));
       if ((await kamasOf(page, "dofousxen-save")) !== 12345) fail(`${w} px : la partie Classique n'a pas été sauvegardée avant la bascule`);
-      await page.waitForSelector('#status [data-act="sv-swap"].to-cl', { timeout: 5000 }).catch(() => fail(`${w} px : bouton ⇄ Classique absent de la partie Monocompte`));
+      await acc(); await page.waitForSelector('#status [data-act="sv-swap"].to-cl', { timeout: 5000 }).catch(() => fail(`${w} px : bouton ⇄ Classique absent de la partie Monocompte`));
       await shot(page, `bascule-mono-${w}.png`); await noScroll(page, `${w} px, partie Monocompte`);
       // 3. retour au Classique : chacun ses kamas
-      await page.evaluate(() => { window.DX.S.kamas = 999; });
+      await page.evaluate(() => { window.DX.S.kamas = 999; }); await acc();
       await Promise.all([page.waitForEvent("load"), page.click('#status [data-act="sv-swap"]')]);
       await ready(page, false);
       const c = await page.evaluate(() => [window.ONLINE.slot(), window.DX.S.kamas]);

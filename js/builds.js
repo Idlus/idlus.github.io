@@ -1,6 +1,6 @@
 /* ============================================================================
    BUILDS PARTAGÉS — Idlus (1.0.23)
-   Page Communauté › Builds, « un peu comme Huzounet » (choix de Mathis : tout en A).
+   Page Joueurs › Builds, « un peu comme Huzounet » (choix de Mathis : tout en A).
    - Liste en cartes (héros en pied, objets, Dofus, ❤, vues), bandeau « Build de la semaine »,
      filtres en haut : classe, tranche de niveau, élément, budget, recherche (titre, objet, Dofus), tri.
    - Fiche : équipement en « poupée » comme l'onglet Équipement, panoplies, caractéristiques aux jets moyens,
@@ -340,9 +340,9 @@
   function readPub() { const t = $("#bdPT"), n = $("#bdPN"); if (t) P.title = t.value; if (n) P.note = n.value; }
   function pubHtml(c) {
     if (!online() || !c) return "";
-    if (monoP()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Communauté › Builds</b><p class="small" style="margin:6px 0">Réservé au serveur Classique : les builds publiés sont ceux des héros du Classique. Tu peux toujours partager le build de ton héros Monocompte avec son code.</p></div>`;
+    if (monoP()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Joueurs › Builds</b><p class="small" style="margin:6px 0">Réservé au serveur Classique : les builds publiés sont ceux des héros du Classique. Tu peux toujours partager le build de ton héros Monocompte avec son code.</p></div>`;
     const C = CLASSES[c.cls];
-    if (!logged()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Communauté › Builds</b>
+    if (!logged()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Joueurs › Builds</b>
       <p class="small" style="margin:6px 0">Pour publier, il faut être connecté avec Discord (une seule fois). Sans compte, tu peux tout de même regarder et copier les builds des autres.</p>
       <button class="btn primary sm" data-act="on-loginscreen">Se connecter avec Discord</button></div>`;
     pubInit(c);
@@ -353,7 +353,7 @@
     const heroes = S().chars;
     const pick = heroes.length > 1 ? `<select id="bdPubHero" aria-label="Héros">${heroes.map((y) => `<option value="${y.id}" ${y.id === c.id ? "selected" : ""}>${h(y.name)} (${h(CLASSES[y.cls].name)} ${y.lvl})</option>`).join("")}</select>` : "";
     const state = pub ? `<div class="small ${pub.code !== code ? "warn-t" : "muted"}">${pub.code !== code ? `${h(c.name)} a changé depuis la publication : mets le build à jour en un clic.` : `Publié · ${X().fmt(pub.likes)} ❤ · ${X().fmt(pub.views)} vues${pub.hidden ? " · caché après des signalements" : ""}`}</div>` : "";
-    return `<div class="box stack bd-pubf" id="bdPub" style="gap:8px"><b>Publier dans Communauté › Builds</b>
+    return `<div class="box stack bd-pubf" id="bdPub" style="gap:8px"><b>Publier dans Joueurs › Builds</b>
       <div class="row" style="gap:10px"><img class="bd-mini" src="${X().lookLocal(c.cls, c.sex, c.head || 0)}" alt=""><span class="grow small"><b>${h(c.name)}</b> · ${h(C.name)} niv. ${c.lvl}<br><span class="xs muted">Équipement, Dofus, sorts et caractéristiques sont pris sur le héros.</span></span>${pick}</div>
       ${state}
       <label class="id-f"><b class="small">Titre</b><input type="text" id="bdPT" maxlength="60" value="${h(P.title)}" autocomplete="off"></label>
@@ -365,7 +365,7 @@
       ${nItems < 3 ? `<div class="small muted">Équipe au moins 3 objets sur ${h(c.name)} pour publier son build.</div>` : ""}
       <div class="row"><button class="btn primary" data-act="bd-send" data-c="${c.id}" ${P.busy || full || nItems < 3 ? "disabled" : ""}>${P.busy ? "Envoi…" : pub ? "Mettre à jour le build publié" : "Publier le build"}</button>
         ${pub ? `<button class="btn sm" data-act="bd-see" data-id="${pub.id}">Voir sur la page Builds</button>` : ""}
-        <span class="xs muted grow">${n === null ? "" : full ? `Tu as déjà ${MAX} builds publiés : supprimes-en un dans Communauté › Builds › Mes builds.` : `${n} build${n > 1 ? "s" : ""} publié${n > 1 ? "s" : ""} sur ${MAX}.`}</span></div></div>`;
+        <span class="xs muted grow">${n === null ? "" : full ? `Tu as déjà ${MAX} builds publiés : supprimes-en un dans Joueurs › Builds › Mes builds.` : `${n} build${n > 1 ? "s" : ""} publié${n > 1 ? "s" : ""} sur ${MAX}.`}</span></div></div>`;
   }
   function pubRefresh() {
     const box = $("#bdPub"); const c = hero(P.cid); if (!box || !c) return;
@@ -387,8 +387,8 @@
     else if (r.data.err) { P.err = r.data.err; if (r.data.gone) { c.bd = null; c.bdH = null; X().markDirty(); } }
     else {
       c.bd = r.data.id; c.bdH = hash(code); X().markDirty(); meAt = 0; L.at = 0; delete CACHE[r.data.id];
-      P.ok = r.data.upd ? "Build mis à jour." : "Build publié ! Il est dans Communauté › Builds.";
-      X().toast(r.data.upd ? `Build ${quick ? "de " + c.name + " " : ""}mis à jour.` : "Build publié dans Communauté › Builds !");
+      P.ok = r.data.upd ? "Build mis à jour." : "Build publié ! Il est dans Joueurs › Builds.";
+      X().toast(r.data.upd ? `Build ${quick ? "de " + c.name + " " : ""}mis à jour.` : "Build publié dans Joueurs › Builds !");
       await mine(true);
     }
     if (quick && P.err) X().toast(P.err);

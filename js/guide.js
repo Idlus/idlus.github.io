@@ -1,7 +1,7 @@
 /* ============================================================================
    GUIDE (Idlus 1.2.x « Le Guide ») : demande de Mathis, « un véritable guide en jeu qui donne le détail de toutes
    les fonctionnalités ».
-   Page Journal › Guide : un chapitre par fonctionnalité, rangés par famille, avec où le trouver, comment ça se débloque,
+   Page Aide › Guide : un chapitre par fonctionnalité, rangés par famille, avec où le trouver, comment ça se débloque,
    comment ça marche et les chiffres clés. Les chiffres sont lus dans le code du jeu au moment de l'affichage
    (constantes d'ENGINE et de DATA), donc ils suivent l'équilibrage sans qu'on réécrive le guide.
    Bouton « ? » en haut de l'écran : ouvre le chapitre de la page affichée.
@@ -443,7 +443,7 @@
     ] });
 
   add({ id: "gravure", f: "Héros", n: "Gravure runique", ic: "forge", page: "grav", k: "gravure graver rang emplacement runes kamas fin de jeu",
-    ou: "Héros › Gravure runique", de: "dès le début",
+    ou: "Économie › Forgemagie › Gravure runique", de: "dès le début",
     voir: ["forgemagie", "inventaire", "maitrise"],
     b: () => [
       ["p", `Chaque emplacement d'équipement d'un héros (arme, coiffe, cape, amulette, 2 anneaux, ceinture, bottes, bouclier) se grave du rang 1 au rang ${N(() => E.GRAV.max)}. Chaque rang donne **+${N(() => E.GRAV.pct)} %** aux caractéristiques de l'objet porté, arrondi (jamais de PA, PM, Portée ni Invocation en plus). La gravure reste sur l'emplacement quand tu changes d'objet.`],
@@ -641,7 +641,7 @@
     ] });
 
   add({ id: "asc", f: "Défis", n: "L'Ascension", ic: "ailes", page: "asc", k: "ascension tour etage volonte fiole fragments ecus au-dela roguelike relique reliquaire",
-    ou: "Défis › L'Ascension", de: "dès le début ; l'Au-delà après l'étage 100 en Normal",
+    ou: "Aventure › L'Ascension", de: "dès le début ; l'Au-delà après l'étage 100 en Normal",
     voir: ["sorts"],
     b: () => [
       ["p", `Un mode à part : un nouveau héros niveau 1 grimpe la tour du mois (${N(() => E.ASC.floors)} étages). Tire 3 classes, garde des sorts, recrute en chemin. Rien de ce qu'on y gagne ne rend plus fort dans le jeu principal.`],
@@ -663,7 +663,7 @@
     ] });
 
   add({ id: "defi", f: "Défis", n: "Défi du jour", ic: "cle", page: "defi", k: "defi jour medaille bourse serie grand defi dimanche regle",
-    ou: "Défis › Défi du jour", de: "dès le début",
+    ou: "Aventure › Défi du jour", de: "dès le début",
     voir: ["donjons", "classement"],
     b: () => [
       ["p", "Chaque jour à minuit (heure de Paris), un donjon, une stasis, des modificateurs et des règles par palier, les mêmes pour tout le monde. Le combat est simulé à l'identique : essaie autant de fois que tu veux pour faire le meilleur score. Le dimanche, c'est le Grand défi (bourse ×3)."],
@@ -679,7 +679,7 @@
     ] });
 
   add({ id: "koli", f: "Défis", n: "Kolizéum", ic: "combat", page: "koli", k: "kolizeum pvp arene cote elo grade kolizetons erosion fantome",
-    ou: "Défis › Kolizéum", de: "dès le début",
+    ou: "Joueurs › Kolizéum", de: "dès le début",
     voir: ["comptoirs", "classement"],
     b: () => [
       ["p", `Arène classée en ${N(() => E.KOLI.size)} contre ${N(() => E.KOLI.size)} : ton équipe affronte celle d'un autre joueur (en ligne) ou un Fantôme. Une cote type Elo monte ou baisse à chaque combat.`],
@@ -708,7 +708,7 @@
     ] });
 
   add({ id: "wb", f: "Défis", n: "Boss des mondes", ic: "couronne", page: "wb", k: "boss des mondes serveur grade fragments anomalie",
-    ou: "Défis › Boss des mondes", de: "en ligne avec un compte (sinon, essai d'entraînement)",
+    ou: "Aventure › Boss des mondes", de: "en ligne avec un compte (sinon, essai d'entraînement)",
     voir: ["comptoirs"],
     b: () => [
       ["p", `Tout le serveur tape la même barre de vie. ${N(() => E.WB_TRIES)} tentatives par jour ; une tentative = ${N(() => E.WB_FIGHTS)} combats de ${N(() => E.WB_ROUNDS)} tours, et leurs points s'additionnent. Les boss tournent (${N(() => E.WB_ROT.length)} au total).`],
@@ -895,7 +895,7 @@
     ] });
 
   add({ id: "guilde", f: "Communauté", n: "Guilde, boss et percepteurs", ic: "couronne", page: "guild", k: "guilde fonder places rangs ameliorations boss de guilde percepteurs raid nuit des percepteurs",
-    ou: "Communauté › Guilde", de: "en ligne ; fonder demande un héros niveau " + N(() => E.GUILD_FOUND_LVL),
+    ou: "Joueurs › Guilde", de: "en ligne ; fonder demande un héros niveau " + N(() => E.GUILD_FOUND_LVL),
     voir: ["alliance"],
     b: () => [
       ["kv", [["Fonder une guilde", N(() => E.GUILD_FOUND_K) + " kamas"], ["Places de départ", N(() => E.GUILD_SEATS)], ["Places au plus", N(() => E.GUILD_SEATS_MAX)], ["Part de vente directe au coffre", "0 à " + N(() => E.GUILD_SALE_MAX) + " %"]]],
@@ -914,7 +914,7 @@
     ] });
 
   add({ id: "alliance", f: "Communauté", n: "Alliances et prismes", ic: "couronne", page: "guild", k: "alliance prisme region bataille samedi",
-    ou: "Communauté › Guilde › Alliance", de: `guilde niveau ${N(() => E.ALLY.foundLvl)} (fonder : ${N(() => E.ALLY.foundK)} kamas du coffre)`,
+    ou: "Joueurs › Guilde › Alliance", de: `guilde niveau ${N(() => E.ALLY.foundLvl)} (fonder : ${N(() => E.ALLY.foundK)} kamas du coffre)`,
     voir: ["guilde"],
     b: () => [
       ["p", `Jusqu'à ${N(() => E.ALLY.max)} guildes forment une alliance. Elle pose des prismes pour tenir des régions (bonus de +${N(() => E.ALLY.bonus)} % dans la région), et défend ou attaque pendant la bataille du samedi de ${N(() => E.ALLY.from)} h à ${N(() => E.ALLY.to)} h.`],
@@ -922,7 +922,7 @@
     ] });
 
   add({ id: "classement", f: "Communauté", n: "Classements, Builds et chat", ic: "trophee", page: "ladder", pages: ["builds"], k: "classement ladder builds code partager chat canal",
-    ou: "Communauté › Classements · Communauté › Builds", de: "en ligne",
+    ou: "Joueurs › Classements · Joueurs › Builds", de: "en ligne",
     b: () => [
       ["p", "**Classements** : course, niveau (la somme des 8 meilleurs héros, chaque point de Maîtrise compte un niveau ; par classe, « niv. 200 · Maîtrise 150 » du meilleur héros), Défi du jour, donjons, album, chromatiques, succès, métiers, élevage et « premiers » (les premiers joueurs à réussir un exploit). L'onglet **Guildes** range les guildes du Classique par niveau (une ligne ouvre la fiche de la guilde). Le profil d'un joueur montre sa guilde, son niveau et son rang."],
       ["p", "**Builds** : partage les sorts et caractéristiques d'un héros avec un code « IDLUS1-… ». Appliquer un build copie seulement les sorts et les points. Publier demande une connexion Discord."],
@@ -933,7 +933,7 @@
     ] });
 
   add({ id: "aide", f: "Communauté", n: "Suggestions, bugs et codes cadeaux", ic: "idee", page: "sugg", k: "suggestion idee bug signaler code cadeau discord pluie de kamas cagnotte",
-    ou: "Communauté › Suggestions · « Signaler un bug » en bas du menu · Options › Jeu › Code cadeau", de: "dès le début",
+    ou: "Aide › Suggestions · « Signaler un bug » en bas du menu · Options › Jeu › Code cadeau", de: "dès le début",
     b: () => [
       ["ul", [
         "**Suggestions** : propose une idée (titre et texte courts) ; sans serveur, elle est copiée et le Discord s'ouvre.",
@@ -1472,6 +1472,6 @@
     guide: "parcours", havre: "home", almanax: "quetes", pets: "familiers", stars: "world", align: "alignement", fm: "forgemagie", mounts: "montures", archis: "archis", idols: "idoles", account: "options", ren: "maitrise", maitrise: "maitrise", navnews: "recherche" };
   const forTip = (id) => TIP[id] || null;
 
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "guide")) E.SEARCH_PAGES.push(["guide", "Guide", "Journal › Guide : le détail de chaque fonctionnalité, avec les chiffres"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "guide")) E.SEARCH_PAGES.push(["guide", "Guide", "Aide › Guide : le détail de chaque fonctionnalité, avec les chiffres"]);
   window.GUIDE = { open, q, CH, forPage, forTip, tipDay, V, N, fr, pc };
 })();

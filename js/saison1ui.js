@@ -1,6 +1,6 @@
 /* ============================================================================
    Monocompte — écrans de la Saison 1 « Les Fragments du Temps » (moteur : js/saison1.js), d'après la seconde
-   maquette tranchée le 20/10/2026 (5A 8A 9A) : Carnet des Fragments (Défis › Carnet des Fragments, avec l'événement
+   maquette tranchée le 20/10/2026 (5A 8A 9A) : Carnet des Fragments (Saison › Carnet des Fragments, avec l'événement
    final à partir du jour 50 et, dans une partie de test, l'horloge de test), Boutique temporelle, fiche des Éclats
    du Temps dans le sac, Boutique d'Archives dans l'Éternel.
    ========================================================================== */

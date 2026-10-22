@@ -1,6 +1,6 @@
 /* ============================================================================
    BOÎTE À IDÉES — Idlus (0.1.36)
-   Page Communauté › Suggestions (aussi depuis Options › Aide) : le joueur choisit ce que son idée concerne
+   Page Aide › Suggestions (aussi depuis Options › Aide) : le joueur choisit ce que son idée concerne
    (les tags du forum #idées du Discord), écrit un titre et son idée. Le serveur la garde (supabase/idees.sql)
    et le workflow « Suggestions vers Discord » la publie dans le forum #idées, où les joueurs votent avec 👍.
    Sans serveur (version de test hors ligne, pas d'Internet) : l'idée est copiée et le Discord s'ouvre.

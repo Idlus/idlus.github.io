@@ -246,7 +246,7 @@
     X().openSheet(`<h2>Inviter une guilde</h2><div class="empty">Chargement…</div>`);
     const r = await ON.rpc("guild_list", { p_q: "" }); const ids = new Set((al().guilds || []).map((g) => g.id).concat((al().invited || []).map((x) => x.gid)));
     const L = (r.data || []).filter((g) => !ids.has(g.id));
-    X().openSheet(`<h2>Inviter une guilde</h2><p class="small muted">Son Meneur accepte dans Communauté › Guilde › Alliance. ${E.ALLY.max} guildes au plus.</p>
+    X().openSheet(`<h2>Inviter une guilde</h2><p class="small muted">Son Meneur accepte dans Joueurs › Guilde › Alliance. ${E.ALLY.max} guildes au plus.</p>
       <div class="list" style="max-height:60vh;overflow:auto">${L.map((g) => `<div class="li al-gl">${gemb(g, 34)}<span class="grow"><b>${h(g.name)}</b><br><span class="xs muted">niv. ${g.lvl} · ${g.n} membres</span></span><button class="btn sm primary" data-act="al-invite2" data-g="${g.id}">Inviter</button></div>`).join("") || `<div class="empty">Aucune autre guilde.</div>`}</div>
       <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
   }

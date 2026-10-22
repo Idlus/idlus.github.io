@@ -22,7 +22,9 @@ const server = http.createServer((req, res) => {
 });
 
 /* 1.2 : une page peut être repliée dans sa famille : on ouvre la famille puis on clique (comme un joueur), sinon DX.go */
-const navClick = async (page, k) => { const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "go"; }, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
+/* 2.1.39 : rail des familles sur PC ; une page s'ouvre par sa famille (rail) puis son onglet dans le bandeau, sinon DX.go */
+const NAV_HOW = (k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); const q = (s) => document.querySelector(s); let b = q(`#nav .sn-side [data-nk="${k}"]`) || q(`#subnav .sn-strip [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && q(`#nav .sn-side [data-fam="${F.id}"]`); if (fh) { fh.click(); const w = q("#wtip"); if (w) w.remove(); } b = q(`#subnav .sn-strip [data-nk="${k}"]`); return vis(b) ? "strip" : "go"; };
+const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"], #subnav .sn-strip [data-nk="${k}"]`); else if (how === "strip") await page.click(`#subnav .sn-strip [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = `http://127.0.0.1:${server.address().port}/`;
@@ -57,8 +59,8 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     const tabs = [];
     for (const k of keys) {
       await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); });
-      const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "tab"; }, k);
-      if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`);
+      const how = await page.evaluate(NAV_HOW, k);
+      if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"], #subnav .sn-strip [data-nk="${k}"]`); else if (how === "strip") await page.click(`#subnav .sn-strip [data-nk="${k}"]`);
       else { await page.evaluate((k) => window.DX.go(k), k); if (!(await page.$(`#subnav .sn-tabs [data-nk="${k}"][aria-current]`))) errors.push(`page ${k} : pas d'onglet dans le bandeau`); }
       await page.waitForTimeout(300);
       if (k === "bug") { // 1.1.1.3 : « Signaler un bug » ouvre une fenêtre, pas une page
@@ -67,7 +69,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       }
       const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
       if (!filled) errors.push(`page ${k} vide`);
-      const cur = await page.evaluate(() => { const b = document.querySelector("#subnav .sn-tabs [aria-current]") || document.querySelector("#nav .sn-side .sn-fp [aria-current], #nav .sn-side [aria-current]"); return b ? b.dataset.nk : null; });
+      const cur = await page.evaluate(() => { const b = document.querySelector("#subnav .sn-tabs [aria-current]") || document.querySelector("#subnav .sn-strip [aria-current]") || document.querySelector("#nav .sn-side [aria-current]"); return b ? b.dataset.nk : null; });
       if (cur !== k) errors.push(`page ${k} : le menu montre ${cur}`);
       tabs.push(k);
     }
@@ -82,10 +84,21 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(await page.$("#fiche .hmenu"))) errors.push("Équipe et héros : le menu « Plus » ne s'ouvre pas");
     await page.click("#tlist .tgt"); await page.waitForTimeout(150);
     if (await page.$("#fiche .hmenu")) errors.push("Équipe et héros : le menu « Plus » ne se referme pas");
-    // menu réduit aux icônes, puis rétabli
-    await noTip(); await page.click('#nav [data-act="navmini"]'); await page.waitForTimeout(150);
-    if (!(await page.evaluate(() => document.body.classList.contains("navmini")))) errors.push("menu : réduction sans effet");
-    await noTip(); await page.click('#nav [data-act="navmini"]'); await page.waitForTimeout(150);
+    // 2.1.39 : rail d'icônes (84 px) et bouton Aide (guide, suggestions, Signaler un bug)
+    if (!(await page.evaluate(() => document.body.classList.contains("navrail") && document.querySelector("#nav").getBoundingClientRect().width <= 90))) errors.push("menu : rail d'icônes absent");
+    if ((await page.$$("#nav .sn-rail [data-fam]")).length !== 5) errors.push("menu : il faut 5 familles dans le rail");
+    await noTip(); await page.click('#nav [data-act="navhelp"]'); await page.waitForSelector("#sheet .helpsheet", { timeout: 3000 });
+    await page.click('#sheet .helpsheet [data-v="bug"]'); await page.waitForTimeout(300);
+    if (!(await page.$("#sheet #bgWhat"))) errors.push("Aide › Signaler un bug : fenêtre absente");
+    await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; });
+    // 2.1.39 : la cloche ouvre les pastilles, le portrait ouvre le compte
+    await noTip(); await page.click("#status .tb-bell"); await page.waitForTimeout(150);
+    if (!(await page.evaluate(() => { const t = document.querySelector("#topchips"); return document.body.classList.contains("bellopen") && !!(t.offsetWidth || t.offsetHeight); }))) errors.push("barre du haut : la cloche ne s'ouvre pas");
+    await page.mouse.click(700, 700); await page.waitForTimeout(150);
+    if (await page.evaluate(() => document.body.classList.contains("bellopen"))) errors.push("barre du haut : la cloche ne se referme pas");
+    await noTip(); await page.click("#status .tb-acc"); await page.waitForTimeout(150);
+    if (!(await page.$("#status .tb-accp"))) errors.push("barre du haut : le compte ne s'ouvre pas");
+    await page.keyboard.press("Escape"); await page.waitForTimeout(100);
     // une chasse dans la première sous-zone, affichée dans la page Combat
     await page.evaluate(() => { const { E, S } = window.DX; E.startHunt(S, Object.keys(E.SUBS)[0]); });
     await noTip(); await page.click('#nav .sn-side [data-nk="combat"]');
@@ -105,16 +118,25 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await noTip(); await page.click('#fiche [data-act="teamlist"]'); await page.waitForTimeout(200);
     if (!(await vis("#tlist"))) errors.push("téléphone : « ← Équipe » ne revient pas à la liste");
     await page.evaluate(() => { window.DX.ui.tab = "home"; window.DX.render(); });
-    await noTip(); await page.click('#nav .sn-mob [data-nk="menu"]'); await page.waitForSelector(".navsheet .ns-tiles button", { timeout: 5000 });
-    await page.click('.navsheet [data-v="forge"]'); await page.waitForTimeout(300);
-    if ((await page.evaluate(() => window.DX.ui.tab)) !== "forge") errors.push("menu du téléphone : la tuile Forgemagie n'ouvre pas la page");
+    await noTip(); await page.click('#nav .sn-mob [data-nk="menu"]'); await page.waitForSelector(".navsheet .ns-fams .ns-ft", { timeout: 5000 });
+    if ((await page.$$(".navsheet .ns-fams .ns-ft")).length !== 5) errors.push("menu du téléphone : il faut 5 tuiles de famille");
+    await page.click('.navsheet .ns-ft:has-text("Économie")'); await page.waitForTimeout(300);
+    if (!["metiers", "forge", "grav", "comptoirs", "hdv", "cours", "foire"].includes(await page.evaluate(() => window.DX.ui.tab))) errors.push("menu du téléphone : la tuile Économie n'ouvre pas la famille");
     if (await page.$(".navsheet")) errors.push("menu du téléphone : reste ouvert après le choix");
     // 0.1.42 : accueil du jour (tuiles, journal à onglets, têtes des héros)
     await page.evaluate(() => { const { E, S } = window.DX; delete S.cons.coffre_douze; E.addCons(S, "coffre_bois"); window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); });
     await noTip();
+    // 2.1.39 (5A) : tableau de bord, 3 tuiles « À faire maintenant » puis « Tout voir »
+    if ((await page.$$(".hd-todo .ac-td")).length !== 3) errors.push("accueil : « À faire maintenant » doit montrer 3 tuiles");
+    if ((await page.$$(".hd-cards .hd-card")).length < 2) errors.push("accueil : cartes du tableau de bord absentes");
+    await page.click('[data-act="homeall"]'); await page.waitForTimeout(150);
     if ((await page.$$(".ac-tds .ac-td")).length < 4) errors.push("accueil : il manque des tuiles « Aujourd'hui »");
+    // « Affichage détaillé » remet l'ancien accueil (journal à onglets)
+    await page.evaluate(() => { window.DX.S.settings.detail = true; window.DX.render(); });
     await page.click('[data-act="hjtab"][data-v="c"]'); await page.waitForTimeout(150);
     if ((await page.evaluate(() => window.DX.ui.hj)) !== "c") errors.push("accueil : l'onglet Derniers combats ne s'ouvre pas");
+    if (!(await page.evaluate(() => !document.body.classList.contains("tb1") && !!document.querySelector("#status .updpill, #status #stKills")))) errors.push("Affichage détaillé : l'ancienne barre du haut ne revient pas");
+    await page.evaluate(() => { window.DX.S.settings.detail = false; window.DX.render(); });
     await noTip(); await page.click('.ac-td[data-act="usecons"]'); await page.waitForTimeout(300);
     if (await page.evaluate(() => (window.DX.S.cons.coffre_bois || 0) > 0)) errors.push("accueil : la tuile Coffres n'ouvre pas le coffre");
     await page.evaluate(() => { const s = document.querySelector("#sheet"); if (s) s.innerHTML = ""; window.DX.render(); }); await noTip();

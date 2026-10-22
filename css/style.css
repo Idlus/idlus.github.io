@@ -6247,3 +6247,92 @@ button.pgld{cursor:pointer}button.pgld:hover b{text-decoration:underline}
 .pt-mons{display:flex;gap:2px}.pt-mons img{width:34px;height:34px;object-fit:contain}
 .pt-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}.pt-cnt{font-weight:900}
 @media (max-width:700px){.pt-card{grid-template-columns:auto minmax(0,1fr)}.pt-mons{display:none}.pt-side{grid-column:1/-1;align-items:stretch;text-align:left}.pt-side .row{justify-content:flex-start!important}}
+/* ---------- 2.1.39 « Refonte des menus » (Mathis 1B 3A 4A 5A 6B 7A) ---------- */
+/* 1B : rail d'icônes avec leur nom sur PC */
+@media (min-width:860px){
+  body.hasnav.navrail,body.hasnav.navrail.chat-open{padding-left:96px}
+  body.navrail #nav.sidenav,body.navrail.chat-open #nav.sidenav{width:84px}
+  #nav .sn-side.sn-rail{align-items:center;gap:2px;padding:8px 6px}
+  #nav .sn-rail .rl-brand{display:flex;justify-content:center;width:100%;min-height:0;padding:2px 0 6px;background:none}
+  #nav .sn-rail .rl-brand img{width:34px;height:34px}
+  #nav .sn-rail .rl-i{flex-direction:column;justify-content:center;gap:3px;width:100%;min-height:0;padding:7px 2px 6px;border-radius:12px;text-align:center;font-size:11.5px;line-height:1.1}
+  #nav .sn-rail .rl-i.cur{background:var(--panel3);color:var(--gold2);box-shadow:inset 0 0 0 2px var(--gold)}
+  #nav .sn-rail .rl-l{max-width:74px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #nav .sn-rail .med{width:36px;height:36px}#nav .sn-rail .med img{width:26px;height:26px}
+  #nav .sn-rail .navcnt,#nav .sn-rail .navcoin,#nav .sn-rail .navdot{position:absolute;top:2px;right:8px;margin:0}
+  #nav .sn-rail .rl-sep{display:block;flex:none;width:44px;height:2px;margin:5px 0;background:var(--line)}
+  #nav .sn-rail .rl-frow{position:relative;width:100%;flex:none}
+  #nav .sn-rail .rl-fight.on{background:linear-gradient(180deg,rgba(255,107,122,.26),rgba(255,107,122,.06));box-shadow:inset 0 0 0 2px rgba(255,107,122,.55)}
+  #nav .sn-rail .rl-frow .sn-quit{position:absolute;z-index:95;top:2px;right:2px;width:24px;min-height:24px;padding:0;border-radius:8px;font-size:12px}
+  #nav .sn-rail .rl-frow .sn-quit .uico{width:16px;height:16px}
+  #nav .sn-rail .rl-frow .sn-quit.ask{width:40px;font-size:10px;right:-2px}
+  #nav .sn-rail .rl-sea{background:linear-gradient(180deg,rgba(241,207,110,.2),transparent);box-shadow:inset 0 0 0 1px rgba(241,207,110,.45)}
+  #nav .sn-rail .rl-f{font-size:11px;color:var(--muted)}
+  #nav .sn-rail .rl-f .uico,#nav .sn-rail .rl-f svg{width:20px;height:20px}
+  #nav .sn-rail .rl-f .sn-gq{width:22px;height:22px;display:inline-grid;place-items:center}
+  #nav .sn-rail .sn-grow{flex:1 1 auto}
+}
+/* 3A : une seule barre en haut, la cloche et le portrait */
+body.tb1 .status{flex-wrap:nowrap;gap:12px}
+body.tb1 .status .brand{margin-right:0;display:flex;align-items:center;gap:6px}
+body.tb1 .status .cloud{flex:none}
+.status .tb-grow{flex:1 1 auto;min-width:0}
+body.tb1 .status .st-where{min-width:0;overflow:hidden}body.tb1 .status .st-wt{overflow:hidden;text-overflow:ellipsis}
+.tb-bell{position:relative}.tb-bell.on{background:rgba(255,255,255,.26)}
+.tb-bell .navcnt{position:absolute;top:-7px;right:-8px}
+.tb-acc{position:relative;display:flex;align-items:center;gap:3px;border:0;background:none;color:inherit;padding:0;cursor:pointer;flex:none}
+.tb-acc .med{width:32px;height:32px}.tb-acc .med img{width:22px;height:22px}
+.tb-acc .tb-dn{width:0;height:0;border:5px solid transparent;border-top-color:currentColor;margin-top:5px;opacity:.75}
+.tb-acc.on .med{box-shadow:0 0 0 2px var(--gold2)}
+.tb-acc .navdot{position:absolute;top:0;right:8px}
+.tb-pop{position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:60;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:13.5px}
+.tb-pop h4{margin:4px 2px 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.tb-ph{display:flex;align-items:center;gap:10px}.tb-ph b{display:block;font-size:15px}.tb-ph small{display:block;color:var(--muted)}
+.tb-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.tb-pop .it{display:inline-flex;align-items:center;gap:6px}
+.tb-pop .ic-btn,.tb-pop .cloud,.tb-pop .swapb{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.tb-pop .swapb .sw-sm{display:none}.tb-pop .swapb .sw-lg{display:inline}
+body.tb1 #topchips,body.tb1 #annbar{display:none!important}
+body.tb1.bellopen #topchips{display:flex!important;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:6px;position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:60;width:min(400px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;margin:0;padding:12px;background:var(--panel);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+body.tb1.bellopen #topchips::before{content:"Notifications";font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:0 2px}
+body.tb1.bellopen #topchips.tb-empty::after{content:"Rien de nouveau pour l'instant.";font-size:13px;color:var(--muted);padding:4px 2px}
+body.tb1.bellopen #topchips>#annbar{display:block!important}
+body.tb1.bellopen #topchips>#annbar .annbar{margin:0}
+body.tb1.bellopen #topchips .tchip{max-width:none;width:100%;flex:none}
+body.tb1.bellopen #topchips .tchip .tc-t{max-width:none}
+@media (max-width:600px){body.tb1 .status{gap:7px;padding:8px 10px}body.tb1 .status .brand .blogo{width:26px;height:26px}body.tb1 .status .cloud>span:not(.dot){display:none}body.tb1 .status .sabpill .seg{display:none}body.tb1 .status .ic-btn{padding:4px 6px}body.tb1 .status .tb-acc .tb-dn{display:none}}
+/* 7A : le Menu du téléphone, une tuile par famille */
+.ns-fams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ns-ft{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;border:2px solid var(--frame);background:var(--panel2);border-radius:14px;padding:12px;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.ns-ft.cur{border-color:var(--gold);background:var(--panel3)}
+.ns-ft .med{width:40px;height:40px}.ns-ft .med img{width:28px;height:28px}
+.ns-ft>span{min-width:0}.ns-ft b{display:block;font-size:16px}
+.ns-ft small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11.5px;line-height:1.3;color:var(--muted)}
+.ns-ft .navcnt{position:absolute;top:8px;right:8px}
+.ns-fams>.ns-ft:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:center}
+.ns-ft.sea{flex-direction:row;align-items:center;width:100%;margin:0 0 8px;border-color:var(--gold);background:linear-gradient(90deg,rgba(241,207,110,.18),var(--panel2))}
+.ns-v2 .ns-srch{margin-bottom:10px}
+.ns-v2 .ns-foot{display:flex;flex-wrap:wrap;gap:8px}
+/* Aide */
+.helpsheet{display:flex;flex-direction:column;gap:8px}
+.hp-row{display:flex;align-items:center;gap:12px;width:100%;border:2px solid var(--line);background:var(--panel2);border-radius:12px;padding:9px 12px;color:var(--ink);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.hp-row b{display:block}.hp-row small{display:block;font-size:12px;color:var(--muted)}
+.hp-row .med{width:34px;height:34px;flex:none}.hp-row .hp-q{width:34px;height:34px;display:grid;place-items:center;flex:none}
+.hp-row .dc-i{width:34px;height:34px;display:grid;place-items:center;flex:none}.hp-row .dc-i svg{width:22px;height:22px}
+/* 5A : le Havre-Sac en tableau de bord */
+.hd-todo{margin-top:14px}
+.hd-todo .ac-tds{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:12px}
+.hd-card{display:flex;align-items:center;gap:12px;min-width:0;border:2px solid var(--frame);background:linear-gradient(180deg,var(--panel2),var(--panel));color:var(--ink);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit}
+.hd-card .med,.hd-card .hd-m{width:40px;height:40px;flex:none;object-fit:contain}.hd-card .med img{width:28px;height:28px}
+.hd-card .grow{min-width:0}.hd-card b{display:block;font-size:15px}
+.hd-card small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-card .chev{font-style:normal;color:var(--muted);font-size:20px}
+.hd-card.sea{border-color:var(--gold);background:linear-gradient(90deg,rgba(241,207,110,.16),var(--panel))}
+@media (max-width:700px){.hd-todo .ac-tds{grid-template-columns:1fr}}
+/* 4A : l'essentiel d'abord (pas de titre en double sous le bandeau, explications dans ?) */
+body.dense #main .pagehead:not(.combathead)>h1,body.dense #main .pagehead .tpt>h1{display:none}
+body.dense #main .pagehead:not(.combathead):has(>h1:only-child){display:none}
+body.dense #main .dgfoldall,body.dense #main .dg-note{display:none}
+.dg-mutline{display:flex;align-items:center;gap:10px;width:100%;border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:12px;padding:9px 12px;text-align:left;font:inherit;font-size:14px;cursor:pointer}
+.dg-mutline .uico{width:18px;height:18px;flex:none}

@@ -2750,16 +2750,18 @@ const ICONS = {
    recherche « Aller à une page », épinglés, étiquette « nouveau », Options et Signaler un bug en bas du menu.
    Les pages rangées dans une autre (NAV_MERGE) restent dans NAV (raccourcis, noms) mais s'ouvrent en onglets au-dessus de la page. */
 const navOnline = () => !!(window.ONLINE && window.ONLINE.enabled);
+/* 2.1.39 « Refonte des menus » (Mathis 2A) : 5 familles. Les défis rejoignent Aventure (Ascension, Défi du jour, Boss des mondes)
+   et Joueurs (Kolizéum, Alignement) ; Guide, Suggestions et Signaler un bug passent dans le bouton Aide (NAV_HELP) */
 const NAV = [
-  { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"]] },
-  { id: "df", n: "Défis", ic: "ailes", pages: [["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["align", "Alignement", "ailes"], ["wb", "Boss des mondes", "couronne"]] }, // 2.1.31.1 (Mathis) : l'Alignement dans le menu principal, il ouvre l'onglet Quêtes › Alignement
-  { id: "he", n: "Héros", ic: null, pages: [["team", "Équipe et héros", null], ["maitrise", "Maîtrise", "cristal"], ["grav", "Gravure runique", "forge"], ["inv", "Inventaire", "sac"], ["dofus", "Dofus", "dofus"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["chasse", "Chasse", "trophee"]] }, // 2.0 : la Renaissance est devenue la Maîtrise
-  { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
-  // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
-  { id: "co", n: "Communauté", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["amis", "Amis", "havre"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) },
-  { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
+  { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["wb", "Boss des mondes", "couronne"]] },
+  { id: "he", n: "Héros", ic: null, pages: [["team", "Équipe et héros", null], ["maitrise", "Maîtrise", "cristal"], ["inv", "Inventaire", "sac"], ["dofus", "Dofus", "dofus"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["chasse", "Chasse", "trophee"]] }, // 2.0 : la Renaissance est devenue la Maîtrise
+  { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["grav", "Gravure runique", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
+  { id: "co", n: "Joueurs", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["amis", "Amis", "havre"]] : []).concat([["koli", "Kolizéum", "combat"], ["align", "Alignement", "ailes"]], navOnline() ? [["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []) }, // 2.1.31.1 : l'Alignement ouvre l'onglet Quêtes › Alignement
+  { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
 ];
-/* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
+/* bouton Aide (bas du menu, Menu du téléphone) : pages hors des familles, toujours trouvées par la recherche ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js */
+const NAV_HELP = [["guide", "Guide", "almanax"], ["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]];
+/* Monocompte : le Pass de saison (js/monopassui.js) et les pages de la saison forment l'entrée Saison (monoNav0) */
 /* 22/10 (Mathis, « 1A » : rien du Classique en Monocompte, même en lecture) : le menu ne garde que les pages de la liste blanche
    E.MONO.PAGES (js/mono.js) et les modules du Classique sont éteints pour cette page (changer de partie recharge la page) */
 function monoSeal() {
@@ -2773,23 +2775,33 @@ function monoSeal() {
   if (!E.monoPageOk(ui.tab)) ui.tab = "home";
 }
 function monoNav() { monoNav0(); monoSeal(); }
-function monoNav0() { const F = NAV.find((x) => x.id === "df"); if (F && window.MONOPLUSUI) window.MONOPLUSUI.nav(F, NAV_DESC, E.monoEternal(S)); /* Classements de saison, Mutation, Serment de fer, Bilan (js/monoplusui.js) */ if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["fragments", "Carnet des Fragments", "cristal"], ["boutique", "Boutique temporelle", "bourse"], ["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
+/* 2.1.39 (Mathis 6B) : en Monocompte, les pages de la saison forment la famille « df », montrée comme une seule entrée « Saison » sous le Havre-Sac */
+function monoNav0() {
+  let F = NAV.find((x) => x.id === "df");
+  if (!F) { F = { id: "df", n: "Saison", ic: "ailes", season: true, pages: [] }; NAV.unshift(F); }
+  if (window.MONOPLUSUI) window.MONOPLUSUI.nav(F, NAV_DESC, E.monoEternal(S)); /* Classements de saison, Mutation, Serment de fer, Bilan (js/monoplusui.js) */
+  if (E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; }
+  if (!F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["pass", "Pass de saison", "ailes"], ["fragments", "Carnet des Fragments", "cristal"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"], ["boutique", "Boutique temporelle", "bourse"]);
+  NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines";
+}
+const navSeason = () => NAV.find((F) => F.season) || null; // Monocompte seulement
+const seasonName = () => (S && S.mono ? (E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom) : "Saison");
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
-const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
+const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"], ladder: ["builds"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.39 : Gravure dans Forgemagie, Builds dans Classements
 /* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
 const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
 const NAV_NEW = { until: Date.UTC(2026, 9, 29), pages: ["grav"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
-const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
+const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } { const p = NAV_HELP.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
 const navFamPages = (F) => F.pages.filter((p) => navParent(p[0]) === p[0]);
 const navIsNew = (k) => E.now() < NAV_NEW.until && NAV_NEW.pages.includes(k);
 const navPins = () => { if (!S.settings.pins) S.settings.pins = NAV_PINS_DEF.slice(); return S.settings.pins.filter((k) => navPage(k)); };
 const navNorm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); Object.values(NAV_SHEETS).forEach(([p]) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); }); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
+function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.concat([{ pages: NAV_HELP }]).forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); Object.values(NAV_SHEETS).forEach(([p]) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); }); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -2814,7 +2826,7 @@ function navGo(k) {
   else if (k === "align") { ui.tab = "quests"; ui.qt = "align"; }
   else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
-const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0][1] : k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
+const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } { const p = NAV_HELP.find((x) => x[0] === k); if (p) return `Aide › ${p[1]}`; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0][1] : k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
@@ -2957,67 +2969,54 @@ function navBadges() {
   return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "", maitrise: mtFreeBadge(), metiers: S && E.appAlert && E.appAlert(S) ? `<span class="navcnt" title="${E.appAlert(S) > 1 ? "Contrat de l'apprenti terminé" : "Contrat de l'apprenti bientôt fini"}">!</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 /* 9A : menu réduit aux icônes (bouton « ou chat ouvert de 1280 à 1599 px) : une icône par famille, le panneau de la famille s'ouvre à côté */
-const navMiniOn = () => !!(S && S.settings.navMini) || (document.body.classList.contains("chat-open") && !!window.matchMedia && window.matchMedia("(min-width:1280px) and (max-width:1599px)").matches);
 let navFx = null; // 20A : la page cliquée et le point du clic, pour l'onde et le rebond posés après le redessin
 let navBadgeSeen = null; // 23A : pastilles déjà vues, pour ne faire pulser que celles qui apparaissent ou changent
 function renderNav() {
   const nav = $("#nav"); const sub = $("#subnav");
-  if (!S) { nav.innerHTML = ""; sub.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); if (window.FORMUI) window.FORMUI.mini(); return; }
-  const k = navKey(); const kk = navParent(k); const fight = ui.tab === "combat"; const mini = navMiniOn(); const B = navBadges(); const live = navLiveTxt();
-  const curFam = navFam(k); const pins = navPins(); const q = (ui.navQ || "").trim(); const hits = q ? navSearchHits(q) : [];
-  document.body.classList.add("hasnav"); document.body.classList.toggle("navmini", mini);
+  if (!S) { nav.innerHTML = ""; sub.innerHTML = ""; document.body.classList.remove("hasnav", "navmini", "navrail"); if (window.FORMUI) window.FORMUI.mini(); return; }
+  const k = navKey(); const kk = navParent(k); const fight = ui.tab === "combat"; const B = navBadges(); const live = navLiveTxt();
+  const curFam = navFam(k); const pins = navPins();
+  document.body.classList.add("hasnav", "navrail"); document.body.classList.remove("navmini");
   const cur = (key) => (k === key || kk === key ? 'aria-current="page"' : "");
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
   const famCount = (F) => { let n = 0, coin = false; navFamPages(F).forEach((p) => { const b = badge(p[0]); const m = /navcnt[^>]*>(\d+)</.exec(b); if (m) n += +m[1]; else if (/navcoin/.test(b)) coin = true; else if (b) n += 1; }); return { n, coin }; };
   const famBadge = (F) => { const c = famCount(F); return c.n ? `<span class="navcnt" title="${c.n} chose${c.n > 1 ? "s" : ""} à faire">${c.n}</span>` : c.coin ? '<span class="navcoin" title="Vous pouvez recruter un héros"></span>' : ""; }; // 8A : le total des pastilles d'une famille repliée
-  const famNew = (F) => (navFamPages(F).some((p) => navIsNew(p[0])) ? '<span class="sn-newdot" title="Nouveauté"></span>' : "");
-  const item = (key, n, ic, desc) => { const hk = navHotkey(key); return `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}${hk ? ` (touche ${hk})` : ""}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}${hk ? `<kbd class="sn-kbd" aria-hidden="true">${hk}</kbd>` : ""}</button>`; };
-  const fightBtn = `<button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${k === "combat" ? 'aria-current="page"' : ""} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>`;
-  const quit = navQuitBtn(); const fightRow = `<div class="sn-frow${quit ? " q" : ""}">${fightBtn}${quit}</div>`; // 2.1.31.5 : quitter le donjon ou rentrer de la chasse sans ouvrir le combat
-  const foot = `<div class="sn-foot"><button class="sn-fb" data-act="gd-open" title="Guide de cette page"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Guide</span></button><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
-  let side;
-  if (mini) {
-    const fly = ui.navFly && NAV.find((F) => F.id === ui.navFly);
-    side = `<div class="sn-side sn-mcol"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button><button class="sn-mini" data-act="navmini" title="Afficher le nom des pages" aria-label="Agrandir le menu">»</button>
-      ${fightRow}${item("home", "Havre-Sac", "logo")}<i class="sn-msep"></i>
-      ${NAV.map((F) => `<button class="sn-fh${curFam && curFam.id === F.id ? " cur" : ""}${fly && fly.id === F.id ? " fly" : ""}" data-act="navfly" data-v="${F.id}" data-fam="${F.id}" title="${h(F.n)}" aria-expanded="${!!(fly && fly.id === F.id)}">${icon(F.ic)}${famNew(F)}${famBadge(F)}</button>`).join("")}
-      <span class="sn-grow"></span>${foot}</div>${fly ? `<div class="sn-fly"><h4>${h(fly.n)}</h4>${navFamPages(fly).map((p) => item(p[0], p[1], p[2], true)).join("")}</div>` : ""}`;
-  } else {
-    const isOpen = (F) => (F.id in navFams ? !!navFams[F.id] : !!(curFam && curFam.id === F.id)); // 1.2.5.5 : plusieurs familles ouvertes
-    side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="Réduire le menu aux icônes" aria-label="Réduire le menu">«</button></div>
-      <label class="sn-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Aller à une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
-      ${fightRow}${item("home", "Havre-Sac", "logo")}
-      ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}<span class="sn-pl">${h(p[1])}</span>${badge(key)}</button>`; }).join("")}</div></div>` : ""}
-      ${q ? `<div class="sn-hits"><span>${hits.length ? `${hits.length} page${hits.length > 1 ? "s" : ""}` : "Aucune page"} pour « ${h(q)} »</span>${hits.map((p) => item(p[0], p[1], p[2], true)).join("")}</div>`
-        : NAV.map((F) => { const op = isOpen(F); return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
-      <span class="sn-grow"></span>${foot}</div>`;
-  }
+  /* 2.1.39 (Mathis 1B) : sur PC, un rail d'icônes avec leur nom : Combat, Havre-Sac, (Saison), les 5 familles, Options et Aide.
+     Une famille ouvre sa dernière page vue ; ses pages sont les onglets du bandeau en haut de la page */
+  const SEA = navSeason(); const seaOn = !!(SEA && curFam === SEA) && !fight;
+  const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
+  const rl = (key, n, ic, on, b, cls, fam) => `<button class="rl-i${cls ? " " + cls : ""}${on ? " cur" : ""}" data-act="nav" data-v="${key}" data-nk="${key}"${fam ? ` data-fam="${fam}"` : ""} ${on ? 'aria-current="page"' : ""} title="${h(n)}">${icon(ic)}<span class="rl-l">${h(n)}</span>${b || ""}</button>`;
+  const rlFight = `<div class="rl-frow"><button class="rl-i rl-fight${live ? " on" : ""}${fight ? " cur" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""} title="${h(live ? "Combat en cours : " + live : "Combat")}">${med("combat")}<span class="rl-l">Combat</span><small id="navlive" hidden>${h(live)}</small></button>${navQuitBtn()}</div>`;
+  const rlFoot = `<button class="rl-i rl-f" data-act="options" title="Options">${G("gear")}<span class="rl-l">Options</span></button><button class="rl-i rl-f" data-act="navhelp" title="Aide : guide, suggestions, signaler un bug"><b class="sn-gq" aria-hidden="true">?</b><span class="rl-l">Aide</span></button>`;
+  const side = `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
+      ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea") : ""}<i class="rl-sep"></i>
+      ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}
+      <span class="sn-grow"></span>${rlFoot}</div>`;
+  if (curFam && !fight && k !== "home") { if (!ui.famLast) ui.famLast = {}; ui.famLast[curFam.id] = kk; }
   ui.navJust = null;
   /* 4A téléphone : Havre-Sac, Aventure, Combat, Héros, Menu */
-  const F0 = NAV[0]; const FH = NAV.find((F) => F.id === "he") || NAV[2];
+  const F0 = NAV.find((F) => F.id === "av") || NAV[0]; const FH = NAV.find((F) => F.id === "he") || NAV[1];
   const famOn = (F) => !fight && !!(curFam && curFam.id === F.id);
   const menuOn = !fight && k !== "home" && !famOn(F0) && !famOn(FH);
   const mb = (key, n, ic, on, b) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""}>${icon(ic)}<span>${n}</span>${b || ""}</button>`;
   const restDot = NAV.some((F) => F !== F0 && F !== FH && famCount(F).n) || !!B.comptoirs;
   const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
-  const qf = document.activeElement && document.activeElement.id === "navq" ? document.activeElement : null; const qs = qf ? [qf.value, qf.selectionStart, qf.selectionEnd] : null; // 1.2.7.2 : le menu se redessine en tâche de fond, la case « Aller à une page » garde ce qui est tapé
-  const keep = [".sn-side", ".sn-fly"].map((c) => { const n = nav.querySelector(c); return n ? n.scrollTop : 0; }); // 1.2.9.3 : le menu se redessine pendant les combats, il garde sa position de défilement
+  const keep = [".sn-side"].map((c) => { const n = nav.querySelector(c); return n ? n.scrollTop : 0; }); // 1.2.9.3 : le menu se redessine pendant les combats, il garde sa position de défilement
   nav.innerHTML = side + mob;
-  if (qs) { const n = $("#navq"); if (n) { n.value = qs[0]; n.focus(); try { n.setSelectionRange(qs[1], qs[2]); } catch (e) {} } }
   /* 5A : bandeau de la famille en haut de chaque page, et 3A les onglets des pages rangées ensemble */
   let strip = "";
   if (curFam && !fight && k !== "home") {
     const pinned = pins.includes(kk);
-    strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button><button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
+    strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.season ? seasonName() : curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button><button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
     const tabs = NAV_MERGE[kk];
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   sub.innerHTML = strip;
   { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.offsetWidth / 2; } // téléphone : la page en cours reste visible dans le bandeau
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
-  [".sn-side", ".sn-fly"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
+  [".sn-side"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
   navAfter(k, B);
 }
 /* animations du menu (Mathis 20A à 25A), jamais avec « Animations réduites » */
@@ -3025,7 +3024,7 @@ function navAfter(k, B) {
   const anim = !calm() && animLvl() === "full";
   if (navFx) { const f = navFx; navFx = null; if (anim) document.querySelectorAll(`#nav [data-nk="${f.k}"], #subnav [data-nk="${f.k}"]`).forEach((b) => { if (!(b.offsetWidth || b.offsetHeight)) return; b.classList.add("sn-clk"); const r = document.createElement("i"); r.className = "sn-ripple"; r.style.left = `${f.x * 100}%`; r.style.top = `${f.y * 100}%`; b.appendChild(r); setTimeout(() => { r.remove(); b.classList.remove("sn-clk"); }, 650); }); }
   const seen = {}; for (const key in B) seen[key] = B[key] || "";
-  if (navBadgeSeen && anim) for (const key in seen) if (seen[key] && seen[key] !== navBadgeSeen[key]) document.querySelectorAll(`#nav [data-nk="${key}"] .navcnt, #nav [data-nk="${key}"] .navdot, #nav .sn-fh[data-fam="${(navFam(key) || {}).id}"] .navcnt`).forEach((b) => b.classList.add("bpulse"));
+  if (navBadgeSeen && anim) for (const key in seen) if (seen[key] && seen[key] !== navBadgeSeen[key]) document.querySelectorAll(`#nav [data-nk="${key}"] .navcnt, #nav [data-nk="${key}"] .navdot, #nav .rl-i[data-fam="${(navFam(key) || {}).id}"] .navcnt`).forEach((b) => b.classList.add("bpulse"));
   navBadgeSeen = seen;
 }
 /* téléphone : toutes les pages en tuiles, par famille, avec la recherche et les épinglés */
@@ -3036,12 +3035,26 @@ function navMenuSheet() {
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const tile = (key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key || kk === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || (navIsNew(key) ? '<span class="sn-new t">nouveau</span>' : "")}</button>` : ""; };
   const hit = (p) => `<button class="ns-hit" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${k === p[0] ? 'aria-current="page"' : ""}>${icon(p[2])}<span class="sn-l">${h(p[1])}<small>${h(NAV_DESC[p[0]] || "")}</small></span>${B[p[0]] || ""}</button>`;
-  openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
+  /* 2.1.39 (Mathis 7A) : une grande tuile par famille, tout tient sur un écran ; la famille ouvre sa dernière page vue */
+  const cnt = (F) => navFamPages(F).reduce((n, p) => { const b = B[p[0]] || (NAV_MERGE[p[0]] || []).map((x) => B[x] || "").find(Boolean) || ""; const m = /navcnt[^>]*>(\d+)</.exec(b); return n + (m ? +m[1] : b ? 1 : 0); }, 0);
+  const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
+  const ft = (F, cls) => { const L = navFamPages(F); const n = cnt(F); return `<button class="ns-ft${cls ? " " + cls : ""}${curF === F ? " cur" : ""}" data-act="nav" data-v="${famPage(F)}" data-nk="${famPage(F)}">${icon(F.ic)}<span><b>${h(F.season ? seasonName() : F.n)}</b><small>${L.slice(0, 3).map((p) => h(p[1])).join(" · ")}${L.length > 3 ? "…" : ""}</small></span>${n ? `<span class="navcnt">${n}</span>` : ""}</button>`; };
+  const SEA = navSeason();
+  openSheet(`<div class="navsheet ns-v2"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
-      : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => { const op = nsOpen(F, curF); const L = navFamPages(F);
-        const cnt = L.reduce((n, p) => { const m = /navcnt[^>]*>(\d+)</.exec(B[p[0]] || ""); return n + (m ? +m[1] : B[p[0]] ? 1 : 0); }, 0);
-        return `<button class="ns-fh${op ? " open" : ""}" data-act="nsfam" data-v="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="grow">${h(F.n)}</span>${op ? "" : `<span class="ns-fn">${L.length} pages</span>${cnt ? `<span class="navcnt">${cnt}</span>` : ""}`}<i class="sn-chev"></i></button>${op ? `<div class="ns-tiles">${L.map((p) => tile(p[0])).join("")}</div>` : ""}`; }).join("")}`}
-    <div class="ns-foot"><button class="btn" data-act="gd-open"><b class="sn-gq" aria-hidden="true">?</b> Guide</button><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+      : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
+    <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+}
+/* 2.1.39 (Mathis 2A) : le bouton Aide regroupe le guide, les suggestions et le signalement de bug */
+function helpSheet() {
+  const row = (act, ic, t, d) => `<button class="hp-row" ${act}>${ic}<span class="grow"><b>${t}</b><small>${d}</small></span><i class="chev">›</i></button>`;
+  openSheet(`<div class="helpsheet"><h2><b class="sn-gq" aria-hidden="true">?</b> Aide</h2>
+    ${row('data-act="gd-open"', '<b class="sn-gq hp-q" aria-hidden="true">?</b>', "Guide de cette page", "Ce que fait la page affichée, en quelques lignes")}
+    ${row('data-act="nav" data-v="guide"', med("almanax"), "Guide complet", h(NAV_DESC.guide))}
+    ${row('data-act="nav" data-v="sugg"', med("idee"), "Suggestions", h(NAV_DESC.sugg))}
+    ${row('data-act="nav" data-v="bug"', med("bug"), "Signaler un bug", h(NAV_DESC.bug))}
+    <a class="hp-row" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow"><b>Discord idlus</b><small>Annonces, aide, builds et idées</small></span><i class="chev">›</i></a>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveTxt() {
@@ -3062,12 +3075,55 @@ function navQuitBtn() {
     : `<button class="sn-quit dg" data-act="navquit" title="Quitter le donjon (la clé est perdue)" aria-label="Quitter le donjon"><b aria-hidden="true">✕</b></button>`;
 }
 function updNavLive() {
-  { const fr = $("#nav .sn-frow"); const q = navQuitKind(); const was = fr ? (fr.querySelector(".sn-quit.ask") ? "ask" : fr.querySelector(".sn-quit.dg") ? "dg" : fr.querySelector(".sn-quit") ? "hunt" : "") : null;
+  { const fr = $("#nav .rl-frow"); const q = navQuitKind(); const was = fr ? (fr.querySelector(".sn-quit.ask") ? "ask" : fr.querySelector(".sn-quit.dg") ? "dg" : fr.querySelector(".sn-quit") ? "hunt" : "") : null;
     const now = q === "dg" && ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000 ? "ask" : q; if (was !== null && was !== now) return renderNav(); }
   const el = $("#navlive"); if (!el) return; const v = navLiveTxt(); if (el.dataset.v === v) return; el.dataset.v = v;
-  el.textContent = v || "voir l'arène"; const b = el.closest(".sn-fight"); if (b) { b.classList.toggle("on", !!v); b.querySelector("b").textContent = v ? "Combat en cours" : "Combat"; }
+  el.textContent = v; const b = el.closest(".rl-fight"); if (b) { b.classList.toggle("on", !!v); b.title = v ? "Combat en cours : " + v : "Combat"; }
 }
+/* 2.1.39 (Mathis 3A) : une seule barre en haut. Kamas, Sablier, la chasse en cours, l'état de la sauvegarde (et le panel de Xener) ; la cloche ouvre les pastilles du jeu
+   (objectifs suivis, événements, annonce de Xener, nouveautés) ; le portrait ouvre le compte (serveur, sauvegarde, son, bonus).
+   Options › Affichage › « Affichage détaillé » remet l'ancienne barre et sa ligne de pastilles. */
+const detailOn = () => !!(S && S.settings.detail);
 function statusHtml() {
+  if (!S) return "";
+  if (detailOn()) return statusHtmlFull();
+  const where = E.expActive(S) ? (window.SGUI ? window.SGUI.where(S) : "Songe infini") : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
+  const sea = S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${seasonName()} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐<b class="hide-sm">&nbsp;${h(seasonName())}</b></span>` : "";
+  const dust = (S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip hide-sm" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : "";
+  const op = ui.tbOpen;
+  return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt=""><span class="hide-sm">idlus</span></button>${sea}
+    <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>${dust}${sabHtml()}
+    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span><span class="tb-grow"></span>${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
+    <button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>
+    <button class="ic-btn tb-bell${op === "bell" ? " on" : ""}" data-act="tb-bell" aria-expanded="${op === "bell"}" title="Notifications : objectifs suivis, événements, annonces" aria-label="Notifications">${TB_BELL}<span class="navcnt" id="tbBellN" hidden></span></button>
+    <button class="tb-acc${op === "acc" ? " on" : ""}" data-act="tb-acc" aria-expanded="${op === "acc"}" title="Mon compte : serveur, sauvegarde, son, bonus" aria-label="Mon compte">${heroMed()}<i class="tb-dn" aria-hidden="true"></i></button>
+    ${op === "acc" ? accPanelHtml() : ""}`;
+}
+const TB_BELL = '<svg class="uico gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+/* le panneau du portrait : serveur, sauvegarde, modération, son, puis les bonus en cours */
+function accPanelHtml() {
+  const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0); const team = E.team(S);
+  const bon = [(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %).">${G("flame")} <b>×${S.chalStreak}</b> +${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span>` : "",
+    activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : "",
+    E.almOn(S) ? `<span class="it boostchip" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""].filter(Boolean).join("");
+  const c = mainHero();
+  return `<div class="tb-pop tb-accp" role="dialog" aria-label="Mon compte"><div class="tb-ph">${heroMed()}<span class="grow"><b>${h(c ? c.name : "")}</b><small>${S.mono ? `Monocompte · ${h(seasonName())}` : `Classique · ${team.length}/8 héros`}</small></span></div>
+    <div class="tb-row">${swapBtn()}${sndBtn()}</div>
+    ${bon ? `<h4>Bonus en cours</h4><div class="tb-row">${bon}</div>` : ""}
+    <div class="tb-row xs muted"><span class="it" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> monstres</span><span class="it">${(S.hunting && team.length) || S.dungeon || E.expActive(S) ? "équipe en chasse" : "équipe au repos"}</span></div>
+    <div class="tb-row"><button class="btn sm" data-act="options">${G("gear")} Options</button><button class="btn sm" data-act="changelog">${G("sparkle")} Nouveautés ${h(GAME_VERSION)}</button></div></div>`;
+}
+/* la cloche : #topchips (pastilles de tous les modules) et #annbar deviennent son panneau ; le chiffre compte ce qu'il y a dedans */
+function tbBellSync() {
+  const tc = $("#topchips"), an = $("#annbar"); if (!tc) return;
+  const one = !!S && !detailOn(); document.body.classList.toggle("tb1", one); document.body.classList.toggle("bellopen", one && ui.tbOpen === "bell");
+  if (an) { if (one && an.parentNode !== tc) tc.prepend(an); else if (!one && an.parentNode === tc) tc.after(an); }
+  const n = one ? tc.querySelectorAll(".tchip, .annbar, .updbar").length : 0; const b = $("#tbBellN");
+  if (b) { b.hidden = !n; b.textContent = n > 9 ? "9+" : String(n); }
+  tc.classList.toggle("tb-empty", !n);
+}
+{ const tc = document.getElementById("topchips"); if (tc && window.MutationObserver) { let q = 0; const mo = new MutationObserver(() => { if (q) return; q = requestAnimationFrame(() => { q = 0; if (S) tbBellSync(); }); }); mo.observe(tc, { childList: true, subtree: true }); if (tc.parentNode) mo.observe(tc.parentNode, { childList: true }); } } // les modules posent leurs pastilles plus tard
+function statusHtmlFull() {
   if (!S) return "";
   const team = E.team(S);
   const where = E.expActive(S) ? (window.SGUI ? window.SGUI.where(S) : "Songe infini") : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
@@ -3145,7 +3201,7 @@ function dustOpen() {
 }
 function dustRefresh() { const p = $("#dustpop"); if (!p || !S) return; const k = dustKey(); if (p.dataset.k !== k) { p.dataset.k = k; p.innerHTML = dustMenuHtml(); } dustPlace(); }
 document.addEventListener("click", (ev) => { const p = $("#dustpop"); if (p && !ev.target.closest("#dustpop,#dustchip")) dustClose(); }, true);
-document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("#dustpop")) dustClose(); });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("#dustpop")) dustClose(); if (ev.key === "Escape" && ui.tbOpen) { ui.tbOpen = null; renderStatus(); } });
 addEventListener("resize", () => dustPlace());
 function sabSheet() {
   const B = E.sab(S); const MX = E.sabMaxOf(S); const fill = Math.min(100, Math.round((B.r / MX) * 100)); const L = E.sabMtLvl(S);
@@ -3216,7 +3272,7 @@ function sabGo(v) {
   if (v.startsWith("cpt:") && window.CPTUI) { window.CPTUI.open(v.slice(4)); return; }
   navGo(v); render(); window.scrollTo(0, 0);
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); tbBellSync(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { dof: "dofus", quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -3369,7 +3425,7 @@ function homeTiles() {
     out.push(tile({ ic: `<span class="ac-te">⏳</span>`, t: "Sablier de Xélor", s: `${dur(sb.r)} en réserve${sb.spd > 1 ? ` · vitesse ×${sb.spd}` : p >= 95 ? " · plein, il ne se remplit plus" : ""}`, hot: p >= 95 && sb.spd === 1, act: `data-act="sabinfo"`, badge: `<span class="ac-sab"><i style="width:${p}%"></i></span>` })); }
   if (S.chars.length < E.HERO_MAX) { const pr = recruitPrice(); const can = canRecruit();
     out.push(tile({ ic: `<span class="head ac-tadd">+</span>`, t: "Prochain héros", s: `${pr ? `${fmt(pr)} kamas` : "gratuit"} · ${can ? "tu peux recruter" : `il manque ${fmt(pr - S.kamas)}`}`, hot: can, act: `data-act="recruitsheet"`, badge: `<span class="coin"></span>` })); }
-  return { html: out.join(""), todo };
+  return { html: out.join(""), todo, list: out };
 }
 function homeEvents() {
   const W = E.weekly(S); const WD = W && DUNGEONS[W.did];
@@ -3404,7 +3460,7 @@ function homeHtml() {
   const heads = S.chars.map((c) => { const out = !(c.inTeam && !c.job); const g = al.some((a) => a.c === c && a.k === "gear"); const p = !c.autoStat && c.pts > 0;
     return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${!out && c.lvl < E.MAX_LVL ? `<i class="ac-x"><i style="width:${Math.max(6, Math.min(100, Math.round(100 * c.xp / E.heroXpNeed(c))))}%"></i></i>` : ""}${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
     + (S.chars.length < E.HERO_MAX ? `<button class="ac-h ac-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="${h(`Recruter un héros : ${recruitPrice() ? `${fmt(recruitPrice())} kamas` : "gratuit"}`)}" aria-label="Recruter un héros"><span class="head">+</span></button>` : "");
-  const { html: tiles, todo } = homeTiles();
+  const HT = homeTiles(); const { html: tiles, todo } = HT;
   const q = E.questStep(S); const qp = E.questProgress(S);
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
   const jt = ui.hj === "c" ? "c" : "j"; const n = ui.hjAll ? 20 : 5;
@@ -3412,6 +3468,7 @@ function homeHtml() {
   const more = (jt === "c" ? S.history.length : S.journal.length) > 5;
   /* 1.0.21 « Havre-Sac en accueil » (choix de Mathis 1A 2B 3A, menu A, bandeau avec décor) : le bandeau porte la maison (titre, bonus en pastilles),
      puis « Aujourd'hui », puis « Ma maison » (une tuile par pièce), puis « En ce moment », la quête et le journal. */
+  if (!detailOn()) return homeDash({ deco, main, card, act, rl, lf, heads, team, T: HT });
   const chips = BKIND.map(([k, l, i]) => `<button class="hvchip" data-act="hvbonus" data-tip="${h(`${l} : détail des bonus et plafonds`)}">${IC(i)}<b class="num plus">+${fmt(E.bonus(S, k))} %</b><span>${l.toLowerCase()}</span></button>`).join("")
     + `<button class="hvchip dim" data-act="hvbonus" data-tip="Autel des Douze : relève les plafonds de bonus">${G("star")}<b class="num">${E.altarLvl(S)}/${E.ALTAR.max}</b><span>autel</span></button>`;
   return `
@@ -3437,6 +3494,35 @@ function homeHtml() {
       <section class="panel"><div class="phead"><nav class="subtabs" style="margin:0"><button data-act="hjtab" data-v="j" aria-pressed="${jt === "j"}">Journal</button><button data-act="hjtab" data-v="c" aria-pressed="${jt === "c"}">Derniers combats</button></nav>${more ? `<button class="btn sm" data-act="hjall">${ui.hjAll ? "Moins" : "Tout voir"}</button>` : ""}</div>${jour}</section>
     </div>
   </section>
+  ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
+}
+/* 2.1.39 (Mathis 5A) : Havre-Sac en tableau de bord. Le bandeau, « À faire maintenant » (3 tuiles, les plus urgentes d'abord, « Tout voir »),
+   puis une carte par sujet : Ma maison, le mutateur de l'heure, la quête (et la saison en Monocompte). « Affichage détaillé » remet l'ancien accueil. */
+function homeDash(o) {
+  const { deco, main, card, act, rl, lf, heads, team, T } = o;
+  const rank = (x) => (/^<button class="ac-td[^"]*\bhot\b/.test(x) ? 2 : /^<button class="ac-td[^"]*\bdone\b/.test(x) ? 0 : 1); // urgentes, puis en cours, puis faites
+  const L = T.list.slice().sort((a, b) => rank(b) - rank(a)); const all = !!ui.homeAll; const show = all ? L : L.slice(0, 3);
+  const furnFree = (Array.isArray(S.furniture) ? S.furniture : []).filter((f) => E.FURN[f] && !E.isPlaced(S, f)).length;
+  const W = E.weekly(S); const WD = W && DUNGEONS[W.did]; const q = E.questStep(S); const qp = E.questProgress(S);
+  const cardB = (act, ic, t, d, cls) => `<button class="hd-card${cls ? " " + cls : ""}" ${act}>${ic}<span class="grow"><b>${t}</b><small>${d}</small></span><i class="chev">›</i></button>`;
+  const cards = [
+    S.mono ? cardB('data-act="nav" data-v="pass"', med("ailes"), h(seasonName()), "Pass de saison · Fragments · Guerre de 21 h", "sea") : "",
+    cardB('data-act="nav" data-v="havre"', med("havre"), "Ma maison", `${E.havreTotal(S)} niveaux de Havre-Sac${furnFree ? ` · ${furnFree} meuble${furnFree > 1 ? "s" : ""} à placer` : ""}`),
+    WD ? cardB(`data-act="dgopen" data-id="${W.did}"`, im(imgM(WD.boss), "hd-m", MONSTERS[WD.boss].name), h(WD.name), `Mutateur de l'heure · <b class="plus">+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b> · encore ${weeklyLeft()}`) : "",
+    q ? cardB('data-act="nav" data-v="quests"', med("quetes"), h(q.title), `Quête · ${fmt(qp[0])}/${fmt(qp[1])}`) : cardB('data-act="nav" data-v="quests"', med("quetes"), "Quêtes", "Quête principale terminée"),
+  ].join("");
+  return `
+  <section class="hero-banner ac-ban hd-ban">
+    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}${window.DECORS ? window.DECORS.html(S.dungeon || (S.hunting && S.sub) ? { sub: S.sub, dungeonId: S.dungeon ? S.dungeon.id : null } : { home: document.documentElement.dataset.hal === "on" ? "hal" : document.documentElement.dataset.theme === "dark" || ["givre", "ecume"].includes(document.documentElement.dataset.skin) ? "dark" : "jardin" }) : ""}</div>
+    <div class="inner"><div class="ac-l">
+      ${card || `<div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}${lf}</div>`}
+      <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn ac-ib" data-tab="world" data-tip="Changer de zone" aria-label="Zones">${IC("monde")} <span class="lb">Zones</span></button><button class="btn ac-ib" data-act="stophunt" data-tip="Rentrer au Havre-Sac" aria-label="Rentrer">${IC("havre")} <span class="lb">Rentrer</span></button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
+      <div class="ac-r"><div class="ac-heads">${heads}</div>${team.length ? fsGauge() : ""}</div>
+    </div>
+  </section>
+  ${window.PLUIE ? window.PLUIE.homeHtml() : ""}
+  <section class="panel hd-todo"><div class="phead"><h2>${G("target")} À faire maintenant</h2>${L.length > 3 ? `<button class="btn sm ghost" data-act="homeall">${all ? "Moins" : `Tout voir · ${L.length}`}</button>` : ""}</div><div class="ac-tds">${show.join("")}</div></section>
+  <div class="hd-cards">${cards}</div>
   ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
 }
 /* 1.0.21 : « Ma maison » sur l'accueil : une tuile par pièce (niveau, bonus, meubles placés, amélioration sur place),
@@ -3975,6 +4061,12 @@ function weeklyBanner() {
   const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
   return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de l'heure</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>${nextHourlyTxt() ? `<div class="xs muted wknext">${nextHourlyTxt()}</div>` : ""}`;
 }
+/* 2.1.39 (Mathis 4A) : les deux mutateurs tiennent sur une ligne, « Voir » les ouvre */
+function dgMutLine() {
+  const W = E.weekly(S); const L = E.flash(S); if (!W && !L.length) return "";
+  const dg = W && DUNGEONS[W.did];
+  return `<button class="dg-mutline" data-act="dgmut">${G("star")}<span class="grow"><b>Mutateurs</b>${dg ? ` · ${h(dg.name)} <b class="plus">+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b>` : ""}${L.length ? ` · ${L.length} donjon${L.length > 1 ? "s" : ""} éclair <b class="plus">+${Math.round((E.FLASH_REW - 1) * 100)} %</b>` : ""}</span><span class="xs muted">Voir ▸</span></button>`;
+}
 /* Mutateur éclair (0.1) : 3 donjons toutes les 20 minutes */
 function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - E.now()) / 60000)); return `${m} min`; }
 function flashBanner() {
@@ -4068,9 +4160,8 @@ function dungeonsHtml() {
   return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10${s15 ? ` · ${s15} en stasis ${E.STASIS_MAX}` : ""}</span></div>
     <div class="pad stack" style="gap:10px">
       ${defiLine()}
-      ${weeklyBanner()}
-      ${flashBanner()}
-      <p class="note xs">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
+      ${detailOn() || ui.dgMut ? weeklyBanner() + flashBanner() : dgMutLine()}
+      <p class="note xs dg-note">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       ${dgFilterBar(F, list.length, nHid)}</div></section>
     ${tdjBanner()}
     ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
@@ -6183,8 +6274,9 @@ function teamTopHtml() {
   const head1 = `<div class="pagehead tph"><div class="tpt"><h1>Équipe et héros</h1><span class="small muted"><b class="num">${team.length} / ${E.TEAM_MAX}</b> en équipe · <b class="num">${S.chars.length} / ${E.HERO_MAX}</b> héros · niveau moyen <b class="num">${avg}</b></span></div><span class="grow"></span>
     ${board ? "" : gearN ? `<button class="btn sm primary" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button>
-    ${!board && S.chars.length < E.HERO_MAX ? `<span class="trec">${recruitBtn()}</span>` : ""}</div>`;
+    ${!board && S.chars.length < E.HERO_MAX ? `<span class="trec">${recruitBtn()}</span>` : ""}${!board && !detailOn() ? `<button class="btn sm ghost" data-act="teammore" aria-expanded="${!!ui.teamMore}">Classes, compositions, idoles ${ui.teamMore ? "▴" : "▾"}</button>` : ""}</div>`;
   if (board) return head1;
+  if (!detailOn() && !ui.teamMore) return head1; // 2.1.39 (Mathis 4A) : les 19 classes et les compositions sous un bouton
   const K = S.comps || []; const cur = E.compMatch(S);
   return `${head1}${classesBoardHtml()}<div class="tbar"><span class="xs muted">Compositions</span>${K.map((k, i) => `<button class="tcomp ${i === cur ? "on" : ""}" data-act="compuse" data-i="${i}" ${i === cur || S.dungeon ? "disabled" : ""} data-tip="${h(`${k.ids.length} héros · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}`)}">${i === cur ? "✓ " : ""}${h(k.name)}</button>`).join("")}
     ${K.length < E.COMP_MAX ? `<button class="tcomp add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe</button>` : ""}${K.length ? `<button class="tcomp add" data-act="teamboard">Gérer</button>` : ""}
@@ -6843,7 +6935,7 @@ function buildPreview(b, c) {
 function buildSheet(cid) {
   const c = char(cid) || char(ui.cid); ui.buildCid = c.id;
   const code = E.buildCode(S, c);
-  const pub = window.BUILDS ? window.BUILDS.pubHtml(c) : ""; // 1.0.23 : publier dans Communauté › Builds (js/builds.js)
+  const pub = window.BUILDS ? window.BUILDS.pubHtml(c) : ""; // 1.0.23 : publier dans Joueurs › Builds (js/builds.js)
   openSheet(`<h2>Partager le build</h2>
     <div class="stack small" style="gap:12px">${pub}
       <div><b>Le code du build ${h(deNom(c.name))}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
@@ -8717,6 +8809,7 @@ function renderUpdBar() {
   if (S && E.honorCls && S.honorHide !== E.honorIdx()) { const k = E.honorCls(), C = CLASSES[k], hh = Math.max(1, Math.ceil((E.honorEnd() - E.now()) / 3600e3)), left = hh >= 24 ? `${Math.floor(hh / 24)} j` : `${hh} h`, mine = S.chars.some((c) => c.cls === k);
     html += tchip({ k: "ev", ico: `<img src="${symImg(k)}" alt="" style="width:18px;height:18px">`, t: `${h(C.name)} à l'honneur`, d: `+${E.HONOR_PCT} % XP et butin`, s: `+${E.HONOR_PCT} % · ${left}`, tip: `La classe à l'honneur : cette semaine, les héros ${h(C.name)} gagnent +${E.HONOR_PCT} % d'XP (Maîtrise comprise), et une équipe avec au moins un ${h(C.name)} a +${E.HONOR_PCT} % de butin. ${mine ? "Tu en as un !" : "Tu n'en as pas encore."} Encore ${left}, puis une autre classe peu jouée prend le relais.`, x: `data-act="honorhide"`, xt: "Masquer cette semaine" }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
+  if (S && !detailOn() && S.seenVersion !== GAME_VERSION) html += tchip({ k: "sys", ico: G("sparkle"), t: `Nouveautés ${h(GAME_VERSION)}`, d: "ce qui a changé", go: `data-act="changelog"`, tip: "Voir les nouveautés de la mise à jour" }); // 2.1.39 (3A) : la pastille des nouveautés passe dans la cloche
   if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
   if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }
@@ -8754,8 +8847,8 @@ function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
-  if (S.navv !== 2) { S.navv = 2; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 : nouveau menu, bulle pour les parties déjà commencées
-  clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
+  if (S.navv !== 3) { S.navv = 3; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 puis 2.1.39 : nouveau menu, bulle pour les parties déjà commencées
+  clearDonePins(); document.body.classList.toggle("dense", !detailOn()); renderNav(); renderStatus(); renderUpdBar(); // 2.1.39 (4A) : pages resserrées sauf « Affichage détaillé »
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
@@ -9018,7 +9111,9 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Batterie", "",
+  return optSec("Menus", "",
+      optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.39 (Mathis 4A)
+    ) + optSec("Batterie", "",
       optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
     + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
     + optSec("Écran", "se voit tout de suite",
@@ -9049,13 +9144,13 @@ function tipTick() {
   const t = E.tipDue(S, tipCtx()); if (t) showTipBubble(t);
 }
 /* 0.1.31 : une bulle, une seule fois, pour les joueurs qui connaissaient l'ancien menu */
-const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav .sn-fh[data-fam="av"], #nav [data-nk="menu"]',
-  txt: "Les pages sont rangées en 6 familles : Aventure, Défis, Héros, Économie, Communauté et Journal. Sur PC, une famille s'ouvre à la fois, la case « Aller à une page » trouve n'importe quelle page, et l'étoile en haut d'une page l'épingle dans le menu. Sur téléphone, le bouton Menu ouvre tout. Options et Signaler un bug sont en bas du menu." };
+const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav .rl-i[data-fam="av"], #nav [data-nk="menu"]',
+  txt: "Moins d'informations partout : 5 familles (Aventure, Héros, Économie, Joueurs, Journal), leurs pages en onglets en haut de chaque page. La cloche en haut réunit les objectifs, événements et annonces ; ton portrait ouvre le compte. Options › Affichage › « Affichage détaillé » remet l'ancien affichage." };
 const tipVis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
 /* 1.0.12.8 : le menu et la page se redessinent (toutes les 3 s sur Quêtes et l'Accueil) : on remet l'anneau doré sur le bouton visé */
 function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = tipEls(tipAnchor).find(tipVis); if (a && !a.classList.contains("wl-target")) a.classList.add("wl-target"); }
 /* 1.2 : la page visée peut être repliée dans sa famille : on vise alors l'en-tête de la famille (PC) */
-function tipEls(sel) { const out = [...document.querySelectorAll(sel)]; (sel.match(/data-nk="([a-z]+)"/g) || []).forEach((m) => { const F = navFam(m.slice(9, -1)); if (F) out.push(...document.querySelectorAll(`#nav .sn-fh[data-fam="${F.id}"]`)); }); return out; }
+function tipEls(sel) { const out = [...document.querySelectorAll(sel)]; (sel.match(/data-nk="([a-z]+)"/g) || []).forEach((m) => { const F = navFam(m.slice(9, -1)); if (F) out.push(...document.querySelectorAll(`#nav .rl-i[data-fam="${F.id}"]`)); }); return out; }
 function showTipBubble(t, again) {
   tipHide(); tipShown = t.id; tipAnchor = t.anchor || null;
   const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
@@ -9193,7 +9288,7 @@ function itemSheet(tpl) {
     ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
     <div class="xs">${window.FORGEUI && !T.dofus ? (() => { const best = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => E.itemQuality(b) - E.itemQuality(a))[0] || null; return tplStatsHtml(Object.assign({}, T, { stats: {} })) + (best ? `<div class="xs muted">Ton meilleur exemplaire · jet ${Math.round(E.itemQuality(best) * 100)} %</div>` : "") + window.FORGEUI.statGrid(T, best, window.FORGEUI.wornRef(tpl, best)); })() : tplStatsHtml(T)}</div>
     <h3 class="sec">${T.dofus ? "Comment l'obtenir" : "Où le trouver"}</h3>
-    <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Défis › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
+    <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Aventure › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
       ${T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${tpl}">${G("cart")} ${inShop ? "Retirer de la liste de courses" : "Liste de courses"}</button>` : ""}
       ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}
@@ -10333,6 +10428,7 @@ document.addEventListener("click", (ev) => {
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
   if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
+  if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.39 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   backMark(t);
@@ -10651,6 +10747,8 @@ document.addEventListener("click", (ev) => {
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
+    case "navhelp": helpSheet(); return;
+    case "tb-bell": case "tb-acc": { const w = a === "tb-bell" ? "bell" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
  toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
@@ -10659,6 +10757,9 @@ document.addEventListener("click", (ev) => {
     case "homehero": ui.tab = "team"; ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; window.scrollTo(0, 0); break;
     case "hjtab": ui.hj = d.v; ui.hjAll = false; break;
     case "hjall": ui.hjAll = !ui.hjAll; break;
+    case "homeall": ui.homeAll = !ui.homeAll; break;
+    case "dgmut": ui.dgMut = true; break;
+    case "teammore": ui.teamMore = !ui.teamMore; { const n = $("#teamtop"); if (n) n.innerHTML = teamTopHtml(); } return;
     case "hgo": ui.tab = "inv"; if (d.v === "cons") ui.inv = "cons"; if (d.v === "gbuy") ui.inv = "res"; window.scrollTo(0, 0); break;
     case "selchar": ui.cid = +d.id; ui.slot = null; ui.eqSearch = ""; ui.psetOpen = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
     case "teamlist": ui.tview = "list"; ui.heroMore = false; break;
@@ -10924,6 +11025,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
+  else if (a === "setdetail") { S.settings.detail = t.checked; ui.tbOpen = null; dirty = true; optionsSheet(); renderStatus(); render(); return; }
   else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
   else if (a === "setlivecol") { S.settings.liveCol = t.checked; dirty = true; liveColTick(true); return; }
   else if (a === "setinvhero") { S.settings.invHero = t.checked; dirty = true; return; }
@@ -11251,7 +11353,7 @@ function slotCard(sl) {
 function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
-  document.body.classList.remove("hasnav", "navmini");
+  document.body.classList.remove("hasnav", "navmini", "navrail");
   applySkin(menuPref().theme); applyHal(); if (window.AMB) { window.AMB.stop(); window.AMB.bg(false); } delete document.documentElement.dataset.bgfx;
   const user = ON && ON.user, id = user ? ON.identities() : null;
   const acc = !ON || menuStuck() ? `<div class="svacc"><span class="who"><span class="dot off"></span><span><b>Serveur injoignable</b><br><span class="small muted">Tes parties de cet appareil restent jouables.${ON ? " Recharge la page quand il reviendra pour retrouver ton compte : ta progression d'ici partira alors en ligne." : ""}</span></span></span>${ON ? `<button class="btn sm" data-act="sv-retry">Réessayer</button>` : ""}</div>`
@@ -11760,10 +11862,10 @@ function sbGrid(sb) {
     return `<span class="sbk${r ? " on" : ""}${r && me && r.user_id === me ? " mine" : ""}"${r ? ` data-tip="${h(`${r.pseudo || "compte supprimé"}, ${raceDate(r.at)}`)}"` : ""}><small>S${k}</small><b>${r ? h(r.pseudo || "?") : "libre"}</b></span>`; }).join("")}</div>
     <span class="xs muted">${next ? `Stasis ${next} : personne encore. Le premier à la finir y grave son nom pour toujours.` : "Toutes les stasis de ce donjon ont leur premier."} Dès la stasis ${E.SB_TITLE_K}, le premier gagne aussi le titre « ${h(E.SB_TITLE)} ».</span></div>`;
 }
-/* 2.1.37.9 (idée de Gagou) : classement des guildes par niveau ; une ligne ouvre la fiche de la guilde (Communauté › Guilde) */
+/* 2.1.37.9 (idée de Gagou) : classement des guildes par niveau ; une ligne ouvre la fiche de la guilde (Joueurs › Guilde) */
 function guildLbHtml(d) {
   const gs = d.glds || [], myG = window.GUILD && window.GUILD.G && window.GUILD.G.me && window.GUILD.G.me.g, myId = myG && myG.id, see = !!(window.GUILD && SLOT === 1 && ON.user);
-  if (!gs.length) return `<div class="empty">Aucune guilde pour l'instant. Fonde la tienne dans Communauté › Guilde !</div>`;
+  if (!gs.length) return `<div class="empty">Aucune guilde pour l'instant. Fonde la tienne dans Joueurs › Guilde !</div>`;
   return `<div class="lbt">${gs.map((g, i) => `<${see ? "button" : "div"} class="lbr jlb-g glb${g.id === myId ? " mine" : ""}${see ? " clk" : ""}"${see ? ` data-act="lb-gview" data-g="${+g.id}"` : ""}><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.name)}${g.id === myId ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${fmt(g.n || 0)} / ${fmt(g.cap || E.GUILD_SEATS || 5)} membres · Meneur : ${h(g.chef || "?")}</small></span><span></span><span class="sc">Niveau ${fmt(g.lvl || 1)}</span></${see ? "button" : "div"}>`).join("")}</div>`;
 }
 function lbListHtml(d) {
@@ -11915,7 +12017,7 @@ function renderLadder() {
     : LB.tab === "gld" ? `<span class="small muted">Les guildes du serveur Classique, de la plus haute à la plus basse. Le niveau monte avec l'XP que les membres donnent à leur guilde.</span>`
     : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<div class="row"><span class="seg">${[["sb", "Sorts des boss"], ["all", "Pour toujours"]].map(([v, n]) => `<button data-act="lb-fview" data-v="${v}" aria-pressed="${LB.fview === v}">${n}</button>`).join("")}</span></div>
-      <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé (et gagne le titre « ${h(E.SB_TITLE)} » dès la stasis ${E.SB_TITLE_K}). Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Communauté › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
+      <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé (et gagne le titre « ${h(E.SB_TITLE)} » dès la stasis ${E.SB_TITLE_K}). Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Joueurs › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
     : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
@@ -12003,7 +12105,7 @@ function recordSheet(r) {
     <div class="chk"><div><span class="okc">✓</span><span>Partie envoyée au serveur</span></div><div><span class="okc">✓</span><span>Le serveur a rejoué la stasis avec ton équipe et l'a terminée en ${recTime(r.t)} (temps officiel)</span></div>
     <div><span class="okc">✓</span><span><b>Record vérifié</b> : ${r.rank}${r.rank === 1 ? "er" : "e"} sur ce donjon${r.week ? ` · ${r.weekRank}${r.weekRank === 1 ? "er" : "e"} cette semaine` : ""}</span></div>
     ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis ${r.k} : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}
-    ${r.firstSb ? `<div><span class="okc">★</span><span><b>Premier depuis les sorts des boss</b> : personne n'avait encore fini ce donjon en stasis ${r.firstSb} depuis la mise à jour. Ton nom est gravé dans Communauté › Classements › Premiers.${r.firstSb >= E.SB_TITLE_K ? ` Titre « ${h(E.SB_TITLE)} » débloqué !` : ""}</span></div>` : ""}</div>
+    ${r.firstSb ? `<div><span class="okc">★</span><span><b>Premier depuis les sorts des boss</b> : personne n'avait encore fini ce donjon en stasis ${r.firstSb} depuis la mise à jour. Ton nom est gravé dans Joueurs › Classements › Premiers.${r.firstSb >= E.SB_TITLE_K ? ` Titre « ${h(E.SB_TITLE)} » débloqué !` : ""}</span></div>` : ""}</div>
     <div class="row"><button class="btn primary" data-act="lb-goto" data-v="${h(r.did)}" data-w="${r.week ? 1 : 0}">Voir le classement</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* Titre « Maître de la semaine » : porté la semaine qui suit un podium. */
