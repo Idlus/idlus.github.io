@@ -286,7 +286,8 @@ as $$ declare me jsonb; rn mono.renforts%rowtype; lv int; begin
   if me is null then return 'Ta partie n''est pas encore validée par le serveur.'; end if;
   if coalesce(me ->> 'serment', me -> 'serment' ->> 't', '') = 'fer' then return 'Serment de fer : pas de renfort pendant la saison.'; end if;
   lv := coalesce(mono.num(me -> 'niveau'), mono.num(me -> 'lvl'), 1)::int;
-  if rn.niveau > lv + 10 then return 'Le héros de ton ami est trop fort pour t''accompagner (10 niveaux au-dessus du tien au plus).'; end if;
+  -- 22/10 (ticket #144) : le niveau compté est celui de la dernière partie validée, pas celui du jeu : le message le dit
+  if rn.niveau > lv + 10 then return format('Le héros de ton ami (niveau %s) est trop fort : le serveur compte ton héros au niveau %s, celui de ta dernière partie validée (10 niveaux d''écart au plus).', rn.niveau, lv); end if;
   return null;
 end $$;
 -- Les renforts disponibles : ceux de mes amis (supabase/amis.sql) pour la saison ouverte, copies du serveur ; et mes aides

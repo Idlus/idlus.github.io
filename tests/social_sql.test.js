@@ -255,7 +255,7 @@ try {
   refus(PR(21, 20, `'dj', 3, p_merc => 'iop'`), /l'un ou l'autre/, "renfort + mercenaire ensemble");
   refus(PR(21, 20, `'dj', 3, p_groupe => 'g:42'`), /donjon solo/, "renfort en groupe");
   refus(PR(24, 20, `'dj', 3`), /Serment de fer/, "renfort sous Serment de fer");
-  refus(PR(25, 20, `'dj', 3`), /trop fort/, "renfort plus de 10 niveaux au-dessus de la partie validée");
+  refus(PR(25, 20, `'dj', 3`), /trop fort : le serveur compte ton héros au niveau \d+, celui de ta dernière partie validée/, "renfort plus de 10 niveaux au-dessus de la partie validée");
   refus(PR(21, 21, `'dj', 3`), /pas disponible/, "son propre héros");
   refus(PR(21, 23, `'dj', 3`), /pas dans tes amis|pas disponible/, "un joueur qui ne prête pas");
   valide(20, { niveau: 103, classe: "cra", nom: "Arc", serment: "ord", aide: {} }); // héros absent de la nouvelle partie validée
