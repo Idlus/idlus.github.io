@@ -386,6 +386,8 @@ jobs:
         run: |
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from mono.parties where updated_at > now() - interval '3 hours') parties_envoyees_3h, (select count(*) from mono.parties_ok where at > now() - interval '3 hours') parties_validees_3h, (select count(*) from mono.bouclier where at > now() - interval '3 hours') lignes_bouclier_3h, (select count(*) from mono.bouclier where left(why, 13) = '[observation]') notes_observation, (select count(*) from mono.bouclier) lignes_bouclier_total"
           bash tools/serveur/vps_sql.sh lecture "select at, left(why, 160) why from mono.bouclier order by at desc limit 15"
+          bash tools/serveur/vps_sql.sh lecture "select etat, count(*) lignes, sum(n) envois, count(distinct user_id) comptes from mono.verifs where at > now() - interval '2 hours' group by etat"
+          bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(user_id) pseudo, etat, n, at, left(why, 140) why from (select distinct on (user_id) * from mono.verifs order by user_id, at desc) d order by at desc"
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 3h supabase-edge-functions 2>&1 | grep -iE "mono" | grep -iE "error|erreur|exception|refus" | tail -20; echo "== appels mono (3 h) : $(docker logs --since 3h supabase-edge-functions 2>&1 | grep -ic mono)"'
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
