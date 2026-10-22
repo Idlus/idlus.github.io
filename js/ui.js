@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.8";
+const GAME_VERSION = "2.1.37.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.9", name: "Guildes au classement", items: [
+    "Idée de Gagou : Classements › nouvel onglet « Guildes », toutes les guildes du serveur Classique rangées par niveau ; un clic ouvre la fiche de la guilde" ] },
   { v: "2.1.37.8", name: "Agressions à minuit", items: [
     "Alignement : les 5 agressions du jour reviennent à minuit, heure de Paris, comme le défi du jour (elles revenaient à 2 h du matin). Les défenses et le bonus de région défendue suivent la même heure" ] },
   { v: "2.1.37.7", name: "XP de récolte rendue au 200", items: [
@@ -11413,7 +11415,7 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, fview: "sb", cache: {} };
 const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho, LB.fview].join("|");
-const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["gld", "Guildes"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -11473,7 +11475,10 @@ async function lbFetch() {
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
-  if (t === "lvl" && LB.cls) {
+  if (t === "gld") { // 2.1.37.9 (idée de Gagou) : guildes par niveau (guild_list, déjà rangée par niveau puis membres)
+    const r = await ON.rpc("guild_list", { p_q: "" }); if (r.err) throw new Error(r.err);
+    out.glds = (Array.isArray(r.data) ? r.data : []).slice().sort((a, b) => (b.lvl || 0) - (a.lvl || 0) || (b.n || 0) - (a.n || 0));
+  } else if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
     const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL + (x.mt || 0)));
@@ -11669,8 +11674,15 @@ function sbGrid(sb) {
     return `<span class="sbk${r ? " on" : ""}${r && me && r.user_id === me ? " mine" : ""}"${r ? ` data-tip="${h(`${r.pseudo || "compte supprimé"}, ${raceDate(r.at)}`)}"` : ""}><small>S${k}</small><b>${r ? h(r.pseudo || "?") : "libre"}</b></span>`; }).join("")}</div>
     <span class="xs muted">${next ? `Stasis ${next} : personne encore. Le premier à la finir y grave son nom pour toujours.` : "Toutes les stasis de ce donjon ont leur premier."} Dès la stasis ${E.SB_TITLE_K}, le premier gagne aussi le titre « ${h(E.SB_TITLE)} ».</span></div>`;
 }
+/* 2.1.37.9 (idée de Gagou) : classement des guildes par niveau ; une ligne ouvre la fiche de la guilde (Communauté › Guilde) */
+function guildLbHtml(d) {
+  const gs = d.glds || [], myG = window.GUILD && window.GUILD.G && window.GUILD.G.me && window.GUILD.G.me.g, myId = myG && myG.id, see = !!(window.GUILD && SLOT === 1 && ON.user);
+  if (!gs.length) return `<div class="empty">Aucune guilde pour l'instant. Fonde la tienne dans Communauté › Guilde !</div>`;
+  return `<div class="lbt">${gs.map((g, i) => `<${see ? "button" : "div"} class="lbr jlb-g glb${g.id === myId ? " mine" : ""}${see ? " clk" : ""}"${see ? ` data-act="lb-gview" data-g="${+g.id}"` : ""}><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.name)}${g.id === myId ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${fmt(g.n || 0)} / ${fmt(g.cap || E.GUILD_SEATS || 5)} membres · Meneur : ${h(g.chef || "?")}</small></span><span></span><span class="sc">Niveau ${fmt(g.lvl || 1)}</span></${see ? "button" : "div"}>`).join("")}</div>`;
+}
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
+  if (LB.tab === "gld") return guildLbHtml(d);
   if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
   if (LB.tab === "defi" && d.guilds) return (d.guilds.length ? defiGuildList(d.guilds) : `<div class="empty">${DF_EMPTY.g}</div>`) + defiViewNote("g", d);
   if (LB.tab === "defi" && LB.dview && LB.dview !== "d" && !d.rows.length) return `<div class="empty">${DF_EMPTY[LB.dview] || DF_EMPTY.d}</div>${defiViewNote(LB.dview, d)}`;
@@ -11814,6 +11826,7 @@ function renderLadder() {
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
     : LB.tab === "race" ? ""
+    : LB.tab === "gld" ? `<span class="small muted">Les guildes du serveur Classique, de la plus haute à la plus basse. Le niveau monte avec l'XP que les membres donnent à leur guilde.</span>`
     : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<div class="row"><span class="seg">${[["sb", "Sorts des boss"], ["all", "Pour toujours"]].map(([v, n]) => `<button data-act="lb-fview" data-v="${v}" aria-pressed="${LB.fview === v}">${n}</button>`).join("")}</span></div>
       <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé (et gagne le titre « ${h(E.SB_TITLE)} » dès la stasis ${E.SB_TITLE_K}). Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Communauté › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
@@ -11832,16 +11845,20 @@ async function lbProfile(u) {
   if (!u) return;
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
+  /* 2.1.37.9 (idée de Gagou) : sa guilde (guild_of, supabase/guildes.sql) ; sans réponse du serveur, la fiche s'affiche sans */
+  const gq = LB.gof === false ? Promise.resolve(null) : Promise.resolve(ON.rpc("guild_of", { p_user: u })).then((r) => { if (r && r.err && /guild_of|function|schema cache/i.test(r.err)) LB.gof = false; /* pas encore sur le serveur : on ne redemande plus */ return r && !r.err && r.data && r.data.name ? r.data : null; }, () => null);
   try {
     const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
       db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
+    const gd = await gq; // 2.1.37.9 (idée de Gagou) : sa guilde
+    const gsee = !!(window.GUILD && window.GUILD.show && SLOT === 1 && ON.user);
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 + (b.mt || 0) - (a.lvl + a.ren * 200 + (a.mt || 0)));
     ui.lbProf = { u, heroes };
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
-    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
+    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2>${gd ? `<${gsee ? "button" : "span"} class="pgld"${gsee ? ` data-act="lb-gview" data-g="${+gd.id}"` : ""}><span class="gemb" style="--gc:${h(gd.col || "#8cc63f")};--gs:22px"><img src="assets/ui/${h(gd.ic || "dofus")}.webp" alt=""></span><b>${h(gd.name)}</b><span class="small muted">niv. ${fmt(gd.lvl || 1)}${gd.rank ? ` · ${h(gd.rank)}` : ""}</span></${gsee ? "button" : "span"}>` : ""}<span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
@@ -11950,6 +11967,7 @@ function lbAct(a, t) {
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
     case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
+    case "lb-gview": closeSheet(); if (window.GUILD && window.GUILD.show) { window.GUILD.show(+d.g); ui.tab = "guild"; render(); window.scrollTo(0, 0); } return; // 2.1.37.9 : fiche de la guilde
     case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }
     case "lb-goto": closeSheet(); LB.tab = "dj"; LB.did = d.v; LB.dmode = d.w === "1" ? "week" : "all"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return;
   }

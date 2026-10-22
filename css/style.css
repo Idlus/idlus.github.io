@@ -6211,3 +6211,7 @@ body:has(#ctxmenu) .tooltip{display:none!important}
 .gvpay{display:grid;gap:2px}
 .gvtable{display:grid;gap:0}
 .gvrunes{display:grid;gap:0;max-height:240px;overflow:auto;padding-right:4px}.gvst input[type=checkbox]{flex:none}.gvslot .icobox img{max-width:100%;max-height:100%}
+/* 2.1.37.9 (idée de Gagou) : Classements › Guildes et guilde sur le profil d'un joueur */
+.lbr.jlb-g.glb.clk{cursor:pointer}
+.pgld{display:flex;width:fit-content;max-width:100%;align-items:center;gap:6px;margin:2px 0 4px;padding:0;background:none;border:0;color:var(--ink);font:inherit;text-align:left;flex-wrap:wrap}
+button.pgld{cursor:pointer}button.pgld:hover b{text-decoration:underline}
