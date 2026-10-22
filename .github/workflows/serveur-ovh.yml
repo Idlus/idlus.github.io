@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-enquete]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -324,6 +324,20 @@ jobs:
             done
           done
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from pg_proc where proname in ('mono_adm_vue','mono_adm_copies','mono_bureau_serie')) fonctions, (select count(*) from mono.testeurs) testeurs"
+      - name: Monocompte, enquête sur un compte (lecture seule, sans le contenu de la partie)
+        if: inputs.etape == 'monocompte-enquete'
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_ -'); [ -n "$p" ] || { echo "pseudo manquant"; exit 1; }
+          U="(select id from public.profiles where lower(pseudo) = lower('$p') limit 1)"
+          bash tools/serveur/vps_sql.sh lecture "select $U as compte, (select at from mono.testeurs where user_id = $U) testeur_depuis, (select jsonb_build_object('id', id, 'gen', gen, 'remise', remise) from mono.saisons where etat = 'ouverte' limit 1) saison"
+          bash tools/serveur/vps_sql.sh lecture "select saison, updated_at, meta->'gen' gen, game_version, length(data) taille from mono.parties where user_id = $U"
+          bash tools/serveur/vps_sql.sh lecture "select saison, at, accept, src_at, bilan->'k' kamas, bilan->'pt' heures_jeu, bilan->'lv' niveaux, bilan->'mt' maitrise, bilan->'sl' sablier, res from mono.parties_ok where user_id = $U"
+          bash tools/serveur/vps_sql.sh lecture "select at, why from mono.bouclier where user_id = $U order by at desc limit 15"
+          bash tools/serveur/vps_sql.sh lecture "select count(*) ops, sum(coalesce((payload->>'k')::numeric, 0)) kamas_ops, min(at), max(at) from mono.ops where user_id = $U"
+          bash tools/serveur/vps_sql.sh lecture "select 'vendu' sens, count(*), coalesce(sum(price), 0) kamas from mono.ventes where seller = $U union all select 'achete', count(*), coalesce(sum(price), 0) from mono.ventes where buyer = $U"
+          bash tools/serveur/vps_sql.sh lecture "select id, status, (a = $U) est_a, offer_a->'k' kamas_a, offer_b->'k' kamas_b, jsonb_array_length(coalesce(offer_a->'items','[]')) objets_a, jsonb_array_length(coalesce(offer_b->'items','[]')) objets_b from mono.echanges where a = $U or b = $U order by id desc limit 10"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
