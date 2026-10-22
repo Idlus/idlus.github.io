@@ -9,6 +9,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.4 « Monocompte séparé »
+- Choix de Mathis 1A 3B 2A (22/10) : la partie Monocompte (emplacement 4 et Éternel) n'a plus que les pages et fonctions serveur de la liste blanche (`js/mono.js` : `M.PAGES`, `M.RPC`, `E.monoPageOk`, `E.monoRpcOk`) ; `ON.rpc` refuse tout le reste, les modules du Classique sont éteints (`monoSeal` dans `js/ui.js`), chat seulement sur le salon `m`.
+- Amis séparés : colonne `srv` ('c' / 'm') dans `supabase/amis.sql`, paramètre `p_srv` envoyé depuis le Monocompte (`js/amis.js`) ; renforts et Bureau sur la liste 'm'.
+- Bouclier Monocompte (installé sur le serveur le 22/10) : rythmes du héros seul ×5, réserve 24 h, plafond absolu 5 M + 35 M kamas par jour de saison à chaque envoi, curseur du Classique noté ; 48 h d'observation jusqu'au 24/10 11 h UTC (`VM.OBS_FIN`).
+- Défi du jour ouvert en Monocompte sans classement, vote ni partage ; import refusé dans la partie Monocompte gardée par le serveur.
+- Tests : `tests/mono_separation.test.js`, `tests/bouclier_mono.test.js`, `tests/social_sql.test.js`.
+
 ## 2.1.37.3 « Monocompte étanche »
 - Monocompte : les opérations du serveur Classique (vente directe, Jackpot, pluie, guildes, Ascension, Songe, Alliances, records) ne s'appliquent plus à la partie Monocompte ; les fonctions Classique sont refusées depuis le Monocompte.
 - Défi du jour : en Monocompte, les règles d'équipe injouables avec un seul héros sont remplacées.

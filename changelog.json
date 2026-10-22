@@ -1,6 +1,17 @@
 {
-  "version": "2.1.37.3",
+  "version": "2.1.37.4",
   "versions": [
+    {
+      "v": "2.1.37.4",
+      "name": "Monocompte séparé",
+      "items": [
+        "Monocompte : le menu ne montre plus que les pages du Monocompte, plus rien du serveur Classique, même en lecture (guildes, Foire, pluie, vente directe, classements du Classique…)",
+        "Monocompte : un seul salon de chat, celui du Monocompte",
+        "Amis : une liste à part pour le Monocompte (tes amis actuels y ont été copiés)",
+        "Défi du jour en Monocompte : jouable pour ses récompenses, sans le classement ni le vote du Classique",
+        "La partie Monocompte, gardée par le serveur, ne s'importe plus depuis une sauvegarde"
+      ]
+    },
     {
       "v": "2.1.37.3",
       "name": "Monocompte étanche",
