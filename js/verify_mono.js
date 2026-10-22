@@ -35,6 +35,7 @@
   const days = (ctx) => Math.max(0, ((ctx.date || 0) - (ctx.debut || 0)) / DAY);
   const n0 = (x) => Math.max(0, Math.floor(+x || 0));
   VM.days = days;
+  VM.LVL_M = 3; VM.LVL_H = 15; // avance acceptée : +3 niveaux et +15 par heure depuis la dernière partie validée
   VM.lvlCap = (ctx) => Math.min(200, Math.floor(VM.LVL0 + VM.LVL_D * Math.sqrt(days(ctx))));
   VM.honCap = (ctx) => Math.floor(VM.HON0 + VM.HON_D * days(ctx));
   VM.bpCap = (ctx) => Math.floor(VM.BP0 + VM.BP_D * days(ctx));
@@ -266,10 +267,14 @@
     let note = null;
     if (!o.admin) {
       // 22/10 (Mathis, « C'est bon » passe aussi le niveau) : l'avance de niveau acceptée reste acquise (bilan.lvx)
-      const lvx0 = prev && prev.bilan ? Math.max(0, +prev.bilan.lvx || 0) : 0;
-      why = VM.impossible(E, S, ctx, nu0, o.accept ? Infinity : lvx0) || VM.registre(E, S, o.reg);
+      // le héros continue de monter après la validation : au-delà, le plafond suit le dernier niveau validé (bilan.lvt) au rythme VM.LVL_H
+      const lvx0 = prev && prev.bilan ? Math.max(0, +prev.bilan.lvx || 0) : 0, cap = VM.lvlCap(ctx);
+      let lvA = lvx0;
+      if (lvx0 > 0) { const h = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000), t0 = +prev.bilan.lvt || cap + lvx0;
+        lvA = Math.max(lvx0, t0 + VM.LVL_M + Math.ceil(VM.LVL_H * h) - cap); }
+      why = VM.impossible(E, S, ctx, nu0, o.accept ? Infinity : lvA) || VM.registre(E, S, o.reg);
       const top0 = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
-      bil.lvx = o.accept ? Math.max(lvx0, top0 - VM.lvlCap(ctx)) : lvx0; if (!(bil.lvx > 0)) delete bil.lvx;
+      bil.lvx = o.accept ? Math.max(lvx0, top0 - cap) : lvx0; if (bil.lvx > 0) bil.lvt = top0; else delete bil.lvx;
       const obs = (o.at || 0) < VM.OBS_FIN; // 48 h d'observation : les nouvelles règles notent, les anciennes décident
       const abs = why ? null : VM.absolu(E, S, ctx);
       if (abs && !o.accept) { if (obs) note = abs; else why = abs; }

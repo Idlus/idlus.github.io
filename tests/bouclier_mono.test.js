@@ -132,7 +132,13 @@ assert(/kamas au jour 1/.test(RES[RES.length - 1].why), "226 M : mauvaise règle
   const b = v({ prev: { bilan: a.bilan, res: a.res, at: now - 60e3 } }); assert(b.ok && b.bilan.lvx === a.bilan.lvx, "après « C'est bon » : même niveau accepté, avance gardée " + JSON.stringify({ ok: b.ok, why: b.why }));
   const T2 = VM.load(E, tx); hero(T2).lvl = 190; const c = VM.verifier(E, E.serialize(T2), { prev: { bilan: a.bilan, res: a.res, at: now - 60e3 }, at: now, ctx: ctx1, reg: regOf(T2) }); E.setClock(() => now);
   assert(!c.ok && /niveau 190/.test(c.why), "après « C'est bon » : 40 niveaux de plus refusés " + JSON.stringify(c));
-  console.log("ok - « C'est bon » sur un niveau en avance : accepté, avance gardée ensuite, pas au-delà"); }
+  // Vector (22/10) : validé au 129, il continue de jouer et passe 132 vingt minutes plus tard
+  const up = (lvl, prev, at) => { const T3 = VM.load(E, tx); hero(T3).lvl = lvl; const r = VM.verifier(E, E.serialize(T3), { prev, at, ctx: ctx1, reg: regOf(T3) }); E.setClock(() => now); return r; };
+  const d = up(153, { bilan: a.bilan, res: a.res, at: now - 20 * 60e3 }, now); assert(d.ok && d.bilan.lvt === 153, "après « C'est bon » : +3 niveaux en 20 min refusés " + JSON.stringify({ ok: d.ok, why: d.why }));
+  const e = up(160, { bilan: d.bilan, res: d.res, at: now - 3600e3 }, now); assert(e.ok, "après « C'est bon » : +7 niveaux en 1 h refusés " + JSON.stringify({ ok: e.ok, why: e.why }));
+  const f = up(185, { bilan: d.bilan, res: d.res, at: now - 60e3 }, now); assert(!f.ok, "après « C'est bon » : +32 niveaux en 1 min acceptés");
+  const g = { bilan: Object.assign({}, a.bilan) }; delete g.bilan.lvt; const h0 = up(152, Object.assign(g, { res: a.res, at: now - 20 * 60e3 }), now); assert(h0.ok, "« C'est bon » d'avant le suivi du niveau (sans lvt) : refusé en montant " + JSON.stringify({ ok: h0.ok, why: h0.why }));
+  console.log("ok - « C'est bon » sur un niveau en avance : accepté, avance gardée ensuite, le héros peut continuer de monter (+3 et +15 par heure), pas de saut"); }
 assert(RES.every((r) => !r.ok), "100 % de refus");
 console.log(`ok - ${RES.length} parties trichées, ${RES.length} refusées (100 %)`);
 // une partie du Classique ou de l'Éternel n'entre jamais dans la saison
