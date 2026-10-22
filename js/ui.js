@@ -12027,7 +12027,7 @@ function raceChip() {
    l'Ascension et le Kolizéum y sont rangés (leur page garde « Ton rang »), Builds devient le 6e groupe */
 const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds", ["#builds"]]];
 function lbGroupsHtml() {
-  const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ›", "#koli": "Kolizéum ›" };
+  const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ↗", "#koli": "Kolizéum ↗" };
   const onB = ui.tab === "builds"; const cur = onB ? LB_GRP[5] : LB_GRP.find(([, L]) => L.includes(LB.tab)) || LB_GRP[0];
   const btn = (x, on, lbl) => x[0] === "#" ? `<button data-act="nav" data-v="${x.slice(1)}" aria-pressed="${on}">${lbl}</button>` : `<button data-act="lb-tab" data-v="${x}" aria-pressed="${on}">${lbl}</button>`;
   return `<nav class="subtabs lb-grp">${LB_GRP.map((g) => btn(g[1][0], g === cur, g[0])).join("")}</nav>`
