@@ -309,10 +309,10 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // les lignes passent dans les caractéristiques du héros ; PM jamais augmenté par Rayonnant ni Parfait ; pas d'over PM
   const S = E.newState("Car", "cra"); const c = S.chars[0]; c.lvl = 200; const st0 = E.charStats(S, c);
   const b = E.rollItem(S, "i12412", { radiant: false }), u = E.rollItem(S, "i774", { radiant: false });
-  assert.strictEqual(E.equip(S, c.id, b.uid), null); assert.strictEqual(E.equip(S, c.id, u.uid), null);
+  assert.strictEqual(E.equip(S, c.id, b.uid), null); const stB = E.charStats(S, c); assert.strictEqual(E.equip(S, c.id, u.uid), null);
   const st1 = E.charStats(S, c);
-  assert.strictEqual((st1.pm || 0) - (st0.pm || 0), 1, "+1 PM"); assert.strictEqual((st1.fui || 0) - (st0.fui || 0), b.stats.fui, "Fuite");
-  assert.strictEqual((st1.tac || 0) - (st0.tac || 0), u.stats.tac, "Tacle"); assert.strictEqual((st1.pou || 0) - (st0.pou || 0), 4, "Dommages de poussée");
+  assert.strictEqual((st1.pm || 0) - (st0.pm || 0), 1, "+1 PM"); assert.strictEqual((st1.fui || 0) - (st0.fui || 0), (E.isPerfect(b) ? E.perfectStats(b) : b.stats).fui, "Fuite");
+  assert.strictEqual((st1.tac || 0) - (stB.tac || 0), (E.isPerfect(u) ? E.perfectStats(u) : u.stats).tac, "Tacle"); /* 2.1.37.2 : une Cape Ulais Parfaite (tous les jets au maximum) donne +1 Tacle, le test échouait 1 fois sur 20 */ assert.strictEqual((st1.pou || 0) - (st0.pou || 0), (E.isPerfect(u) ? E.perfectStats(u) : u.stats).pou, "Dommages de poussée");
   const r = E.rollItem(S, "i12412", { radiant: true }); assert.strictEqual(r.stats.pm, 1, "Rayonnant : toujours 1 PM"); assert.ok(r.stats.fui > r.roll.fui, "Rayonnant : la Fuite monte");
   const p = { tpl: "i12412", stats: {} }; for (const k in ITEMS.i12412.stats) p.stats[k] = ITEMS.i12412.stats[k][1];
   assert.ok(E.isPerfect(p) && E.perfectStats(p).pm === 1 && E.perfectStats(p).fui > 5, "Parfait : pas de PM en plus");

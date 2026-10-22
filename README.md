@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.2 « Bouclier de l'Eniripsa »
+- Bug signalé par Jérémygnon : le passif de l'Eniripsa (soin en trop → bouclier, 40 % du surplus, plafond 25 % des PV) marchait sur les sorts de soin mais sans aucun affichage, et le vol de vie (`drain`, `leech`) ne comptait pas, donc la voie Eau n'en profitait jamais.
+- `js/engine.js` : `doHeal` note le surplus réel (`healOver`, après idoles, Insoignable, érosion) ; `eniSurplus(F, e, t)` (exposé `E.eniSurplus`) pose le bouclier sans jamais réduire un bouclier plus grand, pousse un effet « Bouclier +N » et ajoute « bouclier +N » au journal. Appelé après les sorts de soin, le vol de vie des sorts et le `leech`. Toujours rien au Kolizéum.
+- Simulation (Eniripsa + 3 partenaires, 4 essais, bon et optimisé, voies Feu et Eau) : écarts dans le bruit (±0,2 stasis).
+- Test : `tests/classes.test.js` (partie 4).
+
 ## 2.1.37.1 « Invocations remplacées »
 - Capture de Mathis (22/10) : les invocations mortes restaient dans `F.ents` et s'empilaient. `makeSummon` réutilise la place d'une invocation morte du même lanceur (et la retire de la suite du tour avant de la remettre en fin d'ordre) ; limite d'invocations vivantes inchangée. Simulation osa/sadi/steam/roub, bon équipement : +0,07 / −0,05 stasis selon la graine (bruit). Test `tests/invocations.test.js`.
 

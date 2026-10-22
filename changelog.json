@@ -1,6 +1,15 @@
 {
-  "version": "2.1.37.1",
+  "version": "2.1.37.2",
   "versions": [
+    {
+      "v": "2.1.37.2",
+      "name": "Bouclier de l'Eniripsa",
+      "items": [
+        "Eniripsa : le soin en trop qui devient un bouclier s'affiche enfin (« Bouclier +N » sur la cible et dans le journal), signalé par Jérémygnon",
+        "Le vol de vie de ses sorts compte aussi : la voie Eau profite maintenant du passif",
+        "Le surplus est compté après les réductions de soin (idoles, Insoignable) et ne réduit plus un bouclier déjà plus grand"
+      ]
+    },
     {
       "v": "2.1.37.1",
       "name": "Invocations remplacées",

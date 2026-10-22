@@ -36,4 +36,18 @@ const fight = (ents) => ({ ents, fx: [], seq: 0, log: [], deaths: [], round: 1, 
   assert.ok(/−15 %/.test(D.CLASSES.feca.passive.desc) && /bouclier/.test(D.CLASSES.eni.passive.desc));
   console.log("ok - valeurs et textes");
 }
+// 4. Eniripsa : le soin en trop (soins et vol de vie) devient un bouclier visible, sans baisser un bouclier plus grand ; rien au Kolizéum ni sous l'idole Ougah.
+{
+  const en = ent({ cls: "eni", name: "E" }), al = ent({ cls: "iop", name: "A", hp: 900 });
+  const F = fight([en, al]);
+  E.doHeal(al, 300, F); const g = E.eniSurplus(F, en, al);
+  assert.strictEqual(al.hp, 1000); assert.strictEqual(g, 80, `bouclier de 40 % des 200 PV en trop : ${g}`); assert.strictEqual(al.shield, 80);
+  assert.ok(F.fx.some((x) => x.k === "buff" && x.txt === "Bouclier +80"), "le bouclier s'affiche");
+  E.doHeal(en, 2000, F); E.eniSurplus(F, en, en); assert.strictEqual(en.shield, 250, "plafond à 25 % des PV (vol de vie sur soi)");
+  al.shield = 400; E.doHeal(al, 500, F); E.eniSurplus(F, en, al); assert.strictEqual(al.shield, 400, "ne réduit jamais un bouclier plus grand");
+  const io = ent({ cls: "iop", name: "B" }); E.doHeal(io, 500, F); assert.strictEqual(E.eniSurplus(F, io, en), 0, "seulement les soins de l'Eniripsa");
+  const G = fight([en, al]); G.idol = { heals: "none" }; al.shield = 0; E.doHeal(al, 500, G); assert.strictEqual(E.eniSurplus(G, en, al), 0, "pas de bouclier quand l'idole interdit les soins");
+  const K = fight([en, al]); K.pvp = true; E.doHeal(al, 500, K); assert.strictEqual(E.eniSurplus(K, en, al), 0, "pas au Kolizéum");
+  console.log("ok - surplus de soin de l'Eniripsa");
+}
 console.log("classes.test.js : tout est bon");

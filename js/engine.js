@@ -1752,17 +1752,30 @@
     const pui = e.st.pui + buffSum(e, "pui");
     return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1 + psv(e).eniSoin + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
   };
+  /* 2.1.37.x : Eniripsa, le soin en trop de ses sorts (soins et vol de vie) devient un bouclier : 40 % du surplus, jusqu'à 25 % des PV.
+     Le surplus est mesuré après les réductions (idoles, Insoignable, érosion), et le bouclier s'affiche (« Bouclier +N »). */
+  let healOver = 0;
+  const eniSurplus = (F, e, t) => {
+    const over = healOver; healOver = 0;
+    if (!e || e.cls !== "eni" || e.summon || !E.PSV.eniSurplus || !F || F.pvp || !t || !t.alive || over <= 0) return 0;
+    const old = t.shield || 0; const sh = Math.max(old, Math.round(Math.min(t.hpMax * 0.25, old + over * E.PSV.eniSurplus))); const g = sh - old; if (g <= 0) return 0;
+    t.shield = sh; if (F.fx) F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: `Bouclier +${g}` });
+    return g;
+  };
+  E.eniSurplus = (F, e, t) => eniSurplus(F, e, t);
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
+    healOver = 0;
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
     if (t.side === "m" && E.idHealIn) v *= E.idHealIn(t, F); // identité : Érosion
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     if (F && E.dofpHealIn && F.actor && F.actor.side === t.side && (t.dp || F.actor.dp)) v *= E.dofpHealIn(F, t) * E.dofpHealOut(F, F.actor); // 1.0.16 : Kaliptus, Dofawa
-    const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
+    const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before; const over = Math.max(0, Math.round(v) - g);
     if (F && t.side === "c" && !t.summon && g > 0) { F.healed = (F.healed || 0) + g; const a = F.actor && F.actor.side === "c" ? (F.actor.summon ? F.ents[F.actor.owner] : F.actor) : null; if (a && !a.summon) a.healDone = (a.healDone || 0) + g; } // 1.0.4 : soins par héros
     if (F && E.dofpHealed && F.actor && F.actor.dp && F.actor.side === t.side) E.dofpHealed(F, F.actor, t, g); // 1.0.16 : Dotruche, Verdoyant, Kaliptus
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
+    healOver = over; // lu par eniSurplus juste après (après les soins en chaîne des Dofus)
     return g;
   };
 
@@ -1853,7 +1866,7 @@
     if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
     if (E.srMult && e.cls === "sram" && kind !== "heal") classMult *= E.srMult(F, e, parts); // Sram (sram.js)
     if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1 + psv(e).eniLie + 0.05 * (e.evc || 0); e.eniDmg = false; }
-    let leech = 0; let dealt = 0; const hitIdx = [];
+    let leech = 0; let dealt = 0; let eniSh = 0; const hitIdx = [];
     const idc = E.idPre ? E.idPre(F, e, sp, g, parts) : null; if (idc && idc.crit) e.idCrit = idc.crit; // identité des sorts (js/identite.js)
     for (const f of g.fx) {
       if (f.k === "leech") { leech = f.v; continue; }
@@ -1870,7 +1883,7 @@
           if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < psv(e).enuPelle + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
+            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < psv(e).enuPelle + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") { doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); eniSh += eniSurplus(F, e, e); } if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
@@ -1881,7 +1894,7 @@
       } else if (f.k === "heal" || f.k === "healpct") {
         const ts = f.self ? [e] : f.n > 1 ? alive(F, "c") : [ (forced && forced.alive && forced.side === "c") ? forced : alive(F, "c").slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0] ];
         let tot = 0; const bonus = e.cls === "eni" && e.eniHeal ? 1 + psv(e).eniLie : 1; if (e.cls === "eni") { e.eniHeal = false; e.eniDmg = true; }
-        ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; if (e.cls === "eni" && E.PSV.eniSurplus && !F.pvp && want > got && t.alive) t.shield = Math.round(Math.min(t.hpMax * 0.25, (t.shield || 0) + (want - got) * E.PSV.eniSurplus)); /* Eniripsa : le soin en trop devient bouclier */ if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
+        ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; eniSh += eniSurplus(F, e, t); /* Eniripsa : le soin en trop devient bouclier */ if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
         const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * Math.max(0.1, 1 + ((e.mt && e.mt.h) || 0) / 100); // 2.1 : la Maîtrise « soins et boucliers » compte aussi pour les boucliers
@@ -1902,9 +1915,10 @@
     }
     if (e.cls === "iop" && dealt) doHeal(e, dealt * 0.08, F); // Vigueur
     if (e.cls === "elio" && dealt) { if (!e.portal && g.fx.some((f) => f.n > 1 && ["dmg", "drain", "dot"].includes(f.k))) { e.portal = true; e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.08)); parts.push("bouclier de portail"); } doHeal(e, dealt * 0.1, F); }
-    if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); }
+    if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); eniSh += eniSurplus(F, e, e); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); }
     if (idc && ok) extraPa += E.idPost(F, e, idc, g, dealt, hitIdx, parts); e.idCrit = 0;
     if (sp.wp && ok) weaponFx(S, F, e, sp, dealt, hitIdx, parts);
+    if (eniSh) parts.push(`bouclier +${eniSh}`);
     e.wcast = null;
     if (!ok) return { ok: false };
     if (E.srPost && e.cls === "sram") extraPa += E.srPost(F, e, hitIdx, parts); // Sram (sram.js)
