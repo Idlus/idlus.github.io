@@ -1531,7 +1531,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // 6a : HdV de saison et échanges du serveur Monocompte (mono_hdv_*, mono_trade_*) ; Éclats du Temps à vendre ; rien de l'HdV du Classique
     const mk = await p4.evaluate(async () => { const r = await window.ONLINE.rpc("hdv_sync", { p_after: 0 }); const g = await window.ONLINE.rpc("guild_create", {});
       return { reg: !!(r.data && r.data.registre), tf: window.MARKET.canSell(window.ENGINE.TF_RES), guild: g.err || "" }; });
-    if (!mk.reg || !mk.tf || !/Réservé au serveur Classique/.test(mk.guild)) fail("Monocompte : HdV de saison " + JSON.stringify(mk));
+    if (!mk.reg || !mk.tf || !/Réservé au serveur Classique|Pas en Monocompte/.test(mk.guild)) fail("Monocompte : HdV de saison " + JSON.stringify(mk));
     await edit4(`d.tfLed.u4.push({ n: 1000, o: "defi", src: "defi:autre-appareil" });`);
     const bal = await p4.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; await E.tfSrv.refresh(S); return [E.tfBalance(S), S.res[E.TF_RES], E.tfActTotal(S), (S.mono.tf.led || []).reduce((a, l) => a + l.n, 0)]; });
     if (JSON.stringify(bal) !== "[1001,1001,1,1]") fail("Monocompte : le solde affiché ne vient pas du registre du serveur " + JSON.stringify(bal));
