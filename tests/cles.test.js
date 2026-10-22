@@ -27,4 +27,10 @@ assert.ok(Object.values(D.MONSTERS).some((m) => m.drops.some(([r]) => r === "Rel
   assert.ok(Object.keys(S.res).length > 0, "les autres ressources tombent toujours");
   assert.ok(!Object.keys(S.res).some((r) => KEYS.has(r)), "aucune clé après 400 combats dans " + sub.name);
   const dg = D.DUNGEONS[sub.dungeon]; assert.strictEqual(E.resRateH(S, dg.key).h, 0, "aucun rythme de clé en chasse"); }
+// 2.1.39.1 : plusieurs clés d'un coup (ressources pour 3 clés → 3 clés, ingrédients consommés)
+{ const S = E.newState("Cle2", "iop"); const did = Object.keys(D.DUNGEONS)[0]; const key = D.DUNGEONS[did].key; const R = D.SPECIAL_CRAFTS[key];
+  S.crafts[R.job].lvl = Math.max(S.crafts[R.job].lvl, R.lvl); R.ing.forEach(([r, q]) => { S.res[r] = q * 3; });
+  assert.strictEqual(E.craftCount(S, "special", key), 3, "3 clés possibles");
+  const out = E.craftMany(S, "special", key, 3); assert.strictEqual(out.n, 3, "3 clés fabriquées"); assert.strictEqual(S.res[key], 3);
+  assert.ok(R.ing.every(([r]) => !S.res[r]), "ingrédients consommés"); }
 console.log("cles : OK");

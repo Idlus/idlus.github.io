@@ -1,6 +1,15 @@
 {
-  "version": "2.1.39",
+  "version": "2.1.39.1",
   "versions": [
+    {
+      "v": "2.1.39.1",
+      "name": "Plusieurs clés d'un coup",
+      "guide": "donjons",
+      "items": [
+        "Clés de donjon : sur la fiche du donjon, un bouton « Fabriquer ×N » fabrique d'un coup toutes les clés que tes ressources permettent, au lieu de cliquer une fois par clé (merci Likie)",
+        "Monocompte : au Bureau des Aventuriers, chaque membre du groupe utilise maintenant son entrée du Trousseau du jour avant ses clés (serveur mis à jour)"
+      ]
+    },
     {
       "v": "2.1.39",
       "name": "Trousseau du jour",
@@ -8,7 +17,7 @@
       "items": [
         "Trousseau du jour : chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé et à la stasis de ton choix (Classique et Monocompte)",
         "L'entrée du jour passe avant tes clés : enchaînement, montée de stasis et donjon pendant ton absence commencent par elle, puis tes clés prennent le relais",
-        "Monocompte : au Bureau des Aventuriers, l'entrée du jour arrive avec la prochaine mise à jour du serveur (en attendant, la clé reste demandée en groupe)",
+        "Monocompte : au Bureau des Aventuriers, chaque membre utilise aussi son entrée du jour (serveur mis à jour en 2.1.39.1)",
         "Comme une clé, elle se perd en cas de défaite ou si tu quittes le donjon. Recharge à minuit, heure de Paris",
         "Page Donjons : un encadré compte tes entrées libres du jour, et chaque donjon affiche « entrée du jour » tant qu'elle est disponible"
       ]

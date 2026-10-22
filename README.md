@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.39.1 « Plusieurs clés d'un coup »
+- Fiche du donjon : « Fabriquer ×N » fabrique d'un coup toutes les clés possibles.
+- Monocompte : au Bureau, chaque membre utilise son entrée du Trousseau du jour (serveur mis à jour).
+
 ## 2.1.39 « Trousseau du jour »
 - Choix 1A 2A 3A 4A 5A de Mathis (22/10) : `E.tdj` / `E.tdjFree` / `E.tdjUse` / `E.dgEntries` dans `js/engine.js` (état `S.tdj = { d, u }`, jour de Paris `E.tdjDay`). `E.enterDungeon` prend l'entrée du jour avant une clé (option `noTdj` pour le Défi de la manche et le rejeu du Bouclier), `js/expeditions.js` (donjon pendant l'absence) aussi.
 - Bureau (Monocompte) : `supabase/mono_bureau.sql` ajoute `mono.bureau_tdj_jour()` et `mono.bureau_tdj_libre()` ; « Prêt » et le lancement acceptent l'entrée du jour, le lancement la décompte par une opération `{ tdj: { d, did } }` (reprise par `MARKET.apply`) au lieu de `res -1`. Installation manuelle sur le serveur.

@@ -21,13 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.39";
+const GAME_VERSION = "2.1.39.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.39.1", name: "Plusieurs clés d'un coup", guide: "donjons", items: [
+    "Clés de donjon : sur la fiche du donjon, un bouton « Fabriquer ×N » fabrique d'un coup toutes les clés que tes ressources permettent, au lieu de cliquer une fois par clé (merci Likie)",
+    "Monocompte : au Bureau des Aventuriers, chaque membre du groupe utilise maintenant son entrée du Trousseau du jour avant ses clés (serveur mis à jour)",
+  ] },
   { v: "2.1.39", name: "Trousseau du jour", guide: "donjons", items: [
     "Trousseau du jour : chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé et à la stasis de ton choix (Classique et Monocompte)",
     "L'entrée du jour passe avant tes clés : enchaînement, montée de stasis et donjon pendant ton absence commencent par elle, puis tes clés prennent le relais",
-    "Monocompte : au Bureau des Aventuriers, l'entrée du jour arrive avec la prochaine mise à jour du serveur (en attendant, la clé reste demandée en groupe)",
+    "Monocompte : au Bureau des Aventuriers, chaque membre utilise aussi son entrée du jour (serveur mis à jour en 2.1.39.1)",
     "Comme une clé, elle se perd en cas de défaite ou si tu quittes le donjon. Recharge à minuit, heure de Paris",
     "Page Donjons : un encadré compte tes entrées libres du jour, et chaque donjon affiche « entrée du jour » tant qu'elle est disponible" ] },
   { v: "2.1.38.6", name: "Invocations dans le bon élément", items: [
@@ -4221,11 +4225,11 @@ function keyPanel(did) {
   const head = `<div class="kp-head">${im(resImg(dg.key), "kp-ico", dg.key)}<div class="kp-t"><b>${h(dg.key)}</b><span class="xs muted">${keys ? `<b class="num">${keys}</b> en stock · une clé par entrée` : "aucune clé en stock"}</span>${E.dungeonUnlocked(S, did) ? (E.tdjFree(S, did) ? `<span class="xs tdj-ok">${IC("cle")} Trousseau du jour : entrée gratuite libre aujourd'hui, elle passe avant tes clés</span>` : `<span class="xs muted">${IC("cle")} Trousseau du jour : entrée gratuite déjà prise, prochaine à minuit</span>`) : ""}</div>`;
   if (!R) return `<div class="keypanel">${head}</div></div>`;
   const ing = R.ing.map(([r, q]) => ({ r, q, have: S.res[r] || 0 })).sort((a, b) => (a.have >= a.q) - (b.have >= b.q));
-  const ok = ing.filter((x) => x.have >= x.q).length; const can = E.canCraft(S, R); const pinned = S.shop.some((e) => e.id === dg.key);
+  const ok = ing.filter((x) => x.have >= x.q).length; const can = E.canCraft(S, R); const nMax = can ? E.craftCount(S, "special", dg.key) : 0; /* 2.1.39.1 : plusieurs clés d'un coup (idée de Likie) */ const pinned = S.shop.some((e) => e.id === dg.key);
   const e = can ? null : E.needEta(S, R.ing);
   const eta = can ? `<span class="tag good">Prête à fabriquer</span>` : e.stuck ? `<span class="xs warn">Ta chasse actuelle ne donne pas tout : suis les boutons ci-dessous.</span>` : e.sec ? `<span class="xs muted">Prête ${h(E.etaTxt(e.sec))} en continuant ta chasse</span>` : "";
   return `<div class="keypanel">${head}
-      <div class="kp-btns"><button class="btn sm ${can ? "primary" : ""}" data-act="dgcraftkey" data-id="${did}" ${can ? "" : "disabled"}>${IC("metiers")} Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="special" data-id="${h(dg.key)}" data-tip="Suivre les ingrédients dans la liste de courses (Accueil)">${G("cart")}${pinned ? " ✓" : ""}</button></div></div>
+      <div class="kp-btns"><button class="btn sm ${can ? "primary" : ""}" data-act="dgcraftkey" data-id="${did}" ${can ? "" : "disabled"}>${IC("metiers")} Fabriquer</button>${nMax > 1 ? `<button class="btn sm" data-act="dgcraftkey" data-id="${did}" data-n="${nMax}" data-tip="Fabriquer d'un coup toutes les clés possibles avec tes ressources">Fabriquer ×${fmt(nMax)}</button>` : ""}<button class="btn sm" data-act="shoppin" data-k="special" data-id="${h(dg.key)}" data-tip="Suivre les ingrédients dans la liste de courses (Accueil)">${G("cart")}${pinned ? " ✓" : ""}</button></div></div>
     <div class="kp-prog"><div class="bar"><i style="width:${pct(ok, ing.length)}%"></i></div><span class="xs num">${ok}/${ing.length} ingrédients</span>${eta}</div>
     <div class="kp-list">${ing.filter((x) => x.have < x.q).map((x) => `<div class="kp-ing">${im(resImg(x.r), "kp-rico", x.r)}<span class="kp-n">${h(x.r)}</span><span class="kp-q num">${fmt(x.have)}/${x.q}</span><span class="kp-src">${keySource(x.r)}</span></div>`).join("")}</div>
     ${ok ? `<div class="kp-done"><span class="xs muted">Déjà réunis :</span>${ing.filter((x) => x.have >= x.q).map((x) => `<span class="kp-chip">${im(resImg(x.r), "", x.r)}${h(x.r)} ✓</span>`).join("")}</div>` : ""}
@@ -10624,7 +10628,7 @@ document.addEventListener("click", (ev) => {
     case "dgzall": { const O = S.settings.dgOpen = {}; ZONES.forEach((z) => { O[z.id] = d.v === "1"; }); dirty = true; break; }
     case "ultbuy": { const sel = document.querySelector('#sheet [data-act="ultsel"]'); const r = E.act(S, "ultBuy", sel ? sel.value : ui.ultLeg); if (r) { toast(r, "warn"); return; } dirty = true; dungeonSheet(d.id); return; }
     case "dgstasis": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgStasis = +d.v; dungeonSheet(id); return; }
-    case "dgcraftkey": { const r = E.craftSpecial(S, DUNGEONS[d.id].key); if (typeof r === "string") { toast(r); return; } toast("Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
+    case "dgcraftkey": { const r = E.craftMany(S, "special", DUNGEONS[d.id].key, +d.n || 1); if (typeof r === "string") { toast(r); return; } toast(r.n > 1 ? `${fmt(r.n)} clés fabriquées.` : "Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
     case "cview": S.settings.cview = d.v; dirty = true; break;
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
