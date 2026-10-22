@@ -27,6 +27,19 @@ select exists (select 1 from public.hdv_ops where user_id = :'uid' and txt like 
   rollback;
   \quit
 \endif
+-- un jeu d'avant la 2.1.38.4 ne connaît pas p.jx : il passerait l'opération sans rendre l'XP. On attend que le joueur soit à jour.
+select coalesce(game_version, '0'), coalesce(string_to_array(regexp_replace(game_version, '[^0-9.]', '', 'g'), '.')::int[] >= array[2, 1, 38, 4], false) as ajour
+  from public.saves where user_id = :'uid' \gset
+\echo '== Version du jeu du joueur :' :coalesce
+select (:'CONFIRMATION' = 'RENDS L XP DE METIER') as pourdevrai \gset
+\if :ajour
+\elif :pourdevrai
+  \echo 'Le joueur n''a pas encore la 2.1.38.4 : rien n''est changé (relancer plus tard).'
+  rollback;
+  \quit
+\else
+  \echo 'Attention : le joueur n''a pas encore la 2.1.38.4 (l''envoi pour de vrai attendra).'
+\endif
 \echo '== Copies du serveur (niveau et XP du métier)'
 create temp table copies on commit drop as
   select 'jour ' || to_char(day, 'DD/MM') as copie, at, data from public.saves_jour where user_id = :'uid'
