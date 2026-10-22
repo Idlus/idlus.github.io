@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38.1";
+const GAME_VERSION = "2.1.38.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38.2", name: "Renfort bien équipé", items: [
+    "Monocompte, renfort d'un ami : sa copie arrive avec ses sorts et sa rotation à lui, son arme, et sa fiche affiche ses vraies caractéristiques, équipement compris (merci Jeremygnon)",
+    "On ne peut plus passer les objets de ton héros à la copie de l'ami : elle garde les siens (« Tout équiper au mieux » l'ignore)",
+    "Refus « trop fort » plus clair : il donne le niveau du héros de l'ami et le tien, celui de ta dernière partie validée par le serveur (merci Gagou)" ] },
   { v: "2.1.38.1", name: "« C'est bon » du Bouclier", items: [
     "Bouclier Monocompte : quand Xener valide une partie refusée (« C'est bon »), un héros en avance sur le niveau du jour passe aussi, et cette avance reste acquise aux sauvegardes suivantes" ] },
   { v: "2.1.38", name: "Boss ultimes", items: [
@@ -6415,6 +6419,7 @@ const slotUpgrade = (c, s) => !!bestFor(c, s);
 const gearLast = new Map(), planJobs = new Map(), planAt = new Map(); let planTimer = 0;
 const PLAN_GAP = 20000; // 1.0.25.8 : au plus un calcul en coulisses toutes les 20 s par héros (le butin peut tomber toutes les 2 s)
 function gearAlert(c) {
+  if (c.snap) return false; // copie d'un ami (renfort) : son équipement est dans sa copie
   if (planFresh(c)) { const v = EQ_SLOTS.some((s) => slotUpgrade(c, s)); gearLast.set(c.id, v); return v; }
   if (!planJobs.has(c.id)) planJobs.set(c.id, null); planKick(); return !!gearLast.get(c.id);
 }
@@ -6727,6 +6732,7 @@ function drawTree() {
   svg.setAttribute("width", tree.scrollWidth); svg.setAttribute("height", tree.scrollHeight); svg.innerHTML = p;
 }
 function charEquipView(c, st) {
+  if (c.snap) return `<div class="smallbox monobox">${G("shield")} <span><b>Copie du héros ${h(deNom((c.renfort && c.renfort.p) || "ton ami"))}</b> : son équipement, sa panoplie et son arme sont déjà compris dans ses caractéristiques (onglet Caractéristiques). Ils ne s'échangent pas avec tes objets.</span></div>`; // 22/10 : renfort d'un ami
   const counts = E.setCounts(S, c);
   const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, setFx(id, n))).map(([id, n]) => setBlock(id, n, 1)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint (Couture fine comprise)
   let pick = "";

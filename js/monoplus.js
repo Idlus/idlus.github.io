@@ -104,7 +104,8 @@
     E.monoMercClear(S);
     const c = E.addChar(S, h.cls, `${String(R.p || h.n || "Ami").slice(0, 16)} (renfort)`, Math.max(1, Math.min(200, Math.floor(h.lvl))), h.sex);
     Object.assign(c, { merc: 1, renfort: { u: R.u, p: String(R.p || "").slice(0, 20) }, inTeam: true, head: h.head || 0, snap: h,
-      spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "ordre" : undefined, spellsManual: true });
+      spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "rot" : undefined, spellsManual: true });
+    if (h.am) c.rot = Array.isArray(h.rot) && h.rot.length ? h.rot.slice(0, E.ROT_MAX).map((x) => Object.assign({}, x)) : E.rotFromOrder(c, (h.st || {}).pa, 0); // 22/10 : sa propre rotation (avant : « Mon ordre », refait sans son arme)
     E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
     const e2 = E.enterDungeon(S, did, stasis);
     if (e2) { E.monoMercClear(S); return e2; }
@@ -113,6 +114,16 @@
     if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ce donjon (renfort, sans gain pour lui).`, "info");
     return null;
   };
+
+  /* 22/10 (Mathis : « les Aidants n'ont pas leur stuff ») : la copie d'un ami (renfort, ou héros d'un groupe) se bat avec ses
+     caractéristiques finales, équipement compris (c.snap.st), mais elle n'a aucun objet dans la partie. La fiche, les estimations
+     et la rotation lisent donc sa copie, et on ne peut pas lui passer les objets de son propre héros. */
+  const charStats0 = E.charStats;
+  E.charStats = function (S, c) { return c && c.snap && c.snap.st && typeof c.snap.st === "object" ? JSON.parse(JSON.stringify(c.snap.st)) : charStats0.apply(this, arguments); };
+  const weapon0 = E.weaponSpell;
+  E.weaponSpell = function (S, c) { const w = c && c.snap && c.snap.wp; if (c && c.snap) return w && D.ITEMS[w.t] ? E.weaponSpellOf(c.cls, w.t, w.e, w.h) : null; return weapon0.apply(this, arguments); };
+  const equip0 = E.equip;
+  E.equip = function (S, cid) { const c = S && S.chars && S.chars.find((x) => x.id === cid); if (c && c.snap) return "La copie d'un ami garde son propre équipement."; return equip0.apply(this, arguments); };
 
   /* ======================= Mutation de la semaine ======================= */
   /* fx : effets posés au début du combat et à chaque tour, avec leur contrepartie (réglage : tools/sim_mutations.js).

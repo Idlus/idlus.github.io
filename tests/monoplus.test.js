@@ -67,6 +67,9 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   assert.strictEqual(S.chars.filter((c) => c.merc).length, 1, "un seul : pas de mercenaire en plus");
   assert.strictEqual(S.kamas, k0, "le renfort ne coûte rien");
   assert.strictEqual(E.monoPlayers(S, E.team(S)), 1.5, "compte pour un demi-joueur, comme le mercenaire");
+  // 22/10 : la copie se bat et s'affiche avec ses caractéristiques équipement compris, et garde ses objets à elle
+  assert.deepStrictEqual(E.charStats(S, rc), snap.st, "caractéristiques de la copie (équipement compris)");
+  assert.match(E.equip(S, rc.id, Object.keys(S.items)[0] || 1, "coiffe"), /garde son propre équipement/, "pas d'objet du joueur sur la copie");
   const xp0 = rc.xp || 0; finish(S);
   assert(!S.chars.some((c) => c.merc), "le renfort repart à la fin du donjon"); assert.strictEqual(rc.xp || 0, xp0, "aucun gain pour la copie");
   assert.strictEqual(E.monoAide(S).ren, 1, "renfort compté dans les aides");
@@ -86,6 +89,11 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
     E.setClock(() => now); } // le Bouclier remet l'horloge du moteur à zéro après sa vérification
   // trop fort, photo illisible, sous serment
   assert.match(enter(mono(30), did, 1, { ami: R }), /trop fort/);
+  { // copie d'un ami en « Ma rotation » : elle garde sa rotation (avant : « Mon ordre », refait sans son arme)
+    const G = mono(55); const rot = [{ id: snap.sp[0].id }, { id: "arme" }];
+    assert.strictEqual(enter(G, did, 1, { ami: Object.assign({}, R, { snap: Object.assign({}, snap, { am: 2, rot }) }) }), null);
+    const g = G.chars.find((c) => c.merc); assert.strictEqual(g.atkMode, "rot"); assert.deepStrictEqual(g.rot, rot, "rotation de l'ami");
+  }
   assert.match(enter(mono(60), did, 1, { ami: { u: "x", snap: { cls: "??" } } }), /pas disponible/);
   const T = mono(10); E.monoSwear(T, "fer"); assert.match(enter(T, dj(1), 1, { ami: Object.assign({}, R, { snap: Object.assign({}, snap, { lvl: 10 }) }) }), /pas de renfort/);
 }

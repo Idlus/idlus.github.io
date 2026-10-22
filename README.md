@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38.2 « Renfort bien équipé »
+- Demande de Mathis (« les Aidants n'ont pas leur stuff ») et ticket #150. La copie d'un ami (renfort ou héros d'un groupe, `c.snap`) se battait déjà avec ses caractéristiques finales (`E.monoSnapEnt`), mais la partie ne contient aucun de ses objets : `js/monoplus.js` fait lire sa copie à `E.charStats` et `E.weaponSpell` (fiche, estimations, rotation), et `E.equip` refuse un objet sur la copie ; `gearAlert` l'ignore, l'onglet Équipement l'explique. Le renfort garde sa rotation (`h.am` / `h.rot`) au lieu de « Mon ordre » refait sans arme. Ticket #144 : message de refus « trop fort » avec les deux niveaux (`mono.renfort_refus`, déjà sur le serveur Monocompte). Tests `tests/monoplus.test.js`, `tests/renfort_ui.test.js`.
+
 ## 2.1.38.1 « « C'est bon » du Bouclier »
 - Bouclier Monocompte (js/verify_mono.js) : `VM.impossible` reçoit une avance de niveau tolérée ; « C'est bon » (accept) la porte au niveau du meilleur héros et la garde dans `bilan.lvx`, les sauvegardes suivantes la reprennent. Les Maîtrises impossibles restent refusées. Fonction « mono » redéployée (étape monocompte-fonction). Texte de la page Bouclier Monocompte du panel (js/admin.js) mis à jour.
 - Tests : `tests/bouclier_mono.test.js`.

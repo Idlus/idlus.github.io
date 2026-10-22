@@ -1,6 +1,15 @@
 {
-  "version": "2.1.38.1",
+  "version": "2.1.38.2",
   "versions": [
+    {
+      "v": "2.1.38.2",
+      "name": "Renfort bien équipé",
+      "items": [
+        "Monocompte, renfort d'un ami : sa copie arrive avec ses sorts et sa rotation à lui, son arme, et sa fiche affiche ses vraies caractéristiques, équipement compris (merci Jeremygnon)",
+        "On ne peut plus passer les objets de ton héros à la copie de l'ami : elle garde les siens (« Tout équiper au mieux » l'ignore)",
+        "Refus « trop fort » plus clair : il donne le niveau du héros de l'ami et le tien, celui de ta dernière partie validée par le serveur (merci Gagou)"
+      ]
+    },
     {
       "v": "2.1.38.1",
       "name": "« C'est bon » du Bouclier",
