@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.6 « Journal du Bouclier »
+- Demande de Mathis (22/10) : table `mono.verifs` (supabase/monocompte.sql) remplie par `mono_srv_valider` (acceptée, niveau, kamas) et `mono_srv_refus` (refus, ou note « [observation] ») via `mono.verif_log` ; envois identiques regroupés (n) sur 30 min, 7 jours gardés.
+- Panel Monocompte › Joueurs › « Journal du Bouclier » (`js/admin.js`, `mono_adm_journal`) : 300 dernières vérifications, filtres par état et par compte.
+- Tests : `tests/mono_eco_sql.test.js`, `tests/panel_serveurs_ui.test.js`, `tests/monocompte_sql.test.js`.
+
 ## 2.1.37.5 « Clés à l'atelier »
 - `js/data.js` : `keyDrop` mis à 0 sur tous les donjons et clés (clés de donjon + « Clefs secrètes » sans usage) retirées des butins de monstres au chargement, pour le Classique et le Monocompte. Les 121 donjons gardent leur recette au Bricoleur ; Trousseau de clés (Koli, comptoirs), coffres de chasse au trésor et quêtes inchangés. Guide et fiche de donjon ne parlent plus de clé en chasse. Test `tests/cles.test.js`.
 - Mathis : les 4 Pixels (Mégalithe de Fraktale) et la Carapace de Krabouilleur (Aquadôme de Merkator), qui ne tombaient que dans leur donjon, tombent aussi (12 %) sur les monstres de la sous-zone d'accès (Jour présent, Salles des Embruns).

@@ -435,6 +435,50 @@ window.MONOBOUCLIER = { st, load, html };
 })();
 
 /* ============================================================================
+   22/10 (Mathis « je veux un journal ») : JOURNAL DU BOUCLIER MONOCOMPTE (supabase/monocompte.sql : mono_adm_journal, table
+   mono.verifs) : chaque vérification, acceptée, refusée ou notée pendant l'observation ; envois identiques regroupés (×n) ;
+   filtre par état et par compte (clic sur le pseudo). 7 jours gardés par le serveur.
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const st = { L: null, err: null, etat: null, user: null, pseudo: null };
+const date = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
+const repaint = () => { if (DX.ui.tab === "admin") P.repaint(); };
+const ETATS = [[null, "Tout"], ["ok", "Acceptées"], ["refus", "Refusées"], ["note", "Notes"]];
+const TAG = { ok: ["Acceptée", "good"], refus: ["Refusée", "warn"], note: ["Note", "soft"] };
+async function load() {
+  const r = await ON.rpc("mono_adm_journal", { p_user: st.user, p_etat: st.etat });
+  if (r.err) { st.L = null; st.err = /function .* does not exist|schema cache/i.test(r.err) ? "Le journal n'est pas encore installé sur le serveur." : r.err; return; }
+  st.err = null; st.L = Array.isArray(r.data) ? r.data : [];
+}
+const line = (x) => { const [t, c] = TAG[x.etat] || [x.etat, ""];
+  const what = x.etat === "ok" ? [x.niveau != null ? `niveau ${x.niveau}` : "", x.kamas != null ? `${Number(x.kamas).toLocaleString("fr-FR")} kamas` : ""].filter(Boolean).join(" · ") : String(x.why || "").replace(/^\[observation\] /, "");
+  return `<div class="ln"><span class="tag ${c}">${t}</span><button class="btn sm" data-act="mjr-user" data-v="${h(x.user)}" data-p="${h(x.pseudo || "?")}"><b>${h(x.pseudo || "?")}</b></button><span class="xs muted grow">${h(what)}${x.n > 1 ? ` · ×${x.n}` : ""}</span><span class="t">${h(date(x.at))}</span></div>`; };
+function html() {
+  const seg = `<span class="seg">${ETATS.map(([v, n]) => `<button data-act="mjr-etat" data-v="${v || ""}" aria-pressed="${st.etat === v}">${n}</button>`).join("")}</span>`;
+  const who = st.user ? ` <button class="btn sm" data-act="mjr-user" data-v="">${h(st.pseudo)} ✕</button>` : "";
+  const head = `<div class="box"><h2>Journal du Bouclier</h2><span class="xs muted">Chaque partie Monocompte vérifiée par le serveur : acceptée, refusée, ou notée pendant l'observation. Envois identiques regroupés (×n), 7 jours gardés. Clique un pseudo pour ne voir que lui.</span>
+    <div class="row">${seg}${who}<button class="btn sm" data-act="mjr-load">Actualiser</button></div>`;
+  if (st.err) return `${head}<div class="empty">${h(st.err)}</div></div>`;
+  if (!st.L) return `${head}<div class="empty">Chargement…</div></div>`;
+  return `${head}${st.L.length ? st.L.map(line).join("") : `<div class="empty">Aucune vérification${st.etat || st.user ? " pour ce filtre" : ""}.</div>`}</div>`;
+}
+document.addEventListener("click", async (ev) => {
+  const t = ev.target.closest && ev.target.closest("[data-act^='mjr-']"); if (!t || !P.admin()) return;
+  const a = t.dataset.act;
+  if (a === "mjr-etat") st.etat = t.dataset.v || null;
+  else if (a === "mjr-user") { st.user = t.dataset.v || null; st.pseudo = t.dataset.p || null; }
+  st.L = null; repaint(); await load(); repaint();
+});
+P.register({ id: "monojournal", srv: "m", name: "Journal du Bouclier", group: "Joueurs", html, load });
+window.MONOJOURNAL = { st, load, html };
+})();
+
+/* ============================================================================
    2.1.36 : CÔTÉ MONOCOMPTE DU PANEL XENER (choix « Monocompte » du sélecteur, js/panel.js). Compte admin sur le vrai serveur ;
    chaque appel est vérifié par le serveur (mono.need_admin). Pages :
    - Vue d'ensemble (mono_adm_vue, supabase/monocompte.sql : saison, horloge de test lue sans la changer, testeurs, parties,

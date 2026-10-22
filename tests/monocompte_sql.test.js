@@ -57,7 +57,7 @@ try {
   const before = snap();
   file(path.join(ROOT, "supabase", "monocompte.sql")); file(path.join(ROOT, "supabase", "monocompte.sql")); // relancé deux fois : sans danger
   assert.strictEqual(snap(), before, "le schéma public du Classique a changé");
-  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 47, "fonctions du jeu");
+  assert.strictEqual(+q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'mono\\_%' or p.proname = 'cosm_mine')`), 48, "fonctions du jeu");
   // fonctions du Bouclier (mono_srv_*) : la fonction serveur seulement (service_role), ni les joueurs ni anon
   assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'mono\\_srv\\_%'
     and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('service_role', p.oid, 'execute'))`), "0", "mono_srv_* : service_role seulement");

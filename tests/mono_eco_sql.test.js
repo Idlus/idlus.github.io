@@ -192,6 +192,14 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     // « C'est bon » de Mathis : la partie suivante passe le contrôle des gains, jamais celui de l'impossible
     fails(() => as(1, `select mono_adm_accepter('${U(1)}')`), /réservé à Mathis/, "« C'est bon » donné par un joueur");
     assert(J(9, `mono_adm_bouclier()`).some((b) => b.user === U(1) && /kamas/.test(b.why)), "panel : refus listés");
+    // journal du Bouclier (22/10) : acceptées et refusées, regroupées, filtres ; réservé à Mathis
+    { const jr = J(9, `mono_adm_journal('${U(1)}')`); assert(jr.some((x) => x.etat === "ok" && x.niveau > 0 && x.kamas != null), "journal : partie acceptée avec niveau et kamas " + JSON.stringify(jr.slice(0, 3)));
+      assert(jr.some((x) => x.etat === "refus" && /kamas/.test(x.why)), "journal : refus listés");
+      assert(J(9, `mono_adm_journal(null, 'refus')`).every((x) => x.etat === "refus"), "journal : filtre par état");
+      run(`set role service_role; select public.mono_srv_refus('${U(1)}', '[observation] essai du journal'); select public.mono_srv_refus('${U(1)}', '[observation] essai du journal');`);
+      const nt = J(9, `mono_adm_journal('${U(1)}', 'note')`); assert(nt.length === 1 && nt[0].n === 2 && nt[0].why === "[observation] essai du journal", "journal : notes regroupées " + JSON.stringify(nt));
+      fails(() => as(1, `select mono_adm_journal()`), /réservé à Mathis/, "journal lu par un joueur");
+      fails(() => as(1, `select count(*) from mono.verifs`), /permission denied/, "table du journal lue par un joueur"); }
     console.log("ok - " + CHEATS.length + " parties trichées refusées par la fonction, partie validée inchangée, HdV bloqué pendant la vérification");
 
     // 4. HdV de saison : mise en vente (taxe de 2 %), achat en une opération, numéro unique

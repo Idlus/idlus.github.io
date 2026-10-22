@@ -107,6 +107,22 @@ create table if not exists mono.bouclier (
   at timestamptz not null default now()
 );
 create index if not exists bouclier_user on mono.bouclier (user_id, saison, at);
+-- 22/10 (Mathis « je veux un journal ») : chaque vérification du Bouclier (acceptée, refusée, notée pendant l'observation),
+-- les envois identiques qui se suivent dans la demi-heure sont regroupés (n) ; gardé 7 jours ; lu seulement par le panel
+create table if not exists mono.verifs (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  saison int not null,
+  etat text not null check (etat in ('ok', 'refus', 'note')),
+  why text,
+  niveau int,
+  kamas bigint,
+  n int not null default 1,
+  debut timestamptz not null default now(),
+  at timestamptz not null default now()
+);
+create index if not exists verifs_at on mono.verifs (at desc);
+create index if not exists verifs_user on mono.verifs (user_id, id desc);
 -- bons de butin (6a) : un par combat et par joueur, créés seulement par le serveur. Solo : « j<jour>:<activité>:<rang> », lu dans
 -- la partie validée (le rang du gain dans la journée) ; groupes en direct : « g:<combat> » (Bureau des Aventuriers, plus tard).
 -- La seule source des Éclats d'activité (mono.eclats.source = 'bon:' || combat) : le même combat ne paie jamais deux fois.
@@ -335,7 +351,7 @@ create table if not exists mono.echanges (
 create index if not exists echanges_open on mono.echanges (saison, status);
 
 do $$ declare t text; begin
-  foreach t in array array['parties_ok', 'bouclier', 'bons', 'ops', 'objets', 'sortis', 'hdv', 'ventes', 'ordres', 'echanges'] loop
+  foreach t in array array['parties_ok', 'bouclier', 'verifs', 'bons', 'ops', 'objets', 'sortis', 'hdv', 'ventes', 'ordres', 'echanges'] loop
     execute format('alter table mono.%I enable row level security', t);
     execute format('revoke all on mono.%I from public, anon, authenticated', t);
   end loop;
@@ -1364,6 +1380,17 @@ as $$ declare s int := mono.saison_ouverte(); k mono.parties_ok; op0 bigint; beg
 end $$;
 -- Partie acceptée : elle devient la partie validée (seulement si c'est bien celle qui a été vérifiée), puis bons de butin,
 -- défis atteints, et mono.apres_validation (classements de saison…)
+-- journal du Bouclier (mono.verifs) : regroupe un envoi identique au précédent du même compte (même état, même raison, < 30 min)
+create or replace function mono.verif_log(u uuid, s int, e text, w text, lv int, k bigint) returns void language plpgsql security definer set search_path = mono, public
+as $$ declare v mono.verifs; begin
+  select * into v from mono.verifs where user_id = u order by id desc limit 1;
+  if v.id is not null and v.saison = s and v.etat = e and coalesce(v.why, '') = coalesce(w, '') and v.at > now() - interval '30 minutes' then
+    update mono.verifs set n = n + 1, at = now(), niveau = coalesce(lv, niveau), kamas = coalesce(k, kamas) where id = v.id;
+  else
+    insert into mono.verifs (user_id, saison, etat, why, niveau, kamas) values (u, s, e, w, lv, k);
+  end if;
+  if random() < 0.02 then delete from mono.verifs where at < now() - interval '7 days'; end if;
+end $$;
 create or replace function public.mono_srv_valider(p_user uuid, p_src_at text, p_resume jsonb, p_bilan jsonb, p_res numeric, p_acts jsonb) returns jsonb
 language plpgsql security definer set search_path = mono, public
 as $$ declare s int := mono.saison_ouverte(); p mono.parties; g int; d int; begin
@@ -1373,6 +1400,9 @@ as $$ declare s int := mono.saison_ouverte(); p mono.parties; g int; d int; begi
   if p.user_id is null or p.updated_at <> p_src_at::timestamptz then return mono.err('partie changée pendant la vérification'); end if;
   insert into mono.parties_ok (user_id, saison, data, resume, bilan, res, src_at, accept, at) values (p_user, s, p.data, coalesce(p_resume, '{}'), coalesce(p_bilan, '{}'), p_res, p.updated_at, false, now())
     on conflict (user_id, saison) do update set data = excluded.data, resume = excluded.resume, bilan = excluded.bilan, res = excluded.res, src_at = excluded.src_at, accept = false, at = excluded.at;
+  perform mono.verif_log(p_user, s, 'ok', null,
+    case when jsonb_typeof(p_resume -> 'niveau') = 'number' then (p_resume ->> 'niveau')::numeric::int end,
+    case when jsonb_typeof(p_bilan -> 'k') = 'number' then (p_bilan ->> 'k')::numeric::bigint end);
   g := case when mono.saison_en_jeu(s) then mono.bons_partie(p_user, s, p_acts) else 0 end;
   d := mono.payer_defis(p_user, s);
   perform mono.apres_validation(p_user, s, coalesce(p_resume, '{}'));
@@ -1382,9 +1412,18 @@ end $$;
 create or replace function public.mono_srv_refus(p_user uuid, p_why text) returns void language plpgsql security definer set search_path = mono, public
 as $$ declare s int := mono.saison_ouverte(); begin
   if s is null then return; end if;
+  perform mono.verif_log(p_user, s, case when left(p_why, 13) = '[observation]' then 'note' else 'refus' end, left(p_why, 300), null, null);
   if exists (select 1 from mono.bouclier where user_id = p_user and saison = s and why = left(p_why, 300) and at > now() - interval '1 hour') then
     update mono.bouclier set at = now() where id = (select max(id) from mono.bouclier where user_id = p_user and saison = s and why = left(p_why, 300)); return; end if;
   insert into mono.bouclier (user_id, saison, why) values (p_user, s, left(p_why, 300));
+end $$;
+-- Panel : journal du Bouclier (300 dernières vérifications, filtre par compte ou par état)
+create or replace function public.mono_adm_journal(p_user uuid default null, p_etat text default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
+as $$ begin
+  perform mono.need_admin();
+  return (select coalesce(jsonb_agg(jsonb_build_object('user', v.user_id, 'pseudo', mono.pseudo(v.user_id), 'etat', v.etat, 'why', v.why, 'niveau', v.niveau,
+      'kamas', v.kamas, 'n', v.n, 'debut', v.debut, 'at', v.at) order by v.at desc), '[]'::jsonb)
+    from (select * from mono.verifs where (p_user is null or user_id = p_user) and (p_etat is null or etat = p_etat) order by at desc limit 300) v);
 end $$;
 -- Panel : refus du Bouclier ; « C'est bon » de Mathis (la prochaine partie passe le contrôle des gains, jamais celui de l'impossible)
 create or replace function public.mono_adm_bouclier() returns jsonb language plpgsql stable security definer set search_path = mono, public

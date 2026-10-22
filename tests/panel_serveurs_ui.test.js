@@ -56,6 +56,9 @@ function fake() {
       case "adm_announce_end": F.anns = F.anns.filter((x) => x.id !== a.p_id); return null;
       case "mono_adm_vue": return { saison: { id: 0, nom: "Saison de test", etat: "ouverte", test: true, jour: 10, duree: 56, date: "2026-10-30T12:00:00Z", vitesse: 24, pause: true, horloge: true },
         testeurs: F.testeurs.length, parties: 5, validees: 4, actives: 2, refus: 1, derniers: [{ user: "u3", pseudo: "Bob", why: "niveau impossible", at: "2026-10-21T08:00:00Z" }] };
+      case "mono_adm_journal": return [{ user: "u3", pseudo: "Bob", etat: "refus", why: "niveau impossible", n: 3, at: "2026-10-21T08:00:00Z" },
+        { user: "u2", pseudo: "Zoé", etat: "note", why: "[observation] 9 000 000 kamas au jour 1 (au plus 5 000 000)", n: 1, at: "2026-10-21T07:00:00Z" },
+        { user: "u2", pseudo: "Zoé", etat: "ok", niveau: 42, kamas: 1234567, n: 5, at: "2026-10-21T06:00:00Z" }].filter((x) => (!a.p_etat || x.etat === a.p_etat) && (!a.p_user || x.user === a.p_user));
       case "mono_adm_testeurs": return F.testeurs;
       case "mono_adm_testeur": { if (a.p_on) { if (a.p_pseudo === "Inconnu") return "Pseudo inconnu."; F.testeurs.push({ id: "u" + ++F.n, pseudo: a.p_pseudo, at: new Date().toISOString() }); } else F.testeurs = F.testeurs.filter((x) => x.pseudo !== a.p_pseudo); return null; }
       case "mono_adm_bouclier": return [{ user: "u3", pseudo: "Bob", saison: 0, why: "niveau impossible", at: "2026-10-21T08:00:00Z" }];
@@ -121,7 +124,7 @@ function fake() {
   const shot = async (page, n) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, n), fullPage: true }); };
   const body = (page) => page.evaluate(() => document.querySelector(".px-body").innerText);
   const annbar = (page) => page.evaluate(() => (document.querySelector("#annbar") || {}).textContent || "");
-  const MONO = ["monovue", "monotesteurs", "clesbeta", "monobouclier", "monoremise", "monobureau", "mchat", "mann"];
+  const MONO = ["monovue", "monotesteurs", "clesbeta", "monobouclier", "monojournal", "monoremise", "monobureau", "mchat", "mann"];
   const CLASSIC = ["vue", "joueurs", "ann", "equipe", "test"];
 
   const run = async (w, h, full) => {
@@ -175,6 +178,14 @@ function fake() {
       if ((await srvOn(page)) !== "m") fail("choix Monocompte perdu après rechargement");
       if (!(await nav(page)).includes("monovue") || !(await page.$('.px-nav button.on[data-v="monovue"]'))) fail("après rechargement : Vue d'ensemble Monocompte attendue");
       /* Testeurs */
+      await go(page, "monojournal"); await page.waitForFunction(() => /Acceptée/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => {});
+      t = await body(page);
+      if (!/Refusée/.test(t) || !/×3/.test(t) || !/niveau 42 · 1\s?234\s?567 kamas/.test(t) || !/Note/.test(t) || /\[observation\]/.test(t)) fail(`${W}, journal du Bouclier : ` + t.slice(0, 500));
+      await page.click('[data-act="mjr-etat"][data-v="refus"]'); await page.waitForTimeout(300); t = await body(page);
+      if (/niveau 42/.test(t) || !/niveau impossible/.test(t)) fail(`${W}, journal : filtre Refusées : ` + t.slice(0, 300));
+      await page.click('[data-act="mjr-etat"][data-v=""]'); await page.click('[data-act="mjr-user"][data-v="u2"]'); await page.waitForTimeout(300); t = await body(page);
+      if (/Bob/.test(t) || !/Zoé ✕/.test(t)) fail(`${W}, journal : filtre par compte : ` + t.slice(0, 300));
+      await noScroll(page, `${W}, journal du Bouclier`); await shot(page, `panel-journal-${w}.png`);
       await go(page, "monotesteurs"); await page.waitForSelector("#mtAdd", { timeout: 5000 });
       await page.fill("#mtAdd", "Inconnu"); await page.click('[data-act="mtst-add"]'); await page.waitForTimeout(300);
       await page.fill("#mtAdd", "Lou"); await page.click('[data-act="mtst-add"]'); await page.waitForTimeout(400);

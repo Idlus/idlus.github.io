@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.5";
+const GAME_VERSION = "2.1.37.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.6", name: "Journal du Bouclier", items: [
+    "Panel Monocompte : nouveau « Journal du Bouclier », chaque partie vérifiée par le serveur (acceptée, refusée ou notée), avec filtres par état et par joueur" ] },
   { v: "2.1.37.5", name: "Clés à l'atelier", items: [
     "Les monstres ne donnent plus de clés, en Classique comme en Monocompte : chaque clé de donjon se fabrique chez le Bricoleur avec les ressources de la zone du donjon",
     "Mégalithe de Fraktale et Aquadôme de Merkator : les ingrédients de leur clé qui ne tombaient que dans le donjon (Pixels, Carapace de Krabouilleur) tombent maintenant aussi sur les monstres du Jour présent et des Salles des Embruns",
