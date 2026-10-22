@@ -76,7 +76,7 @@ try {
   // aucun droit direct, même en lecture ; anon ne fait rien
   for (const s of ["select * from public.amis", "select * from public.amis_demandes", "select * from public.amis_presence", "select * from public.amis_invits",
     `insert into public.amis (user_id, ami) values (auth.uid(), '${U(2)}')`, `insert into public.amis_demandes (de, a) values ('${U(2)}', auth.uid())`,
-    "update public.amis_presence set invisible = false", "delete from public.amis", `select public.amis_lier(auth.uid(), '${U(2)}')`, `select public.amis_n('${U(2)}')`])
+    "update public.amis_presence set invisible = false", "delete from public.amis", `select public.amis_lier(auth.uid(), '${U(2)}', 'c')`, `select public.amis_n('${U(2)}', 'c')`])
     fails(() => as(1, s), /permission denied/, "écriture ou lecture directe : " + s);
   fails(() => q(`set role anon; select amis_liste()`), /permission denied/, "anon");
   fails(() => q(`set role anon; select amis_demander(null, 'Joueur002')`), /permission denied/, "anon");
@@ -128,6 +128,20 @@ try {
   q(`update public.amis_presence set vu = now() - interval '10 minutes' where user_id = '${U(5)}'`); J(4, `amis_reglages(false, null)`);
   assert.strictEqual(L(4).amis.find((x) => x.p === P(5)).on, false, "plus de battement depuis 3 minutes : hors ligne");
   assert(J(4, `amis_retirer('${U(5)}')`).ok); assert.strictEqual(L(5).amis.length, 0, "retirer : des deux côtés");
+  // 22/10 (Mathis, 3B) : une liste d'amis par serveur ; le Classique ('c', appel d'avant) et le Monocompte (p_srv 'm') ne se voient pas
+  { const LM = (i) => J(i, `amis_liste(p_srv => 'm')`); const demM = (i, who) => J(i, `amis_demander(p_pseudo => '${who}', p_srv => 'm')`);
+    assert.strictEqual(LM(1).amis.length, 0, "amis du Classique absents de la liste Monocompte");
+    assert(demM(115, P(116)).ok); assert.strictEqual(L(116).recues.length, 0, "demande Monocompte absente du Classique"); assert.strictEqual(LM(116).recues.length, 1);
+    assert.strictEqual(J(116, `amis_repondre('${U(115)}', true, 'm')`).etat, "amis");
+    assert.strictEqual(LM(115).amis.length, 1); assert.strictEqual(L(115).amis.length, 0, "ami du Monocompte absent du Classique");
+    assert.match(JSON.stringify(J(116, `amis_repondre('${U(115)}', true)`)), /n'existe plus/, "la demande Monocompte ne s'accepte pas depuis le Classique");
+    as(116, `select amis_presence('mo', 50, 'iop')`);
+    assert.match(JSON.stringify(J(115, `amis_inviter('${U(116)}', 'groupe')`)), /pas dans tes amis/, "invitation depuis le Classique : pas ami au Classique");
+    assert(J(115, `amis_inviter('${U(116)}', 'groupe', null, 'm')`).ok, "invitation depuis le Monocompte");
+    assert.strictEqual(J(116, `amis_liste()`).invits.length, 0); assert.strictEqual(LM(116).invits.length, 1, "invitation visible seulement au Monocompte");
+    assert.strictEqual(J(115, `amis_retirer('${U(116)}')`).ok, false); assert.strictEqual(LM(116).amis.length, 1, "retirer au Classique ne touche pas le Monocompte");
+    assert(J(115, `amis_retirer('${U(116)}', 'm')`).ok); assert.strictEqual(LM(116).amis.length, 0);
+    console.log("ok - amis : listes séparées Classique / Monocompte (demandes, réponses, invitations, retrait)"); }
 
   // ======================= Monocompte : saison, classements, couronne =======================
   J(99, `mono_adm_saison(0, 'Saison de test', '2026-10-19 00:00 Europe/Paris', true, 'ouverte')`);
@@ -190,7 +204,7 @@ try {
   // la copie vient du résumé de la partie validée (clé « renfort », calculée par le Bouclier, js/verify_mono.js : VM.renfort)
   const copie = (cls, lvl, hid, hp) => ({ n: "Héros", cls, lvl, hid, rf: 1, merc: 0, st: { hpMax: hp || 3000, pa: 11 }, sp: [{ id: "x", lvl: 1 }] });
   for (const i of [20, 21, 22, 23, 24, 25]) as(99, `select mono_adm_testeur('${P(i)}', true)`);
-  const amis = (i, j) => q(`insert into public.amis (user_id, ami) values ('${U(i)}', '${U(j)}'), ('${U(j)}', '${U(i)}') on conflict do nothing`);
+  const amis = (i, j) => q(`insert into public.amis (user_id, ami, srv) values ('${U(i)}', '${U(j)}', 'm'), ('${U(j)}', '${U(i)}', 'm') on conflict do nothing`); // amis du Monocompte (3B)
   const PR = (i, v, extra) => J(i, `mono_renfort_prendre('${U(v)}'${extra ? ", " + extra : ""})`);
   const pub = (i, h) => J(i, `mono_renfort_publier(${h == null ? "" : h})`);
   // 20 prête son Crâ ; 21 l'emprunte (Iop 95, serment ordinaire) ; 22 a seulement demandé 20 en ami ; 23 a été bloqué par 20 ;

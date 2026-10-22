@@ -23,7 +23,11 @@
   const A = { list: null, at: 0, crown: null, renf: null, cour: null, busy: false, err: "", lastPres: 0, lastSnap: 0 };
   const live = () => !!(ON && ON.enabled && ON.user && ON.rpc);
   const monoLive = () => { const s = S(); return !!(live() && ON.monoOn && ON.monoOn() && s && s.mono && !s.mono.eternel && ON.slot && ON.slot() === 4); };
-  const rpc = async (n, a) => { if (!live()) return { err: "Pas de connexion au serveur." }; try { const r = await ON.rpc(n, a || {}); if (r.err) return r; if (r.data && r.data.err) return { err: r.data.err }; return r; } catch (e) { return { err: "Pas de connexion au serveur." }; } };
+  /* 22/10 (Mathis, « 3B ») : une liste d'amis par serveur (supabase/amis.sql, colonne srv) ; une partie Monocompte (ou l'Éternel)
+     envoie p_srv « m » aux fonctions de liste, de demande et d'invitation ; le Classique garde l'appel d'avant ('c' par défaut) */
+  const SRV_FN = /^amis_(liste|demander|repondre|annuler|retirer|inviter)$/;
+  const srvArgs = (n, a) => (SRV_FN.test(n) && ON.monoGame && ON.monoGame() ? Object.assign({}, a, { p_srv: "m" }) : a || {});
+  const rpc = async (n, a) => { if (!live()) return { err: "Pas de connexion au serveur." }; try { const r = await ON.rpc(n, srvArgs(n, a)); if (r.err) return r; if (r.data && r.data.err) return { err: r.data.err }; return r; } catch (e) { return { err: "Pas de connexion au serveur." }; } };
   const MODE = { mo: ["Monocompte", "am-mo"], cl: ["Classique", "am-cl"] };
   const CROWN = `<svg class="am-crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l-1.6-9-4.6 3.8L12 5l-2.8 7.8L4.6 9z" fill="#e8c45a" stroke="#7a5a0c" stroke-width="1.2"/><circle cx="12" cy="5" r="1.4" fill="#7fe6ff"/></svg>`;
   const ago = (t) => { if (!t) return "Hors ligne"; const m = Math.max(0, (Date.now() - Date.parse(t)) / 60000); return m < 60 ? `Vu il y a ${Math.max(1, Math.round(m))} min` : m < 1440 ? `Vu il y a ${Math.round(m / 60)} h` : m < 2880 ? "Vu hier" : `Vu il y a ${Math.round(m / 1440)} jours`; };

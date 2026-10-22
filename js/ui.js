@@ -2698,7 +2698,20 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"], ["guide", "Guide", "almanax"]] }, // 1.2.x : Guide (js/guide.js)
 ];
 /* Monocompte : le Pass de saison (js/monopassui.js) rejoint le menu Défis */
-function monoNav() { const F = NAV.find((x) => x.id === "df"); if (F && window.MONOPLUSUI) window.MONOPLUSUI.nav(F, NAV_DESC, E.monoEternal(S)); /* Classements de saison, Mutation, Serment de fer, Bilan (js/monoplusui.js) */ if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["fragments", "Carnet des Fragments", "cristal"], ["boutique", "Boutique temporelle", "bourse"], ["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
+/* 22/10 (Mathis, « 1A » : rien du Classique en Monocompte, même en lecture) : le menu ne garde que les pages de la liste blanche
+   E.MONO.PAGES (js/mono.js) et les modules du Classique sont éteints pour cette page (changer de partie recharge la page) */
+function monoSeal() {
+  if (!S || !S.mono || !E.monoPageOk) return;
+  const ok = (k) => E.monoPageOk(k) && !(k === "ladder" && E.monoEternal(S)); // l'Éternel n'a pas de classement de saison en cours
+  NAV.forEach((F) => { for (let i = F.pages.length - 1; i >= 0; i--) if (!ok(F.pages[i][0])) F.pages.splice(i, 1); });
+  for (let i = NAV.length - 1; i >= 0; i--) if (!NAV[i].pages.length) NAV.splice(i, 1);
+  // les modules chargés après ce fichier (js/wbossui.js, js/songeui.js…) posent window.X plus tard : la place reste vide
+  (E.MONO.CLASSIC_MODS || []).forEach((k) => { try { Object.defineProperty(window, k, { configurable: true, get: () => null, set: () => {} }); } catch (e) {} });
+  if (S.settings && Array.isArray(S.settings.pins)) S.settings.pins = S.settings.pins.filter((k) => E.monoPageOk(k));
+  if (!E.monoPageOk(ui.tab)) ui.tab = "home";
+}
+function monoNav() { monoNav0(); monoSeal(); }
+function monoNav0() { const F = NAV.find((x) => x.id === "df"); if (F && window.MONOPLUSUI) window.MONOPLUSUI.nav(F, NAV_DESC, E.monoEternal(S)); /* Classements de saison, Mutation, Serment de fer, Bilan (js/monoplusui.js) */ if (F && E.monoEternal(S)) { if (!F.pages.some((p) => p[0] === "eternel")) F.pages.unshift(["eternel", "Éternel", "couronne"], ["archives", "Boutique d'Archives", "bourse"]); NAV_DESC.eternel = "Ta saison finie et le monde Éternel"; NAV_DESC.archives = "Dépenser les Éclats du Temps de ta saison"; return; } if (F && !F.pages.some((p) => p[0] === "pass")) F.pages.unshift(["fragments", "Carnet des Fragments", "cristal"], ["boutique", "Boutique temporelle", "bourse"], ["pass", "Pass de saison", "ailes"], ["manche", "Défi de la manche", "cle"], ["guerre", "Guerre et Boss de saison", "couronne"]); NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines"; }
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
@@ -3378,7 +3391,7 @@ function houseHtml() {
   const all = Object.keys(E.FURN).filter((f) => E.FURN[f].shop); const own = all.filter((f) => furn.includes(f)).length;
   const placedN = E.ROOMS.reduce((a, R) => a + placedOf(R).length, 0), slotsN = E.ROOMS.reduce((a, R) => a + E.roomSlots(S, R.id), 0);
   return `<section class="panel hvhouse" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Ma maison</h2><span class="xs muted"><b class="num">${placedN}/${slotsN}</b> meubles placés · <button class="btn xs" data-act="hvroomgo" data-v="">Tout voir</button></span></div>
-    <div class="hvtiles">${E.ROOMS.map(tile).join("")}</div>
+    <div class="hvtiles">${E.ROOMS.filter((R) => !(S.mono && R.id === "enclos")).map(tile).join("")}</div>
     <div class="hvfoot">${free.length ? `<button class="hvfl hot" data-act="hvroomgo" data-v="${E.FURN[free[0]].room}">${MEUBLE_IC}<span class="grow"><b>${free.length} meuble${free.length > 1 ? "s" : ""} à placer</b><span class="xs muted">${free.map((f) => h(f)).join(" · ")}</span></span><span class="tag">Placer</span></button>` : `<button class="hvfl" data-act="hvroomgo" data-v="">${MEUBLE_IC}<span class="grow"><b>Meubles</b><span class="xs muted">${furn.some((f) => E.FURN[f]) ? "tous placés" : "Boutique, trophées de boss, Comptoir, Bricoleur, Almanax et butins rares en donnent"}</span></span><span class="chev">›</span></button>`}
       <button class="hvfl" data-act="fcatalog">${TROPHEE_IC}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
       <button class="hvfl" data-act="hvshop">${IC("bourse")}<span class="grow"><b>Boutique de la maison</b><span class="xs muted">${own}/${all.length} meubles achetés · en kamas</span></span><span class="chev">›</span></button></div></section>`;
@@ -8647,6 +8660,7 @@ function render() {
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
+  if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
@@ -11765,11 +11779,10 @@ function raceChip() {
 }
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }
-  // 2.1.35.2 : en Monocompte, la page Classements montre d'abord les classements de saison (bouton pour revoir le Classique)
-  if (monoSlot(SLOT) && !E.monoEternal(S) && !LB.classic && window.DX.pages.saisonlb) {
-    const m = $("#main"); window.DX.pages.saisonlb(m);
-    if (ui.tab === "ladder") { const ph = m.querySelector(".pagehead"); const pn = `<div class="panel"><div class="pad row between"><span class="small muted">Tu joues en Monocompte : voici les classements de ta saison.</span><button class="btn sm" data-act="lb-classic">Voir le Classique</button></div></div>`; if (ph) ph.insertAdjacentHTML("afterend", pn); else m.insertAdjacentHTML("afterbegin", pn); }
-    return;
+  // 2.1.35.2 : en Monocompte, la page Classements montre les classements de saison ; 22/10 (Mathis, 1A) : plus de bouton vers le Classique
+  if (S && S.mono) {
+    if (E.monoEternal(S) || !window.DX.pages.saisonlb) { ui.tab = "home"; return renderHome(); }
+    return window.DX.pages.saisonlb($("#main"));
   }
   const wl = weekList(), dids = Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || DUNGEONS[a].name.localeCompare(DUNGEONS[b].name));
   if (!LB.did) LB.did = lbDefaultDid();
@@ -12046,8 +12059,8 @@ function bootGame(pushNow) {
   if (ON && ON.enabled) setTimeout(staffLoad, 200);
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
-  if (ON && window.PLUIE) setTimeout(() => window.PLUIE.start(), 900); // 1.2.8 : pluie de kamas (js/pluie.js)
-  if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
+  if (ON && window.PLUIE) setTimeout(() => window.PLUIE && window.PLUIE.start(), 900); // 1.2.8 : pluie de kamas (js/pluie.js)
+  if (ON && window.GUILD) setTimeout(() => window.GUILD && window.GUILD.start(), 700); // Monocompte : modules du Classique éteints entre-temps (monoSeal)
   if (ON) { setTimeout(brisageNet, 5000); setInterval(brisageNet, 15000); }
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();

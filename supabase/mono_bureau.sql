@@ -745,7 +745,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); b text; m mo
   perform mono.bureau_menage();
   b := mono.bureau_bloque(u, s); if b is not null then return mono.err(b); end if;
   if p_user is null or p_user = u then return mono.err('Joueur introuvable.'); end if;
-  if not (public.amis_sont(u, p_user) and public.amis_sont(p_user, u)) or mono.bureau_brouille(u, p_user) then
+  if not (public.amis_sont(u, p_user, 'm') and public.amis_sont(p_user, u, 'm')) or mono.bureau_brouille(u, p_user) then
     return mono.err('Tu ne peux inviter directement que tes amis.'); end if;
   if not mono.acces(p_user) or mono.bureau_bloque(p_user, s) is not null then return mono.err('Ce joueur ne peut pas rejoindre de groupe en ce moment.'); end if;
   perform mono.verrou(u);

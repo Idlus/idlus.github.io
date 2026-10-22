@@ -66,6 +66,27 @@ create table if not exists public.amis_invits (
 );
 create index if not exists amis_invits_a on public.amis_invits (a, at desc);
 
+-- 22/10 (Mathis, « 3B ») : listes d'amis séparées entre le Classique (srv 'c') et le Monocompte (srv 'm'). Au premier passage,
+-- les amitiés et demandes d'avant (communes aux deux) sont gardées des deux côtés ; les invitations (groupe, rendez-vous) sont
+-- du Monocompte. La présence et le blocage (public.ignores) restent ceux du compte.
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'amis' and column_name = 'srv') then
+    alter table public.amis add column srv text not null default 'c' check (srv in ('c', 'm'));
+    alter table public.amis drop constraint amis_pkey;
+    alter table public.amis add primary key (user_id, ami, srv);
+    insert into public.amis (user_id, ami, at, srv) select user_id, ami, at, 'm' from public.amis where srv = 'c';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'amis_demandes' and column_name = 'srv') then
+    alter table public.amis_demandes add column srv text not null default 'c' check (srv in ('c', 'm'));
+    alter table public.amis_demandes drop constraint amis_demandes_pkey;
+    alter table public.amis_demandes add primary key (de, a, srv);
+    insert into public.amis_demandes (de, a, src, at, srv) select de, a, src, at, 'm' from public.amis_demandes where srv = 'c';
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'amis_invits' and column_name = 'srv') then
+    alter table public.amis_invits add column srv text not null default 'm' check (srv in ('c', 'm'));
+  end if;
+end $$;
+
 do $$ declare t text; begin
   foreach t in array array['amis', 'amis_demandes', 'amis_presence', 'amis_invits'] loop
     execute format('alter table public.%I enable row level security', t);
@@ -74,16 +95,28 @@ do $$ declare t text; begin
 end $$;
 
 -- ---------- fonctions internes ----------
+-- anciennes signatures (avant la séparation Classique / Monocompte) : remplacées par celles qui prennent le serveur
+drop function if exists public.amis_n(uuid);
+drop function if exists public.amis_sont(uuid, uuid);
+drop function if exists public.amis_lier(uuid, uuid);
+drop function if exists public.amis_demander(uuid, text, text);
+drop function if exists public.amis_repondre(uuid, boolean);
+drop function if exists public.amis_annuler(uuid);
+drop function if exists public.amis_retirer(uuid);
+drop function if exists public.amis_liste();
+drop function if exists public.amis_inviter(uuid, text, jsonb);
 create or replace function public.amis_moi() returns uuid language plpgsql stable security definer set search_path = public
 as $$ begin
   if auth.uid() is null then raise exception 'Connecte-toi pour gérer tes amis.'; end if;
   if not exists (select 1 from public.profiles where id = auth.uid()) then raise exception 'Choisis d''abord un pseudo.'; end if;
   return auth.uid();
 end $$;
-create or replace function public.amis_n(u uuid) returns int language sql stable security definer set search_path = public
-as $$ select count(*)::int from public.amis where user_id = u $$;
-create or replace function public.amis_sont(u uuid, v uuid) returns boolean language sql stable security definer set search_path = public
-as $$ select exists (select 1 from public.amis where user_id = u and ami = v) $$;
+-- serveur d'une liste : 'm' (Monocompte) ou 'c' (Classique, par défaut)
+create or replace function public.amis_srv(p text) returns text language sql immutable as $$ select case when p = 'm' then 'm' else 'c' end $$;
+create or replace function public.amis_n(u uuid, s text) returns int language sql stable security definer set search_path = public
+as $$ select count(*)::int from public.amis where user_id = u and srv = public.amis_srv(s) $$;
+create or replace function public.amis_sont(u uuid, v uuid, s text default 'c') returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.amis where user_id = u and ami = v and srv = public.amis_srv(s)) $$;
 -- v a bloqué u (u ne peut plus lui envoyer de demande ni lui écrire)
 create or replace function public.amis_bloque(v uuid, u uuid) returns boolean language sql stable security definer set search_path = public
 as $$ select exists (select 1 from public.ignores where user_id = v and other = u) $$;
@@ -92,64 +125,66 @@ as $$ select coalesce((select not invisible and vu > now() - interval '3 minutes
 create or replace function public.amis_cible(p_user uuid, p_pseudo text) returns uuid language sql stable security definer set search_path = public
 as $$ select coalesce(p_user, (select id from public.profiles where lower(pseudo) = lower(btrim(coalesce(p_pseudo, ''))) limit 1)) $$;
 -- devenir amis (les deux lignes) : 100 amis au plus de chaque côté ; enlève les demandes dans les deux sens
-create or replace function public.amis_lier(u uuid, v uuid) returns text language plpgsql security definer set search_path = public
+create or replace function public.amis_lier(u uuid, v uuid, s text) returns text language plpgsql security definer set search_path = public
 as $$ begin
-  perform pg_advisory_xact_lock(hashtextextended('amis:' || least(u, v)::text || greatest(u, v)::text, 0));
-  if public.amis_n(u) >= 100 then return 'Tu as déjà 100 amis.'; end if;
-  if public.amis_n(v) >= 100 then return 'Ce joueur a déjà 100 amis.'; end if;
-  insert into public.amis (user_id, ami) values (u, v), (v, u) on conflict do nothing;
-  delete from public.amis_demandes where (de = u and a = v) or (de = v and a = u);
+  s := public.amis_srv(s);
+  perform pg_advisory_xact_lock(hashtextextended('amis:' || s || least(u, v)::text || greatest(u, v)::text, 0));
+  if public.amis_n(u, s) >= 100 then return 'Tu as déjà 100 amis.'; end if;
+  if public.amis_n(v, s) >= 100 then return 'Ce joueur a déjà 100 amis.'; end if;
+  insert into public.amis (user_id, ami, srv) values (u, v, s), (v, u, s) on conflict do nothing;
+  delete from public.amis_demandes where srv = s and ((de = u and a = v) or (de = v and a = u));
   return null;
 end $$;
 
 -- ---------- fonctions du jeu ----------
+-- p_srv : 'm' depuis une partie Monocompte (js/amis.js), 'c' sinon : chaque serveur a sa liste d'amis et ses demandes.
 -- Envoyer une demande (par l'identifiant d'un joueur montré dans le chat, les classements ou la guilde, ou par pseudo).
 -- Si l'autre joueur nous avait déjà demandé, vous devenez amis tout de suite.
-create or replace function public.amis_demander(p_user uuid default null, p_pseudo text default null, p_src text default 'pseudo')
+create or replace function public.amis_demander(p_user uuid default null, p_pseudo text default null, p_src text default 'pseudo', p_srv text default 'c')
 returns jsonb language plpgsql security definer set search_path = public
-as $$ declare me uuid := public.amis_moi(); v uuid := public.amis_cible(p_user, p_pseudo); e text; begin
+as $$ declare me uuid := public.amis_moi(); v uuid := public.amis_cible(p_user, p_pseudo); e text; s text := public.amis_srv(p_srv); begin
   if public.susp(me) then return jsonb_build_object('err', 'Ton compte est suspendu.'); end if;
   if v is null or not exists (select 1 from public.profiles where id = v) then return jsonb_build_object('err', 'Pseudo inconnu.'); end if;
   if v = me then return jsonb_build_object('err', 'Tu ne peux pas t''ajouter toi-même.'); end if;
   if public.amis_bloque(me, v) then return jsonb_build_object('err', 'Tu as bloqué ce joueur : débloque-le d''abord.'); end if;
   if public.amis_bloque(v, me) then return jsonb_build_object('err', 'Ce joueur ne reçoit pas de demandes.'); end if;
-  if public.amis_sont(me, v) then return jsonb_build_object('err', 'Vous êtes déjà amis.'); end if;
-  if exists (select 1 from public.amis_demandes where de = v and a = me) then
-    e := public.amis_lier(me, v); if e is not null then return jsonb_build_object('err', e); end if;
+  if public.amis_sont(me, v, s) then return jsonb_build_object('err', 'Vous êtes déjà amis.'); end if;
+  if exists (select 1 from public.amis_demandes where de = v and a = me and srv = s) then
+    e := public.amis_lier(me, v, s); if e is not null then return jsonb_build_object('err', e); end if;
     return jsonb_build_object('ok', true, 'etat', 'amis');
   end if;
-  if exists (select 1 from public.amis_demandes where de = me and a = v) then return jsonb_build_object('err', 'Demande déjà envoyée.'); end if;
-  if public.amis_n(me) >= 100 then return jsonb_build_object('err', 'Tu as déjà 100 amis.'); end if;
-  if public.amis_n(v) >= 100 then return jsonb_build_object('err', 'Ce joueur a déjà 100 amis.'); end if;
-  if (select count(*) from public.amis_demandes where de = me) >= 50 then return jsonb_build_object('err', 'Tu as déjà 50 demandes en attente : attends leurs réponses.'); end if;
-  if (select count(*) from public.amis_demandes where a = v) >= 100 then return jsonb_build_object('err', 'Ce joueur a trop de demandes en attente.'); end if;
-  insert into public.amis_demandes (de, a, src) values (me, v, case when p_src in ('pseudo', 'chat', 'classement', 'guilde', 'groupe') then p_src else 'pseudo' end);
+  if exists (select 1 from public.amis_demandes where de = me and a = v and srv = s) then return jsonb_build_object('err', 'Demande déjà envoyée.'); end if;
+  if public.amis_n(me, s) >= 100 then return jsonb_build_object('err', 'Tu as déjà 100 amis.'); end if;
+  if public.amis_n(v, s) >= 100 then return jsonb_build_object('err', 'Ce joueur a déjà 100 amis.'); end if;
+  if (select count(*) from public.amis_demandes where de = me and srv = s) >= 50 then return jsonb_build_object('err', 'Tu as déjà 50 demandes en attente : attends leurs réponses.'); end if;
+  if (select count(*) from public.amis_demandes where a = v and srv = s) >= 100 then return jsonb_build_object('err', 'Ce joueur a trop de demandes en attente.'); end if;
+  insert into public.amis_demandes (de, a, src, srv) values (me, v, case when p_src in ('pseudo', 'chat', 'classement', 'guilde', 'groupe') then p_src else 'pseudo' end, s);
   return jsonb_build_object('ok', true, 'etat', 'envoyee');
 end $$;
 
 -- Accepter ou refuser une demande reçue
-create or replace function public.amis_repondre(p_de uuid, p_ok boolean) returns jsonb language plpgsql security definer set search_path = public
-as $$ declare me uuid := public.amis_moi(); e text; begin
-  if not exists (select 1 from public.amis_demandes where de = p_de and a = me) then return jsonb_build_object('err', 'Cette demande n''existe plus.'); end if;
-  if not coalesce(p_ok, false) then delete from public.amis_demandes where de = p_de and a = me; return jsonb_build_object('ok', true, 'etat', 'refusee'); end if;
-  e := public.amis_lier(me, p_de); if e is not null then return jsonb_build_object('err', e); end if;
+create or replace function public.amis_repondre(p_de uuid, p_ok boolean, p_srv text default 'c') returns jsonb language plpgsql security definer set search_path = public
+as $$ declare me uuid := public.amis_moi(); e text; s text := public.amis_srv(p_srv); begin
+  if not exists (select 1 from public.amis_demandes where de = p_de and a = me and srv = s) then return jsonb_build_object('err', 'Cette demande n''existe plus.'); end if;
+  if not coalesce(p_ok, false) then delete from public.amis_demandes where de = p_de and a = me and srv = s; return jsonb_build_object('ok', true, 'etat', 'refusee'); end if;
+  e := public.amis_lier(me, p_de, s); if e is not null then return jsonb_build_object('err', e); end if;
   return jsonb_build_object('ok', true, 'etat', 'amis');
 end $$;
 
-create or replace function public.amis_annuler(p_a uuid) returns jsonb language plpgsql security definer set search_path = public
+create or replace function public.amis_annuler(p_a uuid, p_srv text default 'c') returns jsonb language plpgsql security definer set search_path = public
 as $$ declare me uuid := public.amis_moi(); begin
-  delete from public.amis_demandes where de = me and a = p_a; return jsonb_build_object('ok', found);
+  delete from public.amis_demandes where de = me and a = p_a and srv = public.amis_srv(p_srv); return jsonb_build_object('ok', found);
 end $$;
 
-create or replace function public.amis_retirer(p_ami uuid) returns jsonb language plpgsql security definer set search_path = public
-as $$ declare me uuid := public.amis_moi(); begin
-  delete from public.amis where (user_id = me and ami = p_ami) or (user_id = p_ami and ami = me);
-  delete from public.amis_invits where (de = me and a = p_ami) or (de = p_ami and a = me);
-  return jsonb_build_object('ok', found);
+create or replace function public.amis_retirer(p_ami uuid, p_srv text default 'c') returns jsonb language plpgsql security definer set search_path = public
+as $$ declare me uuid := public.amis_moi(); s text := public.amis_srv(p_srv); ok boolean; begin
+  delete from public.amis where srv = s and ((user_id = me and ami = p_ami) or (user_id = p_ami and ami = me)); ok := found;
+  delete from public.amis_invits where srv = s and ((de = me and a = p_ami) or (de = p_ami and a = me));
+  return jsonb_build_object('ok', ok);
 end $$;
 
 -- Bloquer (ou débloquer) : le joueur bloqué ne peut plus envoyer de demande ni écrire en privé ; l'amitié, les demandes et
--- les invitations entre vous sont effacées. C'est la même liste que « Ignorer » dans le chat.
+-- les invitations entre vous sont effacées, sur les deux serveurs. C'est la même liste que « Ignorer » dans le chat.
 create or replace function public.amis_bloquer(p_user uuid default null, p_pseudo text default null, p_on boolean default true)
 returns jsonb language plpgsql security definer set search_path = public
 as $$ declare me uuid := public.amis_moi(); v uuid := public.amis_cible(p_user, p_pseudo); begin
@@ -186,8 +221,8 @@ end $$;
 
 -- Ma liste : amis (en ligne, mode, niveau, cherche un groupe), demandes reçues et envoyées, bloqués, invitations reçues.
 -- Un ami invisible apparaît hors ligne, sans mode ni « cherche un groupe ».
-create or replace function public.amis_liste() returns jsonb language plpgsql stable security definer set search_path = public
-as $$ declare me uuid := public.amis_moi(); begin
+create or replace function public.amis_liste(p_srv text default 'c') returns jsonb language plpgsql stable security definer set search_path = public
+as $$ declare me uuid := public.amis_moi(); s text := public.amis_srv(p_srv); begin
   return jsonb_build_object(
     'max', 100,
     'moi', coalesce((select jsonb_build_object('invisible', invisible, 'cherche', cherche) from public.amis_presence where user_id = me), jsonb_build_object('invisible', false, 'cherche', false)),
@@ -199,29 +234,29 @@ as $$ declare me uuid := public.amis_moi(); begin
         'cherche', public.amis_en_ligne(a.ami) and coalesce(pr.cherche, false),
         'lvl', coalesce(pr.lvl, l.main_lvl), 'cls', coalesce(pr.cls, l.main)) x
       from public.amis a join public.profiles p on p.id = a.ami left join public.amis_presence pr on pr.user_id = a.ami left join public.ladder l on l.user_id = a.ami
-      where a.user_id = me) s),
+      where a.user_id = me and a.srv = s) q),
     'recues', (select coalesce(jsonb_agg(jsonb_build_object('u', d.de, 'p', p.pseudo, 'src', d.src, 'at', d.at, 'lvl', coalesce(pr.lvl, l.main_lvl), 'cls', coalesce(pr.cls, l.main)) order by d.at desc), '[]'::jsonb)
-      from public.amis_demandes d join public.profiles p on p.id = d.de left join public.amis_presence pr on pr.user_id = d.de left join public.ladder l on l.user_id = d.de where d.a = me),
+      from public.amis_demandes d join public.profiles p on p.id = d.de left join public.amis_presence pr on pr.user_id = d.de left join public.ladder l on l.user_id = d.de where d.a = me and d.srv = s),
     'envoyees', (select coalesce(jsonb_agg(jsonb_build_object('u', d.a, 'p', p.pseudo, 'at', d.at) order by d.at desc), '[]'::jsonb)
-      from public.amis_demandes d join public.profiles p on p.id = d.a where d.de = me),
+      from public.amis_demandes d join public.profiles p on p.id = d.a where d.de = me and d.srv = s),
     'bloques', (select coalesce(jsonb_agg(jsonb_build_object('u', i.other, 'p', p.pseudo) order by lower(p.pseudo)), '[]'::jsonb)
       from public.ignores i join public.profiles p on p.id = i.other where i.user_id = me),
     'invits', (select coalesce(jsonb_agg(jsonb_build_object('id', v.id, 'u', v.de, 'p', p.pseudo, 'quoi', v.quoi, 'data', v.data, 'at', v.at) order by v.at desc), '[]'::jsonb)
-      from public.amis_invits v join public.profiles p on p.id = v.de where v.a = me and v.etat = 'envoyee' and v.at > now() - interval '15 minutes'));
+      from public.amis_invits v join public.profiles p on p.id = v.de where v.a = me and v.srv = s and v.etat = 'envoyee' and v.at > now() - interval '15 minutes'));
 end $$;
 
 -- Inviter un ami dans son groupe (Monocompte) ou à un rendez-vous du Bureau : ami en ligne et visible seulement
-create or replace function public.amis_inviter(p_ami uuid, p_quoi text, p_data jsonb default null) returns jsonb
+create or replace function public.amis_inviter(p_ami uuid, p_quoi text, p_data jsonb default null, p_srv text default 'c') returns jsonb
 language plpgsql security definer set search_path = public
-as $$ declare me uuid := public.amis_moi(); n bigint; begin
+as $$ declare me uuid := public.amis_moi(); n bigint; s text := public.amis_srv(p_srv); begin
   if p_quoi not in ('groupe', 'rdv') then return jsonb_build_object('err', 'Invitation inconnue.'); end if;
-  if not public.amis_sont(me, p_ami) then return jsonb_build_object('err', 'Ce joueur n''est pas dans tes amis.'); end if;
+  if not public.amis_sont(me, p_ami, s) then return jsonb_build_object('err', 'Ce joueur n''est pas dans tes amis.'); end if;
   if not public.amis_en_ligne(p_ami) then return jsonb_build_object('err', 'Ce joueur n''est pas en ligne.'); end if;
   if p_quoi = 'groupe' and coalesce((select mode from public.amis_presence where user_id = p_ami), '') <> 'mo' then return jsonb_build_object('err', 'Les groupes se jouent au Monocompte : ton ami n''y est pas en ce moment.'); end if;
   if p_data is not null and length(p_data::text) > 1000 then return jsonb_build_object('err', 'Invitation trop longue.'); end if;
   if exists (select 1 from public.amis_invits where de = me and at > now() - interval '5 seconds') then return jsonb_build_object('err', 'Doucement : une invitation toutes les 5 secondes.'); end if;
   delete from public.amis_invits where de = me and a = p_ami and quoi = p_quoi and etat = 'envoyee';
-  insert into public.amis_invits (de, a, quoi, data) values (me, p_ami, p_quoi, p_data) returning id into n;
+  insert into public.amis_invits (de, a, quoi, data, srv) values (me, p_ami, p_quoi, p_data, s) returning id into n;
   delete from public.amis_invits where at < now() - interval '1 day';
   return jsonb_build_object('ok', true, 'id', n);
 end $$;

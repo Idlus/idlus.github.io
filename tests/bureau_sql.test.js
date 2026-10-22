@@ -110,7 +110,7 @@ run(`drop database if exists ${DB}`, URL0); run(`create database ${DB}`, URL0);
        insert into profiles (id, pseudo) select id, 'Joueur' || substr(id::text, 35) from auth.users;
        delete from admins; insert into admins values ('${U(9)}');`); // classements.sql fait du premier profil un admin : Mathis = 9 ici
     // amis acceptés (supabase/amis.sql, les deux lignes) : 12 et 1, 5 et 1
-    q(`insert into public.amis (user_id, ami) values ('${U(12)}', '${U(1)}'), ('${U(1)}', '${U(12)}'), ('${U(5)}', '${U(1)}'), ('${U(1)}', '${U(5)}')`);
+    q(`insert into public.amis (user_id, ami, srv) values ('${U(12)}', '${U(1)}', 'm'), ('${U(1)}', '${U(12)}', 'm'), ('${U(5)}', '${U(1)}', 'm'), ('${U(1)}', '${U(5)}', 'm')`); // amis du Monocompte (3B)
     J(9, `mono_adm_saison(0, 'Saison de test', '2026-10-19 00:00 Europe/Paris', true, 'ouverte')`);
     for (const i of [1, 2, 3, 4, 5, 6, 7, 10, 11, 12]) as(9, `select mono_adm_testeur('Joueur${String(i).padStart(2, "0")}', true)`);
     const DEBUT = Date.parse("2026-10-18T22:00:00Z");
@@ -555,7 +555,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     refuse("inviter un joueur qui n'est pas un ami", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "pas ami"));
     J(12, `amis_demander(p_user => '${U(2)}')`);
     refuse("inviter un joueur dont la demande d'ami n'est pas acceptée", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "demande en attente"));
-    q(`insert into public.amis (user_id, ami) values ('${U(12)}', '${U(2)}')`);
+    q(`insert into public.amis (user_id, ami, srv) values ('${U(12)}', '${U(2)}', 'm')`);
     refuse("inviter avec une amitié à sens unique", () => err(B(12, "inviter", U(2), VER, app(12)), /que tes amis/, "sens unique"));
     q(`delete from public.amis where user_id = '${U(12)}' and ami = '${U(2)}'; delete from public.amis_demandes where de = '${U(12)}'`);
     q(`insert into public.ignores (user_id, other) values ('${U(1)}', '${U(12)}')`);

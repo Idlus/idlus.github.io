@@ -112,7 +112,7 @@
   const PING = PUB;
   const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;
   const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
-  const pingsAll = () => PING.reduce((n, k) => n + pings(k), 0);
+  const pingsAll = () => (monoGame() ? ["m"] : PING).reduce((n, k) => n + pings(k), 0); // Monocompte : seulement les mentions du salon Monocompte
   function markSeen(k) {
     if (!PING.includes(k) || !C[k].length) return;
     const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [k]: top }); savePref(); }
@@ -216,7 +216,7 @@
   const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
   function minHtml() {
     const last = [...(C.tab === "m" && monoOk() ? C.m : C.g)].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
-    const n = C.unread + C.unreadP + C.unreadC + C.unreadV + (monoOk() ? C.unreadM : 0) + ((window.GUILD && window.GUILD.unread) || 0);
+    const n = monoGame() ? (monoOk() ? C.unreadM : 0) : C.unread + C.unreadP + C.unreadC + C.unreadV + (monoOk() ? C.unreadM : 0) + ((window.GUILD && window.GUILD.unread) || 0);
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${atNb(pingsAll())}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
@@ -252,8 +252,11 @@
     const tab = (k, ic, n, unread, lock) => lock ? `<span class="ch-tab lock" data-tip="${h(lock)}">${G("lock")}<span>${n}</span></span>`
       : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
     const guild = window.GUILD && window.GUILD.inGuild();
+    // 22/10 (Mathis, 1A) : partie Monocompte, seulement le salon Monocompte (verrouillé sans accès), aucun salon du Classique
+    const tabsH = monoGame() ? tab("m", "sparkle", "Monocompte", C.unreadM, monoOk() ? "" : "Salon des testeurs du Monocompte : connecte-toi au serveur Monocompte.")
+      : `${monoOk() ? tab("g", "chat", "Classique", C.unread) + tab("m", "sparkle", "Monocompte", C.unreadM) : tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}`;
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
-      <div class="ch-tabs" role="tablist">${monoOk() ? tab("g", "chat", "Classique", C.unread) + tab("m", "sparkle", "Monocompte", C.unreadM) : tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
+      <div class="ch-tabs" role="tablist">${tabsH}</div></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
@@ -319,6 +322,7 @@
     return C.loaded && C.tab !== "u" && ON.chatLost && ON.chatLost() ? `<div class="sys">Chat en direct perturbé côté serveur : messages mis à jour chaque minute tant que le chat est ouvert. Tu peux toujours écrire.</div>${l}` : l;
   }
   function listHtml0() {
+    if (monoGame() && C.tab !== "m") C.tab = "m"; // 22/10 (Mathis, 1A) : partie Monocompte, seulement le salon Monocompte
     if (!C.loaded) return tries || slow ? `<div class="sys">Chat momentanément indisponible, reconnexion automatique…<br>${busy ? `<span class="small" style="display:inline-block;margin-top:6px">Nouvel essai en cours…</span>` : `<button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button>`}</div>` : `<div class="sys">Connexion au chat…</div>`;
     if (C.tab === "p") {
       if (!C.peer) {
@@ -339,7 +343,7 @@
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
     if (C.tab === "m") {
-      if (!monoOk()) { C.tab = "g"; return listHtml(); }
+      if (!monoOk()) { if (monoGame()) return `<div class="sys">Le salon Monocompte s'ouvre avec ton compte testeur du Monocompte (Options › Compte).</div>`; C.tab = "g"; return listHtml(); }
       const rows = C.m.filter((m) => !C.ign.has(m.user_id));
       return `<div class="sys">Général Monocompte : réservé aux joueurs de la bêta Monocompte. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
     }

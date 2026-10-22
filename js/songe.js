@@ -577,7 +577,7 @@
   const autoDo = (S) => { const X = S.exp; const p = X.pend[0]; const a = E.expAutoChoice(S); if (a) E.expChoose(S, ...a); if (X.pend[0] === p && p.t === "fount") E.expChoose(S, "no"); else if (X.pend[0] === p) X.pend.shift(); };
   /* appelé par E.tick : le jeu choisit à la place du joueur après le délai (si le réglage le permet) */
   E.expTick = (S) => {
-    if (!S.songe || !S.songe.seen) { const top = S.chars && S.chars.length ? Math.max(...S.chars.map((c) => c.lvl)) : 0; if (top >= E.EXP_MIN_LVL) { E.songe(S).seen = 1; E.celebrate({ t: "songe" }); } }
+    if (!S.mono && (!S.songe || !S.songe.seen)) { const top = S.chars && S.chars.length ? Math.max(...S.chars.map((c) => c.lvl)) : 0; if (top >= E.EXP_MIN_LVL) { E.songe(S).seen = 1; E.celebrate({ t: "songe" }); } }
     const X = X_(S); if (!X || !E.expAutoOn(S)) return;
     const now = E.now();
     if (X.pend.length) { const p = X.pend[0]; if (now - p.at > E.EXP_AUTO_MS) { p.auto = true; autoDo(S); } return; }

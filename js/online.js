@@ -352,9 +352,16 @@
      faisaient avancer son curseur. Toute autre fonction qui reçoit p_after (curseur des opérations) hors mono_ est refusée aussi. */
   const CLASSIC_RPC = /^(hdv_(sync|list|buy|cancel|reprice|mine|bought|order_new|order_cancel|order_fill|orders_mine)|trade_|guild_|gboss_|perco_|prism_|ally_|koli_|brisage_|vente_sell$|foire_jackpot|rain_|adm_rain_|songe_claim$|asc_claim$|defi_guild_prize$|gift_redeem$|gift_mine$|build_publish$)/;
   ON.classicRpc = (name, args) => !/^mono_/.test(name) && (CLASSIC_RPC.test(name) || !!(args && Object.prototype.hasOwnProperty.call(args, "p_after")));
+  /* 22/10 (Mathis, 1A) : une partie Monocompte (emplacement 4 ou Éternel) n'appelle que les fonctions de la liste blanche
+     E.MONO.RPC (js/mono.js) ; tout le reste, du Classique ou à venir, est refusé ici sans partir sur le réseau. */
+  const MONO_ERR = "Pas en Monocompte : cette fonction appartient au serveur Classique.";
+  ON.MONO_ERR = MONO_ERR;
+  ON.monoGame = () => SLOT === MONO_N || SLOT > 100;
+  const monoRpcOk = (name) => { const E = root.ENGINE; return !!(E && E.monoRpcOk && E.monoRpcOk(name)); };
   const rpc = async (name, args) => {
     if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
     else if (ON.monoPart() && ON.classicRpc(name, args)) return { err: CLASSIC_ERR };
+    else if (ON.monoGame() && !monoRpcOk(name)) return { err: MONO_ERR };
     else if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
     try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
     catch (e) { return { err: "Pas de connexion au serveur." }; }

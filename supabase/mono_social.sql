@@ -278,7 +278,7 @@ end $$;
 create or replace function mono.renfort_refus(u uuid, v uuid, s int) returns text language plpgsql stable security definer set search_path = mono, public
 as $$ declare me jsonb; rn mono.renforts%rowtype; lv int; begin
   if v is null or v = u then return 'Ce renfort n''est pas disponible.'; end if;
-  if not (public.amis_sont(u, v) and public.amis_sont(v, u)) then return 'Ce joueur n''est pas dans tes amis.'; end if;
+  if not (public.amis_sont(u, v, 'm') and public.amis_sont(v, u, 'm')) then return 'Ce joueur n''est pas dans tes amis.'; end if;
   if public.amis_bloque(u, v) or public.amis_bloque(v, u) then return 'Ce joueur n''est pas dans tes amis.'; end if;
   select * into rn from mono.renforts where user_id = v and saison = s;
   if rn.user_id is null or not exists (select 1 from mono.parties_ok where user_id = v and saison = s) or public.susp(v) then return 'Ce renfort n''est pas disponible.'; end if;
@@ -295,7 +295,7 @@ as $$ declare u uuid := mono.need(); s int := mono.saison_ouverte(); begin
   if s is null then return jsonb_build_object('amis', '[]'::jsonb, 'aides', 0); end if;
   return jsonb_build_object(
     'amis', (select coalesce(jsonb_agg(jsonb_build_object('u', r.user_id, 'p', mono.pseudo(r.user_id), 'cls', r.cls, 'lvl', r.niveau, 'snap', r.snap, 'at', r.at, 'err', mono.renfort_refus(u, r.user_id, s)) order by r.niveau desc), '[]'::jsonb)
-      from mono.renforts r join public.amis a on a.user_id = u and a.ami = r.user_id
+      from mono.renforts r join public.amis a on a.user_id = u and a.ami = r.user_id and a.srv = 'm'
       where r.saison = s and not public.amis_bloque(u, r.user_id) and not public.amis_bloque(r.user_id, u) and exists (select 1 from mono.parties_ok k where k.user_id = r.user_id and k.saison = s)),
     'prete', exists (select 1 from mono.renforts where user_id = u and saison = s),
     'aides', coalesce((select aides from mono.renforts where user_id = u and saison = s), 0));
