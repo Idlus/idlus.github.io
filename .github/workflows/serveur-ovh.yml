@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étape enquete-joueur)"
@@ -365,6 +365,13 @@ jobs:
           sleep 15
           echo '== Fonctions record et mono (erreurs au démarrage)'
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 1m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception|boot" | tail -20'
+      - name: Monocompte, état du Bouclier (lecture seule, sans pseudo)
+        # 22/10/2026 : vérifier que les notes « [observation] » arrivent bien au panel. Ne change rien.
+        if: inputs.etape == 'monocompte-bouclier-etat'
+        run: |
+          bash tools/serveur/vps_sql.sh lecture "select (select count(*) from mono.parties where updated_at > now() - interval '3 hours') parties_envoyees_3h, (select count(*) from mono.parties_ok where at > now() - interval '3 hours') parties_validees_3h, (select count(*) from mono.bouclier where at > now() - interval '3 hours') lignes_bouclier_3h, (select count(*) from mono.bouclier where left(why, 13) = '[observation]') notes_observation, (select count(*) from mono.bouclier) lignes_bouclier_total"
+          bash tools/serveur/vps_sql.sh lecture "select at, left(why, 160) why from mono.bouclier order by at desc limit 15"
+          bash tools/serveur/vps_sql.sh commande 'docker logs --since 3h supabase-edge-functions 2>&1 | grep -iE "mono" | grep -iE "error|erreur|exception|refus" | tail -20; echo "== appels mono (3 h) : $(docker logs --since 3h supabase-edge-functions 2>&1 | grep -ic mono)"'
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
