@@ -109,7 +109,7 @@
       ]],
       ["ul", [
         "Il ne s'use que si quelque chose avance : combat, chasse, donjon, expédition, récolte, atelier, forgemagie. Équipe au repos, il est en pause.",
-        "Contrepartie : moins de butin (ressources, équipements, clés et kamas) tant que le temps file plus vite. L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus (au niveau 50 : 1,9, 2,7 et 3 fois en ×4).",
+        "Contrepartie : moins de butin (ressources, équipements et kamas) tant que le temps file plus vite. L'XP et les Dofus ne changent pas. Par heure réelle, ×2 rapporte encore environ 1,8 fois plus de butin et ×3 environ 2,4 fois plus (au niveau 50 : 1,9, 2,7 et 3 fois en ×4).",
         "Réserve vide : retour à la vitesse normale.",
         "Plus d'heures : Horloge de Xélor dans la Chambre du Havre-Sac (+30 min de recharge par jour et par niveau), +1 h au Défi du jour gagné, +30 min avec l'offrande de l'Almanax, +30 min par essai au boss des mondes (3 par jour) et au boss de guilde (2 par jour).",
         "L'Horloger de Xélor (fiche du Sablier) vend une Fiole de temps (+1 h) par achat, 3 par jour, à partir de 5 millions de kamas (le prix double à chaque achat du jour). Les boss de donjon dès la stasis 6 lâchent très rarement un Grain de Xélor (+15 min). Fioles et Grains se vendent à l'hôtel de vente.",
@@ -573,7 +573,6 @@
       ["p", `Quand chaque monstre d'une sous-zone atteint le palier Traqueur (${N(() => D.HUNT_TIERS[1].n)} tués), tu gagnes son trophée : +${pc(V(() => E.TROPHY_REGION, 0))} d'XP, de butin et de kamas en chassant dans sa région (par trophée). La vitrine donne aussi la Vitalité et la Sagesse des ${N(() => E.VITRINE_N)} meilleurs trophées à tous les héros.`],
       ["h", "Ce qu'on trouve en chasse"],
       ["kv", [
-        ["Clé de donjon (par monstre)", pc(V(() => 0.01 * E.KEY_DROP_SCALE, 0))],
         ["Champion (par combat)", "1 / " + N(() => Math.round(1 / E.CHAMP_CHANCE))],
         ["Archimonstre (par monstre)", "1 / " + N(() => Math.round(1 / E.ARCHI_CHANCE))],
         ["Ta chance d'archimonstre", V(() => "1 / " + fr(Math.round(1 / E.archiOdds(S()))))],
@@ -965,7 +964,7 @@
     const pts = s.chars.filter((c) => (c.pts || 0) > 0 && c.autoStat === false);
     L.push(pts.length ? { t: `${pts.map((c) => c.name).join(", ")} : des points de caractéristiques à répartir.`, ic: "parchemin_or", nav: "team", ch: "caracs" } : { t: "Points de caractéristiques répartis.", ok: 1 });
     L.push(V(() => E.sabUnlocked(s), false) ? { t: "Sablier de Xélor débloqué.", ok: 1 } : { t: `Avance la quête principale jusqu'à l'étape ${N(() => E.SAB_UNLOCK_STEP)} (fin d'Incarnam) pour débloquer le Sablier de Xélor.`, ic: "cristal", nav: "quests", ch: "sablier" });
-    L.push(bossDone() ? { t: `${fr(bossDone())} donjon${bossDone() > 1 ? "s" : ""} terminé${bossDone() > 1 ? "s" : ""}.`, ok: 1 } : { t: "Termine ton premier donjon : la clé se trouve en chassant dans la sous-zone du donjon.", ic: "coffre", nav: "dungeons", ch: "donjons" });
+    L.push(bossDone() ? { t: `${fr(bossDone())} donjon${bossDone() > 1 ? "s" : ""} terminé${bossDone() > 1 ? "s" : ""}.`, ok: 1 } : { t: "Termine ton premier donjon : fabrique sa clé chez le Bricoleur avec les ressources de la sous-zone du donjon.", ic: "coffre", nav: "dungeons", ch: "donjons" });
     const sk = stasisTop();
     L.push(sk >= 4 ? { t: `Meilleure stasis réussie : ${sk}.`, ok: 1 } : { t: `Monte un donjon jusqu'à la stasis 4 (meilleure pour l'instant : ${sk}).`, ic: "coffre", nav: "dungeons", ch: "donjons#la-stasis" });
     const lvlStep = (req, has, okT, t, ic, nav, ch) => L.push(has ? { t: okT, ok: 1 } : lv < req ? { t: `Niveau ${req} : ${t}`, ic: "cle", ch } : { t: t.charAt(0).toUpperCase() + t.slice(1), ic, nav, ch });
@@ -1244,7 +1243,7 @@
       const d = D.DUNGEONS[did]; const M = (D.MONSTERS || {})[d.boss] || {}; const SI = (s.stasis || {})[did] || {}; const sub = E.SUBS && E.SUBS[d.access];
       const dof = V(() => Object.values(E.DOFUS).filter((x) => x.dg === did).map((x) => x.name).join(", "), "");
       return [`<div class="gd-cin"><label>Donjon ${sel("dj", L.map((k) => [k, `${D.DUNGEONS[k].name} (niv. ${D.DUNGEONS[k].lvl})`]), did)}</label><button class="btn sm" data-act="dgopen" data-id="${h(did)}">Ouvrir sa fiche</button></div>`,
-        [["Niveau", fr(d.lvl)], ["Salles avant le boss", fr((d.rooms || []).length)], ["Boss", M.name || "?"], ["Clé", d.key || "?"], sub ? ["Accès (et clé en chasse)", sub.name] : null,
+        [["Niveau", fr(d.lvl)], ["Salles avant le boss", fr((d.rooms || []).length)], ["Boss", M.name || "?"], ["Clé", d.key || "?"], sub ? ["Accès", sub.name] : null,
           ["Débloqué", V(() => E.dungeonUnlocked(s, did), false) ? "oui" : "pas encore"], ["Victoires sur le boss", fr((s.progress.bossKills || {})[did] || 0)], ["Ta meilleure stasis", SI.max ? fr(SI.max) : "aucune"], dof ? ["Dofus de ce boss", dof] : null]];
     },
     jet: () => {

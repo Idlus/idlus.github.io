@@ -1,0 +1,26 @@
+/* 2.1.37.5 « Clés à l'atelier » : plus aucune clé ne tombe sur les monstres (Classique et Monocompte partagent les mêmes monstres) ;
+   chaque donjon garde une recette de clé chez le Bricoleur. Lancer : node tests/cles.test.js */
+"use strict";
+const assert = require("assert");
+const E = require("../js/engine.js");
+require("../js/systems.js");
+const D = require("../js/data.js");
+let seed = 7; E.setRng(() => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; });
+E.now = () => 1.8e12; E.protSpawn = () => {}; E.almMult = () => 1;
+const KEYS = new Set(Object.values(D.DUNGEONS).map((d) => d.key));
+// aucune clé dans les butins des monstres, aucun taux de clé en chasse
+{ const bad = []; for (const k in D.MONSTERS) (D.MONSTERS[k].drops || []).forEach(([r]) => { if (KEYS.has(r) || /^Clef (secrète|végétale)/.test(r)) bad.push(D.MONSTERS[k].name + " : " + r); });
+  assert.deepStrictEqual(bad, [], "clés dans les butins : " + bad.join(", "));
+  assert.deepStrictEqual(Object.keys(D.DUNGEONS).filter((d) => D.DUNGEONS[d].keyDrop), [], "plus de keyDrop sur les donjons"); }
+// chaque donjon a une recette de clé
+assert.deepStrictEqual(Object.keys(D.DUNGEONS).filter((d) => !D.SPECIAL_CRAFTS[D.DUNGEONS[d].key]), [], "donjon sans recette de clé");
+// les ingrédients des clés tombent toujours (ex. Crypte de Kardorim)
+assert.ok(Object.values(D.MONSTERS).some((m) => m.drops.some(([r]) => r === "Relique d'Incarnam")), "ingrédient de la Clef de la Crypte de Kardorim toujours en butin");
+// chasse dans une sous-zone d'accès à un donjon : aucune clé
+{ const sub = Object.values(E.SUBS).find((s) => s.dungeon && s.monsters.length && !s.hidden); assert.ok(sub, "une sous-zone avec donjon");
+  const S = E.newState("Cle", "iop"); S.sub = sub.id; S.hunting = true;
+  for (let i = 0; i < 400; i++) E.giveRewards(S, sub.monsters.map((key) => ({ key, lvl: D.MONSTERS[key].lvl[0], name: "x" })), { offline: true });
+  assert.ok(Object.keys(S.res).length > 0, "les autres ressources tombent toujours");
+  assert.ok(!Object.keys(S.res).some((r) => KEYS.has(r)), "aucune clé après 400 combats dans " + sub.name);
+  const dg = D.DUNGEONS[sub.dungeon]; assert.strictEqual(E.resRateH(S, dg.key).h, 0, "aucun rythme de clé en chasse"); }
+console.log("cles : OK");

@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.5 « Clés à l'atelier »
+- `js/data.js` : `keyDrop` mis à 0 sur tous les donjons et clés (clés de donjon + « Clefs secrètes » sans usage) retirées des butins de monstres au chargement, pour le Classique et le Monocompte. Les 121 donjons gardent leur recette au Bricoleur ; Trousseau de clés (Koli, comptoirs), coffres de chasse au trésor et quêtes inchangés. Guide et fiche de donjon ne parlent plus de clé en chasse. Test `tests/cles.test.js`.
+
 ## 2.1.37.4 « Monocompte séparé »
 - Choix de Mathis 1A 3B 2A (22/10) : la partie Monocompte (emplacement 4 et Éternel) n'a plus que les pages et fonctions serveur de la liste blanche (`js/mono.js` : `M.PAGES`, `M.RPC`, `E.monoPageOk`, `E.monoRpcOk`) ; `ON.rpc` refuse tout le reste, les modules du Classique sont éteints (`monoSeal` dans `js/ui.js`), chat seulement sur le salon `m`.
 - Amis séparés : colonne `srv` ('c' / 'm') dans `supabase/amis.sql`, paramètre `p_srv` envoyé depuis le Monocompte (`js/amis.js`) ; renforts et Bureau sur la liste 'm'.

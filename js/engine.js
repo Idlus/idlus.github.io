@@ -3003,7 +3003,7 @@
     // nulle part dans l'activité en cours : meilleure sous-zone connue
     let best = null;
     Object.values(SUBS).forEach((s) => { if (s.hidden || !E.subUnlocked(S, s.id)) return; s.monsters.forEach((k) => { const m = MONSTERS[k]; const d = m && m.drops.find(([r]) => r === name); if (d && (!best || d[1] > best.p)) best = { p: d[1], where: s.name }; }); });
-    if (!best) Object.entries(DUNGEONS).forEach(([id, dg]) => { if (dg.key === name && E.dungeonUnlocked(S, id)) best = { p: dg.keyDrop, where: SUBS[DUNGEON_SUB[id]].name }; });
+    if (!best) Object.entries(DUNGEONS).forEach(([id, dg]) => { if (dg.key === name && dg.keyDrop > 0 && E.dungeonUnlocked(S, id)) best = { p: dg.keyDrop, where: SUBS[DUNGEON_SUB[id]].name }; });
     return { h: 0, where: best ? best.where : null };
   };
   /* temps avant d'avoir tous les ingrédients d'une recette : le plus lent des ingrédients manquants */

@@ -1,6 +1,14 @@
 {
-  "version": "2.1.37.4",
+  "version": "2.1.37.5",
   "versions": [
+    {
+      "v": "2.1.37.5",
+      "name": "Clés à l'atelier",
+      "items": [
+        "Les monstres ne donnent plus de clés, en Classique comme en Monocompte : chaque clé de donjon se fabrique chez le Bricoleur avec les ressources de la zone du donjon",
+        "Les clés s'obtiennent aussi toujours en boutique (Trousseau de clés), dans les coffres des chasses au trésor et en récompense de certaines quêtes"
+      ]
+    },
     {
       "v": "2.1.37.4",
       "name": "Monocompte séparé",

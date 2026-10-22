@@ -471,6 +471,10 @@
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
+  /* 2.1.37.5 : plus aucune clé ne tombe sur les monstres (Classique et Monocompte) : les clés de donjon se fabriquent chez le Bricoleur
+     (ou s'achètent en boutique, ou viennent des quêtes) ; les « Clefs secrètes » sans usage disparaissent aussi des butins */
+  { const KEYS = new Set(Object.values(G.DUNGEONS).map((d) => d.key)); Object.values(G.DUNGEONS).forEach((d) => { d.keyDrop = 0; });
+    for (const k in G.MONSTERS) { const m = G.MONSTERS[k]; if (m.drops) m.drops = m.drops.filter(([r]) => !KEYS.has(r) && !(/^Clef /.test(r) && G.RES[r] && G.RES[r].type === 139)); } }
   /* 0.1.44.1 : boss secondaires qui accompagnent le boss principal ; part de PV réglée par simulation (stasis 5-7 avec un bon équipement) */
   [["labo_tynril", 0.2], ["cavernes_kolosso", 0.15]].forEach(([d, v]) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossHp = v; });
   ["gelaxieme_dimension", "clos_blops"].forEach((d) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossEq = true; }); // 1.0.4.2 : boss de même force
