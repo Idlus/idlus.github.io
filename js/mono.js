@@ -94,7 +94,7 @@
   /* Séparation du Classique (Mathis, 22/10 : « 1A », rien du Classique, même en lecture) : LISTES BLANCHES. Ce qui n'est pas listé
      n'existe pas dans une partie Monocompte (ni l'Éternel) : page du menu, fonction du serveur, module Classique.
      tests/mono_separation.test.js échoue si un nouvel appel au serveur n'est rangé ni ici ni dans M.CLASSIC_RPC. */
-  M.PAGES = new Set(["home", "havre", "combat", "world", "dungeons", "enc", "team", "heroes", "maitrise", "ren", "grav", "inv", "dofus", "pets",
+  M.PAGES = new Set(["home", "havre", "combat", "world", "dungeons", "defi", "enc", "team", "heroes", "maitrise", "ren", "grav", "inv", "dofus", "pets",
     "chasse", "metiers", "forge", "hdv", "koli", "align", "quests", "succes", "carnet", "guide", "amis", "ladder", "sugg", "bug", "archis", "admin",
     "fragments", "boutique", "pass", "manche", "guerre", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau"]);
   E.monoPageOk = (k) => M.PAGES.has(k);

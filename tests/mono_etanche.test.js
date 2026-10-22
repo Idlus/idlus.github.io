@@ -178,8 +178,8 @@ function fake() {
       if (await page.$(".pl-card")) fail(`${w} px : pluie de kamas du Classique sur l'accueil du Monocompte`);
       if (await page.evaluate(() => { const p = document.querySelector("#plpill"); return !!(p && p.offsetParent); })) fail(`${w} px : pastille de pluie dans le Monocompte`);
       for (const [k, what] of [["guild", "guilde"], ["foire", "Jackpot"], ["cours", "vente directe"], ["builds", "builds"]]) {
-        const t = await go(k);
-        if (!/serveur Classique/.test(t)) fail(`${w} px : page ${k} du Monocompte : « serveur Classique » attendu`);
+        const t = await go(k); const tab = await page.evaluate(() => window.DX.ui.tab); // 22/10 (1A) : la page n'ouvre plus, retour au Havre-Sac
+        if (!/serveur Classique/.test(t) && tab !== "home") fail(`${w} px : page ${k} du Monocompte : « serveur Classique » ou retour au Havre-Sac attendu (onglet ${tab})`);
         await wide(k);
         if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `etanche-mono-${k}-${w}.png`) });
       }

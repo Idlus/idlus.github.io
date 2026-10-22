@@ -9386,6 +9386,7 @@ function defiBourses(tid) {
     <div class="xs muted">Chaque bourse se gagne une fois par jour, tous paliers confondus ; la plus haute atteinte complète les autres.${def.sun ? ` <b>Dimanche : tout est multiplié par ${def.mult}.</b>` : ""}</div>`;
 }
 function renderDefi() {
+  const dfOn = ON && !S.mono; // 22/10 (Mathis, 1A) : en Monocompte, ni classement, ni vote, ni partage du serveur Classique
   if (!E.team(S).length) { $("#main").innerHTML = `<section class="panel"><div class="empty">Il faut au moins un héros dans l'équipe pour relever le défi du jour.</div></section>`; return; }
   const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S); const best = st.best[tid];
   const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${fmt(x.score || 0)} pts` : "défaite"}</b></div>`).join("");
@@ -9395,9 +9396,9 @@ function renderDefi() {
       <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Tes héros suivent les règles d'eux-mêmes.</li>
       <li>Score : ${fmt(E.DEFI_PTS.win)} points pour la victoire, ${E.DEFI_PTS.rule} par règle tenue dans toutes les salles, ${E.DEFI_PTS.turn} par tour sous le temps de référence (${E.DEFI_PTS.par} tours par salle) et ${E.DEFI_PTS.hp} par % de PV restants. Essais illimités.</li>
       <li>Bourse de bronze à la victoire, d'argent à ${fmt(E.DEFI_MEDALS[1].pts)} points, d'or à ${fmt(E.DEFI_MEDALS[2].pts)}. La première victoire du jour fait avancer ta série ; un jour manqué par semaine est couvert par le joker.</li>
-      ${ON ? `<li>Ton score entre au classement quand tu le valides : le serveur rejoue ton combat (${E.DEFI_MAX_SENDS} validations par palier et par jour). Le premier de la semaine porte le titre « ${h(E.DEFI_CHAMP)} » la semaine suivante.</li>` : ""}</ul></div></div>`;
+      ${dfOn ? `<li>Ton score entre au classement quand tu le valides : le serveur rejoue ton combat (${E.DEFI_MAX_SENDS} validations par palier et par jour). Le premier de la semaine porte le titre « ${h(E.DEFI_CHAMP)} » la semaine suivante.</li>` : ""}</ul></div></div>`;
   const pend = ON && ranked() && E.defiSendPending(S, tid); const left = E.defiSendsLeft(S, tid);
-  const val = !ON ? "" : !ranked() ? `<p class="note">${onLive() ? "Partie solo : le classement du défi se joue avec ta partie 1." : "Connecte-toi pour entrer au classement du défi."}</p>`
+  const val = S.mono ? `<p class="note">Monocompte : le Défi du jour se joue pour ses récompenses, sans classement.</p>` : !ON ? "" : !ranked() ? `<p class="note">${onLive() ? "Partie solo : le classement du défi se joue avec ta partie 1." : "Connecte-toi pour entrer au classement du défi."}</p>`
     : pend ? `<div class="df-val"><span class="grow">Ton meilleur essai : <b>${fmt(best.score)} points</b>, pas encore validé. Le serveur rejoue ton combat pour le vérifier.</span><button class="btn sm primary" data-act="sm-dsend" data-v="${tid}" ${left ? "" : "disabled"}>Valider mon score</button><span class="xs muted">${left} validation${left > 1 ? "s" : ""} restante${left > 1 ? "s" : ""} aujourd'hui</span></div>`
     : best ? `<div class="df-val"><span class="grow">✓ Ton meilleur score (${fmt(best.score)} points) est validé.</span>${defiShareBtn(tid)}</div>` : "";
   const brk = best ? defiPtsHtml(Object.assign({ win: true }, best)) : `<p class="note">Lance le défi : le détail de ton score s'affichera ici.</p>`;
@@ -9409,16 +9410,16 @@ function renderDefi() {
         <div class="pad stack" style="gap:10px"><div class="row between"><span class="small"><b class="num">Série : ${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>${defiCal()}
           <div class="df-val"><span><b>Joker de série</b> : un jour manqué par semaine ne casse pas la série. ${E.defiJokerFree(S) ? "Disponible cette semaine." : "Déjà utilisé cette semaine, il revient lundi."}</span></div>
           ${goal(7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi » et Coffre des Douze", (ss.best || 0) >= 30)}${goal(100, `titre « ${h(E.DEFI_TITLE100)} » et ornement « Cadre du défi »`, (ss.best || 0) >= 100)}${defiGoldGoal()}</div></div>
-      ${ON ? defiVoteHtml() : ""}
+      ${dfOn ? defiVoteHtml() : ""}
     </div>
     <div class="stack" style="gap:14px">
-      ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad"><span class="seg df-lbtabs">${dfViews().map(([v, n]) => `<button data-act="sm-dlbw" data-v="${v}" aria-pressed="${dfView() === v}">${n}</button>`).join("")}</span><div id="dfLb"><p class="note">Chargement…</p></div>${val}</div></div>` : ""}
+      ${dfOn ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad"><span class="seg df-lbtabs">${dfViews().map(([v, n]) => `<button data-act="sm-dlbw" data-v="${v}" aria-pressed="${dfView() === v}">${n}</button>`).join("")}</span><div id="dfLb"><p class="note">Chargement…</p></div>${val}</div></div>` : ""}
       <div class="panel"><div class="phead"><h2>${IC("quetes")} Ton score, point par point</h2></div><div class="pad stack" style="gap:8px">${brk}<b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
     </div>
   </section>
   <section style="margin-top:14px">${defiLogHtml()}</section>
   <section style="margin-top:14px">${rules}</section>`;
-  if (ON) { defiLbFill(tid); defiVoteFetch(); defiLogRanks(); }
+  if (dfOn) { defiLbFill(tid); defiVoteFetch(); defiLogRanks(); }
 }
 /* les classes de l'équipe, en petites icônes (la composition des meilleurs, à copier) */
 const dfTeamIcons = (team) => (Array.isArray(team) && team.length ? `<span class="df-team">${team.slice(0, 8).map((c) => (CLASSES[c] ? `<img src="${symImg(c)}" alt="${h(CLASSES[c].name)}" title="${h(CLASSES[c].name)}">` : "")).join("")}</span>` : "");

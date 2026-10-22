@@ -67,7 +67,7 @@ console.log(`ok - aucune des ${credit.size} fonctions du Classique qui versent d
 /* modules éteints : chacun existe bien dans le jeu (un nom mal écrit ne couperait rien) */
 { const all = files.map((f) => fs.readFileSync(f, "utf8")).join("\n");
   for (const k of E.MONO.CLASSIC_MODS) assert(new RegExp(`window\\.${k} = `).test(all), `module ${k} : introuvable dans js/`); }
-for (const k of ["exp", "asc", "defi", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
 console.log("ok - liste blanche des pages et modules du Classique éteints : noms vérifiés");
 
 /* ---------- 3. dans le navigateur ---------- */
@@ -141,13 +141,15 @@ function fake() {
       const keys = await navKeys(p);
       const hors = keys.filter((k) => !E.monoPageOk(k));
       if (hors.length) fail(`${w} px : pages hors de la liste blanche dans le menu Monocompte : ` + hors.join(", "));
-      for (const k of ["exp", "asc", "defi", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
+      for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
       for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
       const pins = await p.evaluate(() => window.DX.S.settings.pins);
       if (pins.some((k) => !E.monoPageOk(k))) fail(`${w} px : épingles du Classique gardées : ` + JSON.stringify(pins));
       const mods = await p.evaluate((L) => L.filter((k) => window[k]), E.MONO.CLASSIC_MODS);
       if (mods.length) fail(`${w} px : modules du Classique encore actifs : ` + mods.join(", "));
-      for (const k of ["exp", "asc", "defi", "wb", "guild", "foire", "comptoirs", "elev", "builds"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      for (const k of ["exp", "asc", "wb", "guild", "foire", "comptoirs", "elev", "builds"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      { const t = await go(p, "defi"); const tx = await p.evaluate(() => document.querySelector("#main").textContent);
+        if (t !== "defi" || /Classement ·|vote/i.test(tx)) fail(`${w} px : Défi du jour du Monocompte (onglet ${t}) : jouable, sans classement ni vote du Classique`); }
       await go(p, "home");
       const home = await p.evaluate(() => document.querySelector("#main").textContent);
       for (const re of [/Boss des mondes/, /Songe infini/, /L'Ascension/, /Pluie de kamas/, /Course de/, /Foire du Trool/]) if (re.test(home)) fail(`${w} px : accueil Monocompte, encart du Classique : ${re}`);
@@ -161,7 +163,7 @@ function fake() {
       const r = await p.evaluate(async () => { const ON = window.ONLINE; window.__SEP.calls.length = 0; const out = {};
         for (const n of ["songe_claim", "asc_claim", "rain_join", "vente_sell", "gift_mine", "guild_me", "builds_list", "wb_info"]) out[n] = (await ON.rpc(n, { p_after: 0 })).err || null;
         out.chat = (await ON.rpc("chat_me")).err || null; out.sent = window.__SEP.calls.map((c) => c[0]); return out; });
-      for (const n of ["songe_claim", "asc_claim", "rain_join", "vente_sell", "gift_mine", "guild_me", "builds_list", "wb_info"]) if (!/Pas en Monocompte/.test(r[n] || "")) fail(`${w} px : ${n} attendue refusée en Monocompte : ` + r[n]);
+      for (const n of ["songe_claim", "asc_claim", "rain_join", "vente_sell", "gift_mine", "guild_me", "builds_list", "wb_info"]) if (!/Pas en Monocompte|Réservé au serveur Classique/.test(r[n] || "")) fail(`${w} px : ${n} attendue refusée en Monocompte : ` + r[n]);
       if (r.chat || JSON.stringify(r.sent) !== JSON.stringify(["chat_me"])) fail(`${w} px : seul chat_me part au serveur : ` + JSON.stringify(r));
       if (!errors.length) console.log(`ok - ${w} px, partie Monocompte : menu de la liste blanche (${keys.length} pages), modules du Classique éteints, pages du Classique fermées, Classements sans le Classique, appels du Classique refusés`);
       /* ---------- partie Classique : rien ne change ---------- */
