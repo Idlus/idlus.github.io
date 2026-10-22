@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.3 « Monocompte étanche »
+- Monocompte : les opérations du serveur Classique (vente directe, Jackpot, pluie, guildes, Ascension, Songe, Alliances, records) ne s'appliquent plus à la partie Monocompte ; les fonctions Classique sont refusées depuis le Monocompte.
+- Défi du jour : en Monocompte, les règles d'équipe injouables avec un seul héros sont remplacées.
+- Carnet des kamas : plus de faux « Autres ».
+
 ## 2.1.37.2 « Bouclier de l'Eniripsa »
 - Bug signalé par Jérémygnon : le passif de l'Eniripsa (soin en trop → bouclier, 40 % du surplus, plafond 25 % des PV) marchait sur les sorts de soin mais sans aucun affichage, et le vol de vie (`drain`, `leech`) ne comptait pas, donc la voie Eau n'en profitait jamais.
 - `js/engine.js` : `doHeal` note le surplus réel (`healOver`, après idoles, Insoignable, érosion) ; `eniSurplus(F, e, t)` (exposé `E.eniSurplus`) pose le bouclier sans jamais réduire un bouclier plus grand, pousse un effet « Bouclier +N » et ajoute « bouclier +N » au journal. Appelé après les sorts de soin, le vol de vie des sorts et le `leech`. Toujours rien au Kolizéum.

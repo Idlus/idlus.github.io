@@ -1,6 +1,16 @@
 {
-  "version": "2.1.37.2",
+  "version": "2.1.37.3",
   "versions": [
+    {
+      "v": "2.1.37.3",
+      "name": "Monocompte étanche",
+      "items": [
+        "Monocompte : plus aucun gain du serveur Classique (vente directe, Jackpot, pluie de kamas, guilde, Ascension…) n'arrive dans ta partie Monocompte, et rien n'en sort vers le Classique",
+        "Monocompte : les pages réservées au Classique le disent clairement (« Réservé au serveur Classique ») au lieu de rester actives",
+        "Défi du jour en Monocompte : plus de règle d'équipe impossible avec un seul héros (« Sans Eniripsa »…), une règle jouable la remplace",
+        "Carnet des kamas : il note ce qui a vraiment bougé, fini les « Autres » fantômes"
+      ]
+    },
     {
       "v": "2.1.37.2",
       "name": "Bouclier de l'Eniripsa",

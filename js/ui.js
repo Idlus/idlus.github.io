@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.2";
+const GAME_VERSION = "2.1.37.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.3", name: "Monocompte étanche", items: [
+    "Monocompte : plus aucun gain du serveur Classique (vente directe, Jackpot, pluie de kamas, guilde, Ascension…) n'arrive dans ta partie Monocompte, et rien n'en sort vers le Classique",
+    "Monocompte : les pages réservées au Classique le disent clairement (« Réservé au serveur Classique ») au lieu de rester actives",
+    "Défi du jour en Monocompte : plus de règle d'équipe impossible avec un seul héros (« Sans Eniripsa »…), une règle jouable la remplace",
+    "Carnet des kamas : il note ce qui a vraiment bougé, fini les « Autres » fantômes" ] },
   { v: "2.1.37.2", name: "Bouclier de l'Eniripsa", items: [
     "Eniripsa : le soin en trop qui devient un bouclier s'affiche enfin (« Bouclier +N » sur la cible et dans le journal), signalé par Jérémygnon",
     "Le vol de vie de ses sorts compte aussi : la voie Eau profite maintenant du passif",
