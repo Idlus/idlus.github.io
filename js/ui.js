@@ -3246,7 +3246,7 @@ function homeTiles() {
   const tile = (o) => { if (o.hot && !o.done) todo++; return `<button class="ac-td ${o.done ? "done" : ""} ${o.hot && !o.done ? "hot" : ""}" ${o.act}><span class="ac-ti">${o.ic}</span><span class="ac-tt"><b>${o.t}</b><span class="xs">${o.s}</span></span><span class="ac-ts">${o.done ? `<span class="tag good">✓</span>` : o.badge || `<span class="chev">›</span>`}</span></button>`; };
   const out = [];
   /* défi du jour : « Lancer » joue tout de suite, comme l'ancienne carte */
-  const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defi(tid);
+  const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defiFor(S, tid);
   if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
     if (def.sun && defiVoteNeeded()) defiVoteFetch(); // 2.1.26.3 : la règle votée du dimanche, avant « Lancer »
     const near = Math.max(...E.team(S).map((c) => c.lvl)) >= dg.lvl - 10; // 1.0.10.3 : pas allumée pour une équipe loin du niveau du donjon (perdu d'avance)
@@ -9258,7 +9258,7 @@ function defiTeamCard(def) {
 }
 function defiBanner() {
   if (!E.team(S).length) return "";
-  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const tid = defiTierCur(); const def = E.defiFor(S, tid); if (!def) return "";
   const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S);
   const tiers = E.DEFI_TIERS.map((T) => { const ok = E.defiTierOk(S, T.id); return `<button data-act="sm-dtier" data-v="${T.id}" aria-pressed="${tid === T.id}" ${ok ? "" : `disabled data-tip="${T.min ? `S'ouvre avec un héros niveau ${T.min}` : `Ton héros le plus fort dépasse le niveau ${T.hi}`}"`}>${h(T.name)} <small>${T.min ? `niv. ${T.min} · stasis ${T.k[0]}-${T.k[1]}` : `${T.lo}-${T.hi}`}</small></button>`; }).join("");
   const tries = st.tries.filter((x) => x.tier === tid).length; const teamErr = E.defiTeamErr(S, def);
@@ -9301,7 +9301,7 @@ function defiPtsHtml(r) {
 }
 function defiSheet(r) {
   if (!r) return;
-  const dg = DUNGEONS[r.did]; const T = E.defiTier(r.tier); const st = E.defiState(S); const def = r.def || E.defi(r.tier);
+  const dg = DUNGEONS[r.did]; const T = E.defiTier(r.tier); const st = E.defiState(S); const def = r.def || E.defiFor(S, r.tier);
   const gain = r.prev && r.prev.win ? (r.score || 0) - (r.prev.score || 0) : 0; const ml = medOf(r.score);
   const next = E.DEFI_MEDALS.find((M) => M.pts > (r.score || 0));
   /* salle par salle : tours et règles tenues ou ratées, avec la raison */
@@ -9326,7 +9326,7 @@ function defiSheet(r) {
 const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
 /* bourse de bronze : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
 function defiReward(tid) {
-  const def = E.defi(tid);
+  const def = E.defiFor(S, tid);
   const key = [def.day, tid, E.defiTeam(S, def).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
   if (!E.defiTeamErr(S, def) && (!ui.dfEst || ui.dfEst.key !== key) && (!dfJob || dfJob.key !== key)) defiEstimate(key, def);
   const est = ui.dfEst && ui.dfEst.key === key ? ui.dfEst : null;
@@ -9350,13 +9350,13 @@ function defiEstimate(key, def) {
 const onIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 500 }) : setTimeout(() => fn(null), 30));
 function defiLine() {
   if (!E.team(S).length) return "";
-  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const tid = defiTierCur(); const def = E.defiFor(S, tid); if (!def) return "";
   const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
   const dz = E.defiDanger(S); // 1.1 (série 4, 2A) : série en danger
   return `<button class="dfline${dz ? " danger" : ""}" data-tab="defi"><span class="wk">${G("target")} ${def.sun ? "Grand défi" : "Défi du jour"}</span><span class="grow"><b>${h(dg.name)}</b> · stasis ${def.k} · ${def.rules.map((id) => h(ruleName(id))).join(", ")}</span>${dz ? `<span class="tag bad">série en danger</span>` : best ? `<span class="tag good">${fmt(best.score)} pts</span>` : st.chest ? `<span class="tag good">✓ réussi</span>` : `<span class="tag">à faire</span>`}<span class="chev">›</span></button>${dz ? defiDangerNote(dz) : ""}`;
 }
 function defiBourses(tid) {
-  const def = E.defi(tid); const st = E.defiState(S); const best = st.best[tid]; const base = defiReward(tid); const dust = E.defiDust(def); const sc = best ? best.score : 0; const x = def.mult > 1 ? `${def.mult} × ` : "";
+  const def = E.defiFor(S, tid); const st = E.defiState(S); const best = st.best[tid]; const base = defiReward(tid); const dust = E.defiDust(def); const sc = best ? best.score : 0; const x = def.mult > 1 ? `${def.mult} × ` : "";
   const card = (i, ico, body) => { const M = E.DEFI_MEDALS[i]; const got = st.medal > i; const cur = medOf(sc) === i + 1;
     return `<div class="df-bourse${got ? " got" : ""}${cur ? " cur" : ""}">${ico}${medTag(i + 1)}<span>${body}</span><span class="need">${got ? `✓ ${i ? `${fmt(M.pts)} pts` : "victoire"}` : i ? `${fmt(M.pts)} pts${sc ? ` · il t'en manque ${fmt(M.pts - sc)}` : ""}` : "à la victoire"}</span></div>`; };
   return `<div class="df-bourses">${card(0, chestImg("bourse_defi"), `≈ ${fmt(base)} kamas<br>${dust} ${h(E.POUSSIERE)}`)}${card(1, chestImg("bois"), `Bronze<br>+ ${x}Coffre en bois`)}${card(2, chestImg("argent"), `+ ${fmt(Math.round(base / 2))} kamas<br>+ ${x}Coffre en argent`)}</div>
@@ -9608,7 +9608,7 @@ function cardX() {
 async function watchStart(tid) {
   if (!E.defiTierOk(S, tid)) { toast("Ce palier n'est plus pour ton équipe.", "warn"); return; }
   await defiVoteReady(); // 2.1.26.3 : le combat regardé est celui du serveur, avec la règle votée du dimanche
-  watchStop(); const def = E.defi(tid); const W = E.defiWatch(S, def, E.now());
+  watchStop(); const def = E.defiFor(S, tid); const W = E.defiWatch(S, def, E.now());
   if (W.err) { toast(W.err, "warn"); return; }
   E.defiWatchStep(W); ui.watch = { W, tid, spd: (ui.watch && ui.watch.spd) || 1, timer: null };
   closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
@@ -10185,7 +10185,7 @@ function smAct(a, t) {
     case "sm-dplay": defiPlay(d.v); return;
     case "sm-dsend": closeSheet(); defiSubmit(d.v); return;
     case "sm-dlbw": ui.dfView = d.v; render(); return;
-    case "sm-dpick": { const def = E.defi(d.v); const ids = E.defiSuggest(S, def).map((c) => c.id); const r = E.act(S, "defiSetPick", d.v, ids); if (r) toast(r, "warn"); else { dirty = true; toast("Équipe du défi adaptée pour aujourd'hui. Ton équipe de farm ne change pas."); } render(); return; }
+    case "sm-dpick": { const def = E.defiFor(S, d.v); const ids = E.defiSuggest(S, def).map((c) => c.id); const r = E.act(S, "defiSetPick", d.v, ids); if (r) toast(r, "warn"); else { dirty = true; toast("Équipe du défi adaptée pour aujourd'hui. Ton équipe de farm ne change pas."); } render(); return; }
     case "sm-dunpick": E.act(S, "defiSetPick", null, null); dirty = true; render(); return;
     case "sm-dshare": defiShare(d.v); return;
     case "sm-dhero": { const r = E.act(S, "defiToggleHero", d.v, d.r); if (r) toast(r, "warn"); else dirty = true; render(); return; }

@@ -89,7 +89,13 @@
   E.defiVoteOpts = (wk) => pickN(E.DEFI_RULES, 3, (s) => hash(`idlus|defivote|${wk}|${s}`), "opt");
   E.defiVoteWin = (wk) => { const o = E.defiVoteOpts(wk); const c = E.DEFI_VOTE[wk] || {}; return o.reduce((b, r) => ((c[r] || 0) > (c[b] || 0) ? r : b), o[0]); };
   E.defiVoteOpen = (day = E.defiDay()) => !E.defiSunday(day);
-  E.defi = (tid, day = E.defiDay()) => {
+  /* Monocompte (un seul héros ; bug signalé par Mathis le 22/10/2026) : une règle d'équipe qui interdit une classe (« Sans Eniripsa »,
+     « Sans Iop ») rendait le défi injouable pour un héros de cette classe. Une règle est « jouable seul » si un héros seul de chaque
+     classe la respecte ; en Monocompte, une règle qui ne l'est pas est remplacée par une règle jouable seul, tirée de la même date
+     (la même pour tous les joueurs Monocompte). Le Classique ne change pas (mêmes tirages, mêmes scores). */
+  E.defiSoloOk = (k) => { const R = E.DEFI_TEAM[k]; return !!R && Object.keys(D.CLASSES).every((cls) => R.ok([{ cls, lvl: 1 }])); };
+  E.defiFor = (S, tid, day = E.defiDay()) => E.defi(tid, day, !!(E.isMono && E.isMono(S)));
+  E.defi = (tid, day = E.defiDay(), mono = false) => {
     const T = E.defiTier(tid); if (!T) return null;
     const ids = Object.keys(DUNGEONS).sort().filter((d) => DUNGEONS[d].lvl >= (T.id === "eli" ? 141 : T.lo) && DUNGEONS[d].lvl <= T.hi && DUNGEONS[d].rooms && DUNGEONS[d].rooms.length);
     if (!ids.length) return null;
@@ -105,13 +111,16 @@
     const rules = sun ? pickN(E.DEFI_RULES.filter((r) => !opts.includes(r)), 3, h, "regle").concat([E.defiVoteWin(E.defiWeek(day))]) : pickN(E.DEFI_RULES, 3, h, "regle");
     /* 1.1 (série 4, 1A) : mode héroïque, 3 règles en plus proposées (le joueur en garde 0, 1 ou 2) */
     const extra = pickN(E.DEFI_RULES.filter((r) => !rules.includes(r)), 3, h, "heroique");
-    const tk = Object.keys(E.DEFI_TEAM); const team = tk[h("equipe") % tk.length];
-    return { day, tier: T.id, did, k, mods, rules, extra, team, sun, mult: sun ? 3 : 1, seed: h("hasard") };
+    const tk = Object.keys(E.DEFI_TEAM); let team = tk[h("equipe") % tk.length];
+    if (mono && !E.defiSoloOk(team)) { const solo = tk.filter(E.defiSoloOk); team = solo[h("equipe-mono") % solo.length]; }
+    const out = { day, tier: T.id, did, k, mods, rules, extra, team, sun, mult: sun ? 3 : 1, seed: h("hasard") };
+    if (mono) out.mono = true;
+    return out;
   };
   const topTeam = (S) => Math.max(0, ...E.team(S).map((c) => c.lvl));
   /* on peut viser plus haut que son niveau, jamais plus bas que son héros le plus fort */
   E.defiTierOk = (S, tid) => { const T = E.defiTier(tid); if (!T) return false; if (E.team(S).length > 0 && topTeam(S) <= T.hi && topTeam(S) >= (T.min || 0)) return true;
-    return !!(S.defiPick && S.defiPick.tier === tid) && tierFits(E.defiTeam(S, E.defi(tid)), T); };
+    return !!(S.defiPick && S.defiPick.tier === tid) && tierFits(E.defiTeam(S, E.defiFor(S, tid)), T); };
   E.defiTierDefault = (S) => (E.DEFI_TIERS.find((T) => !T.min && topTeam(S) <= T.hi && topTeam(S) >= T.lo) || E.DEFI_TIERS.find((T) => E.defiTierOk(S, T.id)) || E.DEFI_TIERS[2]).id;
   /* la règle d'équipe du jour : null si l'équipe la respecte, sinon ce qu'il faut changer */
   E.defiTeamErr = (S, def) => { const R = def && E.DEFI_TEAM[def.team]; const t = E.defiTeam(S, def); return !R || R.ok(t) ? null : `Règle d'équipe du jour, « ${R.name} » : ${R.fix(t)}`; };
@@ -140,7 +149,7 @@
   E.defiHeroRules = (S, def) => { const P = S.defiHero; return P && def && P.day === def.day && P.tier === def.tier && Array.isArray(P.ids) ? P.ids.filter((r) => (def.extra || []).includes(r)).slice(0, E.DEFI_HERO_MAX) : []; };
   /* Action : ajouter ou retirer une règle héroïque */
   E.defiToggleHero = (S, tid, rule) => {
-    const def = E.defi(tid); if (!def || !(def.extra || []).includes(rule)) return "Règle inconnue.";
+    const def = E.defiFor(S, tid); if (!def || !(def.extra || []).includes(rule)) return "Règle inconnue.";
     const cur = E.defiHeroRules(S, def); const on = cur.includes(rule);
     if (!on && cur.length >= E.DEFI_HERO_MAX) return `${E.DEFI_HERO_MAX} règles héroïques au plus.`;
     S.defiHero = { day: def.day, tier: tid, ids: on ? cur.filter((r) => r !== rule) : cur.concat([rule]) };
@@ -158,7 +167,7 @@
   /* Action : garder (ids) ou oublier (null) l'équipe du défi du jour */
   E.defiSetPick = (S, tid, ids) => {
     if (!ids) { delete S.defiPick; return null; }
-    const def = E.defi(tid); if (!def) return "Palier inconnu.";
+    const def = E.defiFor(S, tid); if (!def) return "Palier inconnu.";
     S.defiPick = { day: def.day, tier: tid, ids: ids.slice(0, 8) };
     if (E.defiTeamErr(S, def) || !E.defiPicked(S, def)) { delete S.defiPick; return "Cette équipe ne respecte pas la règle du jour."; }
     return null;
@@ -253,7 +262,7 @@
     const T = E.defiTier(tid); if (!T) return "Palier inconnu.";
     if (!E.team(S).length) return "Il faut au moins un héros dans l'équipe.";
     if (!E.defiTierOk(S, tid)) return T.min && topTeam(S) < T.min ? `Le palier ${T.name} s'ouvre avec un héros niveau ${T.min}.` : `Ton héros le plus fort dépasse le niveau ${T.hi} : le palier ${T.name} n'est plus pour lui.`;
-    const now = E.now(); const day = E.defiDay(now); const def = E.defi(tid, day);
+    const now = E.now(); const day = E.defiDay(now); const def = E.defiFor(S, tid, day);
     const te = E.defiTeamErr(S, def); if (te) return te;
     const st = E.defiState(S, day);
     const r = E.defiSim(S, def, now);
