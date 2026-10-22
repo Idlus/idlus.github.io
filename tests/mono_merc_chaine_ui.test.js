@@ -44,7 +44,7 @@ const server = http.createServer((req, res) => {
       // partie Monocompte : un Iop niveau 60, 3 clés d'un donjon de son niveau, de quoi payer le mercenaire
       const did = await page.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S); const c = S.chars[0]; c.lvl = 60; E.autoAllocate(S, c); E.refreshSpells(c, E.charStats(S, c));
         const DG = window.DATA.DUNGEONS; const did = Object.keys(DG).find((k) => DG[k].lvl <= 60 && E.dungeonUnlocked(S, k)) || Object.keys(DG)[0]; E.dungeonUnlocked = () => true;
-        S.res[DG[did].key] = 3; S.kamas = 1e6; const b = document.createElement("button"); b.dataset.act = "searchdg"; b.dataset.id = did; b.id = "tstdg"; document.body.appendChild(b); return did; });
+        S.res[DG[did].key] = 3; /* 2.1.39 : + l'entrée du Trousseau du jour = 4 courses */ S.kamas = 1e6; const b = document.createElement("button"); b.dataset.act = "searchdg"; b.dataset.id = did; b.id = "tstdg"; document.body.appendChild(b); return did; });
       await page.evaluate(() => document.getElementById("tstdg").click()); await page.waitForTimeout(300);
       await page.click('#sheet [data-act="mercpick"][data-v="eni"]'); await page.waitForTimeout(200);
       await page.click('#sheet [data-act="dgchainset"][data-v="-1"]'); await page.waitForTimeout(200);
@@ -53,12 +53,12 @@ const server = http.createServer((req, res) => {
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `merc-chain-${w}.png`) });
       await page.click('#sheet [data-act="enterdg"]'); await page.waitForTimeout(300);
       const st = await page.evaluate(() => { const { E, S } = window.DX; return { dg: !!S.dungeon, chain: S.dungeon && S.dungeon.chain, merc: !!E.monoMercOf(S), n: E.team(S).length }; });
-      if (!st.dg || st.chain !== 3 || !st.merc || st.n !== 2) fail(`${w} px : donjon avec mercenaire pas enchaîné ${JSON.stringify(st)} (${did})`);
+      if (!st.dg || st.chain !== 4 || !st.merc || st.n !== 2) fail(`${w} px : donjon avec mercenaire pas enchaîné ${JSON.stringify(st)} (${did})`);
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
       if (sw[0] > sw[1] + 1) fail(`${w} px : la page défile de côté (${sw[0]} px pour ${sw[1]})`);
       await page.close();
     }
   } finally { await browser.close(); server.close(); }
   if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
-  console.log("ok - Monocompte : un donjon lancé avec un mercenaire s'enchaîne (3 courses), PC 1280 px et téléphone 390 px");
+  console.log("ok - Monocompte : un donjon lancé avec un mercenaire s.enchaîne (3 clés + entrée du jour), PC 1280 px et téléphone 390 px");
 })().catch((e) => { console.error(e); process.exit(1); });

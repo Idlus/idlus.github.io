@@ -210,7 +210,7 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   E.setClock(() => T0);
   const S = E.newState("Chaîne", "iop"); const did = Object.keys(D.DUNGEONS)[0]; const key = D.DUNGEONS[did].key;
   const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
-  S.res[key] = 5;
+  S.res[key] = 5; E.tdjUse(S, did); // 2.1.39 : entrée du Trousseau du jour déjà prise (on compte les clés)
   assert.ok(/Aucun/.test(E.stopChain(S)), "hors donjon, rien à arrêter");
   assert.strictEqual(E.act(S, "enterDungeon", did, 1, 5), null);
   assert.deepStrictEqual([S.dungeon.chain, S.dungeon.tot, S.dungeon.run], [5, 5, 1]);
@@ -241,7 +241,7 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   const S = E.newState("Montée", "iop"); S.chars = []; const did = Object.keys(D.DUNGEONS)[0]; const dg = D.DUNGEONS[did];
   const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
   ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S, c, "H" + i, 200); x.inTeam = true; E.refreshSpells(x, E.charStats(S, x)); });
-  S.res[dg.key] = 6; assert.strictEqual(E.enterDungeon(S, did, 1, 3, 3), null);
+  S.res[dg.key] = 6; E.tdjUse(S, did); assert.strictEqual(E.enterDungeon(S, did, 1, 3, 3), null);
   assert.deepStrictEqual([S.dungeon.stasis, S.dungeon.climb, S.dungeon.k0], [1, 3, 1]);
   const seen = []; let n = 0; while (S.dungeon && n++ < 40000) { if (seen[seen.length - 1] !== S.dungeon.stasis) seen.push(S.dungeon.stasis); E.tick(S, 500); }
   assert.deepStrictEqual(seen, [1, 2, 3], "stasis 1, puis 2, puis 3");

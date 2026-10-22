@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38.6";
+const GAME_VERSION = "2.1.39";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.39", name: "Trousseau du jour", guide: "donjons", items: [
+    "Trousseau du jour : chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé et à la stasis de ton choix (Classique et Monocompte)",
+    "L'entrée du jour passe avant tes clés : enchaînement, montée de stasis et donjon pendant ton absence commencent par elle, puis tes clés prennent le relais",
+    "Monocompte : au Bureau des Aventuriers, chacun peut aussi se mettre « Prêt » avec son entrée du jour",
+    "Comme une clé, elle se perd en cas de défaite ou si tu quittes le donjon. Recharge à minuit, heure de Paris",
+    "Page Donjons : un encadré compte tes entrées libres du jour, et chaque donjon affiche « entrée du jour » tant qu'elle est disponible" ] },
   { v: "2.1.38.6", name: "Invocations dans le bon élément", items: [
     "Osamodas : en sorts automatiques, l'invocation choisie suit le profil du héros, comme dans DOFUS : Bouftou en Force (Terre), Tofu en Agilité (Air), Crapipou en Chance (Eau), Dragoune en Intelligence (Feu), et leurs versions plus fortes ensuite",
     "La fiche d'un sort d'invocation indique l'élément de la créature et celui de ses coups" ] },
@@ -3941,6 +3947,7 @@ function monCard(k, opts = {}) {
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
 function dgStars(did) { const SI = (S.stasis || {})[did] || { max: 0 }; const k = S.progress.bossKills[did] ? 1 : 0; return `<span class="stars" title="Terminé · stasis 5 · stasis 10">${k ? "✓" : "·"}<b class="${SI.max >= 5 ? "on" : ""}">★</b><b class="${SI.max >= 10 ? "on" : ""}">★</b>${SI.max >= 15 ? `<b class="on s15" title="Stasis 15">★</b>` : ""}</span>`; }
 function dgKeyState(did) { const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  if (E.tdjFree(S, did)) return { k: "ok tdj", txt: `entrée du jour${keys ? ` + ${keys} clé${keys > 1 ? "s" : ""}` : ""}` }; // 2.1.39 : Trousseau du jour
   if (keys) return { k: "ok", txt: `${keys} clé${keys > 1 ? "s" : ""}` }; if (R && E.canCraft(S, R)) return { k: "craft", txt: "clé fabricable" }; return { k: "no", txt: "pas de clé" }; }
 function dgDifficulty(did, k) {
   const team = E.team(S); if (!team.length) return { k: "risk", txt: "Aucun héros" };
@@ -4005,7 +4012,7 @@ function dgMatch(did, F, nq) {
   const mx = ((S.stasis || {})[did] || {}).max || 0; const done = !!S.progress.bossKills[did];
   if (F.sk === "none" && done) return false; if (F.sk === "low" && !(mx >= 1 && mx <= 4)) return false; if (F.sk === "mid" && !(mx >= 5 && mx <= 9)) return false;
   if (F.sk === "max" && mx < 10) return false; if (F.sk === "todo" && mx >= 10) return false;
-  if (F.key && !(S.res[dg.key] > 0)) return false; if (F.dof && !dgDofusToWin(did)) return false; if (F.fav && !(S.dgFav || []).includes(did)) return false;
+  if (F.key && !(E.dgEntries(S, did) > 0)) return false; if (F.dof && !dgDofusToWin(did)) return false; if (F.fav && !(S.dgFav || []).includes(did)) return false;
   if (F.h15 && mx >= E.STASIS_MAX) return false; // 2.1.4 : donjons finis en stasis 15 masqués
   return true;
 }
@@ -4058,7 +4065,16 @@ function dungeonsHtml() {
       ${flashBanner()}
       <p class="note xs">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       ${dgFilterBar(F, list.length, nHid)}</div></section>
+    ${tdjBanner()}
     ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
+}
+/* 2.1.39 « Trousseau du jour » : une entrée gratuite par donjon débloqué et par jour (E.tdj, js/engine.js) */
+function tdjBanner() {
+  const L = E.tdjLeft(S); if (!L.of) return "";
+  const p = new Date(E.now()); let left = "";
+  try { const hm = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hour12: false }).format(p).split(":").map(Number); const m = 1440 - (hm[0] % 24) * 60 - hm[1]; left = ` (dans ${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")})`; } catch (e) {}
+  return `<section class="panel tdjban"><div class="pad row" style="gap:12px;align-items:center;flex-wrap:wrap"><span class="tdj-ic">${IC("cle")}</span><div class="grow" style="min-width:0"><b>Trousseau du jour</b> <span class="tag ${L.n ? "good" : ""}">${fmt(L.n)} / ${fmt(L.of)} entrées libres</span>
+    <div class="xs muted">Chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé et à la stasis de ton choix. Elle passe avant tes clés et se perd comme une clé. Recharge à minuit, heure de Paris${left}.</div></div></div></section>`;
 }
 function compSuggest(did) {
   const K = S.comps || []; if (!K.length) return ""; const cur = E.compMatch(S); const best = (S.compDg || {})[did];
@@ -4096,7 +4112,7 @@ function dungeonSheet(did) {
   const mechs = E.bossMechs(did).map((m) => { const M = E.BOSS_MECHS[m]; return seen ? `<li>${M.sig ? `<span class="sigmk" data-tip="Mécanique unique de ce boss">${G("star")}</span> ` : ""}<b>${h(M.name)}</b> : ${h(M.desc)}</li>` : `<li><b>???</b> <span class="muted">${M.sig ? "mécanique unique, " : ""}à découvrir en affrontant le boss</span></li>`; }).join("");
   const sigA = E.BOSS_SIGS[did] ? E.ACH.find((a) => a.id === "sig_" + did) : null;
   const steps = E.STASIS_STEPS.filter(([n]) => n <= Math.min(k, 10) && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
-  const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  const nk = S.res[dg.key] || 0; const free = un && E.tdjFree(S, did); const keys = nk + (free ? 1 : 0); const R = SPECIAL_CRAFTS[dg.key]; // 2.1.39 : l'entrée du Trousseau du jour compte comme une entrée
   /* 1.0.15 : équipements du boss avec leur chance par héros à la stasis choisie (×1 à la 1, ×3,25 à la 10) */
   const bm = E.bossDropMult(k); const own0 = E.ownedTpls(S);
   const loot = (B.items || []).filter(([t]) => ITEMS[t]).sort((a, b) => ITEMS[a[0]].lvl - ITEMS[b[0]].lvl).slice(0, 24).map(([t, r]) => { const own = !!own0[t]; return `<div class="lcard" data-act="encitem" data-v="${t}" style="cursor:pointer"><span class="icobox">${im(itemImg(t), "", ITEMS[t].name)}</span><div><div class="n">${h(ITEMS[t].name)}${own ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[t].lvl} · <span class="pct">${dropPct(Math.min(100, r * bm))} %</span> <span class="muted">par héros</span></div></div></div>`; }).join("");
@@ -4110,7 +4126,7 @@ function dungeonSheet(did) {
   /* 1.0.32.3 « Montée de stasis » : enchaîner en montant d'une stasis après chaque victoire, jusqu'à la stasis choisie */
   const climbRow = k < E.STASIS_MAX ? `<div class="chainrow climbrow"><span class="xs"><b>Monter</b> jusqu'à la stasis</span><button class="sbtn ${climbT ? "" : "on"}" data-act="dgclimb" data-id="${did}" data-v="0">Non</button>${Array.from({ length: E.STASIS_MAX - k }, (_, i) => k + 1 + i).map((n) => `<button class="sbtn ${climbT === n ? "on" : ""}" data-act="dgclimb" data-id="${did}" data-v="${n}">${n}</button>`).join("")}</div>` : "";
   const climbTxt = climbT ? `<div class="xs climbtxt">Stasis <b>${k} → ${climbT}</b> : ${climbT - k + 1} donjons, une clé chacun. Après chaque victoire l'équipe monte d'une stasis ; une défaite ou plus de clé arrête la montée.${keys < climbT - k + 1 ? ` <span class="warn">Il te manque ${climbT - k + 1 - keys} clé${climbT - k + 1 - keys > 1 ? "s" : ""} : la montée s'arrêtera en stasis ${k + keys - 1}.</span>` : ""}</div>` : "";
-  const chainBox = un && keys > 1 ? `<div class="chainbox"><b>Enchaîner</b> <span class="xs muted">(${keys} clé${keys > 1 ? "s" : ""} en stock)</span>
+  const chainBox = un && keys > 1 ? `<div class="chainbox"><b>Enchaîner</b> <span class="xs muted">(${free ? `entrée du jour + ${nk} clé${nk > 1 ? "s" : ""}` : `${keys} clé${keys > 1 ? "s" : ""} en stock`})</span>
         ${climbRow}${climbT ? climbTxt : `<div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="-1">Toutes (${chainMax})</button>
         <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
         <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div>`}</div>` : "";
@@ -4143,7 +4159,7 @@ function dungeonSheet(did) {
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
-    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${climbT && chainN > 1 ? ` → ${k + chainN - 1}` : keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
+    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>${free ? IC("cle") + " " : ""}Entrer en stasis ${k}${climbT && chainN > 1 ? ` → ${k + chainN - 1}` : keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}${free ? " · entrée du jour" : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* 2.1.38 « Boss ultimes » (Mathis 1A 2A) : une règle de plus par palier de 11 à 15, Sceaux ultimes échangés contre un légendaire */
@@ -4185,9 +4201,9 @@ async function enterRenfort(did, stasis, u) {
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   return XP ? `${window.SGUI ? window.SGUI.where(S) : "Songe infini"} · ${XP.relics.length} bonus${XP.sable ? ` · ${XP.sable} Sable${XP.sable > 1 ? "s" : ""}` : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
 function chainBtn() { return S.dungeon && (S.dungeon.chain || 1) > 1 ? `<button class="btn sm" data-act="stopchain" data-tip="Le donjon en cours va jusqu'au bout, puis l'équipe s'arrête">Arrêter après celui-ci</button>` : ""; }
-function chainCount(did) { const keys = S.res[DUNGEONS[did].key] || 0; const k = ui.dgStasis || 1; const T = climbTarget(did, k); if (T) return Math.min(Math.max(1, keys), T - k + 1); return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
+function chainCount(did) { const keys = E.dgEntries(S, did); const k = ui.dgStasis || 1; const T = climbTarget(did, k); if (T) return Math.min(Math.max(1, keys), T - k + 1); return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
 /* 1.0.32.3 : stasis visée par la montée (0 = pas de montée), seulement si plusieurs clés et au-dessus de la stasis de départ */
-function climbTarget(did, k) { const keys = S.res[DUNGEONS[did].key] || 0; return ui.dgSel === did && keys > 1 && ui.dgClimb > k ? Math.min(E.STASIS_MAX, ui.dgClimb) : 0; }
+function climbTarget(did, k) { const keys = E.dgEntries(S, did); return ui.dgSel === did && keys > 1 && ui.dgClimb > k ? Math.min(E.STASIS_MAX, ui.dgClimb) : 0; }
 function chainTxt() { const D = S.dungeon; return D && (D.tot || 1) > 1 ? `${D.climb ? `montée vers la stasis ${D.climb} · ` : ""}course ${D.run || 1} sur ${D.tot}${(D.chain || 1) <= 1 ? " (dernière)" : ""} · ` : ""; }
 /* 0.1 : panneau de la clé du donjon (recette lisible, d'où vient chaque ingrédient) */
 function keySource(r) {
@@ -4202,7 +4218,7 @@ function keySource(r) {
 function keyPanel(did) {
   const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   const sub = E.SUBS[E.DUNGEON_SUB[did]];
-  const head = `<div class="kp-head">${im(resImg(dg.key), "kp-ico", dg.key)}<div class="kp-t"><b>${h(dg.key)}</b><span class="xs muted">${keys ? `<b class="num">${keys}</b> en stock · une clé par entrée` : "aucune clé en stock"}</span></div>`;
+  const head = `<div class="kp-head">${im(resImg(dg.key), "kp-ico", dg.key)}<div class="kp-t"><b>${h(dg.key)}</b><span class="xs muted">${keys ? `<b class="num">${keys}</b> en stock · une clé par entrée` : "aucune clé en stock"}</span>${E.dungeonUnlocked(S, did) ? (E.tdjFree(S, did) ? `<span class="xs tdj-ok">${IC("cle")} Trousseau du jour : entrée gratuite libre aujourd'hui, elle passe avant tes clés</span>` : `<span class="xs muted">${IC("cle")} Trousseau du jour : entrée gratuite déjà prise, prochaine à minuit</span>`) : ""}</div>`;
   if (!R) return `<div class="keypanel">${head}</div></div>`;
   const ing = R.ing.map(([r, q]) => ({ r, q, have: S.res[r] || 0 })).sort((a, b) => (a.have >= a.q) - (b.have >= b.q));
   const ok = ing.filter((x) => x.have >= x.q).length; const can = E.canCraft(S, R); const pinned = S.shop.some((e) => e.id === dg.key);

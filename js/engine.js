@@ -3350,15 +3350,27 @@
     if (full && last >= D2.climb) note(S, `Montée réussie : ${name}, stasis ${k0} à ${last} enchaînées sans t'arrêter !`, "rare");
     else note(S, `Montée de stasis arrêtée : ${name}, ${last >= k0 ? `stasis ${k0} à ${last} réussies` : "aucune stasis réussie"}${lost ? `, défaite en stasis ${D2.stasis || 1}` : ""}.`, "warn");
   };
-  E.enterDungeon = (S, did, stasis, chain, climb) => {
+  /* 2.1.39 « Trousseau du jour » (choix 1A 2A 3A 4A 5A de Mathis, 22/10) : chaque jour (minuit, heure de Paris), une entrée gratuite
+     dans chaque donjon débloqué, sans clé, à toute stasis. Elle passe avant les clés (enchaînement, montée, donjon pendant l'absence)
+     et se perd comme une clé (défaite, sortie). Classique et Monocompte ; au Bureau, le serveur la décompte (supabase/mono_bureau.sql). */
+  const TDJ_FMT = (() => { try { return new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }); } catch (e) { return null; } })();
+  E.tdjDay = (t = E.now()) => { try { if (TDJ_FMT) return TDJ_FMT.format(new Date(t)); } catch (e) {} return new Date(t).toISOString().slice(0, 10); };
+  E.tdj = (S) => { const d = E.tdjDay(); if (!S.tdj || typeof S.tdj !== "object" || S.tdj.d !== d || !S.tdj.u || typeof S.tdj.u !== "object") S.tdj = { d, u: {} }; return S.tdj; };
+  E.tdjFree = (S, did) => !!DUNGEONS[did] && E.dungeonUnlocked(S, did) && !E.tdj(S).u[did];
+  E.tdjUse = (S, did, d) => { const T = E.tdj(S); if (d && d !== T.d) return false; if (T.u[did]) return false; T.u[did] = 1; return true; };
+  E.tdjLeft = (S) => { const T = E.tdj(S); const ids = Object.keys(DUNGEONS).filter((x) => E.dungeonUnlocked(S, x)); return { n: ids.filter((x) => !T.u[x]).length, of: ids.length }; };
+  /* entrées possibles dans un donjon : clés en stock + l'entrée du jour */
+  E.dgEntries = (S, did) => (S.res[(DUNGEONS[did] || {}).key] || 0) + (E.tdjFree(S, did) ? 1 : 0);
+  E.enterDungeon = (S, did, stasis, chain, climb, opts) => {
     const dg = DUNGEONS[did]; if (!dg) return "Donjon inconnu.";
     const SI = E.stasisInfo(S, did); const k = clamp(stasis || SI.sel || 1, 1, E.STASIS_MAX);
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
     if (!E.dungeonUnlocked(S, did)) return "Donjon verrouillé.";
     if (S.dungeon) return "Vous êtes déjà en donjon.";
     if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Aventure › Songe infini).";
-    if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
-    S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
+    const free = !(opts && opts.noTdj) && E.tdjFree(S, did); // opts.noTdj : entrée qui apporte sa propre clé (Défi de la manche, Bouclier)
+    if (!free && (S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
+    if (free) E.tdjUse(S, did); else { S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key]; }
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, tot: chain || 1, run: 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
       mods: k >= 12 ? pickMods(3, wk) : k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
@@ -3366,7 +3378,7 @@
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);
-    note(S, `Entrée dans ${dg.name}.`, "info");
+    note(S, free ? `Entrée dans ${dg.name} (Trousseau du jour : aucune clé utilisée).` : `Entrée dans ${dg.name}.`, "info");
     return null;
   };
   /* 0.1.37.1 : « Arrêter après celui-ci » : le donjon en cours va jusqu'au bout, puis l'enchaînement s'arrête */

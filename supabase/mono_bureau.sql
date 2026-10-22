@@ -779,7 +779,18 @@ as $$ declare u uuid := mono.need(); m mono.bureau_membres%rowtype; x mono.burea
   return jsonb_build_object('ok', true);
 end $$;
 
--- « Prêt » (1B : jamais pendant un donjon solo ; même version du jeu ; plage de stasis du joueur ; clé du donjon)
+-- 2.1.39 « Trousseau du jour » (choix 4A de Mathis, 22/10) : une entrée gratuite par donjon et par jour (minuit, heure de Paris).
+-- Libre si ni la partie validée (tdj.d = aujourd'hui et tdj.u contient le donjon) ni une opération du serveur pas encore reprise
+-- par la partie ne l'a déjà prise. Au lancement, elle passe avant la clé (opération { tdj: { d, did } } au lieu de res -1).
+drop function if exists mono.bureau_tdj_jour();
+create or replace function mono.bureau_tdj_jour(p_s int) returns text language sql stable set search_path = mono, public
+as $$ select to_char((mono.date_saison(p_s) at time zone 'Europe/Paris')::date, 'YYYY-MM-DD') $$; -- heure de la saison (horloge de test comprise), jour de Paris
+create or replace function mono.bureau_tdj_libre(u uuid, p_s int, d jsonb, p_did text) returns boolean language sql stable security definer set search_path = mono, public
+as $$ select p_did is not null
+  and not (coalesce(d -> 'tdj' ->> 'd', '') = mono.bureau_tdj_jour(p_s) and jsonb_typeof(d -> 'tdj' -> 'u') = 'object' and (d -> 'tdj' -> 'u') ? p_did)
+  and not exists (select 1 from mono.ops o where o.user_id = u and o.saison = p_s and o.id > mono.cursor(d)
+    and o.payload -> 'tdj' ->> 'did' = p_did and o.payload -> 'tdj' ->> 'd' = mono.bureau_tdj_jour(p_s)) $$;
+-- « Prêt » (1B : jamais pendant un donjon solo ; même version du jeu ; plage de stasis du joueur ; clé du donjon ou entrée du Trousseau du jour)
 create or replace function public.mono_bureau_pret(p_on boolean, p_version text, p_solo boolean default false, p_onglet text default null)
 returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); m mono.bureau_membres%rowtype; x mono.bureau_salons%rowtype; c mono.bureau_combats%rowtype; b text; d jsonb; begin
@@ -804,7 +815,7 @@ as $$ declare u uuid := mono.need(); s int := mono.bureau_saison(); m mono.burea
   if (m.smin is not null and x.stasis < m.smin) or (m.smax is not null and x.stasis > m.smax) then return mono.err(format('Stasis %s hors de ta recherche (%s à %s).', x.stasis, m.smin, m.smax)); end if;
   if x.cle is not null then
     select data::jsonb into d from mono.parties_ok where user_id = u and saison = s;
-    if mono.qty(u, s, d, 'res', x.cle) < 1 then return mono.err('Il te faut la clé du donjon : ' || x.cle || '.'); end if;
+    if not mono.bureau_tdj_libre(u, s, d, x.did) and mono.qty(u, s, d, 'res', x.cle) < 1 then return mono.err('Il te faut la clé du donjon : ' || x.cle || ' (l''entrée du jour du Trousseau est déjà prise).'); end if;
   end if;
   update mono.bureau_membres set pret = true, version = left(p_version, 20) where salon = x.id and user_id = u;
   perform mono.bureau_log(x.id, mono.bureau_nom(u) || ' est prêt.');
@@ -1183,7 +1194,7 @@ as $$ declare c mono.bureau_combats%rowtype; z record; d jsonb; ex uuid[] := '{}
   if p_cle is not null then
     for z in select m.user_id from mono.bureau_combat_membres m where m.combat = c.id and not (m.user_id = any(ex)) loop
       select data::jsonb into d from mono.parties_ok where user_id = z.user_id and saison = c.saison;
-      if d is null or mono.qty(z.user_id, c.saison, d, 'res', p_cle) < 1 then ex := ex || z.user_id; why := why || mono.bureau_nom(z.user_id) || ' : pas de clé. '; end if;
+      if d is null or (not mono.bureau_tdj_libre(z.user_id, c.saison, d, c.did) and mono.qty(z.user_id, c.saison, d, 'res', p_cle) < 1) then ex := ex || z.user_id; why := why || mono.bureau_nom(z.user_id) || ' : pas de clé. '; end if;
     end loop;
   end if;
   if cardinality(ex) > 0 then
@@ -1204,7 +1215,12 @@ as $$ declare c mono.bureau_combats%rowtype; z record; d jsonb; ex uuid[] := '{}
   j := mono.jour_de(c.saison, mono.date_saison(c.saison));
   if p_cle is not null then
     for z in select m.user_id from mono.bureau_combat_membres m where m.combat = c.id loop
-      perform mono.op(z.user_id, c.saison, jsonb_build_object('res', jsonb_build_object(p_cle, -1)), 'Clé utilisée : donjon de groupe du Bureau des Aventuriers');
+      select data::jsonb into d from mono.parties_ok where user_id = z.user_id and saison = c.saison;
+      if mono.bureau_tdj_libre(z.user_id, c.saison, d, c.did) then
+        perform mono.op(z.user_id, c.saison, jsonb_build_object('tdj', jsonb_build_object('d', mono.bureau_tdj_jour(c.saison), 'did', c.did)), 'Trousseau du jour : entrée gratuite, donjon de groupe du Bureau des Aventuriers');
+      else
+        perform mono.op(z.user_id, c.saison, jsonb_build_object('res', jsonb_build_object(p_cle, -1)), 'Clé utilisée : donjon de groupe du Bureau des Aventuriers');
+      end if;
     end loop;
   end if;
   update mono.bureau_combats set etat = 'fini', snaps = p_snaps, result = p_result, duree_ms = p_duree_ms, win = w, manche = mono.manche_de(least(j, 56)),

@@ -42,7 +42,7 @@
         "Choisis une zone dans **Aventure › Monde** : l'équipe y enchaîne les combats, gagne de l'XP, des kamas, des ressources et des objets.",
         "Équipe tes héros (**Héros › Équipe et héros**, bouton « Équiper au mieux »), répartis leurs caractéristiques et règle leurs sorts.",
         "Recrute de nouveaux héros pour remplir l'équipe : chaque classe différente renforce tout le groupe.",
-        "Récupère des clés et attaque les **donjons**, puis monte leur stasis pour de meilleurs butins.",
+        "Fabrique des clés (ou utilise ton **Trousseau du jour** : une entrée gratuite par donjon et par jour) et attaque les **donjons**, puis monte leur stasis pour de meilleurs butins.",
         "Débloque peu à peu le reste : métiers, forgemagie, quêtes, Dofus, Songe infini, L'Ascension, Kolizéum, guilde…",
       ]],
       ["p", "Même jeu fermé, l'équipe continue à progresser (voir « Absence et hors-ligne »)."],
@@ -589,13 +589,15 @@
       ["tip", "La **chasse vagabonde** fait changer de zone toute seule ; la **progression automatique** monte ou descend de zone selon tes victoires."],
     ] });
 
-  add({ id: "donjons", f: "Aventure", n: "Donjons, clés et stasis", ic: "coffre", page: "dungeons", k: "donjon cle stasis coffre boss mutateur flash poussiere premier passage",
+  add({ id: "donjons", f: "Aventure", n: "Donjons, clés et stasis", ic: "coffre", page: "dungeons", k: "donjon cle stasis coffre boss mutateur flash poussiere premier passage trousseau entree gratuite",
     ou: "Aventure › Donjons", de: "en débloquant la sous-zone du donjon",
     voir: ["world", "dofus", "combat"],
     b: () => [
       ["p", `${N(() => Object.keys(D.DUNGEONS).length)} donjons. Une clé = une tentative : les salles, puis le boss. Perdre ou quitter fait perdre la clé (une Fiole de résurrection relance une fois).`],
       ["h", "Les clés"],
-      ["ul", ["En chasse dans la sous-zone d'accès du donjon (sous la recette de la clé, le nom de la zone est un bouton qui y mène).", "Fabriquées par le Bricoleur.", "À l'Hôtel de vente, dans les Comptoirs (Trousseau de clés), à la Foire, en expédition."]],
+      ["ul", ["Fabriquées par le Bricoleur, avec les ressources des monstres de la zone du donjon et de trois métiers de récolte (sous la recette, chaque ressource a un bouton qui mène où la trouver). Les monstres ne donnent plus de clés.", "À l'Hôtel de vente, dans les Comptoirs et au Kolizéum (Trousseau de clés), à la Foire, dans les coffres de chasse au trésor."]],
+      ["h", "Le Trousseau du jour"],
+      ["p", "Chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé, à la stasis de ton choix. Elle passe avant tes clés (enchaînement, montée de stasis, donjon pendant l'absence, groupe du Bureau en Monocompte) et se perd comme une clé en cas de défaite ou de sortie. Recharge à minuit, heure de Paris. L'encadré en haut de la page Donjons compte les entrées libres du jour."],
       ["h", "La stasis"],
       ["p", `Chaque donjon a sa difficulté de 1 à ${N(() => E.STASIS_MAX)}. Réussir une stasis ouvre la suivante pour ce donjon. Plus elle est haute, plus les monstres sont forts et les récompenses grandes.`],
       ["kv", [1, 5, 10, 15].map((k) => [`Stasis ${k}`, V(() => { const m = E.stasisMult(k); return `vie ×${fr(Math.round(m.hp * 100) / 100)} · dégâts ×${fr(Math.round(m.dmg * 100) / 100)} · gains ×${fr(Math.round(m.rew * 100) / 100)}`; })])],

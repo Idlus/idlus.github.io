@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.39 « Trousseau du jour »
+- Choix 1A 2A 3A 4A 5A de Mathis (22/10) : `E.tdj` / `E.tdjFree` / `E.tdjUse` / `E.dgEntries` dans `js/engine.js` (état `S.tdj = { d, u }`, jour de Paris `E.tdjDay`). `E.enterDungeon` prend l'entrée du jour avant une clé (option `noTdj` pour le Défi de la manche et le rejeu du Bouclier), `js/expeditions.js` (donjon pendant l'absence) aussi.
+- Bureau (Monocompte) : `supabase/mono_bureau.sql` ajoute `mono.bureau_tdj_jour()` et `mono.bureau_tdj_libre()` ; « Prêt » et le lancement acceptent l'entrée du jour, le lancement la décompte par une opération `{ tdj: { d, did } }` (reprise par `MARKET.apply`) au lieu de `res -1`. Installation manuelle sur le serveur.
+- Affichage : encadré sur la page Donjons, badge « entrée du jour », bouton « Entrer », filtre « Clé en stock », chapitre du guide. Test `tests/trousseau.test.js`.
+
 ## 2.1.38.6 « Invocations dans le bon élément »
 - Ticket #149 : `E.summonEl` (js/engine.js) donne l'élément DOFUS de la créature invoquée ; `spellScore` favorise d'un cheveu (+0,02) l'invocation de l'élément du profil, donc `autoLoadout` prend Bouftou pour un Osamodas Force au lieu du premier sort (Tofu). Aucun chiffre de combat changé.
 - Fiche du sort (`spSentence0` dans js/ui.js) : « (créature Terre), qui se bat avec l'équipe et frappe en Terre ». Test : `tests/invocations.test.js`.

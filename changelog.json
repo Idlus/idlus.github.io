@@ -1,6 +1,18 @@
 {
-  "version": "2.1.38.6",
+  "version": "2.1.39",
   "versions": [
+    {
+      "v": "2.1.39",
+      "name": "Trousseau du jour",
+      "guide": "donjons",
+      "items": [
+        "Trousseau du jour : chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé et à la stasis de ton choix (Classique et Monocompte)",
+        "L'entrée du jour passe avant tes clés : enchaînement, montée de stasis et donjon pendant ton absence commencent par elle, puis tes clés prennent le relais",
+        "Monocompte : au Bureau des Aventuriers, chacun peut aussi se mettre « Prêt » avec son entrée du jour",
+        "Comme une clé, elle se perd en cas de défaite ou si tu quittes le donjon. Recharge à minuit, heure de Paris",
+        "Page Donjons : un encadré compte tes entrées libres du jour, et chaque donjon affiche « entrée du jour » tant qu'elle est disponible"
+      ]
+    },
     {
       "v": "2.1.38.6",
       "name": "Invocations dans le bon élément",

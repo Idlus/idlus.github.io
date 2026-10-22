@@ -657,6 +657,8 @@ a.btn{text-decoration:none}
 .dgcard .fav{position:absolute;top:6px;right:8px;font-size:16px;color:var(--muted);cursor:pointer}.dgcard .fav.on{color:var(--gold2)}
 .stars{font-weight:900;letter-spacing:1px;color:var(--good)}.stars b{color:rgba(255,255,255,.18)}.stars b.on{color:var(--gold2)}
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08)}
+.pill.key.tdj{background:rgba(126,224,106,.2);color:#9ff07a;font-weight:700}
+.tdjban{border-color:var(--gold)!important}.tdjban .tdj-ic{font-size:28px;display:inline-flex}.tdjban .tdj-ic img,.tdjban .tdj-ic svg{width:34px;height:34px}.tdj-ok{color:#9ff07a;font-weight:700}
 .pill.key.ok{background:rgba(126,224,106,.16);color:#9ff07a}.pill.key.craft{background:rgba(var(--glw),.16);color:var(--gold2)}.pill.key.no{color:var(--muted)}
 .pill.diff.easy{background:rgba(126,224,106,.16);color:#9ff07a}.pill.diff.mid{background:rgba(var(--glw),.16);color:var(--gold2)}.pill.diff.risk{background:rgba(255,107,122,.16);color:#ff8a8a}
 .pill.good{background:rgba(126,224,106,.16);color:#9ff07a}

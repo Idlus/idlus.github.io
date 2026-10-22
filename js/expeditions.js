@@ -114,7 +114,7 @@
     if (E.expActive && E.expActive(S)) return stop("songe");
     const team = E.team(S); if (!team.length) return stop("team");
     if (H.b < 60) return stop("hours");
-    const dg = DUNGEONS[T.did]; const have = S.res[dg.key] || 0; if (!have) return stop("keys");
+    const dg = DUNGEONS[T.did]; const free = E.tdjFree ? E.tdjFree(S, T.did) : false; const have = (S.res[dg.key] || 0) + (free ? 1 : 0); if (!have) return stop("keys"); // 2.1.39 : l'entrée du Trousseau du jour passe en premier
     const est = E.dghEst(S, T.did, T.k); out.est = est;
     const avail = Math.min(seconds, H.b);
     const per = est.s / E.DGH.pace; // durée d'une course hors ligne, en temps de jeu
@@ -137,7 +137,7 @@
     };
     try {
       for (let i = 0; i < n; i++) {
-        S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key]; out.keys++; out.runs++;
+        if (i === 0 && free) { E.tdjUse(S, T.did); out.tdj = 1; } else { S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key]; out.keys++; } out.runs++;
         const win = rnd() < est.w; const rooms = win ? nf : Math.floor(rnd() * nf); // défaite : les salles gagnées avant rapportent
         for (let r = 0; r < Math.min(rooms, dg.rooms.length); r++) fight(r);
         if (!win) continue;
@@ -164,7 +164,7 @@
   E.dghPlan = (S, did, k, rate) => {
     const H = E.dgh(S); const est = E.dghEst(S, did, k); if (!est) return null;
     const runs = Math.floor(H.b * rate * E.DGH.pace / est.s);
-    return { est, runs, keys: (S.res[DUNGEONS[did].key] || 0), perRun: est.s, rate };
+    return { est, runs, keys: (S.res[DUNGEONS[did].key] || 0) + (E.tdjFree && E.tdjFree(S, did) ? 1 : 0), perRun: est.s, rate };
   };
   E.dghSet = (S, o) => {
     const H = E.dgh(S); o = o || {};

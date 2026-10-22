@@ -186,7 +186,7 @@
     const R = E.mdState(S); const dg = D.DUNGEONS[R.did]; const k = Math.min(E.STASIS_MAX, R.best + 1);
     const SI = E.stasisInfo(S, R.did); const max0 = SI.max || 0; SI.max = Math.max(max0, k - 1);
     const du = E.dungeonUnlocked; E.dungeonUnlocked = () => true; S.res[dg.key] = (S.res[dg.key] || 0) + 1; let err;
-    try { err = E.enterDungeon(S, R.did, k); } finally { E.dungeonUnlocked = du; }
+    try { err = E.enterDungeon(S, R.did, k, 1, 0, { noTdj: true }); } finally { E.dungeonUnlocked = du; }
     if (err) { SI.max = max0; S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key]; return err; }
     R.tries++; S.mono.mdRun = { did: R.did, k, max0 }; onQuest(S, "mdefi", {}); return null;
   };

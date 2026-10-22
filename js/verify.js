@@ -74,7 +74,7 @@
       SI.max = k - 1; delete SI.best[k];
       const key = dg ? dg.key : null; if (key) S.res[key] = (S.res[key] || 0) + 1;
       E.dungeonUnlocked = () => true;
-      const err = E.enterDungeon(S, did, k); if (err) return { ok: false, err };
+      const err = E.enterDungeon(S, did, k, 1, 0, { noTdj: true }); if (err) return { ok: false, err };
       for (let ms = 0; S.dungeon && ms < 3 * 3600 * 1000; ms += 1000) { t += 1000; E.tick(S, 1000); }
       E.events && E.events.splice(0);
       if (SI.max >= k && SI.best[k] != null) return { ok: true, t: SI.best[k] };

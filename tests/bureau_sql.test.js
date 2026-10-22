@@ -167,6 +167,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
       for (const o of (ops || []).slice().sort((a, b) => a.id - b.id)) { if (o.id <= (S.hdv.op || 0)) continue; const p = o.p || {};
         if (p.k) S.kamas = Math.max(0, Math.round((S.kamas || 0) + Number(p.k)));
         ["res", "runes", "cons"].forEach((b) => { if (!p[b]) return; S[b] = S[b] || {}; for (const k in p[b]) { const v = (S[b][k] || 0) + Number(p[b][k]); if (v > 0) S[b][k] = v; else delete S[b][k]; } });
+        if (p.tdj) E.tdjUse(S, String(p.tdj.did || ""), String(p.tdj.d || "")); // 2.1.39 : comme MARKET.apply (js/market.js)
         S.hdv.op = o.id; } };
     const sync = (i) => { const r = J(i, `mono_hdv_sync(${(P[i].S.hdv && P[i].S.hdv.op) || 0})`); apply(P[i].S, r.ops); return r; };
     const CLS = { 1: "iop", 2: "cra", 3: "eni", 4: "feca", 5: "sram", 6: "osa", 10: "iop", 11: "cra", 12: "eni" };
@@ -322,8 +323,13 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     ok(B(enPlus, "quitter"), "quitter pendant le combat : le héros finit en automatique");
     refuse("butin avant la fin du combat", () => err(B(1, "butin", c1.id), /pas fini/, "butin avant la fin"));
     refuse("butin d'un combat auquel on n'a pas pris part", () => err(B(12, "butin", c1.id), /Aucun butin/, "butin d'un autre"));
-    // clés : une par joueur, retirée par une opération du serveur
-    assert.strictEqual(+q(`select count(*) from mono.ops where saison = 0 and payload -> 'res' ->> '${KEY.replace(/'/g, "''")}' = '-1'`), 3, "une clé retirée par joueur du combat");
+    // 2.1.39 « Trousseau du jour » (4A) : premier combat du jour dans ce donjon = l'entrée du jour de chacun (une opération du serveur), pas de clé
+    assert.strictEqual(+q(`select count(*) from mono.ops where saison = 0 and payload -> 'tdj' ->> 'did' = '${DJ}' and payload -> 'tdj' ->> 'd' = mono.bureau_tdj_jour(0)`), 3, "entrée du jour prise par joueur du combat");
+    assert.strictEqual(+q(`select count(*) from mono.ops where saison = 0 and payload -> 'res' ->> '${KEY.replace(/'/g, "''")}' = '-1'`), 0, "aucune clé pour le premier combat du jour");
+    { const lib = (i, did) => q(`select mono.bureau_tdj_libre('${U(i)}', 0, (select data::jsonb from mono.parties_ok where user_id = '${U(i)}' and saison = 0), '${did}')`);
+      assert.strictEqual(lib(1, DJ), "f", "entrée du jour prise : plus libre aujourd'hui (opération pas encore reprise par la partie)");
+      assert.strictEqual(lib(1, "grange_tournesol"), "t", "les autres donjons gardent leur entrée du jour");
+      assert.strictEqual(q(`select mono.bureau_tdj_libre('${U(1)}', 0, jsonb_build_object('tdj', jsonb_build_object('d', mono.bureau_tdj_jour(0), 'u', jsonb_build_object('grange_tournesol', 1))), 'grange_tournesol')`), "f", "prise en solo (partie validée) : plus libre"); }
     // le combat se termine (on avance l'heure de fin)
     q(`update mono.bureau_combats set debut_at = debut_at - interval '1 hour', fin_at = now() - interval '1 second' where id = ${c1.id}`);
     sa = etat(1).salon; assert(sa.etat === "ouvert" && sa.membres.every((m) => !m.pret), "combat fini : salon ouvert, chacun reconfirme « Prêt »");
@@ -331,7 +337,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     for (const i of [1, 3, enPlus]) {
       assert(etat(i).butins.some((b) => b.combat === c1.id), "butin à récupérer " + i);
       const b = ok(B(i, "butin", c1.id), "butin " + i); assert.strictEqual(b.ids.length, 2, "les deux autres joueurs (défi 12)");
-      sync(i); assert.strictEqual(P[i].S.res[KEY], 4, "clé retirée par le serveur dans la partie " + i);
+      sync(i); assert.strictEqual(P[i].S.res[KEY], 5, "clé gardée : l'entrée du jour a servi (partie " + i + ")"); assert(E.tdj(P[i].S).u[DJ], "entrée du jour marquée prise dans la partie " + i);
       const lvl0 = hero(P[i].S).lvl; const got = BC.butin(P[i].S, b); assert(got, "butin appliqué " + i);
       assert(!BC.butin(P[i].S, b), "le même butin n'est jamais appliqué deux fois dans la partie");
       P[i].S.stats.playtime += 300;
@@ -424,6 +430,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     const G = [1, 3, 12];
     for (const i of G) { q(`select mono.op('${U(i)}', 0, jsonb_build_object('res', jsonb_build_object(${lit(KEY)}, 10)), 'Clés de test (séries)')`); sync(i); const r = await send(i, P[i].S); assert(r.verif && r.verif.ok, "clés reçues " + i + " " + JSON.stringify(r.verif)); }
     const keys0 = Object.fromEntries(G.map((i) => [i, P[i].S.res[KEY]]));
+    const tdj0 = Object.fromEntries(G.map((i) => [i, !E.tdj(P[i].S).u[DJ]])); // 2.1.39 : l'entrée du jour (si encore libre) sert au premier combat de la série
     assert.strictEqual(etat(3).salon.serie, 1, "un seul combat par défaut");
     refuse("série choisie par un membre qui n'est pas chef", () => err(B(3, "serie", 3), /Seul le chef/, "série par un membre"));
     for (const n of [11, 0, -1, 1000]) refuse("série de " + n + " combats", () => err(B(1, "serie", n), /De 1 à 10/, "série " + n));
@@ -483,7 +490,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
       // bons « donjons en groupe » : un par combat au plus, et les mêmes plafonds que sans série (mono.act_regles : 2 par jour)
       assert(+q(`select count(*) from mono.bons where user_id = '${U(i)}' and combat = any(array[${cs.map((c) => `'g:${c}'`)}])`) >= 1, "bons de la série " + i);
       assert.strictEqual(+q(`select count(*) from mono.bons where user_id = '${U(i)}' and kind = 'grp'`), +q(`select max_jour from mono.act_regles where kind = 'grp'`), "plafond du jour des bons de groupe atteint, jamais dépassé " + i);
-      sync(i); assert.strictEqual(P[i].S.res[KEY], keys0[i] - 3, "une clé par combat " + i);
+      sync(i); assert.strictEqual(P[i].S.res[KEY], keys0[i] - 3 + (tdj0[i] ? 1 : 0), "une clé par combat (l'entrée du jour d'abord) " + i); assert(E.tdj(P[i].S).u[DJ], "entrée du jour prise " + i);
     }
     refuse("rejouer un numéro de la série (base)", () => fails(() => q(`insert into mono.bureau_combats (salon, saison, did, stasis, seed, transition_fin, serie_id, serie_k, serie_n) values (${sidA}, 0, '${DJ}', 1, 1, now(), ${cs[0]}, 2, 3)`), /bureau_serie_k|duplicate/, "même numéro deux fois"));
     refuse("combat k au-delà de N (base)", () => fails(() => q(`insert into mono.bureau_combats (salon, saison, did, stasis, seed, transition_fin, serie_k, serie_n) values (${sidA}, 0, '${DJ}', 1, 1, now(), 4, 3)`), /check constraint/, "k > N"));
