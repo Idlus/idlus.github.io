@@ -277,7 +277,7 @@
   const spellScore = (c, sp, st) => {
     const g = E.spellGrade(sp, c.lvl); const k = E.spellKind(g); const el = sp.el;
     let sc = E.spellPower(g) / Math.max(1, g.pa);
-    if (k === "heal") return 8; if (k === "summon") return 7; if (k === "shield") return 6; if (k === "buff") return 4;
+    if (k === "heal") return 8; if (k === "summon") return 7 + (E.summonEl(g) === mainEl(c) ? 0.02 : 0); if (k === "shield") return 6; if (k === "buff") return 4;
     const me = mainEl(c);
     const est = (x) => (st ? st[(ELEMENTS[x] || {}).stat] || 0 : x === me ? c.lvl * 4 : 0);
     const bestV = st ? Math.max(st.fo || 0, st.ine || 0, st.cha || 0, st.age || 0) : c.lvl * 4;
@@ -287,6 +287,10 @@
     return sc;
   };
   E.spellScore = spellScore;
+  /* 2.1.38.6 : élément de la créature invoquée, comme dans DOFUS (Tofu Air, Bouftou Terre, Crapaud Eau, Dragonnet Feu…) ;
+     sert à choisir l'invocation qui va avec le profil du héros quand les sorts sont automatiques */
+  const SUMMON_EL = [[/tofu|scarafoudre/i, "a"], [/bouf|craquolosse/i, "t"], [/crapi|crocol/i, "e"], [/dragou|dragonnet|sulf/i, "f"]];
+  E.summonEl = (g) => { const f = g && g.fx && g.fx.find((x) => x.k === "summon"); const m = f && (D.SUMMONS || {})[String(f.mid)]; const r = m && SUMMON_EL.find(([re]) => re.test(m.name)); return r ? r[1] : null; };
   /* meilleure sélection automatique : attaques de l'élément principal + 1 invocation, 1 soin et 1 protection au maximum */
   E.autoLoadout = (c, st) => {
     const known = E.knownSpells(c); const slots = E.spellSlots(c);

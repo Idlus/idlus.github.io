@@ -1,6 +1,14 @@
 {
-  "version": "2.1.38.5",
+  "version": "2.1.38.6",
   "versions": [
+    {
+      "v": "2.1.38.6",
+      "name": "Invocations dans le bon élément",
+      "items": [
+        "Osamodas : en sorts automatiques, l'invocation choisie suit le profil du héros, comme dans DOFUS : Bouftou en Force (Terre), Tofu en Agilité (Air), Crapipou en Chance (Eau), Dragoune en Intelligence (Feu), et leurs versions plus fortes ensuite",
+        "La fiche d'un sort d'invocation indique l'élément de la créature et celui de ses coups"
+      ]
+    },
     {
       "v": "2.1.38.5",
       "name": "Donjons enchaînés avec mercenaire",

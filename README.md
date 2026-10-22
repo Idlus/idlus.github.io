@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38.6 « Invocations dans le bon élément »
+- Ticket #149 : `E.summonEl` (js/engine.js) donne l'élément DOFUS de la créature invoquée ; `spellScore` favorise d'un cheveu (+0,02) l'invocation de l'élément du profil, donc `autoLoadout` prend Bouftou pour un Osamodas Force au lieu du premier sort (Tofu). Aucun chiffre de combat changé.
+- Fiche du sort (`spSentence0` dans js/ui.js) : « (créature Terre), qui se bat avec l'équipe et frappe en Terre ». Test : `tests/invocations.test.js`.
+
 ## 2.1.38.5 « Donjons enchaînés avec mercenaire »
 - Ticket #151 (Vector) : la fiche du donjon envoie le nombre de courses et la montée de stasis à `E.monoEnter` même avec un mercenaire (`js/ui.js`, `enterdg`). `E.monoEnter(S, did, stasis, mercCls, chain, climb)`.
 - `js/mono.js` : `E.enterDungeon` enveloppé, le mercenaire (pas le renfort d'un ami) reste pour la course suivante et coûte `E.MONO.merc.cost` à chaque nouvelle entrée ; sans les kamas, l'enchaînement s'arrête (clé gardée) et il repart.

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.38.5";
+const GAME_VERSION = "2.1.38.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38.6", name: "Invocations dans le bon élément", items: [
+    "Osamodas : en sorts automatiques, l'invocation choisie suit le profil du héros, comme dans DOFUS : Bouftou en Force (Terre), Tofu en Agilité (Air), Crapipou en Chance (Eau), Dragoune en Intelligence (Feu), et leurs versions plus fortes ensuite",
+    "La fiche d'un sort d'invocation indique l'élément de la créature et celui de ses coups" ] },
   { v: "2.1.38.5", name: "Donjons enchaînés avec mercenaire", items: [
     "Monocompte : un donjon lancé avec un mercenaire s'enchaîne enfin (et la montée de stasis marche aussi). Le mercenaire reste jusqu'au bout, payé à chaque donjon ; sans assez de kamas, l'enchaînement s'arrête. Merci Vector" ] },
   { v: "2.1.38.4", name: "XP de métier rendue", items: [
@@ -6905,7 +6908,8 @@ function spSentence0(c, sp) {
       case "apdrain": out.push(`Retire <b>${f.v} PA</b> à la cible : elle joue moins`); break;
       case "weaken": out.push(`La cible frappe <b>${f.v} % moins fort</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
       case "vuln": out.push(`La cible <b>prend +${f.v} % de dégâts</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
-      case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; out.push(`Invoque <b>${m ? h(m.name) : "une créature"}</b>, qui se bat avec l'équipe`); break; }
+      case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; const se = E.summonEl(g); const ce = (STATS[CLASSES[c.cls].main] || {}).el || "t"; // 2.1.38.6 : élément de la créature et de ses coups
+        out.push(`Invoque <b>${m ? h(m.name) : "une créature"}</b>${se ? ` (créature ${elS(se)})` : ""}, qui se bat avec l'équipe et frappe en ${elS(ce)}`); break; }
       case "leech": out.push(`Vole <b>${f.v} %</b> des dégâts en PV`); break;
       case "push": out.push(`Repousse la cible de ${f.v} case${f.v > 1 ? "s" : ""} : si elle percute un monstre, les deux prennent des dégâts`); break;
     }

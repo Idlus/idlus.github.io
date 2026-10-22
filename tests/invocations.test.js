@@ -27,3 +27,12 @@ assert.ok(sums <= 2, `les invocations s'empilent : ${sums} places pour ${made} i
 assert.ok(F.ents.length <= n0 + 2, `le combat grossit : ${F.ents.length} entités`);
 assert.ok(F.order.every((x, k) => F.order.indexOf(x) === k || !F.ents[x].alive || k < F.oi), "une invocation joue deux fois dans le même tour");
 console.log(`ok - invocations remplacées (${made} invocations, ${sums} places)`);
+
+/* 2.1.38.6 (ticket #149) : en sorts automatiques, l'Osamodas prend l'invocation de son profil (Force → Bouftou, Agilité → Tofu…) */
+for (const [as, want] of [["fo", "Bouftou"], ["age", "Tofu"], ["cha", "Crapipou"], ["ine", "Dragoune"]]) {
+  const S2 = E.newState("Elt", "osa"); const h = S2.chars[0]; h.lvl = 40; h.autoStat = as; h.spellsManual = false;
+  E.refreshSpells(h, E.charStats(S2, h));
+  const names = h.spells.map((x) => E.spellDef("osa", x.id).name);
+  assert.ok(names.includes(want), `profil ${as} : ${want} attendu, barre = ${names.join(", ")}`);
+}
+console.log("ok - invocation de l'Osamodas selon son profil");
