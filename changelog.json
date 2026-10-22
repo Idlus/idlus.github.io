@@ -1,6 +1,13 @@
 {
-  "version": "2.1.37.9",
+  "version": "2.1.37.10",
   "versions": [
+    {
+      "v": "2.1.37.10",
+      "name": "Chat bien en bas",
+      "items": [
+        "Grand écran : le chat ne remonte plus par à-coups quand la colonne « Combat en direct » change de taille, et il redescend tout seul aux nouveaux messages (merci Zoubilus)"
+      ]
+    },
     {
       "v": "2.1.37.9",
       "name": "Guildes au classement",

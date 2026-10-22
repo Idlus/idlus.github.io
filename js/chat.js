@@ -194,11 +194,14 @@
     } else { el.className = "chat"; el.innerHTML = body + `<div class="ch-foot">${footHtml(typed)}</div>`; }
     C.footSig = sig;
     const nl = el.querySelector(".ch-list");
-    if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
-    else if (nl) { nl.scrollTop = top; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
+    if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; C.stick = true; }
+    else if (nl) { nl.scrollTop = top; C.stick = false; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
     if (nl) {
       if (C.below) nl.insertAdjacentHTML("beforeend", `<button class="ch-new" data-act="ch-bottom">Nouveaux messages ↓</button>`);
-      nl.addEventListener("scroll", () => { if (C.below && nl.scrollTop + nl.clientHeight >= nl.scrollHeight - 30) { C.below = false; const b = nl.querySelector(".ch-new"); if (b) b.remove(); } }, { passive: true });
+      nl.addEventListener("scroll", () => { const end = nl.scrollTop + nl.clientHeight >= nl.scrollHeight - 30; C.stick = end; if (C.below && end) { C.below = false; const b = nl.querySelector(".ch-new"); if (b) b.remove(); } }, { passive: true });
+      // 2.1.37.10 (ticket #148) : la colonne « Combat en direct » des grands écrans change de hauteur à chaque tour et pousse le haut du chat ;
+      // la liste rétrécissait sans suivre la fin (elle remontait par à-coups et ne descendait plus). Collée en bas, elle y reste.
+      if (window.ResizeObserver) { if (C.ro) C.ro.disconnect(); C.ro = new ResizeObserver(() => { if (C.stick && nl.isConnected) nl.scrollTop = nl.scrollHeight; }); C.ro.observe(nl); }
     }
     if (focus && $("#chIn") && document.activeElement !== $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
     cntTick(); // 1.0.12.8

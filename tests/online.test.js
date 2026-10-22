@@ -782,6 +782,15 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.evaluate(() => document.querySelector("#chat .ch-list").scrollTop)) !== 120) fail("chat : la lecture remonte quand le chat se redessine");
     await page.evaluate(() => window.__chatEmit({ id: 600, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Plus bas", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
     if (!(await page.$("#chat .ch-new"))) fail("chat : bouton « Nouveaux messages » absent"); else { await page.click("#chat .ch-new"); if (await page.evaluate(() => { const l = document.querySelector("#chat .ch-list"); return l.scrollTop + l.clientHeight < l.scrollHeight - 30; })) fail("chat : « Nouveaux messages » ne descend pas"); }
+    // 2.1.37.10 (ticket #148) : grand écran avec la colonne « Combat en direct » : quand elle grandit, le chat collé en bas y reste
+    await page.setViewportSize({ width: 1875, height: 966 }); await page.waitForTimeout(400);
+    { const gap = await page.evaluate(async () => { const l = document.querySelector("#chat .ch-list"); l.scrollTop = l.scrollHeight; await new Promise((ok) => setTimeout(ok, 60));
+        const B = document.body, h0 = parseInt(B.style.getPropertyValue("--lch")) || 0; const g = [];
+        for (const d of [60, 25, 90]) { B.style.setProperty("--lch", h0 + d + "px"); await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))); g.push(Math.round(l.scrollHeight - l.clientHeight - l.scrollTop)); }
+        B.style.setProperty("--lch", h0 + "px"); return { on: B.classList.contains("livecol"), g }; });
+      if (!gap.on) fail("chat grand écran : colonne « Combat en direct » absente à 1875 px");
+      else if (gap.g.some((x) => x > 2)) fail("chat grand écran : le chat ne reste pas en bas quand la colonne Combat en direct change de hauteur " + gap.g.join(",")); }
+    await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(300);
     await page.evaluate(() => { const tpl = Object.keys(window.DATA.ITEMS)[0]; window.DX.social.itemSheet(tpl); }); await page.click('[data-act="ch-share"]');
     await page.waitForSelector("#chat .ch-att", { timeout: 3000 }); await page.waitForTimeout(4000); await page.click('[data-act="ch-send"]'); await page.waitForTimeout(400);
     if (!(await page.$("#chat .ch-list .itm"))) fail("chat : objet montré absent");
