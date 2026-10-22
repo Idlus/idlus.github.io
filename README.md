@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38.4 « XP de métier rendue »
+
+Le registre de l'HdV peut porter de l'XP de métier (`jx`, `E.addJobXp`) ; étape « rendre-xp-metier » du workflow Serveur OVH (`tools/serveur/rendre_xp_metier.sql`, sauvegarde de la base avant l'envoi) pour rendre l'XP de récolte perdue au niveau 200 (ticket #146).
+
 ## 2.1.38.3 « Guilde sur le profil »
 - Idée de Gagou (22/10, accord de Mathis « installe la guilde sur le profil sur le serveur ») : fonction `guild_of(p_user)` ajoutée à supabase/guildes.sql (lecture seule, installée par « Serveur en ligne ») ; le profil d'un joueur (déjà prêt depuis la 2.1.37.9) affiche sa guilde, son niveau et son rang.
 

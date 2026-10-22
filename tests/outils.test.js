@@ -117,4 +117,8 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   run(S, 600); assert.strictEqual(S.jobs.paysan.lvl, 200); assert.ok(S.jobs.paysan.xp > 40e6, `XP au-delà du 200 conservée (${S.jobs.paysan.xp})`);
   const M = E.newState("M", "iop"); M.mono = { spec: [] }; M.jobs.paysan.lvl = 100; M.jobs.paysan.xp = 0; M.chars[0].job = { job: "paysan", res: "Blé", prog: 0 };
   run(M, 3600); assert.strictEqual(M.jobs.paysan.lvl, 100); assert.ok(M.jobs.paysan.xp < E.jobXpNeed(100), "Monocompte hors spécialité : bloqué au 100"); }
+{ const S = E.newState("T", "iop"); S.jobs.paysan.lvl = 200; S.jobs.paysan.xp = 110589;
+  assert.strictEqual(E.addJobXp(S, "paysan", 4e8), 4e8); assert.strictEqual(S.jobs.paysan.xp, 110589 + 4e8, "XP rendue au 200");
+  S.jobs.bucheron.lvl = 1; S.jobs.bucheron.xp = 0; E.addJobXp(S, "bucheron", E.jobXpNeed(1) + E.jobXpNeed(2)); assert.strictEqual(S.jobs.bucheron.lvl, 3, "l'XP rendue fait monter le métier");
+  assert.strictEqual(E.addJobXp(S, "inconnu", 5), 0); assert.strictEqual(E.addJobXp(S, "paysan", -5), 0); }
 console.log("outils : OK");

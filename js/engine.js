@@ -100,6 +100,15 @@
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
   /* niveau maximum d'un métier (g récolte, c artisanat, f forgemagie) : 200 ; le Monocompte le baisse hors spécialités (js/mono.js) */
   E.jobCap = (S, kind, job) => 200;
+  /* 2.1.38.4 : XP de métier envoyée par le serveur (registre de l'HdV, p.jx, js/market.js), par exemple l'XP de récolte perdue
+     au niveau 200 entre la 2.1.35 et la 2.1.37.7 (ticket #146) ; elle fait monter le métier comme une récolte */
+  E.addJobXp = (S, job, n) => {
+    const g = !!(S.jobs && S.jobs[job]), J = g ? S.jobs[job] : S.crafts && S.crafts[job]; n = Math.max(0, Math.floor(Number(n) || 0)); if (!J || !n) return 0;
+    const cap = E.jobCap(S, g ? "g" : "c", job); J.xp = (J.xp || 0) + n;
+    while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; }
+    if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, Math.max(0, E.jobXpNeed(J.lvl) - 1));
+    return n;
+  };
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
   /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
   E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)

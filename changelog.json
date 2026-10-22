@@ -1,6 +1,13 @@
 {
-  "version": "2.1.38.3",
+  "version": "2.1.38.4",
   "versions": [
+    {
+      "v": "2.1.38.4",
+      "name": "XP de métier rendue",
+      "items": [
+        "Le serveur peut rendre de l'XP de métier perdue : elle arrive dans la partie comme un gain de l'hôtel de vente (première utilisation : l'XP de récolte bloquée au niveau 200, ticket #146)"
+      ]
+    },
     {
       "v": "2.1.38.3",
       "name": "Guilde sur le profil",
