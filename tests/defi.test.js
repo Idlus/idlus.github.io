@@ -5,7 +5,7 @@ const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
-require("../js/defi.js");
+require("../js/defi.js"); require("../js/mono.js");
 const D = require("../js/data.js");
 
 // 1. Le jour change à minuit heure de Paris ; le défi est le même pour tous et change chaque jour.
@@ -135,6 +135,38 @@ console.log(`ok - défi : coffre, série (${wins}/9 victoires)`);
   const G2 = E.newState("Or", "iop"); G2.defiHist = {}; let m0 = E.defiMonth(day), d0 = day; while (E.defiMonth(d0 - 1) === m0) d0--;
   for (let i = 0; i < 20; i++) G2.defiHist[d0 + i] = 3; assert.strictEqual(E.defiGoldCount(G2, d0 + 20), 20);
   console.log("ok - défi 1.1 série 4 : mode héroïque, vote, série en danger, carnet, mois doré");
+}
+
+// 4 quinquies. Monocompte (un seul héros) : aucune règle d'équipe qui rende le défi injouable seul
+// (bug de Mathis : « Sans Eniripsa » avec un Eniripsa pour seul héros). Le Classique ne change pas.
+{
+  const crypto = require("crypto"); const D0 = 20750, N = 365; const rows = [];
+  for (const T of E.DEFI_TIERS) for (let d = D0; d < D0 + N; d++) { const x = E.defi(T.id, d); rows.push([T.id, d, x.k, x.mods, x.rules, x.extra, x.team, x.seed, x.sun].join("|")); }
+  // empreinte des tirages du Classique sur 365 jours, prise avec le code d'avant le correctif (2.1.37)
+  assert.strictEqual(crypto.createHash("sha256").update(rows.join("\n")).digest("hex"), "9341996a87759a1c537ddc2ee27ed836debb4df93fe1ea2a6c06bfd441ed60d5", "Classique : mêmes règles tirées qu'avant");
+  const CL = Object.keys(D.CLASSES); let swapped = 0;
+  const heroes = CL.map((cls) => { const M = E.monoStart(E.newState("Mono", cls)); assert.ok(E.isMono(M) && M.chars.length === 1); return M; });
+  for (const T of E.DEFI_TIERS) for (let d = D0; d < D0 + N; d++) {
+    const c = E.defi(T.id, d), m = E.defi(T.id, d, true);
+    assert.deepStrictEqual(E.defi(T.id, d, false), c, "Classique : le même défi");
+    assert.ok(!("mono" in c), "pas de marque Monocompte en Classique");
+    assert.ok(E.defiSoloOk(m.team), `Mono : règle jouable seul (${T.id}, jour ${d}, ${m.team})`);
+    const { team: tc, ...rc } = c; const { team: tm, mono, ...rm } = m; assert.deepStrictEqual(rm, rc, "Mono : le reste du défi est celui du Classique"); assert.strictEqual(mono, true);
+    if (E.defiSoloOk(tc)) assert.strictEqual(tm, tc, "règle déjà jouable seul : gardée"); else swapped++;
+    assert.deepStrictEqual(E.defi(T.id, d, true), m, "Mono : même jour, même règle pour tous");
+    for (const M of heroes) assert.strictEqual(E.defiTeamErr(M, E.defiFor(M, T.id, d)), null, `Mono ${M.chars[0].cls} : défi jouable (${T.id}, jour ${d})`);
+  }
+  assert.ok(swapped > 0, "des jours « Sans Eniripsa » ou « Sans Iop » ont bien été remplacés");
+  // le jour du signalement (22/10/2026, Découverte : « Sans Eniripsa ») : un Eniripsa seul lance le défi
+  const day = 20748; assert.strictEqual(E.defi("dec", day).team, "noeni");
+  const saveT = t; t = Date.UTC(2026, 9, 22, 12, 0); assert.strictEqual(E.defiDay(), day);
+  const M = E.monoStart(E.newState("Eni", "eni")); M.chars[0].lvl = 40;
+  assert.strictEqual(E.defiFor(M, "dec").team !== "noeni", true);
+  const r = E.defiPlay(M, "dec"); assert.ok(typeof r === "object", "Mono Eniripsa : le défi se lance (" + r + ")");
+  assert.strictEqual(r.team.length, 1); const back = E.defiSim(JSON.parse(E.serialize(M)), E.defiFor(M, "dec"), t); assert.strictEqual(back.turns, r.turns, "même combat rejoué");
+  const C = E.newState("Eni", "eni"); C.chars[0].lvl = 40; assert.ok(/Sans Eniripsa/.test(E.defiPlay(C, "dec")), "Classique : la règle du jour reste « Sans Eniripsa »");
+  t = saveT;
+  console.log(`ok - défi Monocompte : règle d'équipe jouable seul pour les ${CL.length} classes sur ${N} jours (${swapped} remplacements), Classique inchangé`);
 }
 
 // 5. Garde-robe : tout ce qu'on possède y entre, on garde l'apparence après avoir vendu l'objet.
