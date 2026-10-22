@@ -373,10 +373,12 @@
     const valid = ["jour", "shops"].concat(FAMS.flatMap((F) => F.pages.map((p) => p[0])), COL.map((p) => p[0]));
     if (!valid.includes(ui.qt)) ui.qt = "jour";
     const qt = ui.qt;
+    /* 2.1.39 (Mathis 1A des onglets) : Quêtes, Succès et Ornements sur une seule rangée d'onglets (plus de rangée sous le bandeau) */
+    const mergeTab = `<button class="mg-tab" data-act="nav" data-v="quests" aria-pressed="false">Quêtes</button>`;
     if (qt === "ach" || qt === "orn") { // page Succès : succès et ornements, sans le journal
       // la recherche garde le curseur malgré le rafraîchissement de la page
       const f = document.activeElement && document.activeElement.id === "qxSearch" ? document.activeElement.selectionStart : null;
-      main.innerHTML = `<div class="pagehead"><h1>Succès</h1></div><nav class="subtabs">${COL.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n} ${cnt(s, id)}</button>`).join("")}</nav><section class="stack">${qt === "ach" ? achHtml(s) : ornHtml(s)}</section>`;
+      main.innerHTML = `<div class="pagehead"><h1>Succès</h1></div><nav class="subtabs">${mergeTab}${COL.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n} ${cnt(s, id)}</button>`).join("")}</nav><section class="stack">${qt === "ach" ? achHtml(s) : ornHtml(s)}</section>`;
       if (f !== null) { const el = document.getElementById("qxSearch"); if (el) { el.focus(); try { el.setSelectionRange(f, f); } catch (e) {} } }
       return;
     }
@@ -384,7 +386,7 @@
     // 1.0.3.2 : la page se redessine toutes les 3 s ; on garde le défilement des rangées horizontales (chapitres…)
     const keep = st.lastQt === qt ? [...main.querySelectorAll(".qj-main *")].filter((e) => e.scrollLeft > 0 && typeof e.className === "string" && e.className.trim()).map((e) => [e.className, e.scrollLeft]) : [];
     st.lastQt = qt;
-    const html = `<div class="pagehead"><h1>Quêtes</h1></div><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
+    const html = `<div class="pagehead"><h1>Quêtes</h1></div><nav class="subtabs pg-mtabs"><button aria-pressed="true" data-act="nav" data-v="quests">Quêtes</button>${COL.map(([id, n]) => `<button class="mg-tab" data-act="qtab" data-v="${id}" aria-pressed="false">${n} ${cnt(s, id)}</button>`).join("")}</nav><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
     if (soft && window.DX.morph) { window.DX.morph(main, html); return; }
     main.innerHTML = html;
     keep.forEach(([c, x]) => { const e = main.querySelector(".qj-main ." + c.trim().split(/\s+/).join(".")); if (e) e.scrollLeft = x; });

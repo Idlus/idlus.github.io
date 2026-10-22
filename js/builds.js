@@ -159,14 +159,18 @@
   }
 
   /* ---------- liste ---------- */
+  const FO = { open: false };
   function filtersHtml() {
     const cls = `<div class="bd-cls" role="group" aria-label="Classe">${D.CLASS_ORDER.filter((c) => CLASSES[c]).map((c) => `<button class="${F.cls === c ? "on" : ""}" style="--cc:${CLASSES[c].color}" data-act="bd-f" data-k="cls" data-v="${c}" data-tip="${h(CLASSES[c].name)}" aria-pressed="${F.cls === c}"><img src="${X().symImg(c)}" alt="${h(CLASSES[c].name)}"></button>`).join("")}</div>`;
     const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="bd-f" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
     const sort = `<select id="bdSort" aria-label="Trier">${SORTS.map(([v, n]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>${n}</option>`).join("")}</select>`;
+    /* 2.1.39 (Mathis 2A des onglets) : niveau, élément et budget derrière « Filtres » (toujours ouverts avec « Affichage détaillé ») */
+    const s = window.DX.S; const fold = !(s && s.settings.detail); const nf = ["br", "el", "bud"].filter((k) => F[k]).length; const open = !fold || FO.open;
     return `<div class="panel pad stack bd-filt">${cls}
+      ${fold ? `<div class="row"><button class="btn sm ${nf ? "primary" : ""}" data-act="bd-fo" aria-expanded="${!!open}">${X().G("search")} Filtres · ${nf}</button></div>` : ""}<div class="stack bd-more" ${open ? "" : "hidden"}>
       <div class="row bd-fl"><span class="bd-lab">Niveau</span>${seg("br", BR)}</div>
       <div class="row bd-fl"><span class="bd-lab">Élément</span>${seg("el", [["", "Tous"], ["fo", "Terre"], ["ine", "Feu"], ["cha", "Eau"], ["age", "Air"], ["multi", "Multi"]])}</div>
-      <div class="row bd-fl"><span class="bd-lab">Budget</span>${seg("bud", [["", "Tous"], ["abo", "◆ Abordable"], ["moy", "◆◆ Moyen"], ["pre", "◆◆◆ Premium"]])}</div>
+      <div class="row bd-fl"><span class="bd-lab">Budget</span>${seg("bud", [["", "Tous"], ["abo", "◆ Abordable"], ["moy", "◆◆ Moyen"], ["pre", "◆◆◆ Premium"]])}</div></div>
       <div class="row bd-fl"><input type="search" id="bdQ" class="bd-q" placeholder="Chercher un objet, un Dofus, un titre…" value="${h(F.q)}" autocomplete="off">${sort}</div></div>`;
   }
   function weekHtml() {
@@ -464,6 +468,7 @@
     if (a === "bd-open") return openBuild(id);
     if (a === "bd-back") { U().bdOpen = null; repaint(); return; }
     if (a === "bd-tab") { readQ(); U().bdTab = d.v === "mine" ? "mine" : "all"; U().bdOpen = null; repaint(); window.scrollTo(0, 0); return; }
+    if (a === "bd-fo") { readQ(); FO.open = !FO.open; repaint(); return; }
     if (a === "bd-f") { readQ(); F[d.k] = F[d.k] === d.v && d.k === "cls" ? "" : d.v; repaint(); return; }
     if (a === "bd-more") { load(true); repaint(); return; }
     if (a === "bd-retry") { L.at = 0; L.key = null; repaint(); return; }

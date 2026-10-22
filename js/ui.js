@@ -2785,6 +2785,9 @@ function monoNav0() {
   NAV_DESC.fragments = "Les 12 défis de la saison et tes Éclats du Temps"; NAV_DESC.boutique = "Cosmétiques et objets de collection de la saison"; NAV_DESC.guerre = "Bonta contre Brâkmar et le boss de 21 h"; NAV_DESC.pass = "Paliers, quêtes et hauts faits de la saison"; NAV_DESC.manche = "Un donjon imposé pendant 2 semaines";
 }
 const navSeason = () => NAV.find((F) => F.season) || null; // Monocompte seulement
+/* 2.1.39 (Mathis 7A des onglets) : la page Saison en 5 onglets ; un onglet à plusieurs pages montre ses pages juste dessous */
+const SEASON_GRP = [["Progression", ["pass", "fragments"]], ["Défis", ["manche", "mutation", "serment"]], ["Guerre", ["guerre"]], ["Boutique", ["boutique"]], ["Classements", ["saisonlb"]]];
+const seasonGroups = () => SEASON_GRP.map(([n, L]) => [n, L.filter((k) => navPage(k))]).filter(([, L]) => L.length);
 const seasonName = () => (S && S.mono ? (E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom) : "Saison");
 /* une ligne par page pour la recherche et le mode icônes */
 const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", admin: "Le panneau de Xener" };
@@ -3010,7 +3013,10 @@ function renderNav() {
   if (curFam && !fight && k !== "home") {
     const pinned = pins.includes(kk);
     strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.season ? seasonName() : curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button><button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
-    const tabs = NAV_MERGE[kk];
+    if (curFam.season) { const G2 = seasonGroups(); const g = G2.find((x) => x[1].includes(kk));
+      if (g) { strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(seasonName())}</span></span>${G2.map((x) => { const p = navPage(x[1][0]); return `<button data-act="nav" data-v="${x[1][0]}" data-nk="${x[1][0]}" ${x === g ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(x[0])}</span>${x[1].map((y) => badge(y)).find(Boolean) || ""}</button>`; }).join("")}<button class="sn-guide" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?</button></div>`;
+        if (g[1].length > 1) strip += `<div class="sn-tabs">${g[1].map((y) => { const p = navPage(y); return `<button data-act="nav" data-v="${y}" data-nk="${y}" ${y === kk ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[y] || ""}</button>`; }).join("")}</div>`; } }
+    const tabs = null; // 2.1.39 (Mathis 1A des onglets) : les pages rangées ensemble sont des onglets de la page (pageTabs), plus de 2e rangée
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   sub.innerHTML = strip;
@@ -4122,9 +4128,9 @@ function dgFilterBar(F, nShown, nHid) {
   if (F.lv !== "me" && !F.q) chips.push(["lv", F.lv === "all" ? "Tous les niveaux" : "Niveau " + DG_LV.find((x) => x[0] === F.lv)[1]]);
   if (F.st !== "all") chips.push(["st", F.st === "open" ? "Accessibles" : "Fermés"]); if (F.sk !== "all") chips.push(["sk", DG_SK.find((x) => x[0] === F.sk)[1]]);
   if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.h15) chips.push(["h15", `Sans les stasis ${E.STASIS_MAX}`]); if (F.q) chips.push(["q", `« ${F.q} »`]);
-  const nf = chips.filter(([k]) => k !== "q").length; const open = !narrow() || (ui.fltOpen && ui.fltOpen.dg);
+  const nf = chips.filter(([k]) => k !== "q").length; const fold = narrow() || !detailOn(); const open = !fold || (ui.fltOpen && ui.fltOpen.dg); // 2.1.39 (Mathis 2A des onglets) : sur PC aussi, les filtres derrière « Filtres »
   return `<div class="dgsearch"><span class="dgq">${G("search")}<input type="search" id="dgq" data-act="dgq" placeholder="Donjon, boss ou zone…" autocomplete="off" spellcheck="false" value="${h(F.q)}"></span>
-      ${narrow() ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
+      ${fold ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg" aria-expanded="${!!open}">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
     <div class="dgtools" ${open ? "" : "hidden"}>
       <div class="dgtrow"><span class="xs muted dglab">Niveau</span>${seg("lv", DG_LV)}</div>
       <div class="dgtrow"><span class="xs muted dglab">Afficher</span>${seg("st", [["all", "Tous"], ["open", "Accessibles"], ["closed", "Fermés"]])}
@@ -4388,10 +4394,16 @@ function encyclopediaHtml() {
   const kpis = [["best", "Monstres rencontrés", met, all.length], ["eq", "Équipements obtenus", eqHave, EQ.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length], ["tro", "Trophées de zone", troN(), Object.keys(E.SUBS).length]];
   const souls = E.soulCount(S), st = E.stones(S);
   const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>` + (window.CHROMA ? window.CHROMA.kpi() : ""); // 1.0.33 : album chromatique (js/chromaui.js)
-  const head = `<div class="enckpis k6 k7${window.CHROMA ? " k8" : ""}">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
-    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"]].concat(window.COLL ? [["sets", "Panoplies"]] : [], [["tro", "Trophées"]], window.CHROMA ? [["chroma", "✦ Chromatiques"]] : []).map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}${window.COLL ? "" : `<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button>`}</nav>` // 1.0.30 : onglet Panoplies (Collection de panoplies, js/collui.js)
+  const head = `<div class="enckpis k6 k7${window.CHROMA ? " k8" : ""}">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>`
+    + encTabsHtml(enc) // 2.1.39 (Mathis 4A des onglets) : 4 onglets, les sous-pages en pastilles
     + (enc.tab === "sets" && window.COLL ? "" : `<div class="encsrch">${G("search")}<input class="encq" id="encQ" type="search" data-act="encsearch" placeholder="${ENC_Q_PH[enc.tab] || ENC_Q_PH.best}" value="${h(enc.q || "")}" autocomplete="off" spellcheck="false" enterkeyhint="search">${enc.q ? `<button class="encqx" data-act="encqclear" aria-label="Effacer la recherche" data-tip="Effacer la recherche">✕</button>` : ""}</div>`);
   return head + (enc.tab === "chroma" && window.CHROMA ? window.CHROMA.html(enc) : enc.tab === "sets" && window.COLL ? window.COLL.setsHtml() : enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
+}
+const ENC_GRP = () => [["Monstres", [["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"]]], ["Objets", [["eq", "Équipements"]].concat(window.COLL ? [["sets", "Panoplies"]] : [])], ["Trophées", [["tro", "Trophées"]]]].concat(window.CHROMA ? [["✦ Chromatiques", [["chroma", "✦ Chromatiques"]]]] : []);
+function encTabsHtml(enc) {
+  const G0 = ENC_GRP(); const cur = G0.find(([, L]) => L.some(([v]) => v === enc.tab)) || G0[0];
+  return `<nav class="subtabs enctabs">${G0.map(([n, L]) => `<button data-act="enctab" data-v="${L[0][0]}" aria-pressed="${cur[0] === n}">${n}</button>`).join("")}${window.COLL ? "" : `<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button>`}</nav>`
+    + (cur[1].length > 1 ? `<div class="catchips enc-sub">${cur[1].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}</div>` : "");
 }
 function encBestHtml(enc) {
   if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
@@ -7396,6 +7408,7 @@ const invStats = () => (ui.invStats || []).concat(statOfQ(E.searchNorm(ui.invSea
 let invStatCnt = {};
 const statOfQ = (q) => (q ? Object.keys(STATS).find((k) => E.searchNorm(STATS[k].name) === q || E.searchNorm(STATS[k].short || "") === q || E.searchNorm(STATS[k].name).startsWith(q) && q.length >= 3) : null);
 let invCnt = {}; let invOwn = new Set(); let invTrash = new Set();
+const INV_CHIP_TOP = ["all", "up", "new", "radiant", "trash"]; // 2.1.39 (Mathis 6A des onglets) : 4 ou 5 pastilles, le reste dans le menu « Type »
 function invGroups() {
   const q = E.searchNorm(ui.invSearch); const filt = ui.slotFilter;
   const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
@@ -7612,7 +7625,7 @@ function renderInventory() {
     const toolsA = `<div class="invtools"><div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher un objet…" value="${h(ui.invSearch || "")}">
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["up", "Améliorations d'abord"], ["recent", "Récents"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
         <button class="btn sm ${S.settings.invSmall ? "primary" : ""}" data-act="invsmall" title="${S.settings.invSmall ? "Grandes cases" : "Petites cases : plus d'objets à l'écran"}" aria-pressed="${!!S.settings.invSmall}">▦</button>${`<button class="btn sm ${ui.invStatOpen || (ui.invStats || []).length ? "primary" : ""}" data-act="invstatopen" title="Filtrer par caractéristique"><span class="ilbl">Caractéristiques</span><span class="ilbs">Carac.</span>${(ui.invStats || []).length ? ` <b>${ui.invStats.length}</b>` : ""}</button>`}${selBtn}<button class="btn sm ${ui.invMore ? "primary" : ""}" data-act="invmore" title="Options du sac">${G("gear")}<span class="ilbl"> Options</span></button></div>
-      <div class="catchips invchips">${chips.map(([k, n, c]) => `<button data-act="invchip" data-v="${k}" aria-pressed="${(ui.slotFilter || "all") === k}">${n} <b>${c}</b></button>`).join("")}</div>
+      <div class="catchips invchips">${chips.filter(([k]) => INV_CHIP_TOP.includes(k)).map(([k, n, c]) => `<button data-act="invchip" data-v="${k}" aria-pressed="${(ui.slotFilter || "all") === k}">${n} <b>${c}</b></button>`).join("")}${(() => { const L = chips.filter(([k]) => !INV_CHIP_TOP.includes(k)); const on = L.find(([k]) => k === ui.slotFilter); return L.length ? `<label class="invtype${on ? " on" : ""}">Type <select data-act="invtype" aria-label="Type d'objet"><option value="all">Tous</option>${L.map(([k, n, c]) => `<option value="${k}" ${on && on[0] === k ? "selected" : ""}>${n} (${c})</option>`).join("")}</select></label>` : ""; })()}</div>
       ${`<div class="invfor"><span class="xs muted">Pour</span><button class="invcmp ${ui.invFor ? "" : "on"} all" data-act="invfor" data-cid="">Tous</button>${E.team(S).map((c) => `<button class="invcmp ${ui.invFor === c.id ? "on" : ""}" data-act="invfor" data-cid="${c.id}" title="${h(c.name)} : objets qu'il peut porter, du plus utile au moins utile" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</button>`).join("")}${ui.invFor && char(ui.invFor) ? `<span class="small"><b>${h(char(ui.invFor).name)}</b> niv. ${char(ui.invFor).lvl} : gain de puissance sur chaque case</span>` : ""}</div>`}
       ${ui.invStatOpen ? `<div class="panel invstp"><div class="pad stack" style="gap:6px">${INV_STG.map(([gn, ks]) => { const L = ks.filter((k) => STATS[k] && (invStatCnt[k] || (ui.invStats || []).includes(k))); return L.length ? `<div class="invstg"><span class="xs muted">${gn}</span>${L.map((k) => `<button data-act="invstat" data-k="${k}" aria-pressed="${(ui.invStats || []).includes(k)}">${sIco(k)}${h(STATS[k].name.replace(/^% /, ""))} <b>${invStatCnt[k] || 0}</b></button>`).join("")}</div>` : ""; }).join("")}<span class="xs muted">Plusieurs choix : les objets doivent avoir toutes ces caractéristiques. Tri du plus fort au plus faible.</span></div></div>` : ""}
       ${invStats().length ? `<div class="invhint"><span class="grow">Objets avec ${invStats().map((k) => `<button class="invstx" data-act="invstat" data-k="${k}" title="Retirer">${h(STATS[k].name)} ✕</button>`).join(" ")}, du plus fort au plus faible.</span>${(ui.invStats || []).length ? `<button class="btn sm" data-act="invstatclr">Effacer</button>` : ""}</div>` : ""}
@@ -8879,7 +8892,7 @@ function render() {
   else if (ui.tab === "pets" && window.COLL) window.COLL.render($("#main")); // 1.0.30 : Familiers et montures (js/collui.js)
   else if (PAGES[ui.tab]) PAGES[ui.tab]($("#main")); // 1.0.30 : Comptoirs, Foire du Trool, Cours des ressources
   else { ui.tab = "home"; renderHome(); }
-  tabsKeep();
+  pageTabs(); tabsKeep();
   backChip();
   tipTick();
 }
@@ -8903,6 +8916,21 @@ function backChip() {
 const tabScroll = {};
 const tabRows = () => [...document.querySelectorAll("#main .subtabs, #main .catchips")];
 const tabKey = (el) => ui.tab + ":" + tabRows().indexOf(el);
+/* 2.1.39 (Mathis 1A des onglets) : une seule rangée d'onglets. La page mère reçoit les pages rangées avec elle au bout de sa rangée
+   (HdV + Cours, Forgemagie + Gravure, Familiers + Élevage) ; une page rangée reçoit la page mère en tête. Quêtes et Succès : js/questui.js */
+const MERGE_HOST = { hdv: ".subtabs", forge: ".subtabs", pets: ".seg" };
+{ const mm = document.getElementById("main"); if (mm && window.MutationObserver) { let q = 0; new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; pageTabs(); }); }).observe(mm, { childList: true, subtree: true }); } } // les modules redessinent leur page eux-mêmes
+function pageTabs() {
+  if (!S || ui.tab === "combat" || ui.tab === "home") return; const m = $("#main"); if (!m || m.querySelector(".mg-tab, .pg-mtabs")) return;
+  if (ui.tab === "builds" && !S.mono) { m.insertAdjacentHTML("afterbegin", `<div class="pg-mtabs">${lbGroupsHtml()}</div>`); return; }
+  const k = navKey(), kk = navParent(k); if (kk === "quests" || kk === "ladder") return;
+  const kids = (NAV_MERGE[kk] || []).filter((x) => navPage(x)); if (!kids.length) return;
+  const b = (x) => `<button class="mg-tab" data-act="nav" data-v="${x}" data-nk="${x}" aria-pressed="${x === k}">${h(navPage(x)[1])}</button>`;
+  const host = MERGE_HOST[k] ? m.querySelector(MERGE_HOST[k]) : null;
+  if (host && k === kk) host.insertAdjacentHTML("beforeend", kids.map(b).join(""));
+  else if (host) host.insertAdjacentHTML("afterbegin", b(kk));
+  else m.insertAdjacentHTML("afterbegin", `<nav class="subtabs pg-mtabs">${[kk].concat(kids).map(b).join("")}</nav>`);
+}
 function tabsKeep() {
   if (!matchMedia("(max-width:640px)").matches) return;
   tabRows().forEach((el) => {
@@ -11063,6 +11091,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "gafrom") ui.ga = t.value;
   else if (a === "trto") ui.tr.to = t.value;
   else if (a === "invsort") ui.invSort = t.value;
+  else if (a === "invtype") ui.slotFilter = t.value;
   else if (a === "invlv0" || a === "invlv1") { const L = ui.invLv || [0, 0]; L[a === "invlv0" ? 0 : 1] = +t.value || 0; ui.invLv = L[0] || L[1] ? L : null; }
   else if (a === "setmode") ui.setF.mode = t.value;
   else if (a === "setcid") ui.setF.cid = +t.value;
@@ -11994,6 +12023,16 @@ function raceChip() {
     s: me ? `${raceOrd(R.rank)} · ${pl}` : pl, go: `data-act="race-open"`,
     tip: `Course de lancement de L'Ascension : les 10 premiers comptes à l'étage ${ASC_TOP} en Difficile gagnent le titre « Légende de la 1.1 ». Encore ${pl}.${me ? ` Tu es ${raceOrd(R.rank)} en course (étage ${R.fl}/${ASC_TOP}).` : ""} Toucher pour voir la course.` });
 }
+/* 2.1.39 (Mathis 3A des onglets) : 6 groupes au lieu de 11 onglets, les classements du groupe en pastilles ;
+   l'Ascension et le Kolizéum y sont rangés (leur page garde « Ton rang »), Builds devient le 6e groupe */
+const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds", ["#builds"]]];
+function lbGroupsHtml() {
+  const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ›", "#koli": "Kolizéum ›" };
+  const onB = ui.tab === "builds"; const cur = onB ? LB_GRP[5] : LB_GRP.find(([, L]) => L.includes(LB.tab)) || LB_GRP[0];
+  const btn = (x, on, lbl) => x[0] === "#" ? `<button data-act="nav" data-v="${x.slice(1)}" aria-pressed="${on}">${lbl}</button>` : `<button data-act="lb-tab" data-v="${x}" aria-pressed="${on}">${lbl}</button>`;
+  return `<nav class="subtabs lb-grp">${LB_GRP.map((g) => btn(g[1][0], g === cur, g[0])).join("")}</nav>`
+    + (cur[1].length > 1 ? `<div class="catchips lb-sub">${cur[1].map((x) => btn(x, x === LB.tab, LN[x] || N[x])).join("")}</div>` : "");
+}
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }
   // 2.1.35.2 : en Monocompte, la page Classements montre les classements de saison ; 22/10 (Mathis, 1A) : plus de bouton vers le Classique
@@ -12023,7 +12062,7 @@ function renderLadder() {
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? (monoSlot(SLOT) && !E.monoEternal(S) && window.DX.pages.saisonlb ? `<div class="panel"><div class="pad row between"><span class="small muted">Ici, ce sont les classements du serveur Classique.</span><button class="btn sm primary" data-act="lb-mono">Classements de ma saison</button></div></div>` : SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
-    <nav class="subtabs">${LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n]).map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
+    ${lbGroupsHtml()}
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
   const key = lbKey();
   lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === lbKey()) el.innerHTML = lbListHtml(d); })
@@ -12140,7 +12179,7 @@ async function lbTitles() {
 function lbAct(a, t) {
   const d = t.dataset;
   switch (a) {
-    case "lb-tab": LB.tab = d.v; break;
+    case "lb-tab": LB.tab = d.v; if (ui.tab !== "ladder") { ui.tab = "ladder"; window.scrollTo(0, 0); } break;
     case "lb-classic": LB.classic = true; break;
     case "lb-mono": LB.classic = false; break;
     case "lb-job": LB.job = d.v; break;

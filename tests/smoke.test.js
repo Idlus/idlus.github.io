@@ -61,7 +61,7 @@ const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k
       await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); });
       const how = await page.evaluate(NAV_HOW, k);
       if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"], #subnav .sn-strip [data-nk="${k}"]`); else if (how === "strip") await page.click(`#subnav .sn-strip [data-nk="${k}"]`);
-      else { await page.evaluate((k) => window.DX.go(k), k); if (!(await page.$(`#subnav .sn-tabs [data-nk="${k}"][aria-current]`))) errors.push(`page ${k} : pas d'onglet dans le bandeau`); }
+      else { await page.evaluate((k) => window.DX.go(k), k); await page.evaluate(() => window.DX.render()); await page.waitForTimeout(100); if (!(await page.$(`#main .mg-tab[data-nk="${k}"][aria-pressed="true"], #main .subtabs [data-act="qtab"][data-v="ach"][aria-pressed="true"]`))) errors.push(`page ${k} : pas d'onglet dans la page`); }
       await page.waitForTimeout(300);
       if (k === "bug") { // 1.1.1.3 : « Signaler un bug » ouvre une fenêtre, pas une page
         if (!(await page.$("#sheet #bgWhat"))) errors.push("Signaler un bug : fenêtre absente");
@@ -69,8 +69,8 @@ const navClick = async (page, k) => { const how = await page.evaluate(NAV_HOW, k
       }
       const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
       if (!filled) errors.push(`page ${k} vide`);
-      const cur = await page.evaluate(() => { const b = document.querySelector("#subnav .sn-tabs [aria-current]") || document.querySelector("#subnav .sn-strip [aria-current]") || document.querySelector("#nav .sn-side [aria-current]"); return b ? b.dataset.nk : null; });
-      if (cur !== k) errors.push(`page ${k} : le menu montre ${cur}`);
+      const cur = await page.evaluate(() => { const b = document.querySelector('#main .mg-tab[aria-pressed="true"]') || document.querySelector("#subnav .sn-strip [aria-current]") || document.querySelector("#nav .sn-side [aria-current]"); return b ? b.dataset.nk : null; });
+      if (cur !== k && !(k === "succes" && cur === "quests")) errors.push(`page ${k} : le menu montre ${cur}`); // Succès : onglet de la page Quêtes
       tabs.push(k);
     }
     // « Fiche » d'un héros : la page Équipe et héros garde la fiche sous l'équipe

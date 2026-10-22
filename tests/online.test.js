@@ -413,6 +413,8 @@ const MOCK = () => {
 };
 
 /* 1.2 : une page peut être repliée dans sa famille (ou rangée en onglet) : on ouvre la famille puis on clique, sinon DX.go */
+/* 2.1.39 : les classements sont rangés en 6 groupes ; un classement hors du groupe affiché s'ouvre par son groupe */
+const lbTab = async (page, v) => { if (await page.$(`[data-act="lb-tab"][data-v="${v}"]`)) return page.click(`[data-act="lb-tab"][data-v="${v}"]`); await page.evaluate((v) => { const b = document.createElement("button"); b.dataset.act = "lb-tab"; b.dataset.v = v; document.body.appendChild(b); b.click(); b.remove(); }, v); await page.waitForSelector(`[data-act="lb-tab"][data-v="${v}"][aria-pressed="true"]`, { timeout: 5000 }); };
 const navClick = async (page, k) => { const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "go"; }, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -544,7 +546,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.$$("#lbList .rc-slot")).length !== 20) fail("course : il faut 10 places pour L'Ascension (1.1) et 10 pour la 1.0");
     // 1.2.3.2 : la course de lancement de L'Ascension (race11, lb_asc cat classe) s'affiche en premier
     { const t = await page.$eval("#lbList", (e) => e.textContent); if (!/Course de lancement de L'Ascension/.test(t) || !/Zephyr/.test(t) || !/Grimpeur/.test(t)) fail("course de L'Ascension absente : " + t.slice(0, 200)); }
-    await page.click('[data-act="lb-tab"][data-v="lvl"]');
+    await lbTab(page, "lvl");
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");
@@ -563,7 +565,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('.pod.p2'); await page.waitForSelector(".sheet .tm", { timeout: 5000 });
     if (await page.$(".sheet .pgld")) fail("profil : une guilde apparaît pour un joueur sans guilde");
     await page.click('[data-act="closesheet"].btn');
-    await page.click('[data-act="lb-tab"][data-v="gld"]'); await page.waitForSelector("#lbList .lbr.glb", { timeout: 10000 });
+    await lbTab(page, "gld"); await page.waitForSelector("#lbList .lbr.glb", { timeout: 10000 });
     { const r = await page.$$eval("#lbList .lbr.glb", (l) => l.map((e) => e.textContent.replace(/\s+/g, " ")));
       if (r.length !== 3 || !/Ordre du Kralamour/.test(r[0]) || !/Niveau 22/.test(r[0]) || !/12 \/ 12 membres/.test(r[0]) || !/Les Tofus Enragés/.test(r[2])) fail("classement des guildes incorrect : " + r.join(" | ")); }
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-guildes.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/lb-guildes-mob.png" }); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) fail("lb-guildes : défilement de côté sur téléphone"); await page.setViewportSize(vp); await page.waitForTimeout(300); }
@@ -571,7 +573,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (await page.evaluate(() => window.GUILD.G.view && window.GUILD.G.view.id) !== 4 || !/Ordre du Kralamour/.test(await page.textContent("#main"))) fail("classement des guildes : la ligne n'ouvre pas la fiche de la guilde");
     await page.click('[data-act="g-vback"]'); await page.waitForTimeout(200);
     await navClick(page, "ladder"); await page.waitForTimeout(300);
-    await page.click('[data-act="lb-tab"][data-v="job"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
+    await lbTab(page, "job"); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
     if ((await page.$$(".jlb-tiles button")).length !== 8) fail("métiers : il faut 8 tuiles (tous + 7 métiers)");
     if (!(await page.$("#lbList .jlb-mini"))) fail("métiers : meilleurs métiers absents sous le nom");
     if (!(await page.$("#lbList .lbr.me"))) fail("métiers : ma ligne absente");
@@ -594,7 +596,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.$$("#lbList .lbr.jlb-g .gemb")).length !== 2 || !/2 100 niveaux/.test((await page.textContent("#lbList")).replace(/\s/g, " "))) fail("métiers : classement des guildes incorrect");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-jobs-guild.png" });
     await page.click('[data-act="lb-jwho"][data-v="p"]'); await page.waitForTimeout(300);
-    for (const tb of ["dj", "album", "succ", "first", "job", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
+    for (const tb of ["dj", "album", "succ", "first", "job", "lvl"]) { await lbTab(page, tb); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
     if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
     await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 }); await page.click('[data-act="closesheet"].btn');
@@ -606,10 +608,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
     await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
     // Premiers depuis les sorts des boss : grille des 15 stasis du donjon, puis l'onglet Premiers › Sorts des boss
-    await page.click('[data-act="lb-tab"][data-v="first"]'); await page.waitForTimeout(300); await page.click('[data-act="lb-tab"][data-v="dj"]'); await page.click('[data-act="lb-dmode"][data-v="all"]'); await page.waitForSelector("#lbList .sbgrid", { timeout: 5000 });
+    await lbTab(page, "first"); await page.waitForTimeout(300); await lbTab(page, "dj"); await page.click('[data-act="lb-dmode"][data-v="all"]'); await page.waitForSelector("#lbList .sbgrid", { timeout: 5000 });
     if ((await page.$$("#lbList .sbgrid .sbk")).length !== 15 || (await page.$$("#lbList .sbgrid .sbk.on")).length !== 1) fail("Premiers des sorts des boss : grille du donjon incorrecte");
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-sb.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.screenshot({ path: process.env.SHOTS + "/lb-sb-mob.png" }); await page.setViewportSize(vp); await page.waitForTimeout(300); }
-    await page.click('[data-act="lb-tab"][data-v="first"]'); await page.waitForTimeout(300);
+    await lbTab(page, "first"); await page.waitForTimeout(300);
     if (!/Kralamour/.test(await page.textContent("#lbList")) || !/stasis 1/.test(await page.textContent("#lbList"))) fail("Premiers › Sorts des boss : ligne absente");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-first-sb.png", fullPage: true });
     await page.click('[data-act="lb-fview"][data-v="all"]'); await page.waitForTimeout(300);

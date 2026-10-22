@@ -6336,3 +6336,12 @@ body.dense #main .pagehead:not(.combathead):has(>h1:only-child){display:none}
 body.dense #main .dgfoldall,body.dense #main .dg-note{display:none}
 .dg-mutline{display:flex;align-items:center;gap:10px;width:100%;border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:12px;padding:9px 12px;text-align:left;font:inherit;font-size:14px;cursor:pointer}
 .dg-mutline .uico{width:18px;height:18px;flex:none}
+/* 2.1.39 : onglets des pages (Mathis 1A à 7A) */
+.pg-mtabs{margin-bottom:12px}
+.subtabs .mg-tab:not([aria-pressed="true"]),.seg .mg-tab:not([aria-pressed="true"]){box-shadow:inset 0 0 0 2px rgba(241,207,110,.45)}
+.lb-sub,.enc-sub,.as-sub{margin:6px 0 10px}
+.as-tabsp .phead{display:flex;align-items:center;gap:8px}.as-tabsp .phead .subtabs{flex:1 1 auto;min-width:0}
+.as-help{flex:none;width:32px;padding:4px 0;justify-content:center;font-weight:900}
+.invtype{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px;color:var(--muted)}
+.invtype select{font:inherit;font-weight:700;padding:4px 8px;border-radius:999px;color:var(--ink);background:var(--panel2);border:2px solid var(--line)}
+.invtype.on select{border-color:var(--gold);color:var(--gold2)}

@@ -306,11 +306,17 @@
   function rulesHtml() {
     return `<p class="note">Chaque étage de combat a sa règle (sauf les paliers et les boss). Elles changent chaque mois. Tous les 5 étages, le palier offre un sort puis une relique (3 proposées, 1 gardée, 6 portées au plus, une par emplacement) : dans la tour, la Vitalité donne des PV, la Puissance de la puissance, l'Esquive et les PM de l'esquive, la Sagesse des Fragments.</p><div class="as-g2">${Object.entries(E.ASC_RULES).filter(([, r]) => !r.hal || (E.halWin && E.halWin(E.now()))).map(([, r]) => `<div class="as-offer"><b>${r.ic} ${h(r.name)}</b><span class="xs muted">${h(r.d)}</span></div>`).join("")}</div>`;
   }
-  const TABS = [["prog", "Progression"], ["shop", "Écus"], ["rel", "Reliquaire"], ["best", "Bestiaire"], ["rank", "Classements"], ["hist", "Historique"], ["rules", "Règles"]];
+  /* 2.1.39 (Mathis 5A des onglets) : 4 onglets. Écus et Reliquaire dans Boutique ; Historique et Règles dans le bouton « ? » de la rangée */
+  const TABS = [["prog", "Progression"], ["shop", "Boutique", ["shop", "rel"]], ["best", "Bestiaire"], ["rank", "Classement"]];
+  const SUB = { shop: "Écus", rel: "Reliquaire" };
   function tabsHtml(s) {
-    const body = st.tab === "shop" ? shopHtml(s) : st.tab === "rel" ? relHtml(s) : st.tab === "best" ? bestHtml(s) : st.tab === "rank" ? rankHtml(s) : st.tab === "hist" ? histHtml(s) : st.tab === "rules" ? rulesHtml() : progHtml(s);
-    return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.map(([k, n]) => `<button data-act="as-tab" data-v="${k}" aria-pressed="${st.tab === k}">${n}</button>`).join("")}</div></div><div class="pad stack">${body}</div></section>`;
+    if (st.tab === "hist" || st.tab === "rules") st.tab = "prog";
+    const body = st.tab === "shop" ? shopHtml(s) : st.tab === "rel" ? relHtml(s) : st.tab === "best" ? bestHtml(s) : st.tab === "rank" ? rankHtml(s) : progHtml(s);
+    const on = (t) => (t[2] || [t[0]]).includes(st.tab); const grp = TABS.find(on);
+    const sub = grp && grp[2] ? `<div class="catchips as-sub">${grp[2].map((k) => `<button data-act="as-tab" data-v="${k}" aria-pressed="${st.tab === k}">${SUB[k]}</button>`).join("")}</div>` : "";
+    return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.map((t) => `<button data-act="as-tab" data-v="${t[0]}" aria-pressed="${on(t)}">${t[1]}</button>`).join("")}</div><button class="btn sm ghost as-help" data-act="as-help" title="Historique et règles de la tour" aria-label="Historique et règles de la tour">?</button></div><div class="pad stack">${sub}${body}</div></section>`;
   }
+  function helpSheet(s) { X().openSheet(`<h2>L'Ascension</h2><h3>Règles</h3>${rulesHtml()}<h3>Historique</h3>${histHtml(s)}<div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 
   /* 1.1.2.8 : en manuel, la tour n'enchaîne plus les combats toute seule (Mathis : « Ne pas rentrer directement dans le prochain combat ») :
      entre deux étages, un encadré présente l'étage qui vient et c'est le joueur qui lance le combat */
@@ -456,6 +462,7 @@
       case "as-unl": done(E.act(s, "ascUnlock", d.v)); return;
       case "as-buy": done(E.act(s, "ascBuy", d.v)); return;
       case "as-tab": st.tab = d.v; paint(); if (d.v === "rank") rkLoad(false); return;
+      case "as-help": helpSheet(S()); return;
       case "as-rk": st.rk.cat = d.v; paint(); rkLoad(true); return;
     }
   });
