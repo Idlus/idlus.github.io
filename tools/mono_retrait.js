@@ -32,6 +32,8 @@ for (const r of R) {
     const val = c.havre - rest;
     console.log(`== ${r.pseudo} : Havre-Sac ${h0} → ${JSON.stringify(S.havre)} ; retiré ${Object.entries(pris).map(([id, n]) => `${E.HAVRE.find((x) => x.id === id).name} −${n}`).join(", ")} (valeur ${fm(val)} kamas)`);
   }
+  const ops = typeof r.ops === "string" ? JSON.parse(r.ops) : (r.ops || []); const cur = (S.hdv && S.hdv.op) || 0;
+  console.log(`   curseur S.hdv.op ${cur} ; dernier n° du registre Monocompte ${r.op_max} ; ${ops.length} opération(s) Monocompte : ${ops.map((o) => `${o.id} (${String(o.at).slice(0, 16)}, ${fm(o.k)} k)`).join(", ") || "aucune"}`);
   if (!r.user_id || !r.updated_at) { ok = false; continue; }
   const jour = new Date().toISOString().slice(0, 10);
   sql.push(`do $rz$ begin perform mono.verrou(${q(r.user_id)}::uuid); update mono.parties set data = ${q(JSON.stringify(S))}, meta = meta || jsonb_build_object('remise', ${q(jour)}), updated_at = clock_timestamp() where user_id = ${q(r.user_id)}::uuid and saison = 0 and updated_at = ${q(r.updated_at)}::timestamptz; if not found then raise exception 'partie de % changée entre-temps : relancer', ${q(r.pseudo)}; end if; end $rz$;`);
