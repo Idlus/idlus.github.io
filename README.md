@@ -9,6 +9,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.38 « Boss ultimes »
+- Pool d'idées du 21/10, choix de Mathis 1A 2A 3A 4A : boss ultimes en stasis 11 à 15 (`E.ULT`, `E.ULT_TIERS`, `ultTurn` dans `js/engine.js`) : phase ultime, enrage, onde ultime, gardiens, forme finale ; vie ×1,4 à ×3,4 et dégâts ×1,1 à ×1,5 (simulation : équipe au maximum du jeu bloquée en 12-13).
+- Sceaux ultimes (`S.ult`, `E.ultBuy`) : 1/1/2/2/3 par victoire, 3 000 pour un légendaire au choix, 1 200 pour une copie ; titre `E.ultTitle` « Fléau de… » en stasis 15.
+- Nouveau départ des classements de stasis : `E.STASIS_SAISON = 3`, opération unique `raz-stasis-boss-ultimes-2026-10-22` dans `supabase/classements.sql` (copie dans `records_s2`, `records_week_s2`).
+- Portail instable : `js/portail.js` (moteur), `js/portailui.js` (carte du Monde, case « Aujourd'hui », échoppe des Fragments instables). Pas en Monocompte.
+- Panel de test : +3 000 Sceaux ultimes, +2 000 Fragments instables. Simulateur : `NO_ULT=1`, `ULT='{...}'`, `--depart`, `DIAG=1`.
+
 ## 2.1.37.12 « Soins arrondis »
 
 Combat : les chiffres qui s'affichent (soins, dégâts, journal, bilan) sont toujours arrondis, dans les trois vues (Formation, Scène, Compacte).

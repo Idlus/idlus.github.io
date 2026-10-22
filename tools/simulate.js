@@ -18,6 +18,8 @@ require("../js/identboss.js"); // sorts uniques des boss
 require("../js/maitrise_moteur.js"); // 2.0 : la Maîtrise (--maitrise N : N points placés par héros niveau 200)
 require("../js/sram.js"); // le nouveau Sram (NO_SRAM=1 : l'ancien)
 if (process.env.NO_SRAM) E.SR2 = false;
+if (process.env.NO_ULT) E.ULT_OFF = true;
+if (process.env.ULT) Object.assign(E.ULT, JSON.parse(process.env.ULT)); // 2.1.38 : réglage des boss ultimes, ex. ULT='{"wave":0.4}'
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -143,7 +145,8 @@ function run(did, k, cls, prof) {
   const SI = E.stasisInfo(S, did); SI.max = k - 1; S.res[dg.key] = 1;
   const err = E.enterDungeon(S, did, k); if (err) throw new Error(`${did} stasis ${k} : ${err}`);
   if (MUT && !S.dungeon.mods.includes(MUT)) S.dungeon.mods = [MUT].concat(S.dungeon.mods).slice(0, Math.max(1, S.dungeon.mods.length)); // --mutateur : impose un modificateur à toutes les stasis
-  for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S, 1000);
+  let BF = null; for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1000) { E.tick(S, 1000); if (S.fight && S.fight.ents.some((x) => x.side === "m" && x.mech)) BF = S.fight; }
+  if (process.env.DIAG && BF) { const b = BF.ents.find((x) => x.side === "m" && x.mech); const hs = BF.ents.filter((x) => x.side === "c" && !x.summon); console.error(`${did} s${k} ${cls} ${SI.max >= k ? "V" : "D"} tours ${b.mturn || 0} boss ${Math.round(100 * b.hp / b.hpMax)} % relèves ${b.ultRises || 0} héros ${hs.filter((x) => x.alive).length}/${hs.length} pv ${Math.round(100 * hs.reduce((a, x) => a + Math.max(0, x.hp), 0) / hs.reduce((a, x) => a + x.hpMax, 0))} %`); }
   return SI.max >= k;
 }
 
@@ -213,8 +216,9 @@ for (const did of DUNS) {
   const row = { did, name: DG[did].name, lvl: DG[did].lvl, prof: {} };
   for (const [p] of PRF) {
     // stasis la plus haute réussie au moins une fois sur deux, en montant tant que ça passe
-    let best = 0, rate = {};
-    for (let k = 1; k <= E.STASIS_MAX; k++) {
+    const K0 = +arg("depart", 1); // 2.1.38 --depart 11 : commence à cette stasis (les précédentes comptées réussies)
+    let best = K0 - 1, rate = {};
+    for (let k = K0; k <= E.STASIS_MAX; k++) {
       let wins = 0, n = 0;
       for (const cls of CLS) for (let i = 0; i < TRIES; i++) { n++; if (run(did, k, cls, p)) wins++; }
       rate[k] = wins / n;

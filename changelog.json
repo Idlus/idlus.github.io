@@ -1,6 +1,19 @@
 {
-  "version": "2.1.37.12",
+  "version": "2.1.38",
   "versions": [
+    {
+      "v": "2.1.38",
+      "name": "Boss ultimes",
+      "items": [
+        "Stasis 11 à 15 : les boss deviennent des boss ultimes, avec une règle de plus à chaque palier. 11 : phase ultime, à 50 % de vie le boss se relève avec une mécanique de plus. 12 : enrage, ses dégâts montent à chaque tour dès le 15e. 13 : une onde ultime frappe toute l'équipe tous les 3 tours. 14 : deux gardiens le rendent invulnérable tant qu'ils sont debout. 15 : forme finale, une seconde phase ultime à 25 %",
+        "Le boss ultime a aussi bien plus de vie (+40 % à +240 %) et de dégâts (+10 % à +50 %) selon le palier. La stasis 15 devient un vrai sommet",
+        "Sceaux ultimes : 1 à 3 par victoire en stasis 11 et plus, liés au compte. 3 000 Sceaux pour un objet légendaire au choix (de ton niveau), 1 200 pour une copie d'Éveil d'un légendaire déjà obtenu. Échange depuis la fiche du donjon",
+        "Première victoire en stasis 15 sur un boss : titre « Fléau de… » propre au boss et icône dorée sur la fiche du donjon",
+        "Nouveau départ des classements de stasis : seules les stasis terminées depuis cette mise à jour comptent. Tes stasis débloquées restent, et les Premiers déjà gravés aussi",
+        "Portail instable (équipes niveau 200, Classique) : chaque jour, une dimension niveau 200 s'ouvre en version instable, la même pour tous. 30 victoires par jour, monstres +40 % de vie et de dégâts, butin ×2, 2 Fragments instables par victoire. Sur la carte du Monde et dans « Aujourd'hui »",
+        "Échoppe des Fragments instables : ornement, teinture et cadre « Faille instable », montures chromatiques, titres « Arpenteur de failles » et « Maître des failles »"
+      ]
+    },
     {
       "v": "2.1.37.12",
       "name": "Soins arrondis",

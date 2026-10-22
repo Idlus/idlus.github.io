@@ -1359,8 +1359,8 @@
      ne compte que les stasis terminées depuis cette mise à jour. SI.sz = saison, SI.sk = stasis la plus haute terminée
      pendant la saison, SI.st = son meilleur temps. Les stasis débloquées (SI.max) ne changent pas : on peut tout de suite
      relancer sa meilleure stasis. La fonction serveur « record » lit E.stasisSaison pour les records et les Premiers. */
-  E.STASIS_SAISON = 2;
-  E.STASIS_SAISON_NOM = "sorts des boss";
+  E.STASIS_SAISON = 3; // 2.1.38 « Boss ultimes » : nouveau départ des classements de stasis (Mathis, 22/10/2026)
+  E.STASIS_SAISON_NOM = "boss ultimes";
   E.SB_TITLE = "Pionnier des boss"; E.SB_TITLE_K = 10; // titre du premier compte à finir une stasis 10 ou plus d'un donjon depuis les sorts des boss (Mathis 2A + 2B)
   E.stasisSaison = (S, did) => { const SI = ((S && S.stasis) || {})[did]; return SI && SI.sz === E.STASIS_SAISON && SI.sk > 0 ? { k: SI.sk, t: SI.st || 0 } : { k: 0, t: 0 }; };
   E.STASIS_TL = { room: 15, boss: 24 };
@@ -1380,8 +1380,12 @@
     [4, "Synchronisation : les monstres prennent le niveau de votre meilleur héros."], [5, "Une salle d'élite (monstre Élite : PV ×2, +15 % de dégâts pour ses alliés)."],
     [6, "Un modificateur de donjon."], [7, "Deux modificateurs de donjon."], [8, "Le boss a une seconde phase sous 30 % de PV."],
     [9, "Temps limité : 15 tours par salle, 24 contre le boss."], [10, "Boss légendaire : 3 mécaniques, butin exclusif."],
-    [11, "Monstres +12 % de PV et de dégâts (environ +25 % de difficulté), de même à chaque palier suivant. Poussière de stasis ×2."], [12, "Trois modificateurs de donjon."], [13, "Monstres encore plus forts."],
-    [14, "Le boss légendaire a 4 mécaniques."], [15, "Le sommet. Titre « Maître du temps » au premier passage."],
+    /* 2.1.38 « Boss ultimes » (Mathis 1A, 22/10) : de 11 à 15, une règle de combat de plus à chaque palier (E.ULT), en plus des +12 % */
+    [11, "Boss ultime · Phase ultime : à 50 % de PV, le boss se relève une fois (+25 % de PV) avec une mécanique de plus. Monstres +12 % de PV et de dégâts à chaque palier, poussière ×2."],
+    [12, "Enrage : à partir de son 15e tour, le boss gagne +20 % de dégâts à chaque tour. Trois modificateurs de donjon."],
+    [13, "Mécanique ultime : tous les 3 tours, une onde frappe toute l'équipe."],
+    [14, "Gardiens : deux gardiens entrent avec lui, il est invulnérable tant qu'ils sont debout. Le boss légendaire a 4 mécaniques."],
+    [15, "Forme finale : une seconde phase ultime à 25 % de PV. Titre « Maître du temps » au premier passage."],
   ];
   E.stasisInfo = (S, did) => { S.stasis = S.stasis || {}; return (S.stasis[did] = S.stasis[did] || { max: 0, sel: 1, firsts: {}, best: {} }); };
   E.stasisMult = (k) => { const up = Math.pow(E.STASIS_UP, Math.max(0, k - 10)); return { hp: (1 + 0.12 * (Math.min(k, 10) - 1)) * up, dmg: Math.pow(1.2, Math.min(k, 10) - 1) * up, rew: 1 + 0.15 * (k - 1) }; };
@@ -1474,6 +1478,7 @@
       if (k >= 3) { const keys = pool.filter((x) => !b.mech.includes(x)); if (keys.length) b.mech = b.mech.concat([pick(keys)]); }
       if (k >= 8) b.phase2 = true;
       if (k >= 10) { b.legend = true; b.name = b.name + " Légendaire"; b.hpMax = b.hp = Math.round(b.hpMax * 1.5); const keys = pool.filter((x) => !b.mech.includes(x)); while (b.mech.length < (k >= 14 ? 4 : 3) && keys.length) b.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); }
+      if (k >= 11 && !E.ULT_OFF) { b.ult = k; b.hpMax = b.hp = Math.round(b.hpMax * E.ULT.hp[k - 11]); b.dmg *= E.ULT.dmg[k - 11]; } // 2.1.38 : boss ultime (vie et dégâts en plus, règles dans ultTurn)
     }
     return mons;
   };
@@ -1634,6 +1639,7 @@
     if (F && tgt.side === "m") {
       if (tgt.role === "esquive" && src && src.side === "c" && !src.lgNoDodge && rnd() < 0.2) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Esquive" }); return 0; }
       if (tgt.mech && tgt.mech.includes("totems") && alive(F, "m").some((m) => m.totem)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; }
+      if (tgt.ult >= 14 && alive(F, "m").some((m) => m.guardU)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; } // 2.1.38 : gardiens ultimes
       if (tgt.role === "coriace" && tgt.hp > tgt.hpMax * 0.5) v *= 0.7;
       if (tgt.weakOpen) v *= 1.5;
       if (E.midUDef && tgt.boss && E.MID_U && E.MID_U[tgt.key]) v = E.midUDef(F, src, tgt, v, el); // sorts uniques des boss
@@ -1809,12 +1815,12 @@
         if (free.length) prim = free[0];
       }
     }
-    if (prim && !forced && prim.mech && prim.mech.includes("totems") && foes.some((x) => x.totem)) prim = null; // 2.1.13 : cible du challenge intouchable (totems) : on frappe ailleurs
+    if (prim && !forced && ((prim.mech && prim.mech.includes("totems") && foes.some((x) => x.totem)) || (prim.ult >= 14 && foes.some((x) => x.guardU)))) prim = null; // 2.1.13 : cible du challenge intouchable (totems) : on frappe ailleurs
     const rule = (slot && slot.tgt) || "low";
     if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
       const focus = (S.settings && S.settings.focus) || "auto";
-      const inv = (m) => m.mech && m.mech.includes("totems") && foes.some((x) => x.totem);
-      const prio = (m) => (m.bomb ? 5 : m.totem ? 4 : 0) + (inv(m) ? -9 : 0) + (focus === "auto" && ["soigneur", "chef", "invoc", "protect"].includes(m.role) ? 2 : 0) + (focus === "boss" && m.boss ? 2 : 0);
+      const inv = (m) => (m.mech && m.mech.includes("totems") && foes.some((x) => x.totem)) || (m.ult >= 14 && foes.some((x) => x.guardU));
+      const prio = (m) => (m.bomb ? 5 : m.totem || m.guardU ? 4 : 0) + (inv(m) ? -9 : 0) + (focus === "auto" && ["soigneur", "chef", "invoc", "protect"].includes(m.role) ? 2 : 0) + (focus === "boss" && m.boss ? 2 : 0);
       const best = foes.slice().sort((a, b) => prio(b) - prio(a) || a.hp - b.hp);
       if (prio(best[0]) > 0 || foes.some(inv)) prim = best[0];
     }
@@ -2274,7 +2280,7 @@
   const spawnMon = (F, key, lvl, o = {}) => {
     const m = monsterEntity(key, Math.max(1, lvl)); m.minion = true; m.role = null;
     if (o.hp) m.hpMax = m.hp = Math.max(1, Math.round(o.hp)); if (o.dmg !== undefined) m.dmg = o.dmg;
-    ["name", "fake", "totem", "bomb", "fuse", "linked", "attacks", "isDouble", "mech", "mturn"].forEach((k) => { if (o[k] !== undefined) m[k] = o[k]; });
+    ["name", "fake", "totem", "bomb", "fuse", "linked", "attacks", "isDouble", "mech", "mturn", "guardU"].forEach((k) => { if (o[k] !== undefined) m[k] = o[k]; });
     if (o.attacks === 0) m.sp = null;
     F.ents.push(m); F.order.push(F.ents.indexOf(m)); F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(m) });
     return m;
@@ -2289,6 +2295,24 @@
     if (e.role === "invoc" && e.rt % 3 === 0 && (e.invN || 0) < 3 && alive(F, "m").length < 10) { e.invN = (e.invN || 0) + 1; const m = spawnMon(F, e.base || e.key, e.lvl - 5, { fake: true, name: `${e.name} (invoqué)` }); m.hpMax = m.hp = Math.round(m.hpMax * 0.35); m.dmg *= 0.5; flog(F, `${e.name} invoque un allié !`, "m"); }
   };
   const ELS4 = ["t", "f", "e", "a"];
+  /* 2.1.38 « Boss ultimes » (Mathis 1A, 22/10) : stasis 11 phase ultime, 12 enrage, 13 onde ultime, 14 gardiens, 15 forme finale. Les règles s'additionnent. */
+  E.ULT_TIERS = [[11, "Phase ultime", "à 50 % de vie, le boss se relève une fois (+25 % de vie) avec une mécanique de plus."],
+    [12, "Enrage", "à partir de son 15e tour, ses dégâts montent de 20 % à chaque tour."],
+    [13, "Mécanique ultime", "tous les 3 tours, une onde ultime frappe toute l'équipe."],
+    [14, "Gardiens", "deux gardiens entrent avec lui : il est invulnérable tant qu'ils sont debout."],
+    [15, "Forme finale", "une seconde phase ultime à 25 % de vie, avec encore une mécanique."]];
+  E.ULT = { hp: [1.4, 1.8, 2.3, 2.8, 3.4], dmg: [1.1, 1.2, 1.3, 1.4, 1.5], rise: [0.5, 0.25], riseHeal: 0.25, enrT: 15, enrStep: 0.2, waveT: 3, wave: 0.6, guardHp: 0.12, guardDmg: 0.4 };
+  const ultTurn = (S, F, e, t, say, hitAll) => {
+    const k = e.ult, U = E.ULT, n = e.ultRises || 0, th = U.rise[n];
+    if (th && (n === 0 || k >= 15) && e.hp < e.hpMax * th) {
+      e.ultRises = n + 1; doHeal(e, hpR(e) * U.riseHeal, F);
+      const keys = E.mechPool(DUNGEONS[F.dungeonId] ? DUNGEONS[F.dungeonId].lvl : 200).filter((x) => !e.mech.includes(x)); if (keys.length) e.mech = e.mech.concat([pick(keys)]);
+      say(`${e.name} se relève : ${n ? "forme finale" : "phase ultime"} ! Il gagne une mécanique.`, n ? "Forme finale" : "Phase ultime"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(e) });
+    }
+    if (k >= 12 && t >= U.enrT) { e.dmg *= (1 + U.enrStep * (t - U.enrT + 1)) / (1 + U.enrStep * (t - U.enrT)); if (t === U.enrT) say(`${e.name} s'enrage : ses dégâts montent à chaque tour !`, "Enrage"); }
+    if (k >= 13 && t % U.waveT === 0) { say(`${e.name} libère une onde ultime sur toute l'équipe !`, "Onde ultime"); hitAll(heroesOf(F), U.wave); }
+    if (k >= 14 && t === 1 && F.dungeonId) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, guardU: true, name: "Gardien ultime", hp: hpR(e) * U.guardHp, dmg: e.dmg * U.guardDmg }); say(`Deux gardiens protègent ${e.name} : il est invulnérable tant qu'ils sont debout !`, "Gardiens"); }
+  };
   const bossMech = (S, F, e) => {
     e.mturn = (e.mturn || 0) + 1; const M = e.mech; const t = e.mturn; const has = (k) => M.includes(k); const ei = F.ents.indexOf(e); let skip = false;
     const say = (txt, tag) => { flog(F, txt, "m"); if (tag) F.fx.push({ seq: F.seq, k: "buff", t: ei, txt: tag }); };
@@ -2296,6 +2320,7 @@
     const victim = (list) => (list.length ? pick(list) : null);
     if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, hpR(e) * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: ei });
       if (F.dungeonId) for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); }
+    if (e.ult) ultTurn(S, F, e, t, say, hitAll);
     if (has("enrage") && !e.enraged && e.hp < e.hpMax * 0.5) { e.enraged = true; e.dmg *= 1.4; e.debuffs.push({ vuln: 15, turns: 999 }); say(`${e.name} entre dans une rage folle !`, "Rage !"); }
     if (has("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(hpR(e) * 0.2); say(`${e.name} se couvre d'une carapace !`, "Carapace"); }
     if (has("summon")) {
@@ -2870,7 +2895,7 @@
       const cb = E.chalResolve(S, F);
       const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1) * (1 + (F.idolBonus || 0) / 100);
       const xm = F.exp ? F.exp.mult : { xp: 1, drop: 1, kamas: 1 }; // 0.1.24 : +4 % par étage d'expédition, reliques de butin
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, stasis: F.stasis || 1, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, stasis: F.stasis || 1, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * (F.portalDrop || 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       if (F.cr && E.chromaWin) { const ch = E.chromaWin(S, mons, {}); if (ch.length) F.rewards.chroma = ch; } // 1.0.33 : chromatiques (js/chroma.js), seulement les vrais combats
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
@@ -3265,6 +3290,19 @@
 
   /* ---------------- Donjons ---------------- */
   E.POUSSIERE = "Poussière de stasis";
+  /* 2.1.38 « Boss ultimes » : Sceaux ultimes gagnés en stasis 11 à 15, liés au compte (pas d'HdV), échangés contre un légendaire */
+  E.ULT_TR = [1, 1, 2, 2, 3]; E.ULT_TR_NAME = "Sceau ultime"; E.ULT_LEG = 3000; E.ULT_COPY = 1200; // Mathis 22/10 : « beaucoup plus de run » (≈ 1 000 victoires en stasis 15 pour un légendaire au choix)
+  E.ultSt = (S) => (S.ult = S.ult || { tr: 0, tot: 0 });
+  E.ultTr = (n) => `${n} ${n > 1 ? "Sceaux" : "Sceau"} ultime${n > 1 ? "s" : ""}`; // Mathis 22/10 : « Sceaux ultimes » (et non trophées, déjà pris par les sous-zones et les boss)
+  E.ultTitle = (did) => { const n = MONSTERS[DUNGEONS[did].boss].name.replace(/ Légendaire$/, "");
+    const de = /^Le /.test(n) ? `du ${n.slice(3)}` : /^Les /.test(n) ? `des ${n.slice(4)}` : /^(La |L')/.test(n) ? `de ${n.charAt(0).toLowerCase()}${n.slice(1)}` : /^(Comte|Roi|Chevalier|Seigneur|Prince|Maître|Général|Capitaine|Baron|Duc|Chef|Grand|Professeur|Docteur|Père|Gardien|Mage|Tengu|Kanniboul|Shogun|Vénérable) /.test(n) ? `du ${n}` : /^(Reine|Princesse|Comtesse|Dame|Mère|Déesse|Gardienne|Larve|Prêtresse|Déchireuse)(?: |$)/.test(n) ? `de la ${n}` : /^[AEIOUYÉÈÊaeiouyéèê]/.test(n) ? `d'${n}` : `de ${n}`;
+    return `Fléau ${de}`; };
+  E.ultCost = (S, k) => ((S.legSeen || {})[k] ? E.ULT_COPY : E.ULT_LEG);
+  E.ultBuy = (S, k) => {
+    const x = E.LEG && E.LEG[k]; if (!x) return "Légendaire inconnu."; if (x.lvl > Math.max(1, ...E.team(S).map((c) => c.lvl))) return "Ce légendaire est au-dessus du niveau de ton équipe.";
+    const U = E.ultSt(S), c = E.ultCost(S, k); if (U.tr < c) return `Il faut ${E.ultTr(c)}.`;
+    U.tr -= c; E.giveLeg(S, k, "Sceaux ultimes"); return null;
+  };
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
@@ -3288,6 +3326,8 @@
     if (k > (SI.sk || 0)) { SI.sk = k; SI.st = t; } else if (k === SI.sk && t > 0 && (!SI.st || t < SI.st)) SI.st = t;
     if (k >= 10) S.unlocks.stasis10 = true;
     if (k >= 15) { S.unlocks.stasis15 = true; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.STASIS15_TITLE)) { S.titlesExtra.push(E.STASIS15_TITLE); note(S, `Stasis 15 : titre « ${E.STASIS15_TITLE} » !`, "rare"); } }
+    if (k >= 11 && !E.ULT_OFF) { const n = E.ULT_TR[k - 11] || 1; const U = E.ultSt(S); U.tr += n; U.tot = (U.tot || 0) + n; out.push(E.ultTr(n)); // 2.1.38 : Sceaux ultimes (liés au compte)
+      if (k >= 15 && DUNGEONS[did] && MONSTERS[DUNGEONS[did].boss]) { const tt = E.ultTitle(did); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(tt)) { S.titlesExtra.push(tt); note(S, `Boss ultime vaincu en stasis 15 : titre « ${tt} » !`, "rare"); } } }
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
     if (rew) rew.stasis = { k, out, dust };
   };
@@ -4272,7 +4312,7 @@
     equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
     startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement", releaseMount: "relâcher une monture",
     // divers
-    almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
+    ultBuy: "échanger des Sceaux ultimes", almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
   };
   E.act = (S, name, ...args) => {
     if (!Object.prototype.hasOwnProperty.call(E.ACTIONS, name) || typeof E[name] !== "function") return `Action inconnue : ${name}`;

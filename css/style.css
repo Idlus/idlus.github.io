@@ -4613,6 +4613,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 [data-fr="songe"]{--m1:#2a2f7a;--m2:#ffb8e8;--m3:#0e1030;--gem:#5fd8d0;--glow:rgba(255,160,230,.5);--ring:conic-gradient(from var(--ang),#5fd8d0,#2a2f7a,#ffb8e8,#0e1030,#5fd8d0)}
 [data-fr="guilde"]{--gcol:#c9962e;--m1:color-mix(in srgb,var(--gcol) 70%,#000);--m2:color-mix(in srgb,var(--gcol) 45%,#fff);--m3:#1a1206;--gem:#ffd36a;--glow:color-mix(in srgb,var(--gcol) 55%,transparent);--ring:conic-gradient(var(--gcol),#ffd36a 15%,var(--gcol) 30%,#1a1206 45%,var(--gcol) 60%,#ffd36a 75%,var(--gcol))}
 [data-fr="mono_pres"]{--m1:#7a4ad8;--m2:#ffe08a;--m3:#1a0f33;--gem:#ffe08a;--glow:rgba(255,224,138,.6);--ring:conic-gradient(from var(--ang),#ffe08a,#7a4ad8,#fff6d0,#3a2378,#ffe08a)} /* Monocompte : cadre Prestige */
+[data-fr="faille"]{--m1:#8a3ffc;--m2:#2fd3c7;--m3:#120a24;--gem:#b991ff;--glow:rgba(138,63,252,.6);--ring:repeating-conic-gradient(#8a3ffc 0 30deg,#2fd3c7 0 60deg)}
 [data-fr="halouine"]{--m1:#e0761a;--m2:#ffb347;--m3:#140a04;--gem:#ff7a1a;--glow:rgba(255,130,30,.55);--ring:repeating-conic-gradient(#ff8a1a 0 22.5deg,#1a0d04 0 45deg)}
 /* anneau du portrait */
 .head[data-fr]{border:3px solid transparent;background:linear-gradient(var(--cc),var(--cc)) padding-box,var(--ring,conic-gradient(from 210deg,var(--m2),var(--m1) 25%,var(--m3) 50%,var(--m1) 75%,var(--m2))) border-box;box-shadow:0 0 0 1px #000a}
@@ -4621,7 +4622,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .head[data-fr="krosmoz"]{--ring:conic-gradient(from var(--ang),#c77dff,#4fd1e0,#f0c35a,#ff7ac8,#c77dff);box-shadow:0 0 0 1px #000a,0 0 8px rgba(199,125,255,.7);animation:spin 6s linear infinite}
 .head[data-fr="feu"]{--ring:conic-gradient(from var(--ang),#ffc35a,#d9541e,#7a2a0e,#ff9a3d,#ffc35a);box-shadow:0 0 0 1px #000a,0 0 8px rgba(255,140,60,.7);animation:spin 5s linear infinite}
 .head[data-fr="mono_pres"]{box-shadow:0 0 0 1px #000a,0 0 9px var(--glow);animation:spin 7s linear infinite}
-.head:is([data-fr="pionnier"],[data-fr="stasis"],[data-fr="ames"],[data-fr="dofus"],[data-fr="align"],[data-fr="koli"],[data-fr="songe"],[data-fr="guilde"],[data-fr="halouine"]){box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
+.head:is([data-fr="pionnier"],[data-fr="stasis"],[data-fr="ames"],[data-fr="dofus"],[data-fr="align"],[data-fr="koli"],[data-fr="songe"],[data-fr="guilde"],[data-fr="halouine"],[data-fr="faille"]){box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
 .head:is([data-fr="stasis"],[data-fr="songe"]){animation:spin 8s linear infinite}
 .hb-por .head.lg[data-fr]{box-shadow:0 0 0 1px #000c,0 0 16px var(--glow,color-mix(in srgb,var(--cc) 45%,transparent))}
 .hb-por .head.lg[data-fr$="2"]{box-shadow:0 0 0 1px #000c,0 0 0 3px var(--m2),0 0 0 4px #000a,0 0 16px var(--glow,transparent)}
@@ -6223,3 +6224,24 @@ button.pgld{cursor:pointer}button.pgld:hover b{text-decoration:underline}
 #status .swapb .sw-lg{display:none}
 @container (min-width:1100px){#status .swapb .sw-lg{display:inline}#status .swapb .sw-sm{display:none}}
 @media (max-width:600px){#status .swapb{padding:1px 7px}}
+/* 2.1.38 « Boss ultimes » : fiche du donjon, stasis 11 à 15 */
+.ultbox{border:2px solid #d8a93a;border-radius:14px;background:linear-gradient(180deg,rgba(216,169,58,.16),rgba(216,169,58,.04));padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}
+.ultbox .hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ultbox .hd b{color:var(--gold);font-size:14.5px}
+.ultbox .tag{font-size:10.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;background:#d8a93a;color:#2a1d05;border-radius:6px;padding:1px 6px}
+.ultbox ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.ultbox li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:start;font-size:12.5px;padding:5px 6px;border-radius:9px}
+.ultbox li .n{font-weight:900;text-align:center;border-radius:7px;background:rgba(255,255,255,.06);padding:2px 0}
+.ultbox li.on{background:rgba(216,169,58,.18);outline:1px solid rgba(216,169,58,.6)}.ultbox li.on .n{background:#d8a93a;color:#2a1d05}
+.ultbox li.off{opacity:.55}.ultbox .note{font-size:11.5px;color:var(--muted)}
+.ultshop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid rgba(216,169,58,.35);padding-top:6px}.ultshop select{max-width:100%;min-width:0}
+.dglist li.ultrew{color:var(--gold)}.dglist li.ultrew b{color:inherit}
+.dgboss.ultgold{outline:3px solid #d8a93a;box-shadow:0 0 18px rgba(216,169,58,.7);border-radius:14px}
+/* 2.1.38 « Portail instable » : Monde › Carte */
+.pt-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;border:2px solid #8a3ffc;border-radius:14px;padding:10px 12px;background:linear-gradient(110deg,rgba(138,63,252,.22),rgba(47,211,199,.10))}
+.pt-card.on{border-color:#2fd3c7}
+.pt-ring{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(47,211,199,.35),rgba(138,63,252,.25) 60%,transparent 72%);box-shadow:0 0 0 3px rgba(138,63,252,.55),0 0 18px rgba(138,63,252,.6)}
+.pt-ring img{width:46px;height:46px;object-fit:contain}
+.pt-t{display:flex;flex-direction:column;gap:2px;min-width:0}.pt-k{font-size:10.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:#b991ff}.pt-t b{font-size:15px}
+.pt-mons{display:flex;gap:2px}.pt-mons img{width:34px;height:34px;object-fit:contain}
+.pt-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}.pt-cnt{font-weight:900}
+@media (max-width:700px){.pt-card{grid-template-columns:auto minmax(0,1fr)}.pt-mons{display:none}.pt-side{grid-column:1/-1;align-items:stretch;text-align:left}.pt-side .row{justify-content:flex-start!important}}

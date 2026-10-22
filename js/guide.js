@@ -283,6 +283,13 @@
       ["h", "Mode manuel"],
       ["p", `Sur la page Combat, le mode manuel te laisse choisir chaque sort. Sans réponse au bout de ${N(() => E.MANUAL_TIMEOUT)} s, le héros joue tout seul.`],
     ] });
+  add({ id: "portail", f: "Aventure", n: "Le portail instable", ic: "monde", page: "world", k: "portail instable dimension fragments instables cosmetique ornement teinture monture chromatique titre",
+    ou: "Aventure › Monde", de: "une équipe niveau 200",
+    voir: ["world", "chasse"],
+    b: () => [
+      ["p", "Chaque jour, une sous-zone niveau 200 des Dimensions divines ou des Cavaliers s'ouvre en version instable, la même pour tout le monde, de minuit à minuit."],
+      ["ul", [`Monstres +${N(() => Math.round((E.PORTAL.hp - 1) * 100))} % de vie et de dégâts, butin ×${N(() => E.PORTAL.drop)}.`, `${N(() => E.PORTAL.n)} victoires par compte et par jour, ${N(() => E.PORTAL.fr)} Fragments instables chacune. Ensuite la chasse continue normalement.`, "Les Fragments, liés au compte, s'échangent contre un ornement, une teinture, un cadre, des montures chromatiques et deux titres."]],
+    ] });
   add({ id: "chasse", f: "Héros", n: "Champions, Sceaux et Éclats", ic: "trophee", page: "chasse", k: "champion sceau eclat eveil comptoir appat legendaire pouvoir cri conclave fusion piste",
     ou: "Héros › Chasse", de: "le premier Champion vaincu débloque son Sceau",
     voir: ["world", "combat"],
@@ -1021,6 +1028,8 @@
         "Dès la stasis 4, les monstres suivent le niveau de ton équipe : monter de niveau ne suffit plus, c'est l'équipement qui compte.",
         `Dès la stasis 9, les donjons ont une limite de tours (${N(() => E.STASIS_TL.room)} par salle, ${N(() => E.STASIS_TL.boss)} pour le boss) : il faut des dégâts, pas seulement de la survie.`,
         "La chance de Dofus ne monte plus après la stasis 10. Les stasis 11 à 15 servent aux gains, aux coffres de premier passage et au classement des temps.",
+        "Boss ultimes (stasis 11 à 15) : une règle de plus à chaque palier (11 phase ultime, 12 enrage dès le 15e tour, 13 onde ultime tous les 3 tours, 14 deux gardiens à tuer d'abord, 15 forme finale). L'enrage en fait une course aux dégâts.",
+        "Chaque victoire en stasis 11 et plus donne des Sceaux ultimes (1 à 3), liés au compte : 3 000 pour un légendaire au choix, 1 200 pour une copie d'Éveil. La première stasis 15 d'un boss donne le titre « Fléau de… ».",
         "Les leviers de fin de jeu : forgemagie près du jet parfait, Potentiel des Dofus, Sceaux des Champions, arbre de Maîtrise.",
         "Retire les idoles quand tu bloques : elles augmentent la difficulté.",
         "Après une défaite, « Pourquoi j'ai perdu » dit ce qui a manqué (dégâts, survie, tours).",

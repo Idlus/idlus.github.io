@@ -491,6 +491,24 @@ begin
     insert into public.ops_done (id) values ('raz-stasis-sorts-des-boss-2026-10-15');
   end if;
 end $$;
+-- 2.1.38 « Boss ultimes » (Mathis, 22/10/2026 : « reset les classement stasis ») : les stasis 11 à 15 deviennent bien plus dures,
+-- les classements des stasis de donjon repartent de zéro (saison 3, E.STASIS_SAISON). Copie gardée dans records_s2 et
+-- records_week_s2 (semaine en cours), invisibles pour les joueurs. Stasis débloquées, semaines passées et Premiers gravés gardés.
+create table if not exists public.records_s2 (like public.records including all);
+create table if not exists public.records_week_s2 (like public.records_week including all);
+alter table public.records_s2 enable row level security;
+alter table public.records_week_s2 enable row level security;
+do $$
+declare wnow int := floor((extract(epoch from now()) / 86400 + 3) / 7)::int;
+begin
+  if not exists (select 1 from public.ops_done where id = 'raz-stasis-boss-ultimes-2026-10-22') then
+    insert into public.records_s2 select * from public.records on conflict do nothing;
+    insert into public.records_week_s2 select * from public.records_week where w = wnow on conflict do nothing;
+    delete from public.records;
+    delete from public.records_week where w = wnow;
+    insert into public.ops_done (id) values ('raz-stasis-boss-ultimes-2026-10-22');
+  end if;
+end $$;
 -- Premiers depuis les sorts des boss : pour chaque donjon, la stasis la plus haute déjà prise (firsts kind « sb », key « donjon:stasis »)
 create or replace view public.lb_first_sb as
   select distinct on (split_part(f.key, ':', 1)) split_part(f.key, ':', 1) as did, split_part(f.key, ':', 2)::int as k, f.pseudo, f.user_id, f.at

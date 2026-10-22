@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.12";
+const GAME_VERSION = "2.1.38";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.38", name: "Boss ultimes", items: [
+    "Stasis 11 à 15 : les boss deviennent des boss ultimes, avec une règle de plus à chaque palier. 11 : phase ultime, à 50 % de vie le boss se relève avec une mécanique de plus. 12 : enrage, ses dégâts montent à chaque tour dès le 15e. 13 : une onde ultime frappe toute l'équipe tous les 3 tours. 14 : deux gardiens le rendent invulnérable tant qu'ils sont debout. 15 : forme finale, une seconde phase ultime à 25 %",
+    "Le boss ultime a aussi bien plus de vie (+40 % à +240 %) et de dégâts (+10 % à +50 %) selon le palier. La stasis 15 devient un vrai sommet",
+    "Sceaux ultimes : 1 à 3 par victoire en stasis 11 et plus, liés au compte. 3 000 Sceaux pour un objet légendaire au choix (de ton niveau), 1 200 pour une copie d'Éveil d'un légendaire déjà obtenu. Échange depuis la fiche du donjon",
+    "Première victoire en stasis 15 sur un boss : titre « Fléau de… » propre au boss et icône dorée sur la fiche du donjon",
+    "Nouveau départ des classements de stasis : seules les stasis terminées depuis cette mise à jour comptent. Tes stasis débloquées restent, et les Premiers déjà gravés aussi",
+    "Portail instable (équipes niveau 200, Classique) : chaque jour, une dimension niveau 200 s'ouvre en version instable, la même pour tous. 30 victoires par jour, monstres +40 % de vie et de dégâts, butin ×2, 2 Fragments instables par victoire. Sur la carte du Monde et dans « Aujourd'hui »",
+    "Échoppe des Fragments instables : ornement, teinture et cadre « Faille instable », montures chromatiques, titres « Arpenteur de failles » et « Maître des failles »" ] },
   { v: "2.1.37.12", name: "Soins arrondis", items: [
     "Combat : les soins et dégâts qui s'affichent au-dessus des combattants (Formation, Scène et Compacte), le journal et le bilan sont arrondis : plus de « +129.78000000000065 » après une Transposition du Sacrieur" ] },
   { v: "2.1.37.11", name: "Bascule de serveur", items: [
@@ -3321,8 +3329,9 @@ function homeTiles() {
   const bn = S.bounties || []; const bd = bn.filter((b) => b.prog >= b.n).length;
   if (bn.length) out.push(tile({ ic: IC("quetes"), t: "Avis de recherche", s: bn.map((b) => `${h(MONSTERS[b.key].name)} ${fmt(Math.min(b.prog, b.n))}/${b.n}`).join(" · "), done: bd === bn.length, act: `data-act="goquest" data-v="bounty"`, badge: `<span class="pill num">${bd}/${bn.length}</span>` }));
   /* coffres : un clic ouvre le premier coffre (le plus précieux d'abord) */
+  const pt = window.PORTUI && window.PORTUI.tile(); if (pt) out.push(tile(pt)); // 2.1.38 : portail instable (4A : il prend la place de la case Coffres vide)
   const ch = Object.keys(S.cons || {}).filter((k) => S.cons[k] > 0 && CONSUMABLES[k] && CONSUMABLES[k].kind === "chest").sort((a, b) => CONSUMABLES[b].tier - CONSUMABLES[a].tier); const nCh = ch.reduce((a, k) => a + S.cons[k], 0);
-  out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
+  if (nCh || !pt) out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
     act: nCh > 1 ? `data-act="chestall"` : nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">${nCh > 1 ? "Tout ouvrir" : "Ouvrir"} · ${nCh}</span>` : "" })); // 2.1.3 : un clic ouvre tous les coffres
   { const GB = E.gameBuys(S).list.map(gbState); const r = GB.filter((g) => g.st === "ready"); const dn = GB.filter((g) => g.st === "done").length;
     out.push(tile({ ic: IC("bourse"), t: "Commandes du jour", s: r.length ? `${r.length} prête${r.length > 1 ? "s" : ""} à livrer · ${fmt(r.reduce((a, g) => a + g.q * g.price, 0))} k` : dn === GB.length ? "toutes livrées, nouvelles à minuit" : `${GB.length - dn} en attente de ressources`, done: dn === GB.length, hot: r.length > 0,
@@ -3674,7 +3683,7 @@ function worldHtml() {
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
     const carte = mapView() === "carte" && window.CARTE;
-    body = tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    body = (window.PORTUI ? window.PORTUI.card() : "") + tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (carte ? worldMapHtml(t) : (window.CARTE ? `<div class="row wm-back"><button class="btn sm" data-act="mapview" data-v="carte">${IC("monde")} Voir la carte</button></div>` : "") + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`));
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
@@ -4071,7 +4080,7 @@ function dungeonSheet(did) {
   const seen = E.bossSeen(S, did); const tips = E.bossTips(did);
   const mechs = E.bossMechs(did).map((m) => { const M = E.BOSS_MECHS[m]; return seen ? `<li>${M.sig ? `<span class="sigmk" data-tip="Mécanique unique de ce boss">${G("star")}</span> ` : ""}<b>${h(M.name)}</b> : ${h(M.desc)}</li>` : `<li><b>???</b> <span class="muted">${M.sig ? "mécanique unique, " : ""}à découvrir en affrontant le boss</span></li>`; }).join("");
   const sigA = E.BOSS_SIGS[did] ? E.ACH.find((a) => a.id === "sig_" + did) : null;
-  const steps = E.STASIS_STEPS.filter(([n]) => n <= k && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
+  const steps = E.STASIS_STEPS.filter(([n]) => n <= Math.min(k, 10) && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
   const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   /* 1.0.15 : équipements du boss avec leur chance par héros à la stasis choisie (×1 à la 1, ×3,25 à la 10) */
   const bm = E.bossDropMult(k); const own0 = E.ownedTpls(S);
@@ -4090,7 +4099,7 @@ function dungeonSheet(did) {
         ${climbRow}${climbT ? climbTxt : `<div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="-1">Toutes (${chainMax})</button>
         <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
         <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div>`}</div>` : "";
-  openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
+  openSheet(`<div class="dghead">${im(imgM(dg.boss), `dgboss lg${SI.firsts[15] ? " ultgold" : ""}`, B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${S.dungeon && S.dungeon.id === did && !S.dungeon.defi ? `<div class="wkbox">${IC("combat")} <div class="grow"><b>En cours : ${chainTxt()}stasis ${S.dungeon.stasis || 1}</b><div class="ac-rate xs" style="margin-top:2px">${dgRateLine(E.dgChainRate(S))}</div></div></div>` : ""}
       ${S.mono ? monoDgBox() : ""}${S.mono ? "" : (() => { const sm = E.SMALL_TEAM[E.team(S).length]; const one = E.team(S).length === 1; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${one ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${one ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${one ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
@@ -4104,12 +4113,14 @@ function dungeonSheet(did) {
       ${dgDofusBox(did, SI, k)}
       ${window.DGRANK ? window.DGRANK.box(did) : ""}
       <div><b>Stasis</b> ${window.GUIDE ? GUIDE.q("donjons#la-stasis") : ""} <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
-        <div class="stasisrow">${Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""} ${n > 10 ? "hi" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
+        <div class="stasisrow">${Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""} ${n > 10 ? "hi" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""} ${n > 10 ? 'data-tip="Boss ultime"' : ""}>${n > 10 ? "✦" : ""}${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
+        ${k >= 11 ? ultBox(did, k) : ""}
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de l'heure" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
+        ${k >= 11 ? `<li class="ultrew">✦ <b>${E.ultTr(E.ULT_TR[k - 11])}</b> à chaque victoire (1 en stasis 11, jusqu'à 3 en 15) : ils s'échangent contre un objet légendaire.</li>${k >= 15 ? `<li class="ultrew">✦ ${SI.firsts[15] ? "✓ " : ""}<b>Titre « ${h(E.ultTitle(did))} »</b> et icône dorée du boss sur cette fiche, à la première victoire en stasis 15</li>` : ""}` : ""}
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme${k >= 11 ? `, ${k >= 15 ? "2 Pierres d'âme dorées" : "1 Pierre d'âme dorée"}` : ""}`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (k >= 11 ? 2 : 1) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
@@ -4119,6 +4130,16 @@ function dungeonSheet(did) {
     </div>
     ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${climbT && chainN > 1 ? ` → ${k + chainN - 1}` : keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* 2.1.38 « Boss ultimes » (Mathis 1A 2A) : une règle de plus par palier de 11 à 15, Sceaux ultimes échangés contre un légendaire */
+function ultBox(did, k) {
+  const U = E.ultSt(S); const lvl = Math.max(1, ...E.team(S).map((c) => c.lvl)); const pool = E.legPool ? E.legPool(lvl).slice().sort((a, b) => b.lvl - a.lvl || a.name.localeCompare(b.name)) : [];
+  const sel = pool.find((x) => x.k === ui.ultLeg) || pool[0]; const cost = sel ? E.ultCost(S, sel.k) : 0;
+  const shop = sel ? `<div class="ultshop"><span class="xs"><b>${E.ultTr(U.tr).replace(/^\S+/, fmt(U.tr))}</b></span><select class="small" data-act="ultsel">${pool.map((x) => `<option value="${x.k}" ${x === sel ? "selected" : ""}>${h(x.name)} · niv. ${x.lvl}${(S.legSeen || {})[x.k] ? " · copie" : ""}</option>`).join("")}</select><button class="btn sm ${U.tr >= cost ? "primary" : ""}" data-act="ultbuy" data-id="${did}" ${U.tr >= cost ? "" : "disabled"}>Échanger ${fmt(cost)}</button>
+    <span class="xs muted">Un légendaire jamais obtenu coûte ${fmt(E.ULT_LEG)} Sceaux ultimes, une copie de plus pour l'Éveil d'un légendaire déjà obtenu ${fmt(E.ULT_COPY)}. Liés au compte.</span></div>` : "";
+  return `<div class="ultbox"><div class="hd"><span class="tag">Boss ultime</span><b>Stasis 11 à 15 : une règle de plus à chaque palier</b></div>
+    <ol>${E.ULT_TIERS.map(([n, t, x]) => `<li class="${n === k ? "on" : n > k ? "off" : ""}"><span class="n">${n}</span><span><b>${h(t)}</b> · ${h(x)}</span></li>`).join("")}</ol>
+    <div class="note">En stasis ${k}, les règles des paliers 11 à ${k} s'additionnent. Le boss ultime a aussi +${Math.round((E.ULT.hp[k - 11] - 1) * 100)} % de vie et +${Math.round((E.ULT.dmg[k - 11] - 1) * 100)} % de dégâts, en plus des +12 % par palier${k >= 12 ? ", des trois modificateurs" : ""}${k >= 14 ? " et des 4 mécaniques du boss légendaire" : ""}.</div>${shop}</div>`;
 }
 /* Monocompte : bonus Héros unique et mercenaire, sur la fiche du donjon */
 function monoDgBox() {
@@ -10290,6 +10311,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("sg-")) { if (S && window.SGUI) window.SGUI.act(a, t); return; } // 0.1.48 : Songe infini (js/songeui.js)
   if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum
   if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
+  if (a && a.startsWith("pt-")) { if (S && window.PORTUI) window.PORTUI.act(a, t); return; } // 2.1.38 : portail instable (js/portailui.js)
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 1.0.30 : Expéditions et donjon pendant l'absence (js/expeditionsui.js)
   if (a && a.startsWith("co-")) { if (S && window.COLL) window.COLL.act(a, t); return; } // 1.0.30 : collections (js/collui.js)
   if (a && a.startsWith("cx-")) { if (S && window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : chromatiques (js/chromaui.js)
@@ -10566,6 +10588,7 @@ document.addEventListener("click", (ev) => {
     case "dgfclr": { const F = dgF(); if (d.k === "all") Object.assign(F, DGF0, { view: F.view }); else F[d.k] = DGF0[d.k]; dirty = true; break; }
     case "dgzone": { const O = S.settings.dgOpen || (S.settings.dgOpen = {}); O[d.id] = t.getAttribute("aria-expanded") !== "true"; dirty = true; break; }
     case "dgzall": { const O = S.settings.dgOpen = {}; ZONES.forEach((z) => { O[z.id] = d.v === "1"; }); dirty = true; break; }
+    case "ultbuy": { const sel = document.querySelector('#sheet [data-act="ultsel"]'); const r = E.act(S, "ultBuy", sel ? sel.value : ui.ultLeg); if (r) { toast(r, "warn"); return; } dirty = true; dungeonSheet(d.id); return; }
     case "dgstasis": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgStasis = +d.v; dungeonSheet(id); return; }
     case "dgcraftkey": { const r = E.craftSpecial(S, DUNGEONS[d.id].key); if (typeof r === "string") { toast(r); return; } toast("Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
@@ -10870,6 +10893,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "roam") { S.settings.roam = t.checked; toast(t.checked ? `Chasse itinérante : l'équipe suivra les étoiles de zone, avec ${Math.round(E.ROAM_MALUS * 100)} % d'XP et de butin en moins.` : "Chasse itinérante désactivée."); }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
+  else if (a === "ultsel") { ui.ultLeg = t.value; if (ui.dgSel) dungeonSheet(ui.dgSel); }
   else if (a === "dgsk") { dgF().sk = t.value; dirty = true; }
   else if (a === "focusset") { S.settings.focus = t.value; toast(t.value === "auto" ? "L'équipe vise d'abord les soigneurs, chefs, invocateurs et protecteurs." : t.value === "boss" ? "L'équipe vise d'abord le boss." : "L'équipe vise d'abord le monstre le plus faible."); }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
@@ -11841,7 +11865,7 @@ function renderLadder() {
       <select data-act="lb-cls" aria-label="Classe"><option value="">Toutes les classes</option>${CLASS_ORDER.map((c) => `<option value="${c}" ${LB.cls === c ? "selected" : ""}>Meilleur ${h(CLASSES[c].name)}</option>`).join("")}</select></div>`
     : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Records"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
       ${LB.dmode === "all" ? `<select data-act="lb-did" aria-label="Donjon">${dids.map((d) => `<option value="${d}" ${LB.did === d ? "selected" : ""}>${h(DUNGEONS[d].name)} (niv. ${DUNGEONS[d].lvl})</option>`).join("")}</select>` : ""}</div>
-      ${LB.dmode === "all" ? `<span class="small muted">Nouveau départ avec les sorts des boss : seules les stasis terminées depuis cette mise à jour comptent. Tes stasis débloquées restent : relance ta meilleure stasis pour revenir au classement.</span>` : ""}
+      ${LB.dmode === "all" ? `<span class="small muted">Nouveau départ avec les boss ultimes (2.1.38) : seules les stasis terminées depuis cette mise à jour comptent. Tes stasis débloquées restent : relance ta meilleure stasis pour revenir au classement.</span>` : ""}
       ${LB.dmode === "week" ? `<div class="panel"><div class="pad stack"><div class="row between"><b>${IC("cle")} Donjons de la semaine</b><span class="tag good">fin dans ${wEnd >= 86400000 ? `${Math.floor(wEnd / 86400000)} j ${Math.floor((wEnd % 86400000) / 3600000)} h` : dur(wEnd / 1000)}</span></div>
         <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
