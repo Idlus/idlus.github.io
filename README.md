@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.39.2 « Donjon pendant l'absence réparé »
+- Bug n°45 (ticket #155) : dans `js/expeditionsui.js` (`dghPanel`), la ligne `const P = E.dghPlan(...)` s'était retrouvée au bout d'un commentaire en 2.1.39 ; le panneau déplié plantait (« P is not defined ») et la page Donjons ne s'ouvrait plus. Test `tests/absence_donjon_ui.test.js` (PC 1280 px, téléphone 390 px).
+
 ## 2.1.39.1 « Plusieurs clés d'un coup »
 - Fiche du donjon : « Fabriquer ×N » fabrique d'un coup toutes les clés possibles.
 - Monocompte : au Bureau, chaque membre utilise son entrée du Trousseau du jour (serveur mis à jour).

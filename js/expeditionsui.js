@@ -124,7 +124,8 @@
     if (!s.settings.dghOpen) return `<section class="panel dgh-pan dgh-mini"><div class="dgh-line"><span class="dgh-hg" aria-hidden="true">⏳</span><span class="stack grow" style="gap:0;min-width:0"><b>Donjon pendant ton absence</b><span class="xs muted">${hrs(H.b)} sur ${hrs(E.DGH.max)} · ${H.on ? (dg ? `${h(dg.name)}${T.k ? ` · stasis ${T.k}` : ""}` : "le donjon en cours quand tu pars") : "coupé : l'équipe chasse"}</span></span>${tog}<button class="btn sm" data-act="ex-dghfold" aria-expanded="false">Régler</button></div></section>`;
     let box, rows = [];
     if (dg && T.k) {
-      const keys = E.dgEntries ? E.dgEntries(s, did) : s.res[dg.key] || 0; const est = E.dghEst(s, did, T.k); // 2.1.39 : + l'entrée du Trousseau du jour const P = E.dghPlan(s, did, T.k, rate);
+      const keys = E.dgEntries ? E.dgEntries(s, did) : s.res[dg.key] || 0; const est = E.dghEst(s, did, T.k); // 2.1.39 : + l'entrée du Trousseau du jour
+      const P = E.dghPlan(s, did, T.k, rate);
       box = `<div class="dgh-sel">${X().im(X().imgM(dg.boss), "", D.MONSTERS[dg.boss].name)}<div class="stack" style="gap:2px;min-width:0"><b>${h(dg.name)}</b><span class="xs muted">stasis ${T.k} · ${fmt(keys)} ${pl(keys, "clé")} · ${est.src === "mesure" ? `${Math.round(est.w * 100)} % de victoires` : "réussite pas encore mesurée"}${T.auto ? " · donjon en cours" : ""}</span></div>${tog}</div>`;
       rows.push([`Pour ${hrs(H.b)}`, P.runs ? `≈ ${P.runs} ${pl(P.runs, "course")}, il te faut ${P.runs} ${pl(P.runs, "clé")} (tu en as ${fmt(keys)})` : "pas assez d'heures pour une course"]);
       rows.push(["Une course", `${est.s < 3600 ? `≈ ${Math.max(1, Math.round(est.s / 60))} min` : hrs(est.s)} en jeu${est.src === "mesure" ? `, mesuré sur tes ${est.n} ${pl(est.n, "course")} en stasis ${T.k}` : est.src === "estime" ? ", estimé d'après tes combats dans ce donjon" : ", estimation prudente (joue-le une fois dans cette stasis)"}`]);

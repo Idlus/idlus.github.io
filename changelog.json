@@ -1,6 +1,14 @@
 {
-  "version": "2.1.39.1",
+  "version": "2.1.39.2",
   "versions": [
+    {
+      "v": "2.1.39.2",
+      "name": "Donjon pendant l'absence réparé",
+      "guide": "donjons",
+      "items": [
+        "Donjons : le réglage « Donjon pendant ton absence » déplié ne faisait plus s'ouvrir la page des donjons (retour au Havre-Sac) ; c'est réparé (merci pour le signalement)"
+      ]
+    },
     {
       "v": "2.1.39.1",
       "name": "Plusieurs clés d'un coup",

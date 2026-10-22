@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.39.1";
+const GAME_VERSION = "2.1.39.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.39.2", name: "Donjon pendant l'absence réparé", guide: "donjons", items: [
+    "Donjons : le réglage « Donjon pendant ton absence » déplié ne faisait plus s'ouvrir la page des donjons (retour au Havre-Sac) ; c'est réparé (merci pour le signalement)",
+  ] },
   { v: "2.1.39.1", name: "Plusieurs clés d'un coup", guide: "donjons", items: [
     "Clés de donjon : sur la fiche du donjon, un bouton « Fabriquer ×N » fabrique d'un coup toutes les clés que tes ressources permettent, au lieu de cliquer une fois par clé (merci Likie)",
     "Monocompte : au Bureau des Aventuriers, chaque membre du groupe utilise maintenant son entrée du Trousseau du jour avant ses clés (serveur mis à jour)",
