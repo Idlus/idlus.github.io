@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.37.12 « Soins arrondis »
+
+Combat : les chiffres qui s'affichent (soins, dégâts, journal, bilan) sont toujours arrondis, dans les trois vues (Formation, Scène, Compacte).
+
 ## 2.1.37.11 « Bascule de serveur »
 - Idée de Zoubilus : bouton ⇄ dans la barre du haut (`swapBtn` / action `sv-swap` dans `js/ui.js`) pour passer du Classique au Monocompte et inversement. Il sauvegarde et envoie la partie en cours (comme « Changer de partie »), puis recharge la page sur l'autre emplacement via `idlus-reprise` : chaque partie garde sa clé, le Monocompte est rescellé au chargement, rien ne passe d'un serveur à l'autre. Si la partie visée demande un choix (versions en conflit, nouvelle partie), l'écran des parties s'ouvre. Retour vers la dernière partie Classique jouée (`lastCl` dans `idlus-parties`). Pas de bouton dans la partie de test ni sans accès au Monocompte. Libellé seulement quand la barre fait au moins 1 100 px (sinon « ⇄ ⭐ » / « ⇄ 🌍 »). Test `tests/bascule_serveur_ui.test.js`.
 

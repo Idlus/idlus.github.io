@@ -1,6 +1,13 @@
 {
-  "version": "2.1.37.11",
+  "version": "2.1.37.12",
   "versions": [
+    {
+      "v": "2.1.37.12",
+      "name": "Soins arrondis",
+      "items": [
+        "Combat : les soins et dégâts qui s'affichent au-dessus des combattants (Formation, Scène et Compacte), le journal et le bilan sont arrondis : plus de « +129.78000000000065 » après une Transposition du Sacrieur"
+      ]
+    },
     {
       "v": "2.1.37.11",
       "name": "Bascule de serveur",

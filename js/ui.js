@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.37.11";
+const GAME_VERSION = "2.1.37.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.37.12", name: "Soins arrondis", items: [
+    "Combat : les soins et dégâts qui s'affichent au-dessus des combattants (Formation, Scène et Compacte), le journal et le bilan sont arrondis : plus de « +129.78000000000065 » après une Transposition du Sacrieur" ] },
   { v: "2.1.37.11", name: "Bascule de serveur", items: [
     "Nouveau bouton ⇄ dans la barre du haut : passe du Classique au Monocompte et inversement en un clic (idée de Zoubilus)",
     "Ta partie est sauvegardée et envoyée avant de changer : chaque serveur garde sa propre partie, rien ne passe de l'un à l'autre",
@@ -4719,8 +4721,11 @@ function chalPickSheet() {
     <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="chalall" data-v="1">Tout cocher</button><button class="btn sm" data-act="chalall" data-v="0">Tout décocher</button><button class="btn" data-act="closesheet" style="margin-left:auto">Fermer</button></div>`);
 }
 function chalPickSet(id, on) { const no = S.settings.chalNo = S.settings.chalNo || {}; if (on) delete no[id]; else no[id] = 1; if (!Object.keys(no).length) delete S.settings.chalNo; }
+/* 2.1.37.12 : un chiffre à virgule venu du moteur (PV non entiers, ex. Transposition du Sacrieur) s'affiche arrondi : « +130 » et non « +129.78000000000065 » */
+const intTxt = (t) => String(t).replace(/(?<![\d.])\d+\.\d+(?![\d.])/g, (m) => String(Math.round(+m)));
 function floatAt(node, txt, color, small, cls) {
   if (ecoOn()) return; // 2.1.11 : économie de batterie, plus de chiffres qui volent (les barres et les PV restent à jour)
+  txt = intTxt(txt);
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
   if (cls === "crit") s.innerHTML = `${h(txt)}<small>Critique !</small>`; else s.textContent = txt;
   node.appendChild(s); setTimeout(() => s.remove(), 1150);
@@ -5794,7 +5799,7 @@ function updateCombat(force) {
     if (F.log.length !== A.lastLog || force) {
       A.lastLog = F.log.length;
       $("#flog").innerHTML = F.log.slice(-7).reverse().map((l) => logLineNew(F, l)).join("");
-      const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? last.txt : F.label;
+      const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? intTxt(last.txt) : F.label;
     }
     if (F.over && !A.over) {
       A.over = true; axVictory(F, A); cbtEnd(F); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`; // 1.3 : jingle de fin du combat affiché ; 1.2.7.2 : « Victoire ! » / « Défaite… » revient (il était passé dans le commentaire)
@@ -5821,7 +5826,7 @@ function lossHtml(R) {
   const gear = (R.gear || []).filter((g) => ITEMS[g.tpl] && (g.k !== "bag" || S.items[g.uid]));
   const GK = { bag: ["dans ton sac", "Équiper", (g) => `data-act="lossequip" data-uid="${g.uid}" data-id="${R.cid}"`], craft: ["à fabriquer", "Liste de courses", (g) => `data-act="shoppin" data-k="tpl" data-id="${g.tpl}"`], loot: ["à looter", "Voir", (g) => { const s = subOfMon(g.m); return typeof s === "string" ? `data-act="dgopen" data-id="${s}"` : s ? `data-act="zoneview" data-id="${s.id}" data-gotab="world"` : ""; }] };
   return `<div class="loss"><div class="ttl">${G("warn")} Défaite au tour ${R.round}</div><div class="advice">${h(R.txt)}</div>
-    <div class="facts">${R.facts.map((f) => `<span class="pill ${f.k === "killer" ? "bad" : f.k === "streak" ? "gold" : ""}">${h(f.txt)}</span>`).join("")}</div>
+    <div class="facts">${R.facts.map((f) => `<span class="pill ${f.k === "killer" ? "bad" : f.k === "streak" ? "gold" : ""}">${h(f.k === "heal" ? f.txt.replace(/(\d),\d+/, "$1") : f.txt)}</span>`).join("")}</div>
     ${gear.length && c ? `<div class="sec">Équipement conseillé pour ${h(c.name)}${stat ? ` (${h(stat.name.replace("% ", ""))})` : ""}</div><div class="sugg">${gear.map((g) => { const T = ITEMS[g.tpl]; const [tag, btn, attrs] = GK[g.k]; const it = g.k === "bag" ? S.items[g.uid] : null; const miss = g.k === "craft" ? g.miss : null; const eta = miss && miss.length ? E.needEtaTxt(S, T.craft.ing) : null;
       return `<div class="sl">${it ? itemIcon(it) : `<span class="icobox ${rarCls(g.tpl)}">${im(itemImg(g.tpl), "", T.name)}</span>`}<div class="t"><b>${h(T.name)}</b> <span class="tag soft">${tag}</span><small>${stat ? `+${fmt(g.v)} ${h(stat.name.replace("% ", ""))}` : ""} · niv. ${T.lvl}${miss ? miss.length ? ` · manque ${miss.map(([r, q]) => `${q} ${h(r)}`).join(", ")}${eta ? ` (${h(eta)})` : ""}` : " · tout est réuni" : ""}${g.k === "loot" ? ` · ${h(MONSTERS[g.m].name)} · ${g.p} %` : ""}</small></div>${g.k === "craft" && S.shop.some((e) => e.id === g.tpl) ? `<span class="tag good">dans la liste</span>` : `<button class="btn sm" ${attrs(g)}>${btn}</button>`}</div>`; }).join("")}</div>` : ""}
  <div class="row">${R.place ? `<button class="btn sm primary" data-act="lossplace">Ouvrir le placement</button>` : ""}${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche ${h(deNom(c.name))}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
@@ -6945,9 +6950,9 @@ function spCardNew(c, sp, x, i) {
 function logLineNew(F, l) {
   const m = /^(.+?) · (.+?)(?: → (.*))?$/.exec(l.txt); const e = m && F.ents.find((x) => x.name === m[1] && x.side === "c" && x.cls);
   const sp = e && CLASSES[e.cls].spells.find((x) => x.name === m[2]);
-  if (!sp) return `<div class="${l.cls}">${h(l.txt)}</div>`;
+  if (!sp) return `<div class="${l.cls}">${h(intTxt(l.txt))}</div>`;
   const el = sp.el && sp.el !== "best" ? sp.el : null; const k = E.spellKind(E.spellGrade(sp, 200)); const R = ROLE[k] || ROLE.buff;
-  let rest = h(m[3] || "");
+  let rest = h(intTxt(m[3] || ""));
   const tm = /^(.+?) : (.+)$/.exec(m[3] || ""); let weak = "";
   if (tm && el) { const t = F.ents.find((x) => x.name === tm[1] && x.side === "m"); const rv = t && t.res ? t.res[el] : 0; if (rv < 0) weak = `<span class="lweak">faible ${ELEMENTS[el].name} ${rv} %</span>`; else if (rv >= 20) weak = `<span class="lres">résiste ${rv} %</span>`; }
   if (tm) rest = `${h(tm[1])} <b class="lv" style="color:${elVar(el || "n")}">${h(tm[2])}</b>`;
