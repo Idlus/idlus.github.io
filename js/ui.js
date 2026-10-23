@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.3";
+const GAME_VERSION = "2.1.40.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.4", name: "Clés de la zone", guide: "donjons", items: [
+    "Clés de donjon : plus aucune ressource de récolte (poissons, plantes, céréales…) dans les recettes. Seules restent les ressources des monstres, surtout ceux de la zone du donjon",
+    "Plus besoin de monter Pêcheur, Alchimiste et Paysan pour ouvrir un donjon : chasser la zone suffit (Bricoleur niveau 10). En Monocompte, tes spécialités restent libres",
+    "Les quantités de ressources de monstres ne changent pas (Classique et Monocompte)",
+  ] },
   { v: "2.1.40.3", name: "Téléphone sans dézoomer", items: [
     "Correction (signalée par Mathis) : au téléphone, la barre du haut était trop large avec beaucoup de kamas et le Sablier, et toute la page débordait à droite (il fallait dézoomer)",
     "Sur les petits écrans, la barre du haut se resserre : le logo et la loupe disparaissent (la recherche reste dans Menu), et la page ne peut plus déborder sur le côté",

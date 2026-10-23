@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40.3",
+  "version": "2.1.40.4",
   "versions": [
+    {
+      "v": "2.1.40.4",
+      "name": "Clés de la zone",
+      "guide": "donjons",
+      "items": [
+        "Clés de donjon : plus aucune ressource de récolte (poissons, plantes, céréales…) dans les recettes. Seules restent les ressources des monstres, surtout ceux de la zone du donjon",
+        "Plus besoin de monter Pêcheur, Alchimiste et Paysan pour ouvrir un donjon : chasser la zone suffit (Bricoleur niveau 10). En Monocompte, tes spécialités restent libres",
+        "Les quantités de ressources de monstres ne changent pas (Classique et Monocompte)"
+      ]
+    },
     {
       "v": "2.1.40.3",
       "name": "Téléphone sans dézoomer",

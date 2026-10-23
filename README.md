@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.4 « Clés de la zone »
+- Choix 1A de Mathis (23/10, retour d'un joueur) : `js/data.js` retire des recettes de clé (`SPECIAL_CRAFTS[dg.key]`) toute ressource des métiers de récolte (`G.GATHER_JOBS`). Pas de compensation : la part monstres coûtait déjà 15 à 150 combats par clé. Alliages et planches inchangés.
+- `tests/cles.test.js` vérifie qu'aucune clé ne demande de ressource de récolte.
+
 ## 2.1.40.3 « Téléphone sans dézoomer »
 - `css/style.css` : sous 440 px, `body.tb1 .status` resserrée (logo et loupe cachés, boutons plus étroits) ; sous 600 px, `overflow-x:clip` sur html/body pour qu'aucun bloc n'élargisse la page. Vérifié à 320, 360, 390 et 412 px sur toutes les pages du menu.
 

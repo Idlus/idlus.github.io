@@ -620,7 +620,7 @@
     b: () => [
       ["p", `${N(() => Object.keys(D.DUNGEONS).length)} donjons. Une clé = une tentative : les salles, puis le boss. Perdre ou quitter fait perdre la clé (une Fiole de résurrection relance une fois).`],
       ["h", "Les clés"],
-      ["ul", ["Fabriquées par le Bricoleur, avec les ressources des monstres de la zone du donjon et de trois métiers de récolte (sous la recette, chaque ressource a un bouton qui mène où la trouver). Les monstres ne donnent plus de clés.", "À l'Hôtel de vente, dans les Comptoirs et au Kolizéum (Trousseau de clés), à la Foire, dans les coffres de chasse au trésor."]],
+      ["ul", ["Fabriquées par le Bricoleur (niveau 10), uniquement avec des ressources de monstres, surtout ceux de la zone du donjon : aucun métier de récolte (sous la recette, chaque ressource a un bouton qui mène où la trouver). Les monstres ne donnent plus de clés.", "À l'Hôtel de vente, dans les Comptoirs et au Kolizéum (Trousseau de clés), à la Foire, dans les coffres de chasse au trésor."]],
       ["h", "Le Trousseau du jour"],
       ["p", "Chaque jour, une entrée gratuite dans chacun de tes donjons débloqués, sans clé, à la stasis de ton choix. Elle passe avant tes clés (enchaînement, montée de stasis, donjon pendant l'absence, groupe du Bureau en Monocompte) et se perd comme une clé en cas de défaite ou de sortie. Recharge à minuit, heure de Paris. L'encadré en haut de la page Donjons compte les entrées libres du jour."],
       ["h", "La stasis"],

@@ -496,6 +496,11 @@
   /* 0.1.14.2 : la Clef du Château du Wa Wabbit demandait trois morceaux de clef introuvables → ressources des Wabbits de l'île */
   { const C = G.SPECIAL_CRAFTS["Clef du Château du Wa Wabbit"];
     if (C) C.ing = [["Patte de Wabbit", 3], ["Queue de Black Wabbit", 3], ["Moustaches de Tiwabbit", 3], ["Viande Ladre", 2], ["Carpe d'Iem", 2], ["Menthe Sauvage", 2], ["Houblon", 2]]; }
+  /* 2.1.41 « Clés de la zone » (Mathis, 23/10 : « 1A ») : les clés de donjon ne demandent plus de ressources des métiers de récolte,
+     seulement les ressources des monstres. Pas de compensation : la part monstres coûtait déjà 15 à 150 combats par clé, la récolte moins d'une minute.
+     Boucle : chasser la zone → clé → donjon, sans Pêcheur, Alchimiste ni Paysan (en Monocompte, les clés ne prennent plus les 3 spécialités). */
+  { const GATH = new Set(); for (const j in G.GATHER_JOBS) G.GATHER_JOBS[j].forEach(([r]) => GATH.add(r));
+    Object.values(G.DUNGEONS).forEach((d) => { const C = G.SPECIAL_CRAFTS[d.key]; if (!C) return; const ing = C.ing.filter(([r]) => !GATH.has(r)); if (ing.length) C.ing = ing; }); }
   { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
     G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 };
     G.RES["Poussière de stasis"] = { id: 0, icon: gem.icon, lvl: 1, price: 15, type: -2 }; }

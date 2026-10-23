@@ -33,4 +33,10 @@ assert.ok(Object.values(D.MONSTERS).some((m) => m.drops.some(([r]) => r === "Rel
   assert.strictEqual(E.craftCount(S, "special", key), 3, "3 clés possibles");
   const out = E.craftMany(S, "special", key, 3); assert.strictEqual(out.n, 3, "3 clés fabriquées"); assert.strictEqual(S.res[key], 3);
   assert.ok(R.ing.every(([r]) => !S.res[r]), "ingrédients consommés"); }
+// 2.1.41 « Clés de la zone » : aucune recette de clé ne demande une ressource de métier de récolte
+{ const GATH = new Set(); Object.values(D.GATHER_JOBS).forEach((j) => j.items.forEach(([r]) => GATH.add(r)));
+  const bad = []; Object.values(D.DUNGEONS).forEach((d) => { const R = D.SPECIAL_CRAFTS[d.key]; if (R) R.ing.forEach(([r]) => { if (GATH.has(r)) bad.push(d.key + " : " + r); }); });
+  assert.deepStrictEqual(bad, [], "ressources de récolte dans les clés : " + bad.join(", "));
+  assert.ok(Object.values(D.DUNGEONS).every((d) => D.SPECIAL_CRAFTS[d.key].ing.length >= 2), "chaque clé garde des ressources de monstres");
+  assert.ok(D.SPECIAL_CRAFTS["Ardonite"].ing.length === 8, "les alliages ne changent pas"); }
 console.log("cles : OK");
