@@ -1,6 +1,14 @@
 {
-  "version": "2.1.40.2",
+  "version": "2.1.40.3",
   "versions": [
+    {
+      "v": "2.1.40.3",
+      "name": "Téléphone sans dézoomer",
+      "items": [
+        "Correction (signalée par Mathis) : au téléphone, la barre du haut était trop large avec beaucoup de kamas et le Sablier, et toute la page débordait à droite (il fallait dézoomer)",
+        "Sur les petits écrans, la barre du haut se resserre : le logo et la loupe disparaissent (la recherche reste dans Menu), et la page ne peut plus déborder sur le côté"
+      ]
+    },
     {
       "v": "2.1.40.2",
       "name": "Joyaux sans risque",

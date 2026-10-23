@@ -6383,3 +6383,13 @@ body.tb1 #chat .chmin{display:none}
   #nav .sn-full .uico{width:22px;height:22px;flex:none;margin:0 3px}
 }
 .ns-alltg{align-self:flex-end;margin:-4px 0 4px auto;display:block}
+/* 2.1.40.2 : téléphone étroit, la barre du haut ne doit jamais élargir la page (kamas + Sablier + 4 boutons dépassaient 360 px : il fallait dézoomer) */
+@media (max-width:440px){
+  body.tb1 .status{gap:5px;padding:7px 8px}
+  body.tb1 .status .brand{display:none}
+  body.tb1 .status>[data-act="search"]{display:none}
+  body.tb1 .status .ic-btn{padding:3px 4px}
+  body.tb1 .status .it{min-width:0}
+  body.tb1 .status .sabpill .sbi{padding-inline:6px}
+}
+@media (max-width:600px){html,body{overflow-x:clip}body.tb1 .status{max-width:100%;min-width:0}}
