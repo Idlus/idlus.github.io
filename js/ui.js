@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.1";
+const GAME_VERSION = "2.1.40.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.2", name: "Joyaux sans risque", guide: "maitrise", items: [
+    "Maîtrise › Arbre : la carte Joyaux compte tes emplacements ◆ pris et libres. Un clic sur un joyau le sertit dans un emplacement libre, un clic sur un joyau serti le retire : plus besoin de toucher aux étoiles ni de passer par le brouillon"
+  ] },
   { v: "2.1.40.1", name: "Toutes les pages", guide: "menus", items: [
     "Menus (retour des joueurs : trop de clics) : bouton « Tout » dans la colonne du PC, qui déplie le menu complet avec chaque famille et toutes ses pages, à un clic ; « « » en haut revient au menu en icônes",
     "Téléphone : bouton « Toutes les pages » dans Menu, qui montre toutes les pages de chaque famille en tuiles ; « Menu par familles » revient aux grandes tuiles",

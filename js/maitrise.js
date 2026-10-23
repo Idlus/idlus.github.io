@@ -326,10 +326,20 @@
       <div class="mt-card"><h3>Chercher</h3><input id="mtQ" type="search" value="${h(st.q)}" placeholder="Critique, Phénix, joyau…" aria-label="Chercher une étoile"><span class="xs muted">${st.q.trim().length >= 2 ? `${hits().size} étoile${hits().size > 1 ? "s" : ""} allumée${hits().size > 1 ? "s" : ""}` : ""}</span>${nearHtml()}</div>
       <div class="mt-card mt-info">${infoHtml()}</div>
       <div class="mt-card"><h3>Total des bonus</h3><div class="mt-tot">${totHtml(got)}</div></div>
-      ${st.view ? "" : `<div class="mt-card"><h3>Joyaux <span class="xs muted">${joys.length}</span></h3>${joys.length ? `<div class="mt-joys">${joys.map((z) => `<span class="mt-jw ${setJ.has(z.uid) ? "on" : ""}" style="--jc:${JOY[z.k].c}" title="${h(JOY[z.k].n)} : +${JOY[z.k].b[1]} ${h(JOY[z.k].b[0])}">◆ ${h(JOY[z.k].n)}</span>`).join("")}</div><span class="xs muted">Touche un emplacement ◆ pris dans l'arbre pour sertir.</span>` : `<span class="xs muted">Les joyaux tombent sur les boss en stasis 10 et plus.</span>`}</div>`}
+      ${st.view ? "" : joyCard(M, joys)}
       ${!st.view && E.mtBrDone(c).length ? `<div class="mt-card"><h3>Branches complètes</h3><div class="mt-tot">${E.mtBrDone(c).map((B) => `<div><span style="color:${B.c}">✦ ${h(B.n)}</span><b>${h(E.MT_BR_TITLE[B.n] || "")}</b></div>`).join("")}</div><span class="xs muted">Une branche entière donne son aura en combat et son titre.</span></div>` : ""}
       <div class="mt-card"><h3>Maîtrise du compte</h3><div class="mt-tot">${S().chars.filter((x) => E.mtPts(x)).sort((a, b) => E.mtPts(b) - E.mtPts(a)).map((x) => `<div><span>${h(x.name)} <span class="xs muted">${h(CLASSES[x.cls].name)}</span></span><b class="num">${fmt(E.mtPts(x))}</b></div>`).join("")}<div class="mt-sum"><span>Total : ${fmt(E.mtAcct(S()))} points</span><b>+${E.mtAcctPct(S())} % d'XP</b></div></div><span class="xs muted">Chaque tranche de 100 points, tous héros confondus, donne +1 % d'XP au compte.</span></div>`;
   }
+  /* 2.1.40.2 (Mathis) : sertir depuis un compteur d'emplacements, sans toucher aux étoiles (un joyau donne la même chose sur n'importe quel emplacement) */
+  const joySlots = () => T().N.filter((n) => n.t === "joy" && got.has(n.id)).map((n) => n.id);
+  const joyCard = (M, joys) => { const sl = joySlots(); const freeSl = sl.filter((id) => M.j[id] == null); const setJ = new Set(Object.values(M.j));
+    const free = joys.filter((z) => !E.joyOwner(S(), z.uid) && JOY[z.k]); const jw = (k) => `style="--jc:${JOY[k].c}" title="+${JOY[k].b[1]} ${h(JOY[k].b[0])}"`;
+    const socked = sl.filter((id) => M.j[id] != null).map((id) => [id, joys.find((z) => z.uid === M.j[id])]).filter((x) => x[1] && JOY[x[1].k]);
+    return `<div class="mt-card mt-joyc"><h3>Joyaux <span class="xs muted">${joys.length}</span></h3>
+      <div class="mt-sum"><span>Emplacements ◆ pris : ${sl.length}</span><b>${freeSl.length} libre${freeSl.length > 1 ? "s" : ""}</b></div>
+      ${socked.length ? `<div class="mt-joys">${socked.map(([id, z]) => `<button class="btn xs mt-jw on" ${jw(z.k)} data-act="mt-unsockf" data-v="${id}" aria-label="Retirer ${h(JOY[z.k].n)}">◆ ${h(JOY[z.k].n)} ✕</button>`).join("")}</div>` : ""}
+      ${freeSl.length && free.length ? `<span class="xs muted">Sertir :</span><div class="mt-joys">${Object.keys(JOY).map((k) => { const of = free.filter((z) => z.k === k); return of.length ? `<button class="btn xs mt-jw" ${jw(k)} data-act="mt-sockf" data-v="${of[0].uid}">◆ ${h(JOY[k].n)}${of.length > 1 ? ` ×${of.length}` : ""}</button>` : ""; }).join("")}</div>` : ""}
+      <span class="xs muted">${!joys.length ? "Les joyaux tombent sur les boss en stasis 10 et plus." : !sl.length ? "Prends un emplacement ◆ dans l'arbre pour pouvoir sertir." : !freeSl.length ? "Tous tes emplacements sont sertis. Touche un joyau serti pour le retirer." : !free.length ? "Aucun joyau libre." : "Un joyau donne le même bonus sur n'importe quel emplacement."}</span></div>`; };
   /* 2.1 (7A) : la recherche montre l'étoile trouvée la plus proche et y emmène */
   const nearest = () => { const H0 = hits(); if (!H0.size) return null; let best = null, bl = 1e9; H0.forEach((id) => { const p = got.has(id) ? [] : pathTo(id); const l = p ? p.length : 1e6; if (l < bl) { bl = l; best = id; } }); return best == null ? null : [best, bl]; };
   const nearHtml = () => { const r = nearest(); if (!r) return ""; const n = T().N[r[0]]; return `<div class="mt-near"><span class="small">Plus proche : <b>${h(n.n)}</b> <span class="xs muted">${got.has(n.id) ? "déjà prise" : r[1] < 1e6 ? `${r[1]} point${r[1] > 1 ? "s" : ""}` : "pas atteignable"}</span></span><button class="btn xs" data-act="mt-go" data-v="${n.id}">Y aller</button></div>`; };
@@ -417,6 +427,8 @@
       case "mt-cno": st.cmp = null; side(); return;
       case "mt-cgo": { const tg = E.mtGot(c, st.cmp); if (!payRespec([...got].filter((x) => !tg.has(x)).length, "changer d'arbre")) return; E.mt(c).lo = st.cmp; st.cmp = null; st.hist = []; rer(); return; }
       case "mt-sock": { if (st.sel == null || !got.has(st.sel) || E.joyOwner(S(), +d.v)) return; E.mt(c).j[st.sel] = +d.v; side(); draw(); return; }
+      case "mt-sockf": { const fr = joySlots().find((id) => E.mt(c).j[id] == null); if (fr == null || E.joyOwner(S(), +d.v)) return; E.mt(c).j[fr] = +d.v; side(); draw(); return; }
+      case "mt-unsockf": { delete E.mt(c).j[+d.v]; side(); draw(); return; }
       case "mt-unsock": { if (st.sel == null) return; delete E.mt(c).j[st.sel]; side(); draw(); return; }
       case "mt-fam": st.fam = d.v; rer(); return;
       case "mt-rkc": RK.cls = d.v || ""; rer(); return;

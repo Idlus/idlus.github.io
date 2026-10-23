@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.2 « Joyaux sans risque »
+- Maîtrise : compteur d'emplacements de joyaux, sertir et retirer depuis la carte Joyaux sans cliquer sur les étoiles.
+
 ## 2.1.40.1 « Toutes les pages »
 - Retour des joueurs relayé par Mathis (23/10 : « ça double le nombre de clics »). `js/ui.js` : `navFullOn()` (réglage `S.settings.navFull`, par défaut = Affichage détaillé), colonne complète `sn-full` dans `renderNav()` (familles + pages, réutilise les styles de l'ancien menu), bouton « Tout » du rail et « « » pour revenir, action `navfull`, bouton « Toutes les pages » dans `navMenuSheet()`, case dans Options › Affichage.
 

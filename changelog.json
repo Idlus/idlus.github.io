@@ -1,6 +1,14 @@
 {
-  "version": "2.1.40.1",
+  "version": "2.1.40.2",
   "versions": [
+    {
+      "v": "2.1.40.2",
+      "name": "Joyaux sans risque",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise › Arbre : la carte Joyaux compte tes emplacements ◆ pris et libres. Un clic sur un joyau le sertit dans un emplacement libre, un clic sur un joyau serti le retire : plus besoin de toucher aux étoiles ni de passer par le brouillon"
+      ]
+    },
     {
       "v": "2.1.40.1",
       "name": "Toutes les pages",
