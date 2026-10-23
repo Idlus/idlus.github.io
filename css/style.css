@@ -6373,3 +6373,13 @@ body.dense .phead>.num[data-tip]{white-space:nowrap}
 body.tb1 #chat .chmin{display:none}
 .tb-chat{position:relative}
 .tb-chat .navcnt{top:-6px;right:-6px}
+/* 2.1.40.1 : « Tout » dans le rail, menu complet (une colonne, chaque famille avec ses pages) et bouton du menu du téléphone */
+@media (min-width:860px){
+  #nav .sn-rail .rl-all .sn-burger{width:22px;height:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+  #nav .sn-rail .rl-all .sn-burger b{display:block;width:16px;height:2px;border-radius:2px;background:currentColor}
+  #nav .sn-full .sn-g{padding-top:10px}
+  #nav .sn-full .sn-grow{flex:1 1 auto;min-height:8px}
+  #nav .sn-full .sn-gq{width:28px;height:28px;display:inline-grid;place-items:center;flex:none}
+  #nav .sn-full .uico{width:22px;height:22px;flex:none;margin:0 3px}
+}
+.ns-alltg{align-self:flex-end;margin:-4px 0 4px auto;display:block}

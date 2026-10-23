@@ -126,6 +126,7 @@
       ["ul", [
         "**Sur PC** : une colonne à gauche avec Combat, Havre-Sac, les 5 familles, puis Options et Aide en bas. Une famille rouvre la dernière page visitée.",
         "**Au téléphone** : Havre-Sac, Aventure, Combat, Héros et **Menu** en bas de l'écran. Menu montre la recherche, les familles en grandes tuiles et tes épinglés.",
+        "**Toutes les pages d'un coup** : le bouton **Tout** de la colonne (PC) ou **Toutes les pages** dans Menu (téléphone) montre chaque famille avec toutes ses pages, à un clic. Le choix est gardé (aussi dans Options › Affichage).",
         "**En Monocompte** : l'entrée **Saison** réunit Progression, Défis, Guerre, Boutique et Classements de la saison.",
       ]],
       ["h", "La barre du haut"],

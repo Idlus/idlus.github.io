@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40",
+  "version": "2.1.40.1",
   "versions": [
+    {
+      "v": "2.1.40.1",
+      "name": "Toutes les pages",
+      "guide": "menus",
+      "items": [
+        "Menus (retour des joueurs : trop de clics) : bouton « Tout » dans la colonne du PC, qui déplie le menu complet avec chaque famille et toutes ses pages, à un clic ; « « » en haut revient au menu en icônes",
+        "Téléphone : bouton « Toutes les pages » dans Menu, qui montre toutes les pages de chaque famille en tuiles ; « Menu par familles » revient aux grandes tuiles",
+        "Le choix est gardé, et se règle aussi dans Options › Affichage › « Toutes les pages dans le menu » (activé d'office avec « Affichage détaillé »)"
+      ]
+    },
     {
       "v": "2.1.40",
       "name": "Les nouveaux menus",

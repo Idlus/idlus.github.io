@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40";
+const GAME_VERSION = "2.1.40.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.1", name: "Toutes les pages", guide: "menus", items: [
+    "Menus (retour des joueurs : trop de clics) : bouton « Tout » dans la colonne du PC, qui déplie le menu complet avec chaque famille et toutes ses pages, à un clic ; « « » en haut revient au menu en icônes",
+    "Téléphone : bouton « Toutes les pages » dans Menu, qui montre toutes les pages de chaque famille en tuiles ; « Menu par familles » revient aux grandes tuiles",
+    "Le choix est gardé, et se règle aussi dans Options › Affichage › « Toutes les pages dans le menu » (activé d'office avec « Affichage détaillé »)",
+  ] },
   { v: "2.1.40", name: "Les nouveaux menus", guide: "menus", items: [
     "Menus : moins d'informations partout. Le jeu tient en 5 familles (Aventure, Héros, Économie, Joueurs, Journal) et les pages d'une famille sont des onglets en haut de chaque page",
     "PC : une colonne à gauche avec Combat, Havre-Sac, les 5 familles, Options et Aide. Une famille rouvre la dernière page visitée",
@@ -2987,6 +2992,8 @@ function navBadges() {
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
   return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "", maitrise: mtFreeBadge(), metiers: S && E.appAlert && E.appAlert(S) ? `<span class="navcnt" title="${E.appAlert(S) > 1 ? "Contrat de l'apprenti terminé" : "Contrat de l'apprenti bientôt fini"}">!</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
+/* 2.1.40.1 : menu complet (toutes les pages, un clic) ; par défaut seulement avec « Affichage détaillé » */
+const navFullOn = () => !!S && (S.settings.navFull === undefined ? detailOn() : !!S.settings.navFull);
 /* 9A : menu réduit aux icônes (bouton « ou chat ouvert de 1280 à 1599 px) : une icône par famille, le panneau de la famille s'ouvre à côté */
 let navFx = null; // 20A : la page cliquée et le point du clic, pour l'onde et le rebond posés après le redessin
 let navBadgeSeen = null; // 23A : pastilles déjà vues, pour ne faire pulser que celles qui apparaissent ou changent
@@ -2995,7 +3002,7 @@ function renderNav() {
   if (!S) { nav.innerHTML = ""; sub.innerHTML = ""; document.body.classList.remove("hasnav", "navmini", "navrail"); if (window.FORMUI) window.FORMUI.mini(); return; }
   const k = navKey(); const kk = navParent(k); const fight = ui.tab === "combat"; const B = navBadges(); const live = navLiveTxt();
   const curFam = navFam(k); const pins = navPins();
-  document.body.classList.add("hasnav", "navrail"); document.body.classList.remove("navmini");
+  document.body.classList.add("hasnav"); document.body.classList.toggle("navrail", !navFullOn()); document.body.classList.remove("navmini");
   const cur = (key) => (k === key || kk === key ? 'aria-current="page"' : "");
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
@@ -3007,8 +3014,18 @@ function renderNav() {
   const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
   const rl = (key, n, ic, on, b, cls, fam) => `<button class="rl-i${cls ? " " + cls : ""}${on ? " cur" : ""}" data-act="nav" data-v="${key}" data-nk="${key}"${fam ? ` data-fam="${fam}"` : ""} ${on ? 'aria-current="page"' : ""} title="${h(n)}">${icon(ic)}<span class="rl-l">${h(n)}</span>${b || ""}</button>`;
   const rlFight = `<div class="rl-frow"><button class="rl-i rl-fight${live ? " on" : ""}${fight ? " cur" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""} title="${h(live ? "Combat en cours : " + live : "Combat")}">${med("combat")}<span class="rl-l">Combat</span><small id="navlive" hidden>${h(live)}</small></button>${navQuitBtn()}</div>`;
-  const rlFoot = `<button class="rl-i rl-f" data-act="options" title="Options">${G("gear")}<span class="rl-l">Options</span></button><button class="rl-i rl-f" data-act="navhelp" title="Aide : guide, suggestions, signaler un bug"><b class="sn-gq" aria-hidden="true">?</b><span class="rl-l">Aide</span></button>`;
-  const side = `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
+  const rlFoot = `<button class="rl-i rl-f rl-all" data-act="navfull" aria-pressed="false" title="Toutes les pages : le menu complet, chaque page à un clic"><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span class="rl-l">Tout</span></button><button class="rl-i rl-f" data-act="options" title="Options">${G("gear")}<span class="rl-l">Options</span></button><button class="rl-i rl-f" data-act="navhelp" title="Aide : guide, suggestions, signaler un bug"><b class="sn-gq" aria-hidden="true">?</b><span class="rl-l">Aide</span></button>`;
+  /* 2.1.40.1 (retour des joueurs relayé par Mathis : « ça double le nombre de clics ») : « Toutes les pages » déplie le menu en une colonne
+     avec chaque famille et ses pages, à un clic de n'importe où ; « Menu réduit » revient au rail. Réglage partagé avec le menu du téléphone */
+  const full = navFullOn();
+  const fb = (key, n, ic, on, b, cls) => `<button class="${cls || ""}" data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""} title="${h(NAV_DESC[key] || n)}">${icon(ic)}<span class="sn-l">${h(n)}</span>${b || ""}</button>`;
+  const sideFull = `<div class="sn-side sn-full"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""> idlus</button><button class="sn-mini" data-act="navfull" aria-pressed="true" title="Menu réduit : revenir au menu en icônes" aria-label="Menu réduit">«</button></div>
+      <div class="sn-frow"><button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span class="sn-l">Combat<small id="navlive"${live ? "" : " hidden"}>${h(live)}</small></span></button>${navQuitBtn()}</div>
+      ${fb("home", "Havre-Sac", "logo", k === "home" && !fight)}
+      ${NAV.map((F) => `<div class="sn-g">${h(F.season ? seasonName() : F.n)}</div>${navFamPages(F).map((p) => fb(p[0], p[1], p[2], !fight && (k === p[0] || kk === p[0]), badge(p[0]))).join("")}`).join("")}
+      <span class="sn-grow"></span><div class="sn-g">Aide et réglages</div>
+      <button data-act="options">${G("gear")}<span class="sn-l">Options</span></button><button data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Aide</span></button></div>`;
+  const side = full ? sideFull : `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
       ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea") : ""}<i class="rl-sep"></i>
       ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}
       <span class="sn-grow"></span>${rlFoot}</div>`;
@@ -3063,7 +3080,9 @@ function navMenuSheet() {
   const ft = (F, cls) => { const L = navFamPages(F); const n = cnt(F); return `<button class="ns-ft${cls ? " " + cls : ""}${curF === F ? " cur" : ""}" data-act="nav" data-v="${famPage(F)}" data-nk="${famPage(F)}">${icon(F.ic)}<span><b>${h(F.season ? seasonName() : F.n)}</b><small>${L.slice(0, 3).map((p) => h(p[1])).join(" · ")}${L.length > 3 ? "…" : ""}</small></span>${n ? `<span class="navcnt">${n}</span>` : ""}</button>`; };
   const SEA = navSeason();
   openSheet(`<div class="navsheet ns-v2"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
+    ${q ? "" : `<button class="btn sm ghost ns-alltg" data-act="navfull" aria-pressed="${navFullOn()}">${navFullOn() ? "Menu par familles" : "Toutes les pages"}</button>`}
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
+      : navFullOn() ? `${NAV.map((F) => `<h3>${icon(F.ic)} ${h(F.season ? seasonName() : F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`
       : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
@@ -9163,7 +9182,8 @@ function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
   return optSec("Menus", "",
-      optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
+      optChk(`data-act="setnavfull"`, navFullOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
+    + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
       optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
     + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
@@ -10806,6 +10826,7 @@ document.addEventListener("click", (ev) => {
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navhelp": helpSheet(); return;
+    case "navfull": S.settings.navFull = !navFullOn(); dirty = true; renderNav(); if ($("#sheet .navsheet")) navMenuSheet(); return;
     case "tb-bell": case "tb-acc": { const w = a === "tb-bell" ? "bell" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
  toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); if (t.closest(".helpsheet")) helpSheet(); return; }
@@ -11083,6 +11104,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
+  else if (a === "setnavfull") { S.settings.navFull = t.checked; dirty = true; renderNav(); return; }
   else if (a === "setdetail") { S.settings.detail = t.checked; ui.tbOpen = null; dirty = true; optionsSheet(); renderStatus(); render(); return; }
   else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
   else if (a === "setlivecol") { S.settings.liveCol = t.checked; dirty = true; liveColTick(true); return; }

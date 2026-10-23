@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.1 « Toutes les pages »
+- Retour des joueurs relayé par Mathis (23/10 : « ça double le nombre de clics »). `js/ui.js` : `navFullOn()` (réglage `S.settings.navFull`, par défaut = Affichage détaillé), colonne complète `sn-full` dans `renderNav()` (familles + pages, réutilise les styles de l'ancien menu), bouton « Tout » du rail et « « » pour revenir, action `navfull`, bouton « Toutes les pages » dans `navMenuSheet()`, case dans Options › Affichage.
+
 ## 2.1.40 « Les nouveaux menus »
 - Refonte des menus, des onglets et du visuel (choix de Mathis le 22/10 : menus 1B 2A 3A 4A 5A 6B 7A, onglets 1A à 7A, visuel 1A à 7A, retouches 1 à 5). `js/ui.js` : `NAV` en 5 familles, `NAV_HELP`, `NAV_MERGE` et `pageTabs()` (onglets réunis), colonne PC (`.sn-rail`), barre du haut compacte (`statusHtml`, cloche `tbBellSync`, compte), accueil `homeDash()`, `detailOn()` (Options › Affichage › « Affichage détaillé »), visite `NAV_TOUR`, `ambPage()` (lucioles au Havre-Sac et en combat). `js/chat.js` : bouton Chat de la barre du haut (`tbSync`). `js/guide.js` : chapitre « Les menus ». CSS en fin de `css/style.css`.
 - Classements (`LB_GRP`), Encyclopédie (`ENC_GRP`), L'Ascension (`js/ascensionui.js`), Inventaire (`INV_CHIP_TOP`), filtres de Builds (`js/builds.js`), saison Monocompte (famille `df`, `SEASON_GRP`). Chemins « Famille › Page » des textes mis à jour (vérifiés par `tests/chemins.test.js`).
