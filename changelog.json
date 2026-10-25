@@ -1,6 +1,17 @@
 {
-  "version": "2.1.41",
+  "version": "2.1.41.1",
   "versions": [
+    {
+      "v": "2.1.41.1",
+      "name": "Songe sans fin",
+      "guide": "songe",
+      "items": [
+        "Songe infini : plus de plafond à 50 vagues. La Fin du rêve continue tant que ton équipe tient, et les monstres se renforcent à chaque vague (environ +7 %) : chaque équipe trouve son mur",
+        "Paliers de la semaine, dès Cauchemar 1 : la première fois de la semaine que tu tiens 75, 100 puis 150 vagues, un Coffre en obsidienne (3 au plus par semaine)",
+        "Les Bribes par vague ne changent pas, et le classement de la semaine départage enfin les meilleurs au-delà de 50 vagues",
+        "La fenêtre des vagues montre les 10 dernières, ton record de la semaine et les paliers (la rangée ne déborde plus au téléphone). Idée de Ley"
+      ]
+    },
     {
       "v": "2.1.41",
       "name": "Les quatre voies de l'Eniripsa",

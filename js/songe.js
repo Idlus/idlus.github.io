@@ -44,6 +44,13 @@
   ];
   E.SG_STEP = 0.1;             // difficulté en plus par salle
   E.SG_WAVE = 0.35;            // et par vague de la Fin du rêve
+  /* 2.1.41.1 « Songe sans fin » (Ley, choix 1A 2A 3A de Mathis, 25/10) : plus de plafond à 50 vagues (la difficulté monte toujours de
+     E.SG_WAVE par vague, chaque équipe trouve son mur). Paliers de la semaine : la première fois de la semaine qu'un songe en Cauchemar
+     atteint 75, 100 puis 150 vagues, un Coffre en obsidienne (3 au plus par semaine). E.SG_MAXW : garde-fou technique seulement. */
+  E.SG_MAXW = 1000;
+  E.SG_MILES = [75, 100, 150];
+  E.SG_MILE_II = 5;            // à partir de Cauchemar 1
+  E.SG_MILE_CHEST = "coffre_obsidienne";
   E.SG_HARD = 0.8; E.SG_ARCHI = 0.5;
   E.SG_PTS = { fight: 3, hard: 6, archi: 8, favor: 2, gob: 3 };
   E.SG_STORM = 6;              // Tempête astrale : relancer les vœux
@@ -118,6 +125,8 @@
   E.sgUp = (S, id) => !!(S.songe && S.songe.ups && S.songe.ups[id]);
   E.sgGive = (S, n) => { const G = E.songe(S); const v = Math.max(0, Math.round(n)); G.br += v; G.tot = (G.tot || 0) + v; const X = X_(S); if (X) X.bribes = (X.bribes || 0) + v; return v; };
   E.sgWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.wk || G.wk.w !== w) G.wk = { w, ii: -1, waves: 0, runs: 0 }; return G.wk; };
+  /* paliers de la semaine déjà reçus (liste de nombres de vagues) */
+  E.sgMilesGot = (S) => { const wk = E.sgWeek(S); return (wk.miles = wk.miles || []); };
   const better = (a, b) => !b || a.ii > b.ii || (a.ii === b.ii && a.waves > b.waves);
   /* le Marché onirique */
   const M = (id, kind, name, price, desc, extra) => Object.assign({ id, kind, name, price, desc }, extra || {});
@@ -484,7 +493,8 @@
     if (!X.valid && X.waves >= INT.waves) validate(S, X);
     else if (X.valid) { const b = E.sgGive(S, 20 * bribesMult(X.ii)); if (F.rewards) F.rewards.bribes = b; }
     recordWeek(S, X);
-    if (X.waves >= 50) { endRun(S, X, "wake"); return; }
+    if (X.valid && X.ii >= E.SG_MILE_II && E.SG_MILES.includes(X.waves) && !X.max) { const got = E.sgMilesGot(S); if (!got.includes(X.waves)) { got.push(X.waves); E.addCons(S, E.SG_MILE_CHEST); X.miles = (X.miles || 0) + 1; if (F.rewards) F.rewards.sgMile = X.waves; note(S, `Palier de la semaine : ${X.waves} vagues tenues ! +1 ${D.CONSUMABLES[E.SG_MILE_CHEST].name}.`, "rare"); } }
+    if (X.waves >= E.SG_MAXW || (X.stopAt && X.waves >= X.stopAt)) { endRun(S, X, "wake"); return; }
     queue(X, { t: "wave", valid: X.valid });
   };
   const recordWeek = (S, X) => {
@@ -600,7 +610,7 @@
   /* 1.0.30 : rejeu du serveur pour le classement de la semaine (fonction « record », { songe: 1 }). Il rejoue un songe de
      l'intensité ii avec l'équipe de la sauvegarde, la carte de la semaine, les choix automatiques et un hasard choisi par le
      serveur, en tenant le plus de vagues possible. Renvoie { ok, ii, waves, err }. Le hasard et l'heure reviennent ensuite. */
-  E.sgReplay = (txt, ii, seed, now) => {
+  E.sgReplay = (txt, ii, seed, now, stopAt) => { // stopAt (2.1.41.1) : vagues annoncées, le rejeu s'arrête là (moins de calcul sans plafond)
     const t = now || Date.now();
     try {
       E.setRng(seeded(seed >>> 0)); E.setClock(() => t);
@@ -610,7 +620,7 @@
       if (E.songe(S).unl < ii) return { ok: false, err: "intensité jamais débloquée dans cette partie" };
       S.settings.sgMode = "equilibre";
       const err = E.expStart(S, ii); if (err) return { ok: false, err };
-      S.exp.max = 1; E.expAutoPlay(S, 160); if (E.expActive(S)) E.expQuit(S);
+      S.exp.max = 1; if (stopAt > 0) S.exp.stopAt = stopAt; E.expAutoPlay(S, 60 + Math.min(E.SG_MAXW, stopAt > 0 ? stopAt : 340)); if (E.expActive(S)) E.expQuit(S);
       const L = S.expLast || {};
       return L.valid ? { ok: true, ii, waves: L.waves } : { ok: false, ii, waves: 0, err: "l'équipe ne valide pas cette intensité" };
     } catch (e) { return { ok: false, err: "partie illisible" }; }

@@ -180,4 +180,21 @@ const team = (L, cls = ["iop", "eni", "feca", "cra"]) => { const S = E.newState(
   console.log("ok - songe : rejeu du serveur", JSON.stringify(a));
 }
 
+// « Songe sans fin » (Ley, 1A 2A de Mathis, 25/10) : plus de plafond à 50, paliers 75/100/150 en Cauchemar, une fois par semaine
+{
+  const S = team(200); E.songe(S).unl = 7; assert.strictEqual(E.expStart(S, 5), null, "Cauchemar 1 lancé");
+  const X = S.exp; const end = X.nodes.findIndex((n) => n.t === "end"); X.at = end; X.pick = end; X.valid = true; X.chest = {};
+  const fakeF = () => ({ ents: [], rewards: { xp: {}, kamas: 0, res: {}, items: [] } });
+  const chests = () => (S.cons && S.cons[E.SG_MILE_CHEST]) || 0; const c0 = chests();
+  for (let w = 50; w <= 100; w++) { X.wave = w; X.pend = []; E.expWin(S, fakeF()); assert.ok(E.expActive(S), "le songe continue après la vague " + w); }
+  assert.strictEqual(X.waves, 100, "100 vagues tenues"); assert.strictEqual(chests() - c0, 2, "paliers 75 et 100 : deux coffres");
+  assert.deepStrictEqual(E.sgMilesGot(S), [75, 100], "paliers notés pour la semaine");
+  E.expQuit(S); assert.strictEqual(E.expStart(S, 7), null, "un autre songe la même semaine");
+  const Y = S.exp; const e2 = Y.nodes.findIndex((n) => n.t === "end"); Y.at = e2; Y.pick = e2; Y.valid = true;
+  Y.wave = 75; E.expWin(S, fakeF()); assert.strictEqual(chests() - c0, 2, "palier 75 déjà reçu cette semaine");
+  E.expQuit(S); E.expStart(S, 1); const Z = S.exp; const e3 = Z.nodes.findIndex((n) => n.t === "end"); Z.at = e3; Z.pick = e3; Z.valid = true; Z.wave = 150; E.expWin(S, fakeF());
+  assert.strictEqual(chests() - c0, 2, "pas de palier sous Cauchemar"); E.expQuit(S);
+  console.log("ok - songe : sans fin, paliers de la semaine");
+}
+
 console.log("songe.test.js : tout est bon");

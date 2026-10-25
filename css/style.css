@@ -3721,7 +3721,7 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .sg-it.act{border-color:rgba(95,216,208,.65)}.sg-it.act .rk{color:#5fd8d0}.sg-it.sold{opacity:.45}
 .sg-it .pr{margin-top:auto;display:flex;justify-content:space-between;align-items:center}
 .sg-wave{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px}
-.sg-wv{display:flex;gap:4px}.sg-wv span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:900;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2)}
+.sg-wv{display:flex;gap:4px;flex-wrap:wrap}.sg-wv span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:900;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2)}
 .sg-wv span.ok{background:rgba(143,240,160,.22);border-color:#8ff0a0}.sg-wv span.cur{border-color:var(--dg);box-shadow:0 0 10px rgba(240,195,90,.7);color:#ffe2a0}.sg-wv span.v{border-color:#a58bff}
 .sg-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .sg-sum div{padding:10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dm)}
@@ -6437,3 +6437,9 @@ body.tb1 #chat .chmin{display:none}
 .log .lsep{text-align:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);padding:5px 0 3px}
 .log .lresume{position:sticky;bottom:0;z-index:2;display:block;width:100%;margin:4px 0 -2px;padding:5px 8px;border:1px solid var(--gold);border-radius:9px;background:color-mix(in srgb,var(--gold) 22%,var(--panel2));color:var(--ink);font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .log .lresume[hidden]{display:none}
+
+/* 2.1.41.1 « Songe sans fin » : vagues regroupées et paliers de la semaine */
+.sg-wv span.all{width:auto;padding:0 8px;border-style:dashed}
+.sgx-miles{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.sgx-mile{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.18)}
+.sgx-mile.ok{border-color:#8ff0a0;background:rgba(143,240,160,.15)}.sgx-mile img{width:26px;height:26px}

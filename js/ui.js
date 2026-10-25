@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.41";
+const GAME_VERSION = "2.1.41.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.41.1", name: "Songe sans fin", guide: "songe", items: [
+    "Songe infini : plus de plafond à 50 vagues. La Fin du rêve continue tant que ton équipe tient, et les monstres se renforcent à chaque vague (environ +7 %) : chaque équipe trouve son mur",
+    "Paliers de la semaine, dès Cauchemar 1 : la première fois de la semaine que tu tiens 75, 100 puis 150 vagues, un Coffre en obsidienne (3 au plus par semaine)",
+    "Les Bribes par vague ne changent pas, et le classement de la semaine départage enfin les meilleurs au-delà de 50 vagues",
+    "La fenêtre des vagues montre les 10 dernières, ton record de la semaine et les paliers (la rangée ne déborde plus au téléphone). Idée de Ley",
+  ] },
   { v: "2.1.41", name: "Les quatre voies de l'Eniripsa", items: [
     "Eniripsa : Mot Interdit coûte 4 PA au lieu de 5",
     "Voie Eau : Mot Vampirique +20 % de dégâts. Voie Terre : Juron, Peinture de Guerre et Pinceau Tribal +30 %, Cri de Guerre +25 %. Voie Air : Mot Espiègle et Mot Farceur +30 %, Mot Fleuri +20 %",

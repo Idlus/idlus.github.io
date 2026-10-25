@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.41.1 « Songe sans fin »
+- Idée de Ley, choix 1A 2A 3A de Mathis (25/10, maquette https://claude.ai/artifact/6UXk5TZT5QKfmiaqXSjaBm) : `js/songe.js` retire le plafond de 50 vagues (`E.SG_MAXW` = 1 000, garde-fou), même montée `E.SG_WAVE` par vague. Paliers `E.SG_MILES` 75/100/150 dès Cauchemar 1 (`E.SG_MILE_II`) : un Coffre en obsidienne la première fois de la semaine (`songe.wk.miles`), jamais pendant le rejeu du serveur.
+- Serveur : `supabase/functions/record/index.ts` accepte plus de 50 vagues annoncées ; `E.sgReplay(…, stopAt)` s'arrête aux vagues annoncées (moins de calcul).
+- `js/songeui.js` : 10 dernières vagues, record de la semaine, paliers. Guide et `tests/songe.test.js`.
+
 ## 2.1.41 « Les quatre voies de l'Eniripsa »
 - Accord de Mathis (25/10, retours de Jérémygnon) : `js/data.js` (retouches de kits) : Mot Interdit 4 PA ; dégâts ×1,2 Mot Vampirique, ×1,3 Juron, Peinture de Guerre, Pinceau Tribal, Mot Espiègle, Mot Farceur, ×1,25 Cri de Guerre, ×1,2 Mot Fleuri.
 - `healAmount` (`js/engine.js`) : l'Eniripsa (hors invocations et Kolizéum) soigne avec sa meilleure caractéristique d'élément au lieu de l'Intelligence.
