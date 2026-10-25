@@ -3769,6 +3769,13 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .chat .ch-tabs .ch-tab > span:not(.n){max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .chat .ch-tabs .ch-tab .uico{width:16px;height:16px}
 .chat .ch-tabs .ch-tab .n{position:absolute;top:-2px;right:2px;font-size:10px;line-height:15px;padding:0 5px;margin:0}
+/* #154 : jusqu'à huit salons (Classique, Monocompte, Alliance…). Sur une seule ligne, les noms étaient coupés et la pastille
+   d'un onglet trop étroit (Privé) disparaissait. Jusqu'à cinq salons, une ligne ; au-delà, deux lignes de colonnes égales
+   (--chc, posé par js/chat.js) où chaque nom tient en entier. La pastille est accrochée à l'icône : toujours dans le bouton. */
+.chat .ch-tabs{display:grid;grid-template-columns:repeat(var(--chc,5),minmax(0,1fr));gap:2px}
+.chat .ch-tabs .ch-tab{padding:5px 1px}
+.chat .ch-tabs .ch-tab > span.ic{position:relative;display:inline-flex;overflow:visible}
+.chat .ch-tabs .ch-tab .ic .n{top:-5px;right:auto;left:calc(100% - 5px)}
 .chat .ch-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;font-size:12px;border-bottom:1px solid var(--frame);background:rgba(231,196,106,.07)}
 .chat .ch-strip .ev{display:flex;align-items:center;gap:6px;min-width:0}
 .chat .ch-strip .ev .uico,.chat .ch-strip .ev img{width:16px;height:16px;flex:none}
