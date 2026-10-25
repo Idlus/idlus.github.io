@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.12";
+const GAME_VERSION = "2.1.41";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.41", name: "Les quatre voies de l'Eniripsa", items: [
+    "Eniripsa : Mot Interdit coûte 4 PA au lieu de 5",
+    "Voie Eau : Mot Vampirique +20 % de dégâts. Voie Terre : Juron, Peinture de Guerre et Pinceau Tribal +30 %, Cri de Guerre +25 %. Voie Air : Mot Espiègle et Mot Farceur +30 %, Mot Fleuri +20 %",
+    "Ses soins (et donc le bouclier du soin en trop) utilisent sa meilleure caractéristique : Force, Intelligence, Chance ou Agilité. En Eau, Terre ou Air, elle soigne enfin aussi bien qu'en Feu (pas au Kolizéum)",
+    "En simulation, les quatre voies arrivent au même niveau, sans changement pour les équipes. Retours de Jérémygnon, merci !" ] },
   { v: "2.1.40.12", name: "Eniripsa seule", items: [
     "Eniripsa : le vol de vie compte maintenant comme un soin pour Mots liés. Seule en Monocompte, elle renforce enfin sa prochaine attaque de 25 %, même sans allié à soigner (voie Eau surtout)",
     "Le combat automatique connaît Mots liés : l'Eniripsa lance plus souvent ses sorts qui soignent ou volent de la vie au lieu du coup d'arme",

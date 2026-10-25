@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.41 « Les quatre voies de l'Eniripsa »
+- Accord de Mathis (25/10, retours de Jérémygnon) : `js/data.js` (retouches de kits) : Mot Interdit 4 PA ; dégâts ×1,2 Mot Vampirique, ×1,3 Juron, Peinture de Guerre, Pinceau Tribal, Mot Espiègle, Mot Farceur, ×1,25 Cri de Guerre, ×1,2 Mot Fleuri.
+- `healAmount` (`js/engine.js`) : l'Eniripsa (hors invocations et Kolizéum) soigne avec sa meilleure caractéristique d'élément au lieu de l'Intelligence.
+- Simulation solo Mono, bon équipement (7 donjons, 8 essais) : Feu/Eau/Terre/Air 5,04/4,93/4,50/4,30 → 4,96/4,96/4,74/5,03 ; optimisé 6,27/5,56/5,61/5,17 → 6,29/5,87/5,90/5,87. Équipes de 5 : 5,71/6,69 → 5,61/6,66 (bruit). Test `tests/classes.test.js`.
+
 ## 2.1.40.12 « Eniripsa seule »
 - Retours de Jérémygnon (Monocompte) : `castSpell` (`js/engine.js`) : le vol de vie de l'Eniripsa (`drain`, `leech`) met `e.eniDmg` (Mots liés : prochaine attaque +25 %), hors Kolizéum. Seule, elle ne soignait jamais et le bonus ne revenait pas.
 - `healPick` : un soin à une cible va au héros (non invoqué) le plus blessé, l'invocation seulement si aucun héros n'est blessé (toutes les classes). `planTurn` : pour l'Eniripsa, un sort qui soigne ou vole de la vie vaut +25 % de ses dégâts (Mots liés), l'IA délaisse le coup d'arme.
