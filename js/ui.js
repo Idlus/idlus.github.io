@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.8";
+const GAME_VERSION = "2.1.40.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.9", name: "Drops au combat", guide: "combat", items: [
+    "Idée de Bellito : sur la page Combat, un cadre « Drops possibles » montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent en premier",
+    "« Tout voir » affiche la chance de chaque équipement par héros et les ressources de la zone ; un clic ouvre la fiche de l'objet ou de la ressource",
+    "« Voir la zone » ou « Fiche du donjon » ouvre la page complète. Au téléphone, le cadre est dans l'onglet Butin",
+  ] },
   { v: "2.1.40.8", name: "Songe plus rapide", guide: "songe", items: [
     "Songe infini : le choix automatique attend maintenant 5 secondes au lieu de 20 à 30 (couloir, faveur, fontaine, vague suivante). Décoche Auto pour choisir toi-même sans limite de temps",
     "La barre du choix automatique se vide pour de vrai pendant l'attente",
@@ -4609,6 +4614,36 @@ function combatSetSheet() {
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null;
   openSheet(`<h2>${G("gear")} Réglages du combat</h2><div class="csetsheet">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</div><button class="btn" data-act="closesheet">Fermer</button>`);
 }
+/* 2.1.40.9 (idée de Bellito) : drops possibles de la zone ou du donjon en cours, sous le butin du combat */
+function cdropsData() {
+  if (ui.watch || E.expActive(S)) return null;
+  const sc = E.ITEM_DROP_SCALE; const D = S.dungeon; const dg = D && DUNGEONS[D.id];
+  if (dg) { const mobs = [...new Set(dg.rooms.flatMap((r) => r.mobs || []))].filter((k) => MONSTERS[k]); const bm = E.bossDropMult(D.stasis || 1);
+    const its = subItems({ monsters: mobs }).map((e) => ({ t: e.t, p: e.p * sc }));
+    ((MONSTERS[dg.boss] || {}).items || []).forEach(([t, r]) => { if (!ITEMS[t]) return; const p = Math.min(100, r * bm); const e = its.find((x) => x.t === t); if (e) e.p = Math.max(e.p, p); else its.push({ t, p }); });
+    return { k: `dg:${D.id}:${D.stasis || 1}`, its, res: subResources({ monsters: MONSTERS[dg.boss] ? [...mobs, dg.boss] : mobs }), link: D.defi ? "" : `<button class="btn sm" data-act="dgopen" data-id="${D.id}">${IC("coffre")} Fiche du donjon</button>` }; }
+  const sub = S.hunting && S.sub && E.SUBS[S.sub]; if (!sub) return null;
+  return { k: `sub:${sub.id}`, its: subItems(sub).map((e) => ({ t: e.t, p: e.p * sc })), res: subResources(sub), link: `<button class="btn sm" data-act="zoneview" data-id="${sub.id}" data-gotab="world">${IC("carte")} Voir la zone</button>` };
+}
+function cdropsHtml(X) {
+  const own = E.ownedTpls(S); const nT = Math.max(1, E.team(S).length); const open = !!ui.cdropsOpen; const N = 12;
+  const its = X.its.slice().sort((a, b) => (!!own[a.t] - !!own[b.t]) || ITEMS[a.t].lvl - ITEMS[b.t].lvl); const miss = its.filter((e) => !own[e.t]).length; // ceux qui manquent d'abord
+  const tip = (e) => `${ITEMS[e.t].name} · niv. ${ITEMS[e.t].lvl} · ${dropPct(e.p)} % par héros${own[e.t] ? " · déjà obtenu" : ""}`;
+  const icons = its.slice(0, N).map((e) => `<button class="cdr-it ${own[e.t] ? "own" : ""}" data-act="encitem" data-v="${e.t}" data-tip="${h(tip(e))}" aria-label="${h(ITEMS[e.t].name)}">${im(itemImg(e.t), "", ITEMS[e.t].name)}${own[e.t] ? `<i>✓</i>` : ""}</button>`).join("") + (its.length > N ? `<button class="cdr-it more" data-act="cdrops">+${its.length - N}</button>` : "");
+  const list = its.map((e) => `<div class="lcard" data-act="encitem" data-v="${e.t}" style="cursor:pointer"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}${own[e.t] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${dropPct(e.p)} %</span> <span class="muted">par héros</span></div></div></div>`).join("");
+  const rp = (r) => E.resRate(r.p).toFixed(1).replace(".", ",");
+  const res = X.res.map((r) => `<button class="cdr-res" data-act="cdres" data-n="${h(r.n)}" data-tip="${h(`${r.n} · ${rp(r)} %${S.res[r.n] ? ` · ${fmt(S.res[r.n])} en stock` : ""}`)}">${im(resImg(r.n), "ico sm", r.n)}<span>${h(r.n)}</span><b class="num">${rp(r)} %</b></button>`).join("");
+  return `<div class="phead"><h2>Drops possibles</h2><span class="small muted">${its.length ? `${its.length} équipement${its.length > 1 ? "s" : ""}${miss < its.length ? ` · ${miss} à obtenir` : ""}` : "aucun équipement"}</span></div>
+    <div class="pad stack" style="gap:8px">${its.length ? (open ? `<div class="xs muted">Une chance par héros et par monstre : avec ${nT} héros, ${nT} chance${nT > 1 ? "s" : ""}.</div><div class="loot">${list}</div>` : `<div class="cdr-icons">${icons}</div>`) : ""}
+      ${open && res.length ? `<div><b class="small">Ressources</b><div class="cdr-reslist">${res}</div></div>` : ""}
+      <div class="row"><button class="btn sm" data-act="cdrops">${open ? "Réduire" : `Tout voir${X.res.length ? ` · ${X.res.length} ressource${X.res.length > 1 ? "s" : ""}` : ""}`}</button>${X.link}</div></div>`;
+}
+function cdropsUpdate(force) {
+  const el = $("#cdrops"); if (!el) return; const X = cdropsData();
+  const k = X ? `${X.k}:${ui.cdropsOpen ? 1 : 0}:${Object.keys(S.items).length}:${E.team(S).length}` : "-";
+  if (!force && el.dataset.k === k) return; el.dataset.k = k;
+  el.hidden = !X; el.innerHTML = X ? cdropsHtml(X) : "";
+}
 /* ---------- COMBAT ---------- */
 function renderCombat() {
   if (ui.watch) return renderWatch();
@@ -4643,6 +4678,7 @@ function renderCombat() {
     </div>
     <div class="stack cside"><div id="champpand" class="ch-slot-d"></div>
       <div class="panel csec-butin"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
+      <div class="panel csec-butin cdrops" id="cdrops" hidden></div>
       <div class="panel csec-stats"><div class="phead"><h2>Statistiques</h2></div><div class="pad" id="fstats"></div></div>
       <div class="panel csec-butin"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
     </div>
@@ -5976,6 +6012,7 @@ function updateCombat(force) {
   if (window.CHAMPUI && !ui.watch) { const cb = $("#champban"); if (cb) { const v = window.CHAMPUI.banner(S, F); if (cb.dataset.k !== v) { cb.dataset.k = v; cb.innerHTML = v; } } // refonte du Champion : bandeau doré, panneau de la sous-zone
     const v = window.CHAMPUI.huntPanel(S); ["#champpanm", "#champpand"].forEach((id) => { const el = $(id); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; } }); }
   const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + (ecoOn() ? Math.floor(Date.now() / 5000) : F.seq) + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
+  cdropsUpdate(force); // 2.1.40.9 : drops possibles de la zone ou du donjon
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
   const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.25.1
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
@@ -10854,6 +10891,8 @@ document.addEventListener("click", (ev) => {
     case "dgcraftkey": { const r = E.craftMany(S, "special", DUNGEONS[d.id].key, +d.n || 1); if (typeof r === "string") { toast(r); return; } toast(r.n > 1 ? `${fmt(r.n)} clés fabriquées.` : "Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
     case "cview": S.settings.cview = d.v; dirty = true; break;
+    case "cdrops": ui.cdropsOpen = !ui.cdropsOpen; cdropsUpdate(true); return;
+    case "cdres": resSheet(d.n); return;
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;

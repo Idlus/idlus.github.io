@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40.8",
+  "version": "2.1.40.9",
   "versions": [
+    {
+      "v": "2.1.40.9",
+      "name": "Drops au combat",
+      "guide": "combat",
+      "items": [
+        "Idée de Bellito : sur la page Combat, un cadre « Drops possibles » montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent en premier",
+        "« Tout voir » affiche la chance de chaque équipement par héros et les ressources de la zone ; un clic ouvre la fiche de l'objet ou de la ressource",
+        "« Voir la zone » ou « Fiche du donjon » ouvre la page complète. Au téléphone, le cadre est dans l'onglet Butin"
+      ]
+    },
     {
       "v": "2.1.40.8",
       "name": "Songe plus rapide",

@@ -6410,3 +6410,15 @@ body.tb1 #chat .chmin{display:none}
 @media (max-width:640px){.gohunt-row .gohunt{width:100%;justify-content:center}}
 .wm-z.here i{background:var(--hunt);box-shadow:0 0 0 3px rgba(79,184,255,.45),0 0 14px 4px rgba(79,184,255,.8)}
 .wm-leg .d.here{background:var(--hunt);box-shadow:0 0 6px 2px rgba(79,184,255,.8)}
+/* 2.1.40.9 (idée de Bellito) : drops possibles au combat */
+.cdrops .loot{max-height:340px;overflow-y:auto}
+.cdr-icons{display:flex;flex-wrap:wrap;gap:6px}
+.cdr-it{position:relative;width:42px;height:42px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--panel3);display:grid;place-items:center;cursor:pointer;color:var(--muted);font-weight:800;font-size:12px}
+.cdr-it img{width:34px;height:34px;object-fit:contain}
+.cdr-it.own img{opacity:.45}
+.cdr-it i{position:absolute;right:2px;bottom:0;font-style:normal;font-size:11px;color:var(--good,#3c9)}
+.cdr-it:hover{border-color:var(--gold2)}
+.cdr-reslist{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;max-height:200px;overflow-y:auto}
+.cdr-res{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--ink);font-size:12px;cursor:pointer}
+.cdr-res b{color:var(--muted);font-weight:700}
+.cdr-res .ico{width:20px;height:20px}

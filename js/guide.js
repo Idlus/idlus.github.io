@@ -305,6 +305,8 @@
         "Avec « Respecter les challenges » (page Combat), l'IA évite ce qui les ferait échouer. Le bouton à côté (11/11) choisit les challenges que l'équipe suit : les autres sont ignorés.",
         `Si le combat tourne mal, les héros oublient les challenges pour gagner : Élitiste et Ordonné sous ${N(() => Math.round(E.CHAL_GIVEUP_TGT * 100))} % des PV de l'équipe, les autres sous ${N(() => Math.round(E.CHAL_GIVEUP * 100))} %, et tous dès qu'un héros tombe. Pas dans le Défi du jour, où les règles comptent dans le score.`,
       ]],
+      ["h", "Drops possibles"],
+      ["p", "Sous le Butin (onglet Butin au téléphone), le cadre **Drops possibles** montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent d'abord. « Tout voir » ajoute les chances par héros et les ressources ; « Voir la zone » ou « Fiche du donjon » ouvre la page complète."],
       ["h", "Mode manuel"],
       ["p", `Sur la page Combat, le mode manuel te laisse choisir chaque sort. Sans réponse au bout de ${N(() => E.MANUAL_TIMEOUT)} s, le héros joue tout seul.`],
     ] });

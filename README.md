@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.9 « Drops au combat »
+- Idée de Bellito : `js/ui.js` ajoute sous le Butin de la page Combat un cadre « Drops possibles » (`cdropsData`, `cdropsHtml`, `cdropsUpdate`) : équipements de la sous-zone chassée (`subItems`) ou du donjon en cours (monstres des salles + boss avec `E.bossDropMult` de la stasis), manquants d'abord ; « Tout voir » donne les chances par héros et les ressources (`subResources`), avec lien vers la zone ou la fiche du donjon. Mis à jour dans `updateCombat` par clé (`dataset.k`), sans réécrire la page.
+- Guide (chapitre « Le combat ») complété.
+
 ## 2.1.40.8 « Songe plus rapide »
 - Retour de Ley (25/10) : `js/songe.js` `EXP_AUTO_MS` 20 s → 5 s et `EXP_DOOR_MS` 30 s → 5 s ; la barre du couloir (`.sgx-cd i`) suit le temps restant (`js/songeui.js`).
 - Correction : six sorts de boss (`js/identboss.js` : Déglutition, Force Poigne, Fumée asphyxiante, Objection, Vampyrisme, Spatule Tranche-Gourmands) annoncent « ne peut plus être soigné » mais posaient `rooted` (ne peut plus lancer de soin). Nouvel état `noHeal` : `doHeal` (`js/engine.js`) ne rend plus aucun PV au héros, décompté à la fin de son tour comme `rooted`. Icône et résumé (`js/ui.js`, `js/formation.js`). Test dans `tests/fight.test.js`.
