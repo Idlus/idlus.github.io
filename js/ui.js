@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.9";
+const GAME_VERSION = "2.1.40.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.10", name: "Trier l'encyclopédie", guide: "enc", items: [
+    "Idée de hattory : Encyclopédie › Équipements se filtre par élément (Terre, Feu, Eau, Air : la caractéristique ou ses dommages) ou par n'importe quelle stat (PA, PM, Vitalité, Critique, Résistances…)",
+    "Nouveau choix « Tous les emplacements » et un tri : niveau croissant ou décroissant, nom, ou la plus forte valeur de la stat choisie. La stat filtrée s'affiche en premier, surlignée",
+    "Encyclopédie › Panoplies : filtre par tranche de niveau (idée de Bellito), mêmes filtres par élément ou stat (pièces et bonus de panoplie), et tri par niveau ou par valeur",
+  ] },
   { v: "2.1.40.9", name: "Drops au combat", guide: "combat", items: [
     "Idée de Bellito : sur la page Combat, un cadre « Drops possibles » montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent en premier",
     "« Tout voir » affiche la chance de chaque équipement par héros et les ressources de la zone ; un clic ouvre la fiche de l'objet ou de la ressource",
@@ -4548,25 +4553,42 @@ function encWhereHtml(k) {
 }
 /* 1.0.7.12 : fiche complète d'un monstre (clic sur son nom ou son portrait dans l'Encyclopédie) */
 /* 1.0.8.3 : onglet Équipements de l'Encyclopédie (tous les équipements, rangés par emplacement ; vert = déjà obtenu une fois) */
-const ENC_EQ_SLOTS = [["arme", "Armes"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["bouclier", "Boucliers"]];
+const ENC_EQ_SLOTS = [["all", "Tous les emplacements"], ["arme", "Armes"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["bouclier", "Boucliers"]];
 function encEqAll() { return ui.encEqL || (ui.encEqL = Object.keys(ITEMS).filter((t) => ITEMS[t].slot !== "dofus" && !ITEMS[t].leg).sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl || (ITEMS[a].name < ITEMS[b].name ? -1 : 1))); }
+/* 2.1.40.10 « Trier l'encyclopédie » (idée de hattory) : filtre par élément ou par caractéristique, et tri (niveau, nom, valeur de la stat).
+   Un élément = sa caractéristique ou ses dommages (Terre : Force ou Dommages Terre) ; la valeur d'un élément pèse les stats comme la forgemagie (STATS.w). */
+const ENC_EL = [["t", "Terre"], ["f", "Feu"], ["e", "Eau"], ["a", "Air"]];
+const encStatKeys = (f) => (!f || f === "all" ? [] : f.startsWith("el:") ? [ELEMENTS[f.slice(3)].stat, ELEMENTS[f.slice(3)].dmg] : [f]);
+const encStatHigh = (v) => (Array.isArray(v) ? Math.max(v[0], v[1]) : +v || 0);
+const encStatVal = (stats, f) => { const ks = encStatKeys(f); const w = ks.length > 1; return ks.reduce((a, k) => a + Math.max(0, encStatHigh(stats && stats[k])) * (w ? (STATS[k] ? STATS[k].w : 1) : 1), 0); };
+function encStatOpts(cur) {
+  const used = ui.encStatU || (ui.encStatU = (() => { const u = new Set(); Object.values(ITEMS).forEach((T) => T.stats && Object.keys(T.stats).forEach((k) => u.add(k))); return STAT_ORDER.concat(D.TACT_ORDER || []).filter((k, i, A) => A.indexOf(k) === i && u.has(k) && STATS[k]); })());
+  return `<option value="all" ${cur === "all" ? "selected" : ""}>Toutes les stats</option><optgroup label="Éléments (caractéristique ou dommages)">${ENC_EL.map(([e, n]) => `<option value="el:${e}" ${cur === "el:" + e ? "selected" : ""}>Élément ${n}</option>`).join("")}</optgroup>`
+    + `<optgroup label="Caractéristiques">${used.map((k) => `<option value="${k}" ${cur === k ? "selected" : ""}>${h(STATS[k].name.replace("% ", ""))}</option>`).join("")}</optgroup>`;
+}
+window.ENCSTAT = { opts: encStatOpts, val: encStatVal, keys: encStatKeys }; // aussi pour Encyclopédie › Panoplies (js/collui.js)
 function encEqSrc(t) { const T = ITEMS[t]; const mon = E.itemSources(t).find((x) => x.mon);
   return { craft: T.craft ? `${IC("metiers")} ${h(CRAFT_JOBS[T.craft.job].name)} niv. ${E.craftReq(t)}` : "", mon: mon ? `${mon.k === "boss" ? "Boss" : "Butin"} : ${S.bestiary[mon.mon] ? h(MONSTERS[mon.mon].name) : "???"}` : "", boss: !!(mon && mon.k === "boss") }; }
 function encEqHtml() {
-  const F = ui.encEq || (ui.encEq = { slot: "arme", lv: "me", src: "all", st: "all" }); const dex = E.itemDex(S); const top = topTeamLvl();
+  const F = ui.encEq || (ui.encEq = { slot: "arme", lv: "me", src: "all", st: "all", stat: "all", sort: "lvl" }); if (!F.stat) { F.stat = "all"; F.sort = "lvl"; } const dex = E.itemDex(S); const top = topTeamLvl();
   const L0 = encEqAll(); const band = F.lv === "all" ? [1, 999] : F.lv === "me" ? [top - 10, top + 10] : F.lv.split("-").map(Number);
   const q = E.searchNorm(ui.enc && ui.enc.q); // recherche : tous les emplacements et tous les niveaux
-  const L = L0.filter((t) => { const T = ITEMS[t]; if (q ? !txtHas(T.name, q) : T.slot !== F.slot || T.lvl < band[0] || T.lvl > band[1]) return false;
+  const L = L0.filter((t) => { const T = ITEMS[t]; if (q ? !txtHas(T.name, q) : (F.slot !== "all" && T.slot !== F.slot) || T.lvl < band[0] || T.lvl > band[1]) return false;
+    if (F.stat !== "all" && !(encStatVal(T.stats, F.stat) > 0)) return false;
     if (F.st === "have" && !dex[t]) return false; if (F.st === "miss" && dex[t]) return false;
     if (F.src === "craft") return !!T.craft; if (F.src !== "all") { const S2 = encEqSrc(t); return F.src === "boss" ? S2.boss : !!S2.mon; } return true; });
-  const side = ENC_EQ_SLOTS.map(([v, n]) => { const ks = L0.filter((t) => ITEMS[t].slot === v); const a = ks.filter((t) => dex[t]).length;
+  if (F.sort === "lvld") L.reverse(); else if (F.sort === "name") L.sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name, "fr")); else if (F.sort === "val" && F.stat !== "all") L.sort((a, b) => encStatVal(ITEMS[b].stats, F.stat) - encStatVal(ITEMS[a].stats, F.stat) || ITEMS[b].lvl - ITEMS[a].lvl);
+  const side = ENC_EQ_SLOTS.map(([v, n]) => { const ks = v === "all" ? L0 : L0.filter((t) => ITEMS[t].slot === v); const a = ks.filter((t) => dex[t]).length;
     return `<button class="enczone ${a === ks.length ? "done" : ""}" data-act="enceqslot" data-v="${v}" aria-pressed="${!q && F.slot === v}"><span class="grow">${n}</span><span class="xs num">${a}/${ks.length}</span><span class="bar"><i style="width:${pct(a, ks.length)}%"></i></span></button>`; }).join("");
   const sel = `<select class="encsel" data-act="enceqslotsel">${ENC_EQ_SLOTS.map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>`;
   const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="enceqf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
   const tools = (q ? "" : seg("lv", [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]]))
-    + seg("src", [["all", "Toutes origines"], ["craft", "Recette"], ["drop", "Butin"], ["boss", "Boss"]]) + seg("st", [["all", "Tous"], ["have", "Obtenus"], ["miss", "À trouver"]]);
+    + seg("src", [["all", "Toutes origines"], ["craft", "Recette"], ["drop", "Butin"], ["boss", "Boss"]]) + seg("st", [["all", "Tous"], ["have", "Obtenus"], ["miss", "À trouver"]])
+    + `<span class="eqsort"><select class="eqstat" data-act="enceqstat" aria-label="Filtrer par élément ou caractéristique">${encStatOpts(F.stat)}</select>`
+    + `<select data-act="enceqsort" aria-label="Trier">${[["lvl", "Tri : niveau ↑"], ["lvld", "Tri : niveau ↓"], ["name", "Tri : nom"]].concat(F.stat !== "all" ? [["val", "Tri : la plus forte valeur"]] : []).map(([v, n]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>${h(n)}</option>`).join("")}</select></span>`;
   const MAX = ui.encEqMore || 48; const shown = L.slice(0, MAX);
-  const stats = (T) => Object.entries(T.stats).slice(0, 6).map(([k, [, b]]) => `<span class="eqst"${tipAttr(k)}>${sIco(k)}${b}</span>`).join("");
+  const hiK = encStatKeys(F.stat); // la stat filtrée passe en premier, surlignée
+  const stats = (T) => Object.entries(T.stats).sort(([a], [b]) => (hiK.includes(b) ? 1 : 0) - (hiK.includes(a) ? 1 : 0)).slice(0, 6).map(([k, [, b]]) => `<span class="eqst${hiK.includes(k) ? " hi" : ""}"${tipAttr(k)}>${sIco(k)}${b}</span>`).join("");
   const card = (t) => { const T = ITEMS[t]; const o = dex[t]; const S2 = encEqSrc(t);
     const set = T.set && SETS[T.set] ? `<div class="encwhere"><button class="encgo" data-act="searchset" data-id="${T.set}" data-tip="${h("Ouvrir le carnet de panoplies : " + SETS[T.set].name)}">${IC("parchemin_or")}<span class="encn">${h(SETS[T.set].name)}</span></button></div>` : "";
     return `<div class="mcard eqcard ${o ? "own" : ""}"><button class="eq-hd" data-act="encitem" data-v="${t}" data-tip="Ouvrir la fiche de l'objet"><span class="icobox lg">${im(itemImg(t), "", T.name)}</span><span class="grow"><b>${h(T.name)}</b><span class="xs muted">niv. ${T.lvl} · ${h(slotName(T.slot))}${o ? ` · <b class="plus">✓ obtenu</b>` : ""}</span></span></button>
@@ -4574,7 +4596,7 @@ function encEqHtml() {
   const nm = ENC_EQ_SLOTS.find((x) => x[0] === F.slot)[1];
   return `<section class="panel encpanel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
     <div class="enctools eqtools">${q ? "" : sel}${tools}</div>
-    <div class="enczhead eqhead"><h2>${q ? `Résultats pour « ${h(ui.enc.q)} »` : nm}</h2><span class="small muted num">${L.filter((t) => dex[t]).length}/${L.length} obtenus${q ? " · tous emplacements et niveaux" : F.lv === "me" ? ` · autour du niveau ${top}` : ""}</span></div>
+    <div class="enczhead eqhead"><h2>${q ? `Résultats pour « ${h(ui.enc.q)} »` : nm}</h2><span class="small muted num">${L.filter((t) => dex[t]).length}/${L.length} obtenus${q ? " · tous emplacements et niveaux" : F.lv === "me" ? ` · autour du niveau ${top}` : ""}${F.stat !== "all" ? ` · avec ${h(F.stat.startsWith("el:") ? "l'élément " + ENC_EL.find((x) => "el:" + x[0] === F.stat)[1] : STATS[F.stat].name.replace("% ", ""))}` : ""}</span></div>
     <div class="mons enc eqgrid">${shown.map(card).join("") || (q ? encNoHit(ui.enc.q) : `<div class="empty">Aucun équipement avec ces filtres.</div>`)}</div>
     ${L.length > MAX ? `<button class="btn" data-act="enceqmore">Afficher plus (${L.length - MAX} restants)</button>` : ""}</div></div></section>`;
 }
@@ -11169,6 +11191,7 @@ document.addEventListener("change", (ev) => {
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
   if (a === "cx-zonesel") { if (window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : album chromatique
   if (a === "enceqslotsel") { ui.encEq.slot = t.value; ui.encEqMore = 0; renderWorld(); return; }
+  if (a === "enceqstat" || a === "enceqsort") { const F = ui.encEq; if (a === "enceqstat") { F.stat = t.value; F.sort = t.value === "all" ? (F.sort === "val" ? "lvl" : F.sort) : "val"; } else F.sort = t.value; ui.encEqMore = 0; renderWorld(); return; } // 2.1.40.10 : choisir une stat trie par sa valeur
   if (a === "monospec") { const r = E.monoSetSpec(S, +t.dataset.i, t.value || null); if (r) toast(r); dirty = true; renderMetiers(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;

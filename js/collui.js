@@ -28,7 +28,7 @@
   const roman = (n) => (E.roman ? E.roman(n) : String(n));
   const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const phone = () => window.innerWidth < 900;
-  const st = { pk: "fam", q: "", f: "all", bon: "all", sort: "lvl", sel: {}, sq: "", sf: "all", scid: "", sn: 30, regAll: false, pot: false, dsel: null };
+  const st = { pk: "fam", q: "", f: "all", bon: "all", sort: "lvl", sel: {}, sq: "", sf: "all", scid: "", sn: 30, sst: "all", slv: "all", ssort: "auto", regAll: false, pot: false, dsel: null };
 
   /* ---------- petits rendus ---------- */
   const petImg = (id) => (E.PETS[id] ? `assets/p/${E.PETS[id].icon}.webp` : "");
@@ -230,17 +230,28 @@
     if (q) ids = ids.filter((sid) => norm(SETS[sid].name).includes(q) || E.setPieces(sid).some((t) => norm(ITEMS[t].name).includes(q)) || norm(E.zoneLabel(E.setRegion(sid))).includes(q));
     if (st.scid) { const main = CLASSES[c.cls].main; ids = ids.filter((sid) => { const L = E.setLvl(sid); if (L > c.lvl || L < c.lvl - 40) return false;
       const ks = new Set(E.setPieces(sid).flatMap((t) => Object.keys(ITEMS[t].stats))); return ks.has(main) || !["fo", "ine", "cha", "age"].some((k) => ks.has(k)); }); }
+    /* 2.1.40.10 (idée de hattory) : panoplies qui donnent un élément ou une stat (pièces ou bonus de panoplie), tranche de niveau, tri */
+    const SF = window.ENCSTAT; const setVal = (sid) => { if (!SF || st.sst === "all") return 0; const B = SETS[sid].bonus || {}; const top = B[Math.max(0, ...Object.keys(B).map(Number))] || {};
+      return E.setPieces(sid).reduce((a, t) => a + SF.val(ITEMS[t].stats, st.sst), 0) + SF.val(top, st.sst) + Object.values(B).some((b) => SF.val(b, st.sst) > 0) * 0.001; };
+    if (SF && st.sst !== "all") ids = ids.filter((sid) => setVal(sid) > 0);
+    if (st.slv !== "all") { const [a, b] = st.slv.split("-").map(Number); ids = ids.filter((sid) => E.setLvl(sid) >= a && E.setLvl(sid) <= b); }
     const missN = (sid) => E.setPieces(sid).filter((t) => !dex[t]).length;
     const nDone = ids.filter((sid) => C.done.has(sid)).length, nOne = ids.filter((sid) => missN(sid) === 1).length, nRun = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length).length, nNew = ids.filter((sid) => missN(sid) === E.setPieces(sid).length).length;
     if (st.sf === "done") ids = ids.filter((sid) => C.done.has(sid)); else if (st.sf === "one") ids = ids.filter((sid) => missN(sid) === 1); else if (st.sf === "run") ids = ids.filter((sid) => !C.done.has(sid) && missN(sid) < E.setPieces(sid).length); else if (st.sf === "new") ids = ids.filter((sid) => missN(sid) === E.setPieces(sid).length);
     const worn = E.setCounts(s, c); const have = (sid) => E.setPieces(sid).filter((t) => dex[t]).length / E.setPieces(sid).length;
-    ids.sort((a, b) => (worn[b] || 0) - (worn[a] || 0) || (missN(a) === 1 ? 0 : 1) - (missN(b) === 1 ? 0 : 1) || have(b) - have(a) || E.setLvl(b) - E.setLvl(a) || a.localeCompare(b));
+    if (st.ssort === "val" && st.sst === "all") st.ssort = "auto";
+    if (st.ssort === "lvl" || st.ssort === "lvld") ids.sort((a, b) => (st.ssort === "lvl" ? 1 : -1) * (E.setLvl(a) - E.setLvl(b)) || SETS[a].name.localeCompare(SETS[b].name, "fr"));
+    else if (st.ssort === "val") { const V = {}; ids.forEach((sid) => (V[sid] = setVal(sid))); ids.sort((a, b) => V[b] - V[a] || E.setLvl(b) - E.setLvl(a)); }
+    else ids.sort((a, b) => (worn[b] || 0) - (worn[a] || 0) || (missN(a) === 1 ? 0 : 1) - (missN(b) === 1 ? 0 : 1) || have(b) - have(a) || E.setLvl(b) - E.setLvl(a) || a.localeCompare(b));
     const total = ids.length; const shown = ids.slice(0, st.sn);
     const chips = [["all", "Toutes", null], ["done", "Complètes", nDone], ["one", "Il manque 1 pièce", nOne], ["run", "Commencées", nRun], ["new", "Non commencées", nNew]];
     return `<div class="stack co-sets-page" style="margin-top:10px">${collPanel(s)}
       <div class="co-tb"><input type="search" id="coSQ" data-co="sq" placeholder="Rechercher une panoplie ou une pièce…" value="${h(st.sq)}" autocomplete="off" spellcheck="false" enterkeyhint="search">
         <span class="co-chips">${chips.map(([k, nm, n]) => `<button class="co-chip" data-act="co-sf" data-v="${k}" aria-pressed="${st.sf === k}">${nm}${n != null ? ` <span class="n">${n}</span>` : ""}</button>`).join("")}</span>
         <select data-co="scid" aria-label="Héros"><option value="" ${st.scid ? "" : "selected"}>Toutes, équiper sur ${h(c.name)}</option>${heroesOf(s).map((x) => `<option value="${x.id}" ${String(st.scid) === String(x.id) ? "selected" : ""}>Adaptées à ${h(x.name)} (${h(CLASSES[x.cls].name)} ${x.lvl})</option>`).join("")}</select>
+        ${SF ? `<select data-co="sst" aria-label="Élément ou caractéristique">${SF.opts(st.sst)}</select>` : ""}
+        <select data-co="slv" aria-label="Niveau">${[["all", "Tous niveaux"], ["1-50", "Niv. 1–50"], ["51-100", "Niv. 51–100"], ["101-150", "Niv. 101–150"], ["151-200", "Niv. 151–200"]].map(([k, nm]) => `<option value="${k}" ${st.slv === k ? "selected" : ""}>${nm}</option>`).join("")}</select>
+        <select data-co="ssort" aria-label="Tri">${[["auto", "Tri : portées et presque finies"], ["lvl", "Tri : niveau ↑"], ["lvld", "Tri : niveau ↓"]].concat(st.sst !== "all" ? [["val", "Tri : la plus forte valeur"]] : []).map(([k, nm]) => `<option value="${k}" ${st.ssort === k ? "selected" : ""}>${nm}</option>`).join("")}</select>
         <span class="xs muted num">${total} panoplie${total > 1 ? "s" : ""}</span></div>
       <div class="co-sets">${shown.map((sid) => setCard(s, sid, c, owned, dex)).join("") || `<div class="empty">Aucune panoplie ici.</div>`}</div>
       ${total > shown.length ? `<div style="text-align:center"><button class="btn sm" data-act="co-smore">Voir ${Math.min(30, total - shown.length)} de plus (${total - shown.length} restantes)</button></div>` : ""}</div>`;
@@ -387,7 +398,7 @@
     clearTimeout(qT); qT = setTimeout(() => { const m = $("#main"); if (!m) return; if (UI().tab === "pets") renderPets(m, true); else if ($("#main .co-sets-page")) X().render(); }, 160); }); // le champ garde le focus (repaintKeep)
   document.addEventListener("change", (ev) => { const t = ev.target; if (!t || !t.dataset || !t.dataset.co) return;
     const k = t.dataset.co; if (k === "skin") { const r = E.act(S(), "setPetSkin", +t.dataset.uid, t.value || null); if (r) X().toast(r, "warn"); else X().markDirty(); X().render(); paintSheet(); return; } // 1.1 : Mue
-    if (k === "bon") st.bon = t.value; else if (k === "sort") st.sort = t.value; else if (k === "scid") { st.scid = t.value; st.sn = 30; } else return;
+    if (k === "bon") st.bon = t.value; else if (k === "sort") st.sort = t.value; else if (k === "scid") { st.scid = t.value; st.sn = 30; } else if (k === "sst") { st.sst = t.value; st.ssort = t.value === "all" ? "auto" : "val"; st.sn = 30; } else if (k === "slv") { st.slv = t.value; st.sn = 30; } else if (k === "ssort") st.ssort = t.value; else return;
     X().render(); });
   /* un filtre de la page Dofus (Tous, En cours…) ramène à la liste des quêtes */
   document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest('[data-act="qj-dfil"],[data-act="qj-dof"]'); if (t) st.pot = false;

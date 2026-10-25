@@ -6422,3 +6422,8 @@ body.tb1 #chat .chmin{display:none}
 .cdr-res{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--ink);font-size:12px;cursor:pointer}
 .cdr-res b{color:var(--muted);font-weight:700}
 .cdr-res .ico{width:20px;height:20px}
+/* 2.1.40.10 « Trier l'encyclopédie » : filtre par élément ou stat et tri dans Équipements */
+.eqsort{display:flex;flex-wrap:wrap;gap:6px}
+.eqsort select{padding:6px 10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-weight:700;max-width:100%}
+.eqst.hi{color:var(--good,#2f9e44);background:color-mix(in srgb,var(--good,#2f9e44) 14%,transparent);border-radius:8px;padding:0 4px}
+@media (max-width:760px){.eqsort{flex:1 1 100%}.eqsort select{flex:1 1 140px;min-width:0}}

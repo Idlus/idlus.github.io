@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40.9",
+  "version": "2.1.40.10",
   "versions": [
+    {
+      "v": "2.1.40.10",
+      "name": "Trier l'encyclopédie",
+      "guide": "enc",
+      "items": [
+        "Idée de hattory : Encyclopédie › Équipements se filtre par élément (Terre, Feu, Eau, Air : la caractéristique ou ses dommages) ou par n'importe quelle stat (PA, PM, Vitalité, Critique, Résistances…)",
+        "Nouveau choix « Tous les emplacements » et un tri : niveau croissant ou décroissant, nom, ou la plus forte valeur de la stat choisie. La stat filtrée s'affiche en premier, surlignée",
+        "Encyclopédie › Panoplies : filtre par tranche de niveau (idée de Bellito), mêmes filtres par élément ou stat (pièces et bonus de panoplie), et tri par niveau ou par valeur"
+      ]
+    },
     {
       "v": "2.1.40.9",
       "name": "Drops au combat",

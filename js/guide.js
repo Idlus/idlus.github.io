@@ -867,6 +867,7 @@
     voir: ["archis", "chroma", "world"],
     b: () => [
       ["p", "L'Encyclopédie garde tout ce que tu as rencontré : Bestiaire (lieux, résistances, butins avec les vraies chances), Familles, Boss de donjon, Équipements, Panoplies, Trophées et Chromatiques. Chaque onglet a sa recherche, et « Y aller » emmène au bon endroit."],
+      ["p", "**Équipements et Panoplies** se filtrent par élément (Terre, Feu, Eau, Air : la caractéristique ou ses dommages) ou par stat (PA, Vitalité, Résistances…), par niveau, et se trient par niveau, par nom ou par la plus forte valeur de la stat choisie. Pratique pour préparer un stuff."],
       ["h", "Collection de panoplies"],
       ["p", `Une panoplie compte quand chacune de ses pièces a été obtenue au moins une fois (même vendue ensuite). ${N(() => E.collTotal())} panoplies.`],
       ["ul", V(() => E.COLL_TIERS.map((t) => `**${fr(t.n)} panoplies** : ${t.txt || t.name || ""}`), [])],
