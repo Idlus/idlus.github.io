@@ -6393,3 +6393,17 @@ body.tb1 #chat .chmin{display:none}
   body.tb1 .status .sabpill .sbi{padding-inline:6px}
 }
 @media (max-width:600px){html,body{overflow-x:clip}body.tb1 .status{max-width:100%;min-width:0}}
+
+/* 2.1.40.6 (idée de Bellito) : la chasse en cours a sa propre couleur, bleu ciel, distincte du jaune-vert des titres, de la zone conseillée et des autres repères */
+:root{--hunt:#4fb8ff;--hunt-ink:#04182a}
+:root .tag.hunt{background:var(--hunt);border-color:var(--hunt);color:var(--hunt-ink);display:inline-flex;align-items:center;gap:5px}
+.tag.hunt::before,.gohunt .hdot{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;animation:huntpulse 1.6s ease-in-out infinite}
+.gohunt .hdot{background:var(--hunt);display:inline-block;margin-right:6px;box-shadow:0 0 6px var(--hunt)}
+@keyframes huntpulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.tag.hunt::before,.gohunt .hdot{animation:none}}
+:root .subrow.here{border-color:var(--hunt);box-shadow:0 0 0 2px var(--hunt)}
+.gohunt-row{justify-content:flex-end}
+.gohunt{border-color:var(--hunt)}.gohunt b{color:var(--hunt);margin-left:4px}
+@media (max-width:640px){.gohunt-row .gohunt{width:100%;justify-content:center}}
+.wm-z.here i{background:var(--hunt);box-shadow:0 0 0 3px rgba(79,184,255,.45),0 0 14px 4px rgba(79,184,255,.8)}
+.wm-leg .d.here{background:var(--hunt);box-shadow:0 0 6px 2px rgba(79,184,255,.8)}

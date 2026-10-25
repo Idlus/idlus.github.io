@@ -596,7 +596,7 @@
     voir: ["donjons", "chasse", "archis", "chroma"],
     b: () => [
       ["p", `${N(() => D.ZONES.length)} zones et leurs sous-zones, chacune avec une plage de niveaux. Choisis une sous-zone : l'équipe y enchaîne les combats. Il n'y a pas de niveau minimum, mais des monstres trop forts font perdre ; trop faibles, ils rapportent moins d'XP.`],
-      ["p", "La page s'ouvre sur la carte du Monde des Douze : touche une région pour voir ses sous-zones à côté. Zoome avec la molette, deux doigts ou les boutons + / −, et glisse pour te déplacer ; les niveaux s'affichent en zoomant. Le bouton « Liste » remet l'ancienne liste. Incarnam et les autres mondes sont sous la carte."],
+      ["p", "La page s'ouvre sur la carte du Monde des Douze : touche une région pour voir ses sous-zones à côté. Zoome avec la molette, deux doigts ou les boutons + / −, et glisse pour te déplacer ; les niveaux s'affichent en zoomant. Le bouton « Liste » remet l'ancienne liste. Incarnam et les autres mondes sont sous la carte. La chasse en cours est en bleu ciel (étiquette, cadre et point sur la carte) et le bouton « Aller à ma chasse », en haut de la page, ouvre sa région et y descend."],
       ["h", "Ouvrir de nouvelles zones"],
       ["ul", V(() => D.ZONES.filter((z) => z.requires && z.requires.boss).map((z) => { const b = z.requires.boss; const dg = D.DUNGEONS[b] || Object.values(D.DUNGEONS).find((x) => x.boss === b); return `**${z.name}** : battre ${dg ? dg.name : b}`; }), [])],
       ["h", "Étoiles de zone"],

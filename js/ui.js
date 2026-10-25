@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.5";
+const GAME_VERSION = "2.1.40.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.6", name: "Où je chasse ?", guide: "world", items: [
+    "Monde : « Chasse en cours » passe en bleu ciel, avec un petit point qui clignote. L'étiquette, le cadre de la sous-zone et le point sur la carte ne se confondent plus avec le jaune-vert des titres et de la zone conseillée",
+    "Nouveau bouton « Aller à ma chasse » en haut de la page Monde : il ouvre la bonne tranche de niveaux et la bonne région, puis descend jusqu'à la sous-zone où chasse l'équipe (liste et carte)",
+    "Idée de Bellito, merci !" ] },
   { v: "2.1.40.5", name: "Plusieurs parchemins d'un coup", guide: "caracs", items: [
     "Héros › Caractéristiques : à côté de « Fabriquer », un bouton « ×N » fabrique d'un coup les Petits parchemins qu'il faut pour monter ce héros à 100, au lieu de cliquer une fois par parchemin",
     "N tient compte des parchemins déjà dans ton sac et de ta poussière de stasis et de tes kamas ; le prix monte à chaque parchemin, exactement comme un par un (le total s'affiche au survol)",
@@ -3856,7 +3860,8 @@ function worldHtml() {
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
     const carte = mapView() === "carte" && window.CARTE;
-    body = (window.PORTUI ? window.PORTUI.card() : "") + tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    const hs = S.hunting && !S.dungeon && E.SUBS[S.sub]; // 2.1.40.6 (idée de Bellito) : un bouton en haut mène à la chasse en cours
+    body = (hs ? `<div class="row gohunt-row"><button class="btn sm gohunt" data-act="gohunt"><i class="hdot"></i>Aller à ma chasse : <b>${h(hs.name)}</b></button></div>` : "") + (window.PORTUI ? window.PORTUI.card() : "") + tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (carte ? worldMapHtml(t) : (window.CARTE ? `<div class="row wm-back"><button class="btn sm" data-act="mapview" data-v="carte">${IC("monde")} Voir la carte</button></div>` : "") + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`));
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
@@ -3989,7 +3994,7 @@ function zonePanel(z, tier = -1, open = false) {
   const tro = subs.filter((s) => S.trophies && S.trophies[s.id]).length;
   const prog = `<span class="zf-prog" data-tip="${traq}/${mons.length} monstres Traqueur · ${tro}/${subs.length} trophée${subs.length > 1 ? "s" : ""}"><span class="bar"><i style="width:${pct(traq, mons.length)}%"></i></span>${IC("trophee")}<span class="xs num">${tro}/${subs.length}</span></span>`;
   const head = `<button class="zonefold" data-act="zonefold" data-id="${z.id}" aria-expanded="${open}"><span class="zf-name">${h(z.name)}</span>
-    <span class="zf-meta">${window.ALLY ? window.ALLY.foldTag(z) : ""}${window.CHASSE ? window.CHASSE.foldTag(z) : ""}${hunting ? `<span class="tag good">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
+    <span class="zf-meta">${window.ALLY ? window.ALLY.foldTag(z) : ""}${window.CHASSE ? window.CHASSE.foldTag(z) : ""}${hunting ? `<span class="tag hunt">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
   if (!open) return `<section class="panel zonefoldp">${head}</section>`;
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
     <div class="subrows">${subs.map((s) => {
@@ -4000,7 +4005,7 @@ function zonePanel(z, tier = -1, open = false) {
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
         <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${petMark(s.id)}</span>
           <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")} Meilleure zone</span>` : ""}</span>
-          ${window.CHASSE ? window.CHASSE.subChip(s.id) : ""}${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
+          ${window.CHASSE ? window.CHASSE.subChip(s.id) : ""}${here ? `<span class="tag hunt" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
 /* 1.1 : le familier de la sous-zone et ses traces (1 sur 1 500 après 600 traces) */
@@ -10796,6 +10801,10 @@ document.addEventListener("click", (ev) => {
     case "maptier": ui.mapTier = +d.v; break;
     case "mapzone": ui.mapSel = d.id; break;
     case "mapzoom": { const v = +d.v; if (!v) { ui.mapZoom = 1; ui.mapScroll = null; break; } mapSetZoom(mapZoom() * (v > 0 ? 1.5 : 1 / 1.5)); return; } // 2.1.x : la carte du monde, la région choisie s'ouvre à côté
+    case "gohunt": { const s = S.hunting && !S.dungeon && E.SUBS[S.sub]; if (!s) break; // la tranche de niveaux et la région de la chasse s'ouvrent, puis la page défile jusqu'à elle
+      if (mapTier() >= 0 && tierOf(s.lvl[0]) !== mapTier()) ui.mapTier = tierOf(s.lvl[0]);
+      mapOpenZone(mapTier()); ui.mapOpen[String(mapTier())] = s.zone; ui.mapSel = s.zone; dirty = true; render();
+      const el = $("#main .subrow.here"); if (el) el.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     case "mapview": ui.mapView = d.v; try { localStorage.setItem("idlus-mapview", d.v); } catch (e) { /* navigation privée */ } break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": { ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; dirty = true; render(); const hd = $(".enczhead"); if (hd && hd.getBoundingClientRect().top < $("#status").getBoundingClientRect().bottom) hd.scrollIntoView(); return; } // 1.0.12.8 : on remonte au titre de la zone choisie

@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40.5",
+  "version": "2.1.40.6",
   "versions": [
+    {
+      "v": "2.1.40.6",
+      "name": "Où je chasse ?",
+      "guide": "world",
+      "items": [
+        "Monde : « Chasse en cours » passe en bleu ciel, avec un petit point qui clignote. L'étiquette, le cadre de la sous-zone et le point sur la carte ne se confondent plus avec le jaune-vert des titres et de la zone conseillée",
+        "Nouveau bouton « Aller à ma chasse » en haut de la page Monde : il ouvre la bonne tranche de niveaux et la bonne région, puis descend jusqu'à la sous-zone où chasse l'équipe (liste et carte)",
+        "Idée de Bellito, merci !"
+      ]
+    },
     {
       "v": "2.1.40.5",
       "name": "Plusieurs parchemins d'un coup",
