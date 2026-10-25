@@ -50,4 +50,21 @@ const fight = (ents) => ({ ents, fx: [], seq: 0, log: [], deaths: [], round: 1, 
   const K = fight([en, al]); K.pvp = true; E.doHeal(al, 500, K); assert.strictEqual(E.eniSurplus(K, en, al), 0, "pas au Kolizéum");
   console.log("ok - surplus de soin de l'Eniripsa");
 }
+// 5. 2.1.40.12 (retours de Jérémygnon, Monocompte) : seule, l'Eniripsa profite de Mots liés grâce au vol de vie,
+//    et ses soins à une cible vont au héros blessé avant son Lapino.
+{
+  const st = { ine: 100, cha: 100, fo: 0, age: 0, pui: 0, so: 0, do: 0, pa: 6 };
+  const S = { chars: [], settings: {} };
+  const mk = (o) => ent(Object.assign({ st, cd: {}, els: [], lvl: 100, cid: 1 }, o));
+  const en = mk({ cls: "eni", name: "E", hp: 600 }), lap = mk({ cls: "eni", name: "Lapino", summon: true, owner: 0, hp: 100, cid: undefined }), mon = mk({ side: "m", name: "M", hp: 99999, hpMax: 99999 });
+  const F = fight([en, lap, mon]);
+  assert.strictEqual(API.healPick(F), en, "le soin va à l'Eniripsa blessée, pas au Lapino");
+  en.hp = en.hpMax; assert.strictEqual(API.healPick(F), lap, "le Lapino est soigné quand aucun héros n'est blessé");
+  const vamp = E.spellDef("eni", "s25870"); en.eniDmg = false;
+  const r = API.castSpell(S, F, en, vamp, null, { id: vamp.id, cond: "", tgt: "low" });
+  assert.ok(r.ok && en.eniDmg === true, "Mot Vampirique renforce la prochaine attaque (Mots liés)");
+  const K = fight([mk({ cls: "eni", name: "K", tm: 0 }), mk({ side: "m", name: "N", hp: 99999, hpMax: 99999, tm: 1 })]); K.pvp = true;
+  API.castSpell(S, K, K.ents[0], vamp, null, { id: vamp.id, cond: "", tgt: "low" }); assert.ok(!K.ents[0].eniDmg, "pas au Kolizéum (anciens passifs)");
+  console.log("ok - Mots liés en solo et soins de l'Eniripsa");
+}
 console.log("classes.test.js : tout est bon");

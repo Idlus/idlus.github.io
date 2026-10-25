@@ -1,6 +1,16 @@
 {
-  "version": "2.1.40.11",
+  "version": "2.1.40.12",
   "versions": [
+    {
+      "v": "2.1.40.12",
+      "name": "Eniripsa seule",
+      "items": [
+        "Eniripsa : le vol de vie compte maintenant comme un soin pour Mots liés. Seule en Monocompte, elle renforce enfin sa prochaine attaque de 25 %, même sans allié à soigner (voie Eau surtout)",
+        "Le combat automatique connaît Mots liés : l'Eniripsa lance plus souvent ses sorts qui soignent ou volent de la vie au lieu du coup d'arme",
+        "Toutes les classes : un soin à une cible va d'abord au héros le plus blessé ; une invocation (le Lapino de l'Eniripsa…) n'est soignée que si aucun héros ne l'est. Avant, le Lapino en première ligne prenait presque tous les soins",
+        "Retours de Jérémygnon, merci !"
+      ]
+    },
     {
       "v": "2.1.40.11",
       "name": "Journal de combat",

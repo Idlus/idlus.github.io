@@ -1729,7 +1729,7 @@
     if (F && src && src.pet && v > 0 && E.petHit && !F.pushHit) E.petHit(F, src, tgt, v, el); // 1.1 : familiers (souffle, soin, griffe)
     return v;
   };
-  E.fightApi = { charDamage: (...a) => charDamage(...a), dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a), rowOf: (t) => rowOf(t), resists: (...a) => resists(...a), spawnMon: (...a) => spawnMon(...a), mobKey: (...a) => mobKey(...a) };
+  E.fightApi = { charDamage: (...a) => charDamage(...a), dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a), rowOf: (t) => rowOf(t), resists: (...a) => resists(...a), spawnMon: (...a) => spawnMon(...a), mobKey: (...a) => mobKey(...a), castSpell: (...a) => castSpell(...a), healPick: (F) => healPick(F) };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
@@ -1875,6 +1875,9 @@
   };
   const mainElE = (e) => { const c = CLASSES[e.cls]; return (c && STATS[c.main] && STATS[c.main].el) || "t"; };
 
+  /* 2.1.40.12 : un soin à une cible va au héros le plus blessé ; une invocation n'est soignée que si aucun héros n'est blessé
+     (le Lapino de l'Eniripsa, en première ligne, prenait presque tous ses soins et l'Eniripsa seule ne se soignait pas) */
+  const healPick = (F) => { const al = alive(F, "c"); const hurt = al.filter((a) => !a.summon && a.hp < a.hpMax); return (hurt.length ? hurt : al).slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; };
   /* lance un sort de héros : applique tous ses effets */
   const castSpell = (S, F, e, sp, forced, slot) => {
     const g = E.spellGrade(sp, e.lvl); const allies = alive(F, "c").filter((a) => !a.summon); const parts = []; let ok = false; let extraPa = 0;
@@ -1923,8 +1926,9 @@
         parts.push(`${ts.length > 1 ? ts.length + " cibles" : ts[0].name} : ${vals.join(" / ")}`); ok = true;
         if (f.k === "drain") { const ci = chal(F, "incurable"); if (ci) failChal(F, "incurable", "vol de vie"); }
         if (e.cls === "eni") e.eniHeal = true;
+        if (e.cls === "eni" && f.k === "drain" && !F.pvp) e.eniDmg = true; // 2.1.40.12 : le vol de vie compte comme un soin pour Mots liés (seule en Monocompte, l'Eniripsa ne soignait jamais : la prochaine attaque n'était jamais renforcée)
       } else if (f.k === "heal" || f.k === "healpct") {
-        const ts = f.self ? [e] : f.n > 1 ? alive(F, "c") : [ (forced && forced.alive && forced.side === "c") ? forced : alive(F, "c").slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0] ];
+        const ts = f.self ? [e] : f.n > 1 ? alive(F, "c") : [ (forced && forced.alive && forced.side === "c") ? forced : healPick(F) ];
         let tot = 0; const bonus = e.cls === "eni" && e.eniHeal ? 1 + psv(e).eniLie : 1; if (e.cls === "eni") { e.eniHeal = false; e.eniDmg = true; }
         ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; eniSh += eniSurplus(F, e, t); /* Eniripsa : le soin en trop devient bouclier */ if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
@@ -1947,7 +1951,7 @@
     }
     if (e.cls === "iop" && dealt) doHeal(e, dealt * 0.08, F); // Vigueur
     if (e.cls === "elio" && dealt) { if (!e.portal && g.fx.some((f) => f.n > 1 && ["dmg", "drain", "dot"].includes(f.k))) { e.portal = true; e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.08)); parts.push("bouclier de portail"); } doHeal(e, dealt * 0.1, F); }
-    if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); eniSh += eniSurplus(F, e, e); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); }
+    if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); eniSh += eniSurplus(F, e, e); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); if (e.cls === "eni" && !F.pvp) e.eniDmg = true; }
     if (idc && ok) extraPa += E.idPost(F, e, idc, g, dealt, hitIdx, parts); e.idCrit = 0;
     if (sp.wp && ok) weaponFx(S, F, e, sp, dealt, hitIdx, parts);
     if (eniSh) parts.push(`bouclier +${eniSh}`);
@@ -2082,7 +2086,7 @@
     const hup = e.cls === "hupper" && E.PLAN.passifs;
     // 2.1.21 : bonus posés par une attaque (Puissance, PA, vulnérabilité) : l'Osamodas délaissait Cri de l'Ours (+150 Puissance à l'équipe) ;
     // 2.1.32 : ces bonus se cumulent d'un lancer à l'autre, et les Dommages (Furia du Zobal) comptent aussi
-    const bonus = cands.map(() => 0); const stack = cands.map(() => false); let ivr = 0;
+    const bonus = cands.map(() => 0); const stack = cands.map(() => false); const lie = cands.map(() => 0); let ivr = 0;
     if (E.PLAN.passifs) {
       const perPa = Math.max(0, ...cands.map((c, k) => fxOf[k].reduce((a, f) => a + f.v * Math.min(f.n, Math.max(1, foes.length)), 0) / Math.max(1, c.g.pa)));
       const turn = perPa * Math.max(1, e.st.pa || 6); const team = 1 + 0.6 * Math.max(0, alive(F, "c").filter((a) => !a.summon).length - 1);
@@ -2097,6 +2101,8 @@
       }));
       // 2.1.32 : le Pandawa cuve un tour toutes les 5 attaques : chaque lancer coûte un cinquième de tour, il préfère les gros sorts
       if (e.cls === "panda" && E.PLAN.cumul) ivr = turn / 5;
+      // 2.1.40.12 : Eniripsa, Mots liés : un sort qui soigne ou vole de la vie renforce la prochaine attaque (l'IA préférait le coup d'arme)
+      if (e.cls === "eni" && !F.pvp) cands.forEach((c, k) => { if (!c.sp.wp && c.g.fx.some((f) => f.k === "heal" || f.k === "healpct" || f.k === "drain" || f.k === "leech")) lie[k] = psv(e).eniLie * fxOf[k].reduce((a, f) => a + f.v * Math.min(f.n, Math.max(1, foes.length)), 0); });
     }
     let best = { v: -1, first: null };
     const rec = (from, pa, left, hp, total, first, firstGain, depth, lastEl, els) => {
@@ -2106,7 +2112,7 @@
         const c = cands[k]; if (c.g.pa > pa || left[k] <= 0) continue;
         const h2 = hp.slice(); let fx = fxOf[k]; let le = lastEl, es = els;
         if (hup) fx = fx.map((f, i) => { const o = { ...f, v: f.v * (i === 0 ? hupMul(e, f.el, le, es) : le && le !== f.el ? 1.1 : 1) }; if (i === 0 && es.length >= 4) es = []; le = f.el; if (!es.includes(f.el)) es = es.concat(f.el); return o; });
-        const gn = planGain(fx, foes, h2, F) + (left[k] === c.left || stack[k] ? bonus[k] : 0) - ivr; // 2.1.32 : un bonus qui se cumule (Furia, Truanderie, Cri de l'Ours) compte à chaque lancer
+        const gn = planGain(fx, foes, h2, F) + (left[k] === c.left || stack[k] ? bonus[k] : 0) + lie[k] - ivr; // 2.1.32 : un bonus qui se cumule (Furia, Truanderie, Cri de l'Ours) compte à chaque lancer
         if (gn <= 0) continue;
         left[k]--;
         const f2 = hup ? (first === null ? k : first) : first === null || (stack[k] && !stack[first]) || (stack[k] === stack[first] && gn > firstGain) ? k : first; // dans la combinaison, on commence par le sort le plus utile ; 2.1.32 : un sort qui pose un bonus part avant (Truanderie puis Attaque Mortelle)

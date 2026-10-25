@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.12 « Eniripsa seule »
+- Retours de Jérémygnon (Monocompte) : `castSpell` (`js/engine.js`) : le vol de vie de l'Eniripsa (`drain`, `leech`) met `e.eniDmg` (Mots liés : prochaine attaque +25 %), hors Kolizéum. Seule, elle ne soignait jamais et le bonus ne revenait pas.
+- `healPick` : un soin à une cible va au héros (non invoqué) le plus blessé, l'invocation seulement si aucun héros n'est blessé (toutes les classes). `planTurn` : pour l'Eniripsa, un sort qui soigne ou vole de la vie vaut +25 % de ses dégâts (Mots liés), l'IA délaisse le coup d'arme.
+- Simulation solo Mono (bon équipement, 7 donjons, 8 essais) : Feu 4,67 → 5,04, Eau 4,39 → 4,93, Terre 4,31 → 4,50, Air 4,13 → 4,30 (bruit ±0,3) ; coup d'arme 7-19 % des lancers → 3-13 %. Équipes de 5 : inchangé (5,65 → 5,71 bon, 6,56 → 6,69 optimisé). Test `tests/classes.test.js` (5).
+
 ## 2.1.40.11 « Journal de combat »
 - Demande de Mathis (25/10) : `js/ui.js` garde un historique du journal côté interface (`flogSync`, 150 lignes, plusieurs combats séparés) au lieu des 7 dernières lignes ; nouvelles lignes ajoutées en haut sans réécrire la liste. Si le joueur a descendu la liste, la vue reste sur ses lignes et un bouton « Reprendre » apparaît. Le moteur (40 lignes par combat) ne change pas.
 - `css/style.css` : `.log` défilable, haut de 58 vh (260 à 620 px, sur téléphone la hauteur libre sous l’arène collée), lignes complètes.
