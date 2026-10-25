@@ -1042,7 +1042,7 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .room.locked{border-style:dashed}.room.soon{opacity:.6}
 .trainee{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:8px 10px}
 .trainee .bar{height:6px;margin-top:4px}
-.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:8px}.mlist>*{min-width:0} /* 2.1.40.13 : une explication sur une ligne (affichage resserré) élargissait la liste et cachait « Placer » et « Catalogue » au téléphone */
 .mitem{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:12px;padding:8px 10px}.mitem.dim,.li.dim{opacity:.7}
 .room .chev{color:var(--muted)}
 @media (min-width:641px){.msum,.room .chev{display:none}.room header{cursor:default}}
@@ -4216,7 +4216,7 @@ button.cmdico{padding:0;cursor:pointer}
 .altar .grow{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:4px}.altar .rico .uico{width:30px;height:30px}
 @media (max-width:900px){.bgrid{grid-template-columns:1fr}.bcard{gap:6px}}
 @media (max-width:640px){.altar .btn{width:100%}.bonbox{padding:10px}}
-@media (max-width:640px){.bchip{font-size:11.5px;padding:1px 7px}}
+@media (max-width:640px){.bchip{font-size:11.5px;padding:1px 7px;white-space:normal}} /* 2.1.40.13 : « Sram à l'honneur… » passe à la ligne au lieu de sortir du Havre-Sac */
 
 /* 0.1.57 « Affichage plus clair » */
 /* barre du haut : plus de logo (il est dans le menu), tout tient sur une ligne */

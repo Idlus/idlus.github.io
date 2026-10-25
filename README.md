@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.13 « Liste des trophées »
+- Signalé par Bellito (ticket #157, Android 378 px) : en affichage resserré (`body.dense`), les explications des lignes passent sur une ligne (`white-space:nowrap`) ; dans `.mlist` (grille `1fr`), une ligne prenait sa largeur d'origine et le panneau « Meubles à placer » débordait (577 px pour 356), cachant « Placer » et le bouton des trophées. `.mlist` : `minmax(min(300px,100%),1fr)` et `.mlist>*{min-width:0}`. Les pastilles de bonus (« Sram à l'honneur… ») passent à la ligne au téléphone.
+- `trophyListSheet` (`js/ui.js`, `fcatalog` avec `data-v="troph"`) : liste des trophées de boss triée par niveau de donjon (boss, trophée, effet, donjon, Obtenu/Placé ou « Y aller »), ouverte depuis le Havre-Sac, Ma maison et une place libre de la Salle des trophées. Test `tests/havre_trophees_ui.test.js` (PC, 390 px, 378×431).
+
 ## 2.1.40.12 « Eniripsa seule »
 - Retours de Jérémygnon (Monocompte) : `castSpell` (`js/engine.js`) : le vol de vie de l'Eniripsa (`drain`, `leech`) met `e.eniDmg` (Mots liés : prochaine attaque +25 %), hors Kolizéum. Seule, elle ne soignait jamais et le bonus ne revenait pas.
 - `healPick` : un soin à une cible va au héros (non invoqué) le plus blessé, l'invocation seulement si aucun héros n'est blessé (toutes les classes). `planTurn` : pour l'Eniripsa, un sort qui soigne ou vole de la vie vaut +25 % de ses dégâts (Mots liés), l'IA délaisse le coup d'arme.

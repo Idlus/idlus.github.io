@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.12";
+const GAME_VERSION = "2.1.40.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.13", name: "Liste des trophées", items: [
+    "Havre-Sac au téléphone : le bouton des trophées de boss, en bas de « Meubles à placer », était poussé hors de l'écran (comme les boutons « Placer » sur certaines lignes). Il est de retour et se touche normalement",
+    "Il ouvre maintenant la liste des trophées de boss : chaque boss, son trophée, son effet et son donjon, du plus bas niveau au plus haut, avec « Obtenu » ou un bouton « Y aller ». « Tous les meubles » ramène au catalogue complet",
+    "Même liste depuis la ligne « Trophées de boss » de Ma maison et depuis une place libre de la Salle des trophées",
+    "Signalé par Bellito, merci !" ] },
   { v: "2.1.40.12", name: "Eniripsa seule", items: [
     "Eniripsa : le vol de vie compte maintenant comme un soin pour Mots liés. Seule en Monocompte, elle renforce enfin sa prochaine attaque de 25 %, même sans allié à soigner (voie Eau surtout)",
     "Le combat automatique connaît Mots liés : l'Eniripsa lance plus souvent ses sorts qui soignent ou volent de la vie au lieu du coup d'arme",
@@ -3644,7 +3649,7 @@ function houseHtml() {
   return `<section class="panel hvhouse" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Ma maison</h2><span class="xs muted"><b class="num">${placedN}/${slotsN}</b> meubles placés · <button class="btn xs" data-act="hvroomgo" data-v="">Tout voir</button></span></div>
     <div class="hvtiles">${E.ROOMS.filter((R) => !(S.mono && R.id === "enclos")).map(tile).join("")}</div>
     <div class="hvfoot">${free.length ? `<button class="hvfl hot" data-act="hvroomgo" data-v="${E.FURN[free[0]].room}">${MEUBLE_IC}<span class="grow"><b>${free.length} meuble${free.length > 1 ? "s" : ""} à placer</b><span class="xs muted">${free.map((f) => h(f)).join(" · ")}</span></span><span class="tag">Placer</span></button>` : `<button class="hvfl" data-act="hvroomgo" data-v="">${MEUBLE_IC}<span class="grow"><b>Meubles</b><span class="xs muted">${furn.some((f) => E.FURN[f]) ? "tous placés" : "Boutique, trophées de boss, Comptoir, Bricoleur, Almanax et butins rares en donnent"}</span></span><span class="chev">›</span></button>`}
-      <button class="hvfl" data-act="fcatalog">${TROPHEE_IC}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
+      <button class="hvfl" data-act="fcatalog" data-v="troph">${TROPHEE_IC}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
       <button class="hvfl" data-act="hvshop">${IC("bourse")}<span class="grow"><b>Boutique de la maison</b><span class="xs muted">${own}/${all.length} meubles achetés · en kamas</span></span><span class="chev">›</span></button></div></section>`;
 }
 /* ---------- 4.0 : Havre-Sac en pièces ---------- */
@@ -3764,7 +3769,7 @@ function havreHtml() {
       ${free.map((f) => { const F = E.FURN[f]; const full = E.placed(S, F.room).length >= E.roomSlots(S, F.room);
         return `<div class="mitem"><span class="rico">${furnIco(f)}</span><div class="grow"><b>${h(f)}</b><div class="xs muted">${h(E.furnEffect(f))} · ${h(E.room(F.room).name)}${full ? " (pleine)" : ""}</div></div><button class="btn sm ${full ? "" : "primary"}" data-act="fplace" data-v="${h(f)}" ${full ? "disabled" : ""}>Placer</button></div>`; }).join("")}
       ${free.length ? "" : `<p class="note">${S.furniture.some((f) => E.FURN[f]) ? "Tous vos meubles sont placés." : "Aucun meuble pour l'instant : la Boutique de la maison, les trophées de boss, le Comptoir de la cité, le Bricoleur, l'Almanax et les butins rares de certaines zones en donnent."}</p>`}
-      <div class="mitem dim"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
+      <div class="mitem dim"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog" data-v="troph">Voir la liste</button></div>
     </div></div></section>`;
 }
 /* 1.0.24.2 : une place libre se clique : les meubles à placer, puis tous les meubles de la pièce avec où les trouver et un bouton pour y aller */
@@ -3789,9 +3794,18 @@ function furnPickSheet(room) {
   openSheet(`<h2>${IC(R.icon)} ${h(R.name)} : place libre</h2><p class="small muted">${placed.length}/${E.roomSlots(S, room)} meuble${placed.length > 1 ? "s" : ""} placé${placed.length > 1 ? "s" : ""} · ${h(R.desc)}</p>
     ${list.length ? `<h3>À placer maintenant</h3><div class="list">${list.map((f) => row(f, `<button class="btn sm primary" data-act="fplace" data-v="${h(f)}">Placer</button>`)).join("")}</div>` : `<p class="note">Vous n'avez aucun meuble à placer ici pour l'instant. Voici ceux qui vont dans cette pièce et où les trouver.</p>`}
     ${rest.length ? `<h3>${list.length ? "Les autres meubles de la pièce" : "Meubles pour cette pièce"}</h3><div class="list">${rest.map(whereRow).join("")}</div>` : ""}
-    ${troph.length ? `<div class="mitem dim" style="margin-top:8px"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss : ${troph.length - tleft.length} gagné${troph.length - tleft.length > 1 ? "s" : ""} · ${tleft.length} à gagner</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="pagego" data-v="dungeons">Donjons</button></div>` : ""}
+    ${troph.length ? `<div class="mitem dim" style="margin-top:8px"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss : ${troph.length - tleft.length} gagné${troph.length - tleft.length > 1 ? "s" : ""} · ${tleft.length} à gagner</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog" data-v="troph">Voir la liste</button></div>` : ""}
     ${placed.length ? `<p class="xs muted" style="margin-top:8px">Déjà placés : ${placed.map((f) => h(f)).join(" · ")}</p>` : ""}
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* 2.1.40.13 (signalé par Bellito) : la liste des trophées de boss, du donjon le plus bas au plus haut : boss, donjon, effet, obtenu ou « Y aller » */
+function trophyListSheet() {
+  const furn = Array.isArray(S.furniture) ? S.furniture : [];
+  const rows = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy).sort((a, b) => ((DUNGEONS[E.FURN[a].trophy] || {}).lvl || 0) - ((DUNGEONS[E.FURN[b].trophy] || {}).lvl || 0));
+  const got = rows.filter((f) => furn.includes(f)).length;
+  openSheet(`<h2>${TROPHEE_IC} Trophées de boss</h2><p class="small muted">${got} / ${rows.length} gagnés · chaque boss donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}. Un trophée agit une fois placé dans la Salle des trophées.</p><div class="list">${rows.map((f) => { const F = E.FURN[f]; const dg = DUNGEONS[F.trophy]; const boss = dg && MONSTERS[dg.boss]; const has = furn.includes(f);
+    return `<div class="li ${has ? "" : "dim"}"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(boss ? boss.name : f)}</b> <span class="xs muted">${h(f)}</span><br><span class="xs plus">${h(E.furnEffect(f))}</span> <span class="xs muted">· ${dg ? `${h(dg.name)} (niveau ${dg.lvl})` : "Donjon"}</span></span>${has ? `<span class="tag good">${E.isPlaced(S, f) ? "Placé" : "Obtenu"}</span>` : dg ? `<button class="btn sm" data-act="dgopen" data-id="${F.trophy}">Y aller</button>` : ""}</div>`; }).join("")}</div>
+    <div class="row"><button class="btn" data-act="closesheet">Fermer</button><button class="btn" data-act="fcatalog">Tous les meubles</button></div>`);
 }
 function furnCatalogSheet() {
   const rows = Object.keys(E.FURN).sort((a, b) => E.ROOMS.findIndex((r) => r.id === E.FURN[a].room) - E.ROOMS.findIndex((r) => r.id === E.FURN[b].room));
@@ -10734,7 +10748,7 @@ document.addEventListener("click", (ev) => {
     case "hvshop": ui.tab = "home"; ui.home = "havre"; closeSheet(); render(); { const el = $("#main .panel.shop"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); } return;
     case "hvbonus": ui.tab = "home"; ui.home = "havre"; ui.bonOpen = true; render(); window.scrollTo(0, 0); return;
     case "fpick": furnPickSheet(d.v); return;
-    case "fcatalog": furnCatalogSheet(); return;
+    case "fcatalog": if (d.v === "troph") trophyListSheet(); else furnCatalogSheet(); return;
     case "zonego": { const subs = Object.keys(E.SUBS).filter((k) => E.SUBS[k].zone === d.v); const sid = subs.find((k) => E.subUnlocked(S, k)) || subs[0]; ui.tab = "world"; ui.world = "map"; ui.zoneView = sid || null; ui.slot = null; closeSheet(); render(); window.scrollTo(0, 0); return; } // 1.0.24.2 : depuis une place libre, ouvre une sous-zone de la région
     case "gobric": ui.craftJob = "bricoleur"; ui.recSel = null; pageGo("craft"); return;
     case "pagego": pageGo(d.v); return;
