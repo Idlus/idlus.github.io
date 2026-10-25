@@ -1,6 +1,16 @@
 {
-  "version": "2.1.41.1",
+  "version": "2.1.41.2",
   "versions": [
+    {
+      "v": "2.1.41.2",
+      "name": "Liste des trophées",
+      "items": [
+        "Havre-Sac au téléphone : le bouton des trophées de boss, en bas de « Meubles à placer », était poussé hors de l'écran (comme les boutons « Placer » sur certaines lignes). Il est de retour et se touche normalement",
+        "Il ouvre maintenant la liste des trophées de boss : chaque boss, son trophée, son effet et son donjon, du plus bas niveau au plus haut, avec « Obtenu » ou un bouton « Y aller ». « Tous les meubles » ramène au catalogue complet",
+        "Même liste depuis la ligne « Trophées de boss » de Ma maison et depuis une place libre de la Salle des trophées",
+        "Signalé par Bellito, merci !"
+      ]
+    },
     {
       "v": "2.1.41.1",
       "name": "Songe sans fin",

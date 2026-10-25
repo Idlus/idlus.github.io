@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.41.2 « Liste des trophées »
+- Signalé par Bellito (ticket #157, Android 378 px) : en affichage resserré (`body.dense`), les explications des lignes passent sur une ligne (`white-space:nowrap`) ; dans `.mlist` (grille `1fr`), une ligne prenait sa largeur d'origine et le panneau « Meubles à placer » débordait (577 px pour 356), cachant « Placer » et le bouton des trophées. `.mlist` : `minmax(min(300px,100%),1fr)` et `.mlist>*{min-width:0}`. Les pastilles de bonus (« Sram à l'honneur… ») passent à la ligne au téléphone.
+- `trophyListSheet` (`js/ui.js`, `fcatalog` avec `data-v="troph"`) : liste des trophées de boss triée par niveau de donjon (boss, trophée, effet, donjon, Obtenu/Placé ou « Y aller »), ouverte depuis le Havre-Sac, Ma maison et une place libre de la Salle des trophées. Test `tests/havre_trophees_ui.test.js` (PC, 390 px, 378×431).
+
 ## 2.1.41.1 « Songe sans fin »
 - Idée de Ley, choix 1A 2A 3A de Mathis (25/10, maquette https://claude.ai/artifact/6UXk5TZT5QKfmiaqXSjaBm) : `js/songe.js` retire le plafond de 50 vagues (`E.SG_MAXW` = 1 000, garde-fou), même montée `E.SG_WAVE` par vague. Paliers `E.SG_MILES` 75/100/150 dès Cauchemar 1 (`E.SG_MILE_II`) : un Coffre en obsidienne la première fois de la semaine (`songe.wk.miles`), jamais pendant le rejeu du serveur.
 - Serveur : `supabase/functions/record/index.ts` accepte plus de 50 vagues annoncées ; `E.sgReplay(…, stopAt)` s'arrête aux vagues annoncées (moins de calcul).
