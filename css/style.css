@@ -248,6 +248,9 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .icobox.radiant::after{content:"✦";position:absolute;right:-3px;top:-6px;color:#ffd84d;font-size:14px;text-shadow:0 0 6px #ffd84d;animation:twinkle 1.6s ease-in-out infinite}
 .li.radiant{position:relative;border-top:0;margin:4px 8px;border-radius:12px;border:2px solid transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--ang),#ffd84d,#ff8a4d,#ff5fbf,#8a7dff,#4fd8ff,#7dff8a,#ffd84d) border-box;animation:spin 3.2s linear infinite}
 .bonus{color:#b9790a;font-weight:800;margin-left:4px}
+.jmx{color:var(--gold);font-weight:800}
+.jov{color:var(--jov,#8a3fe0);font-weight:800}
+:root[data-theme="dark"],:root[data-theme="emerald"]{--jov:#c69bff}
 :root[data-theme="dark"] .bonus{color:#ffcf4a}
 .ing{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px;font-size:12.5px}
 .ing span{display:inline-flex;align-items:center;gap:4px}
@@ -5258,7 +5261,7 @@ span.fch{cursor:default;padding-left:8px}
 .fsg-c em.up{color:var(--good,#3fb35d)}
 .fsg-c em.dn{color:var(--danger)}
 .fsg-c .mx{color:var(--gold)}
-.fsg-c .ov{color:#b06cff}
+.fsg-c .ov{color:var(--jov,#8a3fe0)}
 .fsg-c.exo .n{color:#b06cff}
 .fsg-c.miss{opacity:.7}
 .fsgcap{margin:2px 0 6px}

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.6";
+const GAME_VERSION = "2.1.40.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.7", name: "Over en violet", items: [
+    "Objets : une caractéristique au-dessus du jet maximum grâce à la forgemagie (« over ») s'affiche maintenant en violet. Le jet maximum garde la couleur dorée du thème",
+    "D'un coup d'œil, tu vois qu'un objet n'a plus besoin de forgemagie : mêmes couleurs dans les infobulles, la fiche d'objet et l'atelier de forgemagie",
+  ] },
   { v: "2.1.40.6", name: "Où je chasse ?", guide: "world", items: [
     "Monde : « Chasse en cours » passe en bleu ciel, avec un petit point qui clignote. L'étiquette, le cadre de la sous-zone et le point sur la carte ne se confondent plus avec le jaune-vert des titres et de la zone conseillée",
     "Nouveau bouton « Aller à ma chasse » en haut de la page Monde : il ouvre la bonne tranche de niveaux et la bonne région, puis descend jusqu'à la sous-zone où chasse l'équipe (liste et carte)",
@@ -6165,12 +6169,20 @@ function dofpPickHtml(c, all, g) {
     ${pm("dpmiss", "Pas encore obtenus", missing.length, () => missing.map((id) => `<div class="li dofp-pr fam-${dofpFc(id)} dofp-lock"><span class="dofp-primg">${im(dofusImg(id), "", "")}</span><span class="grow"><span class="dofp-prn"><b>${h(E.DOFUS[id].name)}</b> <span class="xs muted">niv. ${E.DOFUS[id].lvl}</span></span><span class="dofp-prp">${dofpIco(id)}<b>${h(E.dofpName(id))}</b> · ${dofpHi(E.dofpTxt(id))}</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">${G("lock")} Sa quête</button></div>`).join(""))}
     ${pm("dptro", "Trophées (sans passif)", tro.length, () => tro.slice(0, 20).map((it) => `<div class="li"><span class="ptip" data-tipitem="${it.uid}">${itemIcon(it)}</span><span class="grow">${itemName(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span><button class="btn sm" data-act="equip" data-uid="${it.uid}">Équiper</button></div>`).join(""))}</div>`;
 }
+// Couleur d'une ligne d'objet : jet maximum (or du thème) ou « over », au-dessus du maximum grâce à la forgemagie (violet)
+function jetCls(it, k, a, b, v, base) {
+  if (!(b > 0)) return "";
+  const top = it.radiant ? Math.ceil(b * (1 + it.radiant / 100)) : b; // un Rayonnant dépasse le maximum sans forgemagie
+  if (v > top) return "jov";
+  return base >= b && a !== b ? "jmx" : "";
+}
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
   const pr = T.dofus && S.items[it.uid] === it ? dofpRank(T.dofus) : 0, pot = pr && E.dpotStatsOf ? E.dpotStatsOf(T.dofus, pr) : {}; // 2.1.30.4 : caractéristiques du Potentiel
   return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true, r: pr }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""}${pot[k] ? ` <span class="bonus">(+${pot[k]} Potentiel)</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
+    const jc = jetCls(it, k, a, b, v, base);
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${jc ? ` class="${jc}"${jc === "jov" ? ` data-tip="Au-dessus du jet maximum (${b}) grâce à la forgemagie"` : ""}` : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""}${pot[k] ? ` <span class="bonus">(+${pot[k]} Potentiel)</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 /* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
 const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
@@ -8252,7 +8264,7 @@ function fmStatLine(it, k) {
   if (has && mx <= 0) return `<div class="pfl neg"><div class="pfn">${sIco(k)}<b>${statLine(k, cur)}</b><span class="xs muted">malus · une rune le fait remonter vers 0</span></div>${cur < 0 && runes.length ? `<div class="pruns">${runes.map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div>` : ""}</div>`;
   const cap = E.fmCap(T, k); const f0 = runes.length ? E.fmInfo(S, it.uid, runes[0][0]) : null;
   const simple = E.runeKey("", k);
-  return `<div class="pfl ${has ? "" : "pexo"}"><div class="pfn">${sIco(k)}<b class="${cur > mx && has ? "bonus" : ""}">${statLine(k, cur)}</b>${tr}<span class="xs muted">${has ? `jet ${mn} à ${mx} · over jusqu'à ${cap}` : `exo · jusqu'à ${cap}`}</span></div>${fmGauge(mn, mx, cap, cur, f0 && f0.ok ? f0.nv : 0)}
+  return `<div class="pfl ${has ? "" : "pexo"}"><div class="pfn">${sIco(k)}<b class="${cur > mx && has ? "jov" : cur === mx && has ? "jmx" : ""}">${statLine(k, cur)}</b>${tr}<span class="xs muted">${has ? `jet ${mn} à ${mx} · over jusqu'à ${cap}` : `exo · jusqu'à ${cap}`}</span></div>${fmGauge(mn, mx, cap, cur, f0 && f0.ok ? f0.nv : 0)}
     <div class="pruns">${runes.length ? runes.map(([rk, q]) => runeBtn(it, rk, q)).join("")
       : `<span class="xs muted">Aucune rune de ${h(STATS[k].name)}</span>${RUNE_SIMPLE_ONLY.includes(k) && k === "pa" ? "" : `<button class="btn sm" data-act="fmtransmute" data-k="${k}" data-tip="Transmuter 5 runes d'une autre caractéristique en 1 rune de ${h(STATS[k].name)}">Transmuter</button>`}${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="rune" data-k="${simple}" data-n="10">Offre d'achat HdV</button>` : ""}`}</div></div>`;
 }

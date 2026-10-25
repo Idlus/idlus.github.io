@@ -154,7 +154,7 @@
     const ks = Object.keys(T.stats).filter((k) => STATS[k]); const R = ref && !ref.self ? ref.it : null;
     const cell = (k, v, rng, d, cls) => `<div class="fsg-c ${cls || ""}">${sIco(k) || "<i></i>"}<span class="n">${h(nm(k))}${rng ? `<i>${rng}</i>` : ""}</span><b>${v}${d ? `<em class="${d > 0 ? "up" : "dn"}">${d > 0 ? "+" : ""}${fmt(d)}</em>` : ""}</b></div>`;
     const cells = ks.map((k) => { const [a, b] = T.stats[k]; const v = it ? it.stats[k] || 0 : null; const cmp = v === null ? b : v; const d = R ? cmp - (R.stats[k] || 0) : 0;
-      const top = v !== null && a !== b && v >= b; return cell(k, v === null ? "" : `<span class="${v > b && b > 0 ? "ov" : top ? "mx" : ""}">${fmt(v)}</span>`, a === b ? String(a) : `${a} à ${b}`, d, ""); });
+      const top = v !== null && a !== b && v >= b; return cell(k, v === null ? "" : `<span class="${v > b && b > 0 ? "ov jov" : top ? "mx jmx" : ""}">${fmt(v)}</span>`, a === b ? String(a) : `${a} à ${b}`, d, ""); });
     if (it && it.exo) cells.push(cell(it.exo, `+1`, "exo", R ? 1 - (R.exo === it.exo ? 1 : 0) - (R.stats[it.exo] || 0) : 0, "exo"));
     if (it) Object.keys(it.stats).filter((k) => !T.stats[k] && STATS[k] && it.stats[k]).forEach((k) => cells.push(cell(k, fmt(it.stats[k]), "exo", R ? it.stats[k] - (R.stats[k] || 0) : 0, "exo")));
     if (R) Object.keys(R.stats).filter((k) => !T.stats[k] && STATS[k] && R.stats[k] && !(it && it.stats[k])).forEach((k) => cells.push(cell(k, "–", "", -R.stats[k], "miss")));

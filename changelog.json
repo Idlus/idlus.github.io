@@ -1,6 +1,14 @@
 {
-  "version": "2.1.40.6",
+  "version": "2.1.40.7",
   "versions": [
+    {
+      "v": "2.1.40.7",
+      "name": "Over en violet",
+      "items": [
+        "Objets : une caractéristique au-dessus du jet maximum grâce à la forgemagie (« over ») s'affiche maintenant en violet. Le jet maximum garde la couleur dorée du thème",
+        "D'un coup d'œil, tu vois qu'un objet n'a plus besoin de forgemagie : mêmes couleurs dans les infobulles, la fiche d'objet et l'atelier de forgemagie"
+      ]
+    },
     {
       "v": "2.1.40.6",
       "name": "Où je chasse ?",
