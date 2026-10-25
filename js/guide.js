@@ -235,7 +235,7 @@
         "Les PA partent de 6 (+1 au niveau 100, + équipement, 12 au plus).",
       ]],
       ["h", "Parchemins"],
-      ["p", `Les petits parchemins donnent +1, les grands +3, pour toujours, jusqu'à ${N(() => E.SCROLL_MAX)} par caractéristique et par héros. Ils ne comptent pas dans les paliers de coût. Les petits se fabriquent avec de la Poussière de stasis et des kamas (le prix monte à chaque fabrication).`],
+      ["p", `Les petits parchemins donnent +1, les grands +3, pour toujours, jusqu'à ${N(() => E.SCROLL_MAX)} par caractéristique et par héros. Ils ne comptent pas dans les paliers de coût. Les petits se fabriquent avec de la Poussière de stasis et des kamas (le prix monte à chaque fabrication) ; le bouton « ×N » en fabrique plusieurs d'un coup, juste ce qu'il faut pour atteindre 100 sur ce héros.`],
     ] });
 
   add({ id: "sorts", f: "Héros", n: "Sorts et stratégies", ic: "idee", page: "team", pages: ["spells"], k: "sort variante barre condition cible preset strategie identite mecanique poutch apercu ordre mon ordre sequence auto attaques",

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.4";
+const GAME_VERSION = "2.1.40.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.5", name: "Plusieurs parchemins d'un coup", guide: "caracs", items: [
+    "Héros › Caractéristiques : à côté de « Fabriquer », un bouton « ×N » fabrique d'un coup les Petits parchemins qu'il faut pour monter ce héros à 100, au lieu de cliquer une fois par parchemin",
+    "N tient compte des parchemins déjà dans ton sac et de ta poussière de stasis et de tes kamas ; le prix monte à chaque parchemin, exactement comme un par un (le total s'affiche au survol)",
+  ] },
   { v: "2.1.40.4", name: "Clés de la zone", guide: "donjons", items: [
     "Clés de donjon : plus aucune ressource de récolte (poissons, plantes, céréales…) dans les recettes. Seules restent les ressources des monstres, surtout ceux de la zone du donjon",
     "Plus besoin de monter Pêcheur, Alchimiste et Paysan pour ouvrir un donjon : chasser la zone suffit (Bricoleur niveau 10). En Monocompte, tes spécialités restent libres",
@@ -6719,9 +6723,11 @@ function charStatsView(c, st) {
       <span class="num cst-v">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
       ${manual ? `<span class="allocbtns"><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="10" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 10 en ${STATS[k].name}">−10</button><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="1" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 1 en ${STATS[k].name}">−1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 1 en ${STATS[k].name}">+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 10 en ${STATS[k].name}">+10</button></span>` : ""}</div>`).join("")}</div>`;
   const scrollRows = BASE_STATS.map((k) => { const own = scrollsOwned(k), room = E.scrollRoom(c, k), cc = E.scrollCraftCost(S, k);
+    /* 2.1.40.5 : ×N fabrique d'un coup ce qu'il faut pour remplir ce héros (moins ceux déjà dans le sac), dans la limite de la poussière et des kamas */
+    const nMax = E.scrollCraftMax(S, k, Math.max(0, room - own)), tot = nMax > 1 ? E.scrollCraftTotal(S, k, nMax) : null;
     return `<div class="li psc">${sIco(k)}<span class="grow"><span class="small"><b>${STATS[k].name}</b> <span class="num muted">${sc[k] || 0}/${E.SCROLL_MAX}</span></span><div class="scrollbar"><i style="width:${(sc[k] || 0) / E.SCROLL_MAX * 100}%"></i></div></span>
       ${own && room > 0 ? `<button class="btn sm pluse" data-act="usescroll" data-k="${k}">Utiliser ${own}</button>` : ""}
-      ${room > 0 ? `<button class="btn sm" data-act="craftscroll" data-k="${k}" ${dust >= cc.dust && S.kamas >= cc.kamas ? "" : "disabled"} data-tip="Fabriquer un Petit parchemin (+1) : ${cc.dust} poussières de stasis et ${fmt(cc.kamas)} kamas">Fabriquer <span class="xs">${cc.dust} ✨</span></button>` : `<span class="tag soft xs">complet</span>`}</div>`; }).join("");
+      ${room > 0 ? `<button class="btn sm" data-act="craftscroll" data-k="${k}" ${dust >= cc.dust && S.kamas >= cc.kamas ? "" : "disabled"} data-tip="Fabriquer un Petit parchemin (+1) : ${cc.dust} poussières de stasis et ${fmt(cc.kamas)} kamas">Fabriquer <span class="xs">${cc.dust} ✨</span></button>${tot ? `<button class="btn sm" data-act="craftscroll" data-k="${k}" data-n="${nMax}" data-tip="Fabriquer ${nMax} Petits parchemins d'un coup (de quoi arriver à ${E.SCROLL_MAX} avec ceux du sac) : ${fmt(tot.dust)} poussières de stasis et ${fmt(tot.kamas)} kamas">×${nMax}</button>` : ""}` : `<span class="tag soft xs">complet</span>`}</div>`; }).join("");
   return `<div class="grid2 cstatpg">
     <div class="stack">
     <div class="panel"><div class="phead"><h2>Caractéristiques</h2>${manual ? `<span class="ptsleft num ${c.pts ? "on" : ""}" title="Points à placer"><b>${c.pts}</b> point${c.pts > 1 ? "s" : ""} à placer</span>` : `<span class="tag soft" title="${fmt((c.lvl - 1) * 5)} points placés par le plan">Auto</span>`}</div>
@@ -10910,7 +10916,8 @@ document.addEventListener("click", (ev) => {
     case "planadd": { const x = char(+d.id); const plan = E.planOf(x).map((st) => Object.assign({}, st)); if (plan.length < E.PLAN_MAX) { plan.push({ k: E.planRest(x), to: 100 }); E.setPlan(S, x, plan, E.planRest(x)); } break; }
     case "allocmode": { const x = char(+d.id); E.setAllocMode(S, x, d.v === "1"); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
     case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
-    case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le dans Héros › Caractéristiques (lien « à utiliser »).`); dustRefresh(); break; }
+    case "craftscroll": { ev.preventDefault(); const b0 = (S.scrollCrafted || {})[d.k] || 0; const r = E.craftScroll(S, d.k, +d.n || 1); if (r) { toast(r); return; } const n = ((S.scrollCrafted || {})[d.k] || 0) - b0;
+      toast(n > 1 ? `${n} Petits parchemins de ${STATS[d.k].name} fabriqués : « Utiliser » les donne au héros.` : `Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le dans Héros › Caractéristiques (lien « à utiliser »).`); dustRefresh(); break; }
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }

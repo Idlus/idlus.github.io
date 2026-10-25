@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.5 « Plusieurs parchemins d'un coup »
+- Demande de Mathis (25/10, éviter le spam de clics) : `E.craftScroll(S, stat, n)` fabrique jusqu'à n Petits parchemins (100 au plus par appel, arrêt au premier qu'on ne peut plus payer) ; `E.scrollCraftMax` et `E.scrollCraftTotal` donnent le nombre payable et le coût total. Bouton « ×N » dans Héros › Caractéristiques, N = ce qui manque pour atteindre 100 sur ce héros moins les parchemins du sac.
+- `tests/parchemins.test.js` : ×N = N clics (même coût, mêmes compteurs), plafonds respectés.
+
 ## 2.1.40.4 « Clés de la zone »
 - Choix 1A de Mathis (23/10, retour d'un joueur) : `js/data.js` retire des recettes de clé (`SPECIAL_CRAFTS[dg.key]`) toute ressource des métiers de récolte (`G.GATHER_JOBS`). Pas de compensation : la part monstres coûtait déjà 15 à 150 combats par clé. Alliages et planches inchangés.
 - `tests/cles.test.js` vérifie qu'aucune clé ne demande de ressource de récolte.

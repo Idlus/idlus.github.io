@@ -470,7 +470,10 @@
   E.SCROLL_MAX = 100;
   /* fabrication de Petits parchemins avec de la poussière de stasis (de plus en plus cher) */
   E.scrollCraftCost = (S, stat) => { const n = (S.scrollCrafted || {})[stat] || 0; return { dust: Math.round(20 * Math.pow(1 + n / 20, 2)), kamas: Math.round(400 * (1 + n / 10)) }; };
-  E.craftScroll = (S, stat) => {
+  /* 2.1.40.5 : plusieurs parchemins d'un coup (n), le coût monte à chaque exemplaire comme un par un */
+  E.craftScroll = (S, stat, n = 1) => {
+    n = Math.max(1, Math.min(E.SCROLL_MAX, Math.floor(+n) || 1));
+    if (n > 1) { let done = 0, r = null; while (done < n && !(r = E.craftScroll(S, stat))) done++; return done ? null : r; }
     const c = E.scrollCraftCost(S, stat); const have = S.res["Poussière de stasis"] || 0;
     if (have < c.dust) return `Il faut ${c.dust} Poussières de stasis (vous en avez ${have}).`;
     if (S.kamas < c.kamas) return `Il faut ${c.kamas} kamas.`;
@@ -478,6 +481,15 @@
     S.scrollCrafted = S.scrollCrafted || {}; S.scrollCrafted[stat] = (S.scrollCrafted[stat] || 0) + 1;
     E.addCons(S, "parch_" + stat + "_p", 1); return null;
   };
+  /* combien de parchemins on peut payer d'affilée (poussière et kamas), sans dépasser lim */
+  E.scrollCraftMax = (S, stat, lim = E.SCROLL_MAX) => {
+    let dust = S.res["Poussière de stasis"] || 0, k = S.kamas || 0, n = 0; const done = Object.assign({}, S.scrollCrafted || {});
+    while (n < lim) { const c = E.scrollCraftCost({ scrollCrafted: done }, stat); if (dust < c.dust || k < c.kamas) break; dust -= c.dust; k -= c.kamas; done[stat] = (done[stat] || 0) + 1; n++; }
+    return n;
+  };
+  E.scrollCraftTotal = (S, stat, n) => { const done = Object.assign({}, S.scrollCrafted || {}), t = { dust: 0, kamas: 0 };
+    for (let i = 0; i < n; i++) { const c = E.scrollCraftCost({ scrollCrafted: done }, stat); t.dust += c.dust; t.kamas += c.kamas; done[stat] = (done[stat] || 0) + 1; }
+    return t; };
   E.scrollRoom = (c, stat) => E.SCROLL_MAX - ((c.scrolls || {})[stat] || 0);
   E.resetPoints = (S, cid) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return;

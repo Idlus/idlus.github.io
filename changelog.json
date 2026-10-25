@@ -1,6 +1,15 @@
 {
-  "version": "2.1.40.4",
+  "version": "2.1.40.5",
   "versions": [
+    {
+      "v": "2.1.40.5",
+      "name": "Plusieurs parchemins d'un coup",
+      "guide": "caracs",
+      "items": [
+        "Héros › Caractéristiques : à côté de « Fabriquer », un bouton « ×N » fabrique d'un coup les Petits parchemins qu'il faut pour monter ce héros à 100, au lieu de cliquer une fois par parchemin",
+        "N tient compte des parchemins déjà dans ton sac et de ta poussière de stasis et de tes kamas ; le prix monte à chaque parchemin, exactement comme un par un (le total s'affiche au survol)"
+      ]
+    },
     {
       "v": "2.1.40.4",
       "name": "Clés de la zone",
