@@ -273,26 +273,76 @@ drop trigger if exists firsts_chat on public.firsts;
 create trigger firsts_chat after insert on public.firsts for each row execute function public.firsts_ann();
 
 -- Niveau 200, Renaissance, Dofus : comparés à l'envoi précédent (pas au premier envoi d'une partie)
+-- Tickets #158, #159 : « Grougaloragran, Crâ de Bozoman, atteint le niveau 200 ! » en boucle dans les Hauts faits.
+-- Les héros étaient appariés par classe + nom ; les noms par défaut sont tirés d'une liste de 16 (js/data.js), donc deux Crâ
+-- « Grougaloragran » (un niveau 200, l'autre non) donnaient une paire « 200 maintenant, moins de 200 avant » à CHAQUE envoi.
+-- Même boucle quand deux appareils envoient tour à tour une partie récente et une plus ancienne. Désormais :
+-- - on compte par classe + nom (+ Renaissance pour le niveau 200) au lieu de comparer chaque paire ;
+-- - ann_marks garde, par compte, le plus haut déjà annoncé : une annonce ne repart que si on le dépasse.
+create table if not exists public.ann_marks (
+  user_id uuid not null,
+  k text not null,
+  n int not null default 0,
+  at timestamptz not null default now(),
+  primary key (user_id, k)
+);
+alter table public.ann_marks enable row level security; -- aucune lecture directe : seulement par ladder_ann
+
+-- Vrai si p_now dépasse à la fois l'envoi précédent (p_seen) et le plus haut déjà annoncé ; garde le plus haut des trois.
+create or replace function public.ann_mark(p_user uuid, p_k text, p_seen int, p_now int) returns boolean language plpgsql security definer set search_path = public
+as $$ declare m int; begin
+  insert into ann_marks (user_id, k, n) values (p_user, p_k, 0) on conflict do nothing;
+  select n into m from ann_marks where user_id = p_user and k = p_k for update;
+  if greatest(p_seen, p_now) > m then update ann_marks set n = greatest(p_seen, p_now), at = now() where user_id = p_user and k = p_k; end if;
+  return p_now > greatest(m, p_seen);
+end $$;
+revoke all on function public.ann_mark(uuid, text, int, int) from public, anon, authenticated;
+
 create or replace function public.ladder_ann() returns trigger language plpgsql security definer set search_path = public
 as $$ declare x record; d text; begin
   if new.flagged then return new; end if;
+  -- Renaissance : plus haute Renaissance par classe + nom (héros déjà présents à l'envoi précédent)
   for x in
-    select n->>'cls' cls, n->>'name' nm, coalesce((n->>'lvl')::int, 1) lv, coalesce((n->>'ren')::int, 0) rn,
-           coalesce((o->>'lvl')::int, 1) olv, coalesce((o->>'ren')::int, 0) orn
-    from jsonb_array_elements(new.heroes) n
-    join jsonb_array_elements(old.heroes) o on o->>'cls' = n->>'cls' and o->>'name' = n->>'name'
+    with nh as (select n->>'cls' cls, coalesce(n->>'name', '') nm, coalesce((n->>'ren')::int, 0) rn from jsonb_array_elements(new.heroes) n),
+         oh as (select o->>'cls' cls, coalesce(o->>'name', '') nm, coalesce((o->>'ren')::int, 0) rn from jsonb_array_elements(old.heroes) o)
+    select nh.cls, nh.nm, max(nh.rn) rn, (select max(oh.rn) from oh where oh.cls = nh.cls and oh.nm = nh.nm) orn
+    from nh where exists (select 1 from oh where oh.cls = nh.cls and oh.nm = nh.nm) group by nh.cls, nh.nm
   loop
-    if x.rn > x.orn then perform public.chat_ann(new.user_id, jsonb_build_object('t', 'ren', 'cls', x.cls, 'name', x.nm, 'n', x.rn));
-    elsif x.lv >= 200 and x.olv < 200 then perform public.chat_ann(new.user_id, jsonb_build_object('t', 'lvl200', 'cls', x.cls, 'name', x.nm, 'ren', x.rn));
+    if x.rn > x.orn and public.ann_mark(new.user_id, 'ren:' || x.cls || ':' || x.nm, x.orn, x.rn) then
+      perform public.chat_ann(new.user_id, jsonb_build_object('t', 'ren', 'cls', x.cls, 'name', x.nm, 'n', x.rn));
+    end if;
+  end loop;
+  -- Niveau 200 : nombre de héros au niveau 200 par classe + nom + Renaissance (« (encore) » après une Renaissance)
+  for x in
+    with nh as (select n->>'cls' cls, coalesce(n->>'name', '') nm, coalesce((n->>'ren')::int, 0) rn, coalesce((n->>'lvl')::int, 1) lv from jsonb_array_elements(new.heroes) n),
+         oh as (select o->>'cls' cls, coalesce(o->>'name', '') nm, coalesce((o->>'ren')::int, 0) rn, coalesce((o->>'lvl')::int, 1) lv from jsonb_array_elements(old.heroes) o)
+    select nh.cls, nh.nm, nh.rn, count(*)::int c, (select count(*)::int from oh where oh.cls = nh.cls and oh.nm = nh.nm and oh.rn = nh.rn and oh.lv >= 200) oc
+    from nh where nh.lv >= 200 and exists (select 1 from oh where oh.cls = nh.cls and oh.nm = nh.nm) group by nh.cls, nh.nm, nh.rn
+  loop
+    if x.c > x.oc and public.ann_mark(new.user_id, 'l200:' || x.cls || ':' || x.nm || ':' || x.rn, x.oc, x.c) then
+      perform public.chat_ann(new.user_id, jsonb_build_object('t', 'lvl200', 'cls', x.cls, 'name', x.nm, 'ren', x.rn));
     end if;
   end loop;
   for d in select jsonb_array_elements_text(new.dofus) except select jsonb_array_elements_text(old.dofus) loop
-    perform public.chat_ann(new.user_id, jsonb_build_object('t', 'dofus', 'id', d));
+    if public.ann_mark(new.user_id, 'dofus:' || d, 0, 1) then perform public.chat_ann(new.user_id, jsonb_build_object('t', 'dofus', 'id', d)); end if;
   end loop;
   return new;
 end $$;
 drop trigger if exists ladder_chat on public.ladder;
 create trigger ladder_chat after update on public.ladder for each row execute function public.ladder_ann();
+-- Tickets #158, #159 : les annonces répétées encore dans le chat (moins de 48 h) sont effacées, la première de chaque reste ;
+-- et ce qui a déjà été annoncé est noté dans ann_marks (sinon la prochaine alternance l'annoncerait encore une fois)
+delete from public.chat_msgs c using (
+  select id, row_number() over (partition by user_id, data order by id) r from public.chat_msgs
+  where kind = 'ann' and data->>'t' in ('lvl200', 'ren', 'dofus')
+) x where c.id = x.id and x.r > 1;
+insert into public.ann_marks (user_id, k, n)
+  select user_id, k, max(n) from (
+    select user_id, 'l200:' || (data->>'cls') || ':' || coalesce(data->>'name', '') || ':' || coalesce((data->>'ren')::int, 0) k, 1 n from public.chat_msgs where kind = 'ann' and data->>'t' = 'lvl200'
+    union all select user_id, 'ren:' || (data->>'cls') || ':' || coalesce(data->>'name', ''), coalesce((data->>'n')::int, 0) from public.chat_msgs where kind = 'ann' and data->>'t' = 'ren'
+    union all select user_id, 'dofus:' || (data->>'id'), 1 from public.chat_msgs where kind = 'ann' and data->>'t' = 'dofus'
+  ) a where user_id is not null group by user_id, k
+on conflict (user_id, k) do update set n = greatest(ann_marks.n, excluded.n);
 
 -- ============================================================================
 -- PANEL ADMIN : réservé à Mathis (is_admin) ; les modérateurs (mods) peuvent rendre muet
