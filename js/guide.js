@@ -290,6 +290,7 @@
         "Les PM ne servent pas à se déplacer : ils donnent de l'esquive en première ligne et de la poussée.",
         `Coup critique : 5 % + %Critique (60 % au plus), dégâts ×1,25 + dommages critiques.`,
         "Résistances en % : 50 % au plus. Les boucliers absorbent les dégâts d'abord.",
+        "Le **Journal** du combat garde les 150 dernières actions, sur plusieurs combats (la plus récente en haut). Descends dans la liste pour relire ta rotation : elle ne bouge plus tant que tu lis, et « Reprendre » te ramène en haut.",
         `Le combat est perdu si tous les héros tombent, ou au-delà de 60 tours (retraite). Dès la stasis 9, les donjons ont une limite de tours (${N(() => E.STASIS_TL.room)} par salle, ${N(() => E.STASIS_TL.boss)} pour le boss).`,
       ]],
       ["h", "Défaite"],

@@ -208,7 +208,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .pips i.off{background:transparent;border-color:var(--muted)}
 .log{margin:0 14px 14px;background:var(--panel2);border-radius:12px;padding:8px 10px;font-size:13px;height:132px;overflow:hidden}
 .log div{padding:2px 0;border-bottom:1px dashed var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.log div:last-child{border:0}
+.log div:last-child,.log div:has(+.lresume){border:0}
 .log .win{color:var(--action);font-weight:800}.log .lose,.log .ko{color:var(--danger)}.log .crit{font-weight:800}.log .heal{color:var(--el-a)}.log .buff{color:var(--gold)}.log .dim{opacity:.7}
 .log .pou{color:var(--el-f);font-weight:700} /* 1.0.30 : coup de poussée */
 .hist{display:flex;flex-direction:column;gap:6px}
@@ -816,7 +816,7 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
   .combatgrid:not([data-ctab="butin"]) .csec-butin{display:none}
   .combatgrid:not([data-ctab="stats"]) .csec-stats{display:none}
   .combatgrid:not([data-ctab="butin"]):not([data-ctab="stats"]) .cside{display:none}
-  .csec-journal .log{margin-top:10px;height:auto;min-height:150px}
+  .csec-journal .log{margin-top:10px;height:max(240px,calc(100dvh - 450px))} /* 2.1.40.11 : tient sous l'arène collée et au-dessus de la barre du bas */
   .arenasticky.stick{position:sticky;top:var(--sth,48px);z-index:25;box-shadow:0 8px 16px rgba(0,0,0,.45)}
   .combatpanel>.arenasticky{border-radius:0}
 }
@@ -6427,3 +6427,13 @@ body.tb1 #chat .chmin{display:none}
 .eqsort select{padding:6px 10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-weight:700;max-width:100%}
 .eqst.hi{color:var(--good,#2f9e44);background:color-mix(in srgb,var(--good,#2f9e44) 14%,transparent);border-radius:8px;padding:0 4px}
 @media (max-width:760px){.eqsort{flex:1 1 100%}.eqsort select{flex:1 1 140px;min-width:0}}
+
+
+
+/* 2.1.40.11 : journal de combat plus haut, défilable, lignes complètes, pause quand on lit plus bas */
+.log{height:clamp(260px,58vh,620px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;position:relative}
+.log div{white-space:normal;overflow:visible}
+.log .lnew{align-items:flex-start}.log .lnew>span{overflow:visible}
+.log .lsep{text-align:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);padding:5px 0 3px}
+.log .lresume{position:sticky;bottom:0;z-index:2;display:block;width:100%;margin:4px 0 -2px;padding:5px 8px;border:1px solid var(--gold);border-radius:9px;background:color-mix(in srgb,var(--gold) 22%,var(--panel2));color:var(--ink);font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.log .lresume[hidden]{display:none}

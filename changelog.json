@@ -1,6 +1,18 @@
 {
-  "version": "2.1.40.10",
+  "version": "2.1.40.11",
   "versions": [
+    {
+      "v": "2.1.40.11",
+      "name": "Journal de combat",
+      "guide": "combat",
+      "items": [
+        "Le journal de combat est bien plus haut : il remplit la place vide sous les sorts (et l'onglet Journal sur téléphone)",
+        "Il se fait défiler et garde les 150 dernières actions, d'un combat à l'autre, avec un séparateur à chaque nouveau combat",
+        "Descends dans la liste pour analyser ta rotation : elle ne bouge plus pendant que tu lis. Le bouton « Reprendre » te ramène aux dernières lignes",
+        "Les lignes longues (sorts à plusieurs cibles) s'affichent en entier au lieu d'être coupées",
+        "Correction : le journal pouvait se figer après 40 lignes dans un long combat"
+      ]
+    },
     {
       "v": "2.1.40.10",
       "name": "Trier l'encyclopédie",

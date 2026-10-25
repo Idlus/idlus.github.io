@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.11 « Journal de combat »
+- Demande de Mathis (25/10) : `js/ui.js` garde un historique du journal côté interface (`flogSync`, 150 lignes, plusieurs combats séparés) au lieu des 7 dernières lignes ; nouvelles lignes ajoutées en haut sans réécrire la liste. Si le joueur a descendu la liste, la vue reste sur ses lignes et un bouton « Reprendre » apparaît. Le moteur (40 lignes par combat) ne change pas.
+- `css/style.css` : `.log` défilable, haut de 58 vh (260 à 620 px, sur téléphone la hauteur libre sous l’arène collée), lignes complètes.
+- Corrige le journal figé après 40 lignes (la longueur de `F.log` ne changeait plus).
+
 ## 2.1.40.10 « Trier l'encyclopédie »
 - Idées de hattory et Bellito (relayées par Mathis, 25/10). `js/ui.js` : `ENC_EL`, `encStatVal()`, `encStatOpts()` (exposés en `window.ENCSTAT`) ; Encyclopédie › Équipements : emplacement « Tous », filtre élément/stat (`ui.encEq.stat`) et tri (`ui.encEq.sort` : lvl, lvld, name, val), stat filtrée surlignée. Un élément = sa caractéristique ou ses dommages, pondérés par `STATS.w` pour le tri.
 - `js/collui.js` : Panoplies filtrées par élément/stat (pièces + bonus), tranche de niveau, tri (`st.sst`, `st.slv`, `st.ssort`).

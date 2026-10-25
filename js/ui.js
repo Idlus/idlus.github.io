@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.10";
+const GAME_VERSION = "2.1.40.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.11", name: "Journal de combat", guide: "combat", items: [
+    "Le journal de combat est bien plus haut : il remplit la place vide sous les sorts (et l'onglet Journal sur téléphone)",
+    "Il se fait défiler et garde les 150 dernières actions, d'un combat à l'autre, avec un séparateur à chaque nouveau combat",
+    "Descends dans la liste pour analyser ta rotation : elle ne bouge plus pendant que tu lis. Le bouton « Reprendre » te ramène aux dernières lignes",
+    "Les lignes longues (sorts à plusieurs cibles) s'affichent en entier au lieu d'être coupées",
+    "Correction : le journal pouvait se figer après 40 lignes dans un long combat",
+  ] },
   { v: "2.1.40.10", name: "Trier l'encyclopédie", guide: "enc", items: [
     "Idée de hattory : Encyclopédie › Équipements se filtre par élément (Terre, Feu, Eau, Air : la caractéristique ou ses dommages) ou par n'importe quelle stat (PA, PM, Vitalité, Critique, Résistances…)",
     "Nouveau choix « Tous les emplacements » et un tri : niveau croissant ou décroissant, nom, ou la plus forte valeur de la stat choisie. La stat filtrée s'affiche en premier, surlignée",
@@ -6088,16 +6095,12 @@ function updateCombat(force) {
         else if (f.k === "phase") phaseFlash();
       });
     }
-    if (F.log.length !== A.lastLog || force) {
-      A.lastLog = F.log.length;
-      $("#flog").innerHTML = F.log.slice(-7).reverse().map((l) => logLineNew(F, l)).join("");
-      const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? intTxt(last.txt) : F.label;
-    }
+    if (flogSync(F, force)) { const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? intTxt(last.txt) : F.label; }
     if (F.over && !A.over) {
       A.over = true; axVictory(F, A); cbtEnd(F); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`; // 1.3 : jingle de fin du combat affiché ; 1.2.7.2 : « Victoire ! » / « Défaite… » revient (il était passé dans le commentaire)
       lootHtml(F); const fh = $("#fhist"); if (fh) fh.innerHTML = historyHtml(6);
     } else if (!F.over && (force || ($("#floot") && $("#floot").dataset.none))) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; delete $("#floot").dataset.none; $("#fres").textContent = `Tour ${F.round}`; } // 1.0.10.3 : plus de « Aucun combat en cours » pendant le premier combat
-  } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; $("#floot").dataset.none = "1"; }
+  } else if (force) { flogFill($("#flog")); $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; $("#floot").dataset.none = "1"; }
   // barre de sorts du héros sélectionné
   const c = ui.combatCid ? char(ui.combatCid) : null;
   if (c) {
@@ -7253,6 +7256,34 @@ function spCardNew(c, sp, x, i) {
     ${x ? `<div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === c.spells.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>` : ""}
   </div>`;
 }
+// 2.1.40.11 : journal de combat plus haut et défilable. L'historique (FLOG_MAX lignes, plusieurs combats) est gardé côté interface ;
+// les nouvelles lignes s'ajoutent en haut sans toucher aux autres, et si le joueur a descendu la liste, la vue ne bouge plus (bouton « Reprendre »).
+const FLOG_MAX = 150;
+function flogSync(F, force) {
+  const el = $("#flog"); if (!el) return false;
+  const key = (ui.watch ? "w" : "s") + ":" + F.id; let B = ui.flogB;
+  if (!B || B.dom !== (ui.watch ? "w" : "s")) B = ui.flogB = { dom: ui.watch ? "w" : "s", key: null, last: null, rows: [] };
+  let add = [];
+  if (B.key !== key) { if (B.rows.length) add.push(`<div class="lsep">Nouveau combat · ${h(F.label || "")}</div>`); B.key = key; B.last = null; }
+  const i = B.last ? F.log.lastIndexOf(B.last) : -1;
+  const fresh = B.last && i < 0 && F.log.length ? F.log : F.log.slice(i + 1); // ligne de repère sortie des 40 gardées par le moteur : on reprend tout
+  if (fresh.length) { B.last = F.log[F.log.length - 1]; add = add.concat(fresh.map((l) => logLineNew(F, l))); }
+  if (add.length) { B.rows = B.rows.concat(add); if (B.rows.length > FLOG_MAX) B.rows.splice(0, B.rows.length - FLOG_MAX); }
+  if (flogFill(el)) return true;
+  if (!add.length) return false;
+  const held = el.scrollTop > 6, h0 = el.scrollHeight, btn = el.querySelector(".lresume"); if (!btn) { ui.flogEl = null; return flogFill(el); }
+  el.insertAdjacentHTML("afterbegin", add.slice().reverse().join(""));
+  let n = el.children.length - 1; while (n > FLOG_MAX && btn.previousElementSibling) { btn.previousElementSibling.remove(); n--; } // le bouton « Reprendre » reste le dernier, collé en bas
+  if (held) { ui.flogNew = (ui.flogNew || 0) + add.length; flogBtn(el); el.scrollTop += el.scrollHeight - h0; } // le joueur lit plus bas : la vue reste sur ses lignes
+  return true;
+}
+function flogFill(el) { // nouvel écran : tout l'historique, la plus récente en haut (le rendu de la boucle ne repasse jamais par ici)
+  if (!el || el === ui.flogEl) return false;
+  ui.flogEl = el; ui.flogNew = 0; el.innerHTML = (ui.flogB ? ui.flogB.rows.slice().reverse().join("") : "") + `<button class="lresume" data-act="flogtop" hidden></button>`; el.scrollTop = 0;
+  el.addEventListener("scroll", () => { if (el.scrollTop < 6 && ui.flogNew) { ui.flogNew = 0; flogBtn(el); } }, { passive: true });
+  return true;
+}
+function flogBtn(el) { const b = el.querySelector(".lresume"); if (!b) return; b.hidden = !ui.flogNew; if (ui.flogNew) b.textContent = `▲ ${ui.flogNew} nouvelle${ui.flogNew > 1 ? "s" : ""} ligne${ui.flogNew > 1 ? "s" : ""} · Reprendre`; }
 function logLineNew(F, l) {
   const m = /^(.+?) · (.+?)(?: → (.*))?$/.exec(l.txt); const e = m && F.ents.find((x) => x.name === m[1] && x.side === "c" && x.cls);
   const sp = e && CLASSES[e.cls].spells.find((x) => x.name === m[2]);
@@ -10685,6 +10716,7 @@ document.addEventListener("click", (ev) => {
     case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;
     case "losssheet": lossSheet(d.t); return;
     case "fstsheet": fstSheet(d.t); return;
+    case "flogtop": { ui.flogNew = 0; const el = $("#flog"); if (el) { el.scrollTop = 0; flogBtn(el); } return; }
     case "fstv": ui.fstv = d.v; updateCombat(true); return;
     case "fstreset": if (!confirm("Remettre à zéro le cumul des statistiques de combat ?")) return; E.resetFightStats(S); updateCombat(true); return;
     case "lossequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } toast(`Équipé sur ${char(+d.id).name}.`); break; }
