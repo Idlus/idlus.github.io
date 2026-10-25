@@ -101,7 +101,7 @@ function fake() {
      commencée après le lancement du chat) ; sur une machine chargée, la bulle peut donc manquer juste après le chargement : on l'attend */
   const openChat = async (page) => { await page.waitForSelector("#chat .chmin, #chat .ch-tabs", { timeout: 10000, state: "attached" });
     if (!(await page.$("#chat .ch-tabs"))) await page.evaluate(() => document.querySelector("#chat .chmin").click()); await page.waitForSelector("#chat .ch-tabs", { timeout: 5000 }); };
-  const tabs = (page) => page.evaluate(() => [...document.querySelectorAll("#chat .ch-tabs .ch-tab")].map((b) => (b.dataset.v || "?") + ":" + b.querySelector("span").textContent));
+  const tabs = (page) => page.evaluate(() => [...document.querySelectorAll("#chat .ch-tabs .ch-tab")].map((b) => (b.dataset.v || "?") + ":" + b.querySelector("span:not(.ic)").textContent));
   const cur = (page) => page.evaluate(() => window.CHAT.state.tab);
   const listTxt = (page) => page.evaluate(() => (document.querySelector("#chat .ch-list") || {}).textContent || "");
   const sendTxt = async (page, t) => { await page.fill("#chIn", t); await page.click('#chat [data-act="ch-send"]'); await page.waitForTimeout(300);

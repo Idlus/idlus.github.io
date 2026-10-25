@@ -252,16 +252,17 @@
   }
   /* 0.1.48.2 : six salons sur une ligne à part, sous le titre ; chacun a son icône et sa pastille de messages non lus */
   const nb = (n) => (n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : "");
+  const chCols = (html) => { const n = (html.match(/class="ch-tab/g) || []).length; return n <= 5 ? Math.max(n, 1) : Math.ceil(n / 2); }; // #154 : au-delà de cinq salons, deux lignes
   function headHtml() {
     const G = X().G;
     const tab = (k, ic, n, unread, lock) => lock ? `<span class="ch-tab lock" data-tip="${h(lock)}">${G("lock")}<span>${n}</span></span>`
-      : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
+      : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}"><span class="ic">${G(ic)}${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</span><span>${n}</span></button>`; // #154 : pastille sur l'icône
     const guild = window.GUILD && window.GUILD.inGuild();
     // 22/10 (Mathis, 1A) : partie Monocompte, seulement le salon Monocompte (verrouillé sans accès), aucun salon du Classique
     const tabsH = monoGame() ? tab("m", "sparkle", "Monocompte", C.unreadM, monoOk() ? "" : "Salon des testeurs du Monocompte : connecte-toi au serveur Monocompte.")
       : `${monoOk() ? tab("g", "chat", "Classique", C.unread) + tab("m", "sparkle", "Monocompte", C.unreadM) : tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Joueurs › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}`;
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
-      <div class="ch-tabs" role="tablist">${tabsH}</div></div>`;
+      <div class="ch-tabs" role="tablist" style="--chc:${chCols(tabsH)}">${tabsH}</div></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
