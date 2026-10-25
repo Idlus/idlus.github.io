@@ -665,6 +665,8 @@
         "La validation donne un coffre : kamas, XP, poussière, objets, rune de transcendance dès Paradoxe 2, chance de légendaire et du Dofus Onirique.",
         "Une défaite réveille l'équipe (le butin des combats est gardé), sauf avec un Sable de Draconiros.",
         `Choix automatique (case Auto) : si tu ne réponds pas, le jeu choisit à ta place après ${N(() => E.EXP_DOOR_MS / 1000)} s, selon le mode Prudent, Équilibré ou Gourmand.`,
+        "Pas de plafond : la Fin du rêve continue tant que l'équipe tient, et les monstres se renforcent à chaque vague.",
+        `Paliers de la semaine (dès ${E.SG_INT[E.SG_MILE_II] ? E.SG_INT[E.SG_MILE_II].name : "Cauchemar 1"}) : la première fois de la semaine à ${E.SG_MILES ? E.SG_MILES.join(", ") : "75, 100, 150"} vagues, un Coffre en obsidienne.`,
         "En ligne : classement de la semaine (meilleure intensité, puis vagues).",
       ]],
     ] });

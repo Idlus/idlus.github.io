@@ -1,4 +1,4 @@
-/* 2.1.40.13 « Liste des trophées » (signalé par Bellito, ticket #157) : au téléphone, le bouton des trophées de boss du Havre-Sac
+/* 2.1.41.2 « Liste des trophées » (signalé par Bellito, ticket #157) : au téléphone, le bouton des trophées de boss du Havre-Sac
    sortait du panneau « Meubles à placer » (explication sur une ligne qui élargissait la liste) ; il ouvre maintenant la liste des boss
    et de leurs trophées. Lancer : node tests/havre_trophees_ui.test.js (SHOTS=dossier pour garder des captures) */
 "use strict";

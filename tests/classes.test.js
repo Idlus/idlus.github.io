@@ -66,5 +66,14 @@ const fight = (ents) => ({ ents, fx: [], seq: 0, log: [], deaths: [], round: 1, 
   const K = fight([mk({ cls: "eni", name: "K", tm: 0 }), mk({ side: "m", name: "N", hp: 99999, hpMax: 99999, tm: 1 })]); K.pvp = true;
   API.castSpell(S, K, K.ents[0], vamp, null, { id: vamp.id, cond: "", tgt: "low" }); assert.ok(!K.ents[0].eniDmg, "pas au Kolizéum (anciens passifs)");
   console.log("ok - Mots liés en solo et soins de l'Eniripsa");
+  // 2.1.41 : Mot Interdit à 4 PA ; soins avec la meilleure caractéristique (pas au Kolizéum)
+  assert.ok(E.spellDef("eni", "s25873").grades.every((g) => g.pa === 4), "Mot Interdit coûte 4 PA");
+  const hurt = mk({ cls: "iop", name: "I", hp: 1, cid: 2 }); const terre = mk({ cls: "eni", name: "T", st: Object.assign({}, st, { ine: 0, cha: 0, fo: 300 }) });
+  const H = fight([terre, hurt]); const jouv = { grades: [{ lvl: 1, pa: 2, cd: 0, fx: [{ k: "heal", min: 100, max: 100, n: 1 }] }], name: "Essai", id: "x" };
+  API.castSpell(S, H, terre, jouv, hurt, { id: "x", cond: "", tgt: "low" }); const terreHeal = hurt.hp - 1;
+  const hurt2 = mk({ cls: "iop", name: "J", hp: 1, cid: 2 }); const z = mk({ cls: "eni", name: "Z", st: Object.assign({}, st, { ine: 0, cha: 0, fo: 0 }) });
+  API.castSpell(S, fight([z, hurt2]), z, jouv, hurt2, { id: "x", cond: "", tgt: "low" });
+  assert.ok(terreHeal > (hurt2.hp - 1) * 3, `Eniripsa Terre : soin ${terreHeal} contre ${hurt2.hp - 1} sans caractéristique`);
+  console.log("ok - Mot Interdit 4 PA, soins avec la meilleure caractéristique");
 }
 console.log("classes.test.js : tout est bon");

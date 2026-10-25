@@ -1781,7 +1781,9 @@
   };
   const healAmount = (e, f) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1 + psv(e).eniSoin + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
+    // 2.1.41 : l'Eniripsa soigne avec sa meilleure caractéristique (en Eau, Terre ou Air, ses soins et boucliers restaient faibles) ; pas au Kolizéum
+    const ine = e.cls === "eni" && !e.summon && e.tm === undefined ? Math.max(...["fo", "ine", "cha", "age"].map((k) => (e.st[k] || 0) + buffSum(e, k))) : e.st.ine + buffSum(e, "ine");
+    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (ine + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1 + psv(e).eniSoin + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * (1 + ((e.mt && e.mt.h) || 0) / 100);
   };
   /* 2.1.37.x : Eniripsa, le soin en trop de ses sorts (soins et vol de vie) devient un bouclier : 40 % du surplus, jusqu'à 25 % des PV.
      Le surplus est mesuré après les réductions (idoles, Insoignable, érosion), et le bouclier s'affiche (« Bouclier +N »). */

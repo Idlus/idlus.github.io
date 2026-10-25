@@ -427,11 +427,11 @@ async function songe(db: any, uid: string) {
   try { const S = E.deserialize(save.data); E.events.length = 0; if (S.panelUsed) return json({ ok: false, err: "partie de test" }); wk = S.songe && S.songe.wk; } catch (_) { return json({ ok: false, err: "partie illisible" }); }
   if (!wk || wk.w !== w || !(wk.ii >= 0)) return json({ ok: false, err: "aucun songe validé cette semaine" });
   const ii = Math.min(E.SG_INT.length - 1, Math.max(0, Math.round(Number(wk.ii) || 0)));
-  const claim = Math.max(0, Math.min(50, Math.round(Number(wk.waves) || 0)));
+  const claim = Math.max(0, Math.min(E.SG_MAXW || 50, Math.round(Number(wk.waves) || 0))); // 2.1.41.1 : plus de plafond à 50 vagues
   if (claim < E.SG_INT[ii].waves) return json({ ok: false, err: "songe non validé" });
   let best = -1, why = "";
   for (let i = 0; i < 2; i++) {
-    const r = E.sgReplay(save.data, ii, crypto.getRandomValues(new Uint32Array(1))[0], now);
+    const r = E.sgReplay(save.data, ii, crypto.getRandomValues(new Uint32Array(1))[0], now, claim); // s'arrête aux vagues annoncées
     if (r.ok && r.waves > best) best = r.waves; else if (!r.ok) why = r.err;
   }
   if (best < 0) return json({ ok: false, ii, err: why || "l'équipe ne valide pas cette intensité" });

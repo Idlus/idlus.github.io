@@ -164,7 +164,7 @@
   const SIGNATURE = {
     iop: "Colère : chaque sort lancé ajoute 1 charge (max 6). À 6 charges, la prochaine attaque inflige +40 % de dégâts et vide la jauge. Vigueur : vole 8 % des dégâts infligés. +10 % de dégâts contre les boss.",
     cra: "Distance : +40 % de dégâts au tour 1, puis −10 % par tour (+30 % au tour 2, +20 % au tour 3, +10 % au tour 4, plus rien ensuite). Œil de lynx : joue en premier au tour 1, et ses attaques à cible unique marquent la cible (+10 % de dégâts subis pendant 2 tours).",
-    eni: "Mots liés : un soin (vol de vie compris) rend la prochaine attaque 25 % plus forte, une attaque rend le prochain soin 25 % plus fort. Soins +20 %, et le soin en trop de ses sorts, vol de vie compris, devient un bouclier (40 % du surplus, jusqu'à 25 % des PV).",
+    eni: "Mots liés : un soin (vol de vie compris) rend la prochaine attaque 25 % plus forte, une attaque rend le prochain soin 25 % plus fort. Soins +20 %, calculés avec sa meilleure caractéristique (Force, Intelligence, Chance ou Agilité), et le soin en trop de ses sorts, vol de vie compris, devient un bouclier (40 % du surplus, jusqu'à 25 % des PV).",
     feca: "Glyphes : au début de chacun de ses tours, pose un glyphe pour toute l'équipe jusqu'à son tour suivant, dans cet ordre : Protection (−15 % de dégâts subis), Renvoi (25 % des dégâts reçus renvoyés à l'attaquant), Soin (chaque allié récupère 6 % de ses PV max). Boucliers +25 %.",
     osa: "Dressage : jusqu'à 2 invocations à la fois, avec +30 % de PV ; elles gagnent la moitié de la Puissance et des Dommages de l'Osamodas. +5 % de PV pour toute l'équipe.",
     enu: "Pelle : ses attaques à cible unique ont 10 % de chances de retirer 1 PA (une fois par monstre et par tour). Trésors : chaque monstre qu'il achève a 15 % de chances de laisser une ressource en plus. Chercheur : +15 % de butin et de kamas pour l'équipe (ne se cumule pas entre plusieurs Enutrof). Butin de guerre : chaque monstre qu'il achève donne à toute l'équipe un bouclier de 8 % de ses PV.",
@@ -285,6 +285,12 @@
       const k = Math.min(1.5, (ref * 0.75) / x.v);
       x.g.fx.forEach((f) => { if (["dmg", "drain", "dot"].includes(f.k) && f.min !== undefined) { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } });
     });
+    // 2.1.41 (retours de Jérémygnon, accord de Mathis le 25/10) : Eniripsa, voies Eau, Terre et Air remontées ; Mot Interdit à 4 PA
+    if (cls === "eni") {
+      tweak("Mot Interdit", (sp) => sp.grades.forEach((g) => (g.pa = 4)));
+      [["Mot Vampirique", 1.2], ["Juron", 1.3], ["Peinture de Guerre", 1.3], ["Pinceau Tribal", 1.3], ["Cri de Guerre", 1.25], ["Mot Espiègle", 1.3], ["Mot Farceur", 1.3], ["Mot Fleuri", 1.2]].forEach(([n, k]) =>
+        tweak(n, (sp) => sp.grades.forEach((g) => g.fx.forEach((f) => { if ((f.k === "dmg" || f.k === "drain") && f.min !== undefined) { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } }))));
+    }
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
     const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };

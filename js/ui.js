@@ -21,14 +21,25 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.13";
+const GAME_VERSION = "2.1.41.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "2.1.40.13", name: "Liste des trophées", items: [
+  { v: "2.1.41.2", name: "Liste des trophées", items: [
     "Havre-Sac au téléphone : le bouton des trophées de boss, en bas de « Meubles à placer », était poussé hors de l'écran (comme les boutons « Placer » sur certaines lignes). Il est de retour et se touche normalement",
     "Il ouvre maintenant la liste des trophées de boss : chaque boss, son trophée, son effet et son donjon, du plus bas niveau au plus haut, avec « Obtenu » ou un bouton « Y aller ». « Tous les meubles » ramène au catalogue complet",
     "Même liste depuis la ligne « Trophées de boss » de Ma maison et depuis une place libre de la Salle des trophées",
     "Signalé par Bellito, merci !" ] },
+  { v: "2.1.41.1", name: "Songe sans fin", guide: "songe", items: [
+    "Songe infini : plus de plafond à 50 vagues. La Fin du rêve continue tant que ton équipe tient, et les monstres se renforcent à chaque vague (environ +7 %) : chaque équipe trouve son mur",
+    "Paliers de la semaine, dès Cauchemar 1 : la première fois de la semaine que tu tiens 75, 100 puis 150 vagues, un Coffre en obsidienne (3 au plus par semaine)",
+    "Les Bribes par vague ne changent pas, et le classement de la semaine départage enfin les meilleurs au-delà de 50 vagues",
+    "La fenêtre des vagues montre les 10 dernières, ton record de la semaine et les paliers (la rangée ne déborde plus au téléphone). Idée de Ley",
+  ] },
+  { v: "2.1.41", name: "Les quatre voies de l'Eniripsa", items: [
+    "Eniripsa : Mot Interdit coûte 4 PA au lieu de 5",
+    "Voie Eau : Mot Vampirique +20 % de dégâts. Voie Terre : Juron, Peinture de Guerre et Pinceau Tribal +30 %, Cri de Guerre +25 %. Voie Air : Mot Espiègle et Mot Farceur +30 %, Mot Fleuri +20 %",
+    "Ses soins (et donc le bouclier du soin en trop) utilisent sa meilleure caractéristique : Force, Intelligence, Chance ou Agilité. En Eau, Terre ou Air, elle soigne enfin aussi bien qu'en Feu (pas au Kolizéum)",
+    "En simulation, les quatre voies arrivent au même niveau, sans changement pour les équipes. Retours de Jérémygnon, merci !" ] },
   { v: "2.1.40.12", name: "Eniripsa seule", items: [
     "Eniripsa : le vol de vie compte maintenant comme un soin pour Mots liés. Seule en Monocompte, elle renforce enfin sa prochaine attaque de 25 %, même sans allié à soigner (voie Eau surtout)",
     "Le combat automatique connaît Mots liés : l'Eniripsa lance plus souvent ses sorts qui soignent ou volent de la vie au lieu du coup d'arme",
@@ -3798,7 +3809,7 @@ function furnPickSheet(room) {
     ${placed.length ? `<p class="xs muted" style="margin-top:8px">Déjà placés : ${placed.map((f) => h(f)).join(" · ")}</p>` : ""}
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-/* 2.1.40.13 (signalé par Bellito) : la liste des trophées de boss, du donjon le plus bas au plus haut : boss, donjon, effet, obtenu ou « Y aller » */
+/* 2.1.41.2 (signalé par Bellito) : la liste des trophées de boss, du donjon le plus bas au plus haut : boss, donjon, effet, obtenu ou « Y aller » */
 function trophyListSheet() {
   const furn = Array.isArray(S.furniture) ? S.furniture : [];
   const rows = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy).sort((a, b) => ((DUNGEONS[E.FURN[a].trophy] || {}).lvl || 0) - ((DUNGEONS[E.FURN[b].trophy] || {}).lvl || 0));
