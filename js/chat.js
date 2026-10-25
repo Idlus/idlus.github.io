@@ -86,7 +86,7 @@
   async function load() {
     const [g, p, ign, role, me, c, v, pin, mo] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin(), monoOk() ? ON.chatLoad("m") : []]);
     if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
-    C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.m = mo ? keepLive(C.m, mo) : C.m; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    C.pin = pin; C.g = dedupFeats(keepLive(C.g, g || [])); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.m = mo ? keepLive(C.m, mo) : C.m; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     if (!C.picked && (C.tab === "g" || C.tab === "m")) C.tab = defTab(); // accès au Monocompte connu après le lancement : salon par défaut revu, tant que le joueur n'a pas choisi
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
@@ -100,6 +100,10 @@
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
   const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || m.data.t === "defi" || /^race1[01]$/.test(m.data.kind))); // 1.1 : « Montrer dans le chat » du Défi du jour reste dans le Général // 1.0.5 (race11 : course de la 1.1, L'Ascension) : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
+  /* Tickets #158, #159 : une annonce automatique identique (même joueur, même niveau 200, Renaissance ou Dofus)
+     n'est montrée qu'une fois, pour qu'une boucle ne noie pas les autres hauts faits ni le Général (le serveur n'en envoie plus) */
+  const featKey = (m) => (m.kind === "ann" && m.data && /^(lvl200|ren|dofus)$/.test(m.data.t) ? `${m.user_id}|${m.data.t}|${m.data.cls || ""}|${m.data.name || ""}|${m.data.ren || 0}|${m.data.n || 0}|${m.data.id || ""}` : null);
+  const dedupFeats = (L) => { const seen = new Set(); return L.filter((m) => { const k = featKey(m); if (!k) return true; if (seen.has(k)) return false; seen.add(k); return true; }); };
   /* 0.1.53.7 : mentions « @pseudo ». Surlignées dans le message ; le joueur mentionné voit le message mis en évidence
      et une pastille « @ » sur le chat et le salon, même s'il lit un autre salon. Seules les 3 premières mentions d'un
      message comptent (pas de mention de masse), un joueur ignoré ne prévient pas, et le mode lent du serveur s'applique. */
@@ -153,6 +157,7 @@
     if (!m || !m.id) return;
     const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : m.ch === "m" ? C.m : C.g;
     if (list.some((x) => x.id === m.id)) return;
+    const fk = featKey(m); if (fk && list.some((x) => featKey(x) === fk)) return; // tickets #158, #159 : annonce déjà montrée
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
     if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) { C.unreadP++; if (C.loaded && window.DX.sndPlay) window.DX.sndPlay("msg"); } }
