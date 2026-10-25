@@ -72,6 +72,9 @@
       return { k, r, w: r >= 5 ? w : 0, v: Math.round((fused ? E.sealVal(k, 5) * E.SEAL_FUSE_PCT : E.sealVal(k, r)) * f * 10) / 10 }; }).filter((x) => x.r);
     return list.length ? { key: c.seal, list, cri: list.every((x) => x.r >= 5) } : null;
   };
+  /* texte d'un pouvoir porté : Véloce éveillé affiche aussi son bonus du premier tour (70 % dans une fusion), sinon on ne voyait pas qu'il comptait */
+  E.sealVeloceEv = (key, w) => Math.round(E.SEAL_EV_VELOCE * w * (key && key.includes("+") ? E.SEAL_FUSE_PCT : 1) * 10) / 10;
+  E.sealPowTxt = (key, x) => (x.k === "veloce" && x.w ? `Joue avant tout le monde et +${pc(E.sealVeloceEv(key, x.w))} % de dégâts au premier tour` : E.SEALS[x.k].txt(x.v));
   E.sealCanWear = (S, key) => (key.includes("+") ? st(S).f.includes(key) : !!E.SEALS[key] && E.sealRank(S, key) > 0);
 
   /* ---------- actions ---------- */
@@ -200,7 +203,7 @@
     s.list.forEach((x) => {
       if (x.k === "enrage" && e.hp < e.hpMax * 0.5) v *= 1 + x.v * mul / 100;
       if (x.k === "traqueur" && tgt && tgt.hp < tgt.hpMax * 0.5) v *= 1 + x.v * mul / 100;
-      if (x.k === "veloce" && x.w && F && F.round <= 1) v *= 1 + E.SEAL_EV_VELOCE * x.w * (s.key.includes("+") ? E.SEAL_FUSE_PCT : 1) / 100; // Véloce éveillé : +4 % de dégâts au premier tour par Éveil (70 % dans une fusion, comme les autres pouvoirs)
+      if (x.k === "veloce" && x.w && F && F.round <= 1) v *= 1 + E.sealVeloceEv(s.key, x.w) / 100; // Véloce éveillé : +4 % de dégâts au premier tour par Éveil (70 % dans une fusion, comme les autres pouvoirs)
     });
     if (e.criOn && F && F.round !== e.criRound) { e.criRound = F.round; e.criOn--; if (!e.criOn) { const vp = s.list.find((x) => x.k === "vampire"); if (vp) e.vamp = vp.v / 100; } }
     return v;

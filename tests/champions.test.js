@@ -158,11 +158,12 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   E.act(S, "sealFuse", "enrage", "vampire"); E.act(S, "sealWear", c.id, "enrage+vampire");
   assert.deepStrictEqual(E.sealOf(S, c).list.map((x) => x.v), [10.5, 5.6], "vampire pas éveillé : fusion à 70 % sans bonus");
   C.ev.vampire = 2; assert.deepStrictEqual(E.sealOf(S, c).list.map((x) => x.v), [12.6, 6.7], "fusion : Éveil 2 des deux");
-  C.ev.veloce = 3; E.act(S, "sealWear", c.id, "veloce"); const sv = E.sealOf(S, c).list[0]; assert.strictEqual(sv.v, 1); assert.strictEqual(sv.w, 3);
+  C.ev.veloce = 3; E.act(S, "sealWear", c.id, "veloce"); const sv = E.sealOf(S, c).list[0]; assert.strictEqual(sv.v, 1); assert.strictEqual(sv.w, 3); assert.strictEqual(E.sealPowTxt("veloce", sv), "Joue avant tout le monde et +12 % de dégâts au premier tour", "le bonus d'Éveil de Véloce s'affiche");
   const F = { round: 1 }; assert.strictEqual(Math.round(E.sealDmg(F, { side: "c", seal: E.sealOf(S, c), hp: 100, hpMax: 100 }, null, 100)), 112, "Véloce Éveil 3 : +12 % au premier tour");
   F.round = 2; assert.strictEqual(Math.round(E.sealDmg(F, { side: "c", seal: E.sealOf(S, c), hp: 100, hpMax: 100 }, null, 100)), 100);
   E.act(S, "sealFuse", "vampire", "veloce"); E.act(S, "sealWear", c.id, "vampire+veloce"); F.round = 1;
   assert.strictEqual(Math.round(E.sealDmg(F, { side: "c", seal: E.sealOf(S, c), hp: 100, hpMax: 100 }, null, 100) * 10) / 10, 105.6, "fusion : bonus de Véloce à 70 % (Éveil 2 : 8 % → 5,6 %)");
+  assert.strictEqual(E.sealOf(S, c).list.map((x) => E.sealPowTxt("vampire+veloce", x)).join(" · "), "Vole 6,7 % des dégâts qu'il inflige · Joue avant tout le monde et +5,6 % de dégâts au premier tour", "fusion : le bonus de Véloce s'affiche à 70 %");
   // Comptoir des Éclats
   C.sh = 2000; const k0 = S.kamas;
   assert.strictEqual(E.act(S, "shardBuy", "vente"), null); assert.strictEqual(S.kamas, k0 + 100000); assert.strictEqual(C.sh, 1990);
