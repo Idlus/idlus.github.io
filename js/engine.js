@@ -1797,6 +1797,7 @@
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
     healOver = 0;
+    if (t.side === "c" && t.noHeal > 0) return 0; // 2.1.40.8 : « ne peut plus être soigné » (sorts de boss) : aucun soin reçu, vol de vie compris
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
     if (t.side === "m" && E.idHealIn) v *= E.idHealIn(t, F); // identité : Érosion
@@ -2423,7 +2424,7 @@
     if (e.cd) for (const k in e.cd) if (e.cd[k] > 0) e.cd[k]--;
     if (e.cds) for (const k in e.cds) if (e.cds[k] > 0) e.cds[k]--;
     if (e.side === "c" && e.regen) doHeal(e, e.hpMax * e.regen / 100, F);
-    if (e.side === "c") { if (e.silence > 0) e.silence--; if (e.rooted > 0) e.rooted--; if (e.fearT > 0 && --e.fearT === 0) { e.row = e.fearRow || "f"; flog(F, `${e.name} reprend courage et revient en première ligne.`, "dim"); } }
+    if (e.side === "c") { if (e.silence > 0) e.silence--; if (e.rooted > 0) e.rooted--; if (e.noHeal > 0) e.noHeal--; if (e.fearT > 0 && --e.fearT === 0) { e.row = e.fearRow || "f"; flog(F, `${e.name} reprend courage et revient en première ligne.`, "dim"); } }
     return true;
   };
 

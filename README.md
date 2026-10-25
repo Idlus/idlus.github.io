@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.40.8 « Songe plus rapide »
+- Retour de Ley (25/10) : `js/songe.js` `EXP_AUTO_MS` 20 s → 5 s et `EXP_DOOR_MS` 30 s → 5 s ; la barre du couloir (`.sgx-cd i`) suit le temps restant (`js/songeui.js`).
+- Correction : six sorts de boss (`js/identboss.js` : Déglutition, Force Poigne, Fumée asphyxiante, Objection, Vampyrisme, Spatule Tranche-Gourmands) annoncent « ne peut plus être soigné » mais posaient `rooted` (ne peut plus lancer de soin). Nouvel état `noHeal` : `doHeal` (`js/engine.js`) ne rend plus aucun PV au héros, décompté à la fin de son tour comme `rooted`. Icône et résumé (`js/ui.js`, `js/formation.js`). Test dans `tests/fight.test.js`.
+
 ## 2.1.40.7 « Over en violet »
 - Demande de Mathis (25/10) : `js/ui.js` `jetCls()` colore chaque ligne d'objet. Jet maximum = classe `jmx` (or du thème, comme avant) ; valeur au-dessus du maximum (over de forgemagie, au-delà du bonus Rayonnant) = classe `jov` (violet, `--jov` dans `css/style.css`). Avant, une ligne over sans `it.roll` restait blanche comme une ligne non parfaite.
 - Même violet dans la grille de forgemagie (`js/forgeui.js`, `.fsg-c .ov`) et sur la ligne de l'atelier.

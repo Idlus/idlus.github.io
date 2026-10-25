@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.40.7";
+const GAME_VERSION = "2.1.40.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.40.8", name: "Songe plus rapide", guide: "songe", items: [
+    "Songe infini : le choix automatique attend maintenant 5 secondes au lieu de 20 à 30 (couloir, faveur, fontaine, vague suivante). Décoche Auto pour choisir toi-même sans limite de temps",
+    "La barre du choix automatique se vide pour de vrai pendant l'attente",
+    "Correction (signalée par Ley) : les sorts de boss qui disent « ne peut plus être soigné » empêchaient seulement de lancer des soins. Le héros touché ne reçoit plus aucun soin pendant l'effet (sorts, vol de vie, glyphes)",
+    "Une icône rouge « Ne peut plus être soigné » apparaît sur le héros pendant l'effet",
+  ] },
   { v: "2.1.40.7", name: "Over en violet", items: [
     "Objets : une caractéristique au-dessus du jet maximum grâce à la forgemagie (« over ») s'affiche maintenant en violet. Le jet maximum garde la couleur dorée du thème",
     "D'un coup d'œil, tu vois qu'un objet n'a plus besoin de forgemagie : mêmes couleurs dans les infobulles, la fiche d'objet et l'atelier de forgemagie",
@@ -5856,6 +5862,7 @@ function axStates(F, e, i) {
   if (e.stun > 0) add("stun", "", "#bfe8ff", "Passe son tour");
   if (e.silence > 0) add("mute", "", "#ddd", "Muet");
   if (e.rooted > 0) add("root", "", "#a8e070", "Enraciné : ne peut plus soigner");
+  if (e.noHeal > 0) add("root", "", "#ff8a8a", "Ne peut plus être soigné");
   if (e.charging) add("warn", "", "#ff6b6b", "Prépare une attaque dévastatrice");
   if (e.side === "c" && !e.summon && e.hp < e.hpMax * 0.25 && axFull()) add("warn", "", "#ff6b6b", "En danger : moins de 25 % de PV");
   if (F.ents.some((m) => m.alive && m.doom && m.doom.i === i)) add("warn", "", "#ff6b6b", "Condamné");

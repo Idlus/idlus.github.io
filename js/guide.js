@@ -661,6 +661,7 @@
         "Les **Bribes de rêve** paient le Marché onirique (Comptoirs) ; la moitié est gagnée vague par vague, même en cas de défaite.",
         "La validation donne un coffre : kamas, XP, poussière, objets, rune de transcendance dès Paradoxe 2, chance de légendaire et du Dofus Onirique.",
         "Une défaite réveille l'équipe (le butin des combats est gardé), sauf avec un Sable de Draconiros.",
+        `Choix automatique (case Auto) : si tu ne réponds pas, le jeu choisit à ta place après ${N(() => E.EXP_DOOR_MS / 1000)} s, selon le mode Prudent, Équilibré ou Gourmand.`,
         "En ligne : classement de la semaine (meilleure intensité, puis vagues).",
       ]],
     ] });

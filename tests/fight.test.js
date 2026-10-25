@@ -219,6 +219,11 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   S.fight = null; S.hunting = false; E.clearIdols(S); E.giveIdol(S, "ougah", ""); E.toggleIdol(S, "ougah"); E.startHunt(S, firstSub); E.startFight(S); const F2 = S.fight; const hero = F2.ents.find((e) => e.side === "c"); hero.hp = 1;
   assert.strictEqual(E.doHeal(hero, 100, F2), 0, "Ougah : aucun soin"); assert.strictEqual(hero.hp, 1, "PV inchangés");
   S.fight = null; S.hunting = false; E.clearIdols(S);
+  // 2.1.40.8 (retour de Ley) : un héros qui « ne peut plus être soigné » ne récupère aucun PV, puis l'effet s'arrête
+  E.startHunt(S, firstSub); E.startFight(S); { const F3 = S.fight; const hh = F3.ents.find((e) => e.side === "c"); hh.hp = 1; hh.noHeal = 2;
+    assert.strictEqual(E.doHeal(hh, 100, F3), 0, "ne peut plus être soigné : aucun soin"); assert.strictEqual(hh.hp, 1, "PV inchangés");
+    hh.noHeal = 0; assert.ok(E.doHeal(hh, 100, F3) > 0, "l'effet fini, les soins reviennent"); }
+  S.fight = null; S.hunting = false;
   // risque et fabrication
   assert.ok(["easy", "mid", "risk"].includes(E.idolRisk(S, null, null).k), "risque calculé");
   S.crafts.bricoleur.lvl = 20; const R = D.SPECIAL_CRAFTS["Idole Dynamo"]; assert.ok(E.craftSpecial(S, "Idole Dynamo"), "Bricoleur 25 requis"); S.crafts.bricoleur.lvl = 25; R.ing.forEach(([r, q]) => E.addRes(S, r, q));

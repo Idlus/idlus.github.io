@@ -1,6 +1,17 @@
 {
-  "version": "2.1.40.7",
+  "version": "2.1.40.8",
   "versions": [
+    {
+      "v": "2.1.40.8",
+      "name": "Songe plus rapide",
+      "guide": "songe",
+      "items": [
+        "Songe infini : le choix automatique attend maintenant 5 secondes au lieu de 20 à 30 (couloir, faveur, fontaine, vague suivante). Décoche Auto pour choisir toi-même sans limite de temps",
+        "La barre du choix automatique se vide pour de vrai pendant l'attente",
+        "Correction (signalée par Ley) : les sorts de boss qui disent « ne peut plus être soigné » empêchaient seulement de lancer des soins. Le héros touché ne reçoit plus aucun soin pendant l'effet (sorts, vol de vie, glyphes)",
+        "Une icône rouge « Ne peut plus être soigné » apparaît sur le héros pendant l'effet"
+      ]
+    },
     {
       "v": "2.1.40.7",
       "name": "Over en violet",

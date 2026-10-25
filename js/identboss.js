@@ -39,6 +39,7 @@
       stun: (t) => { if (heroes().length < 2 || t.stun > 0 || A.resists(t, "epa")) return false; t.stun = 1; say(t, "m_entrave"); A.flog(F, `${t.name} est assommé et passera son tour.`, "m"); return true; },
       silence: (t, n = 2) => { if (A.resists(t, "epa")) return; t.silence = n + 1; say(t, "m_peur"); },
       root: (t, n = 2) => { if (A.resists(t, "epm")) return; t.rooted = n + 1; say(t, "m_entrave"); },
+      noHeal: (t, n = 2) => { if (A.resists(t, "epm")) return; t.noHeal = Math.max(t.noHeal || 0, n + 1); say(t, "m_entrave"); }, // 2.1.40.8 : « ne peut plus être soigné » (avant : il ne pouvait plus soigner mais recevait les soins)
       weak: (t, v, n = 2) => { t.debuffs.push({ weak: Math.round(v * p), turns: n }); say(t, "m_peur"); },
       vuln: (t, v, n = 2) => { t.debuffs.push({ vuln: Math.round(v * p), turns: n }); say(t, "m_choc"); },
       mark: (t) => { t.midMark = F.round + 1; say(t, "m_marque"); },
@@ -83,7 +84,7 @@
   add("m7197", "Serpette", "Fauchage", "Fauche toute la première ligne : chaque héros devant saigne pendant 3 tours.", { post: (h, ts, b) => { if (!b) return; h.heroes().filter((t) => h.row(t) === "f").forEach((t) => h.bleed(t, b, 0.07, 3)); } });
   add("m252", "Tchaiste", "Coffre fermé", "Après ce sort, il se referme : −50 % de dégâts reçus jusqu'à son prochain tour.", { post: (h) => { h.e.midShut = h.F.round + 1; h.say(h.e, "m_armure"); }, def: (h, v) => (h.e.midShut >= h.F.round ? v * (1 - 0.5 * h.p) : v) });
   add("m1027", "Frappe de Corail Magistrale", "Récif", "Fait pousser un corail sur lui : il récupère 3 % de ses PV pendant 3 tours.", { post: (h) => { h.e.midRegen = { r: h.F.round + 3, f: 0.03 }; h.say(h.e, "m_soin"); } });
-  add("m457", "Déglutition", "Enlisement", "Avale la cible : elle perd 1 PA et ne peut plus être soignée pendant 2 tours.", { hit: (h, t) => { h.pa(t, 1); h.root(t, 2); } });
+  add("m457", "Déglutition", "Enlisement", "Avale la cible : elle perd 1 PA et ne peut plus être soignée pendant 2 tours.", { hit: (h, t) => { h.pa(t, 1); h.noHeal(t, 2); } });
   add("m1184", "Blopunition Royale", "Division royale", "Chaque fois qu'il le lance sous 66 % de PV, un Blop se détache de lui (2 au plus).", { post: (h) => { if (h.e.hp < h.e.hpMax * 0.66) { const m = h.summon(2, 0.08); if (m) h.log(`Un Blop se détache de ${h.e.name} !`); } } });
   add("m180", "Abwutissement", "Pluie de carottes", "Ses carottes soignent tous les monstres de 4 % de leurs PV.", { post: (h) => h.mons().forEach((m) => h.heal(m, 0.04)) });
   add("m58", "Royale Bleuet Os", "Gélatine", "Tant que la gelée tremble (2 tours), aucun coup ne lui retire plus de 6 % de ses PV.", { post: (h) => { h.e.midJelly = h.F.round + 2; h.say(h.e, "m_armure"); }, def: (h, v) => (h.e.midJelly >= h.F.round ? Math.min(v, h.e.hpMax * 0.06 / h.p) : v) });
@@ -96,7 +97,7 @@
 
   /* ——— niveaux 80 à 130 ——— */
   add("m3460", "Mékattwaction", "Aimant wobotique", "Attire la cible en première ligne pendant 2 tours.", { hit: (h, t) => h.toFront(t) });
-  add("m4621", "Force Poigne", "Tombeau des sables", "Enterre la cible : elle recule à l'arrière et ne peut plus être soignée pendant 2 tours.", { hit: (h, t) => { h.toBack(t); h.root(t, 2); } });
+  add("m4621", "Force Poigne", "Tombeau des sables", "Enterre la cible : elle recule à l'arrière et ne peut plus être soignée pendant 2 tours.", { hit: (h, t) => { h.toBack(t); h.noHeal(t, 2); } });
   add("m230", "Coup de Sabre Maudit", "Malédiction du Chouque", "Maudit la cible : elle subit 15 % de dégâts en plus pendant 3 tours.", { hit: (h, t) => h.vuln(t, 15, 3) });
   add("m4860", "Vinriktus", "Tour de passe-passe", "Échange la première ligne et l'arrière de l'équipe.", { post: (h) => { h.heroes().forEach((t) => { if (h.row(t) === "f") h.toBack(t); else h.toFront(t); }); } });
   add("m173", "Morsure Sylvestre", "Racines anciennes", "Enracine la cible : ses sorts à recharge attendent un tour de plus.", { hit: (h, t) => h.cd(t) });
@@ -132,7 +133,7 @@
   add("m1087", "Helse", "Ahurissement", "Ahurit la cible : une chance sur trois qu'elle frappe 25 % moins fort au tour suivant.", { hit: (h, t) => { if (h.ch(0.33)) h.weak(t, 25, 1); } });
   add("m2848", "Mansoluble", "Banquise", "Gèle le sol : tous les héros perdent 1 PA au tour suivant (une chance sur deux chacun).", { post: (h) => h.heroes().forEach((t) => { if (h.ch(0.5)) h.pa(t, 1); }) });
   add("m257", "Tornade de Branches", "Ramure", "Chaque branche le soigne : il récupère la moitié des dégâts de la tornade, partagée avec ses alliés.", { hit: (h, t, d) => { const m = h.low(h.mons()); if (m) { const v = API().doHeal(m, d * 0.4 * h.p, h.F); if (v) h.say(m, "m_soin"); } } });
-  add("m6249", "Fumée asphyxiante", "Asphyxie", "La fumée étouffe : les héros touchés ne peuvent plus être soignés pendant 2 tours.", { hit: (h, t) => h.root(t, 2) });
+  add("m6249", "Fumée asphyxiante", "Asphyxie", "La fumée étouffe : les héros touchés ne peuvent plus être soignés pendant 2 tours.", { hit: (h, t) => h.noHeal(t, 2) });
   add("m6204", "Grande Lame du Vent", "Lame du vent", "Le vent coupe deux fois : un second coup frappe le héros derrière la cible.", { post: (h, ts, b) => { const t = h.rand(h.heroes().filter((x) => h.row(x) === "b" && !ts.includes(x))); if (t && b) { h.hit(t, b * 0.5, "a"); h.say(t, "m_eclair"); } } });
   add("m107", "Bond Maléfique", "Bond maléfique", "Bondit sur l'arrière : vise toujours un héros de la deuxième ligne quand il y en a un.", { tgt: (h, ts, all, n) => { const bk = all.filter((t) => h.row(t) === "b"); return n <= 1 && bk.length ? [h.rand(bk)] : ts; } });
   add("m943", "Rasoir", "Rasage de près", "Chaque coup le rend plus tranchant : +5 % de dégâts par héros touché, jusqu'à +25 %.", { hit: (h) => h.buff(5, 5, "mraso") });
@@ -140,7 +141,7 @@
   add("m3651", "Bain de lave", "Lave figée", "La lave refroidit sur la cible : elle brûle, puis perd 1 PA au tour suivant.", { hit: (h, t, d) => { h.burn(t, d, 0.15, 1); h.later(1, (k) => { if (t.alive) k.pa(t, 1); }); } });
   add("m827", "Destinos", "Destin du Minotot", "Marque un destin : la cible prend 30 % de dégâts en plus de tous les monstres pendant 2 tours.", { hit: (h, t) => { h.vuln(t, 30, 2); h.mark(t); } });
   add("m1045", "Furie du Kimbo", "Pair et impair", "Frappe 30 % plus fort les tours pairs, et se protège les tours impairs.", { mul: (h) => (h.F.round % 2 === 0 ? 1 + 0.3 * h.p : 1), post: (h) => { if (h.F.round % 2 === 1) h.shield(h.e, 0.06); } });
-  add("m2924", "Objection", "Objection !", "Objection retenue : la cible perd son bouclier et ne peut plus être soignée au tour suivant.", { hit: (h, t) => { h.strip(t); h.root(t, 1); } });
+  add("m2924", "Objection", "Objection !", "Objection retenue : la cible perd son bouclier et ne peut plus être soignée au tour suivant.", { hit: (h, t) => { h.strip(t); h.noHeal(t, 1); } });
   add("m3556", "Chachyène cinglante", "Matriarche", "Appelle ses petits : les autres monstres frappent 15 % plus fort pendant 2 tours.", { post: (h) => h.mons().filter((m) => m !== h.e).forEach((m) => h.tbuff(m, 15, 2)) });
   add("m4264", "Pulsation Malsaine", "Pulsation", "Le venin bat comme un cœur : il frappe tous les deux tours pendant 4 tours.", { hit: (h, t, d) => { h.later(2, (k) => { if (t.alive) k.poison(t, d, 0.15, 1); }); h.later(4, (k) => { if (t.alive) k.poison(t, d, 0.15, 1); }); } });
   add("m6388", "Shin Kûdaigyoku", "Vent divin", "Le vent repousse : les héros touchés de la première ligne reculent, ceux de l'arrière jouent en dernier.", { hit: (h, t) => { if (h.row(t) === "f") { if (h.ch(0.4)) h.toBack(t); } else h.slow(t); } });
@@ -178,9 +179,9 @@
   add("m4460", "Matière Volatile", "Matière instable", "La matière explose au tour suivant sur la cible et ses voisins de ligne.", { hit: (h, t, d) => { h.later(1, (k) => k.heroes().filter((x) => k.row(x) === k.row(t)).forEach((x) => { k.hit(x, d * 0.4, "a"); k.say(x, "m_zone"); })); } });
   add("m4453", "Frappe Koutonienne", "Folie de Koutoulou", "Rend fou : une chance sur trois que la cible se blesse elle-même (−10 % de ses PV).", { hit: (h, t) => { if (t.alive && h.ch(0.33)) { t.hp = Math.max(1, t.hp - Math.round(t.hpMax * 0.1 * h.p)); h.say(t, "m_peur"); h.log(`${t.name} perd la raison un instant !`); } } });
   add("m4444", "Siphon d'Âme", "Siphon", "Aspire l'âme : le soin volé passe aussi aux autres monstres.", { hit: (h, t, d) => h.mons().forEach((m) => { const v = API().doHeal(m, d * 0.2 * h.p, h.F); if (v) h.say(m, "m_vampire"); }) });
-  add("m4882", "Vampyrisme", "Goule", "Change la cible en goule : plus de soins pendant 2 tours, et la Shushess récupère 30 % des dégâts.", { hit: (h, t, d) => { h.root(t, 2); h.drain(d, 0.3); } });
+  add("m4882", "Vampyrisme", "Goule", "Change la cible en goule : plus de soins pendant 2 tours, et la Shushess récupère 30 % des dégâts.", { hit: (h, t, d) => { h.noHeal(t, 2); h.drain(d, 0.3); } });
   add("m5100", "Aube Saine", "Midi solaire", "Le soleil monte : chaque lancer est 10 % plus fort que le précédent (jusqu'à +50 %).", { mul: (h) => 1 + 0.1 * h.p * Math.min(5, h.e.midSun || 0), post: (h) => { h.e.midSun = (h.e.midSun || 0) + 1; h.say(h.e, "m_rage"); } });
-  add("m5666", "Spatule Tranche-Gourmands", "Régime", "Met la cible au régime : plus de soins pendant 2 tours, et elle frappe 10 % moins fort.", { hit: (h, t) => { h.root(t, 2); h.weak(t, 10, 2); } });
+  add("m5666", "Spatule Tranche-Gourmands", "Régime", "Met la cible au régime : plus de soins pendant 2 tours, et elle frappe 10 % moins fort.", { hit: (h, t) => { h.noHeal(t, 2); h.weak(t, 10, 2); } });
   add("m5806", "Faisceau lunaire", "Phases de la lune", "Chaque faisceau change la lune : nouvelle lune = −1 PA, pleine lune = +30 % de dégâts.", { mul: (h) => ((h.e.midMoon || 0) % 2 === 1 ? 1 + 0.3 * h.p : 1), hit: (h, t) => { if ((h.e.midMoon || 0) % 2 === 0) h.pa(t, 1); }, post: (h) => { h.e.midMoon = (h.e.midMoon || 0) + 1; } });
   add("m6026", "Bêche corrompue", "Semis corrompu", "Sème la corruption : un rejeton corrompu sort de terre à côté du boss (2 au plus).", { post: (h) => { const m = h.summon(2, 0.06); if (m) h.log(`Un rejeton corrompu sort de terre !`); } });
   add("m5955", "Tyrannie", "Joug", "Asservit la cible : elle perd 1 PA et frappe 15 % moins fort tant que Servitude est debout.", { hit: (h, t) => { h.pa(t, 1); h.weak(t, 15, 2); } });

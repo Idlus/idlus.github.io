@@ -124,6 +124,7 @@
     if (e.paLoss > 0) bad.push(`−${e.paLoss} PA`);
     if (e.silence > 0) bad.push("muet");
     if (e.rooted > 0) bad.push("enraciné");
+    if (e.noHeal > 0) bad.push("ne peut plus être soigné");
     if (F.ents.some((m) => m.alive && m.doom && m.doom.i === i)) bad.push("condamné");
     if (e.stun > 0) out.push(["db", ICO.stun, "passe son tour" + (bad.length ? ", " + bad.join(", ") : "")]);
     else if (bad.length) out.push(["db", `${ICO.down}${bad.length > 1 ? bad.length : ""}`, bad.join(", ")]);

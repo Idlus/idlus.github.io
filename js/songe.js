@@ -48,8 +48,8 @@
   E.SG_PTS = { fight: 3, hard: 6, archi: 8, favor: 2, gob: 3 };
   E.SG_STORM = 6;              // Tempête astrale : relancer les vœux
   E.SG_BET = 10;               // mise du Gobledore
-  E.EXP_AUTO_MS = 20000;       // choix automatique (faveur, fontaine, vague…) après ce délai
-  E.EXP_DOOR_MS = 30000;       // choix automatique du couloir
+  E.EXP_AUTO_MS = 5000;        // choix automatique (faveur, fontaine, vague…) après ce délai (2.1.40.8 : 20 s → 5 s, retour de Ley)
+  E.EXP_DOOR_MS = 5000;        // choix automatique du couloir (2.1.40.8 : 30 s → 5 s)
   E.EXP_KO = 15;               // PV (%) d'un héros à terre à la salle suivante
   E.EXP_ZONE = 10;             // zones de niveau ± 10 autour de l'équipe
   E.SG_ROOM_REW = 0.02;        // XP : +2 % par salle
