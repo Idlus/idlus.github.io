@@ -22,6 +22,7 @@
 #   compensation-fm-essai : 1.0.30.1, À BLANC : qui recevrait combien de kamas en plus pour la forgemagie retirée par le soft
 #               reset (tools/compensation_fm.js), puis annule tout.
 #   compensation-fm : la même chose pour de vrai (une seule fois : refusé si elle a déjà été envoyée). Avec les mots de Mathis.
+#   usage-modes : lecture seule : combien de comptes utilisent chaque mode de jeu (tools/usage_modes.js), des totaux seulement.
 # domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
 name: Serveur OVH
 on:
@@ -30,7 +31,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, usage-modes, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -254,6 +255,17 @@ jobs:
             (select coalesce(json_agg(x), '[]') from (select j.day, j.at, j.data from public.saves_jour j where j.user_id = p.id) x) as jours
             from public.profiles p left join public.saves s on s.user_id = p.id where lower(p.pseudo) = lower('$p')" > "$f"
           node tools/enquete_joueur.js "$f"
+          rm -f "$f"
+      - name: Usage des modes de jeu (lecture seule, sans pseudo)
+        if: inputs.etape == 'usage-modes'
+        run: |
+          # 28/10/2026 : préparation de la Saison 1 ; Mathis : « tu peux lire les sauvegardes sans mon accord ». Lecture seule ;
+          # le journal n'affiche que des totaux (tools/usage_modes.js) ; le relevé reste dans le dossier temporaire et il est effacé.
+          f="$RUNNER_TEMP/usage.json"
+          bash tools/serveur/vps_sql.sh lecture "select s.data as cur, o.data as old, (current_date - o.day) as jours
+            from public.saves s left join lateral (select j.data, j.day from public.saves_jour j where j.user_id = s.user_id order by j.day asc limit 1) o on true
+            where s.updated_at > now() - interval '7 days'" > "$f"
+          node tools/usage_modes.js "$f"
           rm -f "$f"
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
