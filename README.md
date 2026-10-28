@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.41.2 « Fiche du donjon à portée »
+- Demande de Mathis : en combat, le bouton « Fiche du donjon » bougeait sans arrêt (il était sous le Butin, qui grandit à chaque combat). `js/ui.js` : bouton `.cdgfiche` dans l'en-tête du combat (rendu une fois, hors de la boucle), et le cadre `#cdrops` passe au-dessus du Butin. `tests/fiche_donjon_ui.test.js` mesure la position dans les 3 affichages, PC 1280 et téléphone 390.
+
 ## 2.1.41.1 « Songe sans fin »
 - Idée de Ley, choix 1A 2A 3A de Mathis (25/10, maquette https://claude.ai/artifact/6UXk5TZT5QKfmiaqXSjaBm) : `js/songe.js` retire le plafond de 50 vagues (`E.SG_MAXW` = 1 000, garde-fou), même montée `E.SG_WAVE` par vague. Paliers `E.SG_MILES` 75/100/150 dès Cauchemar 1 (`E.SG_MILE_II`) : un Coffre en obsidienne la première fois de la semaine (`songe.wk.miles`), jamais pendant le rejeu du serveur.
 - Serveur : `supabase/functions/record/index.ts` accepte plus de 50 vagues annoncées ; `E.sgReplay(…, stopAt)` s'arrête aux vagues annoncées (moins de calcul).

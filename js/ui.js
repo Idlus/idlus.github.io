@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.41.1";
+const GAME_VERSION = "2.1.41.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.41.2", name: "Fiche du donjon à portée", items: [
+    "Combat en donjon : le bouton « Fiche du donjon » est maintenant en haut, à côté de « Quitter le donjon ». Il ne bouge plus pendant les combats, en Formation, Scène ou Compacte, sur PC comme au téléphone",
+    "Sur PC, le cadre « Drops possibles » passe au-dessus du Butin : il ne glisse plus quand le butin s'allonge",
+  ] },
   { v: "2.1.41.1", name: "Songe sans fin", guide: "songe", items: [
     "Songe infini : plus de plafond à 50 vagues. La Fin du rêve continue tant que ton équipe tient, et les monstres se renforcent à chaque vague (environ +7 %) : chaque équipe trouve son mur",
     "Paliers de la semaine, dès Cauchemar 1 : la première fois de la semaine que tu tiens 75, 100 puis 150 vagues, un Coffre en obsidienne (3 au plus par semaine)",
@@ -4701,7 +4705,7 @@ function renderCombat() {
   <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1>${dg && !XP && !S.dungeon.defi ? `<div class="ac-rate xs cdgrate" id="cdgrate">${dgRateLine(E.dgChainRate(S))}</div>` : ""}</div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <span class="cset">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</span><button class="btn sm csetbtn" data-act="csetsheet">${G("gear")} Réglages</button>
-      ${XP ? "" : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${XP ? "" : dg ? `${S.dungeon.defi ? "" : `<button class="btn sm cdgfiche" data-act="dgopen" data-id="${S.dungeon.id}" data-tip="Sceaux, classement, butin et sorts du boss">${IC("coffre")} Fiche du donjon</button>`}<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   ${XP && window.SGUI ? window.SGUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
@@ -4722,8 +4726,8 @@ function renderCombat() {
       <div class="csec-journal"><div class="log" id="flog"></div></div>
     </div>
     <div class="stack cside"><div id="champpand" class="ch-slot-d"></div>
-      <div class="panel csec-butin"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
       <div class="panel csec-butin cdrops" id="cdrops" hidden></div>
+      <div class="panel csec-butin"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
       <div class="panel csec-stats"><div class="phead"><h2>Statistiques</h2></div><div class="pad" id="fstats"></div></div>
       <div class="panel csec-butin"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
     </div>

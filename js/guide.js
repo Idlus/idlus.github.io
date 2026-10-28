@@ -307,7 +307,7 @@
         `Si le combat tourne mal, les héros oublient les challenges pour gagner : Élitiste et Ordonné sous ${N(() => Math.round(E.CHAL_GIVEUP_TGT * 100))} % des PV de l'équipe, les autres sous ${N(() => Math.round(E.CHAL_GIVEUP * 100))} %, et tous dès qu'un héros tombe. Pas dans le Défi du jour, où les règles comptent dans le score.`,
       ]],
       ["h", "Drops possibles"],
-      ["p", "Sous le Butin (onglet Butin au téléphone), le cadre **Drops possibles** montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent d'abord. « Tout voir » ajoute les chances par héros et les ressources ; « Voir la zone » ou « Fiche du donjon » ouvre la page complète."],
+      ["p", "Au-dessus du Butin (onglet Butin au téléphone), le cadre **Drops possibles** montre les équipements que la zone ou le donjon en cours peut donner, ceux qui te manquent d'abord. « Tout voir » ajoute les chances par héros et les ressources ; « Voir la zone » ou « Fiche du donjon » ouvre la page complète. En donjon, « Fiche du donjon » est aussi en haut du combat, à côté de « Quitter le donjon » : il ne bouge jamais."],
       ["h", "Mode manuel"],
       ["p", `Sur la page Combat, le mode manuel te laisse choisir chaque sort. Sans réponse au bout de ${N(() => E.MANUAL_TIMEOUT)} s, le héros joue tout seul.`],
     ] });

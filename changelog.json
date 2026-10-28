@@ -1,6 +1,14 @@
 {
-  "version": "2.1.41.1",
+  "version": "2.1.41.2",
   "versions": [
+    {
+      "v": "2.1.41.2",
+      "name": "Fiche du donjon à portée",
+      "items": [
+        "Combat en donjon : le bouton « Fiche du donjon » est maintenant en haut, à côté de « Quitter le donjon ». Il ne bouge plus pendant les combats, en Formation, Scène ou Compacte, sur PC comme au téléphone",
+        "Sur PC, le cadre « Drops possibles » passe au-dessus du Butin : il ne glisse plus quand le butin s'allonge"
+      ]
+    },
     {
       "v": "2.1.41.1",
       "name": "Songe sans fin",
