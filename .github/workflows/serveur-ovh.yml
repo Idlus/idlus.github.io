@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, triche-tour, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, triche-tour, suspendre-2810, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -287,6 +287,9 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select left(user_id::text, 8) id, regexp_replace(regexp_replace(why, '^[^:]{1,20} : ', '<héros> : '), '[0-9][0-9  ,.]*', '#', 'g') raison, count(*) n, min(at) premier, max(at) dernier, (array_agg(left(regexp_replace(why, '^[^:]{1,20} : ', '<héros> : '), 110) order by at))[1] exemple from public.bouclier_log where at > now() - interval '7 days' group by 1, 2 order by 1, 4"
           echo '== MONOCOMPTE refus sans partie validée'
           bash tools/serveur/vps_sql.sh lecture "select left(b.user_id::text, 8) id, b.saison, count(*) n, max(b.at) dernier from mono.bouclier b where not exists (select 1 from mono.parties_ok o where o.user_id = b.user_id and o.saison = b.saison) group by 1, 2 order by 3 desc"
+      - name: Suspension définitive d'aife et Chizoumi (demande écrite de Mathis du 28/10)
+        if: inputs.etape == 'suspendre-2810'
+        run: bash tools/serveur/vps_sql.sh fichier tools/serveur/suspendre_2810.sql
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
         run: |
