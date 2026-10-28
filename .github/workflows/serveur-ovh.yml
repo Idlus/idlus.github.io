@@ -283,6 +283,8 @@ jobs:
             (select left(regexp_replace(b.why, '^[^:]{1,20} : ', '<héros> : '), 110) from mono.bouclier b where b.user_id = o.user_id and b.saison = o.saison order by b.at desc limit 1) dernier_refus,
             (select coalesce(sum(v.n), 0) from mono.verifs v where v.user_id = o.user_id and v.etat = 'note') notes_7j
             from mono.parties_ok o join public.profiles p on p.id = o.user_id left join mono.parties m on m.user_id = o.user_id and m.saison = o.saison order by k desc nulls last"
+          echo '== CLASSIQUE historique des refus (7 j, comptes refusés)'
+          bash tools/serveur/vps_sql.sh lecture "select left(user_id::text, 8) id, regexp_replace(regexp_replace(why, '^[^:]{1,20} : ', '<héros> : '), '[0-9][0-9  ,.]*', '#', 'g') raison, count(*) n, min(at) premier, max(at) dernier, (array_agg(left(regexp_replace(why, '^[^:]{1,20} : ', '<héros> : '), 110) order by at))[1] exemple from public.bouclier_log where at > now() - interval '7 days' group by 1, 2 order by 1, 4"
           echo '== MONOCOMPTE refus sans partie validée'
           bash tools/serveur/vps_sql.sh lecture "select left(b.user_id::text, 8) id, b.saison, count(*) n, max(b.at) dernier from mono.bouclier b where not exists (select 1 from mono.parties_ok o where o.user_id = b.user_id and o.saison = b.saison) group by 1, 2 order by 3 desc"
       - name: Bouclier (lecture seule, sans pseudo)
