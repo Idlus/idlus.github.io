@@ -1,0 +1,26 @@
+# Actions libres du robot sur le serveur Discord (lire, créer ou modifier salons, rôles, messages, fils…), lancement manuel. Nécessite le secret DISCORD_BOT_TOKEN.
+# Format des actions : voir l'en-tête de tools/discord_actions.js.
+name: Actions sur le Discord
+on:
+  workflow_dispatch:
+    inputs:
+      actions:
+        description: "Liste JSON des actions (ou vide pour utiliser le fichier)"
+        type: string
+        default: ""
+      fichier:
+        description: "Fichier JSON d'actions dans le dépôt (si « actions » est vide)"
+        type: string
+        default: ""
+jobs:
+  actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_actions.js $FICHIER
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_ACTIONS: ${{ inputs.actions }}
+          FICHIER: ${{ inputs.fichier }}
