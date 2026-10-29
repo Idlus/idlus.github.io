@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, codes-actifs]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -414,3 +414,13 @@ jobs:
           bash tools/serveur/vps_sql.sh commande "echo '== Fonction record (journal récent)'; docker logs --since 60m supabase-edge-functions 2>&1 | grep -iE 'error|erreur|exception|limit|timeout|boot' | tail -40; echo '== Routeur des fonctions (limites)'; grep -nE 'Limit|Timeout|userWorkers.create|EdgeRuntime' volumes/functions/main/index.ts; docker inspect supabase-edge-functions --format '{{json .Config.Cmd}} {{json .Config.Image}}'"
           bash tools/serveur/vps_sql.sh lecture "select n, count(*) as essais, max(at) as dernier from public.wb_hits where at > now() - interval '3 hours' group by n order by n"
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from auth.users where last_sign_in_at > now() - interval '2 hours') as connexions_2h, (select count(*) from public.saves where updated_at > now() - interval '15 minutes') as envois_15min, (select count(*) from public.saves where updated_at > now() - interval '1 hour') as envois_1h"
+      - name: Codes cadeaux encore actifs (lecture seule)
+        # 29/10/2026 : liste demandée par Mathis (thread « Lister les codes cadeaux actifs »). Rien n'est modifié.
+        if: inputs.etape == 'codes-actifs'
+        run: |
+          echo '== Codes actifs (non expirés, utilisations restantes)'
+          bash tools/serveur/vps_sql.sh lecture "select code, reward, msg, uses, max_uses, case when max_uses is null then null else max_uses - uses end restantes, ends fin, accounts_only comptes_seuls, created_at::date cree from public.gift_codes where active and (ends is null or ends >= (now() at time zone 'Europe/Paris')::date) and (max_uses is null or uses < max_uses) order by created_at"
+          echo '== Codes inactifs, expirés ou épuisés (nombre)'
+          bash tools/serveur/vps_sql.sh lecture "select count(*) filter (where not active) desactives, count(*) filter (where ends < (now() at time zone 'Europe/Paris')::date) expires, count(*) filter (where max_uses is not null and uses >= max_uses) epuises, count(*) total from public.gift_codes"
+          echo '== Tables de codes dans les autres schémas (Monocompte)'
+          bash tools/serveur/vps_sql.sh lecture "select table_schema, table_name from information_schema.tables where table_name ilike '%gift%' or table_name ilike '%code%'"
