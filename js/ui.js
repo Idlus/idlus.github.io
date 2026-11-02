@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.42.1";
+const GAME_VERSION = "2.1.42.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.42.2", name: "Le hub de la Saison 1", items: [
+    "Préparation de la Saison 1 : le futur écran de choix du serveur (Éternel, Classique · Saison 1, Monocompte) est prêt en coulisses. Rien ne change pour l'instant, il s'ouvrira avec la saison",
+  ] },
   { v: "2.1.42.1", name: "Le Village de l'Horloge", items: [
     "Nouvelle musique sur la page d'accueil : « Le Village de l'Horloge », le premier air de la Saison 1. Sa partition rejoint le juke-box (Options › Sons) après quelques secondes sur l'accueil",
     "Les autres pages gardent leur air : la zone de chasse, le donjon et le Havre-Sac se trouvent toujours sur la page Combat et au Havre-Sac",
@@ -3268,7 +3271,7 @@ function statusHtmlFull() {
    rien ne passe d'un serveur à l'autre, et le Monocompte retrouve ses pages et modules scellés au chargement). */
 const swapTo = () => { if (!S || !menuOn() || TESTMODE) return 0; if (monoSlot(SLOT)) { const c = +menuPref().lastCl; return [1, 2, 3].includes(c) ? c : 1; } return monoOk() ? MONO_SLOT : 0; };
 const swapBtn = () => { const to = swapTo(); if (!to) return ""; const mo = to === MONO_SLOT;
-  return `<button class="it swapb ${mo ? "to-mo" : "to-cl"}" data-act="sv-swap" data-tip="${h(mo ? "Passer au serveur Monocompte : ta partie Classique est sauvegardée et envoyée avant." : `Revenir au serveur Classique (${partName(to)}) : ta partie Monocompte est sauvegardée et envoyée avant.`)}" aria-label="${mo ? "Passer au Monocompte" : "Revenir au Classique"}">⇄ <span class="sw-lg">${mo ? "⭐ Monocompte" : "🌍 Classique"}</span><span class="sw-sm">${mo ? "⭐" : "🌍"}</span></button>`; };
+  return `<button class="it swapb ${mo ? "to-mo" : "to-cl"}" data-act="sv-swap" data-tip="${h(mo ? `Passer au serveur Monocompte : ta partie ${clNom()} est sauvegardée et envoyée avant.` : `Revenir au serveur ${clNom()} (${partName(to)}) : ta partie Monocompte est sauvegardée et envoyée avant.`)}" aria-label="${mo ? "Passer au Monocompte" : `Revenir au ${clNom()}`}">⇄ <span class="sw-lg">${mo ? "⭐ Monocompte" : `🌍 ${clNom()}`}</span><span class="sw-sm">${mo ? "⭐" : "🌍"}</span></button>`; };
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabMal = (v, l) => `−${Math.round((1 - E.sabLootAt(v, l == null ? E.sabMtLvl(S) : l)) * 100)} %`; // 2.1.22 : malus de butin du Sablier (2.1.27 : selon la Maîtrise du temps)
 const sabSpds = () => [1, 2, 3, 4].slice(0, E.sabMaxSpd(S));
@@ -3445,11 +3448,11 @@ const startMono = () => SLOT === MONO_SLOT || (srvFirst() && ui.startSrv === "mo
 const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, échanges et HdV : avec le serveur Monocompte, bientôt`];
 function srvPick() {
   if (!menuOn() || TESTMODE) return "";
-  if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur Classique ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
+  if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur ${clNom()} ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
   if (!srvFirst()) return "";
   const on = ui.startSrv === "mono" ? "mono" : "cl";
   return `<div class="panel"><div class="pad stack"><h2>Choisis ton serveur</h2><div class="srvpick">
-    <button class="srvc ${on === "cl" ? "on" : ""}" data-act="startsrv" data-v="cl" aria-pressed="${on === "cl"}"><span class="srvh">🌍 Classique</span><span class="srvwho">L'aventure complète, avec toute ton équipe</span><ul class="srvul"><li>Jusqu'à 19 héros, 8 en combat</li><li>Classements, Hôtel de vente, guildes, Kolizéum</li><li>Alliances et Boss des mondes</li></ul></button>
+    <button class="srvc ${on === "cl" ? "on" : ""}" data-act="startsrv" data-v="cl" aria-pressed="${on === "cl"}"><span class="srvh">🌍 ${clNom()}</span><span class="srvwho">L'aventure complète, avec toute ton équipe</span><ul class="srvul"><li>Jusqu'à 19 héros, 8 en combat</li><li>Classements, Hôtel de vente, guildes, Kolizéum</li><li>Alliances et Boss des mondes</li></ul></button>
     <button class="srvc ${on === "mono" ? "on" : ""}" data-act="startsrv" data-v="mono" aria-pressed="${on === "mono"}"><span class="srvh">⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></span><span class="srvwho">Tout le monde repart de 0, à égalité</span><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul></button>
   </div><span class="small muted">Tu peux jouer sur les deux : chaque serveur garde sa propre partie (Options › Sauvegarde › Changer de partie).</span></div></div>`;
 }
@@ -11424,6 +11427,14 @@ const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-et
 /* 2.1.33 bêta fermée du Monocompte (Mathis 21/10) : la partie n'apparaît qu'aux testeurs (code dans Options › Compte),
    aux admins, ou quand elle existe déjà sur l'appareil. Elle sera remise à zéro avant l'ouverture de la Saison 1. */
 const MONO_BETA = { on: true, key: "idlus-mono-beta", hash: "47db16f5" };
+/* Saison 1, lot 0 (Mathis 02/11, « lance le lot 0 ») : règles de saison. Tant que S1.open est faux, rien ne change pour les joueurs :
+   le Classique garde son nom et l'écran de choix reste celui d'avant. L'aperçu (adresse ?apercu=s1, ?apercu=off pour l'enlever)
+   montre déjà le hub de la saison : Éternel (le Classique renommé, avec l'Éternel du Monocompte), Classique · Saison 1 et Monocompte · Saison 1. */
+const S1 = { open: false, key: "idlus-apercu-s1", nom: "Saison 1" };
+try { const q = new URLSearchParams(location.search).get("apercu"); if (q === "s1") localStorage.setItem(S1.key, "1"); else if (q === "off") localStorage.removeItem(S1.key); } catch (e) {}
+const s1Apercu = () => { try { return localStorage.getItem(S1.key) === "1"; } catch (e) { return false; } };
+const s1Vue = () => S1.open || s1Apercu();
+const clNom = () => (s1Vue() ? "Éternel" : "Classique"); // nom du serveur des parties 1 à 3
 const codeHash = (t) => { let x = 5381; for (const ch of String(t).trim().toUpperCase()) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(16).padStart(8, "0"); };
 let monoCleBusy = false; // clé bêta envoyée au serveur, réponse attendue
 const monoBetaFlag = () => { try { return localStorage.getItem(MONO_BETA.key) === "1"; } catch (e) { return false; } };
@@ -11604,6 +11615,20 @@ function slotCard(sl) {
   }
   return `<div class="svc2${last ? " last" : ""}" data-slot="${n}" style="--cc:${cls.color}">${last ? `<span class="lastb">Dernière jouée</span>` : ""}${head}${mid}${foot}</div>`;
 }
+/* Saison 1, lot 0 : hub du choix de serveur (images ChatGPT validées par Mathis le 02/11, « 8A »). Les parties ne changent pas de place :
+   1 à 3 et l'Éternel du Monocompte (101…) sous Éternel, la partie 4 sous Monocompte. Le Classique de saison s'ouvrira avec la saison. */
+function hubHtml() {
+  const srv = (img, cls, nom, tag, txt) => `<div class="hubsrv ${cls}"><img src="assets/s1/${img}.webp" alt="" loading="lazy"><div class="hs-tx"><h3>${nom}${tag ? ` <span class="srvtg">${h(tag)}</span>` : ""}</h3><span class="small muted">${txt}</span></div></div>`;
+  const cl = MENU.slots.filter((sl) => !monoSlot(sl.n) || isEter(sl.n)), mo = MENU.slots.filter((sl) => sl.n === MONO_SLOT);
+  return `<div class="hubtop" style="background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.55)),url(assets/s1/hub-1.webp)"><h2>Choisis ton serveur</h2>
+      <a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a></div>
+    ${srv("srv-1", "eter", "🌍 Éternel", "", "Ton monde de toujours : tes parties d'avant la Saison 1 gardent tout, sauf les classements. À la fin de chaque saison, tes héros de saison y arrivent avec leur niveau et leurs cosmétiques.")}
+    <div class="svgrid">${cl.map(slotCard).join("")}</div>
+    ${srv("srv-2", "s1", `⏳ Classique · ${S1.nom}`, S1.open ? "" : "À L'OUVERTURE", "Tout le monde repart de zéro avec 8 héros : classements de saison, Fragments du Temps et récompenses exclusives.")}
+    ${S1.open ? "" : `<div class="svgrid"><div class="hubsoon small muted">Cette partie s'ouvrira avec la Saison 1. Ta partie Éternel n'est pas touchée.</div></div>`}
+    ${monoOk() || mo.length ? `${srv("srv-3", "mono", `⭐ Monocompte · ${S1.open ? S1.nom : MONO_BETA.on ? "Bêta" : h(monoNom())}`, MONO_BETA.on ? "BÊTA FERMÉE" : "", MONO_BETA.on ? "Bêta fermée, sur clé bêta : des bugs sont possibles, et tout repart de zéro avant l'ouverture de la Saison 1." : "Un seul héros par saison, tout le monde repart de 0. À la fin de la saison, il rejoint l'Éternel.")}
+    <div class="svgrid mono">${mo.map(slotCard).join("")}</div>` : ""}`;
+}
 function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
@@ -11618,11 +11643,11 @@ function renderMenu() {
   const pref = menuPref();
   $("#main").innerHTML = `<section class="svm"><div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>${acc}
     ${MENU.msg ? `<div class="svmsg minus small" id="onMsg">${h(MENU.msg)}</div>` : `<span id="onMsg" class="minus small" hidden></span>`}
-    <div class="svtitle"><h2>Choisis ton serveur et ta partie</h2></div>
+    ${s1Vue() ? hubHtml() : `<div class="svtitle"><h2>Choisis ton serveur et ta partie</h2></div>
     <div class="svsrv"><h3>🌍 Classique</h3><span class="small muted">La partie 1 porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et le boss des mondes. Les parties 2 et 3 se jouent en solo.</span></div>
     <div class="svgrid">${MENU.slots.filter((sl) => !monoSlot(sl.n)).map(slotCard).join("")}</div>
     <div class="svsrv mono"><h3>⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h3><span class="small muted">${MONO_BETA.on ? "Bêta fermée, sur clé bêta : saison de test en temps réel, partie gardée par le serveur, groupes en direct au Bureau des Aventuriers. Des bugs sont possibles, et tout repart de zéro avant l'ouverture de la Saison 1." : "Un seul héros par saison, tout le monde repart de 0. À la fin d'une saison, le héros rejoint l'Éternel avec ses kamas et ses objets."}</span></div>
-    <div class="svgrid mono">${MENU.slots.filter((sl) => monoSlot(sl.n)).map(slotCard).join("")}</div>
+    <div class="svgrid mono">${MENU.slots.filter((sl) => monoSlot(sl.n)).map(slotCard).join("")}</div>`}
     <label class="svopt"><input type="checkbox" data-act="sv-auto" ${pref.auto ? "checked" : ""}> Ouvrir directement ma dernière partie</label>
     <div class="svfoot">Pour revenir ici en jeu : ${G("gear", "opt-in")}Options › ${ON ? "Compte" : "Sauvegarde"} › Changer de partie. Version ${GAME_VERSION}</div></section>`;
 }

@@ -1,6 +1,13 @@
 {
-  "version": "2.1.42.1",
+  "version": "2.1.42.2",
   "versions": [
+    {
+      "v": "2.1.42.2",
+      "name": "Le hub de la Saison 1",
+      "items": [
+        "Préparation de la Saison 1 : le futur écran de choix du serveur (Éternel, Classique · Saison 1, Monocompte) est prêt en coulisses. Rien ne change pour l'instant, il s'ouvrira avec la saison"
+      ]
+    },
     {
       "v": "2.1.42.1",
       "name": "Le Village de l'Horloge",

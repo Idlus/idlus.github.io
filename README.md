@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.42.2 « Le hub de la Saison 1 »
+- Saison 1, lot 0 (Mathis 02/11 « lance le lot 0 ») : règles de saison dans `js/ui.js` (`S1.open`, faux tant que la saison n'est pas ouverte ; aperçu par l'adresse `?apercu=s1`, retiré par `?apercu=off`).
+- Hub du choix de serveur (`hubHtml`) : bannière et images de serveurs générées avec ChatGPT (`assets/s1/`), Éternel (parties 1 à 3 et l'Éternel du Monocompte), Classique · Saison 1 (à l'ouverture), Monocompte. `clNom()` : « Classique » devient « Éternel » à l'ouverture (bouton ⇄, choix du premier lancement).
+
 ## 2.1.42.1 « Le Village de l'Horloge »
 - Demande de Mathis (02/11) : intégrer tout de suite la boucle calme qu'il a générée avec Suno pour la Saison 1.
 - `assets/son/horloge.mp3` (128 kb/s, 2 min 43, fin en fondu). `js/musique.js` : airs enregistrés `FILES` joués en boucle par un élément audio branché sur le bus de la musique (même volume, même coupure), gain 0,73 pour s'aligner sur les airs composés.
