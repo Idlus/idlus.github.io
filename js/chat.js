@@ -491,7 +491,7 @@
     if (A.tab === "equipe") A.mods = await r("adm_mods");
     if (A.tab === "mann") A.anns = await ON.announces(); // 2.1.36
     if (A.tab === "mchat") await loadPin();
-    if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); if (window.PLUIE) await window.PLUIE.admLoad(); } // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
+    if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); if (window.PLUIE) await window.PLUIE.admLoad(); A.votes = (await ON.rpc("adm_votes")).data || null; } // 02/11 : votes sur Dofus Fan Games (supabase/vote.sql), sans message si absent // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
     if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
@@ -578,6 +578,7 @@
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
         ${loopBox()}
         <div id="plAdm">${window.PLUIE ? window.PLUIE.adminBox() : ""}</div>
+        ${A.votes && typeof A.votes === "object" && !Array.isArray(A.votes) ? `<div class="box"><h2>Votes sur Dofus Fan Games</h2><div class="small">Votes récompensés : <b class="num">${A.votes.jour || 0}</b> aujourd'hui · <b class="num">${A.votes.sept || 0}</b> en 7 jours (${A.votes.joueurs || 0} joueurs) · <b class="num">${A.votes.trente || 0}</b> en 30 jours</div></div>` : ""}
         <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).filter((x) => x.srv !== "m").map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
     }
     if (A.tab === "mchat") return monoChatHtml();

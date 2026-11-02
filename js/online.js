@@ -440,6 +440,16 @@
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
+  /* 02/11 : récompense de vote sur Dofus Fan Games (supabase/functions/vote) : la fonction vérifie le vote avec l'adresse IP. */
+  ON.vote = async () => {
+    if (!sb || !ON.user) return { ok: false, err: "Connecte-toi à ton compte pour récupérer la récompense de vote." };
+    if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("vote", { body: { claim: 1 } }), 20000);
+      if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} return j && j.err ? j : { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." }; }
+      return data || { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." };
+    } catch (e) { return { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." }; }
+  };
   /* 0.1.44 : Kolizéum. { opps: 1, r } : 3 adversaires ; { fight: { id | slot }, r } : un combat classé (joué par le serveur). */
   ON.koli = (body) => ON.submitGuild({ koli: body });
   ON.koliMe = async (w) => { const r = await rpc("koli_me", { p_w: w }); return r.err ? null : r.data; };

@@ -3454,6 +3454,18 @@ button.pchip{color:var(--ink);cursor:pointer;font:inherit;font-size:13px}
 .dcline:hover{border-color:#5865f2}
 .dc-i{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#5865f2;color:#fff;flex:none}
 .dc-i svg{width:18px;height:18px}
+/* 02/11 : vote sur Dofus Fan Games (js/vote.js), même ligne que le Discord */
+.vtline{margin-top:8px}.vtline:hover{border-color:var(--gold)}.vtline .vt-i{background:color-mix(in srgb,var(--gold) 70%,#000);font-size:16px}
+.vt-b{display:flex;gap:6px;flex:none}.vtline.done{opacity:.85}
+.vt-hero{border-color:color-mix(in srgb,var(--gold) 55%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 14%,var(--panel)),var(--panel))}
+.vt-rew{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.vt-rew-l{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:16px;margin-top:2px}.vt-rew-l .uico{width:20px;height:20px;vertical-align:-4px}
+.vt-btns{gap:8px}.vt-big{padding:10px 16px;font-size:15px}.vt-wait{font-size:15px}
+.vt-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}.vt-stats span{display:flex;flex-direction:column;padding:8px;border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,transparent)}.vt-stats b{font-size:22px}.vt-stats small{font-size:12px;opacity:.75}
+.vt-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.vt-days span{display:flex;flex-direction:column;align-items:center;padding:5px 0;border-radius:8px;border:1px solid var(--frame);opacity:.6}.vt-days span.on{opacity:1;border-color:var(--gold);background:color-mix(in srgb,var(--gold) 15%,transparent)}.vt-days b{min-height:18px}.vt-days small{font-size:11px}
+.vt-paliers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.vt-paliers span{display:flex;flex-direction:column;padding:6px 8px;border-radius:10px;border:1px dashed var(--frame);font-size:13px}.vt-paliers span.on{border-style:solid;border-color:var(--gold)}.vt-paliers small{opacity:.8}
+.vt-rk{width:22px;text-align:center;color:var(--gold)}
+@media (max-width:600px){.vt-big{flex:1 1 100%;text-align:center}.vtline .vt-b .btn{padding:6px 8px}}
 .dcline b{color:var(--gold);white-space:nowrap}
 @media (max-width:700px){
   .ac-ban .inner{gap:12px}

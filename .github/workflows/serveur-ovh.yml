@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -274,6 +274,19 @@ jobs:
           echo '== Parties validées'
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from public.saves where updated_at > now() - interval '1 hour') envois_1h, (select count(*) from public.saves_ok where at > now() - interval '1 hour') valides_1h, (select count(*) from public.saves s join public.saves_ok o using (user_id) where s.updated_at > o.src_at + interval '30 minutes' and s.updated_at > now() - interval '2 hours') en_retard, (select max(at) from public.saves_ok) derniere_validation"
           bash tools/serveur/vps_sql.sh commande "echo '== Fonction record (2 h)'; docker logs --since 120m supabase-edge-functions 2>&1 | grep -iE 'error|erreur|exception|limit|timeout|boot' | tail -40"
+      - name: Vote sur Dofus Fan Games, clé de l'API (secret DFG_VOTE_KEY, jamais affichée)
+        # 02/11/2026 : récompense de vote (supabase/vote.sql, supabase/functions/vote). À lancer une fois après « Serveur en ligne »,
+        # et de nouveau si Mathis change la clé sur le site. La clé n'est écrite que dans public.vote_cfg (lisible par la seule fonction).
+        if: inputs.etape == 'vote-cle'
+        env:
+          CLE: ${{ secrets.DFG_VOTE_KEY }}
+        run: |
+          CLE=$(printf '%s' "$CLE" | tr -d '[:space:]'); CLE=${CLE##*/servers/}; CLE=${CLE%%/*}
+          if ! printf '%s' "$CLE" | grep -qE '^[A-Za-z0-9_-]{8,200}$'; then echo "Secret DFG_VOTE_KEY absent ou illisible (la clé seule, sans l'adresse)." >&2; exit 1; fi
+          printf "update public.vote_cfg set cle = \$cle\$%s\$cle\$, actif = true where id = 1;\n" "$CLE" > /tmp/cle.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/cle.sql; rm -f /tmp/cle.sql
+          bash tools/serveur/vps_sql.sh lecture "select (cle is not null) as cle_posee, actif, length(cle) as longueur from public.vote_cfg"
+          bash tools/serveur/vps_sql.sh commande 'ls -l volumes/functions/vote/ && docker logs --since 10m supabase-edge-functions 2>&1 | grep -iE "vote" | grep -iE "error|erreur|exception" | tail -10'
       - name: Monocompte, lot 3 (sauvegarde de la base, 5 fichiers SQL, fonction « mono », saison de test)
         # 21/10/2026, ordre écrit de Mathis : « Installe le lot 3 Monocompte sur le serveur ». Lancé depuis la branche de la bêta.
         # Ne touche ni aux tables du Classique ni à la fonction « record ».

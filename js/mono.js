@@ -103,7 +103,7 @@
   M.FN = new Set(["mono"]); // fonctions du serveur (functions.invoke) : « record » est celle du Classique
   E.monoRpcOk = (name) => M.RPC.test(String(name || ""));
   /* modules du Classique éteints dans une partie Monocompte (window.X = null : leurs encarts, minuteurs et appels ne partent pas) */
-  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "WBUI", "SGUI", "ASCUI", "FOIREUI", "VENTEUI", "BUILDS", "GIGA", "CPTUI", "ELEVUI", "DGRANK"];
+  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "VOTE", "WBUI", "SGUI", "ASCUI", "FOIREUI", "VENTEUI", "BUILDS", "GIGA", "CPTUI", "ELEVUI", "DGRANK"];
 
   /* dans le jeu (une partie par page) : la partie Monocompte limite l'équipe à 1 héros et les emplacements de Dofus à 3 */
   E.monoBoot = (S) => { if (!E.isMono(S)) return; E.HERO_MAX = 1; E.TEAM_MAX = 1; if (E.KOLI) E.KOLI.size = 1; /* Kolizéum en 1 contre 1 */ if (DOFUS_SLOTS.length > M.dofus) DOFUS_SLOTS.splice(M.dofus); };
