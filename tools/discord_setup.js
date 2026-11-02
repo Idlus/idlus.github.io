@@ -1,32 +1,35 @@
-/* Met en place le serveur Discord d'idlus avec un robot : catégories, salons, rôles, permissions, textes d'accueil, communauté et accueil des nouveaux.
+/* Met en place le serveur Discord d'Ombrelune Studio (le studio de Mathis : idlus et ses futurs jeux) avec un robot : catégories, salons, rôles, permissions, textes d'accueil, communauté et accueil des nouveaux.
    On peut le relancer sans risque : il ne crée que ce qui manque, retrouve les salons par leur nom et met à jour ses propres messages épinglés et n'écrit pas dans un salon où quelqu'un d'autre a écrit.
    Usage : DISCORD_BOT_TOKEN=... [DISCORD_GUILD_ID=...] node tools/discord_setup.js   (sans jeton : affiche seulement le plan) */
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
+const SERVER = "Ombrelune Studio";
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
-const WELCOME = `# Bienvenue sur le Discord d'idlus !
-**idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
+const WELCOME = `# Bienvenue chez Ombrelune Studio !
+🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan. Ce serveur réunit tous ses jeux : **idlus** aujourd'hui, et bientôt un nouveau jeu en préparation (suis-le dans <#NEXT>).
+
+⚔️ **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
 
 🎮 **Jouer** : ${GAME}
 Le jeu est en ligne : connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel de vente, rejoindre une guilde et entrer dans les classements. Le Sablier de Xélor fait filer le temps ×2 ou ×3 quand tu veux avancer plus vite.
 🧪 **Version de test** : ${BETA}
 Les nouveautés y arrivent en premier, à tester hors ligne avant leur sortie.
 
-📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>.
+📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS>.
 🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
 🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
 🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
 🧪 **Rôle Testeur, c'est toi qui choisis** : clique sur **Salons et rôles** tout en haut de la liste des salons, puis coche ou décoche « Tester les nouveautés en avant-première ». Ce rôle ouvre les salons de la version de test et te prévient de ses nouveautés. Tu peux changer d'avis quand tu veux, pareil pour 🔔 « Être prévenu à chaque mise à jour ».
 
-*idlus est un projet de fan non officiel, sans lien avec Ankama.*`;
+*Les jeux d'Ombrelune Studio sont des projets de fan non officiels : idlus n'a aucun lien avec Ankama.*`;
 const RULES = `# Règles du serveur
 **1.** Respecte tout le monde : pas d'insultes, de harcèlement ni de propos discriminatoires.
 **2.** Pas de spam, de flood ni de mentions en masse.
 **3.** Pas de publicité ni de liens vers d'autres serveurs sans accord.
-**4.** Reste dans le bon salon : bugs dans <#BUGS>, idées dans <#IDEAS>, discussion libre dans <#CHAT>.
+**4.** Reste dans le bon salon : chaque jeu a sa catégorie ; pour idlus, bugs dans <#BUGS> et idées dans <#IDEAS>. Discussion libre dans <#CHAT>.
 **5.** Pas de triche partagée publiquement ni de fichiers douteux.
 **6.** Écris de préférence en français.
 
@@ -49,6 +52,9 @@ Sans dates : chaque partie sort quand elle est prête.
 
 **🚀 Version 1.0**
 • Les testeurs qui ont le rôle Pionnier reçoivent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
+const NEXT_TXT = `# Un nouveau jeu en préparation
+Ombrelune Studio prépare son prochain jeu : une aventure sombre où l'on part de rien pour devenir le plus fort.
+Il n'a pas encore de nom ni de date. Les premières images et les nouvelles arriveront ici en premier. Pour en parler, rendez-vous dans <#CHAT>.`;
 const BETA_TXT = `# Version de test
 ${BETA}
 Les nouveautés arrivent ici avant le jeu public. La version de test n'a pas de serveur : en l'ouvrant, choisis « Tester hors ligne » (ta partie de test reste sur ton appareil) ou « Jouer en ligne » pour revenir au jeu public.
@@ -64,30 +70,32 @@ const ROLES = [
   { key: "notif", name: "Notif mises à jour", color: 0, mentionable: true },
 ];
 // lock : lecture seule pour @everyone ; only : visible seulement par ces rôles
-const PLAN = [
-  { cat: "📌 Bienvenue", lock: true, chans: [
-    { key: "WELCOME", name: "bienvenue", topic: "Présentation du jeu et liens utiles", text: WELCOME },
-    { key: "RULES", name: "règles", topic: "À lire avant de participer", text: RULES } ] },
-  { cat: "📢 Infos", lock: true, chans: [
-    { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'idlus" },
-    { key: "UPDATES", name: "note-de-mise-a-jour", topic: "Notes de chaque mise à jour, publiées automatiquement" },
-    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui est déjà dans le jeu et ce qui arrive", text: ROADMAP },
-    { key: "ALMANAX", name: "almanax", topic: "Le bonus et l'offrande du jour, publiés chaque matin" } ] },
+const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
+  { cat: "🌙 Ombrelune Studio", old: ["📌 Bienvenue"], lock: true, chans: [
+    { key: "WELCOME", name: "bienvenue", topic: "Présentation du studio, de ses jeux et liens utiles", text: WELCOME },
+    { key: "RULES", name: "règles", topic: "À lire avant de participer", text: RULES },
+    { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'Ombrelune Studio et de ses jeux" } ] },
   { cat: "💬 Communauté", chans: [
-    { key: "CHAT", name: "général", topic: "Discussion libre autour d'idlus" },
-    { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs" },
+    { key: "CHAT", name: "général", topic: "Discussion libre entre joueurs de tous les jeux du studio" },
+    { key: "VOICE", name: "Général", type: VOICE } ] },
+  { cat: "⚔️ idlus", old: ["📢 Infos"], chans: [
+    { key: "UPDATES", name: "note-de-mise-a-jour", lock: true, topic: "Notes de chaque mise à jour d'idlus, publiées automatiquement" },
+    { key: "ROADMAP", name: "feuille-de-route", lock: true, topic: "Ce qui est déjà dans idlus et ce qui arrive", text: ROADMAP },
+    { key: "ALMANAX", name: "almanax", lock: true, topic: "Le bonus et l'offrande du jour d'idlus, publiés chaque matin" },
+    { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs d'idlus" },
     { key: "BUILDS", name: "builds-et-équipes", topic: "Partage tes compositions (bouton « Partager le build » dans le jeu)" },
     { key: "SHOTS", name: "captures", topic: "Montre tes héros, trophées et ton Havre-Sac. Les aperçus des prochaines nouveautés arrivent aussi ici" },
-    { key: "POLLS", name: "sondages", topic: "Les sondages du jeu : votez pour orienter les prochaines mises à jour" },
-    { key: "VOICE", name: "Général", type: VOICE } ] },
-  { cat: "🛠️ Retours", chans: [
+    { key: "POLLS", name: "sondages", topic: "Les sondages d'idlus : votez pour orienter les prochaines mises à jour" } ] },
+  { cat: "🛠️ Retours idlus", old: ["🛠️ Retours"], chans: [
     { key: "BUGS", name: "bugs", type: FORUM, topic: "Un fil par bug : ce que tu faisais, ce qui s'est passé, une capture si possible.",
       tags: [["Ouvert", "🔴"], ["En cours", "🟡"], ["Corrigé", "🟢"], ["Pas un bug", "⚪"]] },
     { key: "IDEAS", name: "idées", type: FORUM, topic: "Une idée par fil. Votez avec 👍 pour les idées que vous voulez voir dans le jeu.",
       tags: [["Combat", "⚔️"], ["Équipement", "🛡️"], ["Interface", "🖥️"], ["Contenu", "🗺️"], ["Retenue", "✅"]] } ] },
-  { cat: "🧪 Bêta", only: ["tester", "mod", "creator"], chans: [
+  { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["tester", "mod", "creator"], chans: [
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
+  { cat: "🌑 Nouveau jeu", lock: true, chans: [
+    { key: "NEXT", name: "en-préparation", topic: "Le prochain jeu d'Ombrelune Studio : les nouvelles arrivent ici", text: NEXT_TXT } ] },
   { cat: "🔐 Équipe", only: ["mod", "creator"], chans: [
     { key: "MODS", name: "modération", topic: "Salon privé de l'équipe" },
     { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
@@ -113,6 +121,7 @@ async function main() {
   let gid = process.env.DISCORD_GUILD_ID;
   if (!gid) { const gs = await api("GET", "/users/@me/guilds"); if (gs.length !== 1) throw new Error(`Le robot est sur ${gs.length} serveurs : précise DISCORD_GUILD_ID.`); gid = gs[0].id; }
   const guild = await api("GET", `/guilds/${gid}`); console.log("Serveur :", guild.name);
+  if (guild.name !== SERVER) { await api("PATCH", `/guilds/${gid}`, { name: SERVER }); console.log("Serveur renommé :", SERVER); }
   if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/discord.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
 
   const roles = {}; const have = await api("GET", `/guilds/${gid}/roles`);
@@ -131,6 +140,8 @@ async function main() {
     let pos = 0;
     for (const s of PLAN) {
       let cat = find(s.cat, CAT);
+      const was = !cat && (s.old || []).map((n) => find(n, CAT)).find(Boolean);
+      if (was) { cat = was; await api("PATCH", `/channels/${cat.id}`, { name: s.cat }); cat.name = s.cat; console.log("  catégorie renommée :", s.cat); }
       if (!cat) { cat = await api("POST", `/guilds/${gid}/channels`, { name: s.cat, type: CAT, permission_overwrites: overwrites(gid, roles, s, {}) }); chans.push(cat); console.log("  catégorie créée :", s.cat); }
       await api("PATCH", `/channels/${cat.id}`, { position: pos++, permission_overwrites: overwrites(gid, roles, s, {}) });
       let cpos = 0;
@@ -190,7 +201,7 @@ async function main() {
   } catch (e) { console.log("AutoMod non configuré :", e.message); }
 
   try { // règles à accepter avant de pouvoir écrire (filtrage des nouveaux membres)
-    await api("PATCH", `/guilds/${gid}/member-verification`, { enabled: true, description: "Bienvenue sur le Discord d'idlus ! Lis et accepte les règles pour pouvoir écrire.",
+    await api("PATCH", `/guilds/${gid}/member-verification`, { enabled: true, description: "Bienvenue chez Ombrelune Studio ! Lis et accepte les règles pour pouvoir écrire.",
       form_fields: [{ field_type: "TERMS", label: "J'ai lu et j'accepte les règles du serveur", required: true,
         values: RULES.split("\n").filter((l) => /^\*\*\d/.test(l)).map((l) => fill(l.replace(/^\*\*\d+\.\*\* /, ""), ids).replace(/<#\d+>/g, (m) => "#" + (chans.find((c) => `<#${c.id}>` === m) || {}).name)) }] });
     console.log("Règles à accepter avant d'écrire : activé.");
