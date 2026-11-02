@@ -315,8 +315,9 @@
     boss:        "Contre un boss",
     no_summon:   "Si je n'ai pas d'invocation",
     ally_shield: "Si un allié n'a pas de bouclier",
+    boss_prep:   "Si le boss prépare un coup (sinon, si un allié n'a pas de bouclier)",
   };
-  const TARGETS = { low: "PV les plus bas", high: "PV les plus hauts", boss: "Boss / le plus fort d'abord", mark: "Cible marquée ou vulnérable" };
+  const TARGETS = { low: "PV les plus bas", high: "PV les plus hauts", boss: "Boss / le plus fort d'abord", mark: "Cible marquée ou vulnérable", threat: "Le héros visé par le boss" };
 
   /* ---------- Métiers ---------- */
   const GATHER_NAMES = { paysan: "Paysan", bucheron: "Bûcheron", mineur: "Mineur", alchimiste: "Alchimiste", pecheur: "Pêcheur" };

@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 14; // 14 : refonte des alignements, le niveau d'alignement devient de l'honneur (20 rangs, js/honneur.js) ; // 13 : reset des Maîtrises (Maîtrise lente, choix de Mathis 16/10) ; 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
+  E.VERSION = 15; // 15 : boucliers automatiques en « Si le boss prépare un coup » (2.1.42) ; 14 : refonte des alignements, le niveau d'alignement devient de l'honneur (20 rangs, js/honneur.js) ; // 13 : reset des Maîtrises (Maîtrise lente, choix de Mathis 16/10) ; 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -265,7 +265,7 @@
     const g = E.spellGrade(sp, c.lvl); const k = E.spellKind(g);
     if (k === "heal") return "ally_low";
     if (k === "summon") return "no_summon";
-    if (k === "shield") return "ally_shield";
+    if (k === "shield") return "boss_prep"; // 2.1.42 : pare les coups annoncés du boss, sinon comme « un allié sans bouclier »
     if (k === "buff") return g.fx.some((f) => f.k === "buff" && f.st === "pui" && (f.t || 1) >= 3) ? "first_turn" : "always";
 
     return "always";
@@ -311,7 +311,8 @@
     const old = {}; (c.spells || []).forEach((x) => (old[x.id] = x));
     const order = { summon: 0, prot: 1, heal: 2, atk: 3, fill: 4 };
     pickd.sort((a, b) => order[a.cat] - order[b.cat] || b.sc - a.sc);
-    return pickd.map((x) => old[x.sp.id] || { id: x.sp.id, cond: defaultCond(x.sp, c), tgt: "low" });
+    return pickd.map((x) => { const o = old[x.sp.id]; if (o && x.k === "shield" && o.cond === "ally_shield") return Object.assign({}, o, { cond: "boss_prep", tgt: "threat" }); // 2.1.42
+      return o || { id: x.sp.id, cond: defaultCond(x.sp, c), tgt: x.k === "shield" ? "threat" : "low" }; });
   };
   /* sorts : sélection automatique tant que le joueur n'a rien modifié à la main */
   E.refreshSpells = (c, st) => {
@@ -1824,6 +1825,9 @@
       case "boss": return foes.some((f) => f.boss);
       case "no_summon": return !ownSums(F, F.ents.indexOf(e)).length;
       case "ally_shield": return allies.some((a) => !a.summon && !(a.shield > 0));
+      case "boss_prep": { const th = E.bossThreat(F); if (th) return th.ts.some((h) => !(h.shield > 0)); // 2.1.42 : le boss va frapper à son prochain tour
+        if (E.bossForecast(F).some((x) => x.kind === "strip" && x.in === 1)) return false; // ses boucliers seraient brisés ou volés : attendre
+        return allies.some((a) => !a.summon && !(a.shield > 0)); }
       default: return true;
     }
   };
@@ -1888,7 +1892,8 @@
     // sorts inutiles : ne pas les gaspiller
     if (kind === "heal" && !alive(F, "c").some((a) => a.hp < a.hpMax)) return { ok: false };
     if (kind === "summon" && ownSums(F, F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
-    if (kind === "shield" && !g.fx.some((f) => f.k === "shield" && (f.all ? allies.some((a) => !(a.shield > 0)) : !(e.shield > 0)))) return { ok: false };
+    const shT = kind === "shield" && slot && slot.tgt === "threat" ? E.threatTarget(F) || e : e; // 2.1.42 : bouclier sur le héros visé par le boss
+    if (kind === "shield" && !g.fx.some((f) => f.k === "shield" && (f.all ? allies.some((a) => !(a.shield > 0)) : !(shT.shield > 0)))) return { ok: false };
     if (kind === "buff") { // pas de bonus déjà actif, pas d'affaiblissement déjà posé sur la cible
       const bf = g.fx.filter((f) => f.k === "buff" && f.st !== "pa");
       if (bf.length && !g.fx.some((f) => f.k === "buff" && f.st === "pa") && bf.every((f) => (f.all ? allies : [e]).every((t) => (t.buffs || []).some((b) => b.name === sp.name && b.turns > 0)))) return { ok: false };
@@ -1935,7 +1940,7 @@
         ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) * (1 + ((e.mt && e.mt.h) || 0) / 100) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; eniSh += eniSurplus(F, e, t); /* Eniripsa : le soin en trop devient bouclier */ if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
-        const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * Math.max(0.1, 1 + ((e.mt && e.mt.h) || 0) / 100); // 2.1 : la Maîtrise « soins et boucliers » compte aussi pour les boucliers
+        const ts = f.all ? alive(F, "c") : [shT]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0)) * Math.max(0.1, 1 + ((e.mt && e.mt.h) || 0) / 100); // 2.1 : la Maîtrise « soins et boucliers » compte aussi pour les boucliers
         ts.forEach((t) => { t.shield = Math.max(t.shield || 0, Math.round(t.hpMax * f.pct / 100 * k * (F.roulette === "face" ? 1.15 : 1) * (F.idol && F.idol.shieldHalf ? 0.5 : 1))); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: `Bouclier ${t.shield}` }); });
         parts.push("bouclier"); ok = true;
       } else if (f.k === "buff") {
@@ -2266,7 +2271,7 @@
     if (e.paLoss >= 2) { attacks = Math.max(0, attacks - 1); flog(F, `${e.name} manque de PA et frappe moins.`, "dim"); }
     const lowPa = (e.paLoss === 1 ? 0.85 : 1) * (1 - (e.weakNext || 0) / 100); e.paLoss = 0; e.weakNext = 0;
     if (e.charging === "fire") { e.charging = false; const heroes = alive(F, "c"); flog(F, `${e.name} déclenche son attaque dévastatrice !`, "m");
-      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * (F.wboss && E.WB_CHARGE ? E.WB_CHARGE : 2.2) * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
+      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); parade(F, e, "charge", heroes, () => heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * (F.wboss && E.WB_CHARGE ? E.WB_CHARGE : 2.2) * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); })); return; }
     const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => (m.champ === "meneur" || m.role === "chef") && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
     const dmgSpells = (e.sp || []).filter((s) => s.fx.some((f) => f.k === "dmg" || f.k === "drain" || f.k === "dot"));
     const refAvg = dmgSpells.length ? dmgSpells.reduce((a, s) => a + avgDmg(s), 0) / dmgSpells.length : 1;
@@ -2344,13 +2349,58 @@
       say(`${e.name} se relève : ${n ? "forme finale" : "phase ultime"} ! Il gagne une mécanique.`, n ? "Forme finale" : "Phase ultime"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(e) });
     }
     if (k >= 12 && t >= U.enrT) { e.dmg *= (1 + U.enrStep * (t - U.enrT + 1)) / (1 + U.enrStep * (t - U.enrT)); if (t === U.enrT) say(`${e.name} s'enrage : ses dégâts montent à chaque tour !`, "Enrage"); }
-    if (k >= 13 && t % U.waveT === 0) { say(`${e.name} libère une onde ultime sur toute l'équipe !`, "Onde ultime"); hitAll(heroesOf(F), U.wave); }
+    if (k >= 13 && t % U.waveT === 0) { say(`${e.name} libère une onde ultime sur toute l'équipe !`, "Onde ultime"); hitAll(heroesOf(F), U.wave, "onde"); }
     if (k >= 14 && t === 1 && F.dungeonId) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, guardU: true, name: "Gardien ultime", hp: hpR(e) * U.guardHp, dmg: e.dmg * U.guardDmg }); say(`Deux gardiens protègent ${e.name} : il est invulnérable tant qu'ils sont debout !`, "Gardiens"); }
+  };
+  /* 2.1.42 « Le boss prévient » (Mathis 1A 2A 3A 4A, 02/11) : les mécaniques tombent à un tour fixe du boss, on peut donc
+     les annoncer à l'avance. E.bossForecast : ce que chaque boss va faire et dans combien de ses tours (1 = à son prochain tour).
+     kind : hit (coup à parer d'un bouclier), strip (boucliers brisés ou volés), ctrl (contrôle d'un héros), open (point faible),
+     warn (à surveiller), mark (va désigner une cible), info. Rien de tiré au hasard ici : l'affichage ne change pas le combat. */
+  const FC = [["seisme", 4, 0, "hit", "f"], ["maree", 3, 0, "hit", "b"], ["taureau", 3, 0, "hit", "low"],
+    ["brise", 3, 0, "strip"], ["aspiration", 3, 0, "strip"], ["larcin", 3, 0, "strip"],
+    ["terreur", 4, 3, "ctrl"], ["petrif", 3, 0, "ctrl"], ["glace", 3, 0, "ctrl"], ["dore", 4, 2, "ctrl"], ["mutisme", 4, 2, "ctrl"], ["racines", 3, 0, "ctrl"],
+    ["distorsion", 4, 0, "ctrl"], ["putrefaction", 4, 0, "ctrl"], ["tapis", 3, 0, "ctrl"], ["weakspot", 3, 0, "open"], ["reflet", 4, 0, "warn"], ["frenesie", 4, 0, "warn"],
+    ["abordage", 4, 0, "info"], ["devoreur", 3, 0, "info"], ["appetit", 3, 0, "info"], ["banquet", 3, 0, "info"], ["peau", 3, 1, "info"], ["humeurs", 3, 1, "info"], ["fournaise", 2, 1, "info"]];
+  const FC_RANK = { hit: 0, strip: 1, ctrl: 2, open: 3, warn: 4, mark: 5, info: 6 };
+  E.FC_NAMES = { onde: "Onde ultime", rebours: "Compte à rebours", horloge: "Horloge" };
+  E.bossForecast = (F) => {
+    const out = []; if (!F || !F.ents) return out;
+    const hs = heroesOf(F);
+    alive(F, "m").filter((m) => m.mech && m.mech.length).forEach((m) => {
+      const t = m.mturn || 0, mi = F.ents.indexOf(m), has = (k) => m.mech.includes(k);
+      const nx = (N, r) => { for (let d = 1; d <= N; d++) if ((t + d) % N === r) return d; return N; };
+      const name = (k) => (E.BOSS_MECHS[k] || {}).name || E.FC_NAMES[k] || k;
+      const add = (k, n, kind, who, ts) => out.push({ k, name: name(k), in: n, kind, who, ts: (ts || []).filter((h) => h && h.alive), mi, boss: m.name });
+      FC.forEach(([k, N, r, kind, w]) => { if (!has(k)) return;
+        const ts = w === "f" ? hs.filter((h) => rowOf(h) === "f") : w === "b" ? hs.filter((h) => rowOf(h) === "b") : w === "low" ? hs.slice().sort((a, b) => a.hpMax - b.hpMax).slice(0, 1) : [];
+        if (kind === "hit" && !ts.length) return;
+        add(k, nx(N, r), kind, w === "f" ? "la première ligne" : w === "b" ? "l'arrière" : w === "low" ? ts[0].name : "", ts); });
+      if (has("condamne")) { if (m.doom) { const h = F.ents[m.doom.i]; if (h && h.alive) add("condamne", Math.max(1, m.doom.t - t), "hit", h.name, [h]); } else add("condamne", nx(4, 1), "mark", "un héros", []); }
+      if (has("charge")) add("charge", m.charging === "ready" ? 1 : nx(3, 2) + 1, "hit", "toute l'équipe", hs);
+      if (has("inventions")) { alive(F, "m").filter((b) => b.bomb).forEach((b) => add("inventions", Math.max(1, b.fuse), "hit", "toute l'équipe", hs)); add("inventions", nx(4, 1), "mark", "une bombe", []); }
+      if (m.ult >= 13) add("onde", nx(E.ULT.waveT, 0), "hit", "toute l'équipe", hs);
+      ["rebours", "horloge"].forEach((k) => { if (has(k) && !m.isDouble && F.round < 20) add(k, 20 - F.round, "warn", "toute l'équipe", hs); });
+    });
+    return out.sort((a, b) => a.in - b.in || FC_RANK[a.kind] - FC_RANK[b.kind]);
+  };
+  /* le coup qui tombe au prochain tour d'un boss : les héros visés (consigne « Quand le boss prépare un coup ») */
+  E.bossThreat = (F) => { const L = E.bossForecast(F).filter((x) => x.kind === "hit" && x.in === 1 && x.ts.length); if (!L.length) return null; const ts = []; L.forEach((x) => x.ts.forEach((h) => { if (!ts.includes(h)) ts.push(h); })); return { ev: L[0], ts }; };
+  E.threatTarget = (F) => { const th = E.bossThreat(F); if (!th) return null; const L = th.ts.filter((h) => !(h.shield > 0)); return (L.length ? L : th.ts).slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; };
+  /* parade : tous les héros visés avaient un bouclier quand le coup est tombé */
+  const paraded = (F, e, k, hs, saved) => {
+    F.par = (F.par || 0) + 1; F.parAll = (F.parAll || 0) + 1; const nm = (E.BOSS_MECHS[k] || {}).name || E.FC_NAMES[k] || k;
+    F.parLast = { k, name: nm, round: F.round, seq: F.seq, saved: Math.round(saved), who: hs.map((h) => h.name), boss: e.name };
+    flog(F, `Parade : ${hs.length > 2 ? "l'équipe" : hs.map((h) => h.name).join(" et ")} ${hs.length > 1 ? "encaissent" : "encaisse"} ${nm} grâce ${hs.length > 1 ? "à leurs boucliers" : "à son bouclier"} (${Math.round(saved)} dégâts évités).`, "par");
+    hs.forEach((h) => F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(h), txt: "Parade !" }));
+  };
+  const parade = (F, e, k, list, fn) => {
+    const hs = (list || []).filter((h) => h && h.alive && !h.summon), b = hs.map((h) => h.shield || 0); fn(); if (!k || !hs.length) return;
+    if (b.every((x) => x > 0)) paraded(F, e, k, hs, b.reduce((a, x, i) => a + Math.max(0, x - (hs[i].shield || 0)), 0)); else F.parAll = (F.parAll || 0) + 1;
   };
   const bossMech = (S, F, e) => {
     e.mturn = (e.mturn || 0) + 1; const M = e.mech; const t = e.mturn; const has = (k) => M.includes(k); const ei = F.ents.indexOf(e); let skip = false;
     const say = (txt, tag) => { flog(F, txt, "m"); if (tag) F.fx.push({ seq: F.seq, k: "buff", t: ei, txt: tag }); };
-    const hitAll = (list, mult) => list.forEach((h) => { const d = dealDamage(F, e, h, e.dmg * mult * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!h.alive) flog(F, `${h.name} est à terre (−${d}).`, "ko"); });
+    const hitAll = (list, mult, k) => parade(F, e, k, list, () => list.forEach((h) => { const d = dealDamage(F, e, h, e.dmg * mult * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!h.alive) flog(F, `${h.name} est à terre (−${d}).`, "ko"); }));
     const victim = (list) => (list.length ? pick(list) : null);
     if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, hpR(e) * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: ei });
       if (F.dungeonId) for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); }
@@ -2380,7 +2430,8 @@
     if (has("fournaise") && t % 2 === 1) { e.openEl = pick(ELS4.filter((x) => x !== e.openEl)); say(`${e.name} ne craint plus que l'élément ${ELEMENTS[e.openEl].name}.`, ELEMENTS[e.openEl].name); }
     if (has("condamne")) {
       if (e.doom && e.doom.t <= t) { const h = F.ents[e.doom.i]; e.doom = null;
-        if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); } else { const d = dealDamage(F, e, h, e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5) * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
+        if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); paraded(F, e, "condamne", [h], Math.round(e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5))); }
+          else { F.parAll = (F.parAll || 0) + 1; const d = dealDamage(F, e, h, e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5) * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
       else if (!e.doom && t % 4 === 1) { const h = victim(heroesOf(F)); if (h) { e.doom = { i: F.ents.indexOf(h), t: t + 2 }; say(`${e.name} condamne ${h.name} : un bouclier sur lui avant 2 tours !`, "Condamnation"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(h), txt: "Condamné" }); } }
     }
     if (has("mutisme") && t % 4 === 2 && heroesOf(F).length > 1) { const h = victim(heroesOf(F)); if (h && !resists(h, "epa")) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
@@ -2394,7 +2445,7 @@
     if (has("totems") && (t === 1 || (t % 6 === 0 && !alive(F, "m").some((m) => m.totem)))) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, totem: true, name: "Totem", hp: hpR(e) * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} dresse deux totems : il est invulnérable tant qu'ils tiennent debout !`, "Totems"); }
     if (has("liens") && !e.linkDone) { e.linkDone = true; spawnMon(F, mobKey(F, e), e.lvl, { fake: true, linked: true, name: "Âme liée", hp: hpR(e) * 0.3 }); say(`${e.name} lie son âme à un serviteur : les dégâts sont partagés.`, "Âmes liées"); }
     if (has("inventions")) {
-      alive(F, "m").filter((m) => m.bomb).forEach((b) => { b.fuse--; if (b.fuse <= 0) { b.hp = 0; b.alive = false; flog(F, `La bombe de ${e.name} explose !`, "m"); hitAll(heroesOf(F), 2.5); } else flog(F, `Une bombe va exploser dans ${b.fuse} tour${b.fuse > 1 ? "s" : ""}.`, "m"); });
+      alive(F, "m").filter((m) => m.bomb).forEach((b) => { b.fuse--; if (b.fuse <= 0) { b.hp = 0; b.alive = false; flog(F, `La bombe de ${e.name} explose !`, "m"); hitAll(heroesOf(F), 2.5, "inventions"); } else flog(F, `Une bombe va exploser dans ${b.fuse} tour${b.fuse > 1 ? "s" : ""}.`, "m"); });
       if (t % 4 === 1) { spawnMon(F, mobKey(F, e), e.lvl, { fake: true, bomb: true, fuse: 3, name: "Bombe", hp: hpR(e) * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} pose une bombe : détruisez-la avant 3 tours !`, "Bombe"); }
     }
     if (has("double") && !e.isDouble && !e.doubled && e.hp < e.hpMax * 0.5) { e.doubled = true; const m = spawnMon(F, e.key, e.lvl, { fake: true, isDouble: true, name: `Double de ${e.name}`, hp: hpR(e) * 0.4, dmg: e.dmg * 0.7, mech: M.filter((x) => x !== "double"), mturn: 0 }); m.attacks = e.attacks; say(`${e.name} se dédouble !`, "Dédoublement"); }
@@ -2402,9 +2453,9 @@
       if (F.round >= 20) { heroesOf(F).concat(alive(F, "c").filter((h) => h.summon)).forEach((h) => { h.hp = 0; h.alive = false; killed(F, h); }); say(`${e.name} : le temps est écoulé, l'équipe est anéantie !`, "Temps écoulé"); return true; }
       if (F.round >= 15) say(`${e.name} : plus que ${20 - F.round} tour${20 - F.round > 1 ? "s" : ""} avant l'anéantissement !`);
     }
-    if (has("seisme") && t % 4 === 0) { const fr = alive(F, "c").filter((h) => rowOf(h) === "f"); if (fr.length) { say(`${e.name} fait trembler le sol sous la première ligne !`, "Séisme"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(fr, 1.6); skip = true; } }
-    if (has("maree") && t % 3 === 0) { const bk = heroesOf(F).filter((h) => rowOf(h) === "b"); if (bk.length) { say(`La marée de ${e.name} submerge l'arrière !`, "Marée"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(bk, 1.4); skip = true; } }
-    if (has("taureau") && t % 3 === 0 && !skip) { const h = heroesOf(F).sort((a, b) => a.hpMax - b.hpMax)[0]; if (h) { F.fx.push({ seq: F.seq, k: "cast", s: ei }); const d = dealDamage(F, e, h, e.dmg * 2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} charge ${h.name} tête baissée (−${d}) !`, "Charge"); skip = true; } }
+    if (has("seisme") && t % 4 === 0) { const fr = alive(F, "c").filter((h) => rowOf(h) === "f"); if (fr.length) { say(`${e.name} fait trembler le sol sous la première ligne !`, "Séisme"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(fr, 1.6, "seisme"); skip = true; } }
+    if (has("maree") && t % 3 === 0) { const bk = heroesOf(F).filter((h) => rowOf(h) === "b"); if (bk.length) { say(`La marée de ${e.name} submerge l'arrière !`, "Marée"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(bk, 1.4, "maree"); skip = true; } }
+    if (has("taureau") && t % 3 === 0 && !skip) { const h = heroesOf(F).sort((a, b) => a.hpMax - b.hpMax)[0]; if (h) { F.fx.push({ seq: F.seq, k: "cast", s: ei }); let d = 0; parade(F, e, "taureau", [h], () => { d = dealDamage(F, e, h, e.dmg * 2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); }); say(`${e.name} charge ${h.name} tête baissée (−${d}) !`, "Charge"); skip = true; } }
     if (has("charge") && t % 3 === 2 && !e.charging) { e.charging = "ready"; say(`${e.name} prépare une attaque dévastatrice… (protégez l'équipe !)`, "⚠ Charge"); }
     else if (e.charging === "ready") e.charging = "fire";
     return skip;
@@ -4310,6 +4361,8 @@
       if (best >= 100 && !S.titlesExtra.includes(E.MT_PIONNIER)) S.titlesExtra.push(E.MT_PIONNIER);
       if (n) report.push(`Maîtrise lente : les Maîtrises repartent de 0 pour tout le monde${best >= 100 ? ` (titre « ${E.MT_PIONNIER} » en souvenir)` : ""}. Les joyaux sertis sont rendus dans ton sac. Chaque point coûte maintenant un peu plus que le précédent.`); S.migration = report;
     }
+    if (S.v < 15) S.chars.forEach((c) => { if (c.spellsManual || !c.spells) return; // 2.1.42 « Le boss prévient » : les boucliers choisis par le jeu parent les coups annoncés
+      c.spells.forEach((x) => { const d = E.spellDef(c.cls, x.id); if (d && x.cond === "ally_shield" && E.spellKind(E.spellGrade(d, c.lvl)) === "shield") { x.cond = "boss_prep"; x.tgt = "threat"; } }); });
     if (S.v < 14 && S.align && E.honMigrate) { const m = E.honMigrate(S); // refonte des alignements : niveau d'alignement (0-100) → honneur, niveau 100 = rang 10 sur 20
       if (m) report.push(`Refonte des alignements : ton niveau d'alignement ${m.from} devient ${E.honCum ? E.honCum(m.rank).toLocaleString("fr-FR") : ""} points d'honneur, rang ${m.rank} sur 20. Nouveaux talents d'ordre, Arsenal de la cité, régions de la carte et agressions dans Journal › Quêtes › Alignement.`); }
     S.v = E.VERSION;

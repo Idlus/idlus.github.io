@@ -636,6 +636,8 @@
       ["ul", [
         "Chaque sort de monstre a sa **mécanique** (saignement, venin, gel, zone, charge, carapace…), affichée sur les cartes de monstres des zones.",
         "Un tour sur trois, le boss **prépare sa signature** (⚠ au-dessus de lui) puis la lâche sur toute l'équipe : un bouclier ou des soins prêts à ce moment-là font la différence.",
+        "En Formation, un **bandeau sous l'ordre de jeu** annonce le prochain coup du boss : quoi, sur qui, dans combien de tours, et comment le parer. Un sablier ⏳ sur le boss compte les tours, une cible rouge marque les héros visés.",
+        "La consigne **« Quand le boss prépare un coup sur un allié »**, réglée d'office sur les boucliers (tant que tu n'as pas modifié les sorts à la main), pose le bouclier sur **le héros visé** juste avant le coup. Si tous les héros touchés ont un bouclier, c'est une **Parade** : bandeau bleu, ligne dans le journal et compteur dans les statistiques du combat.",
         "Chaque boss a aussi un **sort unique** (✦) qu'aucun autre ne possède. Il se découvre au premier combat et s'explique ensuite dans « Sorts du boss », sur la fiche du donjon.",
       ]],
       ["h", "Récompenses"],

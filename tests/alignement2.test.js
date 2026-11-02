@@ -29,7 +29,7 @@ const team = (L) => { const S = E.newState("Camp", "iop"); S.chars[0].lvl = L; [
 
 // 2. Migration : ancien niveau d'alignement (0-100) → honneur, niveau 100 = rang 10 (E.VERSION 14), une seule fois.
 {
-  assert.strictEqual(E.VERSION, 14);
+  assert.ok(E.VERSION >= 14);
   const S = team(200); S.align = { side: "brakmar", order: "esprit", lvl: 100, xp: 0 }; S.v = 13;
   const N = E.deserialize(JSON.stringify(JSON.parse(E.serialize(S))));
   assert.strictEqual(E.alignRankIdx(N), 10); assert.strictEqual(N.align.hon, E.honCum(10)); assert.strictEqual(N.align.pur, 0, "la bourse commence vide");

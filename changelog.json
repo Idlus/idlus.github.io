@@ -1,6 +1,16 @@
 {
-  "version": "2.1.41.2",
+  "version": "2.1.42",
   "versions": [
+    {
+      "v": "2.1.42",
+      "name": "Le boss prévient",
+      "items": [
+        "Combat en Formation : un bandeau sous l'ordre de jeu annonce le prochain coup du boss (quoi, sur qui, dans combien de tours, comment le parer). Sablier ⏳ sur le boss, cible rouge sur les héros visés",
+        "Nouvelle consigne pour les boucliers : « Quand le boss prépare un coup sur un allié », avec la cible « Le héros visé par le boss ». Elle est réglée d'office tant que tu n'as pas modifié tes sorts à la main",
+        "Parade : si tous les héros touchés avaient un bouclier, bandeau bleu « Parade réussie ! » avec les dégâts évités, une ligne dans le journal et le compteur de parades dans les statistiques du combat",
+        "Le bouton « ✨ Scène » est mis en avant : les sorts y sont animés. Le bandeau suit le réglage Animations"
+      ]
+    },
     {
       "v": "2.1.41.2",
       "name": "Fiche du donjon à portée",

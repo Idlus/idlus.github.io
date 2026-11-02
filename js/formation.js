@@ -187,7 +187,7 @@
   function html(F, A) {
     A.fmRows = monRows(F);
     const line = (side, r) => `<div class="fm-line ${r}" data-r="${r}"><i>${r === "f" ? "Première ligne" : "Arrière"}</i><div class="fm-col">${byRow(F, side, r).map(([e, i]) => tokHtml(F, e, i)).join("")}</div></div>`;
-    return `<div class="fm-ord" id="fmOrd"></div><div class="fm-board"><div class="fm-side c"><b class="fm-lbl">Ton équipe</b><div class="fm-lines">${line("c", "b")}${line("c", "f")}</div></div><div class="fm-vs">VS</div>`
+    return `<div class="fm-ord" id="fmOrd"></div><div class="fm-warn" id="fmWarn" hidden></div><div class="fm-board"><div class="fm-side c"><b class="fm-lbl">Ton équipe</b><div class="fm-lines">${line("c", "b")}${line("c", "f")}</div></div><div class="fm-vs">VS</div>`
       + `<div class="fm-side m"><b class="fm-lbl">${F.pvp ? "Adversaires" : "Ennemis"}</b><div class="fm-lines">${line("m", "f")}${line("m", "b")}</div></div></div><div class="result" id="fresult"></div>`;
   }
   /* un combattant arrivé en cours de combat (invocation) : rangé dans sa colonne */
@@ -213,11 +213,40 @@
     return `<b>Tour ${F.round}</b>${from ? `<span class="more">+${from}</span>` : ""}${V.map((x) => `<span class="o ${x.e.side === "c" ? "c" : "m"}${x.done ? " done" : ""}${x.i === cur && !F.over ? " cur" : ""}" data-tip="${h(x.e.name)}${x.i === cur ? " : à lui de jouer" : x.done ? " : a déjà joué ce tour" : ""}">${ordIcon(x.e)}</span>`).join("")}${L.length > from + max ? `<span class="more">+${L.length - from - max}</span>` : ""}`;
   }
 
+  /* ---------- 2.1.42 « Le boss prévient » (Mathis 1A 2A 4A, 02/11) : bandeau sous l'ordre de jeu, sablier sur le boss, cible sur les héros visés ---------- */
+  const FC_ICO = { hit: "⚠", strip: "🛡", ctrl: "🌀", open: "🎯", warn: "❗", mark: "⚖" };
+  const FC_TIP = { hit: (x) => (x.k === "inventions" ? "Parade : détruire la bombe, ou des boucliers sur l'équipe" : `Parade : un bouclier sur ${x.ts.length > 1 ? "eux" : "lui"} avant le coup`),
+    strip: () => "Ses boucliers seront brisés ou volés : mieux vaut attendre pour en remettre", ctrl: () => "Un héros sera gêné : garde un plan de secours",
+    open: () => "Il prendra plus de dégâts : c'est le moment de frapper fort", warn: (x) => (E.BOSS_MECHS[x.k] || {}).desc || "", mark: (x) => (x.k === "condamne" ? "Il désignera une cible : prépare un bouclier" : "Une bombe arrive : il faudra la détruire") };
+  const fcPick = (F) => (E.bossForecast ? E.bossForecast(F).filter((x) => x.kind !== "info" && x.in <= 3) : []);
+  function warnHtml(F, x) {
+    const when = x.in <= 1 ? `<span class="cd now">au prochain<big>tour</big></span>` : `<span class="cd">dans<big>${x.in}</big>tours</span>`;
+    const who = x.who ? ` sur <b>${h(x.who)}</b>` : "";
+    return `<span class="ic">${FC_ICO[x.kind] || "⚠"}</span><span class="tx"><b>${h(x.name)}</b>${who}<small>${h(FC_TIP[x.kind] ? FC_TIP[x.kind](x) : "")}</small></span>${when}`;
+  }
+  function parHtml(F) { const p = F.parLast; return `<span class="ic">🛡</span><span class="tx"><b>Parade réussie !</b> ${h(p.who.length > 2 ? "L'équipe" : p.who.join(" et "))} ${p.who.length > 1 ? "encaissent" : "encaisse"} ${h(p.name)}<small>${p.saved ? `${nf(p.saved)} dégâts évités` : "Coup paré"}</small></span><span class="cd">Parades<big>${F.par || 0}/${F.parAll || 0}</big></span>`; }
+  function warnUpdate(F, A) {
+    const box = A.el.querySelector("#fmWarn"); if (!box) return;
+    const L = F.over ? [] : fcPick(F), x = L[0], par = !F.over && F.parLast && F.parLast.round >= F.round - 1 && (!x || x.in > 1);
+    const k = par ? `p${F.parLast.seq}|${F.par}/${F.parAll}` : x ? `${x.k}|${x.in}|${x.who}|${x.kind}` : "";
+    if (box.dataset.k !== k) { box.dataset.k = k; box.hidden = !k; box.className = `fm-warn ${par ? "par" : x ? x.kind : ""}${x && x.in <= 1 && !par ? " now" : ""}${window.DX.animLvl && window.DX.animLvl() === "full" ? " anim" : ""}`; box.innerHTML = par ? parHtml(F) : x ? warnHtml(F, x) : ""; }
+    // sablier sur chaque boss (son prochain événement), cible sur les héros visés par un coup proche
+    const tg = new Set(); L.forEach((y) => { if (y.kind === "hit" && y.in <= 2 && y.ts.length && y.who !== "toute l'équipe") y.ts.forEach((t) => tg.add(F.ents.indexOf(t))); });
+    F.ents.forEach((e, i) => {
+      const n = A.nodes[i]; if (!n) return;
+      const mine = e.side !== "c" ? L.find((y) => y.mi === i) : null; let cd = n.querySelector(".fm-cd");
+      if (mine) { const v = `⏳${mine.in}`; if (!cd) { n.insertAdjacentHTML("beforeend", `<span class="fm-cd"></span>`); cd = n.querySelector(".fm-cd"); } if (cd.textContent !== v) cd.textContent = v; cd.dataset.tip = `${mine.name} ${mine.in <= 1 ? "au prochain tour" : `dans ${mine.in} tours`}`; } else if (cd) cd.remove();
+      const on = tg.has(i) && e.alive; n.classList.toggle("fm-tgt", on); let cx = n.querySelector(".fm-cross");
+      if (on && !cx) n.insertAdjacentHTML("beforeend", `<svg class="fm-cross" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="5"/><path d="M20 1v10M20 29v10M1 20h10M29 20h10"/></svg>`); else if (!on && cx) cx.remove();
+    });
+  }
+
   /* ---------- mise à jour (appelée par updateCombat à chaque passage) ---------- */
   function update(F, A, force) {
     const ord = A.el.querySelector("#fmOrd");
     if (ord) { const k = `${F.id}|${F.round}|${F.oi}|${F.over ? 1 : 0}|${F.order ? F.order.filter((i) => F.ents[i] && F.ents[i].alive).join(",") : ""}|${mqSmall.matches ? 1 : 0}`; if (force || ord.dataset.k !== k) { ord.dataset.k = k; ord.innerHTML = ordHtml(F); } }
     const deep = force || A.fmSeq !== F.seq; A.fmSeq = F.seq;
+    if (deep) warnUpdate(F, A);
     F.ents.forEach((e, i) => {
       const n = A.nodes[i]; if (!n) return;
       const hv = n.querySelector(".fhp"); if (hv) { const v = nf(e.hp); if (hv.textContent !== v) hv.textContent = v; }

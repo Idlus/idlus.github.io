@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.41.2";
+const GAME_VERSION = "2.1.42";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.42", name: "Le boss prévient", items: [
+    "Combat en Formation : un bandeau sous l'ordre de jeu annonce le prochain coup du boss (quoi, sur qui, dans combien de tours, comment le parer). Sablier ⏳ sur le boss, cible rouge sur les héros visés",
+    "Nouvelle consigne pour les boucliers : « Quand le boss prépare un coup sur un allié », avec la cible « Le héros visé par le boss ». Elle est réglée d'office tant que tu n'as pas modifié tes sorts à la main",
+    "Parade : si tous les héros touchés avaient un bouclier, bandeau bleu « Parade réussie ! » avec les dégâts évités, une ligne dans le journal et le compteur de parades dans les statistiques du combat",
+    "Le bouton « ✨ Scène » est mis en avant : les sorts y sont animés. Le bandeau suit le réglage Animations",
+  ] },
   { v: "2.1.41.2", name: "Fiche du donjon à portée", items: [
     "Combat en donjon : le bouton « Fiche du donjon » est maintenant en haut, à côté de « Quitter le donjon ». Il ne bouge plus pendant les combats, en Formation, Scène ou Compacte, sur PC comme au téléphone",
     "Sur PC, le cadre « Drops possibles » passe au-dessus du Butin : il ne glisse plus quand le butin s'allonge",
@@ -3883,7 +3889,7 @@ function fstCum() {
 function fstPanel(F) {
   const v = ui.fstv === "t" ? "t" : "c";
   const seg = `<span class="seg">${[["c", "Ce combat"], ["t", "Cumul"]].map(([k, n]) => `<button data-act="fstv" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join("")}</span>`;
-  const body = v === "t" ? fstCum() : F ? `<div class="xs muted fst-since">${F.over ? (F.result === "win" ? "Victoire" : "Défaite") : `En cours · tour ${F.round}`}</div>${fstTable(E.fightStats(F))}` : `<p class="note">Aucun combat en cours.</p>`;
+  const body = v === "t" ? fstCum() : F ? `<div class="xs muted fst-since">${F.over ? (F.result === "win" ? "Victoire" : "Défaite") : `En cours · tour ${F.round}`}${F.parAll ? ` · Parades ${F.par || 0}/${F.parAll}` : ""}</div>${fstTable(E.fightStats(F))}` : `<p class="note">Aucun combat en cours.</p>`;
   return `<div class="fst-top">${seg}</div>${body}`;
 }
 function fstSheet(t) {
@@ -4710,7 +4716,7 @@ function renderCombat() {
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
-        <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog" data-tip="Formation : ton équipe et les ennemis en colonnes (arrière, première ligne), l'ordre de jeu en haut. Scène : les personnages en pied. Compacte : une carte par combattant.">${[["form", "Formation"], ["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
+        <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog" data-tip="Formation : ton équipe et les ennemis en colonnes (arrière, première ligne), l'ordre de jeu en haut. Scène : les personnages en pied. Compacte : une carte par combattant.">${[["form", "Formation"], ["scene", "✨ Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}"${v === "scene" ? ` class="vt-scene" data-tip="Scène : les personnages en pied, et les sorts y sont animés."` : ""}>${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
         <div id="champban"></div><div class="arenawrap"><div class="arena" id="arena"></div></div>
         <div class="ftick" id="turn"></div>
       </div>
@@ -7236,13 +7242,14 @@ function spPlace(c, id, at, replace) {
   c.spellsManual = true; c.activePreset = null; ui.spSel = idx; return null;
 }
 function spMove(c, from, to) { if (from === to || from < 0 || from >= c.spells.length) return; const [m] = c.spells.splice(from, 1); to = Math.min(to, c.spells.length); c.spells.splice(to, 0, m); ui.spSel = to; c.spellsManual = true; c.activePreset = null; }
-const COND_BY_ROLE = { dmg: ["always", "boss", "enemy_many", "enemy_one"], aoe: ["always", "enemy_many", "boss"], drain: ["always", "self_low", "boss"], dot: ["always", "boss", "enemy_one"], heal: ["ally_low", "self_low", "always"], shield: ["always", "first_turn", "ally_shield", "self_low"], summon: ["no_summon", "first_turn"], buff: ["always", "first_turn", "boss"], debuff: ["always", "boss", "enemy_one"] };
-const COND_PHRASE = { always: "Dès que c'est utile", first_turn: "Seulement au 1er tour", ally_low: "Quand un allié passe sous 60 % de PV", self_low: "Quand le lanceur passe sous 50 % de PV", enemy_many: "Quand il reste 3 ennemis ou plus", enemy_one: "Quand il ne reste qu'1 ennemi", boss: "Seulement contre un boss", no_summon: "Quand son invocation est morte", ally_shield: "Quand un allié n'a plus de bouclier" };
+const COND_BY_ROLE = { dmg: ["always", "boss", "enemy_many", "enemy_one"], aoe: ["always", "enemy_many", "boss"], drain: ["always", "self_low", "boss"], dot: ["always", "boss", "enemy_one"], heal: ["ally_low", "self_low", "always"], shield: ["boss_prep", "always", "first_turn", "ally_shield", "self_low"], summon: ["no_summon", "first_turn"], buff: ["always", "first_turn", "boss"], debuff: ["always", "boss", "enemy_one"] };
+const COND_PHRASE = { always: "Dès que c'est utile", first_turn: "Seulement au 1er tour", ally_low: "Quand un allié passe sous 60 % de PV", self_low: "Quand le lanceur passe sous 50 % de PV", enemy_many: "Quand il reste 3 ennemis ou plus", enemy_one: "Quand il ne reste qu'1 ennemi", boss: "Seulement contre un boss", no_summon: "Quand son invocation est morte", ally_shield: "Quand un allié n'a plus de bouclier", boss_prep: "Quand le boss prépare un coup sur un allié (sinon, quand un allié n'a plus de bouclier)" };
 const TGT_PHRASE = { low: "Le plus blessé (pour l'achever)", high: "Le plus en forme", boss: "Le boss ou le plus fort", mark: "Celui qui est déjà affaibli" };
 function spCondHtml(c, x, sp) { // 1.0.31 : seulement les choix utiles pour ce type de sort, écrits en phrases
   const k = spRole(c, sp); const cur = x.cond || "always"; const list = (COND_BY_ROLE[k] || ["always"]).slice(); if (!list.includes(cur) && COND_PHRASE[cur]) list.push(cur); // un ancien réglage reste visible tant qu'on ne le change pas
   const tg = ["dmg", "dot", "drain", "debuff"].includes(k) ? `<div class="splab">Sur quel ennemi ?</div><div class="cradio">${Object.entries(TGT_PHRASE).map(([v, n]) => `<button class="${(x.tgt || "low") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}"><i></i>${n}</button>`).join("")}</div>` : "";
-  return `<div class="splab">Quand le lancer ?</div><div class="cradio">${list.map((v) => `<button class="${cur === v ? "on" : ""}" data-act="spcondc" data-k="${v}"><i></i>${COND_PHRASE[v]}</button>`).join("")}</div>${tg}`;
+  const tgS = k === "shield" && sp && E.spellGrade(sp, Math.max(c.lvl, sp.lvl)).fx.some((f) => f.k === "shield" && !f.all) ? `<div class="splab">Sur quel allié ?</div><div class="cradio">${[["threat", "Le héros visé par le boss"], ["self", "Lui-même"]].map(([v, n]) => `<button class="${((x.tgt === "threat") ? "threat" : "self") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}"><i></i>${n}</button>`).join("")}</div>` : "";
+  return `<div class="splab">Quand le lancer ?</div><div class="cradio">${list.map((v) => `<button class="${cur === v ? "on" : ""}" data-act="spcondc" data-k="${v}"><i></i>${COND_PHRASE[v]}</button>`).join("")}</div>${tg}${tgS}`;
 }
 /* identité du sort (js/identite.js) : ses mécaniques propres, tirées de sa description DOFUS */
 const ID_ICO = { cumul: "📈", retard: "⏳", etat: "🔖", contagion: "🦠", erosion: "🩸", vol: "🫳", sape: "📉", crit: "✴️", contact: "⚔️", recul: "↩️", attire: "🧲", tp: "✨", telefrag: "💥", piege: "🪤", glyphe: "🔯", bombe: "💣", portail: "🌀", relance: "🔁", elan: "💨", entrave: "⛓️", garde: "🛡️", regen: "🌿", sacrifice: "🩸", hasard: "🎲", pioche: "🃏", rune: "🔷", acharne: "🐺", pleine: "🎯", puissance: "💪", execute: "☠️", premier: "🗡️", percegarde: "🔨", echo: "〰️", brulure: "👣", soutien: "💚", bouclier: "🧱", invoc: "🐾", poussee: "👊", retraitpa: "🐌", volvie: "❤️" };
@@ -10095,7 +10102,7 @@ function renderWatch() {
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
   <section class="panel combatpanel watchpanel">
     <div class="arenasticky">
-      <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog">${[["form", "Formation"], ["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
+      <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog">${[["form", "Formation"], ["scene", "✨ Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}"${v === "scene" ? ` class="vt-scene" data-tip="Scène : les personnages en pied, et les sorts y sont animés."` : ""}>${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
       <div class="arenawrap"><div class="arena" id="arena"></div></div>
       <div class="ftick" id="turn"></div>
     </div>
@@ -12746,6 +12753,7 @@ Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "f
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
+window.DX.animLvl = () => animLvl(); // 2.1.42 : bandeau du boss (js/formation.js)
 window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun, axBody, axC, ID_ICO }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 /* 2.0.6 (demande de Mathis) : sur la fiche du héros, sa Maîtrise et le total de ses bonus, qui grandit à chaque étoile placée */

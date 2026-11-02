@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.42 « Le boss prévient »
+- Choix de Mathis « 1A 2A 3A 4A 5C 6A 7B » (02/11, maquette https://claude.ai/artifact/Rt7NnFnPaPnND1r29V96yg) : refonte du combat idle par les annonces du boss.
+- `js/engine.js` : `E.bossForecast(F)` (tous les coups à tour fixe des boss : quoi, sur qui, dans combien de tours), `E.bossThreat`, `E.threatTarget` ; nouvelle condition `boss_prep` et cible `threat` (un bouclier simple va au héros visé) ; parades (`F.par`, `F.parAll`, `F.parLast`, ligne `par` du journal). `E.VERSION` 15 : boucliers choisis par le jeu passés de `ally_shield` à `boss_prep`.
+- `js/formation.js` : bandeau `#fmWarn` sous l'ordre de jeu, sablier `.fm-cd` sur le boss, cible `.fm-tgt` sur les héros visés, bandeau bleu de parade (animé selon le réglage Animations). `js/ui.js` : consigne et cible dans l'éditeur de sorts, « Parades x/y » dans les statistiques, bouton « ✨ Scène » mis en avant.
+- Simulation (profil bon, 20 donjons) : +0,04 stasis en moyenne, dans le bruit. Test `tests/parade.test.js`. Soins inchangés.
+
 ## 2.1.41.2 « Fiche du donjon à portée »
 - Demande de Mathis : en combat, le bouton « Fiche du donjon » bougeait sans arrêt (il était sous le Butin, qui grandit à chaque combat). `js/ui.js` : bouton `.cdgfiche` dans l'en-tête du combat (rendu une fois, hors de la boucle), et le cadre `#cdrops` passe au-dessus du Butin. `tests/fiche_donjon_ui.test.js` mesure la position dans les 3 affichages, PC 1280 et téléphone 390.
 

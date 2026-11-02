@@ -54,6 +54,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 - Seul Mathis décide qui triche ; le Bouclier est la seule protection des sauvegardes.
 - Dofus : quête (1 par compte), butin de boss, codes ; aucun bonus sur leurs chances.
 - Pas de jetons de challenge.
+- Combat : la grille tactique est mise de côté pour la Saison 1 ; le combat idle est enrichi par les annonces du boss et les parades (2.1.42, 02/11). Mesure à suivre : le taux de parades.
 - Répartition des rôles : ChatGPT conçoit, Claude analyse, réalise et vérifie, Mathis tranche.
 - Rien de payant tant que Mathis n'a pas décidé autrement, et rien qui ressemble à un achat intégré (contrainte Ankama).
 
