@@ -1,6 +1,14 @@
 {
-  "version": "2.1.42",
+  "version": "2.1.42.1",
   "versions": [
+    {
+      "v": "2.1.42.1",
+      "name": "Le Village de l'Horloge",
+      "items": [
+        "Nouvelle musique sur la page d'accueil : « Le Village de l'Horloge », le premier air de la Saison 1. Sa partition rejoint le juke-box (Options › Sons) après quelques secondes sur l'accueil",
+        "Les autres pages gardent leur air : la zone de chasse, le donjon et le Havre-Sac se trouvent toujours sur la page Combat et au Havre-Sac"
+      ]
+    },
     {
       "v": "2.1.42",
       "name": "Le boss prévient",

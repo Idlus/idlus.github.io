@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.42";
+const GAME_VERSION = "2.1.42.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.42.1", name: "Le Village de l'Horloge", items: [
+    "Nouvelle musique sur la page d'accueil : « Le Village de l'Horloge », le premier air de la Saison 1. Sa partition rejoint le juke-box (Options › Sons) après quelques secondes sur l'accueil",
+    "Les autres pages gardent leur air : la zone de chasse, le donjon et le Havre-Sac se trouvent toujours sur la page Combat et au Havre-Sac",
+  ] },
   { v: "2.1.42", name: "Le boss prévient", items: [
     "Combat en Formation : un bandeau sous l'ordre de jeu annonce le prochain coup du boss (quoi, sur qui, dans combien de tours, comment le parer). Sablier ⏳ sur le boss, cible rouge sur les héros visés",
     "Nouvelle consigne pour les boucliers : « Quand le boss prépare un coup sur un allié », avec la cible « Le héros visé par le boss ». Elle est réglée d'office tant que tu n'as pas modifié tes sorts à la main",
@@ -10348,7 +10352,7 @@ const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et
   monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Maîtrise", quetes: "page Quêtes",
   succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions",
   comptoirs: "page Comptoirs", foire: "page Foire du Trool", montures: "page Familiers et montures", cours: "page Cours des ressources" };
-const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
+const MUS_MORE = { horloge: "page d'accueil, l'air de la Saison 1", donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
 const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
 /* l'air « selon l'endroit » : page du Havre-Sac (le Gramophone d'abord), page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
@@ -10356,6 +10360,7 @@ function musPlace() { return (ui.tab === "home" && ui.home === "havre" && gramTr
 /* l'air de l'endroit lui-même, sans le Gramophone : c'est lui qu'on trouve comme partition */
 function musSpot() {
   if (ui.tab === "home" && ui.home === "havre") { const h0 = new Date().getHours(); return musEvent() || (h0 >= 21 || h0 < 7 ? "nuit" : "boite"); }
+  if (ui.tab === "home" && ui.home !== "expe") return "horloge"; // 2.1.43 : l'accueil a son air, « Le Village de l'Horloge » (thème de la Saison 1)
   if (MUS_PAGE[ui.tab]) return MUS_PAGE[ui.tab];
   if (ui.tab === "world") return ui.zoneView ? musOfSub(ui.zoneView) : ui.world === "dungeons" ? "cles" : ui.world === "enc" ? "biblio" : "monde";
   if (ui.tab === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quetes";
@@ -10430,7 +10435,7 @@ const CBT_KO = new WeakSet(); // un seul « vaincu » par monstre
 function cbtTest(short) { if (!window.SONS) return; sndVol(true); const L = short ? [["cbt:cast:f", 0], ["cbt:impact:f", 240]] : [["cbt:cast:f", 0], ["cbt:impact:f", 240], ["cbt:cast:e", 700], ["cbt:crit:e", 900], ["cbt:soin", 1400], ["cbt:esquive", 1900], ["cbt:vaincu", 2300], ["cbt:victoire", 2900]];
   L.forEach(([id, d]) => setTimeout(() => { try { window.SONS.play(id); } catch (e) {} }, d)); }
 /* 1.0.30 : partitions à collectionner : l'air d'un endroit se trouve après 5 s passées là-bas (même sans musique) ; le juke-box et le Gramophone ne jouent que celles trouvées */
-const PART_EVENT = ["halouine", "fetes"]; // les airs de saison, en plus
+const PART_EVENT = ["halouine", "fetes", "horloge"]; // les airs de saison, en plus (2.1.43 : le thème de la Saison 1 ne compte pas pour « Mélomane »)
 const partAll = () => Object.keys((window.IdlusAudio && window.IdlusAudio.tracks) || {});
 const partYear = () => partAll().filter((id) => !PART_EVENT.includes(id));
 const partHas = (id) => !!(S && S.partitions && S.partitions[id]);
@@ -10545,7 +10550,7 @@ function soundOptionsHtml() {
 }
 /* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
 const JUKE_GRP = [["En chasse", ["incarnam", "marche", "taverne", "cania", "wabbits", "landes", "koalaks", "foret", "abrak", "moon", "dragoeufs", "iles", "pandala", "frigost", "saharach", "divines", "bonta", "brakmar", "obscure", "harebourg", "sufokia", "wukin", "vulkania"]],
-  ["Pages", ["monde", "cles", "songe", "defi", "koli", "boss", "heros", "sac", "phenix", "atelier", "quetes", "succes", "biblio", "carnet", "hdv", "guilde", "champions", "strateges", "idees", "comptoirs", "foire", "montures", "cours"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
+  ["Pages", ["monde", "cles", "songe", "defi", "koli", "boss", "heros", "sac", "phenix", "atelier", "quetes", "succes", "biblio", "carnet", "hdv", "guilde", "champions", "strateges", "idees", "comptoirs", "foire", "montures", "cours"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]], ["Saison 1", ["horloge"]]];
 function jukeWhere(id) {
   if (MUS_PAGE_N[id]) return MUS_PAGE_N[id]; if (MUS_MORE[id]) return MUS_MORE[id];
   const subs = Object.entries(MUS_SUB).filter(([, v]) => v === id).map(([k]) => E.SUBS[k] && E.SUBS[k].name).filter(Boolean);

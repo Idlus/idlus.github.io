@@ -1,4 +1,4 @@
-/* 1.0.22 : musique et sons composés pour Idlus, joués par le navigateur (Web Audio) : aucun fichier, aucune œuvre d'Ankama. Utilisé par js/ui.js (sndPlay, musSync) */
+/* 1.0.22 : musique et sons composés pour Idlus, joués par le navigateur (Web Audio), aucune œuvre d'Ankama ; 2.1.43 : quelques airs enregistrés (FILES, assets/son). Utilisé par js/ui.js (sndPlay, musSync) */
 (function () {
   const A = {};
   let ctx = null, master, musicBus, musicRv, sfxBus, reverb, seq = null, duck, duckR, fanBus, ambBus;
@@ -787,18 +787,27 @@
       out.connect(dl); dl.connect(lp); lp.connect(fg); fg.connect(dl); lp.connect(wg); wg.connect(musicBus); wg.connect(send); nodes.push(dl, fg, wg, lp); }
     return { out, nodes };
   }
+  /* 2.1.43 : airs enregistrés (fichier audio en boucle, au volume de la musique) ; gain réglé pour sonner comme les airs composés (fichier à -15,8 LUFS, airs ≈ -18,5) */
+  const FILES = { horloge: { name: "Le Village de l'Horloge", src: "assets/son/horloge.mp3", gain: 0.73 } };
+  function playFile(id, F, fade) {
+    const el = new Audio(); el.src = F.src; el.loop = true; el.preload = "auto";
+    const out = ctx.createGain(); let src = null; try { src = ctx.createMediaElementSource(el); src.connect(out); } catch (e) { return; }
+    out.connect(musicBus); out.gain.setValueAtTime(0.0001, ctx.currentTime); out.gain.exponentialRampToValueAtTime(F.gain, ctx.currentTime + Math.max(1.5, fade));
+    const p = el.play(); if (p && p.catch) p.catch(() => {});
+    seq = { id, file: el, out, nodes: [out, src] };
+  }
   A.play = function (id, fade = 0.6) { // fade : durée du fondu entre l'air qui s'arrête et le nouveau (2 s quand on change de zone)
-    if (!init()) return; A.stop(fade); const T = TRACKS[id]; if (!T) return;
+    if (!init()) return; A.stop(fade); if (FILES[id]) return playFile(id, FILES[id], fade); const T = TRACKS[id]; if (!T) return;
     const { out, nodes } = chain(T); out.gain.setValueAtTime(0.0001, ctx.currentTime); out.gain.exponentialRampToValueAtTime(T.gain || 1, ctx.currentTime + Math.max(1.5, fade));
     seq = { id, T, pass: 0, start: ctx.currentTime + 0.12, ev: T.build(0), idx: 0, out, nodes }; seq.timer = setInterval(tick, 60); tick();
   };
   A.stop = function (fade = 1) {
     if (!seq) return; const s = seq; seq = null; clearInterval(s.timer);
     try { s.out.gain.cancelScheduledValues(ctx.currentTime); s.out.gain.setValueAtTime(s.out.gain.value, ctx.currentTime); s.out.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + fade); } catch (e) {}
-    setTimeout(() => s.nodes.forEach((x) => { try { x.disconnect(); } catch (e) {} }), fade * 1000 + 3000);
+    setTimeout(() => { if (s.file) { try { s.file.pause(); s.file.removeAttribute("src"); s.file.load(); } catch (e) {} } s.nodes.forEach((x) => { try { x.disconnect(); } catch (e) {} }); }, fade * 1000 + 3000);
   };
   A.playing = () => (seq ? seq.id : null);
-  A.tracks = Object.fromEntries(Object.entries(TRACKS).map(([k, T]) => [k, T.name]));
+  A.tracks = Object.fromEntries(Object.entries(TRACKS).map(([k, T]) => [k, T.name]).concat(Object.entries(FILES).map(([k, F]) => [k, F.name])));
   A.setMusicVol = (v) => { if (init()) [musicBus, musicRv].concat(fanOwn ? [] : [fanBus]).forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
   let fanOwn = false; // 1.3 : les fanfares ont leur propre volume (Fanfares et récompenses) dès qu'on le règle
   A.setFanVol = (v) => { if (init()) { fanOwn = true; fanBus.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05); } };

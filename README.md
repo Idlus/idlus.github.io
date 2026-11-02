@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.42.1 « Le Village de l'Horloge »
+- Demande de Mathis (02/11) : intégrer tout de suite la boucle calme qu'il a générée avec Suno pour la Saison 1.
+- `assets/son/horloge.mp3` (128 kb/s, 2 min 43, fin en fondu). `js/musique.js` : airs enregistrés `FILES` joués en boucle par un élément audio branché sur le bus de la musique (même volume, même coupure), gain 0,73 pour s'aligner sur les airs composés.
+- `js/ui.js` : l'accueil joue `horloge` (le Havre-Sac, la page Combat et les autres pages gardent leur air) ; partition « en plus » comme Halouine et les Fêtes (ne compte pas pour « Mélomane ») ; groupe « Saison 1 » au juke-box. `sw.js` : le dossier `assets/son/` n'est pas mis en cache par le service worker (lecture par morceaux).
+
 ## 2.1.42 « Le boss prévient »
 - Choix de Mathis « 1A 2A 3A 4A 5C 6A 7B » (02/11, maquette https://claude.ai/artifact/Rt7NnFnPaPnND1r29V96yg) : refonte du combat idle par les annonces du boss.
 - `js/engine.js` : `E.bossForecast(F)` (tous les coups à tour fixe des boss : quoi, sur qui, dans combien de tours), `E.bossThreat`, `E.threatTarget` ; nouvelle condition `boss_prep` et cible `threat` (un bouclier simple va au héros visé) ; parades (`F.par`, `F.parAll`, `F.parLast`, ligne `par` du journal). `E.VERSION` 15 : boucliers choisis par le jeu passés de `ally_shield` à `boss_prep`.

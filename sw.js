@@ -1,7 +1,7 @@
 /* idlus — service worker : jeu jouable hors ligne.
    Fichiers du jeu (html/js/css/json) : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
    Images et polices : cache d'abord (elles ne changent pas), mises en cache au fil de la partie. */
-const VERSION = "2.1.42";
+const VERSION = "2.1.42.1";
 /* La version de test (/beta/) a ses propres caches : chaque service worker ne nettoie que les siens. */
 const P = /\/beta\/$/.test(self.registration.scope) ? "idlus-beta-" : "idlus-";
 const CORE = P + "core-" + VERSION, MEDIA = P + "media-v11";
@@ -17,6 +17,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request; if (req.method !== "GET") return;
   const u = new URL(req.url);
   if (u.pathname.endsWith("version.json")) return; // toujours en ligne (détection des nouvelles versions)
+  if (u.pathname.includes("/assets/son/")) return; // 2.1.43 : airs enregistrés, lus par morceaux (requêtes Range) : le navigateur les gère seul
   if (isMedia(u)) {
     e.respondWith(caches.open(MEDIA).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok || res.type === "opaque") c.put(req, res.clone()); return res; }))));
     return;
