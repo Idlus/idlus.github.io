@@ -117,6 +117,7 @@ assert.deepStrictEqual(E.SEAL_ORDER, Object.keys(E.CHAMP_POWERS), "un Sceau par 
   assert.strictEqual(F.sealReso, 3, "Conclave : 4 pouvoirs différents"); assert.strictEqual(F.sealMen, 5, "Meneur rang 5");
   assert.ok(sh0 && sh0.s >= Math.round(sh0.m * 0.1), "bouclier du Blindé"); assert.strictEqual(hs[1].vamp, 0.08, "vol de vie du Vampirique");
   const e = hs[3]; const tgt = { hp: 10, hpMax: 100 };
+  e.hp = e.hpMax; e.criUsed = false; e.criOn = 0; // les premiers tours ont pu déjà déclencher le Cri : on repart d'un héros plein
   const v0 = E.sealDmg(F, e, tgt, 100); assert.ok(Math.abs(v0 - 100 * 1.08 * 1.2) < 1e-9, "Meneur + Conclave + Traqueur");
   e.hp = Math.floor(e.hpMax * 0.2); const v1 = E.sealDmg(F, e, tgt, 100);
   assert.ok(e.criUsed && Math.abs(v1 - 100 * 1.08 * 1.4) < 1e-9, "Cri du Champion : Traqueur doublé");
