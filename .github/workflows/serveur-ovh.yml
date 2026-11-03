@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -326,8 +326,14 @@ jobs:
           echo '== Date d ouverture de la Saison 1 (posée une seule fois)'
           printf '%s\n' "update s1.s1_cfg set debut = now() where id = 1 and debut is null;" "notify pgrst, 'reload schema';" > /tmp/q.sql
           bash tools/serveur/vps_sql.sh fichier /tmp/q.sql
+      - name: Saison 1, date d'ouverture 23h10 heure de Paris (Mathis 03/11 « 23H10 pour laisser de la marge »)
+        if: inputs.etape == 'saison1-date'
+        run: |
+          echo "SSHO=$SSHO" >> "$GITHUB_ENV"
+          printf '%s\n' "update s1.s1_cfg set debut = timestamptz '2026-11-03 22:10:00+00' where id = 1;" "select debut from s1.s1_cfg;" > /tmp/q.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/q.sql
       - name: Saison 1, état (lecture seule)
-        if: inputs.etape == 'saison1-installer' || inputs.etape == 'saison1-etat'
+        if: inputs.etape == 'saison1-installer' || inputs.etape == 'saison1-etat' || inputs.etape == 'saison1-date'
         run: |
           bash tools/serveur/vps_sql.sh lecture "select (select debut from s1.s1_cfg where id = 1) as debut, (select count(*) from information_schema.tables where table_schema = 's1') as tables_s1, (select count(*) from s1.saves) as parties_s1, (select count(*) from public.saves) as parties_eternel"
           bash tools/serveur/vps_sql.sh commande 'grep "^PGRST_DB_SCHEMAS=" .env; curl -s -o /dev/null -w "API s1 : %{http_code}\n" -H "apikey: $(grep ^ANON_KEY= .env | cut -d= -f2-)" -H "Accept-Profile: s1" "http://localhost:8000/rest/v1/s1_cfg?select=debut"'

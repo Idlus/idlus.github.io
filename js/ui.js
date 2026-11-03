@@ -3487,7 +3487,7 @@ const hasPublicSave = () => !!SV.store().get("dofousxen-save");
 /* Monocompte : au tout premier lancement, choix du serveur au-dessus du choix du héros ; depuis l'écran des parties, la carte Monocompte y mène directement */
 /* 2.2.0 : à l'ouverture de la Saison 1, un nouveau joueur choisit aussi la partie de saison (proposée d'abord) ; avant, il
    arrivait directement dans l'Éternel quand le Monocompte (bêta fermée) ne lui était pas ouvert. */
-const s1Pick = () => !!(S1.open && window.ONLINE && window.ONLINE.s1Srv);
+const s1Pick = () => !!(S1.open && ON && ON.s1Srv); // partie de saison : avec le serveur (classements, Fragments)
 const monoPick = () => !SV.local.get(slotKey(MONO_SLOT)) && monoOk();
 const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && (monoPick() || s1Pick());
 const startSrvOf = () => ui.startSrv || (s1Pick() ? "s1" : "cl");
