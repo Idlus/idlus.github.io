@@ -14,7 +14,7 @@ const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "..");
 const SCHEMA = "s1";
 // fichiers dont tout reste partagé entre l'Éternel et la saison
-const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql"];
+const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql", "supabase/vote.sql"]; // vote : récompense versée à la partie Éternel (à revoir pour la saison)
 // objets de supabase/schema.sql qui restent partagés : le compte, le pseudo, la suspension, le journal des admins
 const SHARED_OBJ = ["profiles", "susp", "susp_lift", "delete_my_account", "admin_log", "alog", "adm_need", "adm_suspend", "is_admin", "is_staff", "my_role", "admins", "mods"];
 
