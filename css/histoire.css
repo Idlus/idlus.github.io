@@ -48,3 +48,23 @@
 .hs-srv{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent,#3aa57a) 10%,transparent);font-size:.9em}
 .hs-srv.ok{background:color-mix(in srgb,#e0b84a 22%,transparent)}
 .hs-srv .uico{width:18px;height:18px}
+.hs-dch{margin-bottom:10px}
+.hs-dch.hot{border-color:var(--gold)}
+.hs-dch.done{opacity:.85}
+.hs-dchest .uico{width:44px;height:44px}
+.hs-dch .hs-goals li{align-items:center}
+.hs-dlist summary{cursor:pointer;list-style:revert}
+.hs-dch .xs.muted,.hs-dch h3{white-space:normal!important;overflow:visible;text-overflow:clip}
+/* cadre de quête suivie (6A) */
+#hs-trk{position:fixed;z-index:60;right:16px;bottom:16px;width:min(380px,calc(100vw - 32px));background:var(--panel);border:2px solid var(--gold);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:8px 10px}
+#hs-trk.mini{width:auto;padding:0;border:0;background:none;box-shadow:none}
+.hs-trk-in{display:flex;gap:8px;align-items:center;position:relative}
+.hs-trk-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+.hs-trk-in .qj-eb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}
+.hs-trk-in .btn{white-space:nowrap}
+.hs-trk-x{position:absolute;top:-14px;right:-16px;width:22px;height:22px;border-radius:50%;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font-size:11px;line-height:1;cursor:pointer;padding:0}
+.hs-trk-pill{display:flex;gap:6px;align-items:center;max-width:min(300px,calc(100vw - 32px));padding:6px 12px;border-radius:999px;border:2px solid var(--gold);background:var(--panel);color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.hs-trk-pill b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hs-trk-pill .uico{width:18px;height:18px}
+@media (max-width:699px){#hs-trk{right:10px;left:10px;width:auto;bottom:calc(var(--navh) + 18px)}#hs-trk.mini{left:auto}}
+body:has(#hs-trk:not(.mini)) .app{padding-bottom:calc(var(--navh) + 120px)}

@@ -11,7 +11,7 @@
   const Q = () => E.MAIN_QUEST, SC = () => E.HIST_SC, CH = () => E.QUEST_CHAPTERS;
   const st = { ch: null, open: {} };
 
-  const initials = (n) => n.split(/[ ']/).filter((w) => w && w[0] === w[0].toUpperCase()).slice(0, 2).map((w) => w[0]).join("");
+  const initials = (n) => String(n || "?").split(/[ ']/).filter((w) => w && w[0] === w[0].toUpperCase()).slice(0, 2).map((w) => w[0]).join("");
   function portrait(sc, cls) {
     const w = E.histWho(sc);
     if (w.img) return `<span class="hs-por ${cls || ""}"><img src="${w.img}" alt="${h(w.n)}" loading="lazy"></span>`;
@@ -110,10 +110,41 @@
     const head2 = head;
     return `${head2}<div class="stack" style="gap:10px"><span class="qj-lab">Semaine ${Math.min(wk, 8)} de la saison · ${fmt(Math.min(T.c, E.CAMP.length))}/${E.CAMP.length} chapitres finis</span>${rows.join("")}</div>`;
   }
+  /* ---------- coffre du jour (4A) ---------- */
+  function dchHtml(s) {
+    const C = E.dch(s); const n = E.dchDone(s), N = E.DCH_NEED; const CH = D.CONSUMABLES[E.DCH_CHEST];
+    const go = (g) => (g === "donjons" ? `data-tab="dungeons"` : g === "defi" || g === "metiers" ? `data-tab="${g}"` : g === "expeditions" ? `data-act="ex-go"` : `data-act="qtab" data-v="${g}"`);
+    const rows = E.DCH_TASKS.map((T) => { const [a, b] = E.dchProg(s, T); const ok = a >= b;
+      return `<li class="${ok ? "ok" : ""}"><span class="hs-ck">${ok ? "✓" : ""}</span><div class="grow stack" style="gap:3px"><b>${h(T.n)}</b>${!ok && b > 1 ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div>${ok || C.ok ? "" : `<button class="btn xs" ${go(T.go)}>Y aller</button>`}</li>`; }).join("");
+    return `<section class="panel hs-card hs-dch ${C.ok ? "done" : n >= N ? "hot" : ""}"><div class="pad stack" style="gap:10px">
+      <div class="row" style="gap:10px;align-items:center"><span class="hs-dchest">${X().chestImg(CH.img)}</span><div class="grow stack" style="gap:2px"><span class="qj-eb">Coffre du jour</span><h3>${C.ok ? "Ouvert ✓, le prochain à minuit" : `${Math.min(n, N)} tâche${n > 1 ? "s" : ""} sur ${N}`}</h3><span class="xs muted">Fais ${N} tâches au choix dans la liste pour gagner un ${h(CH.name)}. Chaque tâche garde aussi sa récompense habituelle.</span></div>
+        ${C.ok ? "" : `<button class="btn sm ${n >= N ? "primary" : ""}" ${n >= N ? 'data-act="qj-dch"' : "disabled"}>Ouvrir</button>`}</div>
+      <div class="bar"><i style="width:${X().pct(Math.min(n, N), N)}%"></i></div>
+      <details class="hs-dlist" ${C.ok ? "" : "open"}><summary class="small"><b>Les ${E.DCH_TASKS.length} tâches du jour</b> <span class="muted">(${n} faite${n > 1 ? "s" : ""})</span></summary><ol class="hs-goals">${rows}</ol></details></div></section>`;
+  }
+  /* ---------- cadre de quête suivie (6A) : visible sur tous les écrans, avec « Y aller » ; ✕ le replie en pastille ---------- */
+  let trkK = "";
+  function trkSync() {
+    const DX = window.DX; const s = DX && DX.S; let el = document.getElementById("hs-trk");
+    const ui = DX && DX.ui; const on = s && E.histOn(s) && s.chars && s.chars.length && ui && !(ui.tab === "quests" && (ui.qt === "main" || ui.qt === "jour"));
+    const sc = on ? E.histScene(s) : null; const q = on ? E.questStep(s) : null;
+    if (!sc || !q) { if (el) { el.remove(); trkK = ""; } return; }
+    const T = E.hist(s); const mini = !!T.trk0; const [a, b] = E.questProgress(s) || [0, 1];
+    const html = mini ? `<button class="hs-trk-pill" data-act="qj-trk" data-v="1" title="Afficher la quête suivie">${IC("quetes")}<b>${h(q.title)}</b><span class="num">${fmt(Math.min(a, b))}/${fmt(b)}</span></button>`
+      : `<div class="hs-trk-in">${portrait(sc, "sm")}<div class="grow stack" style="gap:2px;min-width:0"><span class="qj-eb">Quête suivie · ${h(sc.t)}</span><b class="hs-trk-t">${h(q.title)}</b>
+        <div class="row" style="gap:6px"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(Math.min(a, b))}/${fmt(b)}</span></div></div>
+        <div class="stack" style="gap:4px">${X().questGoBtn(q, "primary")}<button class="btn xs" data-act="qj-hsgo">La scène</button></div><button class="hs-trk-x" data-act="qj-trk" data-v="0" aria-label="Replier la quête suivie">✕</button></div>`;
+    if (!el) { el = document.createElement("aside"); el.id = "hs-trk"; el.setAttribute("aria-label", "Quête suivie"); document.body.appendChild(el); }
+    if (html !== trkK) { trkK = html; el.className = mini ? "mini" : ""; el.innerHTML = html; }
+  }
+  setInterval(trkSync, 1500);
+  document.addEventListener("click", () => setTimeout(trkSync, 30), true);
   function act(a, t) {
     if (a === "qj-hsch") { st.ch = +t.dataset.v; X().render(); return true; }
+    if (a === "qj-hsgo") { const ui = window.DX.ui; ui.tab = "quests"; ui.qt = "main"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return true; }
+    if (a === "qj-trk") { const s = window.DX.S; E.hist(s).trk0 = t.dataset.v === "0" ? 1 : 0; if (X().markDirty) X().markDirty(); trkSync(); return true; }
     return false;
   }
   document.addEventListener("toggle", (e) => { const el = e.target; if (el.classList && el.classList.contains("hs-past")) st.open[el.dataset.n] = el.open; }, true);
-  window.HUI = { mainHtml, heroHtml, campHtml, campSync, act, on: (s) => !!(E.histOn && E.histOn(s)) };
+  window.HUI = { mainHtml, heroHtml, dchHtml, trkSync, campHtml, campSync, act, on: (s) => !!(E.histOn && E.histOn(s)) };
 })();

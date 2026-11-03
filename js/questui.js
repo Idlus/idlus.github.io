@@ -27,7 +27,15 @@
     { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["camp", "Campagne de saison", "parchemin_or"], ["region", "Quêtes de région", "monde"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
     { id: "hunt", n: "Chasses", ic: "carte", pages: [["bounty", "Avis de recherche", "carte"], ["tresor", "Trésor", "parchemin_or"]] },
   ];
-  const famOf = (qt) => (FAMS.find((F) => F.pages.some((p) => p[0] === qt)) || FAMS[0]).id;
+  /* Classique · Saison 1 (1A) : 4 onglets, Histoire d'abord (quête principale, campagne, régions, alignement), puis Aujourd'hui, Chasses et Dofus */
+  const FAMS_S1 = [
+    { id: "adv", n: "Histoire", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["camp", "Campagne de saison", "parchemin_or"], ["region", "Quêtes de région", "monde"], ["align", "Alignement", "ailes"]] },
+    FAMS[0], FAMS[2],
+    { id: "dof", n: "Dofus", ic: "dofus", pages: [["dofus", "Dofus", "dofus"]] },
+  ];
+  const FAMS_ET = FAMS.map((F) => ({ ...F, pages: F.pages.filter((p) => p[0] !== "camp") }));
+  const fams = (s) => (HS(s) ? FAMS_S1 : FAMS_ET);
+  const famOf = (qt, s) => { const L = s ? fams(s) : FAMS; return (L.find((F) => F.pages.some((p) => p[0] === qt)) || L[0]).id; };
   const COL = [["ach", "Succès", "trophee"], ["orn", "Ornements", "couronne"]]; // 0.1.31 : page Succès à part (menu Suivi)
   const pageName = (qt) => (qt === "shops" ? "Comptoirs" : qt === "hebdo" ? "Quêtes de la semaine" : qt === "tresor" ? "Chasse au trésor" : (FAMS.flatMap((F) => F.pages).concat(COL).find((p) => p[0] === qt) || [0, "Quêtes"])[1]);
 
@@ -72,16 +80,16 @@
   function journal(s, qt) {
     const left = todo(s);
     return `<aside class="qj-journal" aria-label="Journal de quêtes"><div class="qj-jh">${IC("quetes")}<h3>Journal</h3></div>
-      ${FAMS.map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
-        ${F.pages.filter((p) => p[0] !== "camp" || HS(s)).map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
+      ${fams(s).map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
+        ${F.pages.map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
       <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>${window.CPTUI ? "6 boutiques" : "3 boutiques"}</span></button></aside>`;
   }
   /* téléphone : les 3 familles en gros boutons, puis les pages de la famille (0.1.49) */
   function mtabs(s, qt) {
-    const left = todo(s); const F = FAMS.find((f) => f.id === famOf(qt));
-    const n = F.pages.filter((p) => p[0] !== "camp" || HS(s)).length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
-    return `<div class="qj-m"><div class="qj-fam3">${FAMS.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
-      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}">${F.pages.filter((p) => p[0] !== "camp" || HS(s)).map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
+    const left = todo(s); const FL = fams(s); const F = FL.find((f) => f.id === famOf(qt, s));
+    const n = F.pages.length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
+    return `<div class="qj-m"><div class="qj-fam3"${FL.length === 4 ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : ""}>${FL.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
+      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}${n < 2 ? ";display:none" : ""}">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
   }
 
   /* en-tête de page : titre, compteur, bouton « ? » (aide repliée) */
@@ -143,7 +151,7 @@
       <div class="row">${pend ? `<span class="xs muted grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>` : left.length ? `<button class="btn sm primary" data-act="vi-tfight" data-v="${left[0]}">Défier ${h(CLASSES[left[0]].name)}</button>` : ""}<button class="btn sm" data-act="qtab" data-v="temples">Ouvrir</button></div></article>`;
     // les cartes terminées descendent en bas
     const cards = [[alm, A.done], [avis, false], [cmd, allDone], [tpl, cls.length && !left.length]].sort((x, y) => x[1] - y[1]).map((c) => c[0]).join("");
-    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}${nextUp(s)}${X().defiLine ? X().defiLine() : ""}<div class="qj-day">${cards}</div>`;
+    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}${HS(s) ? window.HUI.dchHtml(s) : ""}${nextUp(s)}${X().defiLine ? X().defiLine() : ""}<div class="qj-day">${cards}</div>`;
   }
 
   /* ---------- « À faire ensuite » : le plus utile du moment, en une rangée ---------- */
@@ -437,6 +445,7 @@
       case "qj-rf": st.rf = d.v; break;
       case "qj-af": st.af = d.v; break;
       case "qj-ach": st.cat = d.v; st.af = "all"; st.achq = ""; ui.tab = "quests"; ui.qt = "ach"; window.scrollTo(0, 0); break;
+      case "qj-dch": { const r = E.act(S(), "dchClaim"); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); X().toast("Coffre du jour reçu !", "rare"); break; }
       case "qj-rqgive": case "qj-rqclaim": { const r = a === "qj-rqgive" ? E.act(S(), "rqGive", d.v) : E.act(S(), "rqClaim", d.v, d.o); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
       default: if (window.HUI && window.HUI.act(a, t)) return; return;
     }

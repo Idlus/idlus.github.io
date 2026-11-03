@@ -522,6 +522,44 @@
     return r;
   };
 
+  /* ---------------- coffre du jour (4A) : 5 tâches au choix parmi la liste, un Coffre en argent ----------------
+     Chaque tâche garde sa propre récompense ; le coffre vient en plus, une fois par jour. Le reste de la liste est en plus. */
+  E.DCH_NEED = 5; E.DCH_CHEST = "coffre_argent";
+  const DCH = (S) => { const k = E.dayKey(); if (!S.dch || S.dch.d !== k) S.dch = { d: k, c: {}, t0: (E.tresorState ? E.tresorState(S).n : 0) || 0, ok: 0 }; return S.dch; };
+  E.dch = DCH;
+  E.DCH_TASKS = [
+    { id: "alm", n: "Faire l'offrande de l'Almanax", go: "almanax", v: (S) => (E.almanax(S).done ? 1 : 0), max: 1 },
+    { id: "cmd", n: "Livrer 3 commandes d'artisans", go: "commandes", v: (S) => (E.cmdState ? E.cmdState(S).dn || 0 : 0), max: 3 },
+    { id: "tpl", n: "Battre un Dopeul au temple", go: "temples", v: (S) => (E.templeState ? Object.keys(E.templeState(S).done || {}).length : 0), max: 1 },
+    { id: "avis", n: "Remplir 3 avis de recherche", go: "bounty", v: (S) => DCH(S).c.bounty || 0, max: 3 },
+    { id: "defi", n: "Réussir le défi du jour", go: "defi", v: (S) => (E.defiState && E.defiState(S).chest ? 1 : 0), max: 1 },
+    { id: "tres", n: "Trouver un trésor", go: "tresor", v: (S) => Math.max(0, ((E.tresorState ? E.tresorState(S).n : 0) || 0) - DCH(S).t0), max: 1 },
+    { id: "dj", n: "Finir 5 donjons", go: "donjons", v: (S) => DCH(S).c.dj || 0, max: 5 },
+    { id: "rec", n: "Récolter 300 ressources", go: "metiers", v: (S) => DCH(S).c.harvest || 0, max: 300 },
+    { id: "exp", n: "Réussir une expédition", go: "expeditions", v: (S) => DCH(S).c.mission || 0, max: 1 },
+  ];
+  E.dchProg = (S, T) => { let v = 0; try { v = T.v(S) || 0; } catch (e) {} return [Math.min(v, T.max), T.max]; };
+  E.dchDone = (S) => E.DCH_TASKS.filter((T) => { const [a, b] = E.dchProg(S, T); return a >= b; }).length;
+  E.dchClaim = (S) => {
+    if (!E.histOn(S)) return "Le coffre du jour est réservé à la Saison 1.";
+    const C = DCH(S); if (C.ok) return "Coffre du jour déjà ouvert : le prochain arrive à minuit.";
+    const n = E.dchDone(S); if (n < E.DCH_NEED) return `Encore ${E.DCH_NEED - n} tâche${E.DCH_NEED - n > 1 ? "s" : ""} à faire pour ouvrir le coffre du jour.`;
+    C.ok = 1; E.addCons(S, E.DCH_CHEST); E.note(S, `Coffre du jour : ${D.CONSUMABLES[E.DCH_CHEST].name} reçu !`, "rare"); return null;
+  };
+  if (E.ACTIONS) Object.assign(E.ACTIONS, { dchClaim: "ouvrir le coffre du jour (Saison 1)" });
+  const emit2 = E.emit;
+  E.emit = function (S, t, d) {
+    const r = emit2.apply(this, arguments);
+    if (S && S.s1c && !S.mono && E.histOn(S) && (t === "bounty" || t === "dungeon" || t === "harvest" || t === "mission")) try {
+      const C = DCH(S).c; d = d || {};
+      if (t === "bounty") C.bounty = (C.bounty || 0) + 1;
+      if (t === "dungeon") C.dj = (C.dj || 0) + 1;
+      if (t === "harvest") C.harvest = (C.harvest || 0) + (d.n || 0);
+      if (t === "mission" && d.ok) C.mission = (C.mission || 0) + 1;
+    } catch (e) {}
+    return r;
+  };
+
   /* ---------------- personnage d'une scène ---------------- */
   E.histWho = (sc) => {
     if (sc.npc && E.HIST_NPC[sc.npc]) return E.HIST_NPC[sc.npc];

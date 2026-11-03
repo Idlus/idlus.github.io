@@ -86,3 +86,18 @@ console.log("ok - quêtes de région de la Saison 1 : choix obligatoire, titre d
   E.CAMP.forEach((c) => [...c.in, c.out].forEach((t) => assert(t.length <= 200)));
   now = t0; }
 console.log("ok - campagne de saison : un chapitre par semaine, objectifs, 3 boosters, rattrapage, bonus du serveur une fois");
+
+// coffre du jour (4A) : 5 tâches au choix, un Coffre en argent par jour, Saison 1 seulement
+{ const S = s1(); assert.strictEqual(E.dchDone(S), 0);
+  assert(E.act(S, "dchClaim"), "pas encore 5 tâches");
+  for (let i = 0; i < 3; i++) E.emit(S, "bounty", {});
+  for (let i = 0; i < 5; i++) E.emit(S, "dungeon", { id: "crypte_kardorim" });
+  E.emit(S, "harvest", { n: 300 }); E.emit(S, "mission", { ok: true });
+  assert.strictEqual(E.dchDone(S), 4); assert(E.act(S, "dchClaim"));
+  E.dch(S).t0 -= 1; // un trésor trouvé aujourd'hui
+  assert.strictEqual(E.dchDone(S), 5); const c0 = S.cons[E.DCH_CHEST] || 0;
+  assert.strictEqual(E.act(S, "dchClaim"), null); assert.strictEqual((S.cons[E.DCH_CHEST] || 0) - c0, 1);
+  assert(E.act(S, "dchClaim"), "une fois par jour");
+  const DAY = 86400000; now += DAY; assert.strictEqual(E.dchDone(S), 0, "tout repart à minuit"); now -= DAY;
+  const S2 = E.newState("Héros", "iop"); E.refreshSystems(S2); assert(E.act(S2, "dchClaim"), "Éternel : pas de coffre du jour"); }
+console.log("ok - coffre du jour : 5 tâches au choix, un coffre par jour, rien dans l'Éternel");
