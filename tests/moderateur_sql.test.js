@@ -1,4 +1,4 @@
-/* 2.2.1 « Les modérateurs » : droits des modérateurs dans supabase/chat.sql, dans un vrai Postgres jetable (jamais la base en ligne).
+/* 2.2.2 « Les modérateurs » : droits des modérateurs dans supabase/chat.sql, dans un vrai Postgres jetable (jamais la base en ligne).
    - un modo supprime un message de joueur d'un salon public, jamais un message privé, une annonce, ni un message de Mathis ou d'un modo ;
    - un modo avertit un joueur (message privé marqué data.warn), pas Mathis ni un autre modo, ni lui-même ;
    - un modo rend muet 24 h au plus, jamais un autre modo ; Mathis peut tout ;

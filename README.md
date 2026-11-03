@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2 « Les modérateurs »
+
+- Modérateurs : supprimer un message du chat public, avertir un joueur en privé, muet 24 h au plus ; jamais sur Mathis ni un autre modo.
+- Pseudo vert des modérateurs dans le chat ; sur Discord, le rôle Modérateur peut supprimer des messages, charte et journal des actions dans #modération.
+
 ## 2.2.1.1 « Mode Ironman »
 
 - Monocompte, mode Ironman (Mathis 1C 2A 3A 4A, 03/11, retour d'un joueur) : `S.mono.iron` (js/mono.js : `E.monoIron`, `monoIronOn`, `monoIronQuit`), les 12 métiers jusqu'au niveau 200 ; HdV (vente, achat, offres) et échanges bloqués (`IRON_RPC`, js/online.js), renfort fermé (js/monoplus.js). Passage en manche 1 ou héros niveau 20 au plus, sortie une fois (métiers hors spécialités à 100).

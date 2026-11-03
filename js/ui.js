@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.1.1";
+const GAME_VERSION = "2.2.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.2", name: "Les modérateurs", items: [
+    "Les modérateurs peuvent supprimer un message du chat public et avertir un joueur. L'avertissement arrive en message privé, marqué « Avertissement de la modération »",
+    "Le pseudo des modérateurs est en vert dans le chat, avec leur badge, pour les reconnaître d'un coup d'œil",
+    "Un modérateur ne peut pas sanctionner un autre modérateur. Bannir et suspendre restent réservés à Mathis" ] },
   { v: "2.2.1.1", name: "Mode Ironman", items: [
     "Monocompte : nouveau mode Ironman, pour tout faire seul. Tes 12 métiers de récolte et d'artisanat montent tous jusqu'au niveau 200, mais sans HdV, sans échange avec un joueur et sans renfort d'un ami. Groupes et mercenaire restent permis. Merci pour l'idée !",
     "Il se choisit dans Métiers, sous tes spécialités : pendant la manche 1, ou plus tard tant que ton héros n'a pas dépassé le niveau 20. Retire d'abord tes ventes et offres d'achat en cours",

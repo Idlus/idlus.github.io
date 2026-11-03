@@ -1,4 +1,4 @@
-/* 2.2.1 « Les modérateurs » : PC 1280 px et téléphone 390 px, sans erreur console ni défilement de côté.
+/* 2.2.2 « Les modérateurs » : PC 1280 px et téléphone 390 px, sans erreur console ni défilement de côté.
    - connecté en modérateur : menu d'un joueur = « Supprimer ce message », « L'avertir », muet ; menu d'un autre modo ou de Mathis :
      ni suppression, ni avertissement, ni sanction ; « L'avertir » ouvre la fiche, une phrase toute prête, envoi = adm_warn ;
    - pseudo d'un modo en couleur de l'équipe (pas celle de la Garde-robe) ;

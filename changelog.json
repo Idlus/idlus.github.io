@@ -1,6 +1,15 @@
 {
-  "version": "2.2.1.1",
+  "version": "2.2.2",
   "versions": [
+    {
+      "v": "2.2.2",
+      "name": "Les modérateurs",
+      "items": [
+        "Les modérateurs peuvent supprimer un message du chat public et avertir un joueur. L'avertissement arrive en message privé, marqué « Avertissement de la modération »",
+        "Le pseudo des modérateurs est en vert dans le chat, avec leur badge, pour les reconnaître d'un coup d'œil",
+        "Un modérateur ne peut pas sanctionner un autre modérateur. Bannir et suspendre restent réservés à Mathis"
+      ]
+    },
     {
       "v": "2.2.1.1",
       "name": "Mode Ironman",

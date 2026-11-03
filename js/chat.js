@@ -284,14 +284,14 @@
     const mono = m.ch === "m", mh = mono ? monoHero(m) : null;
     const cls = mono ? mh.cls : m.cls, lvl = mono ? mh.lvl : m.lvl, title = mono ? mh.title : m.title;
     const med = X().cmed(cls, lvl);
-    const warn = m.ch === "p" && m.data && m.data.warn; // 2.2.1 : avertissement de la modération (adm_warn)
+    const warn = m.ch === "p" && m.data && m.data.warn; // 2.2.2 : avertissement de la modération (adm_warn)
     return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${warn ? " warnmsg" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${pcWrap(m, X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null))}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt${ttR(title)}">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${warn ? `<b class="warnlbl">${X().G("warn")} Avertissement de la modération</b> ` : ""}${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   /* 2.1.35.3 : héros Monocompte d'un message du salon 'm' (data.mono posé par chat_send) ; ancien message : rien */
   /* Saison 1, lot 3 (js/garderobe.js) : titre coloré par sa rareté, couleur du pseudo choisie dans la Garde-robe (data.pc posé par chat_send) */
   const PCOLS = ["braise", "sylve", "givre", "or", "temps", "voix", "v_cadran", "v_sablier"];
   const ttR = (t) => { const E = window.DX && window.DX.E; return E && E.titleRar ? " gr-t-" + E.titleRar(t) : ""; };
-  const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) && !isStaffU(m.user_id) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; }; // 2.2.1 : la couleur de l'équipe passe avant celle de la Garde-robe
+  const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) && !isStaffU(m.user_id) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; }; // 2.2.2 : la couleur de l'équipe passe avant celle de la Garde-robe
   const monoHero = (m) => (m && m.data && m.data.mono ? { cls: m.cls || null, lvl: m.lvl || 1, title: m.title || null } : { cls: null, lvl: 0, title: null });
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {
@@ -455,7 +455,7 @@
     const hero = CL ? `<b>${h(CL.name)}</b>${P.lvl ? ` <span class="lv">niv. ${+P.lvl}</span>` : ""}${P.hero ? `<span class="xs muted"> · ${h(P.hero)}</span>` : ""}${P.iron ? ` <span class="mp-o mp-iron">Ironman</span>` : ""}` : P.wait ? `<span class="muted">Héros Monocompte…</span>` : `<span class="muted">Pas encore de héros Monocompte</span>`;
     return `${X().cmed(CL ? P.cls : null, CL ? P.lvl : 0)}<div class="chm-t"><div>${hero}</div>${P.title ? `<div class="tt">${h(P.title)}</div>` : ""}${P.nom ? `<div class="xs muted">${h(P.nom)}</div>` : ""}</div>`;
   }
-  /* 2.2.1 « Les modérateurs » : un modo n'agit ni sur Mathis ni sur un autre modo (le serveur refuse aussi, adm_need_target) ;
+  /* 2.2.2 « Les modérateurs » : un modo n'agit ni sur Mathis ni sur un autre modo (le serveur refuse aussi, adm_need_target) ;
      il supprime seulement un message de joueur d'un salon public */
   const isStaffU = (u) => !!u && / is-(crea|mod)/.test(X().staffCls(u));
   const canAct = (u) => isAdmin() || (C.role && !isStaffU(u));
@@ -470,7 +470,7 @@
       <label class="row small"><input type="checkbox" id="chRepIgn" checked> Ignorer aussi ses messages</label>
       <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Annuler</button><button class="btn primary" data-act="ch-repgo" data-u="${h(u)}" data-id="${id}">Envoyer le signalement</button></div>`);
   }
-  /* 2.2.1 « Les modérateurs » : avertir un joueur. Il le reçoit en message privé, marqué « Avertissement de la modération ». */
+  /* 2.2.2 « Les modérateurs » : avertir un joueur. Il le reçoit en message privé, marqué « Avertissement de la modération ». */
   const WARN_TXT = ["Reste courtois dans le chat, s'il te plaît.", "Pas de publicité ni de liens dans le chat.", "Évite de répéter le même message (spam)."];
   function warnSheet(u, p, close) {
     X().openSheet(`<h2>Avertir ${h(p)}</h2><p class="muted small">${h(p)} le reçoit en message privé, marqué « Avertissement de la modération ». L'action est notée dans le journal.</p>
@@ -763,7 +763,7 @@
       case "adm-chclear": if (!confirm(`Vider tout le salon ${d.n} ?`)) return; if (await admDo("adm_chat_clear", { p_ch: d.v }, `Salon ${d.n} vidé.`)) { C[d.v] = C[d.v].filter((m) => m.kind !== "msg"); paint(true); } return;
       case "adm-chclose": if (await admDo("adm_chat_close", { p_on: d.v === "1" }, d.v === "1" ? "Chat fermé : les joueurs ne peuvent plus écrire." : "Chat rouvert.")) { C.me.closed = d.v === "1"; paint(true); } return;
       case "adm-warnpick": { const ta = $("#admWarn"); if (ta) { ta.value = d.t; ta.focus(); } return; }
-      case "adm-warn": if (d.m) closeMenu(); warnSheet(d.u, d.p, !!d.close); return; // 2.2.1
+      case "adm-warn": if (d.m) closeMenu(); warnSheet(d.u, d.p, !!d.close); return; // 2.2.2
       case "adm-warngo": {
         const t = $("#admWarn") ? $("#admWarn").value.trim() : ""; if (!t) return X().toast("Écris la raison de l'avertissement.");
         if (await admDo("adm_warn", { p_user: d.u, p_body: t }, `${d.p} a reçu l'avertissement en privé.`)) { X().closeSheet(); if (d.close) await admDo("adm_report_close", { p_user: d.u });} return;

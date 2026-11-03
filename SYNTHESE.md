@@ -52,6 +52,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 - Pas de version bêta séparée : tests (PC 1280 px, téléphone 390 px) puis publication directe sur `main`, note Discord et annonce en jeu sans redemander (22/10).
 - Serveur, base de données, sauvegardes des joueurs, remises à zéro, posts X : les mots écrits de Mathis sont obligatoires.
 - Seul Mathis décide qui triche ; le Bouclier est la seule protection des sauvegardes.
+- Modération (2.2.2, 03/11) : Mathis nomme seul les modérateurs (Panel › Équipe en jeu, rôle à la main sur Discord). Un modo supprime un message public, avertit en privé, rend muet 24 h au plus, jamais sur Mathis ni un autre modo ; pas de bannissement, de suspension, ni d'accès aux sauvegardes ou aux kamas. Ses actions arrivent dans #modération. La triche reste du ressort de Mathis.
 - Dofus : quête (1 par compte), butin de boss, codes ; aucun bonus sur leurs chances.
 - Pas de jetons de challenge.
 - Combat : la grille tactique est mise de côté pour la Saison 1 ; le combat idle est enrichi par les annonces du boss et les parades (2.1.42, 02/11). Mesure à suivre : le taux de parades.

@@ -171,7 +171,7 @@ alter table public.admin_log enable row level security;
 create or replace function public.alog(t text) returns void language sql security definer set search_path = public
   as $$ insert into public.admin_log (by_user, txt) values (auth.uid(), t) $$;
 revoke all on function public.alog(text) from public, anon, authenticated;
--- 2.2.1 (rôle modérateur, 6B) : les actions des modérateurs partent aussi dans #modération sur Discord (workflow « Journal de
+-- 2.2.2 (rôle modérateur, 6B) : les actions des modérateurs partent aussi dans #modération sur Discord (workflow « Journal de
 -- modération vers Discord », toutes les 10 min) ; discord_at = envoyé. Les lignes d'avant sont marquées envoyées à la création.
 do $$ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'admin_log' and column_name = 'discord_at') then
@@ -365,7 +365,7 @@ as $$ begin
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v', 'm', 's') and kind = 'msg' order by id desc limit 15) x);
 end $$;
 
--- 2.2.1 (rôle modérateur, 2A) : un modérateur ne peut agir ni sur Mathis ni sur un autre modérateur ; seul Mathis sanctionne un modo.
+-- 2.2.2 (rôle modérateur, 2A) : un modérateur ne peut agir ni sur Mathis ni sur un autre modérateur ; seul Mathis sanctionne un modo.
 create or replace function public.adm_need_target(p_user uuid) returns void language plpgsql stable security definer set search_path = public
 as $$ begin
   if exists (select 1 from admins where user_id = p_user) then raise exception 'impossible sur Mathis'; end if;
@@ -507,7 +507,7 @@ end $$;
 -- ---------- 1.2.10.1 : tous les droits de Mathis sur le chat ----------
 -- Supprimer un message, effacer tous les messages publics d'un joueur, vider un salon, fermer le chat.
 -- Réservé au compte admin (adm_need) ; les joueurs voient la suppression en direct (temps réel DELETE).
--- 2.2.1 (rôle modérateur, 1A) : les modérateurs aussi suppriment un message, mais seulement un message de joueur d'un salon public
+-- 2.2.2 (rôle modérateur, 1A) : les modérateurs aussi suppriment un message, mais seulement un message de joueur d'un salon public
 -- (pas les messages privés, pas les annonces, pas les messages de Mathis ou d'un autre modo).
 create or replace function public.adm_msg_del(p_id bigint) returns void language plpgsql security definer set search_path = public
 as $$ declare m record; begin
@@ -522,7 +522,7 @@ as $$ declare m record; begin
   if m.user_id is not null then perform public.alog(format('message de %s supprimé : « %s »', public.pseudo_of(m.user_id), left(coalesce(m.body, ''), 60))); end if;
 end $$;
 
--- 2.2.1 (rôle modérateur, 1A) : avertir un joueur. Message privé du modo (ou de Mathis) marqué data.warn : le jeu l'affiche
+-- 2.2.2 (rôle modérateur, 1A) : avertir un joueur. Message privé du modo (ou de Mathis) marqué data.warn : le jeu l'affiche
 -- comme un avertissement officiel. Renvoie null si c'est parti, sinon la raison.
 create or replace function public.adm_warn(p_user uuid, p_body text) returns text language plpgsql security definer set search_path = public
 as $$ declare b text := btrim(coalesce(p_body, '')); me uuid := auth.uid(); pr record; begin

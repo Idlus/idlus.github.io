@@ -232,7 +232,7 @@ async function main() {
     } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
     console.log("Idées publiées dans #idées :", done.length);
   } else if (cmd === "moderation") {
-    // 2.2.1 « Les modérateurs » (6B) : actions des modérateurs dans le jeu (admin_log, workflow « Journal de modération »)
+    // 2.2.2 « Les modérateurs » (6B) : actions des modérateurs dans le jeu (admin_log, workflow « Journal de modération »)
     // → salon privé #modération ; DISCORD_SORTIE = numéros des lignes envoyées. Textes sans mention ni lien actif.
     const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
     const clean = (t, n) => String(t || "").replace(/@/g, "@\u200b").replace(/https?:\/\//g, "").replace(/[*_`~|>]/g, "").slice(0, n);

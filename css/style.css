@@ -2866,11 +2866,11 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .xtag{color:#2a1c05;background:linear-gradient(180deg,#ffe9a3,#f4c84a)}
 .mtag{color:#13200a;background:linear-gradient(180deg,#d6f27e,#8cc63f)}
 .mtag .uico{width:11px;height:11px}
-/* 2.2.1 « Les modérateurs » (3B) : pseudo vert de l'équipe, en plus du badge, et ligne du chat légèrement marquée */
+/* 2.2.2 « Les modérateurs » (3B) : pseudo vert de l'équipe, en plus du badge, et ligne du chat légèrement marquée */
 .chat .msg.is-mod .ps,.chat .msg.me.is-mod .ps{color:#9fd94a}
 .chat .msg.is-mod{background:linear-gradient(90deg,rgba(140,198,63,.11),transparent 70%);box-shadow:inset 3px 0 0 #8cc63f;border-radius:8px;padding:3px 5px}
 .lbr.is-mod,.gmrow.is-mod{background:linear-gradient(90deg,rgba(140,198,63,.10),transparent 75%)}
-/* 2.2.1 : avertissement de la modération (message privé, adm_warn) */
+/* 2.2.2 : avertissement de la modération (message privé, adm_warn) */
 .chat .msg.warnmsg{background:linear-gradient(90deg,rgba(255,140,60,.16),rgba(255,140,60,.03));box-shadow:inset 3px 0 0 #ff8c3c;border-radius:8px;padding:4px 6px}
 .chat .warnlbl{display:flex;margin-bottom:2px;align-items:center;gap:4px;color:#ff9d4a;font-weight:900}
 .chat .warnlbl .uico{width:13px;height:13px}
@@ -6574,5 +6574,5 @@ body.tb1 #chat .chmin{display:none}
 @media (max-width:640px){.hresume{flex-wrap:wrap}.hresume .btn.big{width:100%}.hubtop.slim{min-height:64px}}
 .hdoor,.hub3>*{min-width:0}.hrow .grow,.hresume .grow,.srvr .grow{flex:1;min-width:0}.hrow small{overflow-wrap:anywhere}
 .hubtop.slim h2{font-size:clamp(18px,5vw,26px)}
-.svm{grid-template-columns:minmax(0,1fr)}.svlog{min-width:0}.svmail input{width:0} /* 2.2.1 : l'écran de choix ne déborde plus sur le côté au téléphone (non connecté) */
+.svm{grid-template-columns:minmax(0,1fr)}.svlog{min-width:0}.svmail input{width:0} /* 2.2.2 : l'écran de choix ne déborde plus sur le côté au téléphone (non connecté) */
 .srvpill{border-radius:999px!important;padding:4px 10px!important;background:var(--panel3)!important;position:relative;z-index:2}

@@ -1,4 +1,4 @@
-# Journal de modération vers Discord (2.2.1 « Les modérateurs », réponse 6B de Mathis) : toutes les 10 minutes, envoie dans le
+# Journal de modération vers Discord (2.2.2 « Les modérateurs », réponse 6B de Mathis) : toutes les 10 minutes, envoie dans le
 # salon privé #modération les actions faites dans le jeu par les modérateurs (table admin_log de supabase/chat.sql, lignes dont
 # l'auteur est dans « mods » et discord_at vide), puis marque ces lignes envoyées. Les actions de Mathis n'y vont pas.
 # Secrets : VPS_HOST, VPS_USER, VPS_NEW_PASSWORD (serveur OVH : lire et marquer) et DISCORD_BOT_TOKEN (publier).
