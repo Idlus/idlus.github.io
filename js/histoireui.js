@@ -76,10 +76,44 @@
       ${b > 1 ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num small">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div>
       <div class="qj-acts">${X().questGoBtn(q, "primary")}<button class="btn sm" data-act="qtab" data-v="main">Toute la scène</button></div></div>`;
   }
+  /* ---------- campagne de saison (3A) ---------- */
+  const cst = { cnt: null, at: 0, busy: false };
+  async function campSync(force) {
+    const s = window.DX && window.DX.S; const ON = window.ONLINE;
+    if (!s || !E.histOn(s) || !ON || !ON.campCount || cst.busy || (!force && Date.now() - cst.at < 300000)) return;
+    cst.busy = true; cst.at = Date.now();
+    try {
+      const T = E.camp(s);
+      for (const f of T.fin) if (!f.sent && f.w === f.i + 1) { const n = await ON.campDone(f.i + 1); if (n != null) f.sent = 1; }
+      const c = await ON.campCount(); if (c) { cst.cnt = c; let got = false; E.CAMP.forEach((_, i) => { if (E.campBonus(s, i, +c[i + 1] || 0)) got = true; }); if (got && X().markDirty) X().markDirty(); }
+    } catch (e) {} finally { cst.busy = false; }
+  }
+  setInterval(() => campSync(false), 60000);
+  function campHtml(s, head) {
+    campSync(false);
+    const T = E.camp(s); const wk = E.campWeek(s); const cur = E.campCur(s);
+    const manche = (i) => (E.S1C ? E.S1C.manches[Math.floor(i / 2)] : "");
+    const who = { npc: "xelorium" };
+    const rows = E.CAMP.map((C, i) => {
+      const done = i < T.c, open = E.campOpen(s, i), isCur = i === cur; const n = cst.cnt ? +cst.cnt[i + 1] || 0 : null;
+      const srv = `<span class="hs-srv ${n != null && n >= E.CAMP_GOAL ? "ok" : ""}">${IC("monde")} Objectif du serveur : ${n == null ? `<b class="num">${E.CAMP_GOAL}</b> aventuriers finissent ce chapitre pendant sa semaine` : `<b class="num">${fmt(Math.min(n, 9999))}/${E.CAMP_GOAL}</b> aventuriers ont fini ce chapitre pendant sa semaine`}${T.bon.includes(i) ? " · Coffre en or reçu ✓" : ""}</span>`;
+      if (!open && !done) return `<div class="hs-next lock"><span class="hs-por ini sm"><b>${i + 1}</b></span><b class="grow">Chapitre ${i + 1} · ${i === wk ? h(C.t) : "???"}</b><span class="xs muted">semaine ${i + 1}${E.S1C ? ` · ${h(manche(i))}` : ""}</span></div>`;
+      if (done) return `<details class="hs-past"><summary>${portrait(who, "sm")}<b class="grow">Chapitre ${i + 1} · ${h(C.t)}</b><span class="xs muted">✓ fini</span></summary><div class="hs-talk">${C.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}<p class="hs-bub end">${h(C.out)}</p></div>${srv}</details>`;
+      const goals = Object.keys(C.g).map((k) => { const [a, b] = E.campProg(s, i, k); const ok = a >= b;
+        return `<li class="${ok ? "ok" : ""}"><span class="hs-ck">${ok ? "✓" : ""}</span><div class="grow stack" style="gap:3px"><b>${h(E.CAMP_K[k])}</b>${!ok ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div></li>`; }).join("");
+      return `<section class="panel hs-card"><div class="pad stack" style="gap:12px">
+        <div class="hs-top">${portrait(who, "big")}<div class="grow stack" style="gap:2px"><span class="qj-eb">Campagne de saison · chapitre ${i + 1} sur ${E.CAMP.length}${E.S1C ? ` · ${h(manche(i))}` : ""}</span><h3>${h(C.t)}</h3><span class="xs muted">${h(E.HIST_NPC.xelorium.n)} · ${h(E.HIST_NPC.xelorium.r)}</span></div></div>
+        <div class="hs-talk">${C.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}</div>
+        <ol class="hs-goals">${goals}</ol>
+        <span class="qj-rew">${IC("coffre")} Récompenses : <b>${E.CAMP_BOOST} boosters de cartes, Coffre en argent${i === E.CAMP.length - 1 ? ", titre « Gardien du Temps »" : ""}</b></span>
+        ${srv}${isCur && i + 1 < wk ? `<span class="xs muted">Tu as du retard : les chapitres se rattrapent dans l'ordre, mais l'objectif du serveur ne compte que pendant la semaine du chapitre.</span>` : ""}</div></section>`; });
+    const head2 = head;
+    return `${head2}<div class="stack" style="gap:10px"><span class="qj-lab">Semaine ${Math.min(wk, 8)} de la saison · ${fmt(Math.min(T.c, E.CAMP.length))}/${E.CAMP.length} chapitres finis</span>${rows.join("")}</div>`;
+  }
   function act(a, t) {
     if (a === "qj-hsch") { st.ch = +t.dataset.v; X().render(); return true; }
     return false;
   }
   document.addEventListener("toggle", (e) => { const el = e.target; if (el.classList && el.classList.contains("hs-past")) st.open[el.dataset.n] = el.open; }, true);
-  window.HUI = { mainHtml, heroHtml, act, on: (s) => !!(E.histOn && E.histOn(s)) };
+  window.HUI = { mainHtml, heroHtml, campHtml, campSync, act, on: (s) => !!(E.histOn && E.histOn(s)) };
 })();

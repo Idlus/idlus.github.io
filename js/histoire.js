@@ -438,6 +438,90 @@
   Object.values(E.RQ_S1).forEach((x) => { x.in = x.in.map(nb); x.q = nb(x.q); ["a", "b"].forEach((k) => { x[k] = x[k].map(nb); }); });
   E.rqNpc = (S, R) => (E.histOn(S) && E.RQ_S1[R.id] && E.RQ_S1[R.id].npc) || R.npc;
 
+
+  /* ======================= CAMPAGNE DE SAISON (3A : un chapitre par semaine, objectif commun au serveur) =======================
+     8 chapitres, le n° k s'ouvre la semaine k de la saison et se rattrape à tout moment, dans l'ordre. Objectifs à la portée
+     de tous les niveaux (donjons à ton niveau, archimonstres, récolte, avis, Fragments du Temps), comptés à partir du moment
+     où le chapitre devient le tien. Récompense : 3 boosters et un Coffre en argent. Objectif du serveur : E.CAMP_GOAL joueurs
+     qui finissent le chapitre pendant sa semaine (supabase/histoire_s1.sql) ; atteint, chacun de ceux qui l'ont fini
+     reçoit un Coffre en or en plus. */
+  E.CAMP_BOOST = 3; E.CAMP_GOAL = 30;
+  E.CAMP_K = { dj: "Donjons à ton niveau (équipe − 20 ou plus)", arch: "Archimonstres vaincus", harvest: "Ressources récoltées", bounty: "Avis de recherche remplis", frag: "Fragments du Temps gagnés" };
+  E.CAMP = [
+    { t: "La Fissure", npc: "xelorium", g: { dj: 5, harvest: 200, bounty: 2 },
+      in: ["Tu l'as senti, toi aussi ? Le ciel s'est fendu au-dessus du Monde des Douze. Une fissure dans le temps lui-même.", "Des morceaux d'heures en tombent : les Fragments du Temps. Il faut comprendre ce qui se passe. Commence par explorer."],
+      out: "Tu reviens avec des Fragments plein les poches. La fissure grandit, mais nous savons maintenant ce qu'elle laisse tomber." },
+    { t: "Les premiers Fragments", npc: "xelorium", g: { frag: 40, arch: 2, dj: 6 },
+      in: ["Chaque Fragment garde un instant du passé. Si on en réunit assez, on pourra peut-être refermer la fissure.", "Les archimonstres semblent attirés par eux. Chasse-les et ramène tous les Fragments que tu trouves."],
+      out: "Assez de Fragments pour un premier essai ! Mais quand je les ai réunis, j'ai entendu une horloge rire. Ce n'est pas normal." },
+    { t: "Échos du passé", npc: "xelorium", g: { dj: 8, harvest: 300, bounty: 3 },
+      in: ["La fissure renvoie des échos : des monstres d'autrefois reviennent dans les donjons, comme s'ils n'avaient jamais été vaincus.", "Retourne dans les donjons à ton niveau et fais taire ces échos avant qu'ils ne deviennent réels."],
+      out: "Les échos se taisent. Et j'ai trouvé une signature gravée sur un Fragment : Noximilien l'Horloger." },
+    { t: "L'Horloger", npc: "xelorium", g: { frag: 60, arch: 3, dj: 8 },
+      in: ["Noximilien l'Horloger. Un ancien disciple de Xélor, banni pour avoir voulu arrêter le temps. C'est lui qui a ouvert la fissure.", "Il se sert des Fragments pour bâtir une horloge géante. Ramène-en plus que lui, et on ralentira son projet."],
+      out: "Noximilien a perdu des Fragments, et il est furieux. Il a promis de briser toutes les horloges du monde. Prépare-toi." },
+    { t: "La Rupture", npc: "xelorium", g: { dj: 10, harvest: 400, bounty: 4 },
+      in: ["C'est arrivé : la Rupture. Le temps saute, recule, s'arrête. Au Xélorium, les tiroirs des heures s'ouvrent tout seuls.", "Il faut tenir le Monde des Douze pendant que je répare. Les donjons, les champs, les avis : tout doit continuer à tourner."],
+      out: "Tu as tenu bon, et le monde aussi. Le temps boite encore, mais il avance. Noximilien ne s'attendait pas à toi." },
+    { t: "Les horloges brisées", npc: "xelorium", g: { frag: 80, arch: 4, dj: 10 },
+      in: ["Noximilien a brisé les horloges des grandes cités. À Bonta comme à Brâkmar, plus personne ne sait quelle heure il est.", "Chaque Fragment que tu rapportes répare une horloge. Les archimonstres en gardent beaucoup : à toi de jouer."],
+      out: "Les cloches de Bonta et de Brâkmar sonnent de nouveau, à la même heure. Ça faisait longtemps. Il reste un seul sablier." },
+    { t: "Le Dernier Sablier", npc: "xelorium", g: { dj: 12, harvest: 500, bounty: 5 },
+      in: ["Noximilien s'est enfermé avec le Dernier Sablier, celui qui contient tout le temps de la saison. S'il le retourne, tout s'arrête.", "Il faut l'user avant qu'il ne soit prêt. Partout où tu vas, frappe fort et vite : chaque minute compte."],
+      out: "Le Dernier Sablier tremble. Noximilien a perdu sa patience, c'est un comble pour un horloger. C'est le moment d'en finir." },
+    { t: "Le temps retrouvé", npc: "xelorium", g: { frag: 100, arch: 5, dj: 12 },
+      in: ["Voilà la dernière heure. Avec tous les Fragments du monde, je peux refermer la fissure, mais il m'en faut encore.", "Rapporte-les-moi, et Noximilien retournera là où le temps ne passe plus. Le Monde des Douze compte sur toi."],
+      out: "La fissure se referme dans un tic-tac géant. Le temps est retrouvé. Le Monde des Douze se souviendra de cette saison, et de toi." },
+  ];
+  const nb2 = (t) => t.replace(/ ([?!:;»])/g, " $1").replace(/« /g, "« ");
+  E.CAMP.forEach((c) => { c.in = c.in.map(nb2); c.out = nb2(c.out); });
+  const CS = (S) => { if (!S.camp) S.camp = { c: 0, p: {}, f0: null, fin: [], bon: [] }; return S.camp; };
+  E.camp = CS;
+  E.campWeek = (S) => (E.s1cWeek ? E.s1cWeek(S) : 1);
+  E.campOpen = (S, i) => E.histOn(S) && i < E.CAMP.length && i < E.campWeek(S) && !(E.s1cOver && E.s1cOver(S));
+  E.campCur = (S) => { const T = CS(S); return E.campOpen(S, T.c) ? T.c : -1; };
+  const fragAct = (S) => (E.s1cFragAct ? E.s1cFragAct(S) : 0);
+  E.campProg = (S, i, k) => {
+    const T = CS(S); const n = E.CAMP[i].g[k];
+    if (i < T.c) return [n, n];
+    if (i > T.c || !E.campOpen(S, i)) return [0, n];
+    if (k === "frag") { if (T.f0 == null) T.f0 = fragAct(S); return [Math.min(n, Math.max(0, fragAct(S) - T.f0)), n]; }
+    return [Math.min(n, T.p[k] || 0), n];
+  };
+  E.campCheck = (S) => {
+    if (!E.histOn(S)) return; const T = CS(S); let g = 0;
+    while (g++ < 8) {
+      const i = E.campCur(S); if (i < 0) return; const C = E.CAMP[i];
+      if (T.f0 == null) T.f0 = fragAct(S);
+      if (!Object.keys(C.g).every((k) => { const [a, b] = E.campProg(S, i, k); return a >= b; })) return;
+      T.c++; T.p = {}; T.f0 = null; T.fin.push({ i, w: E.campWeek(S), t: E.now() }); // w : semaine où il a été fini (le serveur ne compte que sa semaine)
+      E.addCons(S, "coffre_argent"); const nb = E.boosterGive ? E.boosterGive(S, E.CAMP_BOOST) : 0;
+      if (i === E.CAMP.length - 1) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes("Gardien du Temps")) S.titlesExtra.push("Gardien du Temps"); }
+      E.note(S, `Campagne de saison · chapitre ${i + 1} fini : ${C.t} (Coffre en argent${nb ? `, +${nb} boosters` : ""}${i === E.CAMP.length - 1 ? ", titre « Gardien du Temps »" : ""})`, "rare");
+      E.emit(S, "campfin", { i });
+    }
+  };
+  // objectif du serveur atteint (nombre lu par l'interface) : un Coffre en or pour qui a fini le chapitre pendant sa semaine
+  E.campBonus = (S, i, count) => {
+    const T = CS(S); if (!E.histOn(S) || T.bon.includes(i) || !(count >= E.CAMP_GOAL)) return false;
+    if (!T.fin.some((f) => f.i === i && f.w === i + 1)) return false;
+    T.bon.push(i); E.addCons(S, "coffre_or");
+    E.note(S, `Objectif du serveur atteint pour « ${E.CAMP[i].t} » : ${count} aventuriers ! Coffre en or reçu.`, "rare"); return true;
+  };
+  const campCount = (S, t, d) => {
+    const i = E.campCur(S); if (i < 0) return; const T = CS(S); const G = E.CAMP[i].g; const add = (k, n) => { if (G[k]) T.p[k] = (T.p[k] || 0) + n; };
+    if (t === "dungeon" && D.DUNGEONS[d.id] && D.DUNGEONS[d.id].lvl >= topLvl(S) - 20) add("dj", 1);
+    if (t === "win") (d.mons || []).forEach((m) => { if (m.archi) add("arch", 1); });
+    if (t === "harvest") add("harvest", d.n || 0);
+    if (t === "bounty") add("bounty", 1);
+  };
+  const emit1 = E.emit;
+  E.emit = function (S, t, d) {
+    const r = emit1.apply(this, arguments);
+    if (S && S.s1c && !S.mono && E.histOn(S) && t !== "campfin") try { campCount(S, t, d || {}); E.campCheck(S); } catch (e) {}
+    return r;
+  };
+
   /* ---------------- personnage d'une scène ---------------- */
   E.histWho = (sc) => {
     if (sc.npc && E.HIST_NPC[sc.npc]) return E.HIST_NPC[sc.npc];

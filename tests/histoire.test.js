@@ -69,3 +69,20 @@ console.log("ok - Éternel : quête principale inchangée");
   const S2 = E.newState("Héros", "iop"); E.refreshSystems(S2); const T2 = E.rqState(S2, "incarnam"); T2.i = R.steps.length - 1;
   assert.strictEqual(E.rqClaim(S2, "incarnam"), null); assert(S2.titlesExtra.includes(E.regionTitle(R)), "Éternel : titre d'avant"); }
 console.log("ok - quêtes de région de la Saison 1 : choix obligatoire, titre du choix, 2 boosters ; Éternel inchangé");
+
+// campagne de saison : un chapitre par semaine, rattrapable dans l'ordre, objectifs comptés, bonus du serveur
+{ const DAY = 86400000; const t0 = now; const S = s1();
+  assert.strictEqual(E.campCur(S), 0); assert.strictEqual(E.campOpen(S, 1), false, "le chapitre 2 attend la semaine 2");
+  const b0 = E.boosterLeft(S); const C = E.CAMP[0];
+  for (let i = 0; i < C.g.dj; i++) E.emit(S, "dungeon", { id: "crypte_kardorim" });
+  E.emit(S, "harvest", { n: C.g.harvest }); assert.strictEqual(E.camp(S).c, 0, "pas encore les avis");
+  const b1 = E.boosterLeft(S); void b0; // (les donjons donnent aussi leurs boosters : on compte à partir d'ici)
+  for (let i = 0; i < C.g.bounty; i++) E.emit(S, "bounty", {});
+  assert.strictEqual(E.camp(S).c, 1, "chapitre 1 fini"); assert.strictEqual(E.boosterLeft(S) - b1, E.CAMP_BOOST);
+  assert.strictEqual(E.campCur(S), -1, "chapitre 2 pas encore ouvert");
+  assert.strictEqual(E.campBonus(S, 0, E.CAMP_GOAL - 1), false); assert.strictEqual(E.campBonus(S, 0, E.CAMP_GOAL), true); assert.strictEqual(E.campBonus(S, 0, 99), false, "une seule fois");
+  now = t0 + 7 * DAY; assert.strictEqual(E.campCur(S), 1, "semaine 2 : chapitre 2");
+  now = t0 + 30 * DAY; assert.strictEqual(E.campCur(S), 1, "en retard : on reprend où on en était");
+  E.CAMP.forEach((c) => [...c.in, c.out].forEach((t) => assert(t.length <= 200)));
+  now = t0; }
+console.log("ok - campagne de saison : un chapitre par semaine, objectifs, 3 boosters, rattrapage, bonus du serveur une fois");

@@ -45,3 +45,6 @@
 .hs-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .hs-opts .btn{display:grid;gap:2px;text-align:left;padding:8px 10px;height:auto;white-space:normal}
 .hs-opts .btn small{font-weight:600;opacity:.8}
+.hs-srv{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent,#3aa57a) 10%,transparent);font-size:.9em}
+.hs-srv.ok{background:color-mix(in srgb,#e0b84a 22%,transparent)}
+.hs-srv .uico{width:18px;height:18px}

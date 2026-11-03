@@ -416,6 +416,9 @@
   ON.fragPush = (rows) => s1call("frag_post", { p_rows: rows });
   ON.vitBuy = async (id) => { const r = await s1call("vit_buy", { p_id: id }); return r.err ? r.err : r.data || null; };
   ON.vitMine = async () => { const r = await s1call("vit_mine", {}); return r.err ? null : r.data || []; };
+  // Saison 1, quêtes : campagne de saison (supabase/histoire_s1.sql) : chapitre fini pendant sa semaine, nombres du serveur
+  ON.campDone = async (ch) => { const r = await s1call("camp_done", { p_ch: ch }); return r.err ? null : r.data; };
+  ON.campCount = async () => { const r = await s1call("camp_count", {}); return r.err ? null : r.data || {}; };
   /* Saison 1, lot 3 : couleur du pseudo (js/garderobe.js), envoyée seulement quand le serveur la connaît (SRV.gr, posé à l'installation) */
   const pcOf = () => { const D = root.DX, S = D && D.S, E = D && D.E; return ON.grSrv && S && E && E.grPcol ? E.grPcol(S) : null; };
   ON.chatSend = async (body, to, item, ch) => { const pc = pcOf(); const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {}, pc ? { p_pc: pc } : {})); return r.err ? r.err : r.data || null; };

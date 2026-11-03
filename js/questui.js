@@ -24,7 +24,7 @@
 
   const FAMS = [
     { id: "day", n: "Aujourd'hui", ic: "almanax", pages: [["jour", "Tableau du jour", "almanax"], ["hebdo", "Semaine", "coffre"], ["almanax", "Almanax", "almanax"], ["commandes", "Commandes", "metiers"], ["temples", "Temples", "combat"]] },
-    { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["region", "Quêtes de région", "monde"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
+    { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["camp", "Campagne de saison", "parchemin_or"], ["region", "Quêtes de région", "monde"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
     { id: "hunt", n: "Chasses", ic: "carte", pages: [["bounty", "Avis de recherche", "carte"], ["tresor", "Trésor", "parchemin_or"]] },
   ];
   const famOf = (qt) => (FAMS.find((F) => F.pages.some((p) => p[0] === qt)) || FAMS[0]).id;
@@ -57,6 +57,7 @@
       case "tresor": { const T = E.tresorState(s); return T.cur ? ["en cours", "todo"] : T.stock.length ? [`${T.stock.length}`, "todo"] : ["", ""]; }
       case "commandes": { const C = E.cmdState(s); const done = C.dn || 0; return [`${done}/${E.CMD_DAY_MAX}`, done >= E.CMD_DAY_MAX ? "ok" : C.list.some((o) => cmdReady(s, o)) ? "todo" : ""]; }
       case "temples": { const all = E.templeClasses(s).length; const left = templeLeft(s).length; return all ? [`${all - left}/${all}`, left ? "todo" : "ok"] : ["", ""]; }
+      case "camp": { const C = E.camp(s), L = E.CAMP.length; return [`${Math.min(C.c, L)}/${L}`, C.c >= L ? "ok" : E.campCur(s) >= 0 ? "todo" : ""]; }
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
       case "dofus": { const d = E.dofusCount(s); return [`${d}/${E.DOFUS_ORDER.length}`, d >= E.DOFUS_ORDER.length ? "ok" : ""]; }
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
@@ -72,15 +73,15 @@
     const left = todo(s);
     return `<aside class="qj-journal" aria-label="Journal de quêtes"><div class="qj-jh">${IC("quetes")}<h3>Journal</h3></div>
       ${FAMS.map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
-        ${F.pages.map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
+        ${F.pages.filter((p) => p[0] !== "camp" || HS(s)).map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
       <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>${window.CPTUI ? "6 boutiques" : "3 boutiques"}</span></button></aside>`;
   }
   /* téléphone : les 3 familles en gros boutons, puis les pages de la famille (0.1.49) */
   function mtabs(s, qt) {
     const left = todo(s); const F = FAMS.find((f) => f.id === famOf(qt));
-    const n = F.pages.length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
+    const n = F.pages.filter((p) => p[0] !== "camp" || HS(s)).length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
     return `<div class="qj-m"><div class="qj-fam3">${FAMS.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
-      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
+      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}">${F.pages.filter((p) => p[0] !== "camp" || HS(s)).map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
   }
 
   /* en-tête de page : titre, compteur, bouton « ? » (aide repliée) */
@@ -410,7 +411,8 @@
       if (f !== null) { const el = document.getElementById("qxSearch"); if (el) { el.focus(); try { el.setSelectionRange(f, f); } catch (e) {} } }
       return;
     }
-    const body = qt === "jour" ? jourHtml(s) : qt === "main" ? mainHtml(s) : qt === "region" ? regionHtml(s) : qt === "hebdo" ? hebdoHtml(s) : qt === "bounty" ? bountyHtml(s) : qt === "tresor" ? tresorPage(s) : qt === "dofus" ? dofusHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
+    if (qt === "camp" && !HS(s)) ui.qt = "main";
+    const body = ui.qt === "camp" ? window.HUI.campHtml(s, head(s, "camp", "La campagne de saison raconte la saison en 8 chapitres, un par semaine, les mêmes pour tout le serveur. Un chapitre en retard se rattrape à tout moment, dans l'ordre. Chaque chapitre fini donne 3 boosters et un Coffre en argent. Si assez d'aventuriers le finissent pendant sa semaine, chacun d'eux reçoit aussi un Coffre en or.")) : ui.qt === "jour" ? jourHtml(s) : ui.qt === "main" ? mainHtml(s) : qt === "region" ? regionHtml(s) : qt === "hebdo" ? hebdoHtml(s) : qt === "bounty" ? bountyHtml(s) : qt === "tresor" ? tresorPage(s) : qt === "dofus" ? dofusHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
     // 1.0.3.2 : la page se redessine toutes les 3 s ; on garde le défilement des rangées horizontales (chapitres…)
     const keep = st.lastQt === qt ? [...main.querySelectorAll(".qj-main *")].filter((e) => e.scrollLeft > 0 && typeof e.className === "string" && e.className.trim()).map((e) => [e.className, e.scrollLeft]) : [];
     st.lastQt = qt;
