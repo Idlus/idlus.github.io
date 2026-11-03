@@ -11,7 +11,7 @@ const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/maitrise_moteur.js");
 require("../js/quetes.js"); require("../js/mono.js"); require("../js/saisonc.js");
 global.window = {}; require("../js/boucliers.js"); global.BOUCLIERS = window.BOUCLIERS; delete global.window;
-require("../js/garderobe.js"); require("../js/vitrine.js");
+require("../js/garderobe.js"); require("../js/vitrine.js"); require("../js/saisonsoc.js");
 const DAY = 86400000; let now = Date.UTC(2030, 0, 9, 12); E.setClock(() => now); const t0 = now;
 const s1 = () => { const S = E.newState("Héros", "iop"); E.s1cStart(S, t0); return S; };
 

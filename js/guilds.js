@@ -160,7 +160,7 @@
   const chatSeen = () => { G.unread = 0; G.seenChat = G.after; };
 
   /* ---------- rendu ---------- */
-  const emb = (ic, col, sz) => `<span class="gemb" style="--gc:${h(col || "#8cc63f")};${sz ? `--gs:${sz}px` : ""}"><img src="assets/ui/${h(ic || "dofus")}.webp" alt=""></span>`;
+  const emb = (ic, col, sz) => `<span class="gemb" style="--gc:${h(col || "#8cc63f")};${sz ? `--gs:${sz}px` : ""}"><img src="${h(window.gIco(ic))}" alt=""></span>`;
   const ago = (t) => { if (!t) return "jamais"; const s = (Date.now() - new Date(t)) / 1000; return s < 300 ? "en ligne" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
   const netErr = (v) => `<div class="empty">Pas de connexion au serveur : réessaie dans un moment. <button class="btn sm" data-act="g-retry" data-v="${v}">Réessayer</button></div>`;
   const srvNow = () => Date.now() + (G.off || 0);
@@ -214,7 +214,7 @@
       <div class="gfound">${emb(f.ic, f.col, 72)}<div class="stack grow">
         <input type="text" id="gName" data-act="g-name" maxlength="24" placeholder="Nom de la guilde" value="${h(f.name)}">
         <div class="gpick">${ICONS.map((ic) => `<button class="${f.ic === ic ? "on" : ""}" data-act="g-ic" data-v="${ic}" aria-label="${ic}"><img src="assets/ui/${ic}.webp" alt=""></button>`).join("")}</div>
-        <div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="g-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div>
+        <div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="g-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div>${window.CRESTUI ? window.CRESTUI.builder(f) : ""}
       </div></div>
       <div class="list"><div class="li small">${X().IC("couronne")}<span class="grow"><b>${E.GUILD_SEATS} places</b> au départ, agrandies avec le coffre jusqu'à ${E.GUILD_SEATS_MAX}</span></div>
         <div class="li small">${pill(`${E.GUILD_SHIELD_H} h`)}<span class="grow">Bouclier de jeune guilde : tes Percepteurs ne peuvent pas être attaqués pendant ${E.GUILD_SHIELD_H} h</span></div>
@@ -583,7 +583,7 @@
     return `${off2 ? `<section class="panel"><div class="phead"><h2>Réglages</h2></div><div class="pad stack">
         <label class="small"><b>Message du jour</b></label><input type="text" id="gMotd" maxlength="200" value="${h(f.motd || "")}" placeholder="Visible par tous, aussi dans la liste des guildes">
         <label class="row small"><input type="checkbox" id="gOpen" ${f.open ? "checked" : ""}> Entrée libre (sinon, les joueurs envoient une demande)</label>
-        ${G.me.rank === 0 ? `<div class="gfound">${emb(f.ic, f.col, 60)}<div class="stack grow"><div class="gpick">${ICONS.map((ic) => `<button class="${f.ic === ic ? "on" : ""}" data-act="g-ic" data-v="${ic}" aria-label="${ic}"><img src="assets/ui/${ic}.webp" alt=""></button>`).join("")}</div><div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="g-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div></div></div>` : ""}
+        ${G.me.rank === 0 ? `<div class="gfound">${emb(f.ic, f.col, 60)}<div class="stack grow"><div class="gpick">${ICONS.map((ic) => `<button class="${f.ic === ic ? "on" : ""}" data-act="g-ic" data-v="${ic}" aria-label="${ic}"><img src="assets/ui/${ic}.webp" alt=""></button>`).join("")}</div><div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="g-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div>${window.CRESTUI ? window.CRESTUI.builder(f) : ""}</div></div>` : ""}
         <div><button class="btn primary" data-act="g-save">Enregistrer</button></div></div></section>` : ""}
       <section class="panel"><div class="phead"><h2>Quitter la guilde</h2></div><div class="pad row between"><span class="small muted">${leaveTxt()}</span>
         ${leaveBtns("")}</div></section>`;
@@ -617,6 +617,7 @@
   });
   document.addEventListener("click", async (ev) => {
     const t = ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, d = t.dataset;
+    if (/^gc-/.test(a) && window.CRESTUI && G.form) { const v = window.CRESTUI.act(t, G.form); if (v) { G.form.ic = v; paint(); } return; } // Saison 1, lot 5 : créateur de blason (js/saisonsocui.js)
     if (!/^g-/.test(a)) return;
     switch (a) {
       case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home" || d.v === "chasse") loadEx(); if ((d.v === "chasse" || d.v === "percos") && window.CHASSE) window.CHASSE.load(d.v === "chasse"); if (d.v === "alliance" && window.ALLY) window.ALLY.load(true); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;

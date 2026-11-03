@@ -3796,6 +3796,12 @@ function bonusBox() {
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
     <div class="bextra xs"><span class="muted">En plus, hors plafond :</span>${extra.map((t) => `<span class="bchip">${h(t)}</span>`).join("")}</div>` : ""}</section>`;
 }
+/* Saison 1, lot 5 : vitrine de collection des meubles rares (js/saisonsoc.js) : décoratifs, sans place ni bonus */
+function rareFurnHtml() {
+  if (!E.RARE_FURN) return ""; const mine = E.rfMine(S).length;
+  return `<div class="rfurn"><div class="row" style="gap:8px"><h3 class="sec grow">Meubles rares <span class="xs muted num">${mine} / ${E.RARE_FURN.length}</span></h3><span class="xs muted">décoratifs : ils ne prennent pas de place</span></div>
+    <div class="rf-grid">${E.RARE_FURN.map((f) => { const ok = f.ok(S); return `<div class="rf-it${ok ? "" : " lock"}" data-tip="${h(f.nm + (ok ? "" : " · " + f.req))}"><img src="assets/s1/mb/${f.n}.webp" alt="" loading="lazy"><b>${h(f.nm)}</b>${ok ? "" : `<small>🔒 ${h(f.req)}</small>`}</div>`; }).join("")}</div></div>`;
+}
 function havreHtml() {
   const placedN = E.ROOMS.reduce((s, R) => s + E.placed(S, R.id).length, 0), slotsN = E.ROOMS.reduce((s, R) => s + E.roomSlots(S, R.id), 0);
   const t = E.trainee(S);
@@ -3808,7 +3814,7 @@ function havreHtml() {
   return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac ${window.GUIDE ? GUIDE.q("home#ameliorations") : ""}</h2><span class="small row" style="gap:10px"><span><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span><button class="btn sm" data-act="nav" data-v="home">‹ Accueil</button></span></div>
     <div class="pad stack">${bonusBox()}<div class="hvsum two">
       <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
-    <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
+    <div class="rooms">${E.ROOMS.map(room).join("")}</div>${rareFurnHtml()}</div></section>
     ${houseShopHtml()}
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Meubles à placer</h2><span class="xs muted">un meuble agit seulement une fois placé</span></div><div class="pad stack"><div class="mlist">
       ${free.map((f) => { const F = E.FURN[f]; const full = E.placed(S, F.room).length >= E.roomSlots(S, F.room);
@@ -9937,7 +9943,7 @@ function defiViewNote(v, out) {
     g: `La somme des ${E.DEFI_GUILD_TOP} meilleurs scores de la semaine de chaque guilde. La 1re de chaque palier gagne ${fmt(E.DEFI_GUILD_XP)} XP de guilde le lundi.${out && out.lastWin ? ` Semaine passée : <b>${h(out.lastWin)}</b>.` : ""}` }[v];
   return t ? `<div class="xs muted df-note">${IC(v === "g" || v === "mg" ? "bourse" : "couronne")}<span>${t}</span></div>` : "";
 }
-const defiGuildList = (gs) => `<div class="lbt">${gs.map((g) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${g.r}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:30px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
+const defiGuildList = (gs) => `<div class="lbt">${gs.map((g) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${g.r}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:30px"><img src="${h(window.gIco(g.ic))}" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
 /* titres et ornements lus au classement : « Champion du défi » (1er de la semaine passée), saison du mois passé (4A) */
 async function defiTitlesChk(db, me, day) {
   if (!me || !S) return;
@@ -12124,7 +12130,7 @@ async function jobGuildFetch(out, db, j, week, wn) {
 }
 function jobGuildHtml(d) {
   if (!d.guilds.length) return `<div class="empty">${LB.jmode === "week" ? "Aucune guilde n'a encore gagné d'XP ici cette semaine." : "Aucune guilde classée ici pour l'instant."}</div>`;
-  return `<div class="lbt">${d.guilds.map((g, i) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
+  return `<div class="lbt">${d.guilds.map((g, i) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="${h(window.gIco(g.ic))}" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
 }
 /* 1.0.8 : titre « Grand Tailleur » (etc.) pour le premier compte au niveau 200 d'un métier. Le serveur grave le premier
    dans firsts (kind job200) ; le jeu ne demande qu'une fois par métier arrivé au niveau 200.
@@ -12171,7 +12177,7 @@ function sbGrid(sb) {
 function guildLbHtml(d) {
   const gs = d.glds || [], myG = window.GUILD && window.GUILD.G && window.GUILD.G.me && window.GUILD.G.me.g, myId = myG && myG.id, see = !!(window.GUILD && rankSlot(SLOT) && ON.user);
   if (!gs.length) return `<div class="empty">Aucune guilde pour l'instant. Fonde la tienne dans Joueurs › Guilde !</div>`;
-  return `<div class="lbt">${gs.map((g, i) => `<${see ? "button" : "div"} class="lbr jlb-g glb${g.id === myId ? " mine" : ""}${see ? " clk" : ""}"${see ? ` data-act="lb-gview" data-g="${+g.id}"` : ""}><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.name)}${g.id === myId ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${fmt(g.n || 0)} / ${fmt(g.cap || E.GUILD_SEATS || 5)} membres · Meneur : ${h(g.chef || "?")}</small></span><span></span><span class="sc">Niveau ${fmt(g.lvl || 1)}</span></${see ? "button" : "div"}>`).join("")}</div>`;
+  return `<div class="lbt">${gs.map((g, i) => `<${see ? "button" : "div"} class="lbr jlb-g glb${g.id === myId ? " mine" : ""}${see ? " clk" : ""}"${see ? ` data-act="lb-gview" data-g="${+g.id}"` : ""}><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="${h(window.gIco(g.ic))}" alt=""></span><span class="nm">${h(g.name)}${g.id === myId ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${fmt(g.n || 0)} / ${fmt(g.cap || E.GUILD_SEATS || 5)} membres · Meneur : ${h(g.chef || "?")}</small></span><span></span><span class="sc">Niveau ${fmt(g.lvl || 1)}</span></${see ? "button" : "div"}>`).join("")}</div>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
@@ -12361,7 +12367,7 @@ async function lbProfile(u) {
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
-    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2>${gd ? `<${gsee ? "button" : "span"} class="pgld"${gsee ? ` data-act="lb-gview" data-g="${+gd.id}"` : ""}><span class="gemb" style="--gc:${h(gd.col || "#8cc63f")};--gs:22px"><img src="assets/ui/${h(gd.ic || "dofus")}.webp" alt=""></span><b>${h(gd.name)}</b><span class="small muted">niv. ${fmt(gd.lvl || 1)}${gd.rank ? ` · ${h(gd.rank)}` : ""}</span></${gsee ? "button" : "span"}>` : ""}<span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
+    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2>${gd ? `<${gsee ? "button" : "span"} class="pgld"${gsee ? ` data-act="lb-gview" data-g="${+gd.id}"` : ""}><span class="gemb" style="--gc:${h(gd.col || "#8cc63f")};--gs:22px"><img src="${h(window.gIco(gd.ic))}" alt=""></span><b>${h(gd.name)}</b><span class="small muted">niv. ${fmt(gd.lvl || 1)}${gd.rank ? ` · ${h(gd.rank)}` : ""}</span></${gsee ? "button" : "span"}>` : ""}<span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}

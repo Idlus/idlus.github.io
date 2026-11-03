@@ -91,3 +91,24 @@
 .vit-pic{height:56px;display:grid;place-items:center;width:100%}.vit-pic img{max-height:56px;max-width:100%;border-radius:8px;object-fit:cover}
 .vit-frag{display:inline-flex;align-items:center;gap:4px;font-weight:900}.vit-frag img{width:18px;height:18px}
 .s1t .s1case{width:44px;height:44px;object-fit:contain;justify-self:start}
+/* lot 5 : blason de guilde (js/saisonsocui.js), autocollants du chat, meubles rares du Havre-Sac */
+.gemb.gcrest{background:none;box-shadow:none;position:relative;border-radius:0}
+.crest{position:absolute;inset:0;display:block}
+.crest i{position:absolute;inset:0;display:block;background:var(--c1);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.crest i img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;display:block;filter:none}
+.crest i.ce{inset:24%;background:var(--c2)}
+.gemb.gcrest.mini{--gs:18px;display:inline-block;vertical-align:middle;margin-right:4px}
+.gc-b{display:grid;gap:6px;margin-top:6px}.gc-row{display:flex;flex-wrap:wrap;gap:4px}
+.gc-o{width:38px;height:38px;padding:3px;border-radius:9px;background:var(--panel2);border:2px solid transparent;cursor:pointer}
+.gc-o img{width:100%;height:100%;object-fit:contain}.gc-o.on{border-color:var(--gold)}
+.ch-st{width:84px;height:84px;object-fit:contain;display:block;margin:2px 0}
+.ch-stb{min-width:34px;font-size:16px;padding-inline:6px}
+.ch-stp{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-radius:10px;background:var(--panel2);margin-top:6px}
+.ch-stp button{width:52px;height:52px;padding:2px;border-radius:8px;background:none;border:1px solid transparent;cursor:pointer}
+.ch-stp button:hover{border-color:var(--gold)}.ch-stp img{width:100%;height:100%;object-fit:contain}
+.rfurn{display:grid;gap:8px;margin-top:6px}
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.rf-it{display:grid;gap:3px;justify-items:center;text-align:center;padding:8px;border-radius:12px;background:var(--panel2);border:1px solid var(--line,rgba(255,255,255,.08))}
+.rf-it img{width:84px;height:84px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))}
+.rf-it b{font-size:12px}.rf-it small{font-size:10.5px;color:var(--muted)}
+.rf-it.lock img{filter:grayscale(1) brightness(.45)}.rf-it.lock{opacity:.75}
