@@ -15,7 +15,7 @@ const heroes = (h) => (Array.isArray(h) ? h : []).filter((c) => c && !c.x && +c.
 const top = (h) => Math.max(0, ...heroes(h).map((c) => +c.l));
 const top8 = (h) => { const l = heroes(h).map((c) => +c.l).sort((a, b) => b - a).slice(0, 8); return l.length ? l.reduce((a, b) => a + b, 0) / 8 : 0; };
 const mtTop = (h) => Math.max(0, ...heroes(h).map((c) => +c.m || 0));
-const line = (cols) => console.log("  " + cols.map((c, i) => String(c).padStart(i ? 9 : 14)).join(""));
+const line = (cols) => console.log("  " + cols.map((c, i) => String(c).padStart(i ? 14 : 14)).join(" |"));
 
 /* ---------------- Classique ---------------- */
 const C = rd(fc).filter((r) => !r.mono).map((r) => ({ age: +r.age, idle: +r.inactif, pt: (+r.pt || 0) / 3600, k: +r.k || 0, h: r.h, st: r.st || {}, sus: r.suspect || r.flagged }));
@@ -59,9 +59,9 @@ rows.forEach((x) => console.log("  " + x));
 const J = rd(fj); const byU = {};
 J.forEach((r) => (byU[r.u] = byU[r.u] || []).push({ j: r.j, l: +r.l || 0, k: +r.k || 0, pt: (+r.pt || 0) / 3600 }));
 console.log(`\n== Copies du jour : ${J.length} copies, ${Object.keys(byU).length} comptes`);
-console.log("  gains par jour entre la plus vieille et la plus récente copie, selon le niveau de départ");
-line(["niv.départ", "comptes", "niv/j", "kamas/j", "kamas/j p75", "h/j"]);
-[[1, 50], [50, 100], [100, 150], [150, 200], [200, 201]].forEach(([a, b]) => {
+console.log("  gains par jour entre la plus vieille et la plus récente copie, selon la somme des niveaux des héros au départ (colonne lvl)");
+line(["somme niv.", "comptes", "niv/j", "kamas/j", "kamas/j p75", "h/j"]);
+[[1, 300], [300, 1000], [1000, 2000], [2000, 3000], [3000, 99999]].forEach(([a, b]) => {
   const g = Object.values(byU).map((c) => c.sort((x, y) => (x.j < y.j ? -1 : 1))).filter((c) => c.length >= 2 && c[0].l >= a && c[0].l < b).map((c) => { const o = c[0], n = c[c.length - 1]; const d = Math.max(1, (Date.parse(n.j) - Date.parse(o.j)) / 86400000); return { l: (n.l - o.l) / d, k: (n.k - o.k) / d, h: (n.pt - o.pt) / d }; });
   if (!g.length) return;
   line([`${a}-${b - 1}`, g.length, r1(med(g.map((x) => x.l))), fmt(med(g.map((x) => x.k))), fmt(q(g.map((x) => x.k), 0.75)), r1(med(g.map((x) => x.h)))]);
