@@ -411,6 +411,15 @@
     coffre_obsidienne: { name: "Coffre en obsidienne", icon: "🔮", img: "obsidienne", kind: "chest", tier: 3, desc: "Environ 1 heure de chasse : kamas, poussière, ressources, 2 consommables rares, des Éclats et un objet de ton niveau." },
     coffre_douze:      { name: "Coffre des Douze",     icon: "🌟", img: "douze",      kind: "chest", tier: 4, desc: "Environ 2 heures de chasse : kamas, poussière, ressources, 3 consommables rares, des Éclats, 2 objets de ton niveau et un Grand parchemin." },
   };
+  /* Saison 1, lot 4 (Mathis 2B, 02/11) : nouvelles icônes des coffres, bonbons et potions (images ChatGPT de Mathis), pour toutes les parties.
+     coIco(clé) = image d'un coffre (assets/s1/co) ; nimg = image d'un consommable */
+  { const NI = { bonbon_sagesse: "sagesse", bonbon_prospecteur: "prospecteur", bonbon_dore: "dore", bonbon_recolteur: "recolteur", bonbon_traqueur: "traqueur", bonbon_royal: "royal",
+      fiole_resu: "resu", potion_savoir: "savoir", parchemin_avis: "avis", cristal_fm: "cristal", fiole_temps: "temps", grain_xelor: "grain", filet: "filet",
+      coffre_bois: "bois", coffre_argent: "argent", coffre_or: "or", coffre_obsidienne: "obsidienne", coffre_douze: "douze" };
+    for (const k in NI) if (CONSUMABLES[k]) CONSUMABLES[k].nimg = NI[k];
+    const CO = { bois: "bois", argent: "argent", or: "or", obsidienne: "obsidienne", douze: "douze", ticket_koli: "ticket", bourse_defi: "bourse", bourse_perco: "bourse", saison: "saison" };
+    const coIco = (k) => (CO[k] ? `assets/s1/co/${CO[k]}.webp` : `assets/ui/coffres/${k}.svg`);
+    if (typeof window !== "undefined") window.coIco = coIco; }
   /* 0.1.53 « Armes » : potions de forgemagie élémentaire (DOFUS) : changent les dégâts Neutre d'une arme */
   [["seisme", "Potion de Séisme", "t", 26004, 0], ["incendie", "Potion d'Incendie", "f", 26001, 0], ["tsunami", "Potion de Tsunami", "e", 26002, 0], ["ouragan", "Potion d'Ouragan", "a", 26003, 0],
    ["secousse", "Potion de Secousse", "t", 26004, 1], ["etincelle", "Potion d'Étincelle", "f", 26001, 1], ["crachin", "Potion de Crachin", "e", 26002, 1], ["courant", "Potion de Courant d'Air", "a", 26003, 1]].forEach(([k, n, el, ic, half]) => {
@@ -419,8 +428,8 @@
   });
   /* 3.1 : parchemins de caractéristiques (Petit +1, Grand +3), jusqu'à +100 par caractéristique et par héros */
   [["fo", "Force"], ["ine", "Intelligence"], ["cha", "Chance"], ["age", "Agilité"], ["vit", "Vitalité"], ["sa", "Sagesse"]].forEach(([k, n]) => {
-    CONSUMABLES["parch_" + k + "_p"] = { name: "Petit parchemin de " + n, icon: "📜", kind: "scroll", stat: k, v: 1, desc: `+1 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
-    CONSUMABLES["parch_" + k + "_g"] = { name: "Grand parchemin de " + n, icon: "📜", kind: "scroll", stat: k, v: 3, desc: `+3 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
+    CONSUMABLES["parch_" + k + "_p"] = { name: "Petit parchemin de " + n, icon: "📜", nimg: "parch_p", kind: "scroll", stat: k, v: 1, desc: `+1 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
+    CONSUMABLES["parch_" + k + "_g"] = { name: "Grand parchemin de " + n, icon: "📜", nimg: "parch_g", kind: "scroll", stat: k, v: 3, desc: `+3 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
   });
   /* Catégories du sac (types d'objets DOFUS) */
   const RES_CATS = [

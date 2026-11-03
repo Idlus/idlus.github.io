@@ -26,7 +26,7 @@
       if (t === "dgh") return "assets/ui/cle.webp";
       return "assets/ui/couronne.webp"; }
     if (d.c && d.c.length) { const C = D.CONSUMABLES[d.c[0][0]] || {};
-      if (C.kind === "chest") return `assets/ui/coffres/${C.img || "bois"}.svg`;
+      if (C.kind === "chest") return `${window.coIco(C.img || "bois")}`;
       if (d.c[0][0] === "fiole_temps") return "assets/ui/potions/26003.png";
       return "assets/ui/cristal.webp"; }
     return "assets/ui/kamas.webp";
@@ -105,7 +105,7 @@
     const end = E.monoT0(s) + m * E.MONO.jobs.manche - (E.monoDate ? E.monoDate(s) : E.now()); const k = Math.min(E.STASIS_MAX, R.best + 1);
     const me = s.chars.find((c) => !c.merc) || s.chars[0]; const run = s.mono.mdRun;
     const pend = E.mdPending(s); const ch = E.mdChest(R.best);
-    const rows = E.MONO.md.chest.slice().reverse().map(([st, c]) => `<div class="bp-hf${R.best >= st ? "" : " soon"}"><img src="assets/ui/coffres/${(D.CONSUMABLES[c] || {}).img}.svg" alt="" style="width:34px;height:34px"><span class="grow"><b>${h(D.CONSUMABLES[c].name)}</b><br><span class="small muted">meilleure stasis ${st} ou plus</span></span>${R.best >= st ? '<span class="bp-ok">✓</span>' : ""}</div>`).join("");
+    const rows = E.MONO.md.chest.slice().reverse().map(([st, c]) => `<div class="bp-hf${R.best >= st ? "" : " soon"}"><img src="${window.coIco((D.CONSUMABLES[c] || {}).img)}" alt="" style="width:34px;height:34px"><span class="grow"><b>${h(D.CONSUMABLES[c].name)}</b><br><span class="small muted">meilleure stasis ${st} ou plus</span></span>${R.best >= st ? '<span class="bp-ok">✓</span>' : ""}</div>`).join("");
     main.innerHTML = `<div class="pagehead"><h1>Défi de la manche</h1></div>
       <div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">🏁 ${h(dg.name)} <span class="small muted">niv. ${dg.lvl}</span></h2><span class="pill">fin dans ${dur(Math.max(0, end))}</span></div>
         <p class="small muted" style="margin:0">Un donjon imposé pendant 2 semaines, le même pour tout le serveur. Pas besoin de clé, essais libres : tu montes la stasis une par une. Chaque nouvelle stasis donne ${E.MONO.md.pts} points de pass ; ta meilleure stasis donne un coffre à la fin de la manche.</p>

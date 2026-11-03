@@ -23,7 +23,7 @@
   const online = () => { const o = ON(); return !!(o && o.enabled && o.user && o.profile && !(o.solo && o.solo())); }; // 1.0.11 : partie solo : Fantômes, hors classement
   const emb = (g, cls = "") => `<img class="kz-emb ${cls}" src="assets/ui/koli/koli_${g.id}.svg" alt="${h(g.name)}" title="${h(g.name)}">`;
   const coin = (cls = "kz-coin") => `<img class="${cls}" src="assets/ui/koli/kolizeton.svg" alt="" loading="lazy">`;
-  const tick = (cls = "kz-tk") => `<img class="${cls}" src="assets/ui/coffres/ticket_koli.svg" alt="" loading="lazy">`;
+  const tick = (cls = "kz-tk") => `<img class="${cls}" src="assets/s1/co/ticket.webp" alt="" loading="lazy">`;
   const head = (x) => `<span class="head" style="--cc:${(CLASSES[x.cls] || {}).color || "#888"}" title="${h(`${(CLASSES[x.cls] || {}).name || x.cls} niv. ${x.lvl}`)}"><img src="${X().headImg(x)}" alt="">${x.lvl ? `<em>${x.lvl}</em>` : ""}</span>`;
   const heads = (L, dead) => `<div class="kz-heads">${(L || []).map((x, i) => `<span class="${dead && dead.includes(i) ? "kz-dead" : ""}">${head(x)}</span>`).join("")}</div>`;
   const nf = (n) => Math.round(n).toLocaleString("fr-FR");
@@ -173,7 +173,7 @@
     return `<div class="kza-pips">${o}</div>`; }
   function autoPanel(s) {
     const Q = E.koliState(s); const c = aset(s); const tk = E.koliTickets(s); const st = AU.st; const run = st === "run";
-    const ic = `<img class="kza-ic" src="assets/ui/coffres/ticket_koli.svg" alt="">`;
+    const ic = `<img class="kza-ic" src="assets/s1/co/ticket.webp" alt="">`;
     const head = `<div class="kza-head"><div class="kza-ttl">${X().IC("combat")}<div><h2>Mode automatique</h2><span class="xs muted">Il joue tes combats classés contre le Conseillé, ${every(online())}, même si tu changes de page.</span></div></div>
       ${run ? `<span class="kza-live"><i></i>${AU.mode === "hunt" ? "Tickets de chasse" : "En cours"}</span>` : st === "done" ? `<span class="tag">Terminé</span>` : `<span class="kza-cut" data-tip="En auto, chaque combat rapporte 25 % de Kolizetons en moins qu'en manuel. La cote, la bourse et la poussière ne changent pas.">Kolizetons −25 %</span>`}</div>`;
     const sw = `<button class="kza-row kza-sw" data-act="kz-ahunt" aria-pressed="${!!c.hunt}"><span class="sw ${c.hunt ? "on" : ""}"><i></i></span><span><b>Tickets de chasse</b><span class="xs muted"> · un combat se lance dès qu'un ticket arrive en chasse, ${K.autoReserve} tickets restent en réserve</span></span></button>`;
@@ -199,7 +199,7 @@
       ${det}</div></section>`;
   }
   window.KZAUTO = { chip() { if (AU.st === "idle" || !S() || (AU.st === "done" && Date.now() - AU.end > 600000)) return ""; const t = aSum(); const run = AU.st === "run";
-    return `<div class="updbar kzachip ${AU.st}" data-act="nav" data-v="koli" data-tip="Mode automatique du Kolizéum : ${t.w} victoire${t.w > 1 ? "s" : ""}, ${t.l} défaite${t.l > 1 ? "s" : ""}. Cliquer pour l'ouvrir."><img class="ico sm" src="assets/ui/coffres/ticket_koli.svg" alt=""><span><b>Koli auto</b> <span class="muted">${run ? (AU.mode === "count" ? `${AU.L.length}/${AU.tot}` : `${AU.L.length}`) : "terminé"}</span></span><span class="kzac-p">${AU.L.slice(-10).map((x) => `<i class="${x.win ? "w" : "l"}"></i>`).join("")}</span><b class="num ${t.d >= 0 ? "up" : "down"}">${t.d >= 0 ? "+" : "−"}${Math.abs(t.d)}</b></div>`; } };
+    return `<div class="updbar kzachip ${AU.st}" data-act="nav" data-v="koli" data-tip="Mode automatique du Kolizéum : ${t.w} victoire${t.w > 1 ? "s" : ""}, ${t.l} défaite${t.l > 1 ? "s" : ""}. Cliquer pour l'ouvrir."><img class="ico sm" src="assets/s1/co/ticket.webp" alt=""><span><b>Koli auto</b> <span class="muted">${run ? (AU.mode === "count" ? `${AU.L.length}/${AU.tot}` : `${AU.L.length}`) : "terminé"}</span></span><span class="kzac-p">${AU.L.slice(-10).map((x) => `<i class="${x.win ? "w" : "l"}"></i>`).join("")}</span><b class="num ${t.d >= 0 ? "up" : "down"}">${t.d >= 0 ? "+" : "−"}${Math.abs(t.d)}</b></div>`; } };
 
   /* ---------- la page ---------- */
   function render(main) {
