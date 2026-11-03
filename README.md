@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.43.4 « Ougah débloqué »
+- Mathis (03/11) : « Débloque Ougah sur l'Éternel ». `supabase/wboss.sql` : marqueur unique `wb_resets` '2.1.43.4' (si le boss en cours est Ougah n° 14, PV = dégâts + 27 000 points, soit ~3 jours au rythme de ~9 000 points/jour), un essai plafonné à 6 000 points dans `wb_done`, PV du boss n° 15 = dégâts des 3 derniers jours ÷ 3. Vérifié par `tests/wboss_ougah_sql.test.js` (Postgres jetable).
+
 ## 2.1.43.3 « Plus de tours passés »
 - Retour d'un joueur relayé par Mathis (03/11, capture) : Sadida niveau 200 qui « passe son tour » plusieurs tours de suite contre Halbardent et Hacharné. Cause reproduite par simulation : réglage « L'IA respecte les challenges » + un challenge (Élémentaire, Incurable, Versatile…) qui interdit tous les sorts de la barre ; l'IA ne lâchait le challenge que sous 50 % des PV de l'équipe.
 - `js/engine.js` (`charTurn`) : si le héros n'a rien lancé et qu'un challenge a bloqué au moins un sort, il refait son tour en ignorant les challenges (modes Auto et « Ma rotation » ; pas dans le Défi du jour). Journal : un sort de monstre esquivé affiche « X esquive » au lieu de « Geoassaut → , … ». Test `tests/challenge_tour.test.js`.

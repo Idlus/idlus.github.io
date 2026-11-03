@@ -1,6 +1,14 @@
 {
-  "version": "2.1.43.3",
+  "version": "2.1.43.4",
   "versions": [
+    {
+      "v": "2.1.43.4",
+      "name": "Ougah débloqué",
+      "items": [
+        "Boss des mondes : Ougah avait reçu trop de PV à cause des essais bogués sur Harebourg. Ses PV restants sont ramenés à environ 3 jours de combat du serveur : vos essais, coffres et le classement restent",
+        "Un essai compte au plus 6 000 points (600 000 PV) : un essai anormal ne peut plus gonfler le boss suivant. Après Ougah, la rotation repart avec des PV pour environ un jour"
+      ]
+    },
     {
       "v": "2.1.43.3",
       "name": "Plus de tours passés",
