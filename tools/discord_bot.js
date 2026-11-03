@@ -203,9 +203,11 @@ async function main() {
     const gid = await guildId(); const ch = await channelId(gid, salon);
     const last = await api("GET", `/channels/${ch}/messages?limit=20`);
     if (text && last.some((m) => (m.content || "").includes(text.slice(0, 80)))) return console.log("Déjà publié.");
+    const roleName = (process.env.DISCORD_ROLE || "aucun").trim(), role = roleName === "aucun" ? null : await roleId(gid, roleName); // mention facultative (annonce avec visuel)
+    if (roleName !== "aucun" && !role) throw new Error("Rôle introuvable : " + roleName);
     for (let i = 0; i < imgs.length; i += 10) { // Discord : 10 pièces jointes par message au plus
       const fd = new FormData(); const part = imgs.slice(i, i + 10);
-      fd.append("payload_json", JSON.stringify({ content: i ? "" : text, allowed_mentions: { parse: [] } }));
+      fd.append("payload_json", JSON.stringify({ content: i ? "" : (role ? `<@&${role}>\n` : "") + text, allowed_mentions: { parse: [], roles: role && !i ? [role] : [] } }));
       part.forEach((f, j) => fd.append(`files[${j}]`, new Blob([fs.readFileSync(`${dir}/${f}`)]), f));
       const res = await fetch(`${process.env.DISCORD_API || "https://discord.com/api/v10"}/channels/${ch}/messages`, { method: "POST", headers: { Authorization: "Bot " + process.env.DISCORD_BOT_TOKEN, "User-Agent": "idlus-bot (github.com/idlus/idlus.github.io, 1)" }, body: fd });
       if (!res.ok) throw new Error(`envoi des images → ${res.status} ${(await res.text()).slice(0, 300)}`);

@@ -20,6 +20,10 @@ on:
         description: "Salon Discord"
         default: captures
         type: string
+      role:
+        description: "Rôle à mentionner (« aucun » par défaut)"
+        default: aucun
+        type: string
 jobs:
   captures:
     runs-on: ubuntu-latest
@@ -36,4 +40,5 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_TEXTE: ${{ inputs.texte }}
           DISCORD_SALON: ${{ inputs.salon }}
+          DISCORD_ROLE: ${{ inputs.role }}
           DOSSIER: ${{ inputs.dossier }}
