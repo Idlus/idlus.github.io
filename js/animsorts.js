@@ -141,7 +141,7 @@
       c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-10px) rotate(-6deg) scale(1.08)", offset: 0.4 }, { transform: "none" }], 600); await c.wait(350);
       T.slice(0, 4).forEach((n, i) => { const b = c.foot(n); const g = c.b("angear", a.x, a.y - 18); g.innerHTML = '<svg viewBox="0 0 40 40"><path fill="#c9a24a" stroke="#6b4e16" stroke-width="2" d="M17 2h6l1 5 4 2 4-3 4 4-3 4 2 4 5 1v6l-5 1-2 4 3 4-4 4-4-3-4 2-1 5h-6l-1-5-4-2-4 3-4-4 3-4-2-4-5-1v-6l5-1 2-4-3-4 4-4 4 3 4-2z"/><circle cx="20" cy="20" r="6" fill="#3a2a0c"/></svg>';
         g.animate([{ left: a.x + "px", top: a.y - 18 + "px", transform: "translate(-50%,-50%) rotate(0)" }, { left: b.x + "px", top: b.y - 18 + "px", transform: "translate(-50%,-50%) rotate(-900deg)" }], { duration: 700 * c.T, delay: i * 150 * c.T, easing: "cubic-bezier(.3,0,.8,1)", fill: "both" });
-        setTimeout(() => { g.remove(); c.scatter(b.x, b.y - 20, "b-spark", 10, 60, 500); c.puff(b.x, b.y - 18, "rgba(255,210,120,.85)", 5); c.hit(n); c.shake("shake"); }, (700 + i * 150) * c.T); });
+        setTimeout(() => { g.getAnimations().forEach((an) => an.cancel()); g.remove(); c.scatter(b.x, b.y - 20, "b-spark", 10, 60, 500); c.puff(b.x, b.y - 18, "rgba(255,210,120,.85)", 5); c.hit(n); c.shake("shake"); }, (700 + i * 150) * c.T); });
       T.slice(4).forEach((n) => setTimeout(() => c.hit(n), 1300 * c.T));
       await c.wait(700 + Math.min(4, T.length) * 150 + 400); },
     /* Kolosso · Glaciation : des stalactites tombent sur les héros et les prennent dans la glace */

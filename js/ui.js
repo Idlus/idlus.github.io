@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.0.2";
+const GAME_VERSION = "2.2.0.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.0.3", name: "Scène sans fuite de mémoire", items: [
+    "Combat en vue Scène : les effets des sorts restaient en mémoire quand la page ne dessinait plus (fenêtre cachée, écran en veille). L'onglet pouvait monter à plusieurs Go en quelques heures. Merci Fulfutor !",
+  ] },
   { v: "2.2.0.2", name: "Une seule musique", guide: "options", items: [
     "Nouvelle musique « Idlus » : la même dans tous les menus (accueil, inventaire, Monde, Quêtes, HdV…), sans changer à chaque page. Les menus n'ont plus chacun leur air",
     "Les combats gardent leur air (zones, donjons, salle du boss, Songe infini, Kolizéum, Boss des mondes). Le Gramophone du Havre-Sac, le juke-box et les partitions ne changent pas" ] },
@@ -4916,6 +4919,7 @@ function buildArena(F) {
   const view = combatView();
   const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
+  axKill(arena); // 2.2.0.3 : les effets du combat précédent ne restent pas en mémoire
   arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2 iso"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js) ; 1.0.33 : iso = plateau
   { const old = arena.parentNode && arena.parentNode.querySelector(".schud"); if (old && (view !== "scene" || !F)) old.remove(); }
   if (!F) {
@@ -5148,7 +5152,18 @@ const axBody = (n) => (n && n.querySelector(".lookwrap,.medal,img.sprite")) || n
 function axPt(A, n, k = 0.5) { const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height * k }; }
 function axFoot(A, n) { const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.bottom - a.top }; }
 function axMk(A, cls, x, y, vars) { const d = document.createElement("div"); d.className = "axp " + cls; d.style.left = x + "px"; d.style.top = y + "px"; if (vars) for (const k in vars) d.style.setProperty(k, vars[k]); A.fxl.appendChild(d); return d; }
-const axLater = (el, ms) => setTimeout(() => el.remove(), ms);
+/* 2.2.0.3 « Fuite de mémoire en Scène » (retour de Fulfutor : 7 Go après 3 h de combat) : une animation lancée par el.animate()
+   n'est pas arrêtée quand on retire l'élément. Si la page ne dessine plus (fenêtre cachée derrière une autre, écran en veille),
+   elle ne finit jamais et garde l'élément en mémoire, avec tout ce qu'il contient. On annule donc les animations avant de retirer,
+   et un balayage toutes les 5 s annule celles dont l'élément a quitté la page (arène redessinée, changement d'onglet). */
+const axLive = new Set();
+(() => { const P = Element.prototype, o = P.animate; if (!o || o.__idlus) return;
+  P.animate = function (...a) { const an = o.apply(this, a); axLive.add(an); const off = () => axLive.delete(an); an.addEventListener("finish", off); an.addEventListener("cancel", off); return an; };
+  P.animate.__idlus = true;
+  setInterval(() => axLive.forEach((an) => { const t = an.effect && an.effect.target; if (!t || !t.isConnected) { axLive.delete(an); try { an.cancel(); } catch (e) { /* déjà annulée */ } } }), 5000); })();
+const axKill = (el) => { try { if (el && el.isConnected && el.getAnimations) el.getAnimations({ subtree: true }).forEach((an) => an.cancel()); } catch (e) { /* navigateur sans getAnimations */ } };
+const axGone = (el) => { axKill(el); el.remove(); };
+const axLater = (el, ms) => setTimeout(() => axGone(el), ms);
 const AX_EL = { f: "#ff7a3c", e: "#4fa8ff", t: "#c08a3e", a: "#57d06a", n: "#cfcfcf", h: "#8fe36a" };
 const axC = (el) => AX_EL[el] || AX_EL.n;
 /* projectile : forme selon la classe (flèche, carte, bouteille…) ou l'élément */

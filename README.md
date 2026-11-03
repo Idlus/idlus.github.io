@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.0.3 « Scène sans fuite de mémoire »
+- Fulfutor (03/11) : onglet Edge à 7 Go après ~3 h de combat en vue Scène, nœuds détachés retenus par des animations. Cause vérifiée : une animation `el.animate()` n'est pas arrêtée quand on retire l'élément ; si la page ne dessine plus (fenêtre cachée, écran en veille), elle ne finit jamais et garde l'élément. Mesure Playwright (animations gelées, 100 s à vitesse ×10) : +26 000 nœuds avant, stable après. `js/ui.js` : `axGone` annule les animations avant de retirer un effet, `buildArena` annule celles de l'arène précédente, et un balayage toutes les 5 s annule les animations dont l'élément a quitté la page.
+
 ## 2.2.0.2 « Une seule musique »
 - Mathis (03/11) : « Stop les musiques pour chaque menu, on va faire une vraie musique d'idlus pour tous les menus », puis son fichier Suno « Idlus ». `js/ui.js` : `musPlace` ne renvoie plus l'air de la page ; écran Combat, Boss des mondes, Kolizéum et Songe infini (`MUS_FIGHT_PAGES`) gardent leur air, les autres pages jouent `IdlusAudio.theme` (sinon l'air du combat en cours, `musFight`). Gramophone et juke-box « Un air fixe » inchangés ; partitions et ambiances suivent toujours `musSpot`.
 - `js/musique.js` : `THEME` = « Idlus » (`assets/son/idlus.mp3`, 128k, silence de fin coupé pour la boucle, gain 0.77 = même niveau que horloge). Pour la changer : remplacer le fichier (même nom) et régler `gain`. Ce n'est pas une partition (hors juke-box). `THEME = null` = les menus jouent l'air du combat en cours.

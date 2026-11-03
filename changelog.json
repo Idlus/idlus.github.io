@@ -1,6 +1,13 @@
 {
-  "version": "2.2.0.2",
+  "version": "2.2.0.3",
   "versions": [
+    {
+      "v": "2.2.0.3",
+      "name": "Scène sans fuite de mémoire",
+      "items": [
+        "Combat en vue Scène : les effets des sorts restaient en mémoire quand la page ne dessinait plus (fenêtre cachée, écran en veille). L'onglet pouvait monter à plusieurs Go en quelques heures. Merci Fulfutor !"
+      ]
+    },
     {
       "v": "2.2.0.2",
       "name": "Une seule musique",
