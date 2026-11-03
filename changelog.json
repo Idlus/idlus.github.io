@@ -1,6 +1,14 @@
 {
-  "version": "2.1.43.2",
+  "version": "2.1.43.3",
   "versions": [
+    {
+      "v": "2.1.43.3",
+      "name": "Plus de tours passés",
+      "items": [
+        "Combat : avec « L'IA respecte les challenges », un héros dont tous les sorts auraient fait échouer un challenge (Élémentaire, Incurable, Versatile…) passait son tour en boucle. Il lâche maintenant le challenge pour ce tour et attaque (le Défi du jour garde ses règles)",
+        "Journal de combat : quand le héros esquive un sort de monstre, la ligne l'indique (« Sadida esquive ») au lieu de rester vide"
+      ]
+    },
     {
       "v": "2.1.43.2",
       "name": "Menu du compte visible",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.43.3 « Plus de tours passés »
+- Retour d'un joueur relayé par Mathis (03/11, capture) : Sadida niveau 200 qui « passe son tour » plusieurs tours de suite contre Halbardent et Hacharné. Cause reproduite par simulation : réglage « L'IA respecte les challenges » + un challenge (Élémentaire, Incurable, Versatile…) qui interdit tous les sorts de la barre ; l'IA ne lâchait le challenge que sous 50 % des PV de l'équipe.
+- `js/engine.js` (`charTurn`) : si le héros n'a rien lancé et qu'un challenge a bloqué au moins un sort, il refait son tour en ignorant les challenges (modes Auto et « Ma rotation » ; pas dans le Défi du jour). Journal : un sort de monstre esquivé affiche « X esquive » au lieu de « Geoassaut → , … ». Test `tests/challenge_tour.test.js`.
+
 ## 2.1.43.2 « Menu du compte visible »
 - Signalé par Mathis (03/11) : le menu du portrait restait caché sous le chat. Il est dans la barre du haut (`.status`, z-index 30) : `.status:has(.tb-pop)` la passe à 62 quand un menu est ouvert. Vérifié par `tests/chat_lisible_ui.test.js`.
 

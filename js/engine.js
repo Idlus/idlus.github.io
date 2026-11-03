@@ -2022,8 +2022,9 @@
     if (fx === "deterre" && !F.pvp) foes.forEach((t) => { if (!t.alive && rnd() < 0.25) { F.treasure = (F.treasure || 0) + 1; parts.push("déterre une ressource"); } });
   };
   /* l'IA saute les sorts qui feraient échouer un challenge (si l'option est activée) */
-  const chalSkip = (S, F, e, c, sp, g) => {
-    if (!E.chalRespect(S, c)) return false;
+  const chalSkip = (S, F, e, c, sp, g) => { const r = chalSkip0(S, F, e, c, sp, g); if (r) e.chalHit = true; return r; };
+  const chalSkip0 = (S, F, e, c, sp, g) => {
+    if (!E.chalRespect(S, c) || e.chalFree) return false; // 2.1.43.3 : e.chalFree = le héros lâche le challenge plutôt que de passer son tour
     const k = E.spellKind(g); const key = e.cid;
     if (aiChal(S, F, "versatile") && (F.cs.turnCasts[key] || {})[sp.id]) return true;
     if (aiChal(S, F, "econome") && F.cs.last[key] === sp.id) return true;
@@ -2161,9 +2162,14 @@
     const nCast = {}; const blocked = new Set();
     /* 2.1.32 « Ma rotation » (demande de Mathis, choix 1A 2A 3A) : la liste exacte des lancers du tour, de gauche à droite.
        Un sort en recharge, sans assez de PA, déjà lancé le maximum du tour ou hors condition est passé ; au bout de la liste, le tour s'arrête. */
+    /* 2.1.43.3 : un héros qui ne pourrait rien lancer sans faire échouer un challenge passait son tour, encore et encore
+       (retour d'un joueur : Sadida contre Halbardent avec « L'IA respecte les challenges » et Élémentaire). Il lâche maintenant le challenge
+       pour ce tour et joue normalement (sauf dans le Défi du jour, où les challenges sont la règle). */
+    e.chalHit = false; e.chalFree = false;
+    const chalRetry = () => !cast && paStart === undefined && e.chalHit && !e.chalFree && !F.defiRules && alive(F, "m").length ? (e.chalFree = true) : false;
     if (c.atkMode === "rot" && Array.isArray(c.rot) && c.rot.length) {
       const skip = (st, why) => F.fx.push({ seq: F.seq, k: "rskip", s: F.ents.indexOf(e), sp: st.id, why });
-      for (const st of c.rot.slice(0, E.ROT_MAX)) {
+      do for (const st of c.rot.slice(0, E.ROT_MAX)) {
         if (!alive(F, "m").length) return endHeroTurn(S, F, e);
         const w = st.id === "arme"; const idx = w ? (e.wsp ? bar.length - 1 : -1) : bar.findIndex((x) => !x.w && x.id === st.id); const slot = idx >= 0 ? bar[idx] : null;
         if (!slot) { skip(st, w ? "arme" : "barre"); continue; }
@@ -2176,11 +2182,11 @@
         F.seq++; const r = castSpell(S, F, e, sp, null, slot); if (!r.ok) { skip(st, "inutile"); continue; }
         nCast[idx] = (nCast[idx] || 0) + 1; pa -= g.pa; pa += r.extraPa || 0; cast++; if (g.cd) e.cd[sp.id] = (e.lg && E.legCd ? E.legCd(e, g.cd) : g.cd) + 1;
         F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), sp: sp.id });
-      }
+      } while (chalRetry());
       if (!cast && paStart === undefined) flog(F, `${e.name} passe son tour.`, "dim");
       e.lastCast = F.seq; return endHeroTurn(S, F, e);
     }
-    for (let guard = 0; guard < 30; guard++) {
+    do for (let guard = 0; guard < 30; guard++) {
       if (!alive(F, "m").length) return endHeroTurn(S, F, e);
       let best = null, bestV = -1;
       bar.forEach((slot, idx) => {
@@ -2212,7 +2218,7 @@
       nCast[best.idx] = (nCast[best.idx] || 0) + 1;
       pa -= best.g.pa; pa += r.extraPa || 0; cast++; if (best.g.cd) e.cd[best.sp.id] = (e.lg && E.legCd ? E.legCd(e, best.g.cd) : best.g.cd) + 1;
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), sp: best.sp.id });
-    }
+    } while (chalRetry());
     if (!cast && paStart === undefined) flog(F, `${e.name} passe son tour.`, "dim");
     e.lastCast = F.seq;
     if (false) {
@@ -2294,13 +2300,14 @@
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
           let ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)];
           if (E.midTargets) ts = E.midTargets(F, e, sp, f, ts, targets);
-          ts = ts.filter((t) => !dodged(F, t, e));
+          const tried = ts; ts = ts.filter((t) => !dodged(F, t, e)); const miss = tried.filter((t) => !ts.includes(t)).map((t) => `${t.name} esquive`); // 2.1.43.3 : « Geoassaut → , rend … vulnérable » quand la cible esquivait
           const base = monCrit(e, e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15));
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
           ts.forEach((t) => { if (f.k === "dot") { const v = base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1); t.dots.push({ v, turns: f.t || 2, el, src: e.name }); if (E.midHit) E.midHit(F, e, sp, t, v, el); } else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
           F.midB = base; F.midEl = el; F.midTs = ts;
-          parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
+          const got = f.k === "dot" ? (ts.length ? `poison sur ${ts.map((t) => t.name).join(", ")}` : "") : hits.join(", ");
+          const line = [got, ...miss].filter(Boolean).join(", "); if (line) parts.push(line);
         } else if (f.k === "heal" || f.k === "healpct") {
           const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? hpR(t) * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
         } else if (f.k === "shield") { e.shield = Math.max(e.shield, Math.round(hpR(e) * Math.min(20, f.pct) / 100)); parts.push("bouclier");
