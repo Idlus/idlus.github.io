@@ -24,10 +24,18 @@
 
   const FAMS = [
     { id: "day", n: "Aujourd'hui", ic: "almanax", pages: [["jour", "Tableau du jour", "almanax"], ["hebdo", "Semaine", "coffre"], ["almanax", "Almanax", "almanax"], ["commandes", "Commandes", "metiers"], ["temples", "Temples", "combat"]] },
-    { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["region", "Quêtes de région", "monde"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
+    { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["camp", "Campagne de saison", "parchemin_or"], ["region", "Quêtes de région", "monde"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
     { id: "hunt", n: "Chasses", ic: "carte", pages: [["bounty", "Avis de recherche", "carte"], ["tresor", "Trésor", "parchemin_or"]] },
   ];
-  const famOf = (qt) => (FAMS.find((F) => F.pages.some((p) => p[0] === qt)) || FAMS[0]).id;
+  /* Classique · Saison 1 (1A) : 4 onglets, Histoire d'abord (quête principale, campagne, régions, alignement), puis Aujourd'hui, Chasses et Dofus */
+  const FAMS_S1 = [
+    { id: "adv", n: "Histoire", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["camp", "Campagne de saison", "parchemin_or"], ["region", "Quêtes de région", "monde"], ["align", "Alignement", "ailes"]] },
+    FAMS[0], FAMS[2],
+    { id: "dof", n: "Dofus", ic: "dofus", pages: [["dofus", "Dofus", "dofus"]] },
+  ];
+  const FAMS_ET = FAMS.map((F) => ({ ...F, pages: F.pages.filter((p) => p[0] !== "camp") }));
+  const fams = (s) => (HS(s) ? FAMS_S1 : FAMS_ET);
+  const famOf = (qt, s) => { const L = s ? fams(s) : FAMS; return (L.find((F) => F.pages.some((p) => p[0] === qt)) || L[0]).id; };
   const COL = [["ach", "Succès", "trophee"], ["orn", "Ornements", "couronne"]]; // 0.1.31 : page Succès à part (menu Suivi)
   const pageName = (qt) => (qt === "shops" ? "Comptoirs" : qt === "hebdo" ? "Quêtes de la semaine" : qt === "tresor" ? "Chasse au trésor" : (FAMS.flatMap((F) => F.pages).concat(COL).find((p) => p[0] === qt) || [0, "Quêtes"])[1]);
 
@@ -57,6 +65,7 @@
       case "tresor": { const T = E.tresorState(s); return T.cur ? ["en cours", "todo"] : T.stock.length ? [`${T.stock.length}`, "todo"] : ["", ""]; }
       case "commandes": { const C = E.cmdState(s); const done = C.dn || 0; return [`${done}/${E.CMD_DAY_MAX}`, done >= E.CMD_DAY_MAX ? "ok" : C.list.some((o) => cmdReady(s, o)) ? "todo" : ""]; }
       case "temples": { const all = E.templeClasses(s).length; const left = templeLeft(s).length; return all ? [`${all - left}/${all}`, left ? "todo" : "ok"] : ["", ""]; }
+      case "camp": { const C = E.camp(s), L = E.CAMP.length; return [`${Math.min(C.c, L)}/${L}`, C.c >= L ? "ok" : E.campCur(s) >= 0 ? "todo" : ""]; }
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
       case "dofus": { const d = E.dofusCount(s); return [`${d}/${E.DOFUS_ORDER.length}`, d >= E.DOFUS_ORDER.length ? "ok" : ""]; }
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
@@ -71,16 +80,16 @@
   function journal(s, qt) {
     const left = todo(s);
     return `<aside class="qj-journal" aria-label="Journal de quêtes"><div class="qj-jh">${IC("quetes")}<h3>Journal</h3></div>
-      ${FAMS.map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
+      ${fams(s).map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
         ${F.pages.map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
       <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>${window.CPTUI ? "6 boutiques" : "3 boutiques"}</span></button></aside>`;
   }
   /* téléphone : les 3 familles en gros boutons, puis les pages de la famille (0.1.49) */
   function mtabs(s, qt) {
-    const left = todo(s); const F = FAMS.find((f) => f.id === famOf(qt));
+    const left = todo(s); const FL = fams(s); const F = FL.find((f) => f.id === famOf(qt, s));
     const n = F.pages.length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
-    return `<div class="qj-m"><div class="qj-fam3">${FAMS.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
-      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
+    return `<div class="qj-m"><div class="qj-fam3"${FL.length === 4 ? ' style="grid-template-columns:repeat(4,minmax(0,1fr))"' : ""}>${FL.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
+      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}${n < 2 ? ";display:none" : ""}">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
   }
 
   /* en-tête de page : titre, compteur, bouton « ? » (aide repliée) */
@@ -92,9 +101,10 @@
   const splitNote = (html) => { const m = html.match(/^\s*<p class="note">([\s\S]*?)<\/p>/); return m ? [m[1], html.slice(m[0].length)] : ["", html]; };
 
   /* ---------- tableau du jour ---------- */
+  const HS = (s) => !!(window.HUI && window.HUI.on(s)); // Saison 1 : la quête principale en scènes (js/histoireui.js)
   function jourHtml(s) {
     const q = E.questStep(s); const qp = E.questProgress(s); const cur = s.quest.step;
-    const hero = q ? `<div class="qj-hero"><div class="qj-chap">${IC("quetes")}</div>
+    const hero = HS(s) ? window.HUI.heroHtml(s) : q ? `<div class="qj-hero"><div class="qj-chap">${IC("quetes")}</div>
         <div class="qj-hb"><span class="qj-eb">Quête principale · chapitre ${chapOf(cur) + 1} · étape ${cur + 1 - E.QUEST_CHAPTERS[chapOf(cur)].start} sur ${E.QUEST_CHAPTERS[chapOf(cur)].end - E.QUEST_CHAPTERS[chapOf(cur)].start}</span><h2>${h(q.title)}</h2><span class="small muted">${h(q.txt)}</span>
           ${qp ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
           ${E.questExtraText(cur) ? `<span class="qj-rew">${IC("coffre")} Récompense : <b>${h(E.questExtraText(cur))}</b></span>` : ""}</div>
@@ -141,7 +151,7 @@
       <div class="row">${pend ? `<span class="xs muted grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>` : left.length ? `<button class="btn sm primary" data-act="vi-tfight" data-v="${left[0]}">Défier ${h(CLASSES[left[0]].name)}</button>` : ""}<button class="btn sm" data-act="qtab" data-v="temples">Ouvrir</button></div></article>`;
     // les cartes terminées descendent en bas
     const cards = [[alm, A.done], [avis, false], [cmd, allDone], [tpl, cls.length && !left.length]].sort((x, y) => x[1] - y[1]).map((c) => c[0]).join("");
-    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}${nextUp(s)}${X().defiLine ? X().defiLine() : ""}<div class="qj-day">${cards}</div>`;
+    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}${HS(s) ? window.HUI.dchHtml(s) : ""}${nextUp(s)}${X().defiLine ? X().defiLine() : ""}<div class="qj-day">${cards}</div>`;
   }
 
   /* ---------- « À faire ensuite » : le plus utile du moment, en une rangée ---------- */
@@ -166,6 +176,7 @@
   /* ---------- quête principale : 5 chapitres (0.1.49) ---------- */
   const chapOf = (i) => E.questChapter(Math.min(i, E.MAIN_QUEST.length - 1));
   function mainHtml(s) {
+    if (HS(s)) return window.HUI.mainHtml(s, head(s, "main", "La quête principale se joue en scènes : un personnage te parle et te donne 2 à 4 objectifs, qui avancent tous en même temps en jouant. Chaque objectif paie sa récompense dès qu'il est fini, chaque scène finie donne 2 boosters de cartes, et chaque chapitre fini un titre et 3 boosters de plus."));
     const Q = E.MAIN_QUEST; const cur = s.quest.step; const qp = E.questProgress(s); const CH = E.QUEST_CHAPTERS; const t = top(s);
     const curCh = cur >= Q.length ? CH.length - 1 : chapOf(cur);
     if (st.chap === null || !CH[st.chap]) st.chap = curCh;
@@ -230,18 +241,26 @@
   }
 
   /* ---------- quêtes de région (0.1.49) ---------- */
+  // Saison 1 (5A) : à la fin, deux choix ; chacun donne son titre (le choix fait reste affiché)
+  function rqChoice(s, R, T, X) {
+    if (T.done) { const o = X[T.ch]; return o ? `<div class="hs-choice done"><span class="qj-lab">Ton choix</span><p class="hs-bub end">${h(o[2])}</p><span class="xs muted">titre « ${h(o[1])} »</span></div>` : ""; }
+    const ready = E.rqReady(s, R) && R.steps[T.i] && R.steps[T.i].t === "talk";
+    return `<div class="hs-choice ${ready ? "" : "lock"}"><span class="qj-lab">${ready ? "À toi de choisir" : "Le choix de la fin"}</span><p class="hs-bub">${h(X.q)}</p>
+      <div class="hs-opts">${["a", "b"].map((k) => `<button class="btn sm ${ready ? "primary" : ""}" ${ready ? `data-act="qj-rqclaim" data-v="${R.id}" data-o="${k}"` : "disabled"}><b>${h(X[k][0])}</b><small>titre « ${h(X[k][1])} »</small></button>`).join("")}</div></div>`;
+  }
   const regCls = (s, R) => { const T = E.rqState(s, R.id); return T.done ? "got" : E.rqOpen(s, R) ? "run" : "lock"; };
   const regFil = (s, R, f, t) => { const c = regCls(s, R); return f === "all" || (f === "lvl" ? c === "run" && (R.lvM >= t - 10 || E.rqState(s, R.id).i > 0) : f === "run" ? c === "run" && E.rqState(s, R.id).i > 0 : c === f); };
   function regionHtml(s) {
     const L = E.REGIONS; const t = top(s);
     if (!st.reg || !E.REGION[st.reg]) st.reg = (L.find((R) => E.rqReady(s, R)) || L.find((R) => regCls(s, R) === "run" && E.rqState(s, R.id).i > 0) || L.find((R) => regCls(s, R) === "run") || L[0]).id;
     const R = E.REGION[st.reg]; const T = E.rqState(s, R.id); const cls = regCls(s, R); const [pa, pb] = E.rqProgress(s, R);
+    const RS1 = E.histOn && E.histOn(s) && E.RQ_S1 ? E.RQ_S1[R.id] : null; // Saison 1 (5A) : dialogue et choix de fin
     const steps = R.steps.map((x, i) => { const c = T.done || i < T.i ? "ok" : i === T.i && cls === "run" ? "cur" : "todo"; let btn = "";
       if (c === "cur") {
         if (x.t === "kill") btn = `<button class="btn xs primary" data-act="zoneview" data-id="${x.sub}" data-gotab="world">Y aller</button>`;
         else if (x.t === "boss") btn = `<button class="btn xs primary" data-act="dgopen" data-id="${x.dg}">Voir le donjon</button>`;
         else if (x.t === "res") btn = `<button class="btn xs ${pa >= pb ? "primary" : ""}" data-act="qj-rqgive" data-v="${R.id}" ${pa >= pb ? "" : "disabled"}>Remettre</button>`;
-        else if (x.t === "talk") btn = `<button class="btn xs primary" data-act="qj-rqclaim" data-v="${R.id}">Terminer la quête</button>`;
+        else if (x.t === "talk") btn = RS1 ? "" : `<button class="btn xs primary" data-act="qj-rqclaim" data-v="${R.id}">Terminer la quête</button>`;
       }
       return `<li class="${c}"><span>${h(x.txt)}${c === "cur" && (x.t === "kill" || x.t === "res") ? ` <span class="num muted">${fmt(pa)}/${fmt(pb)}</span>` : ""}${c !== "ok" ? ` <span class="xs muted">· ${fmt(i === R.steps.length - 1 ? E.rqFinalRew(R) : E.rqStepRew(R, i))} k</span>` : ""}</span>${c === "cur" ? `<span class="row" style="gap:6px">${x.t !== "talk" ? X().pinBtn({ k: "rq", id: R.id }) : ""}${btn}</span>` : ""}</li>`; }).join("");
     const state = cls === "got" ? `<span class="qj-tag ok">Terminée ✓</span>` : cls === "run" ? `<span class="qj-tag todo">étape ${T.i + 1} sur ${R.steps.length}</span>` : `<span class="qj-tag">${R.lv > t + 5 ? `dès le niveau ${Math.max(1, R.lv - 5)}` : "zone à débloquer"}</span>`;
@@ -253,10 +272,10 @@
     return `${head(s, "region", "Chaque région du Monde des Douze a son histoire, donnée par un personnage de DOFUS : chasser, rapporter des ressources, vaincre les boss de la région. Les chasses et les boss se valident tout seuls ; les ressources se remettent avec un bouton. Au bout : kamas, un Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros. Une quête s'ouvre 5 niveaux avant la région.")}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-rf" data-v="${k}" aria-pressed="${k === st.rf}">${l} <b class="num">${L.filter((x) => regFil(s, x, k, t)).length}</b></button>`).join("")}<span class="grow"></span><span class="xs muted">${L.length} régions · ${L.reduce((a, x) => a + x.steps.length, 0)} étapes</span></div>
       <section class="panel qx-fiche2"><div class="pad qx-f2">
-        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc${NPCP[R.id] ? " port" : ""}">${npcImg(R)}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(R.npc)}</span></div>${state}</div>
-        <p class="small qx-story">« ${h(R.story)} »</p>
-        <ol class="qj-steps qx-steps">${steps}</ol></div>
-        <div class="qx-rewb"><span class="qj-lab">Récompense de fin</span><div class="qx-orprev">${hero ? X().heroCard(hero, "", { orn: "reg_" + R.id }) : ""}</div><div class="row" style="flex-wrap:nowrap"><img class="qx-omid" src="assets/ui/orn/orn_${R.id}.svg" alt=""><span><b>Emblème de ${h(R.name)}</b><br><span class="xs muted">ornement de carte de héros</span></span></div><span class="qj-rew">${IC("kamas")} <b>${fmt(E.rqFinalRew(R))} k</b> · ${IC("coffre")} <b>Coffre en argent</b> · ${IC("couronne")} <b>titre « ${h(E.regionTitle(R))} »</b></span><span class="xs muted">Chaque étape donne aussi des kamas et de l'XP.</span></div></div></section>
+        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc${NPCP[R.id] ? " port" : ""}">${npcImg(R)}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(E.rqNpc ? E.rqNpc(s, R) : R.npc)}</span></div>${state}</div>
+        ${RS1 ? `<div class="hs-talk">${RS1.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}</div>` : `<p class="small qx-story">« ${h(R.story)} »</p>`}
+        <ol class="qj-steps qx-steps">${steps}</ol>${RS1 ? rqChoice(s, R, T, RS1) : ""}</div>
+        <div class="qx-rewb"><span class="qj-lab">Récompense de fin</span><div class="qx-orprev">${hero ? X().heroCard(hero, "", { orn: "reg_" + R.id }) : ""}</div><div class="row" style="flex-wrap:nowrap"><img class="qx-omid" src="assets/ui/orn/orn_${R.id}.svg" alt=""><span><b>Emblème de ${h(R.name)}</b><br><span class="xs muted">ornement de carte de héros</span></span></div><span class="qj-rew">${IC("kamas")} <b>${fmt(E.rqFinalRew(R))} k</b> · ${IC("coffre")} <b>Coffre en argent</b> · ${IC("couronne")} <b>${RS1 ? `un titre au choix · ${E.RQ_BOOST} boosters` : `titre « ${h(E.regionTitle(R))} »`}</b></span><span class="xs muted">Chaque étape donne aussi des kamas et de l'XP.</span></div></div></section>
       <div class="qx-regs">${shown.map(card).join("") || `<p class="small muted">Aucune quête de région dans cette liste.</p>`}</div>`;
   }
 
@@ -400,7 +419,8 @@
       if (f !== null) { const el = document.getElementById("qxSearch"); if (el) { el.focus(); try { el.setSelectionRange(f, f); } catch (e) {} } }
       return;
     }
-    const body = qt === "jour" ? jourHtml(s) : qt === "main" ? mainHtml(s) : qt === "region" ? regionHtml(s) : qt === "hebdo" ? hebdoHtml(s) : qt === "bounty" ? bountyHtml(s) : qt === "tresor" ? tresorPage(s) : qt === "dofus" ? dofusHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
+    if (qt === "camp" && !HS(s)) ui.qt = "main";
+    const body = ui.qt === "camp" ? window.HUI.campHtml(s, head(s, "camp", "La campagne de saison raconte la saison en 8 chapitres, un par semaine, les mêmes pour tout le serveur. Un chapitre en retard se rattrape à tout moment, dans l'ordre. Chaque chapitre fini donne 3 boosters et un Coffre en argent. Si assez d'aventuriers le finissent pendant sa semaine, chacun d'eux reçoit aussi un Coffre en or.")) : ui.qt === "jour" ? jourHtml(s) : ui.qt === "main" ? mainHtml(s) : qt === "region" ? regionHtml(s) : qt === "hebdo" ? hebdoHtml(s) : qt === "bounty" ? bountyHtml(s) : qt === "tresor" ? tresorPage(s) : qt === "dofus" ? dofusHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
     // 1.0.3.2 : la page se redessine toutes les 3 s ; on garde le défilement des rangées horizontales (chapitres…)
     const keep = st.lastQt === qt ? [...main.querySelectorAll(".qj-main *")].filter((e) => e.scrollLeft > 0 && typeof e.className === "string" && e.className.trim()).map((e) => [e.className, e.scrollLeft]) : [];
     st.lastQt = qt;
@@ -425,8 +445,9 @@
       case "qj-rf": st.rf = d.v; break;
       case "qj-af": st.af = d.v; break;
       case "qj-ach": st.cat = d.v; st.af = "all"; st.achq = ""; ui.tab = "quests"; ui.qt = "ach"; window.scrollTo(0, 0); break;
-      case "qj-rqgive": case "qj-rqclaim": { const r = E.act(S(), a === "qj-rqgive" ? "rqGive" : "rqClaim", d.v); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
-      default: return;
+      case "qj-dch": { const r = E.act(S(), "dchClaim"); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); X().toast("Coffre du jour reçu !", "rare"); break; }
+      case "qj-rqgive": case "qj-rqclaim": { const r = a === "qj-rqgive" ? E.act(S(), "rqGive", d.v) : E.act(S(), "rqClaim", d.v, d.o); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
+      default: if (window.HUI && window.HUI.act(a, t)) return; return;
     }
     X().render();
   }

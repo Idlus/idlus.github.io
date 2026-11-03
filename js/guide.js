@@ -803,7 +803,7 @@
   const S1 = () => E.S1C || {};
   add({ id: "s1", f: "Saison 1", n: "La Saison 1 : Les Fragments du Temps", ic: "cristal", page: null, k: "saison eternel manche fragments temps benediction plafond maitrise nouveau depart",
     ou: "écran de choix de la partie : Classique · Saison 1", de: "à l'ouverture de la saison",
-    voir: ["s1album", "s1garde", "s1chev", "s1xs1", "s1tour"],
+    voir: ["s1quetes", "s1album", "s1garde", "s1chev", "s1xs1", "s1tour"],
     b: () => [
       ["p", `La Saison 1 est un **nouveau départ** pour tout le monde : une partie neuve, ${N(() => S1().jours)} jours, en ${N(() => S1().manches.length)} manches de ${N(() => S1().manche)} jours (${V(() => S1().manches.join(", "))}).`],
       ["p", "Ta partie d'avant ne disparaît pas : elle devient l'**Éternel** et garde tout. À la fin de la saison, tes héros de saison la rejoignent avec leur niveau et leurs cosmétiques."],
@@ -845,6 +845,18 @@
     b: () => [
       ["p", `Chaque semaine, ${N(() => E.TOUR.TEAMS)} membres par guilde inscrivent leur **équipe d'arène** (celle du Kolizéum) jusqu'au samedi midi. Le tableau se fait tout seul ; une rencontre, ce sont 5 combats 3 contre 3.`],
       ["ul", ["Les tours se jouent le samedi après-midi, la **finale** le dimanche à 20 h.", "Un coffre pour chaque inscrit, selon le tour atteint.", `La guilde gagnante porte le titre « ${V(() => E.TOUR.TITLE)} ».`]],
+    ] });
+  add({ id: "s1quetes", f: "Saison 1", n: "Les quêtes de la saison", ic: "quetes", page: null, k: "quete principale scene dialogue campagne chapitre semaine coffre du jour region choix titre suivie y aller",
+    ou: "Journal › Quêtes", de: "dès la saison",
+    b: () => [
+      ["p", `La quête principale se joue en **${N(() => E.HIST_SC.length)} scènes**. Dans chaque scène, un personnage parle et donne 2 à 4 objectifs qui avancent **en même temps**. Chaque objectif paie comme avant ; chaque scène donne en plus ${N(() => E.HIST_BOOST)} boosters de cartes, et ${N(() => E.HIST_BOOST_CH)} de plus à la fin d'un chapitre.`],
+      ["h", "La campagne de saison"],
+      ["p", `${N(() => E.CAMP.length)} chapitres, **un par semaine**, les mêmes pour tout le serveur. Un chapitre en retard se rattrape à tout moment, dans l'ordre. Chacun donne ${N(() => E.CAMP_BOOST)} boosters et un Coffre en argent. Si ${N(() => E.CAMP_GOAL)} aventuriers le finissent pendant sa semaine, chacun d'eux reçoit aussi un **Coffre en or**.`],
+      ["h", "Le coffre du jour"],
+      ["p", `Fais **${N(() => E.DCH_NEED)} tâches au choix** parmi les ${N(() => E.DCH_TASKS.length)} de la liste (Almanax, commandes, temple, avis, défi, trésor, donjons, récolte, expédition) pour ouvrir un Coffre en argent. Le reste est en plus ; tout repart à minuit.`],
+      ["h", "Quêtes de région et quête suivie"],
+      ["ul", [`Chaque quête de région finit sur **un choix** : il donne son titre, et ${N(() => E.RQ_BOOST)} boosters.`, "La quête suivie reste dans un petit cadre sur tous les écrans, avec « Y aller ». Le ✕ la replie en pastille."]],
+      ["tip", "Le journal est rangé en 4 onglets : Histoire, Aujourd'hui, Chasses et Dofus."],
     ] });
   add({ id: "s1duel", f: "Saison 1", n: "Duel de caisses", ic: "coffre", page: "foire", k: "duel caisse foire trool kamas",
     ou: "Économie › Foire du Trool", de: "partie de saison",
