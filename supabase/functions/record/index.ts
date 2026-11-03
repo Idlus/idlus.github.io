@@ -23,20 +23,26 @@ const CORS = {
 };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 const TRIES = 3, WAIT_S = 10;
+const SHARED_T = new Set(["profiles", "chat_msgs", "admins", "gift_uses"]);
+// deno-lint-ignore no-explicit-any
+const seasonDb = (db: any) => new Proxy(db, { get: (t, k) => (k === "from" ? (x: string) => (SHARED_T.has(x) ? t.from(x) : t.schema("s1").from(x)) : k === "rpc" ? (n: string, a?: unknown) => t.schema("s1").rpc(n, a) : t[k]) });
 const lastTry = new Map<string, number>(); // anti-rafale (par instance)
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ ok: false, err: "méthode refusée" }, 405);
-  const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const db0 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  const { data: who } = await db.auth.getUser(jwt);
+  const { data: who } = await db0.auth.getUser(jwt);
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
+  let body: { saison?: number; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
+  /* Saison 1, lot 0b : partie Classique · Saison 1 (saison: 1) : tout ce que la fonction lit et écrit est dans l'espace « s1 »
+     (supabase/saison1.sql), sauf le compte et ce qui reste commun (profils, chat, admins, codes cadeaux). */
+  const db = body.saison === 1 ? seasonDb(db0) : db0;
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));

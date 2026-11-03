@@ -3279,7 +3279,7 @@ function statusHtmlFull() {
 /* 2.1.37.11 (idée de Zoubilus) : passer du Classique au Monocompte et inversement en un clic depuis la barre du haut.
    La partie en cours est sauvegardée et envoyée, puis la page se recharge sur l'autre partie (chaque partie garde sa clé :
    rien ne passe d'un serveur à l'autre, et le Monocompte retrouve ses pages et modules scellés au chargement). */
-const swapTo = () => { if (!S || !menuOn() || TESTMODE) return 0; if (monoSlot(SLOT)) { const c = +menuPref().lastCl; return [1, 2, 3].includes(c) ? c : 1; } return monoOk() ? MONO_SLOT : 0; };
+const swapTo = () => { if (!S || !menuOn() || TESTMODE) return 0; if (monoSlot(SLOT)) { const c = +menuPref().lastCl; return [1, 2, 3, S1_SLOT].includes(c) ? c : 1; } return monoOk() ? MONO_SLOT : 0; };
 const swapBtn = () => { const to = swapTo(); if (!to) return ""; const mo = to === MONO_SLOT;
   return `<button class="it swapb ${mo ? "to-mo" : "to-cl"}" data-act="sv-swap" data-tip="${h(mo ? `Passer au serveur Monocompte : ta partie ${clNom()} est sauvegardée et envoyée avant.` : `Revenir au serveur ${clNom()} (${partName(to)}) : ta partie Monocompte est sauvegardée et envoyée avant.`)}" aria-label="${mo ? "Passer au Monocompte" : `Revenir au ${clNom()}`}">⇄ <span class="sw-lg">${mo ? "⭐ Monocompte" : `🌍 ${clNom()}`}</span><span class="sw-sm">${mo ? "⭐" : "🌍"}</span></button>`; };
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
@@ -11391,7 +11391,7 @@ const onMeta = (st) => { if (!st || !st.chars) return {}; const mh = st.chars.fi
   return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }, st.mono && !st.mono.eternel ? { gen: monoGenOf(st) } : {}); };
 const onLive = () => !!(ON && ON.user && ON.profile && booted && S && ON.slotOnline());
 /* 1.0.11 : la partie 1 seule entre aux classements et joue avec les autres (Hôtel de vente, guilde, Kolizéum classé…) */
-const ranked = () => onLive() && SLOT === 1;
+const ranked = () => onLive() && rankSlot(SLOT);
 /* Bandeau des pages qui se jouent avec la partie 1 (classements, Hôtel de vente, guilde, Kolizéum classé, boss des mondes) */
 const soloPanel = (what) => monoSlot(SLOT) ? `<div class="panel solob"><div class="pad row between"><span><b>Monocompte</b><br><span class="small muted">Ici, ${/^les /.test(what) ? "ce sont" : "c'est"} ${what} du serveur Classique : ta partie Monocompte n'y prend pas part. Ta saison a ses propres pages en ligne : HdV de saison, Bureau des Aventuriers, amis et classements de saison.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>` : `<div class="panel solob"><div class="pad row between"><span><b>Partie ${SLOT} : solo</b><br><span class="small muted">${what[0].toUpperCase() + what.slice(1)} se joue${/^les /.test(what) ? "nt" : ""} avec ta partie 1. Ici, tu regardes sans y prendre part.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>`;
 function openGate(html) { hideTip(); $("#sheet").innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
@@ -11430,9 +11430,11 @@ const MONO_SLOT = 4; // serveur Monocompte (js/mono.js) : sa propre partie, gard
 const ETER = 100; // parties de l'Éternel (Monocompte, saisons finies) : 101, 102… gardées sur l'appareil
 const isEter = (n) => n > ETER;
 const monoSlot = (n) => n === MONO_SLOT || isEter(n);
-const slotKey = (n) => (n === 1 ? BASE_KEY : n === MONO_SLOT ? `${BASE_KEY}-mono` : isEter(n) ? `${BASE_KEY}-eternel-${n - ETER}` : `${BASE_KEY}-${n}`);
+const S1_SLOT = 5; // Saison 1, lot 0b : partie Classique · Saison 1 (espace « s1 » du serveur, js/online.js) : classée comme la partie 1
+const rankSlot = (n) => n === 1 || n === S1_SLOT; // parties qui portent les classements, l'HdV, la guilde, la course
+const slotKey = (n) => (n === 1 ? BASE_KEY : n === S1_SLOT ? `${BASE_KEY}-s1` : n === MONO_SLOT ? `${BASE_KEY}-mono` : isEter(n) ? `${BASE_KEY}-eternel-${n - ETER}` : `${BASE_KEY}-${n}`);
 const monoNom = () => E.MONO.saisons[E.monoCurrent() || E.MONO.saison].nom;
-const partName = (n) => (n === MONO_SLOT ? `Monocompte · ${MONO_BETA.on ? "Bêta" : monoNom()}` : isEter(n) ? "Monocompte · Éternel" : `Partie ${n}`);
+const partName = (n) => (n === S1_SLOT ? `Classique · ${S1.nom}` : n === MONO_SLOT ? `Monocompte · ${MONO_BETA.on ? "Bêta" : monoNom()}` : isEter(n) ? "Monocompte · Éternel" : `Partie ${n}`);
 const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-eternel-`) ? +k.slice(`${BASE_KEY}-eternel-`.length) : 0)).filter((i) => i > 0 && Number.isInteger(i)).sort((a, b) => a - b).map((i) => ETER + i);
 /* 2.1.33 bêta fermée du Monocompte (Mathis 21/10) : la partie n'apparaît qu'aux testeurs (code dans Options › Compte),
    aux admins, ou quand elle existe déjà sur l'appareil. Elle sera remise à zéro avant l'ouverture de la Saison 1. */
@@ -11452,7 +11454,7 @@ const monoBetaFlag = () => { try { return localStorage.getItem(MONO_BETA.key) ==
    plus l'ancien drapeau de l'appareil (ancien code testeur) ni une partie 4 restée sur l'appareil ; admins et localhost gardent l'accès. */
 const monoSrvOn = () => !!(ON && ON.enabled && ON.monoSrv);
 const monoOk = () => !MONO_BETA.on || !!(ON && ON.mono && ON.mono.ok) || !!(window.CHAT && window.CHAT.role === "admin") || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || (!monoSrvOn() && (monoBetaFlag() || !!SV.local.get(slotKey(MONO_SLOT)))) || eterSlots().length > 0;
-const menuSlots = () => [1, 2, 3, ...(monoOk() ? [MONO_SLOT] : []), ...eterSlots()];
+const menuSlots = () => [1, 2, 3, ...(s1Vue() ? [S1_SLOT] : []), ...(monoOk() ? [MONO_SLOT] : []), ...eterSlots()];
 const LEGACY_KEY = () => `${BASE_KEY}-mono-legacy`; // titres et apparences gardés d'une saison à l'autre (sur l'appareil)
 /* Ce que le prochain héros garde : les droits cosmétiques partagés du compte lus sur le serveur (cosm_mine, js/online.js) ;
    hors connexion ou sans serveur Monocompte, le relevé de l'appareil, comme avant. */
@@ -11584,7 +11586,7 @@ function cardInfo(m, st) {
 const svStats = (ci, mono) => `<div class="st"><div><b>${fmt(ci.level)}</b><span>${mono ? "niveau" : "niveaux cumulés"}</span></div><div><b>${fmt(ci.succes)}</b><span>succès</span></div><div>${mono ? `<b>${h(mono === true ? monoNom() : mono)}</b><span>héros unique</span>` : `<b>${ci.n} / ${E.HERO_MAX}</b><span>héros</span>`}</div><div><b>${ci.kamas == null ? "—" : kShort(ci.kamas)}</b><span>kamas</span></div></div>`;
 const devTxt = () => (ON && ON.device() === "téléphone" ? "Cet appareil" : "Cet ordinateur");
 function slotCard(sl) {
-  const n = sl.n, solo = n !== 1, mono = monoSlot(n), eter = isEter(n), last = (menuPref().last || 1) === n, plan = sl.plan, rem = sl.rem;
+  const n = sl.n, solo = !rankSlot(n), mono = monoSlot(n), eter = isEter(n), last = (menuPref().last || 1) === n, plan = sl.plan, rem = sl.rem;
   const eS = eter && sl.st && sl.st.mono ? E.monoSeasonDef(sl.st.mono.s).nom : "";
   const tags = `${eter ? `<span class="tag mo" data-tip="Saison finie : le héros garde ses kamas et ses objets, sans contenu de saison">Éternel${eS ? ` · ${h(eS)}` : ""}</span>` : mono ? `<span class="tag mo" data-tip="Serveur Monocompte : un seul héros, tout le monde repart de 0">Monocompte</span>` : solo ? `<span class="tag lo" data-tip="Hors classements : ni Hôtel de vente, ni guilde, ni Kolizéum classé, ni boss des mondes">Solo</span>` : `<span class="tag cl" data-tip="Classements, course, Hôtel de vente, guilde, Kolizéum classé et boss des mondes">Classements</span>`}${rem || ["sync", "own", "resend"].includes(plan) ? `<span class="tag on">En ligne</span>` : sl.st ? `<span class="tag dv">Sur cet appareil</span>` : ""}`;
   const conf = MENU.confirm;
@@ -11599,6 +11601,8 @@ function slotCard(sl) {
     if (mono && !E.monoCurrent()) return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">Entre deux saisons</span><div class="plus">⏳</div><b>La prochaine saison arrive bientôt</b><span class="small muted">Ton héros de la saison passée t'attend dans l'Éternel.</span></div>`;
     if (mono) { const L = monoLegacyRead(); const keep = L ? (L.t || []).length + (L.u || []).length + (L.aura ? 1 : 0) : 0;
       return `<div class="svc2 empty mono" data-slot="${n}"><span class="pn">${MONO_BETA.on ? "Bêta · saison de test" : h(monoNom())}</span><div class="plus">⭐</div><b>${MONO_BETA.on ? "Nouvelle partie de la bêta" : "Nouvelle partie Monocompte"}</b><span class="small muted">Un seul héros, qui part du niveau 1 sans rien, comme tous les joueurs${keep ? `. Tu gardes tes ${keep} titres et apparences des saisons passées.` : ""}</span><button class="btn primary" data-act="sv-play" data-n="${n}">${MONO_BETA.on ? "Commencer la bêta" : `Commencer la ${h(monoNom())}`}</button></div>`; }
+    if (n === S1_SLOT) return `<div class="svc2 empty" data-slot="${n}"><span class="pn">${h(partName(n))}</span><div class="plus">⏳</div><b>Nouvelle partie de saison</b><span class="small muted">8 héros, tout le monde repart de zéro : classements de saison et Fragments du Temps</span>
+      <button class="btn primary" data-act="sv-play" data-n="${n}">Commencer</button></div>`;
     return `<div class="svc2 empty" data-slot="${n}"><span class="pn">Partie ${n}</span><div class="plus">+</div><b>Nouvelle partie</b><span class="small muted">${solo ? "Solo, hors classements : une autre aventure dans le même compte" : "Classements, course, Hôtel de vente, guilde et Kolizéum"}</span>
       ${!solo && ON && ON.user && MENU.off ? `<span class="xs muted">Serveur injoignable : ta partie en ligne n'apparaît pas pour l'instant.</span>` : ""}
       <button class="btn primary" data-act="sv-play" data-n="${n}">Commencer</button></div>`;
@@ -11629,13 +11633,13 @@ function slotCard(sl) {
    1 à 3 et l'Éternel du Monocompte (101…) sous Éternel, la partie 4 sous Monocompte. Le Classique de saison s'ouvrira avec la saison. */
 function hubHtml() {
   const srv = (img, cls, nom, tag, txt) => `<div class="hubsrv ${cls}"><img src="assets/s1/${img}.webp" alt="" loading="lazy"><div class="hs-tx"><h3>${nom}${tag ? ` <span class="srvtg">${h(tag)}</span>` : ""}</h3><span class="small muted">${txt}</span></div></div>`;
-  const cl = MENU.slots.filter((sl) => !monoSlot(sl.n) || isEter(sl.n)), mo = MENU.slots.filter((sl) => sl.n === MONO_SLOT);
+  const cl = MENU.slots.filter((sl) => sl.n !== S1_SLOT && (!monoSlot(sl.n) || isEter(sl.n))), s1 = MENU.slots.filter((sl) => sl.n === S1_SLOT), mo = MENU.slots.filter((sl) => sl.n === MONO_SLOT);
   return `<div class="hubtop" style="background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.55)),url(assets/s1/hub-1.webp)"><h2>Choisis ton serveur</h2>
       <a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a></div>
     ${srv("srv-1", "eter", "🌍 Éternel", "", "Ton monde de toujours : tes parties d'avant la Saison 1 gardent tout, sauf les classements. À la fin de chaque saison, tes héros de saison y arrivent avec leur niveau et leurs cosmétiques.")}
     <div class="svgrid">${cl.map(slotCard).join("")}</div>
     ${srv("srv-2", "s1", `⏳ Classique · ${S1.nom}`, S1.open ? "" : "À L'OUVERTURE", "Tout le monde repart de zéro avec 8 héros : classements de saison, Fragments du Temps et récompenses exclusives.")}
-    ${S1.open ? "" : `<div class="svgrid"><div class="hubsoon small muted">Cette partie s'ouvrira avec la Saison 1. Ta partie Éternel n'est pas touchée.</div></div>`}
+    <div class="svgrid">${s1.map(slotCard).join("")}${S1.open ? "" : `<div class="hubsoon small muted">Aperçu : la partie de saison s'ouvrira avec la Saison 1${ON && ON.s1Srv ? "" : " (en attendant, elle reste sur cet appareil)"}. Ta partie Éternel n'est pas touchée.</div>`}</div>
     ${monoOk() || mo.length ? `${srv("srv-3", "mono", `⭐ Monocompte · ${S1.open ? S1.nom : MONO_BETA.on ? "Bêta" : h(monoNom())}`, MONO_BETA.on ? "BÊTA FERMÉE" : "", MONO_BETA.on ? "Bêta fermée, sur clé bêta : des bugs sont possibles, et tout repart de zéro avant l'ouverture de la Saison 1." : "Un seul héros par saison, tout le monde repart de 0. À la fin de la saison, il rejoint l'Éternel.")}
     <div class="svgrid mono">${mo.map(slotCard).join("")}</div>` : ""}`;
 }
@@ -11764,7 +11768,7 @@ function onPush(force) {
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
 function raceCheck() {
-  if (!S || SLOT !== 1 || S.unlocks.legende || !E.mainQuestDone(S) || !(ON.user && ON.db && ON.db()) || Date.now() - raceAt < 60000) return;
+  if (!S || !rankSlot(SLOT) || S.unlocks.legende || !E.mainQuestDone(S) || !(ON.user && ON.db && ON.db()) || Date.now() - raceAt < 60000) return;
   raceAt = Date.now();
   try { ON.db().from("firsts").select("key").eq("kind", "race10").eq("user_id", ON.user.id).limit(1).then(({ data }) => {
     if (!data || !data[0] || !E.grantLegend(S, +data[0].key || 1)) return;
@@ -11776,7 +11780,7 @@ function raceCheck() {
 /* 1.1 : les 10 premiers comptes à réunir les 4 Dofus de la 1.1 : ornement unique « Gardien de la 1.1 » (le titre, lui, vient avec les 4 Dofus) */
 let gardienAt = 0;
 function gardienRaceCheck() {
-  if (!S || SLOT !== 1 || S.unlocks.gardien || !E.DOFUS_11 || !E.DOFUS_11.every((id) => E.dofusOwned(S, id)) || !(ON.user && ON.db && ON.db()) || Date.now() - gardienAt < 60000) return;
+  if (!S || !rankSlot(SLOT) || S.unlocks.gardien || !E.DOFUS_11 || !E.DOFUS_11.every((id) => E.dofusOwned(S, id)) || !(ON.user && ON.db && ON.db()) || Date.now() - gardienAt < 60000) return;
   gardienAt = Date.now();
   try { ON.db().from("firsts").select("key").eq("kind", "gardien11").eq("user_id", ON.user.id).limit(1).then(({ data }) => {
     if (!data || !data[0] || !E.grantGardien(S, +data[0].key || 1)) return;
@@ -11929,7 +11933,7 @@ function lbDefaultDid() {
 /* 0.1.49 : petit classement des points de succès (page Succès) : 3 premiers et ta place, gardé 2 min */
 const ACHLB = { at: 0, busy: false, rows: null, me: null };
 function achLb() {
-  if (!(ON && ON.user && ON.db && ON.db()) || SLOT !== 1) return null; // 1.0.11 : une partie solo n'a pas de place au classement
+  if (!(ON && ON.user && ON.db && ON.db()) || !rankSlot(SLOT)) return null; // 1.0.11 : une partie solo n'a pas de place au classement
   if (!ACHLB.busy && Date.now() - ACHLB.at > 120000) {
     ACHLB.busy = true; ACHLB.at = Date.now();
     (async () => {
@@ -12115,7 +12119,7 @@ function jobGuildHtml(d) {
    1.0.9 : « Grand Maître artisan » pour le premier compte avec les 7 métiers au niveau 200 (kind job200all). */
 let jobFirstAt = 0;
 function jobFirstCheck() {
-  if (!S || SLOT !== 1 || !(ON && ON.user && ON.db && ON.db()) || Date.now() - jobFirstAt < 60000) return;
+  if (!S || !rankSlot(SLOT) || !(ON && ON.user && ON.db && ON.db()) || Date.now() - jobFirstAt < 60000) return;
   const seen = (S.unlocks.jobFirst = S.unlocks.jobFirst || {});
   const todo = Object.keys(CRAFT_JOBS).filter((j) => (S.crafts[j] || {}).lvl >= 200 && seen[j] === undefined);
   const askAll = seen.all === undefined && Object.keys(CRAFT_JOBS).every((j) => (S.crafts[j] || {}).lvl >= 200);
@@ -12153,7 +12157,7 @@ function sbGrid(sb) {
 }
 /* 2.1.37.9 (idée de Gagou) : classement des guildes par niveau ; une ligne ouvre la fiche de la guilde (Joueurs › Guilde) */
 function guildLbHtml(d) {
-  const gs = d.glds || [], myG = window.GUILD && window.GUILD.G && window.GUILD.G.me && window.GUILD.G.me.g, myId = myG && myG.id, see = !!(window.GUILD && SLOT === 1 && ON.user);
+  const gs = d.glds || [], myG = window.GUILD && window.GUILD.G && window.GUILD.G.me && window.GUILD.G.me.g, myId = myG && myG.id, see = !!(window.GUILD && rankSlot(SLOT) && ON.user);
   if (!gs.length) return `<div class="empty">Aucune guilde pour l'instant. Fonde la tienne dans Joueurs › Guilde !</div>`;
   return `<div class="lbt">${gs.map((g, i) => `<${see ? "button" : "div"} class="lbr jlb-g glb${g.id === myId ? " mine" : ""}${see ? " clk" : ""}"${see ? ` data-act="lb-gview" data-g="${+g.id}"` : ""}><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.name)}${g.id === myId ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${fmt(g.n || 0)} / ${fmt(g.cap || E.GUILD_SEATS || 5)} membres · Meneur : ${h(g.chef || "?")}</small></span><span></span><span class="sc">Niveau ${fmt(g.lvl || 1)}</span></${see ? "button" : "div"}>`).join("")}</div>`;
 }
@@ -12338,7 +12342,7 @@ async function lbProfile(u) {
     const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
       db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
     const gd = await gq; // 2.1.37.9 (idée de Gagou) : sa guilde
-    const gsee = !!(window.GUILD && window.GUILD.show && SLOT === 1 && ON.user);
+    const gsee = !!(window.GUILD && window.GUILD.show && rankSlot(SLOT) && ON.user);
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 + (b.mt || 0) - (a.lvl + a.ren * 200 + (a.mt || 0)));
     ui.lbProf = { u, heroes };
@@ -12597,7 +12601,7 @@ function bootGame(pushNow) {
    si le serveur ne les a pas encore, retour à brisage_list et brisage_hit (plafond de 100 %) */
 let coefAt = 0, coefSince = null, coefOld = false;
 async function brisageNet() {
-  if (!ON || !ON.user || SLOT !== 1) { if (E.netCoef) { E.netCoef = null; E.netCoefT0 = null; E.netCoefHits.length = 0; coefSince = null; } return; } // 1.0.11 : partie solo : coefficient propre, comme sans compte
+  if (!ON || !ON.user || !rankSlot(SLOT)) { if (E.netCoef) { E.netCoef = null; E.netCoefT0 = null; E.netCoefHits.length = 0; coefSince = null; } return; } // 1.0.11 : partie solo : coefficient propre, comme sans compte
   const hits = E.netCoefHits.splice(0, 300);
   if (!hits.length && E.netCoef && Date.now() - coefAt < 180000) return;
   if (!coefOld) {
