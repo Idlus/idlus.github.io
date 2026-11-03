@@ -171,6 +171,14 @@ alter table public.admin_log enable row level security;
 create or replace function public.alog(t text) returns void language sql security definer set search_path = public
   as $$ insert into public.admin_log (by_user, txt) values (auth.uid(), t) $$;
 revoke all on function public.alog(text) from public, anon, authenticated;
+-- 2.2.1 (rôle modérateur, 6B) : les actions des modérateurs partent aussi dans #modération sur Discord (workflow « Journal de
+-- modération vers Discord », toutes les 10 min) ; discord_at = envoyé. Les lignes d'avant sont marquées envoyées à la création.
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'admin_log' and column_name = 'discord_at') then
+    alter table public.admin_log add column discord_at timestamptz;
+    update public.admin_log set discord_at = now();
+  end if;
+end $$;
 
 -- ---------- envoyer un message ----------
 -- Renvoie null si le message est parti, sinon la raison du refus (affichée sous la zone de texte).
@@ -357,10 +365,19 @@ as $$ begin
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v', 'm', 's') and kind = 'msg' order by id desc limit 15) x);
 end $$;
 
+-- 2.2.1 (rôle modérateur, 2A) : un modérateur ne peut agir ni sur Mathis ni sur un autre modérateur ; seul Mathis sanctionne un modo.
+create or replace function public.adm_need_target(p_user uuid) returns void language plpgsql stable security definer set search_path = public
+as $$ begin
+  if exists (select 1 from admins where user_id = p_user) then raise exception 'impossible sur Mathis'; end if;
+  if not public.is_admin() and exists (select 1 from mods where user_id = p_user) then raise exception 'impossible sur un modérateur : seul Mathis peut le faire'; end if;
+end $$;
+revoke all on function public.adm_need_target(uuid) from public, anon, authenticated;
+
 create or replace function public.adm_mute(p_user uuid, p_min int) returns void language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need_chat();
-  if exists (select 1 from admins where user_id = p_user) then raise exception 'impossible sur Mathis'; end if;
+  perform public.adm_need_target(p_user);
+  if not public.is_admin() and p_min > 1440 then raise exception 'muet 24 h au plus pour un modérateur'; end if;
   insert into chat_sanctions (user_id, mute_until, at) values (p_user, case when p_min > 0 then now() + make_interval(mins => p_min) end, now())
     on conflict (user_id) do update set mute_until = excluded.mute_until, at = now();
   perform public.alog(case when p_min > 0 then format('%s rendu muet %s', public.pseudo_of(p_user), case when p_min >= 1440 then (p_min / 1440) || ' j' when p_min >= 60 then (p_min / 60) || ' h' else p_min || ' min' end) else format('%s n''est plus muet', public.pseudo_of(p_user)) end);
@@ -490,11 +507,35 @@ end $$;
 -- ---------- 1.2.10.1 : tous les droits de Mathis sur le chat ----------
 -- Supprimer un message, effacer tous les messages publics d'un joueur, vider un salon, fermer le chat.
 -- Réservé au compte admin (adm_need) ; les joueurs voient la suppression en direct (temps réel DELETE).
+-- 2.2.1 (rôle modérateur, 1A) : les modérateurs aussi suppriment un message, mais seulement un message de joueur d'un salon public
+-- (pas les messages privés, pas les annonces, pas les messages de Mathis ou d'un autre modo).
 create or replace function public.adm_msg_del(p_id bigint) returns void language plpgsql security definer set search_path = public
 as $$ declare m record; begin
-  perform public.adm_need(true);
+  perform public.adm_need_chat();
+  if not public.is_admin() then
+    select user_id, ch, kind into m from chat_msgs where id = p_id;
+    if not found then return; end if;
+    if m.kind <> 'msg' or m.ch not in ('g', 'c', 'v', 'm', 's') or m.user_id is null then raise exception 'seul Mathis peut supprimer ce message'; end if;
+    perform public.adm_need_target(m.user_id);
+  end if;
   delete from chat_msgs where id = p_id returning user_id, body into m;
   if m.user_id is not null then perform public.alog(format('message de %s supprimé : « %s »', public.pseudo_of(m.user_id), left(coalesce(m.body, ''), 60))); end if;
+end $$;
+
+-- 2.2.1 (rôle modérateur, 1A) : avertir un joueur. Message privé du modo (ou de Mathis) marqué data.warn : le jeu l'affiche
+-- comme un avertissement officiel. Renvoie null si c'est parti, sinon la raison.
+create or replace function public.adm_warn(p_user uuid, p_body text) returns text language plpgsql security definer set search_path = public
+as $$ declare b text := btrim(coalesce(p_body, '')); me uuid := auth.uid(); pr record; begin
+  perform public.adm_need_chat();
+  perform public.adm_need_target(p_user);
+  if p_user = me then return 'Tu ne peux pas t''avertir toi-même.'; end if;
+  if b = '' then return 'Écris la raison de l''avertissement.'; end if;
+  if length(b) > 200 then return '200 caractères au maximum.'; end if;
+  if not exists (select 1 from profiles where id = p_user) then return 'Joueur introuvable.'; end if;
+  select pseudo into pr from profiles where id = me;
+  insert into chat_msgs (ch, user_id, to_id, pseudo, body, kind, data) values ('p', me, p_user, pr.pseudo, b, 'msg', jsonb_build_object('warn', true));
+  perform public.alog(format('%s averti : « %s »', public.pseudo_of(p_user), left(b, 60)));
+  return null;
 end $$;
 create or replace function public.adm_msg_purge(p_user uuid) returns int language plpgsql security definer set search_path = public
 as $$ declare n int; begin
@@ -523,7 +564,7 @@ end $$;
 do $$ declare f text; begin
   foreach f in array array['adm_overview()', 'adm_msg_del(bigint)', 'adm_msg_purge(uuid)', 'adm_chat_clear(text)', 'adm_chat_close(boolean)', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
     'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean, int)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
-    'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_pin_mono(text)', 'adm_announce_mono(text, boolean, boolean, int)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
+    'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_pin_mono(text)', 'adm_announce_mono(text, boolean, boolean, int)', 'adm_mods()', 'adm_set_mod(text, boolean)', 'adm_warn(uuid, text)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;

@@ -284,13 +284,14 @@
     const mono = m.ch === "m", mh = mono ? monoHero(m) : null;
     const cls = mono ? mh.cls : m.cls, lvl = mono ? mh.lvl : m.lvl, title = mono ? mh.title : m.title;
     const med = X().cmed(cls, lvl);
-    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${pcWrap(m, X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null))}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt${ttR(title)}">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    const warn = m.ch === "p" && m.data && m.data.warn; // 2.2.1 : avertissement de la modération (adm_warn)
+    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${warn ? " warnmsg" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${pcWrap(m, X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null))}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt${ttR(title)}">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${warn ? `<b class="warnlbl">${X().G("warn")} Avertissement de la modération</b> ` : ""}${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   /* 2.1.35.3 : héros Monocompte d'un message du salon 'm' (data.mono posé par chat_send) ; ancien message : rien */
   /* Saison 1, lot 3 (js/garderobe.js) : titre coloré par sa rareté, couleur du pseudo choisie dans la Garde-robe (data.pc posé par chat_send) */
   const PCOLS = ["braise", "sylve", "givre", "or", "temps", "voix", "v_cadran", "v_sablier"];
   const ttR = (t) => { const E = window.DX && window.DX.E; return E && E.titleRar ? " gr-t-" + E.titleRar(t) : ""; };
-  const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; };
+  const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) && !isStaffU(m.user_id) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; }; // 2.2.1 : la couleur de l'équipe passe avant celle de la Garde-robe
   const monoHero = (m) => (m && m.data && m.data.mono ? { cls: m.cls || null, lvl: m.lvl || 1, title: m.title || null } : { cls: null, lvl: 0, title: null });
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {
@@ -438,8 +439,9 @@
       <button data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${X().G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer ses messages"}</button>
       <button class="red" data-act="ch-rep" data-u="${h(u)}" data-p="${h(p)}" data-id="${id}">${X().G("warn")} Signaler</button>` : ""}
       ${C.role && !mine ? `<button data-act="adm-find" data-q="${h(p)}">${X().G("shield")} Fiche admin</button>` : ""}
-      ${isAdmin() && id && msgById(id) ? `<button class="red" data-act="adm-del" data-id="${id}">${X().G("warn")} Supprimer ce message</button>` : ""}
-      ${C.role && !mine ? `<div class="sub xs muted">Sanctions</div><button data-act="adm-mute" data-u="${h(u)}" data-v="10" data-m="1">Muet 10 min</button><button data-act="adm-mute" data-u="${h(u)}" data-v="60" data-m="1">Muet 1 h</button><button data-act="adm-mute" data-u="${h(u)}" data-v="1440" data-m="1">Muet 24 h</button>${isAdmin() ? `<button data-act="adm-mute" data-u="${h(u)}" data-v="10080" data-m="1">Muet 7 jours</button><button class="red" data-act="adm-ban" data-u="${h(u)}" data-v="1" data-m="1">Bannir du chat</button><button class="red" data-act="adm-purge" data-u="${h(u)}" data-p="${h(p)}">Effacer tous ses messages</button>` : ""}` : ""}`;
+      ${id && canDel(msgById(id)) ? `<button class="red" data-act="adm-del" data-id="${id}">${X().G("warn")} Supprimer ce message</button>` : ""}
+      ${C.role && !mine && canAct(u) ? `<button data-act="adm-warn" data-u="${h(u)}" data-p="${h(p)}" data-m="1">${X().G("warn")} L'avertir</button>` : ""}
+      ${C.role && !mine && canAct(u) ? `<div class="sub xs muted">Sanctions</div><button data-act="adm-mute" data-u="${h(u)}" data-v="10" data-m="1">Muet 10 min</button><button data-act="adm-mute" data-u="${h(u)}" data-v="60" data-m="1">Muet 1 h</button><button data-act="adm-mute" data-u="${h(u)}" data-v="1440" data-m="1">Muet 24 h</button>${isAdmin() ? `<button data-act="adm-mute" data-u="${h(u)}" data-v="10080" data-m="1">Muet 7 jours</button><button class="red" data-act="adm-ban" data-u="${h(u)}" data-v="1" data-m="1">Bannir du chat</button><button class="red" data-act="adm-purge" data-u="${h(u)}" data-p="${h(p)}">Effacer tous ses messages</button>` : ""}` : ""}`;
     document.body.appendChild(el);
     const w = el.offsetWidth, hgt = el.offsetHeight;
     const nv = $("#nav .sn-mob"), nr = nv && nv.getBoundingClientRect(), bot = (nr && nr.height ? nr.top : innerHeight) - 8; // 1.0.12.8 : jamais sur la barre du bas du téléphone
@@ -453,6 +455,11 @@
     const hero = CL ? `<b>${h(CL.name)}</b>${P.lvl ? ` <span class="lv">niv. ${+P.lvl}</span>` : ""}${P.hero ? `<span class="xs muted"> · ${h(P.hero)}</span>` : ""}${P.iron ? ` <span class="mp-o mp-iron">Ironman</span>` : ""}` : P.wait ? `<span class="muted">Héros Monocompte…</span>` : `<span class="muted">Pas encore de héros Monocompte</span>`;
     return `${X().cmed(CL ? P.cls : null, CL ? P.lvl : 0)}<div class="chm-t"><div>${hero}</div>${P.title ? `<div class="tt">${h(P.title)}</div>` : ""}${P.nom ? `<div class="xs muted">${h(P.nom)}</div>` : ""}</div>`;
   }
+  /* 2.2.1 « Les modérateurs » : un modo n'agit ni sur Mathis ni sur un autre modo (le serveur refuse aussi, adm_need_target) ;
+     il supprime seulement un message de joueur d'un salon public */
+  const isStaffU = (u) => !!u && / is-(crea|mod)/.test(X().staffCls(u));
+  const canAct = (u) => isAdmin() || (C.role && !isStaffU(u));
+  const canDel = (m) => !!m && (isAdmin() || (C.role && m.kind === "msg" && ["g", "c", "v", "m", "s"].includes(m.ch) && !isStaffU(m.user_id)));
   const msgById = (id) => C.g.concat(C.p, C.c, C.v, C.m, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
   function reportSheet(u, p, id) {
@@ -462,6 +469,14 @@
       <div class="rep-opts">${["Insultes ou harcèlement", "Arnaque ou publicité", "Spam", "Autre"].map((r, i) => `<label><input type="radio" name="chRep" value="${h(r)}" ${i ? "" : "checked"}> ${h(r)}</label>`).join("")}</div>
       <label class="row small"><input type="checkbox" id="chRepIgn" checked> Ignorer aussi ses messages</label>
       <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Annuler</button><button class="btn primary" data-act="ch-repgo" data-u="${h(u)}" data-id="${id}">Envoyer le signalement</button></div>`);
+  }
+  /* 2.2.1 « Les modérateurs » : avertir un joueur. Il le reçoit en message privé, marqué « Avertissement de la modération ». */
+  const WARN_TXT = ["Reste courtois dans le chat, s'il te plaît.", "Pas de publicité ni de liens dans le chat.", "Évite de répéter le même message (spam)."];
+  function warnSheet(u, p, close) {
+    X().openSheet(`<h2>Avertir ${h(p)}</h2><p class="muted small">${h(p)} le reçoit en message privé, marqué « Avertissement de la modération ». L'action est notée dans le journal.</p>
+      <div class="rep-opts">${WARN_TXT.map((t) => `<button class="btn sm" data-act="adm-warnpick" data-t="${h(t)}">${h(t)}</button>`).join("")}</div>
+      <textarea id="admWarn" maxlength="200" placeholder="Raison de l'avertissement (200 caractères au plus)"></textarea>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Annuler</button><button class="btn primary" data-act="adm-warngo" data-u="${h(u)}" data-p="${h(p)}"${close ? ` data-close="1"` : ""}>Envoyer l'avertissement</button></div>`);
   }
   async function ignore(u, on) {
     const e = await ON.setIgnore(u, on); if (e) return X().toast(e);
@@ -578,7 +593,7 @@
       const R = A.reps || [];
       return R.length ? R.map((r) => `<div class="modrow"><div class="row between"><div class="row">${X().cmed(r.cls)}<b>${h(r.pseudo || "?")}</b></div><span class="xs muted">signalé par ${r.n} joueur${r.n > 1 ? "s" : ""} · ${h(r.reasons || "")}</span></div>
           ${(r.bodies || []).slice(0, 3).map((b) => `<div class="rep-q">${h(b || "")}</div>`).join("")}
-          <div class="acts"><button class="btn sm" data-act="adm-mute" data-u="${r.id}" data-v="60" data-close="1">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${r.id}" data-v="1440" data-close="1">Muet 24 h</button>${isAdmin() ? `<button class="btn sm danger" data-act="adm-ban" data-u="${r.id}" data-v="1" data-close="1">Bannir du chat</button>` : ""}<button class="btn sm" data-act="adm-close" data-u="${r.id}">Classer sans suite</button><button class="btn sm" data-act="adm-find" data-q="${h(r.pseudo || "")}">Fiche</button></div></div>`).join("")
+          <div class="acts"><button class="btn sm" data-act="adm-warn" data-u="${r.id}" data-p="${h(r.pseudo || "")}" data-close="1">Avertir</button><button class="btn sm" data-act="adm-mute" data-u="${r.id}" data-v="60" data-close="1">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${r.id}" data-v="1440" data-close="1">Muet 24 h</button>${isAdmin() ? `<button class="btn sm danger" data-act="adm-ban" data-u="${r.id}" data-v="1" data-close="1">Bannir du chat</button>` : ""}<button class="btn sm" data-act="adm-close" data-u="${r.id}">Classer sans suite</button><button class="btn sm" data-act="adm-find" data-q="${h(r.pseudo || "")}">Fiche</button></div></div>`).join("")
         : `<div class="box"><div class="empty">Aucun signalement en attente.</div></div>`;
     }
     if (A.tab === "verif") {
@@ -602,7 +617,7 @@
     if (A.tab === "mchat") return monoChatHtml();
     if (A.tab === "mann") return monoAnnHtml();
     if (A.tab === "equipe") {
-      return `<div class="box"><h2>Modérateurs</h2><p class="small muted">Ils peuvent rendre muet et traiter les signalements. Ils ne peuvent ni bannir, ni suspendre un compte, ni publier d'annonce.</p>
+      return `<div class="box"><h2>Modérateurs</h2><p class="small muted">Ils traitent les signalements, suppriment un message du chat public, avertissent un joueur en privé et rendent muet 24 h au plus. Ils ne peuvent ni bannir, ni suspendre un compte, ni voir les sauvegardes, ni agir sur toi ou un autre modérateur. Leurs actions partent aussi dans #modération sur Discord.</p>
         ${(A.mods || []).map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="t">depuis ${when(x.at)}</span><button class="btn sm" data-act="adm-mod" data-p="${h(x.pseudo)}" data-v="0">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun modérateur pour l'instant.</div>`}
         <div class="srch"><input id="admMod" placeholder="Pseudo du joueur" autocomplete="off"><button class="btn" data-act="adm-mod" data-v="1">Nommer modérateur</button></div></div>`;
     }
@@ -659,7 +674,7 @@
       <div class="fiche"><div><small>Niveau d'équipe</small>${x.level || 0}</div><div><small>Temps de jeu</small>${dur(x.playtime || 0)}</div><div><small>Dernier envoi de la partie</small>${when(x.last_save)}</div>
         <div><small>Héros</small>${H.slice(0, 4).map((c) => `${h(clsName(c.cls))} ${c.lvl}${c.ren ? ` (R${c.ren})` : ""}`).join(", ") || "—"}</div><div><small>Signalements reçus</small>${x.reports || 0}</div><div><small>Classements</small>${x.flagged ? `en vérification${x.flag_reason ? ` (${h(x.flag_reason)})` : ""}` : "visible"}</div></div>
       ${self ? `<p class="small muted">C'est ton compte.</p>` : `<div class="acts"><button class="btn sm" data-act="ch-prof" data-u="${x.id}">Voir son profil</button>${isAdmin() && window.FICHES ? `<button class="btn sm" data-act="adm-fiche" data-u="${x.id}">Fiche détaillée</button>` : ""}
-        ${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>${isAdmin() ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="10080">Muet 7 jours</button><button class="btn sm danger" data-act="adm-purge" data-u="${x.id}" data-p="${h(x.pseudo)}">Effacer ses messages</button>` : ""}
+        ${isAdmin() || !(x.is_mod || x.is_admin) ? `<button class="btn sm" data-act="adm-warn" data-u="${x.id}" data-p="${h(x.pseudo)}">Avertir</button>${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>${isAdmin() ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="10080">Muet 7 jours</button><button class="btn sm danger" data-act="adm-purge" data-u="${x.id}" data-p="${h(x.pseudo)}">Effacer ses messages</button>` : ""}` : `<span class="xs muted">Modérateur : seul Mathis peut le sanctionner.</span>`}
         ${isAdmin() ? `<button class="btn sm${x.banned ? "" : " danger"}" data-act="adm-ban" data-u="${x.id}" data-v="${x.banned ? 0 : 1}">${x.banned ? "Lever le bannissement" : "Bannir du chat"}</button>
         <button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="${x.flagged ? 0 : 1}">${x.flagged ? "Remettre dans les classements" : "Retirer des classements"}</button>${x.suspect && !x.flagged ? `<button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0">C'est bon</button>` : ""}
         <button class="btn sm" data-act="adm-rename" data-u="${x.id}">Changer son pseudo</button>${window.PANEL ? `<button class="btn sm" data-act="adm-pxcopy" data-u="${x.id}" data-p="${h(x.pseudo)}">Copier dans ma partie de test</button>` : ""}
@@ -747,6 +762,12 @@
       case "adm-purge": closeMenu(); if (!confirm(`Effacer tous les messages publics de ${d.p} ?`)) return; if (await admDo("adm_msg_purge", { p_user: d.u }, `Messages de ${d.p} effacés.`)) { PUB.forEach((k) => { C[k] = C[k].filter((m) => m.user_id !== d.u || m.kind !== "msg"); }); paint(true); } return;
       case "adm-chclear": if (!confirm(`Vider tout le salon ${d.n} ?`)) return; if (await admDo("adm_chat_clear", { p_ch: d.v }, `Salon ${d.n} vidé.`)) { C[d.v] = C[d.v].filter((m) => m.kind !== "msg"); paint(true); } return;
       case "adm-chclose": if (await admDo("adm_chat_close", { p_on: d.v === "1" }, d.v === "1" ? "Chat fermé : les joueurs ne peuvent plus écrire." : "Chat rouvert.")) { C.me.closed = d.v === "1"; paint(true); } return;
+      case "adm-warnpick": { const ta = $("#admWarn"); if (ta) { ta.value = d.t; ta.focus(); } return; }
+      case "adm-warn": if (d.m) closeMenu(); warnSheet(d.u, d.p, !!d.close); return; // 2.2.1
+      case "adm-warngo": {
+        const t = $("#admWarn") ? $("#admWarn").value.trim() : ""; if (!t) return X().toast("Écris la raison de l'avertissement.");
+        if (await admDo("adm_warn", { p_user: d.u, p_body: t }, `${d.p} a reçu l'avertissement en privé.`)) { X().closeSheet(); if (d.close) await admDo("adm_report_close", { p_user: d.u });} return;
+      }
       case "adm-mute": if (d.m) closeMenu(); if (await admDo("adm_mute", { p_user: d.u, p_min: +d.v }, +d.v ? "Joueur rendu muet." : "Le joueur peut de nouveau écrire.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-ban": if (d.m) closeMenu(); if (await admDo("adm_ban", { p_user: d.u, p_on: d.v === "1" }, d.v === "1" ? "Joueur banni du chat." : "Bannissement levé.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
       case "adm-close": admDo("adm_report_close", { p_user: d.u }, "Signalements classés."); return;

@@ -4,7 +4,7 @@
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
 const RA = "https://re-arise.pages.dev"; // Re:Arise, le deuxième jeu du studio (dépôt Mathiss29/re-arise)
-const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
+const P = { VIEW: 1n << 10n, SEND: 1n << 11n, MANAGE_MSG: 1n << 13n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
 const SERVER = "Ombrelune Studio";
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
@@ -85,9 +85,23 @@ const CLASS_ROLES = [["Féca", 0xd9b24c], ["Osamodas", 0x6fae4f], ["Enutrof", 0x
   ["Zobal", 0xa36fc2], ["Steamer", 0x4fa3a8], ["Eliotrope", 0x56c1e0], ["Huppermage", 0xc46fd9], ["Ouginak", 0xc98f4f], ["Forgelance", 0x9aa6b5]];
 // Re:Arise : l'ombre préférée de chacun (couleur du pseudo), choisie à l'arrivée ; la liste s'allonge avec les chapitres
 const SHADOW_ROLES = [["Igris", 0xc2404f], ["Iron", 0x8d9aae], ["Tank", 0x7a5fb0], ["Gobelin d'ombre", 0x6f9a4f], ["Archer d'ombre", 0x4f97b3], ["Chevalier de sang", 0x9e2f3d]];
+// 2.2.1 « Les modérateurs » (7A) : charte épinglée dans #modération
+const MOD_TXT = `🛡️ **Charte des modérateurs**
+
+**Dans le jeu** (bouton bouclier, menu d'un pseudo dans le chat) : traiter les signalements, supprimer un message du chat public, avertir un joueur en privé, rendre muet 10 min, 1 h ou 24 h.
+**Sur Discord** : supprimer les messages qui enfreignent les règles.
+
+1. Reste calme et poli, même face à un joueur agressif. Un avertissement d'abord, le muet ensuite.
+2. Sanctionne un comportement (insultes, spam, publicité, arnaque), jamais une opinion ou une critique du jeu.
+3. **Triche** : tu ne juges pas et tu ne sanctionnes pas. Note le pseudo ici, Mathis seul décide.
+4. Bannir, suspendre un compte, toucher aux sauvegardes ou aux kamas : réservé à Mathis.
+5. Ce qui se dit ici reste ici : pas de captures du salon ni de noms de joueurs signalés ailleurs.
+6. Un doute ? Demande ici avant d'agir.
+
+Chaque action faite dans le jeu par un modérateur s'affiche dans ce salon automatiquement.`;
 const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
-  { key: "mod", name: "Modérateur", color: 0x5ab4f0, hoist: true, mentionable: true },
+  { key: "mod", name: "Modérateur", color: 0x5ab4f0, hoist: true, mentionable: true, perms: P.MANAGE_MSG }, // 2.2.1 (5) : supprimer des messages, rien de plus
   { key: "tester", name: "Testeur", color: 0x7bd389 },
   // donné à la main aux testeurs actifs : au lancement du multijoueur, il débloque le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »
   { key: "pioneer", name: "Pionnier", color: 0x9bd84a, hoist: true },
@@ -146,7 +160,7 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
   { cat: "🔐 Équipe", only: ["mod", "creator"], chans: [
-    { key: "MODS", name: "modération", topic: "Salon privé de l'équipe" },
+    { key: "MODS", name: "modération", topic: "Salon privé de l'équipe · journal des actions des modérateurs dans le jeu", text: MOD_TXT },
     { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
 ];
 
@@ -180,6 +194,8 @@ async function main() {
     if (was) { ex = was; await api("PATCH", `/guilds/${gid}/roles/${ex.id}`, { name: r.name }); console.log("  rôle renommé :", r.name); }
     roles[r.key] = ex ? ex.id : (await api("POST", `/guilds/${gid}/roles`, { name: r.name, color: r.color, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: "0" })).id;
     console.log(ex ? "  rôle déjà là :" : "  rôle créé :", r.name);
+    // 2.2.1 : droits du rôle fixés ici (Modérateur : gérer les messages) ; les autres rôles gardent leurs droits
+    if (r.perms != null && (!ex || BigInt(ex.permissions || 0) !== r.perms)) { await api("PATCH", `/guilds/${gid}/roles/${roles[r.key]}`, { permissions: String(r.perms) }); console.log("  droits du rôle :", r.name); }
   }
   try { await api("PUT", `/guilds/${gid}/members/${guild.owner_id}/roles/${roles.creator}`); } catch (e) { console.log("  (rôle Créateur non attribué :", e.message, ")"); }
 

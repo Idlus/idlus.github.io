@@ -9,6 +9,7 @@
    node tools/discord_bot.js podium                                   → publie dans #annonces-idlus le podium des donjons de la semaine passée (classements de la version de test)
    node tools/discord_bot.js captures <dossier>                       → publie les images et vidéos du dossier (png, jpg, webp, gif, mp4, webm ; 10 par message, 10 Mo par fichier) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js suggestions <idees.json>                 → publie dans le forum #idées les idées envoyées depuis le jeu (un fil par idée, avec son tag) ; écrit dans DISCORD_SORTIE la liste [{ id, url }] des idées publiées
+   node tools/discord_bot.js moderation <actions.json>              → envoie dans #modération les actions des modérateurs dans le jeu (journal du panel) ; écrit dans DISCORD_SORTIE les numéros envoyés
    node tools/discord_bot.js annonce [texte.md]                       → publie un message libre dans le salon DISCORD_SALON (#annonces par défaut, ou annonces-idlus), texte dans DISCORD_TEXTE ou dans le fichier, en mentionnant le rôle DISCORD_ROLE (« aucun » par défaut)
    node tools/discord_bot.js notes <fichier.md>                       → publie dans le salon DISCORD_SALON (#note-de-mise-a-jour par défaut) un long patch note découpé en messages
                                                                         (séparateurs « ════════ Message N/M … ════════ », 2 000 caractères au plus chacun), dans l'ordre, sans mention ; un message déjà présent n'est pas renvoyé
@@ -230,6 +231,23 @@ async function main() {
       }
     } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
     console.log("Idées publiées dans #idées :", done.length);
+  } else if (cmd === "moderation") {
+    // 2.2.1 « Les modérateurs » (6B) : actions des modérateurs dans le jeu (admin_log, workflow « Journal de modération »)
+    // → salon privé #modération ; DISCORD_SORTIE = numéros des lignes envoyées. Textes sans mention ni lien actif.
+    const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
+    const clean = (t, n) => String(t || "").replace(/@/g, "@\u200b").replace(/https?:\/\//g, "").replace(/[*_`~|>]/g, "").slice(0, n);
+    const line = (x) => `🛡️ **${clean(x.who || "?", 40)}** · ${clean(x.txt, 300)} · <t:${Math.floor(new Date(x.at).getTime() / 1000)}:t>`;
+    if (DRY) { list.forEach((x) => console.log(line(x))); return; }
+    if (!list.length) return console.log("Aucune action à envoyer.");
+    const gid = await guildId(); const ch = await channelId(gid, "modération");
+    try {
+      for (let i = 0; i < list.length; i += 10) { // 10 actions par message
+        const part = list.slice(i, i + 10);
+        await api("POST", `/channels/${ch}/messages`, { content: part.map(line).join("\n").slice(0, 2000), allowed_mentions: { parse: [] } });
+        part.forEach((x) => done.push(+x.id)); await new Promise((r) => setTimeout(r, 1200));
+      }
+    } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
+    console.log("Actions envoyées dans #modération :", done.length);
   } else if (cmd === "bugs" || cmd === "bugs-etats") {
     // 1.1.1.3 : bugs signalés depuis le jeu (table bugs, workflow « Bugs signalés ») ; textes des joueurs sans mention ni lien actif
     const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
@@ -269,7 +287,7 @@ async function main() {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json] | suggestions <idees.json> | bugs <bugs.json> | bugs-etats <etats.json>"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json] | suggestions <idees.json> | bugs <bugs.json> | bugs-etats <etats.json> | moderation <actions.json>"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
