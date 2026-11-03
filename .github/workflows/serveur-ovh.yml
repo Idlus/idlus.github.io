@@ -336,7 +336,7 @@ jobs:
         if: inputs.etape == 'saison1-installer' || inputs.etape == 'saison1-etat' || inputs.etape == 'saison1-date'
         run: |
           bash tools/serveur/vps_sql.sh lecture "select (select debut from s1.s1_cfg where id = 1) as debut, (select count(*) from information_schema.tables where table_schema = 's1') as tables_s1, (select count(*) from s1.saves) as parties_s1, (select count(*) from public.saves) as parties_eternel"
-          bash tools/serveur/vps_sql.sh commande 'grep "^PGRST_DB_SCHEMAS=" .env; curl -s -o /dev/null -w "API s1 : %{http_code}\n" -H "apikey: $(grep ^ANON_KEY= .env | cut -d= -f2-)" -H "Accept-Profile: s1" "http://localhost:8000/rest/v1/s1_cfg?select=debut"'
+          bash tools/serveur/vps_sql.sh commande 'grep "^PGRST_DB_SCHEMAS=" .env'
       - name: Monocompte, Saison 1 (sauvegarde de la base, monocompte.sql, fin de la bêta, Saison 1 ouverte à tous)
         # Mathis 03/11 : « Saison 1 ouverte à tous ». Sur sa phrase d'installation seulement. Les héros de la saison de test passent
         # dans l'Éternel (rien d'effacé), la Saison 1 s'ouvre maintenant, tout compte connecté entre. Relançable.

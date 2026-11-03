@@ -109,6 +109,11 @@ function fake(nomono) {
     /* ---------- 1. Monocompte en ligne coupé (flag mono false) : comme avant ---------- */
     const page = await open(1280, 800, true);
     await page.evaluate(() => { window.ONLINE.user = { id: "00000000-0000-0000-0000-000000000001" }; });
+    // 2.2.0 (Mathis 03/11, « Saison 1 ouverte à tous ») : la bêta est finie, plus de champ de clé ; le Monocompte s'ouvre sans code
+    if (await page.evaluate(() => !window.DX.monoBetaOn())) { await opts(page);
+      if ((await beta(page)) !== null) fail("bêta finie : le champ « Code testeur » ne doit plus s'afficher");
+      if (errors.length) { console.error("ÉCHEC\n" + errors.join("\n")); process.exit(1); }
+      console.log("ok - bêta Monocompte terminée (2.2.0) : plus de champ de clé, Monocompte ouvert sans code"); await browser.close(); server.close(); process.exit(0); }
     if (await page.evaluate(() => !!(window.ONLINE.monoCleOn && window.ONLINE.monoCleOn()))) fail("flag mono coupé : le serveur ne doit pas être appelé");
     await opts(page);
     if ((await beta(page)) !== "Code testeur") fail("hors ligne : champ « Code testeur » attendu, trouvé " + (await beta(page)));
