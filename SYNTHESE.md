@@ -80,6 +80,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **03/11/2026 : Saison 1 ouverte à 23h10 sur les deux serveurs (2.2.0).** Le Classique a sa partie Saison 1 (schéma s1), le Monocompte sort de la bêta (héros de la bêta dans l'Éternel). Trois chats : Saison 1, Éternel, Monocompte. À suivre : inscriptions et parties de saison la première semaine, relevé d'équilibrage en fin de semaine 1, cartes Légendes et chat de guilde en Monocompte plus tard.
 
+**03/11 : mode Ironman du Monocompte (2.2.1.1, Mathis 1C 2A 3A 4A).** Retour d'un joueur : 3 métiers 200 trop limitant pour jouer seul. Mode au choix : 12 métiers à 200 contre pas d'HdV, d'échange ni de renfort. À mesurer : combien de joueurs le prennent. Badge au classement et au salon : SQL prêt, pas installé.
+
 1. **Stabiliser (accord de Mathis, 22/10) :** corriger les tickets graves du tri, regrouper les publications en lots plutôt qu'une version par petite modification.
 2. **Suivre la rétention** quelques jours (rapport du serveur), puis agir là où les joueurs partent : prise en main avant le niveau 50, objectifs au niveau 200.
 3. Ensuite : acquisition hors Discord.

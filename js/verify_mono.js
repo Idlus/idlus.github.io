@@ -61,8 +61,36 @@
   /* Bilan : celui du Classique, plus ce que la partie ne peut jamais perdre (partie reculée) */
   VM.bilan = (E, S) => {
     const b = V.bilan(E, S); const c = hero(S) || {}; const B = E.bpState ? E.bpState(S) : null; const T = E.tfState ? E.tfState(S) : null;
-    return Object.assign(b, { op: n0(S.hdv && S.hdv.op), xpt: c.lvl ? xpTot(E, c) : 0, acts: tfAct(E, S), tfs: T ? n0(T.seq) : 0,
+    return Object.assign(b, { ir: VM.ironSt(S), iro: n0(S.mono && S.mono.iron && S.mono.iron.op), op: n0(S.hdv && S.hdv.op), xpt: c.lvl ? xpTot(E, c) : 0, acts: tfAct(E, S), tfs: T ? n0(T.seq) : 0,
       hon: S.align ? Math.max(0, Math.round(+S.align.hon || 0)) : 0, bp: B ? n0(B.pts) : 0, phx: n0(S.mono && S.mono.phx), def: defRaw(E, S), actd: actDays(E, S) });
+  };
+
+  /* Mode Ironman (Mathis, 03/11) : 0 sans, 1 en cours, 2 quitté (il ne se reprend pas de la saison) */
+  VM.ironSt = (S) => { const I = S && S.mono && S.mono.iron; return I && typeof I === "object" ? (I.quit ? 2 : 1) : 0; };
+  VM.IRON_LVL = 20;
+  /* passage au mode Ironman : pendant la manche 1 (14 premiers jours), ou plus tard avec un héros du niveau 20 au plus.
+     prev : bilan validé d'avant (null au premier envoi) ; ne regarde que le passage lui-même (prev sans Ironman). */
+  VM.ironStart = (S, ctx, prev) => {
+    if (prev && n0(prev.ir) === 1) return null;
+    const I = S.mono.iron; if (days(ctx) < 14) return null;
+    if (!prev && (n0(I.at) - n0(ctx.debut) < 14 * DAY || n0(I.lvl) <= VM.IRON_LVL)) return null; // premier envoi : la date et le niveau notés au passage
+    if (prev && n0(prev.lv) <= VM.IRON_LVL) return null;
+    return `mode Ironman pris au jour ${Math.floor(days(ctx)) + 1} avec un héros au-dessus du niveau ${VM.IRON_LVL}`;
+  };
+  /* depuis la partie validée : pas de retour après une sortie, pas de passage effacé ni déplacé, pas de vente ni d'échange
+     (les opérations du serveur qui portent des kamas, une vente ou une offre d'achat remplie : HdV de saison et échanges) */
+  VM.iron = (S, ctx, prev, cur, ops) => {
+    const a = n0(prev && prev.ir), b = VM.ironSt(S);
+    if (a === 2 && b !== 2) return "mode Ironman repris après l'avoir quitté";
+    if (a === 1 && b === 0) return "mode Ironman effacé sans le quitter";
+    if (a >= 1 && b >= 1 && n0(prev.iro) !== n0(cur.iro)) return "mode Ironman déplacé";
+    if (a === 0 && b === 1) { if (n0(cur.iro) < n0(prev.op)) return "mode Ironman pris avant la dernière partie validée"; const w = VM.ironStart(S, ctx, prev); if (w) return w; }
+    if (b !== 1 && !(a === 1 && b === 2)) return null;
+    const from = Math.max(n0(cur.iro), n0(prev.op)), to = b === 2 ? Math.min(n0(cur.op), n0(S.mono.iron.qop)) : n0(cur.op); // sortie : jusqu'au curseur noté à la sortie
+    for (const o of ops || []) { const id = n0(o && o.id), p = (o && o.p) || {};
+      if (id <= from || id > to) continue;
+      if (Object.prototype.hasOwnProperty.call(p, "k") || p.sold || p.got) return "vente, achat ou échange en mode Ironman"; }
+    return null;
   };
 
   /* Gains d'activité de la partie, par jour et par activité (le serveur en fait ses bons de butin, js/saison1.js : lignes act:jour:activité) */
@@ -93,6 +121,7 @@
       phenix: { etape: n0(Q.step), fini: !!Q.done, renaissances: E.phxReborn ? E.phxReborn(S) : 0, stade: E.phxStage ? E.phxStage(S) : 0 },
       groupe: (S.mono && S.mono.gbest && typeof S.mono.gbest === "object") ? S.mono.gbest : {}, // { donjon: { stasis: { t, at } } } (groupes en direct)
       grp: grpRows(S.mono && S.mono.gbest),
+      iron: VM.ironSt(S) === 1, // badge Ironman (classements de saison, carte du salon Monocompte)
       serment: SR && typeof SR === "object" ? (SR.t === "fer" || SR.t === "ord" ? SR.t : null) : (S.mono && (S.mono.serment || S.mono.fer)) || null, // « fer » ou « ord » (js/monoplus.js)
       aide: { sab: n0(A.sab), merc: n0(A.merc), ren: n0(A.ren) }, // Sablier, mercenaire, renfort : le serment de fer sans aide
       renfort: VM.renfort(E, S),
@@ -127,7 +156,9 @@
       if (new Set(sp).size !== sp.length) return "spécialité en double";
       for (const j of sp) if (!(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j])) return `spécialité inconnue (${String(j).slice(0, 20)})`;
       const jobs = Object.assign({}, S.jobs || {}, S.crafts || {});
-      for (const j in jobs) { const J = jobs[j]; const cap = sp.includes(j) ? 200 : M.jobs.cap; if ((+(J && J.lvl) || 1) > cap) return `métier ${(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j] || { name: j }).name} au niveau ${J.lvl} (au plus ${cap}${sp.includes(j) ? "" : " hors spécialité"})`; }
+      const iron = VM.ironSt(S) === 1; // mode Ironman (js/mono.js) : tous les métiers jusqu'au niveau 200
+      if (iron && mercs.some((m) => m.renfort || m.snap)) return "renfort d'un ami en mode Ironman";
+      for (const j in jobs) { const J = jobs[j]; const cap = iron || sp.includes(j) ? 200 : M.jobs.cap; if ((+(J && J.lvl) || 1) > cap) return `métier ${(D.GATHER_JOBS[j] || D.CRAFT_JOBS[j] || { name: j }).name} au niveau ${J.lvl} (au plus ${cap}${sp.includes(j) ? "" : " hors spécialité"})`; }
       // niveau, honneur, pass : plafonnés par la date de saison
       const L = VM.lvlCap(ctx) + Math.max(0, +lvx || 0); if ((c.lvl || 1) > L) return `${nm} : niveau ${c.lvl} au jour ${Math.floor(days(ctx)) + 1} (au plus ${L})`;
       if ((+c.ren || 0) > 0) return `${nm} : renaissance dans une partie Monocompte`;
@@ -280,6 +311,8 @@
       if (abs && !o.accept) { if (obs) note = abs; else why = abs; }
       const cur = why || abs ? null : VM.curseur(S, ctx);
       if (cur && !o.accept) { if (obs || !VM.CURSEUR_REFUS) note = cur; else why = cur; }
+      if (!why && prev && prev.bilan && !o.accept) why = VM.iron(S, ctx, prev.bilan, bil, o.ops);
+      else if (!why && !(prev && prev.bilan) && !o.accept && VM.ironSt(S) === 1) why = VM.ironStart(S, ctx, null);
       if (!why && prev && prev.bilan && !o.accept) {
         const hours = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000);
         const top = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));

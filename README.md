@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.1.1 « Mode Ironman »
+
+- Monocompte, mode Ironman (Mathis 1C 2A 3A 4A, 03/11, retour d'un joueur) : `S.mono.iron` (js/mono.js : `E.monoIron`, `monoIronOn`, `monoIronQuit`), les 12 métiers jusqu'au niveau 200 ; HdV (vente, achat, offres) et échanges bloqués (`IRON_RPC`, js/online.js), renfort fermé (js/monoplus.js). Passage en manche 1 ou héros niveau 20 au plus, sortie une fois (métiers hors spécialités à 100).
+- Bouclier Monocompte (js/verify_mono.js, `VM.iron`) : métiers 200 en Ironman, refus d'une opération HdV ou d'échange après le passage, passage déplacé, effacé ou repris. Résumé `iron` (badge). Badge au classement et au salon : SQL prêt, pas installé (attend Mathis).
+
 ## 2.2.1 « Le hub en trois portes »
 
 - Écran de choix (Mathis 1A 2B 3A, maquette du 03/11) : trois portes Éternel, Classique · Saison 1, Monocompte (`hubHtml`, js/ui.js), ta partie sur une ligne (`hubRow`), grande carte gardée quand la partie demande un choix (versions, envoi, copie), « Reprendre » en haut (`hubResume`), anciennes cartes dans « Gérer mes parties » (`sv-gest`).

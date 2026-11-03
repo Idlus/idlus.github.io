@@ -28,6 +28,7 @@
 .am-grp{background:var(--mp-cyan-bg);color:var(--mp-cyan)}
 .mp-pa{background:var(--mp-violet-bg);color:var(--mp-violet)}
 .mp-fer{background:var(--mp-iron-bg);color:var(--mp-iron)}
+.mp-iron{background:var(--mp-gold-bg);color:var(--mp-gold-ink)}
 .am-tg{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px}
 .am-tg:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
 .am-sw{width:32px;height:18px;border-radius:99px;background:var(--mp-off);position:relative;flex:none}

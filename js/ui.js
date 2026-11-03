@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.1";
+const GAME_VERSION = "2.2.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.1.1", name: "Mode Ironman", items: [
+    "Monocompte : nouveau mode Ironman, pour tout faire seul. Tes 12 métiers de récolte et d'artisanat montent tous jusqu'au niveau 200, mais sans HdV, sans échange avec un joueur et sans renfort d'un ami. Groupes et mercenaire restent permis. Merci pour l'idée !",
+    "Il se choisit dans Métiers, sous tes spécialités : pendant la manche 1, ou plus tard tant que ton héros n'a pas dépassé le niveau 20. Retire d'abord tes ventes et offres d'achat en cours",
+    "On peut le quitter une seule fois : les métiers hors spécialités redescendent alors au niveau 100 (comme un changement de spécialité), et l'HdV rouvre. Le Bouclier Monocompte vérifie ces règles",
+  ] },
   { v: "2.2.1", name: "Le hub en trois portes", items: [
     "Écran de choix refait : les trois serveurs (Éternel, Saison 1, Monocompte) côte à côte, chacun avec ta partie sur une ligne et son bouton « Jouer ». Tout tient sur un écran PC",
     "Grand bouton « Reprendre » en haut : ta dernière partie en un clic. Copies de secours et suppression sont dans « Gérer mes parties »",
@@ -8462,9 +8467,34 @@ function monoSpecHtml() {
     return `<div class="spc${j ? " spcon" : ""}"><span class="xs muted">Spécialité ${i + 1}</span>${j ? `<b>${h((GATHER_JOBS[j] || CRAFT_JOBS[j]).name)}</b><span class="xs">niveau ${lvlOf(j)} / 200</span>` : `<b class="muted">Libre</b><span class="xs muted">à choisir quand tu veux</span>`}
       <select data-act="monospec" data-i="${i}" aria-label="Spécialité ${i + 1}" ${lock ? "disabled" : ""}>${opts}</select></div>`; };
   return `<div class="card monospec"><div class="row between" style="gap:8px;flex-wrap:wrap"><h2 style="margin:0">${G("star")} Spécialités</h2><span class="xs muted">Monocompte · manche ${man}</span></div>
-    <p class="small muted" style="margin:6px 0 10px">Tes métiers de récolte et d'artisanat montent jusqu'au niveau ${M.cap}, tes ${M.spec} spécialités jusqu'au niveau 200. Les 6 métiers de forgemagie montent tous jusqu'au niveau 200. Les cases libres se remplissent quand tu veux ; remplacer une spécialité, c'est une fois par manche, et le métier quitté redescend au niveau ${M.cap} jusqu'à ce que tu le reprennes. La récolte va 2 fois plus vite.</p>
+    <p class="small muted" style="margin:6px 0 10px">${E.monoIron && E.monoIron(S) ? "Mode Ironman : tous tes métiers montent jusqu'au niveau 200 ; tes spécialités comptent si tu quittes le mode. " : ""}Tes métiers de récolte et d'artisanat montent jusqu'au niveau ${M.cap}, tes ${M.spec} spécialités jusqu'au niveau 200. Les 6 métiers de forgemagie montent tous jusqu'au niveau 200. Les cases libres se remplissent quand tu veux ; remplacer une spécialité, c'est une fois par manche, et le métier quitté redescend au niveau ${M.cap} jusqu'à ce que tu le reprennes. La récolte va 2 fois plus vite.</p>
     <div class="spcgrid">${[0, 1, 2].map(card).join("")}</div>
-    ${can ? "" : `<p class="xs muted" style="margin:8px 0 0">Spécialité déjà changée cette manche : prochain changement à la manche ${man + 1}.</p>`}</div>`;
+    ${can ? "" : `<p class="xs muted" style="margin:8px 0 0">Spécialité déjà changée cette manche : prochain changement à la manche ${man + 1}.</p>`}${monoIronHtml()}</div>`;
+}
+/* Monocompte : mode Ironman (js/mono.js, Mathis 03/11) : tous les métiers à 200, sans HdV, échange ni renfort d'un ami */
+function monoIronHtml() {
+  if (!E.monoIron || E.monoEternal(S)) return "";
+  const on = E.monoIron(S), I = S.mono.iron, err = on ? null : E.monoIronErr(S);
+  const btn = on ? `<span class="tag perfect">${G("shield")} Ironman</span><button class="btn sm ghost" data-act="monoironquit">Quitter le mode Ironman</button>`
+    : err ? `<span class="xs muted">${h(err)}</span>` : `<button class="btn sm primary" data-act="monoiron">Passer en Ironman</button>`;
+  return `<div class="spc${on ? " spcon" : ""}" style="margin-top:10px"><span class="xs muted">Mode Ironman</span><b>${on ? "Tu fais tout seul" : "Tout faire seul"}</b>
+    <p class="xs" style="margin:2px 0 0;white-space:normal;overflow:visible;text-overflow:clip">${on ? "Tous tes métiers montent jusqu'au niveau 200. Pas d'HdV, pas d'échange, pas de renfort d'un ami ; groupes et mercenaire restent permis."
+      : I && I.quit ? "Tu as quitté le mode Ironman cette saison."
+      : `Tous les métiers montent jusqu'au niveau 200, mais sans HdV, sans échange et sans renfort d'un ami. Pendant la manche 1, ou tant que ton héros n'a pas dépassé le niveau ${E.MONO.iron.lvlMax}. On peut le quitter une seule fois : les métiers hors spécialités redescendent alors au niveau ${E.MONO.jobs.cap}.`}</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${btn}</div></div>`;
+}
+async function monoIronGo() {
+  if (!confirm("Passer en mode Ironman ? Tous tes métiers pourront monter jusqu'au niveau 200, mais tu ne pourras plus utiliser l'HdV, échanger avec un joueur ni prendre le renfort d'un ami. Tu pourras le quitter une seule fois.")) return;
+  const err = E.monoIronErr(S); if (err) { toast(err); return; }
+  const ON = window.ONLINE;
+  if (!ON || !ON.monoMarket || !ON.monoMarket()) { toast("Connecte-toi au Monocompte pour passer en Ironman : le jeu vérifie d'abord que tu n'as plus rien en cours à l'HdV."); return; }
+  try { if (window.MARKET && window.MARKET.sync) await window.MARKET.sync(); } catch (e) {}
+  const [a, b, c] = await Promise.all([ON.rpc("hdv_mine", {}), ON.rpc("hdv_orders_mine", {}), ON.rpc("trade_state", {})]);
+  if (a.err || b.err || c.err) { toast("Pas de réponse du serveur : réessaie dans un instant."); return; }
+  const open = ((a.data && a.data.open) || []).length, ord = (Array.isArray(b.data) ? b.data : []).filter((o) => o && o.st === "open").length, tr = c.data && c.data.st === "open";
+  if (open || ord || tr) { toast(`Retire d'abord ${[open ? `tes ${open} vente${open > 1 ? "s" : ""}` : "", ord ? `tes ${ord} offre${ord > 1 ? "s" : ""} d'achat` : "", tr ? "ton échange en cours" : ""].filter(Boolean).join(", ")} à l'HdV, puis repasse ici.`); return; }
+  const r = E.monoIronOn(S); if (r) { toast(r); return; }
+  toast("Mode Ironman activé : tous tes métiers montent jusqu'au niveau 200."); dirty = true; renderMetiers();
 }
 /* ======================= Forgemagie (0.1.41, comme dans DOFUS) ======================= */
 const ppc = (x) => Math.round(x * 100);
@@ -10881,6 +10911,8 @@ document.addEventListener("click", (ev) => {
     case "atgo": { const r = E.setAtelier(S, ui.at.cid, ui.at.rec); if (r) { toast(r); return; } closeSheet(); break; }
     case "atstop": E.setAtelier(S, null); break;
     case "mettab": ui.met = d.v; ui.confirm = null; break;
+    case "monoiron": monoIronGo(); return;
+    case "monoironquit": { if (!confirm(`Quitter le mode Ironman ? Tes métiers hors spécialités redescendent au niveau ${E.MONO.jobs.cap} et le mode ne se reprend pas de la saison.`)) return; const r = E.monoIronQuit(S); if (r) toast(r); dirty = true; renderMetiers(); return; }
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Économie › Comptoirs ; 1.0.33 : Héros › Dofus
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;

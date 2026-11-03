@@ -1,6 +1,15 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.1.1",
   "versions": [
+    {
+      "v": "2.2.1.1",
+      "name": "Mode Ironman",
+      "items": [
+        "Monocompte : nouveau mode Ironman, pour tout faire seul. Tes 12 métiers de récolte et d'artisanat montent tous jusqu'au niveau 200, mais sans HdV, sans échange avec un joueur et sans renfort d'un ami. Groupes et mercenaire restent permis. Merci pour l'idée !",
+        "Il se choisit dans Métiers, sous tes spécialités : pendant la manche 1, ou plus tard tant que ton héros n'a pas dépassé le niveau 20. Retire d'abord tes ventes et offres d'achat en cours",
+        "On peut le quitter une seule fois : les métiers hors spécialités redescendent alors au niveau 100 (comme un changement de spécialité), et l'HdV rouvre. Le Bouclier Monocompte vérifie ces règles"
+      ]
+    },
     {
       "v": "2.2.1",
       "name": "Le hub en trois portes",

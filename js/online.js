@@ -376,7 +376,12 @@
   ON.MONO_ERR = MONO_ERR;
   ON.monoGame = () => SLOT === MONO_N || SLOT > 100;
   const monoRpcOk = (name) => { const E = root.ENGINE; return !!(E && E.monoRpcOk && E.monoRpcOk(name)); };
+  /* Monocompte, mode Ironman (js/mono.js) : ni vente, ni achat, ni offre d'achat, ni échange ; consulter et retirer restent permis */
+  const IRON_RPC = /^(mono_)?(hdv_(list|buy|reprice|order_new|order_fill)|trade_(start|offer|ok))$/;
+  ON.IRON_ERR = "Mode Ironman : pas d'HdV ni d'échange avec les autres joueurs.";
+  const ironOn = () => { try { const E = root.ENGINE, s = root.DX && root.DX.S; return !!(E && E.monoIron && s && E.monoIron(s)); } catch (e) { return false; } };
   const rpc = async (name, args) => {
+    if (ON.monoPart() && IRON_RPC.test(name) && ironOn()) return { err: ON.IRON_ERR };
     if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
     else if (ON.monoPart() && ON.classicRpc(name, args)) return { err: CLASSIC_ERR };
     else if (ON.monoGame() && !monoRpcOk(name)) return { err: MONO_ERR };

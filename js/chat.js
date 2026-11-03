@@ -450,7 +450,7 @@
   /* carte Monocompte : héros (classe, niveau, nom), titre Monocompte, saison ; jamais le profil Classique */
   function monoCard(P) {
     P = P || {}; const CL = P.cls && window.DATA.CLASSES[P.cls];
-    const hero = CL ? `<b>${h(CL.name)}</b>${P.lvl ? ` <span class="lv">niv. ${+P.lvl}</span>` : ""}${P.hero ? `<span class="xs muted"> · ${h(P.hero)}</span>` : ""}` : P.wait ? `<span class="muted">Héros Monocompte…</span>` : `<span class="muted">Pas encore de héros Monocompte</span>`;
+    const hero = CL ? `<b>${h(CL.name)}</b>${P.lvl ? ` <span class="lv">niv. ${+P.lvl}</span>` : ""}${P.hero ? `<span class="xs muted"> · ${h(P.hero)}</span>` : ""}${P.iron ? ` <span class="mp-o mp-iron">Ironman</span>` : ""}` : P.wait ? `<span class="muted">Héros Monocompte…</span>` : `<span class="muted">Pas encore de héros Monocompte</span>`;
     return `${X().cmed(CL ? P.cls : null, CL ? P.lvl : 0)}<div class="chm-t"><div>${hero}</div>${P.title ? `<div class="tt">${h(P.title)}</div>` : ""}${P.nom ? `<div class="xs muted">${h(P.nom)}</div>` : ""}</div>`;
   }
   const msgById = (id) => C.g.concat(C.p, C.c, C.v, C.m, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);

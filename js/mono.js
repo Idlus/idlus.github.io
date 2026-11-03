@@ -267,6 +267,7 @@
   E.jobCap = (S, kind, job) => {
     if (!E.isMono(S)) return cap0(S, kind, job);
     if (kind === "f") return 200; // forgemagie : les 6 métiers jusqu'au niveau 200, hors spécialités (Mathis, 18/10)
+    if (E.monoIron(S)) return 200; // mode Ironman : tous les métiers jusqu'au niveau 200
     return E.monoSpecs(S).includes(job) ? 200 : M.jobs.cap;
   };
   E.monoCanSwap = (S) => !S.mono || !!S.mono.eternel || S.mono.specM !== E.monoManche(S); // Éternel : changement libre
@@ -282,12 +283,47 @@
     if (!old && !job) return null;
     if (old) {
       [jobObj(S, old)].forEach((J) => {
-        if (!J || J.lvl <= M.jobs.cap) return; J.keep = { lvl: J.lvl, xp: J.xp }; J.lvl = M.jobs.cap; J.xp = 0; });
+        if (!J || J.lvl <= M.jobs.cap || E.monoIron(S)) return; /* Ironman : le métier quitté garde son niveau */ J.keep = { lvl: J.lvl, xp: J.xp }; J.lvl = M.jobs.cap; J.xp = 0; });
       S.mono.specM = E.monoManche(S);
     }
     sp[i] = job || null;
     if (job) [jobObj(S, job)].forEach((J) => { if (J && J.keep) { if (J.keep.lvl > J.lvl) { J.lvl = J.keep.lvl; J.xp = J.keep.xp; } delete J.keep; } });
     E.note(S, job ? `Spécialité : ${(D.GATHER_JOBS[job] || D.CRAFT_JOBS[job]).name} peut monter jusqu'au niveau 200.` : "Spécialité retirée.", "info");
+    return null;
+  };
+  /* ---------------- Mode Ironman (Mathis, 03/11 : 1C 2A 3A 4A) ----------------
+     Pour qui veut tout faire seul : les 12 métiers de récolte et d'artisanat montent tous jusqu'au niveau 200, mais pas d'HdV
+     (ni vente, ni achat, ni offre d'achat), pas d'échange avec un joueur et pas de renfort d'un ami ; les groupes et le mercenaire
+     restent permis. Se choisit pendant la manche 1, ou plus tard tant que le héros n'a pas dépassé le niveau 20.
+     Se quitte une seule fois : les métiers hors spécialités redescendent au niveau 100 (comme un changement de spécialité)
+     et il ne se reprend pas de la saison. Le Bouclier Monocompte (js/verify_mono.js) vérifie tout cela à chaque envoi.
+       S.mono.iron = { at, op: curseur des opérations du serveur au passage, lvl, quit?: date de la sortie } */
+  M.iron = { lvlMax: 20 };
+  E.monoIron = (S) => !!(E.isMono(S) && S.mono.iron && typeof S.mono.iron === "object" && !S.mono.iron.quit);
+  E.monoIronErr = (S) => {
+    if (!E.isMono(S) || E.monoEternal(S)) return "Le mode Ironman se choisit pendant une saison du Monocompte.";
+    const I = S.mono.iron;
+    if (I && !I.quit) return "Tu joues déjà en mode Ironman.";
+    if (I && I.quit) return "Tu as quitté le mode Ironman cette saison : il ne se reprend pas.";
+    const c = (S.chars || []).find((x) => !x.merc) || {};
+    if (E.monoManche(S) > 1 && (c.lvl || 1) > M.iron.lvlMax) return `Le mode Ironman se choisit pendant la manche 1, ou tant que ton héros n'a pas dépassé le niveau ${M.iron.lvlMax}.`;
+    return null;
+  };
+  E.monoIronOn = (S) => {
+    const err = E.monoIronErr(S); if (err) return err;
+    const c = (S.chars || []).find((x) => !x.merc) || {};
+    S.mono.iron = { at: E.now(), op: Math.max(0, Math.floor(+(S.hdv && S.hdv.op) || 0)), lvl: c.lvl || 1 };
+    E.note(S, "Mode Ironman : tous tes métiers peuvent monter jusqu'au niveau 200. Plus d'HdV, d'échange ni de renfort d'un ami.", "rare");
+    return null;
+  };
+  E.monoIronQuit = (S) => {
+    if (!E.monoIron(S)) return "Tu ne joues pas en mode Ironman.";
+    S.mono.iron = Object.assign({}, S.mono.iron, { quit: E.now(), qop: Math.max(0, Math.floor(+(S.hdv && S.hdv.op) || 0)) });
+    const sp = E.monoSpecs(S);
+    Object.keys(D.GATHER_JOBS).concat(Object.keys(D.CRAFT_JOBS)).forEach((j) => { if (sp.includes(j)) return;
+      const J = D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts || {})[j]; if (!J || J.lvl <= M.jobs.cap) return;
+      J.keep = { lvl: J.lvl, xp: J.xp }; J.lvl = M.jobs.cap; J.xp = 0; });
+    E.note(S, `Mode Ironman quitté : tes métiers hors spécialités redescendent au niveau ${M.jobs.cap}. L'HdV et les échanges sont de nouveau ouverts.`, "info");
     return null;
   };
   const gs0 = E.gatherSpeed;

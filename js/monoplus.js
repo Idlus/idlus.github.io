@@ -93,6 +93,7 @@
   E.monoRenfortErr = (S, R) => {
     if (!mono(S) || !season(S)) return "Le renfort d'un ami se prend pendant une saison du Monocompte.";
     if (E.monoFer(S)) return "Serment de fer : pas de renfort pendant la saison.";
+    if (E.monoIron && E.monoIron(S)) return "Mode Ironman : pas de renfort d'un ami.";
     if (!R || !R.u || !E.monoSnapOk(R.snap)) return "Ce renfort n'est pas disponible.";
     const me = hero(S); if (!me) return "Héros introuvable.";
     if (R.snap.lvl > me.lvl + M.renfort.ecart) return `Le héros de ${R.p || "ton ami"} est trop fort pour t'accompagner (${M.renfort.ecart} niveaux au-dessus du tien au plus).`;

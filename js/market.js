@@ -139,7 +139,7 @@
     if (name === "hdv_list" || name === "hdv_buy" || name === "hdv_order_new" || name === "hdv_order_fill") { try { await X().onPush(); } catch (e) {} }
     const src = srcNow(); const r = await ON.rpc(name, Object.assign({ p_after: cursor() }, args));
     M.busy = false;
-    if (r.err) { X().toast(/connexion/i.test(r.err) ? r.err : "Refusé par le serveur : " + r.err); paint(); return null; }
+    if (r.err) { X().toast(/connexion|Ironman/i.test(r.err) ? r.err : "Refusé par le serveur : " + r.err); paint(); return null; }
     if (r.data && r.data.err) { X().toast(r.data.err); paint(); return null; }
     if (r.data && r.data.ops) apply(r.data.ops, true, src);
     reg(r.data);
