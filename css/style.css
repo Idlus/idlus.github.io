@@ -6485,3 +6485,14 @@ body.tb1 #chat .chmin{display:none}
 .hubsrv h3{margin:0 0 3px;font-size:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hubsoon{border:2px dashed var(--line,rgba(168,174,152,.3));border-radius:14px;padding:16px;text-align:center}
 @media (max-width:640px){.hubtop{min-height:120px}.hubsrv{grid-template-columns:96px minmax(0,1fr)}.hubsrv img{width:96px}}
+/* Classique · Saison 1, lot 1 : tableau de bord de saison (accueil) et bénédictions */
+.s1dash{overflow:hidden}
+.s1ban{background-size:cover;background-position:center;padding:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;color:#fff}
+.s1ban h2{margin:2px 0;color:#fff;text-shadow:0 2px 6px #000}.s1kick{text-transform:uppercase;letter-spacing:.6px;font-weight:900;color:var(--gold)}
+.s1ms{display:flex;gap:6px}.s1m{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.25);font-weight:900}
+.s1m i{display:none}.s1m.on{border-color:var(--gold);color:var(--gold)}.s1m.done{background:var(--gold);color:#13200a}
+.s1grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px}
+.s1t{display:grid;gap:4px;align-content:start;background:var(--panel2);border-radius:12px;padding:10px}.s1t b{font-size:22px}
+.s1boons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.s1b{display:grid;gap:4px;text-align:left;padding:14px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}.s1b:hover{border-color:var(--gold)}
+@media (max-width:640px){.s1grid,.s1boons{grid-template-columns:minmax(0,1fr)}}

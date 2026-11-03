@@ -3623,6 +3623,7 @@ function homeHtml() {
     ${reco}
   </section>
   ${window.PLUIE ? window.PLUIE.homeHtml() : ""}
+  ${window.S1CUI ? window.S1CUI.homeHtml() : ""}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>${window.GUIDE ? GUIDE.tipDay() : ""}
   ${houseHtml()}
   <section class="grid2 ac-grid" style="margin-top:14px">
@@ -3662,6 +3663,7 @@ function homeDash(o) {
     </div>
   </section>
   ${window.PLUIE ? window.PLUIE.homeHtml() : ""}
+  ${window.S1CUI ? window.S1CUI.homeHtml() : ""}
   <section class="panel hd-todo"><div class="phead"><h2>${G("target")} À faire maintenant</h2>${L.length > 3 ? `<button class="btn sm ghost" data-act="homeall">${all ? "Moins" : `Tout voir · ${L.length}`}</button>` : ""}</div><div class="ac-tds">${show.join("")}</div></section>
   <div class="hd-cards">${cards}</div>
   ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
@@ -10729,7 +10731,7 @@ document.addEventListener("click", (ev) => {
     case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      S = E.newState(name.slice(0, 20), ui.startCls); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) E.s1cStart(S); /* Classique · Saison 1 (js/saisonc.js) */ if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
