@@ -1,6 +1,13 @@
 {
-  "version": "2.1.43.1",
+  "version": "2.1.43.2",
   "versions": [
+    {
+      "v": "2.1.43.2",
+      "name": "Menu du compte visible",
+      "items": [
+        "Le menu du portrait en haut à droite (compte, son, Options, Nouveautés) passe maintenant devant le chat ouvert, au lieu d'être caché dessous"
+      ]
+    },
     {
       "v": "2.1.43.1",
       "name": "Chat lisible",

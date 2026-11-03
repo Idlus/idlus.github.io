@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.43.2 « Menu du compte visible »
+- Signalé par Mathis (03/11) : le menu du portrait restait caché sous le chat. Il est dans la barre du haut (`.status`, z-index 30) : `.status:has(.tb-pop)` la passe à 62 quand un menu est ouvert. Vérifié par `tests/chat_lisible_ui.test.js`.
+
 ## 2.1.43.1 « Chat lisible »
 - Demande de Mathis (03/11, captures téléphone et PC) : onglets du chat coupés (« Classiq… », « P… ») et chat posé par-dessus le panneau Notifications.
 - `css/style.css` : onglets du chat en ligne avec retour à la ligne (noms entiers), panneau de la cloche et du compte au-dessus du chat (z-index 62). Test `tests/chat_lisible_ui.test.js`.

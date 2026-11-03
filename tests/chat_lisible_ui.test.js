@@ -112,6 +112,16 @@ function fake() {
       const el = document.elementFromPoint(x, y); return el && el.closest("#topchips") ? "ok" : "chat devant : " + (el ? el.className : "?"); });
     if (top !== "ok") fail(`${w} px : panneau Notifications sous le chat (${top})`);
     await shot(page, `chat-cloche-${w}.png`);
+    // menu du compte (portrait en haut à droite) ouvert avec le chat ouvert : lui aussi devant le chat
+    await page.click('[data-act="tb-bell"]'); await page.waitForTimeout(200);
+    await page.click('[data-act="tb-acc"]'); await page.waitForTimeout(300);
+    const acc = await page.evaluate(() => { const p = document.querySelector(".tb-accp"); if (!p) return "pas ouvert";
+      const r = p.getBoundingClientRect(), c = document.querySelector("#chat").getBoundingClientRect();
+      const x = Math.max(r.left, c.left) + 20, y = Math.max(r.top, c.top) + 8;
+      if (x > Math.min(r.right, c.right) || y > Math.min(r.bottom, c.bottom)) return "ok";
+      const el = document.elementFromPoint(x, y); return el && el.closest(".tb-accp") ? "ok" : "chat devant : " + (el ? el.className : "?"); });
+    if (acc !== "ok") fail(`${w} px : menu du compte sous le chat (${acc})`);
+    await shot(page, `chat-compte-${w}.png`);
     const x = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]); if (x[0] > x[1] + 1) fail(`${w} px : la page défile de côté`);
     await page.context().close();
   }

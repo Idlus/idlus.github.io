@@ -6301,6 +6301,8 @@ body.tb1 .status .st-where{min-width:0;overflow:hidden}body.tb1 .status .st-wt{o
 .tb-acc .tb-dn{width:0;height:0;border:5px solid transparent;border-top-color:currentColor;margin-top:5px;opacity:.75}
 .tb-acc.on .med{box-shadow:0 0 0 2px var(--gold2)}
 .tb-acc .navdot{position:absolute;top:0;right:8px}
+/* 2.1.43.2 : la barre du haut passe devant le chat quand un de ses menus est ouvert (le menu du compte est dedans) */
+.status:has(.tb-pop){z-index:62}
 .tb-pop{position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:62;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:13.5px}
 .tb-pop h4{margin:4px 2px 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 .tb-ph{display:flex;align-items:center;gap:10px}.tb-ph b{display:block;font-size:15px}.tb-ph small{display:block;color:var(--muted)}
