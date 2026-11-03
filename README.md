@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.0.4 « Classement du Songe »
+- Ticket #166 (Zoubilus) : `js/songeui.js` : un refus passager du serveur (« aucun songe validé cette semaine », « en vérification »…, sauvegarde validée en retard) n'est plus gardé pour toujours : le record repart 10 minutes plus tard ; l'envoi (`idlus-songe-envoi`, champ `sl`) et les lots (`idlus-songe-lots`) sont rangés par partie (Éternel 1, Saison 1 5). Le Songe n'existe pas au Monocompte (page hors de `E.MONO.PAGES`).
+
 ## 2.2.0.3 « Scène sans fuite de mémoire »
 - Fulfutor (03/11) : onglet Edge à 7 Go après ~3 h de combat en vue Scène, nœuds détachés retenus par des animations. Cause vérifiée : une animation `el.animate()` n'est pas arrêtée quand on retire l'élément ; si la page ne dessine plus (fenêtre cachée, écran en veille), elle ne finit jamais et garde l'élément. Mesure Playwright (animations gelées, 100 s à vitesse ×10) : +26 000 nœuds avant, stable après. `js/ui.js` : `axGone` annule les animations avant de retirer un effet, `buildArena` annule celles de l'arène précédente, et un balayage toutes les 5 s annule les animations dont l'élément a quitté la page.
 

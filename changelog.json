@@ -1,6 +1,14 @@
 {
-  "version": "2.2.0.3",
+  "version": "2.2.0.4",
   "versions": [
+    {
+      "v": "2.2.0.4",
+      "name": "Classement du Songe",
+      "items": [
+        "Classement du Songe infini : un record refusé parce que le serveur n'avait pas encore validé ta dernière sauvegarde repart tout seul 10 minutes plus tard (avant, il restait refusé jusqu'à un meilleur record)",
+        "Ta partie de la Saison 1 et ta partie Éternel envoient chacune leur record du Songe et récupèrent chacune leurs lots du classement"
+      ]
+    },
     {
       "v": "2.2.0.3",
       "name": "Scène sans fuite de mémoire",

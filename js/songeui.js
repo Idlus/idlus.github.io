@@ -339,6 +339,14 @@
   }
   /* mise à jour ciblée : seulement le bloc du classement (et la tuile du Havre-Sac au prochain tour de boucle) */
   const rkPaint = () => { const el = $("#sgRank"); const s = S(); if (el && s) { const html = rankBody(s); if (el.innerHTML !== html) el.innerHTML = html; } };
+  /* 2.2.0.1 (ticket #166) : partie Éternel (1) et partie de saison (5) ont chacune leur envoi et leurs lots (même compte,
+     espaces du serveur différents) ; un refus passager (sauvegarde pas encore validée, compte en vérification) n'est plus
+     gardé pour toujours : le record repart au serveur 10 minutes plus tard */
+  const slotNow = () => { const o = ONL(); return (o && o.slot && o.slot()) || 1; };
+  const sameSlot = (x) => !!x && (x.sl || 1) === slotNow();
+  const RETRY_RE = /aucun songe validé|aucune partie en ligne|partie illisible|en vérification|songe non validé/i;
+  const RETRY_MS = 10 * 60000;
+  const errTxt = (e) => (/en vérification/i.test(e) ? "ton compte est en vérification par le serveur" : RETRY_RE.test(e) ? "le serveur n'a pas encore validé ta dernière sauvegarde" : e);
   const sentGet = () => { try { return JSON.parse(localStorage.getItem("idlus-songe-envoi") || "null"); } catch (e) { return null; } };
   const sentSet = (o) => { try { localStorage.setItem("idlus-songe-envoi", JSON.stringify(o)); } catch (e) {} };
   /* 1.0.30 : classement d'exemple, seulement depuis le Panel Xener › Test › Essayer une nouveauté (jamais en ligne) */
@@ -353,9 +361,10 @@
     let list = L === null ? `<div class="sgr-empty small muted">${RANK.err ? `Classement indisponible pour l'instant. <button class="btn sm" data-act="sg-rk">Réessayer</button>` : "Chargement du classement…"}</div>`
       : !L.length ? `<div class="sgr-empty small muted">Personne encore cette semaine : valide un songe pour ouvrir le classement.</div>`
       : L.map((x) => row(x, x.user_id === myId)).join("") + (RANK.me && !L.some((x) => x.user_id === myId) ? row(RANK.me, true) : "");
-    const sent = sentGet(); const ok = sent && myId && sent.u === myId && sent.w === wk.w ? sent : null;
+    const sent = sentGet(); const ok = sent && myId && sent.u === myId && sent.w === wk.w && sameSlot(sent) ? sent : null;
     const st = !myId ? `Crée ton compte (gratuit) pour y figurer. Ton meilleur songe de la semaine : <b>${mine}</b>.`
       : o.solo && o.solo() ? "Le classement suit ta partie 1." : wk.ii < 0 ? "Valide un songe cette semaine pour entrer au classement."
+      : ok && ok.res && ok.res.err && ok.res.retry && ok.ii === wk.ii && ok.waves === wk.waves ? `Ton record (${mine}) attend : ${h(errTxt(ok.res.err))}. Nouvel essai automatique dans quelques minutes.`
       : ok && ok.res && ok.res.err && ok.ii === wk.ii && ok.waves === wk.waves ? `Ton songe (${mine}) n'a pas été retenu : ${h(ok.res.err)}.`
       : ok && ok.ii === wk.ii && ok.waves === wk.waves ? `Ton record est vérifié${ok.res && ok.res.waves !== undefined && ok.res.waves < wk.waves ? ` : ${plural(ok.res.waves, "vague")} comptée${ok.res.waves > 1 ? "s" : ""} par le serveur` : ""}.`
       : `Ton record (${mine}) part au serveur à la prochaine sauvegarde, qui le rejoue avant de le compter.`;
@@ -398,18 +407,20 @@
     const s = S(); if (!s || !linked() || subBusy || s.panelUsed) return;
     const wk = E.sgWeek(s); if (wk.ii < 0) return;
     const uid = ONL().user.id; const sent = sentGet();
-    if (sent && sent.u === uid && sent.w === wk.w && (sent.ii > wk.ii || (sent.ii === wk.ii && sent.waves >= wk.waves))) return;
+    const again = sent && sent.res && sent.res.retry && Date.now() >= sent.res.retry; // refus passager : on renvoie
+    if (sent && sent.u === uid && sent.w === wk.w && sameSlot(sent) && !again && (sent.ii > wk.ii || (sent.ii === wk.ii && sent.waves >= wk.waves))) return;
     if (Date.now() - subAt < 60000) return; subAt = Date.now(); subBusy = true;
     const r = await ONL().submitGuild({ songe: 1 }); subBusy = false;
     if (!r || r.net || r.err === "trop tôt") return;
-    sentSet({ u: uid, w: wk.w, ii: wk.ii, waves: wk.waves, res: r.ok ? { ii: r.fii, waves: r.waves, rank: r.rank } : { err: String(r.err || "refusé").slice(0, 80) } });
+    const err = r.ok ? "" : String(r.err || "refusé").slice(0, 80);
+    sentSet({ u: uid, sl: slotNow(), w: wk.w, ii: wk.ii, waves: wk.waves, res: r.ok ? { ii: r.fii, waves: r.waves, rank: r.rank } : RETRY_RE.test(err) ? { err, retry: Date.now() + RETRY_MS } : { err } });
     if (r.ok && r.improved) X().toast(`Songe infini : record vérifié par le serveur, ${intName(r.ii)} · ${plural(r.waves, "vague")} (${ord(r.rank)} cette semaine).`, "rare");
     rkLoad(true);
   }
   async function sgClaim() {
     const o = ONL(); const s = S(); if (!s || !linked() || !window.MARKET) return;
     if ((o.monoPart && o.monoPart()) || s.mono) return; // 2.1.37.x : lots du Songe = partie Classique ; la clé idlus-songe-lots n'est jamais posée depuis le Monocompte
-    const k = `${o.user.id}:${E.weekIdx()}`; if (RANK.claimed === k) return; RANK.claimed = k;
+    const k = `${o.user.id}:${slotNow()}:${E.weekIdx()}`; if (RANK.claimed === k) return; RANK.claimed = k; // 2.2.0.1 : lots de chaque espace (Éternel, saison)
     try { if (localStorage.getItem("idlus-songe-lots") === k) return; } catch (e) {}
     const r = await o.rpc("songe_claim", { p_after: (s.hdv && s.hdv.op) || 0 });
     if (r.err || !r.data || r.data.err) { RANK.claimed = null; return; }

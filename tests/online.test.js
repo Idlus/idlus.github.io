@@ -179,6 +179,7 @@ const MOCK = () => {
         return { data: { ok: true, at: P[u.id].updated_at, verif: { ok: true, registre: { saison: 0, solde, genere, quota: 100, reste: Math.max(0, 100 - genere), semaine: 1, jour: 1 } } }, error: null }; }
       if (o.body.verif) { d.verifs = (d.verifs || 0) + 1; put(d); return { data: { ok: true }, error: null }; } // 2.1.4 « Bouclier du serveur »
       if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
+      if (o.body.songe && d.songeErr) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: false, err: d.songeErr }, error: null }; } // 2.2.0.1 : refus du serveur
       if (o.body.songe) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: true, songe: 1, w: Math.floor((Date.now() / 864e5 + 3) / 7), ii: 2, waves: 20, claim: 20, best: 20, improved: true, rank: 3, fii: 2, fwaves: 20 }, error: null }; } // 1.0.30 : Songe infini rejoué par le serveur
       d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
@@ -1338,6 +1339,22 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(m.claims >= 1)) fail("Songe : lots de la semaine passée jamais demandés");
     { const r = await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const op = S.hdv && S.hdv.op; const b0 = E.songe(S).br; window.MARKET.apply([{ id: 99999, p: { bribes: 1000 } }], true); const b1 = E.songe(S).br; S.hdv.op = op; return b1 - b0; });
       if (r !== 1000) fail("Songe : Bribes des lots non ajoutées (" + r + ")"); }
+    // 2.2.0.1 (ticket #166) : un refus passager (sauvegarde pas encore validée) repart 10 minutes plus tard ; l'envoi est rangé par partie
+    { const r = await page.evaluate(async () => {
+        const S = window.DX.S, E = window.ENGINE; const wk = E.sgWeek(S); wk.waves = 25; const now0 = Date.now; let t = now0() + 120000; Date.now = () => t;
+        const d = JSON.parse(localStorage.getItem("__mock")); d.songeErr = "aucun songe validé cette semaine"; localStorage.setItem("__mock", JSON.stringify(d));
+        try {
+          const n0 = JSON.parse(localStorage.getItem("__mock")).songeSub || 0;
+          await window.SGUI.submit(); const a = JSON.parse(localStorage.getItem("idlus-songe-envoi") || "null");
+          await window.SGUI.rkLoad(true); await new Promise((ok) => setTimeout(ok, 200));
+          const txt = (document.querySelector("#sgRank") || {}).textContent || "";
+          t += 120000; await window.SGUI.submit(); const n1 = JSON.parse(localStorage.getItem("__mock")).songeSub || 0; // moins de 10 minutes : pas renvoyé
+          const d2 = JSON.parse(localStorage.getItem("__mock")); delete d2.songeErr; localStorage.setItem("__mock", JSON.stringify(d2));
+          t += 11 * 60000; await window.SGUI.submit(); const b = JSON.parse(localStorage.getItem("idlus-songe-envoi") || "null"); const n2 = JSON.parse(localStorage.getItem("__mock")).songeSub || 0;
+          return { retry: !!(a && a.res && a.res.retry), sl: a && a.sl, attend: /attend/.test(txt), n0, n1, n2, fini: !!(b && b.res && !b.res.err) };
+        } finally { Date.now = now0; } });
+      if (!r.retry || r.sl !== 1 || !r.attend) fail("Songe : refus passager gardé pour toujours ou mal expliqué " + JSON.stringify(r));
+      if (r.n1 !== r.n0 + 1 || r.n2 !== r.n0 + 2 || !r.fini) fail("Songe : record pas renvoyé 10 minutes après un refus passager " + JSON.stringify(r)); }
     // 2.1.26.3 : Grand défi du dimanche lancé depuis l'Accueil : la règle votée est lue au serveur avant de jouer (le serveur rejoue avec elle)
     { const r = await page.evaluate(async () => {
         const E = window.ENGINE, S = window.DX.S; const day0 = E.defiDay, sun0 = E.defiSunday; const fake = day0() + 7 * 52;

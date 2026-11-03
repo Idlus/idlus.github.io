@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.0.3";
+const GAME_VERSION = "2.2.0.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.0.4", name: "Classement du Songe", items: [
+    "Classement du Songe infini : un record refusé parce que le serveur n'avait pas encore validé ta dernière sauvegarde repart tout seul 10 minutes plus tard (avant, il restait refusé jusqu'à un meilleur record)",
+    "Ta partie de la Saison 1 et ta partie Éternel envoient chacune leur record du Songe et récupèrent chacune leurs lots du classement",
+  ] },
   { v: "2.2.0.3", name: "Scène sans fuite de mémoire", items: [
     "Combat en vue Scène : les effets des sorts restaient en mémoire quand la page ne dessinait plus (fenêtre cachée, écran en veille). L'onglet pouvait monter à plusieurs Go en quelques heures. Merci Fulfutor !",
   ] },
