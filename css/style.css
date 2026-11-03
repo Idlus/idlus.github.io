@@ -3776,11 +3776,12 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .chat .ch-ttl{display:flex;align-items:center;gap:6px;font-weight:900;font-size:14px}
 .chat .ch-ttl .uico{width:16px;height:16px}
 .chat .ch-top .ch-on{margin-left:auto}
-.chat .ch-tabs{display:flex;gap:2px}
-.chat .ch-tabs .ch-tab{flex:1 1 auto;min-width:0;flex-direction:column;align-items:center;gap:1px;padding:5px 3px;font-size:11.5px;position:relative;overflow:visible}
-.chat .ch-tabs .ch-tab > span:not(.n){max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.chat .ch-tabs .ch-tab .uico{width:16px;height:16px}
-.chat .ch-tabs .ch-tab .n{position:absolute;top:-2px;right:2px;font-size:10px;line-height:15px;padding:0 5px;margin:0}
+/* 2.1.43.1 : les salons sur deux lignes au besoin, noms toujours entiers (plus de « Classiq… », « P… ») */
+.chat .ch-tabs{display:flex;flex-wrap:wrap;gap:3px}
+.chat .ch-tabs .ch-tab{flex:1 1 auto;min-width:0;flex-direction:row;justify-content:center;align-items:center;gap:4px;padding:5px 4px;font-size:12px;position:relative;overflow:visible}
+.chat .ch-tabs .ch-tab > span:not(.n){white-space:nowrap}
+.chat .ch-tabs .ch-tab .uico{width:14px;height:14px;flex:none}
+.chat .ch-tabs .ch-tab .n{position:absolute;top:-4px;right:0;font-size:10px;line-height:15px;padding:0 5px;margin:0;z-index:1}
 .chat .ch-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;font-size:12px;border-bottom:1px solid var(--frame);background:rgba(231,196,106,.07)}
 .chat .ch-strip .ev{display:flex;align-items:center;gap:6px;min-width:0}
 .chat .ch-strip .ev .uico,.chat .ch-strip .ev img{width:16px;height:16px;flex:none}
@@ -6300,7 +6301,7 @@ body.tb1 .status .st-where{min-width:0;overflow:hidden}body.tb1 .status .st-wt{o
 .tb-acc .tb-dn{width:0;height:0;border:5px solid transparent;border-top-color:currentColor;margin-top:5px;opacity:.75}
 .tb-acc.on .med{box-shadow:0 0 0 2px var(--gold2)}
 .tb-acc .navdot{position:absolute;top:0;right:8px}
-.tb-pop{position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:60;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:13.5px}
+.tb-pop{position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:62;width:min(380px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);font-size:13.5px}
 .tb-pop h4{margin:4px 2px 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 .tb-ph{display:flex;align-items:center;gap:10px}.tb-ph b{display:block;font-size:15px}.tb-ph small{display:block;color:var(--muted)}
 .tb-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
@@ -6308,7 +6309,7 @@ body.tb1 .status .st-where{min-width:0;overflow:hidden}body.tb1 .status .st-wt{o
 .tb-pop .ic-btn,.tb-pop .cloud,.tb-pop .swapb{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
 .tb-pop .swapb .sw-sm{display:none}.tb-pop .swapb .sw-lg{display:inline}
 body.tb1 #topchips,body.tb1 #annbar{display:none!important}
-body.tb1.bellopen #topchips{display:flex!important;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:6px;position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:60;width:min(400px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;margin:0;padding:12px;background:var(--panel);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+body.tb1.bellopen #topchips{display:flex!important;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:6px;position:fixed;top:calc(var(--sth,60px) + 6px);right:12px;z-index:62;width:min(400px,calc(100vw - 24px));max-height:calc(100vh - var(--sth,60px) - 24px);overflow:auto;margin:0;padding:12px;background:var(--panel);border:2px solid var(--gold);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
 body.tb1.bellopen #topchips::before{content:"Notifications";font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:0 2px}
 body.tb1.bellopen #topchips.tb-empty::after{content:"Rien de nouveau pour l'instant.";font-size:13px;color:var(--muted);padding:4px 2px}
 body.tb1.bellopen #topchips>#annbar{display:block!important}

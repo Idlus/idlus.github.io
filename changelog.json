@@ -1,6 +1,14 @@
 {
-  "version": "2.1.43",
+  "version": "2.1.43.1",
   "versions": [
+    {
+      "v": "2.1.43.1",
+      "name": "Chat lisible",
+      "items": [
+        "Chat : les noms des salons s'affichent en entier (Classique, Monocompte, Commerce, PvP, Guilde, Alliance, Privé, Hauts faits), sur deux lignes au besoin",
+        "PC : le panneau Notifications de la cloche passe maintenant devant le chat ouvert, au lieu d'être caché dessous"
+      ]
+    },
     {
       "v": "2.1.43",
       "name": "Voter pour Idlus",

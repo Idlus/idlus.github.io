@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.43.1 « Chat lisible »
+- Demande de Mathis (03/11, captures téléphone et PC) : onglets du chat coupés (« Classiq… », « P… ») et chat posé par-dessus le panneau Notifications.
+- `css/style.css` : onglets du chat en ligne avec retour à la ligne (noms entiers), panneau de la cloche et du compte au-dessus du chat (z-index 62). Test `tests/chat_lisible_ui.test.js`.
+
 ## 2.1.43 « Voter pour Idlus »
 - Demande de Mathis (02-03/11) : récompense de vote sur Dofus Fan Games (API de vérification par adresse IP, https://dofusfangames.com/documentation-api). Choix 1C 2C puis maquette 1A, 2A + Sablier, 3A+B, 4 top 10 réservé, 5A.
 - `supabase/vote.sql` (réglages et clé dans `vote_cfg`, `vote_claims` avec empreinte salée de l'adresse, effacée après 30 jours ; un vote = une récompense, une par compte toutes les 55 min ; série ; paliers du mois versés par `vote_moi` ; titre « Voix d'Idlus » au top 10 du mois précédent ; `adm_votes` au panel). Gains par `hdv_ops` (`k`, `sab`, `title`).
