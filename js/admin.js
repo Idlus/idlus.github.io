@@ -678,3 +678,30 @@ document.addEventListener("input", (ev) => { const id = ev.target && ev.target.i
 document.addEventListener("keydown", (ev) => { const id = ev.target && ev.target.id; if (ev.key !== "Enter" || (id !== "mtAdd" && id !== "mrQ")) return; ev.preventDefault(); if (id === "mtAdd") testAct("mtst-add", {}); else remiseAct("mrem-find", {}); });
 window.MONOPANEL = { V, T, TS, R, B, loadVue, loadTesteurs, loadBureau };
 })();
+
+/* ============================================================================
+   03/11 (Mathis : « une liste des joueurs connectés ») : page « En ligne » du Panel Xener (groupe Joueurs), dans les trois espaces
+   (Éternel, Saison 1, Monocompte). Lue en direct dans la présence du chat (ON.onlineList, js/online.js), sans appel au serveur :
+   comptes connectés seulement ; une ancienne version du jeu n'envoie pas son espace (« espace inconnu », listé partout).
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const SP = { e: "Éternel", s: "Saison 1", m: "Monocompte" };
+const all = () => (ON.onlineList ? ON.onlineList() : []).sort((a, b) => a.p.localeCompare(b.p, "fr"));
+const mine = () => { const sp = P.space ? P.space() : null; return all().filter((x) => !sp || !x.s || x.s === sp); };
+function html() {
+  const sp = P.space ? P.space() : null, L = mine(), A = all();
+  const by = { e: 0, s: 0, m: 0, x: 0 }; A.forEach((x) => { by[x.s in SP ? x.s : "x"]++; });
+  return `<div class="box"><div class="row between"><h2>En ligne${sp ? ` · ${SP[sp]}` : ""} (${L.length})</h2><button class="btn sm" data-act="enl-maj">Actualiser</button></div>
+    <span class="xs muted">Comptes connectés en ce moment : ${by.e} Éternel · ${by.s} Saison 1 · ${by.m} Monocompte${by.x ? ` · ${by.x} sur une ancienne version (espace inconnu, montrés partout)` : ""}. Les joueurs sans compte n'apparaissent pas.</span>
+    ${L.map((x) => `<div class="ln"><b>${h(x.p)}</b>${!sp || !x.s ? `<span class="st v">${h(SP[x.s] || "espace inconnu")}</span>` : ""}<button class="btn sm" style="margin-left:auto" data-act="adm-find" data-q="${h(x.p)}">Fiche</button></div>`).join("") || `<div class="empty">Personne de connecté ici pour l'instant.</div>`}</div>`;
+}
+document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act='enl-maj']"); if (t && P.admin() && DX.ui.tab === "admin") P.repaint(); });
+P.register({ id: "enligne", name: "En ligne", group: "Joueurs", html, count: () => mine().length });
+P.register({ id: "monoenligne", srv: "m", name: "En ligne", group: "Joueurs", html, count: () => mine().length });
+window.ENLIGNE = { all, mine, html };
+})();

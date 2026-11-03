@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.2";
+const GAME_VERSION = "2.2.2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.2.1", name: "Panel de la Saison 1", items: [
+    "Panel de l'équipe : choix « Éternel | Saison 1 | Monocompte ». Hôtel de vente, guildes, builds, fiches, vérifications et Bouclier visent l'espace choisi, quelle que soit la partie jouée",
+    "Les annonces du jeu s'affichent aussi en Monocompte (bandeau en haut et message dans le salon Monocompte) et dans le salon Saison 1",
+    "Panel de l'équipe : page « En ligne », les comptes connectés en ce moment dans l'espace choisi, avec leur fiche",
+    "Panel de l'équipe : « Vider » le salon Saison 1 du chat, salon Général renommé Éternel, textes du Monocompte sans la bêta",
+  ] },
   { v: "2.2.2", name: "Les modérateurs", items: [
     "Les modérateurs peuvent supprimer un message du chat public et avertir un joueur. L'avertissement arrive en message privé, marqué « Avertissement de la modération »",
     "Le pseudo des modérateurs est en vert dans le chat, avec leur badge, pour les reconnaître d'un coup d'œil",

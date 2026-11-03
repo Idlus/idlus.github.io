@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.1 « Panel de la Saison 1 »
+Panel Xener : trois espaces (Éternel, Saison 1 du Classique, Monocompte). Les outils d'admin qui existent dans l'espace de saison (Hôtel de vente, guildes, builds, fiches, « En vérification », Bouclier, copies) visent l'espace choisi, quelle que soit la partie jouée. Page « En ligne » : comptes connectés par espace. Annonces : bandeau aussi en Monocompte, message dans les salons Éternel, Saison 1 et Monocompte (supabase/chat.sql, accord de Mathis 03/11) ; épinglé et « Vider » du salon Saison 1.
+
 ## 2.2.2 « Les modérateurs »
 
 - Modérateurs : supprimer un message du chat public, avertir un joueur en privé, muet 24 h au plus ; jamais sur Mathis ni un autre modo.

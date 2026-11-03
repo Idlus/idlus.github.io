@@ -1,10 +1,12 @@
 /* Panel Xener dissocié par serveur (2.1.36, js/panel.js, js/admin.js, js/chat.js), dans le navigateur (aucune requête ne sort) :
-   - sélecteur « Classique | Monocompte » sous le titre, Classique par défaut, choix gardé dans le navigateur (page rechargée) ;
+   - sélecteur « Éternel | Saison 1 | Monocompte » sous le titre (03/11), Éternel par défaut, choix gardé dans le navigateur (page rechargée) ;
    - Classique : les pages d'avant, aucune page Monocompte (Clés bêta, Bouclier Monocompte…), pas de case « Monocompte » dans le
      message épinglé ni dans « Vider » ; recherche (Ctrl K) limitée aux pages du serveur choisi ;
    - Monocompte : Vue d'ensemble (saison, horloge, testeurs, parties, refus), Testeurs, Clés bêta, Bouclier Monocompte, Remettre une
      partie (confirmation dans la page, jamais de boîte confirm()), Bureau des Aventuriers (réglage, créneau), Chat Monocompte
      (épinglé du salon 'm', vider 'm'), Annonces Monocompte ; pas d'onglet Test ni de départ rapide ;
+   - Saison 1 : mêmes pages que l'Éternel, Hôtel de vente et « En vérification » lus dans l'espace s1 (admin_flagged), « Vider Saison 1 » ;
+     Éternel : les mêmes fonctions dans public, même quand la partie jouée est la Saison 1 ;
    - fiche d'un joueur ouverte depuis le côté Monocompte : le panel repasse au Classique ;
    - bandeaux : une annonce Monocompte ne s'affiche que dans une partie Monocompte, une annonce Classique seulement dans le Classique ;
      message épinglé du Classique dans 'g', celui du Monocompte dans 'm' ;
@@ -45,6 +47,8 @@ function fake() {
       case "mono_acces": return { ok: true, saison: 0 };
       case "chat_me": return {};
       case "cosm_mine": case "staff_list": case "adm_loops": case "adm_reports": case "adm_flagged": case "adm_mods": return [];
+      case "admin_flagged": return [{ user_id: "u7", pseudo: "Saisonnier", reason: "Bouclier : kamas impossibles", level: 30, updated_at: "2026-11-03T22:30:00Z" }];
+      case "adm_hdv": return { open: 0, sellers: 0, last: [] };
       case "ann_tick": return null;
       case "adm_overview": return { accounts: 42, active: 7, reports: 0, flagged: 0, suspect: 0, muted: 0, signups: [], log: [], settings: { min_level: 0, slow_s: 4, closed: false } };
       case "adm_players": return [{ id: "u2", pseudo: "Zoé", cls: "cra" }, { id: "u9", pseudo: "Kralamour", cls: "iop" }].filter((x) => !a.p_q || x.pseudo.toLowerCase().includes(String(a.p_q).toLowerCase()));
@@ -75,13 +79,14 @@ function fake() {
   const one = (t) => (t === "chat_settings" ? F.pin : null);
   const q = (t) => { const b = new Proxy(function () {}, { get: (o, k) => (k === "then" ? (ok, ko) => Promise.resolve({ data: rows(t), error: null, count: 0 }).then(ok, ko)
     : k === "maybeSingle" || k === "single" ? () => Promise.resolve({ data: one(t), error: null }) : () => b) }); return b; };
-  const ch = () => { const c = { on: () => c, subscribe: () => c, track: () => {}, untrack: () => {}, send: () => {}, presenceState: () => ({}) }; return c; };
+  const ch = () => { const c = { on: () => c, subscribe: () => c, track: () => {}, untrack: () => {}, send: () => {}, presenceState: () => ({ u2: [{ p: "Zoé", s: "s" }], u3: [{ p: "Bob", s: "e" }], u4: [{ p: "Lou", s: "m" }], u5: [{ p: "Vieux" }], "anon-1": [{}] }) }; return c; };
   window.__IDLUS_SB = { createClient: () => ({
     auth: { getSession: async () => ({ data: { session: null } }), getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signOut: async () => ({ error: null }), signInWithOAuth: async () => ({ error: null }), signInWithOtp: async () => ({ error: null }) },
     from: q, channel: ch, removeChannel: () => {}, removeAllChannels: () => {},
     functions: { invoke: async () => ({ data: null, error: { message: "absent" } }) },
-    rpc: async (name, a) => { F.calls.push([name, a || {}]); const d = srv(name, a || {}); put(); return { data: d, error: null }; },
+    rpc: async (name, a) => { F.calls.push([name, a || {}, "public"]); const d = srv(name, a || {}); put(); return { data: d, error: null }; },
+    schema: (sc) => ({ from: q, rpc: async (name, a) => { F.calls.push([name, a || {}, sc]); const d = srv(name, a || {}); put(); return { data: d, error: null }; } }),
   }) };
 }
 
@@ -119,6 +124,7 @@ function fake() {
   const srvOn = (page) => page.evaluate(() => { const b = document.querySelector(".px-srv button.on"); return b ? b.dataset.v : null; });
   const go = async (page, v) => { await page.click(`.px-nav button[data-v="${v}"]`); await page.waitForTimeout(350); };
   const calls = (page, n) => page.evaluate((x) => window.__PX.calls.filter((c) => c[0] === x).map((c) => c[1]), n);
+  const where = (page, n) => page.evaluate((x) => window.__PX.calls.filter((c) => c[0] === x).map((c) => c[2]), n);
   const search = async (page, t) => { await page.fill("#pxQ", t); await page.waitForTimeout(100); const r = await page.evaluate(() => [...document.querySelectorAll("#pxRes button")].map((b) => (b.querySelector(".grow") || b).textContent)); await page.fill("#pxQ", ""); return r; };
   const noScroll = async (page, what) => { const x = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]); if (x[0] > x[1] + 1) fail(`${what} : la page défile de côté (${x[0]} px pour ${x[1]})`); };
   const shot = async (page, n) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, n), fullPage: true }); };
@@ -132,7 +138,7 @@ function fake() {
     const W = `${w} px`;
     await panel(page);
     /* ---------- Classique par défaut ---------- */
-    if ((await srvOn(page)) !== "c") fail(`${W} : Classique attendu par défaut`);
+    if ((await srvOn(page)) !== "e") fail(`${W} : Éternel attendu par défaut`);
     let N = await nav(page);
     if (MONO.some((k) => N.includes(k))) fail(`${W}, Classique : page Monocompte dans le menu : ${N.join(",")}`);
     if (CLASSIC.some((k) => !N.includes(k))) fail(`${W}, Classique : pages d'avant absentes : ${N.join(",")}`);
@@ -142,17 +148,39 @@ function fake() {
       r = await search(page, "annonces"); if (!r.some((x) => /Aller à : Annonces$/.test(x)) || r.some((x) => /Monocompte/.test(x))) fail("Classique : recherche « annonces » : " + r.join(" | "));
       r = await search(page, "nouveau joueur"); if (!r.some((x) => /Partie de test/.test(x))) fail("Classique : départs rapides de test absents de la recherche");
       if (await page.$('[data-act="adm-chclear"][data-v="m"]')) fail("Classique : « Vider Monocompte » encore là");
-      if (!(await page.$('[data-act="adm-chclear"][data-v="g"]'))) fail("Classique : « Vider Général » absent");
+      if (!(await page.$('[data-act="adm-chclear"][data-v="g"]')) || !(await page.$('[data-act="adm-chclear"][data-v="s"]'))) fail("Classique : « Vider Éternel » ou « Vider Saison 1 » absent");
       await go(page, "ann");
       await page.waitForSelector("#admPin", { timeout: 5000 });
       if (await page.$("#admPinm")) fail("Classique : case « Monocompte » dans le message épinglé");
       if (!(await page.$("#admPing")) || !(await page.$("#admPinc")) || !(await page.$("#admPinv"))) fail("Classique : cases Général, Commerce, PvP attendues");
-      if (/Monocompte/.test(await body(page))) fail("Classique : la page Annonces parle du Monocompte : " + (await body(page)).slice(0, 200));
+      // 03/11 : une annonce du Classique part aussi en Monocompte (bandeau et salon 'm'), la page le dit ; épinglé : Saison 1, Éternel, Commerce, PvP
+      if (!/salons Éternel, Saison 1 et Monocompte/.test(await body(page)) || !(await page.$("#admPins"))) fail("Classique : annonce dans les trois salons et case « Saison 1 » de l'épinglé attendues");
       await page.fill("#admPin", "Nouvel épinglé du Classique"); await page.check("#admPinc"); await page.click('[data-act="adm-pin"]'); await page.waitForTimeout(400);
       const pn = await calls(page, "adm_pin"); if (!pn.length || pn[pn.length - 1].p_chs !== "g,c") fail("Classique : épinglé envoyé sans 'm' : " + JSON.stringify(pn));
       await shot(page, `panel-classique-${w}.png`);
     }
     await noScroll(page, `${W}, Classique`);
+    /* ---------- Saison 1 du Classique (03/11) ---------- */
+    let t0;
+    await page.click('.px-srv button[data-v="s"]'); await page.waitForTimeout(500);
+    if ((await srvOn(page)) !== "s") fail(`${W} : Saison 1 pas choisie`);
+    N = await nav(page);
+    if (MONO.some((k) => N.includes(k)) || CLASSIC.some((k) => !N.includes(k))) fail(`${W}, Saison 1 : pages du Classique attendues : ${N.join(",")}`);
+    if (!/Saison 1 du Classique/.test(await page.evaluate(() => document.querySelector(".adm").innerText))) fail(`${W}, Saison 1 : explication de l'espace absente`);
+    if (N.includes("hdv")) { await go(page, "hdv"); await page.waitForTimeout(300); const w0 = await where(page, "adm_hdv"); if (w0[w0.length - 1] !== "s1") fail(`${W}, Saison 1 : Hôtel de vente lu dans ${w0.join(",")}`); }
+    if (N.includes("verif")) {
+      await go(page, "verif"); await page.waitForFunction(() => /Saisonnier/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => fail(`${W}, Saison 1 : « En vérification » sans la liste de la saison`));
+      if ((await where(page, "admin_flagged")).some((x) => x !== "s1")) fail(`${W}, Saison 1 : admin_flagged hors s1`);
+      await page.click('[data-act="adm-flag"][data-u="u7"][data-v="0"]'); await page.waitForTimeout(300);
+      const uf = await where(page, "admin_unflag"); if (uf[uf.length - 1] !== "s1" || (await calls(page, "adm_flag")).length) fail(`${W}, Saison 1 : « C'est bon » doit viser s1.admin_unflag`);
+      await shot(page, `panel-saison1-${w}.png`);
+    }
+    await go(page, "enligne"); t0 = await body(page);
+    if (!/Zoé/.test(t0) || !/Vieux/.test(t0) || /Bob|Lou/.test(t0) || !/1 Éternel · 1 Saison 1 · 1 Monocompte/.test(t0)) fail(`${W}, Saison 1 : En ligne : ` + t0.slice(0, 300));
+    await noScroll(page, `${W}, Saison 1`);
+    /* retour à l'Éternel : public, même si la partie jouée était la Saison 1 */
+    await page.click('.px-srv button[data-v="e"]'); await page.waitForTimeout(400);
+    if (N.includes("hdv")) { await go(page, "hdv"); await page.waitForTimeout(300); const w1 = await where(page, "adm_hdv"); if (w1[w1.length - 1] !== "public") fail(`${W}, Éternel : Hôtel de vente lu dans ${w1.join(",")}`); }
     /* ---------- Monocompte ---------- */
     await page.click('.px-srv button[data-v="m"]'); await page.waitForTimeout(500);
     if ((await srvOn(page)) !== "m") fail(`${W} : Monocompte pas choisi`);
@@ -164,6 +192,9 @@ function fake() {
     await page.waitForFunction(() => /Saison de test/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => fail(`${W}, Monocompte : vue d'ensemble sans la saison`));
     let t = await body(page);
     if (!/×24, en pause/.test(t) || !/Jour 10 sur 56/.test(t) || !/niveau impossible/.test(t) || !/testeurs/.test(t)) fail(`${W}, vue Monocompte : ` + t.slice(0, 400));
+    await go(page, "monoenligne"); t0 = await body(page);
+    if (!/Lou/.test(t0) || /Bob|Zoé/.test(t0)) fail(`${W}, Monocompte : En ligne : ` + t0.slice(0, 300));
+    await go(page, "monovue");
     if ((await calls(page, "mono_adm_horloge")).length) fail("vue Monocompte : l'horloge ne doit pas être changée (mono_adm_horloge écrit)");
     await shot(page, `panel-mono-${w}.png`);
     await noScroll(page, `${W}, Monocompte`);
@@ -250,7 +281,7 @@ function fake() {
       if (!/Bienvenue aux testeurs/.test(pins.m) || /Classique/.test(pins.m)) fail("épinglé de 'm' : " + pins.m);
       /* fiche d'un joueur depuis le côté Monocompte : retour au Classique */
       await page.evaluate(() => window.CHAT.openAdmin("joueurs", "Zoé")); await page.waitForTimeout(500);
-      if ((await srvOn(page)) !== "c" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail("fiche d'un joueur : le panel doit repasser au Classique");
+      if ((await srvOn(page)) !== "e" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail("fiche d'un joueur : le panel doit repasser au Classique (Éternel, dernier espace choisi)");
       /* partie Monocompte → seulement l'annonce Monocompte */
       await page.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S); window.DX.ui.tab = "home"; window.DX.render(); });
       await page.waitForFunction(() => /Nouvelle saison de test lundi/.test((document.querySelector("#annbar") || {}).textContent || ""), null, { timeout: 6000 }).catch(() => {});
@@ -268,7 +299,7 @@ function fake() {
   };
   try {
     await run(1280, 900, true);
-    console.log("ok - 1280 px : sélecteur Classique | Monocompte (Classique par défaut, choix gardé), pages et recherche par serveur, épinglé Classique sans 'm', pages Monocompte (vue, testeurs, remise confirmée dans la page, Bureau, chat, annonces), bandeau Monocompte seulement en partie Monocompte");
+    console.log("ok - 1280 px : sélecteur Éternel | Saison 1 | Monocompte (Éternel par défaut, choix gardé, Saison 1 dans s1), pages et recherche par serveur, épinglé Classique sans 'm', pages Monocompte (vue, testeurs, remise confirmée dans la page, Bureau, chat, annonces), bandeau Monocompte seulement en partie Monocompte");
     await run(390, 844, true);
     console.log("ok - téléphone 390 px : mêmes parcours, sans défilement de côté");
   } catch (e) { fail("exception : " + (e.stack || e.message)); }

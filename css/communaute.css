@@ -76,6 +76,7 @@
 .px-srv button{padding:7px 16px;border-radius:9px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}
 .px-srv button:hover{background:var(--panel2)}
 .px-srv button.on{background:var(--gold);color:#1b1206}
+@media (max-width:520px){.px-srv button{padding:7px 11px}}
 .px-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center}
 .px-kv input[type=number]{width:90px}
 .px-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}

@@ -95,6 +95,9 @@
   const total = () => Math.floor(Number(String(P.f.total).replace(/[^\d]/g, "")) || 0);
   function adminBox() {
     if (monoP()) return `<div class="box"><h2>Pluie de kamas</h2><p class="small muted">Réservé au serveur Classique : ouvre ta partie Classique pour lancer une pluie (les kamas viennent de cette partie).</p></div>`;
+    /* 03/11 : la pluie part de la partie jouée (ses kamas), pas de l'espace choisi dans le panel (Éternel | Saison 1) */
+    const sp = window.PANEL && window.PANEL.space ? window.PANEL.space() : null, gs = ON.s1Game && ON.s1Game() ? "s" : "e";
+    const where = sp && sp !== gs ? `<p class="small minus">La pluie part de la partie que tu joues (${gs === "s" ? "Saison 1" : "Éternel"}), pas de l'espace choisi en haut du panel.</p>` : "";
     const t = P.st && P.st.st === "open" ? P.st : null; const k = Math.floor((S() && S().kamas) || 0);
     const cur = t ? `<div class="ln"><span class="grow"><b>En cours :</b> ${fmt(t.total)} kamas · ${fmt(t.n)} participant${t.n > 1 ? "s" : ""} · fin dans <span class="num" data-pl="left">${mmss(left())}</span></span>
         <button class="btn sm" data-act="pl-stop" data-v="1">Partager maintenant</button><button class="btn sm" data-act="pl-stop" data-v="0">Annuler (tout te revient)</button></div>` : "";
@@ -106,7 +109,7 @@
       <input id="plMsg" maxlength="140" placeholder="Message (facultatif), ex. : Merci d'être là ce soir !" value="${h(P.f.msg)}">
       <div class="row">${P.confirm && ok ? `<button class="btn primary" data-act="pl-open" data-v="1">Confirmer : retirer ${fmt(T)} kamas de mon compte</button><button class="btn sm" data-act="pl-open" data-v="0">Annuler</button>`
         : `<button class="btn primary" data-act="pl-open" ${ok ? "" : "disabled"}>Lancer la pluie</button>`}<span class="xs muted">${T > k ? "Tu n'as pas assez de kamas." : T && T < 1000 ? "Au moins 1 000 kamas." : "Les kamas quittent ton compte au lancement ; ce qui n'est pas partagé te revient."}</span></div>`;
-    return `<div class="box"><h2>Pluie de kamas</h2><p class="small muted">Tu donnes des kamas de ton compte (tu en as <b class="num">${fmt(k)}</b>). Pendant la durée choisie, les joueurs connectés à un compte cliquent « Je participe » ; à la fin, tout est partagé à parts égales entre eux. Personne = tout te revient.</p>
+    return `<div class="box"><h2>Pluie de kamas</h2><p class="small muted">Tu donnes des kamas de ton compte (tu en as <b class="num">${fmt(k)}</b>). Pendant la durée choisie, les joueurs connectés à un compte cliquent « Je participe » ; à la fin, tout est partagé à parts égales entre eux. Personne = tout te revient.</p>${where}
       ${cur}${form}${hist ? `<div class="stack" style="gap:2px"><span class="xs muted">Dernières pluies</span>${hist}</div>` : ""}</div>`;
   }
   function repaintAdm() { const b = $("#plAdm"); if (b) { readForm(); b.innerHTML = adminBox(); } }

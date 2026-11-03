@@ -234,7 +234,14 @@
   };
 
   /* ---------- espace de saison : la partie n (par défaut celle en cours) vise s1 pour les objets de la saison ---------- */
-  const dbOf = (name, n) => ((n || SLOT) === S1_N && S1_SET.has(name) && sb.schema ? sb.schema("s1") : sb);
+  /* 03/11 (Mathis : « réadapter mon panel pour mono et classique ») : le Panel Xener choisit l'espace visé par ses fonctions
+     (adm_…, admin_…) au lieu de suivre la partie jouée : ON.admSp = "e" (Éternel, public) ou "s1" (Classique · Saison 1). Le serveur
+     vérifie toujours le compte admin ; null = comme avant (l'espace de la partie en cours). */
+  const ADM_FN = /^(adm|admin)_(?!rain)/; // pluie de kamas : les kamas viennent de la partie jouée (ses « ops »), elle suit donc la partie
+  ON.admSp = null;
+  ON.admFn = (name) => !!ON.admSp && ADM_FN.test(String(name || ""));
+  const dbOf = (name, n) => (ON.admFn(name) ? (ON.admSp === "s1" && S1_SET.has(name) && sb.schema ? sb.schema("s1") : sb)
+    : (n || SLOT) === S1_N && S1_SET.has(name) && sb.schema ? sb.schema("s1") : sb);
   const R = (name, args, n) => dbOf(name, n).rpc(name, args || {});
   const F = (table, n) => dbOf(table, n).from(table);
   ON.dbOf = dbOf;
@@ -382,7 +389,8 @@
   const ironOn = () => { try { const E = root.ENGINE, s = root.DX && root.DX.S; return !!(E && E.monoIron && s && E.monoIron(s)); } catch (e) { return false; } };
   const rpc = async (name, args) => {
     if (ON.monoPart() && IRON_RPC.test(name) && ironOn()) return { err: ON.IRON_ERR };
-    if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
+    if (ON.admFn(name)) {} // Panel Xener : fonction d'admin, espace choisi dans le panel (pas de partie touchée), vérifiée par le serveur
+    else if (ON.monoMarket() && MONO_RPC.test(name)) name = "mono_" + name; // partie Monocompte en ligne : HdV de saison et échanges du serveur Monocompte
     else if (ON.monoPart() && ON.classicRpc(name, args)) return { err: CLASSIC_ERR };
     else if (ON.monoGame() && !monoRpcOk(name)) return { err: MONO_ERR };
     else if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
@@ -407,10 +415,17 @@
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.old && p.old.id && onDel) onDel(p.old.id); }) // 1.2.10.1 : message supprimé par Mathis, retiré chez tout le monde
       .on("presence", { event: "sync" }, () => { try { onCount(Object.keys(chan.presenceState()).filter((k) => !/^anon-/.test(k)).length); } catch (e) {} })
       .subscribe((st) => {
-        if (st === "SUBSCRIBED") { if (ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); if (lost && onBack) onBack(); lost = false; } // 1.0.9.1 : retour après une coupure → messages manqués rechargés
+        if (st === "SUBSCRIBED") { if (ON.user && ON.profile) { meSp = spOf(); chan.track({ p: ON.profile.pseudo, s: meSp }); } if (lost && onBack) onBack(); lost = false; } // 1.0.9.1 : retour après une coupure → messages manqués rechargés
         else lost = true; // CHANNEL_ERROR, TIMED_OUT, CLOSED : la bibliothèque se reconnecte seule
       });
   };
+  /* 03/11 (Mathis : liste des joueurs connectés) : chaque joueur connecté dit aussi l'espace de sa partie : "e" Éternel (et parties
+     solo), "s" Classique · Saison 1, "m" Monocompte ; renvoyé quand il change de partie (vérifié toutes les 20 s) */
+  let meSp = null;
+  const spOf = () => (ON.monoPart() ? "m" : SLOT === S1_N ? "s" : "e");
+  setInterval(() => { try { if (chan && !lost && ON.user && ON.profile && meSp !== spOf()) { meSp = spOf(); chan.track({ p: ON.profile.pseudo, s: meSp }); } } catch (e) {} }, 20000);
+  /* [{ id, p, s }] : un par compte connecté (s null = ancienne version du jeu) */
+  ON.onlineList = () => { try { if (!chan) return []; const st = chan.presenceState(); return Object.keys(st).filter((k) => !/^anon-/.test(k)).map((k) => { const x = (st[k] || []).slice(-1)[0] || {}; return { id: k, p: x.p || null, s: x.s || null }; }).filter((x) => x.p); } catch (e) { return []; } };
   ON.chatLost = () => !!chan && lost; // 1.0.10.1 : temps réel coupé (incident Supabase Realtime) : le chat se met à jour sans lui
   ON.onlinePseudos = () => { try { return chan ? Object.values(chan.presenceState()).flat().map((x) => x && x.p).filter(Boolean) : []; } catch (e) { return []; } }; // 0.1.53.7 : proposés quand on tape « @ »
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };

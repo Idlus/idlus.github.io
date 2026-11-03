@@ -451,7 +451,7 @@ end $$;
 
 create or replace function public.adm_pin(p_body text, p_chs text) returns void language plpgsql security definer set search_path = public
 as $$ declare b text := left(btrim(coalesce(p_body, '')), 200);
-  c text := array_to_string(array(select x from unnest(string_to_array(coalesce(p_chs, ''), ',')) x where x in ('g', 'c', 'v')), ','); begin -- 2.1.36 : 'm' a son propre message (adm_pin_mono)
+  c text := array_to_string(array(select x from unnest(string_to_array(coalesce(p_chs, ''), ',')) x where x in ('g', 'c', 'v', 's')), ','); begin -- 2.1.36 : 'm' a son propre message (adm_pin_mono) ; 03/11 : 's' = salon Saison 1
   perform public.adm_need(true);
   update chat_settings set pin_body = b, pin_chs = case when c = '' then 'g' else c end, pin_at = now() where id = 1;
   perform public.alog(case when b = '' then 'message épinglé retiré' else format('message épinglé : « %s »', left(b, 60)) end);
@@ -470,7 +470,8 @@ as $$ declare b text := left(btrim(p_body), 300); begin
   perform public.adm_need(true);
   if b = '' then raise exception 'annonce vide'; end if;
   if p_banner then insert into announces (body, banner, until) values (b, true, case when p_hours > 0 then now() + make_interval(hours => p_hours) end); end if;
-  if p_chat then insert into chat_msgs (ch, user_id, pseudo, kind, body, data) values ('g', auth.uid(), public.pseudo_of(auth.uid()), 'ann', b, jsonb_build_object('t', 'admin', 'banner', p_banner)); end if;
+  -- 03/11 (Mathis : « installe les annonces dans les trois salons sur le serveur ») : le message part dans les salons Éternel, Saison 1 et Monocompte
+  if p_chat then insert into chat_msgs (ch, user_id, pseudo, kind, body, data) select c, auth.uid(), public.pseudo_of(auth.uid()), 'ann', b, jsonb_build_object('t', 'admin', 'banner', p_banner) from unnest(array['g', 's', 'm']) c; end if;
   perform public.alog(format('annonce publiée : « %s »', left(b, 60)));
 end $$;
 -- 2.1.36 (panel par serveur) : annonce Monocompte : bandeau montré seulement dans une partie Monocompte, message dans le salon 'm'

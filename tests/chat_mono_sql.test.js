@@ -161,7 +161,7 @@ try {
   as(99, `select adm_announce('Annonce Classique', true, true, 24)`);
   as(99, `select adm_announce_mono('Annonce Monocompte', true, true, 0)`);
   assert.strictEqual(q(`select string_agg(body || ':' || coalesce(srv, '-') || ':' || (until is null), ',' order by id) from announces`), "Annonce Classique:-:false,Annonce Monocompte:m:true", "bandeaux et serveur");
-  assert.strictEqual(q(`select string_agg(ch || ':' || body, ',' order by id) from chat_msgs where kind = 'ann' and body like 'Annonce %'`), "g:Annonce Classique,m:Annonce Monocompte", "message de l'annonce dans le bon salon");
+  assert.strictEqual(q(`select string_agg(ch || ':' || body, ',' order by id) from chat_msgs where kind = 'ann' and body like 'Annonce %'`), "g:Annonce Classique,s:Annonce Classique,m:Annonce Classique,m:Annonce Monocompte", "message de l'annonce dans les bons salons (03/11 : Classique dans Éternel, Saison 1 et Monocompte)");
   assert.strictEqual(+anon(`select count(*) from announces where srv = 'm'`), 1, "bandeau Monocompte lisible (le jeu le filtre)");
   assert.strictEqual(+as(2, `select count(*) from chat_msgs where kind = 'ann' and body = 'Annonce Monocompte'`), 0, "message Monocompte invisible hors du Monocompte");
   assert.strictEqual(+as(1, `select count(*) from chat_msgs where kind = 'ann' and body = 'Annonce Monocompte'`), 1, "message Monocompte lu par un testeur");
