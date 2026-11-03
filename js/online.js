@@ -42,8 +42,17 @@
      le boss des mondes, que le serveur vérifie avec elle. Les parties 2 et 3 se jouent en solo. */
   let SLOT = 1;
   const MONO_N = 4;
+  /* Saison 1, lot 0b (Mathis 03/11 : « Un espace de saison ») : partie 5 = Classique · Saison 1. Elle se joue comme la partie 1
+     (classements, HdV, guilde, Bouclier), mais dans l'espace « s1 » du serveur (supabase/saison1.sql, js/saison1_srv.js) :
+     même compte, tout repart de zéro. s1: false tant que l'espace n'est pas installé (accord écrit de Mathis). */
+  const S1_N = 5;
+  ON.S1_N = S1_N;
+  ON.s1Srv = !!SRV.s1;
+  ON.s1Game = () => SLOT === S1_N;
+  const S1_SET = new Set(root.S1_OBJ || []);
+  ON.s1Obj = (name) => S1_SET.has(name);
   ON.slot = () => SLOT;
-  ON.solo = () => SLOT !== 1;
+  ON.solo = () => SLOT !== 1 && SLOT !== S1_N;
   ON.slotsOk = !!SRV.slots;
   /* ---------- espace Monocompte (supabase/monocompte.sql : étape 4 et registre des Éclats du Temps, 6b) ----------
      ON.mono : réponse de mono_acces ({ ok, saison, date, jour, semaine, manche }) ; ON.monoCosm : droits cosmétiques partagés
@@ -59,9 +68,9 @@
     ON.mono = null; ON.monoCosm = null;
     if (!ON.monoSrv || !sb || !ON.user) return null;
     try {
-      const { data, error } = await withTimeout(sb.rpc("mono_acces"), 8000); if (error || !data) return null;
+      const { data, error } = await withTimeout(R("mono_acces"), 8000); if (error || !data) return null;
       ON.mono = data; ON.monoAt = Date.now();
-      if (data.ok) { const c = await withTimeout(sb.rpc("cosm_mine"), 8000); if (!c.error && Array.isArray(c.data)) ON.monoCosm = ON.cosmLegacy(c.data); }
+      if (data.ok) { const c = await withTimeout(R("cosm_mine"), 8000); if (!c.error && Array.isArray(c.data)) ON.monoCosm = ON.cosmLegacy(c.data); }
     } catch (e) { /* hors ligne : la partie Monocompte reste sur l'appareil */ }
     return ON.mono;
   };
@@ -73,7 +82,7 @@
   ON.tfAchat = (obj, saison) => rpc("mono_boutique_achat", saison != null ? { p_objet: obj, p_saison: saison } : { p_objet: obj });
   /* 4 : partie Monocompte, en ligne seulement pour un compte autorisé (testeur ou admin) quand une saison est ouverte ;
      101… : Éternel, sur l'appareil (le serveur le garde en lecture seule après la fin de saison) */
-  ON.slotOnline = (n) => { n = n || SLOT; return n === 1 || (n < 4 && ON.slotsOk) || (n === MONO_N && ON.monoOn()); };
+  ON.slotOnline = (n) => { n = n || SLOT; return n === 1 || (n < 4 && ON.slotsOk) || (n === MONO_N && ON.monoOn()) || (n === S1_N && ON.s1Srv); };
   ON.setSlot = (n, key) => { SLOT = n; KEY = key; };
   /* 2.1.37.x « Monocompte étanche » : partie Monocompte (4), de l'Éternel (101, 102…) ou partie affichée du Monocompte. Rien du
      serveur Classique n'y entre ni n'en sort (voir CLASSIC_RPC plus bas) */
@@ -195,54 +204,60 @@
     return null;
   };
   ON.fetchProfile = async () => {
-    const { data, error } = await withTimeout(sb.from("profiles").select("pseudo").eq("id", ON.user.id).maybeSingle());
+    const { data, error } = await withTimeout(F("profiles").select("pseudo").eq("id", ON.user.id).maybeSingle());
     if (error) throw error;
     ON.profile = data || null; return ON.profile;
   };
   ON.pseudoFree = async (p) => {
-    const { data, error } = await withTimeout(sb.from("profiles").select("id").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1));
+    const { data, error } = await withTimeout(F("profiles").select("id").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1));
     if (error) throw error;
     return !data.length;
   };
   ON.createProfile = async (p) => {
-    const { error } = await withTimeout(sb.from("profiles").insert({ id: ON.user.id, pseudo: p }));
+    const { error } = await withTimeout(F("profiles").insert({ id: ON.user.id, pseudo: p }));
     if (error) return /duplicate|unique/i.test(error.message) ? "Ce pseudo vient d'être pris. Essaie-en un autre." : /autoris/.test(error.message) ? "Ce pseudo n'est pas autorisé." : error.message;
     ON.profile = { pseudo: p }; return null;
   };
 
   /* 0.1.50.1 : changer son pseudo soi-même (une fois tous les 30 jours ; l'ancien reste réservé 30 jours). */
   ON.pseudoInfo = async () => {
-    try { const { data, error } = await withTimeout(sb.rpc("pseudo_info")); return error ? null : data || null; } catch (e) { return null; }
+    try { const { data, error } = await withTimeout(R("pseudo_info")); return error ? null : data || null; } catch (e) { return null; }
   };
   ON.changePseudo = async (p) => {
     try {
-      const { data, error } = await withTimeout(sb.rpc("pseudo_change", { p_pseudo: p }));
+      const { data, error } = await withTimeout(R("pseudo_change", { p_pseudo: p }));
       if (error) return /autoris/.test(error.message) ? "Ce pseudo n'est pas autorisé." : /duplicate|unique/i.test(error.message) ? "Ce pseudo est déjà pris." : /réserv/.test(error.message) ? error.message : "Le serveur n'a pas pu changer le pseudo. Réessaie plus tard.";
       if (data) return data;
       ON.profile = Object.assign({}, ON.profile, { pseudo: p }); return null;
     } catch (e) { return "Pas de connexion au serveur. Réessaie dans un instant."; }
   };
 
+  /* ---------- espace de saison : la partie n (par défaut celle en cours) vise s1 pour les objets de la saison ---------- */
+  const dbOf = (name, n) => ((n || SLOT) === S1_N && S1_SET.has(name) && sb.schema ? sb.schema("s1") : sb);
+  const R = (name, args, n) => dbOf(name, n).rpc(name, args || {});
+  const F = (table, n) => dbOf(table, n).from(table);
+  ON.dbOf = dbOf;
+  const s1b = (b) => (SLOT === S1_N ? Object.assign({ saison: 1 }, b) : b); // fonction « record » (Bouclier, records, défi) : espace de la partie
   /* ---------- la partie en ligne ---------- */
   /* Renvoie null s'il n'y a pas encore de partie en ligne ; lève une erreur hors ligne. */
   ON.remoteInfo = async (n) => {
     n = n || SLOT;
-    const { data, error } = await withTimeout(n === 1 ? sb.rpc("save_info") : n === MONO_N ? sb.rpc("mono_info") : sb.rpc("slot_info", { p_slot: n }));
+    const { data, error } = await withTimeout(n === 1 || n === S1_N ? R("save_info", null, n) : n === MONO_N ? R("mono_info") : R("slot_info", { p_slot: n }));
     if (error) throw error;
     return (data && data[0]) || null;
   };
   ON.remoteData = async (n) => {
     n = n || SLOT;
-    if (n === MONO_N) { const { data, error } = await withTimeout(sb.rpc("mono_pull"), 20000); if (error) throw error; return data || null; } // tables Monocompte invisibles de l'API : seulement par fonction
-    const q = n === 1 ? sb.from("saves").select("data").eq("user_id", ON.user.id) : sb.from("save_slots").select("data").eq("user_id", ON.user.id).eq("slot", n);
+    if (n === MONO_N) { const { data, error } = await withTimeout(R("mono_pull"), 20000); if (error) throw error; return data || null; } // tables Monocompte invisibles de l'API : seulement par fonction
+    const q = n === 1 || n === S1_N ? F("saves", n).select("data").eq("user_id", ON.user.id) : F("save_slots").select("data").eq("user_id", ON.user.id).eq("slot", n);
     const { data, error } = await withTimeout(q.maybeSingle(), 20000);
     if (error) throw error;
     return data ? data.data : null;
   };
   /* 1.0.11 : effacer la partie 2 ou 3 du compte (la 1 ne s'efface qu'avec le compte). */
   ON.deleteSlot = async (n) => {
-    if (!sb || !ON.user || n === 1 || !ON.slotOnline(n)) return null;
-    try { const { error } = await withTimeout(n === MONO_N ? sb.rpc("mono_delete") : sb.rpc("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
+    if (!sb || !ON.user || n === 1 || n === S1_N || !ON.slotOnline(n)) return null;
+    try { const { error } = await withTimeout(n === MONO_N ? R("mono_delete") : R("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
   };
   /* Envoie la partie. Résultat : "ok", "conflict" (une autre version est en ligne) ou "offline". */
   let pushing = null, again = null, againP = null;
@@ -273,7 +288,7 @@
         for (let i = 0; i < 2; i++) {
           const l = link();
           const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
-          const r = slot === MONO_N ? await monoPush(args) : await withTimeout(slot === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
+          const r = slot === MONO_N ? await monoPush(args) : await withTimeout(slot === 1 || slot === S1_N ? R("push_save", args, slot) : R("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
           const info = await ON.remoteInfo(slot); // envoi refusé : la version en ligne est-elle un de nos envois ?
@@ -284,7 +299,7 @@
         setLinkOf(key, { uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok");
         if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(ON.monoVerif); } catch (e) {} } // registre des Éclats et réponse du Bouclier Monocompte (js/mono_online.js)
-        if (slot === 1) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
+        if (slot === 1 || slot === S1_N) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
       } catch (e) {
         // 2.1.35.2 : partie Monocompte d'avant la remise à zéro de la bêta, refusée par le serveur : le jeu la met de côté (js/ui.js)
@@ -305,17 +320,19 @@
       if (!error && data && data.err) return { error: { message: data.err } };
     } catch (e) { /* fonction injoignable : envoi direct */ }
     ON.monoVerif = null;
-    return withTimeout(sb.rpc("mono_push", args), 20000);
+    return withTimeout(R("mono_push", args), 20000);
   };
   /* 2.1.4 « Bouclier du serveur » : après chaque envoi, le serveur relit la partie, calcule lui-même le résumé des classements
      et la garde comme « dernière partie validée » si elle est possible (fonction « record », { verif: 1 }). Rien à montrer
      au joueur : une partie retenue reste sur sa dernière version validée et Mathis décide. */
   ON.verif = async () => {
     if (!sb || !ON.user) return null;
-    try { const { data } = await withTimeout(sb.functions.invoke("record", { body: { verif: 1 } }), 10000); return data || null; } catch (e) { return null; }
+    try { const { data } = await withTimeout(sb.functions.invoke("record", { body: s1b({ verif: 1 }) }), 10000); return data || null; } catch (e) { return null; }
   };
   /* ---------- classements (étape 3) ---------- */
-  ON.db = () => sb;
+  // partie Classique · Saison 1 : les modules qui lisent par ON.db().from / .rpc visent aussi l'espace de saison
+  let s1db = null;
+  ON.db = () => { if (!sb || SLOT !== S1_N || typeof Proxy === "undefined") return sb; if (!s1db) s1db = new Proxy(sb, { get: (t, k) => (k === "from" ? F : k === "rpc" ? R : typeof t[k] === "function" ? t[k].bind(t) : t[k]) }); return s1db; };
   /* Demande au serveur de vérifier le record du donjon (il rejoue le combat avec la partie en ligne).
      Renvoie la réponse du serveur, ou { net: true } s'il faut réessayer plus tard. */
   ON.submitRecord = async (did) => {
@@ -323,7 +340,7 @@
     if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR }; // le serveur rejoue avec la partie 1 : jamais pour une partie solo
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { did } }), 30000);
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: s1b({ did }) }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : { net: true }; }
       return data || { net: true };
     } catch (e) { return { net: true }; }
@@ -335,7 +352,7 @@
     if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { dofus: { uid: o.uid, did: o.did, k: o.k } } }), 30000);
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: s1b({ dofus: { uid: o.uid, did: o.did, k: o.k } }) }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : { net: true }; }
       return data || { net: true };
     } catch (e) { return { net: true }; }
@@ -363,13 +380,13 @@
     else if (ON.monoPart() && ON.classicRpc(name, args)) return { err: CLASSIC_ERR };
     else if (ON.monoGame() && !monoRpcOk(name)) return { err: MONO_ERR };
     else if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
-    try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
+    try { const { data, error } = await withTimeout(R(name, args), 12000); return error ? { err: error.message || "erreur" } : { data }; }
     catch (e) { return { err: "Pas de connexion au serveur." }; }
   };
   ON.rpc = rpc;
   ON.chatLoad = async (ch) => {
     if (!sb) return null;
-    let q = sb.from("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
+    let q = F("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
     q = q.eq("ch", ["p", "c", "v", "m"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
     try { const { data, error } = await withTimeout(q, 12000); return error ? null : (data || []).reverse(); } catch (e) { return null; } // 1.0.9.1 : une erreur du serveur (délai dépassé côté base) compte comme « pas chargé », le chat réessaie
   };
@@ -399,24 +416,24 @@
   // 0.1.29.1 : l'équipe (créateur, modérateurs) pour le badge à côté du pseudo, lisible sans compte
   ON.staff = async () => (sb ? (await rpc("staff_list")).data || [] : []);
   ON.role = async () => (ON.user ? (await rpc("my_role")).data || null : null);
-  ON.ignores = async () => { try { const { data } = await withTimeout(sb.from("ignores").select("other").eq("user_id", ON.user.id)); return (data || []).map((r) => r.other); } catch (e) { return []; } };
+  ON.ignores = async () => { try { const { data } = await withTimeout(F("ignores").select("other").eq("user_id", ON.user.id)); return (data || []).map((r) => r.other); } catch (e) { return []; } };
   ON.setIgnore = async (other, on) => {
-    try { const q = on ? sb.from("ignores").insert({ user_id: ON.user.id, other }) : sb.from("ignores").delete().eq("user_id", ON.user.id).eq("other", other); const { error } = await withTimeout(q); return error ? error.message : null; }
+    try { const q = on ? F("ignores").insert({ user_id: ON.user.id, other }) : F("ignores").delete().eq("user_id", ON.user.id).eq("other", other); const { error } = await withTimeout(q); return error ? error.message : null; }
     catch (e) { return "Pas de connexion au serveur."; }
   };
   /* 0.1.50.2 : message épinglé du chat ; 2.1.36 : celui du salon Monocompte à part (pin_m_body, supabase/chat.sql). Base pas encore à
      jour (colonne absente) : on relit sans lui, et le salon Monocompte garde l'ancien message épinglé sur 'm'. */
   ON.chatPin = async () => { try {
-    let r = await withTimeout(sb.from("chat_settings").select("pin_body,pin_chs,pin_at,pin_m_body,pin_m_at").eq("id", 1).maybeSingle());
-    if (r && r.error) r = await withTimeout(sb.from("chat_settings").select("pin_body,pin_chs,pin_at").eq("id", 1).maybeSingle());
+    let r = await withTimeout(F("chat_settings").select("pin_body,pin_chs,pin_at,pin_m_body,pin_m_at").eq("id", 1).maybeSingle());
+    if (r && r.error) r = await withTimeout(F("chat_settings").select("pin_body,pin_chs,pin_at").eq("id", 1).maybeSingle());
     return (r && r.data) || null; } catch (e) { return null; } };
   /* bandeaux d'annonce ; 2.1.36 : srv = serveur (null = Classique, 'm' = Monocompte), base pas encore à jour : tous Classique */
   ON.announces = async () => { try {
-    const ask = (cols) => withTimeout(sb.from("announces").select(cols).eq("banner", true).order("id", { ascending: false }).limit(6));
+    const ask = (cols) => withTimeout(F("announces").select(cols).eq("banner", true).order("id", { ascending: false }).limit(6));
     let r = await ask("id,body,until,at,srv"); if (r && r.error) r = await ask("id,body,until,at");
     return (r && r.data) || []; } catch (e) { return []; } };
-  ON.pseudos = async (ids) => { if (!ids.length) return {}; try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").in("id", ids)); const o = {}; (data || []).forEach((r) => { o[r.id] = r.pseudo; }); return o; } catch (e) { return {}; } };
-  ON.findPseudo = async (p) => { try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1)); return (data && data[0]) || null; } catch (e) { return null; } };
+  ON.pseudos = async (ids) => { if (!ids.length) return {}; try { const { data } = await withTimeout(F("profiles").select("id,pseudo").in("id", ids)); const o = {}; (data || []).forEach((r) => { o[r.id] = r.pseudo; }); return o; } catch (e) { return {}; } };
+  ON.findPseudo = async (p) => { try { const { data } = await withTimeout(F("profiles").select("id,pseudo").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1)); return (data && data[0]) || null; } catch (e) { return null; } };
 
   /* 0.1.19 : défi du jour, rejoué par la même fonction serveur avec la partie en ligne. */
   ON.submitDefi = async (tier) => {
@@ -424,7 +441,7 @@
     if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { defi: tier } }), 30000);
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: s1b({ defi: tier }) }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : st === 429 ? { ok: false, err: "trop tôt" } : { net: true }; }
       return data || { net: true };
     } catch (e) { return { net: true }; }
@@ -435,7 +452,7 @@
     if (ON.monoPart()) return { ok: false, err: CLASSIC_ERR }; // 2.1.37.x : la fonction « record » agit sur la partie 1 (Classique)
     if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("record", { body }), 30000);
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: s1b(body) }), 30000);
       if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} const st = error.context && error.context.status; return j && j.err ? j : st === 429 ? { ok: false, err: "Doucement : réessaie dans quelques secondes." } : { net: true }; }
       return data || { net: true };
     } catch (e) { return { net: true }; }
@@ -455,16 +472,16 @@
   ON.koliMe = async (w) => { const r = await rpc("koli_me", { p_w: w }); return r.err ? null : r.data; };
   ON.koliFights = async () => {
     if (!sb || !ON.user) return [];
-    try { const { data } = await withTimeout(sb.from("koli_fights").select("id,at,att,def,ghost,att_name,def_name,att_team,def_team,seed,win,rounds,d_att,d_def").or(`att.eq.${ON.user.id},def.eq.${ON.user.id}`).order("id", { ascending: false }).limit(30)); return data || []; }
+    try { const { data } = await withTimeout(F("koli_fights").select("id,at,att,def,ghost,att_name,def_name,att_team,def_team,seed,win,rounds,d_att,d_def").or(`att.eq.${ON.user.id},def.eq.${ON.user.id}`).order("id", { ascending: false }).limit(30)); return data || []; }
     catch (e) { return null; }
   };
   ON.koliLb = async (w) => {
     if (!sb) return null;
-    try { const { data } = await withTimeout(sb.from("lb_koli").select("user_id,pseudo,cote,n,heads,r").eq("w", w).order("r").limit(10)); return data || []; }
+    try { const { data } = await withTimeout(F("lb_koli").select("user_id,pseudo,cote,n,heads,r").eq("w", w).order("r").limit(10)); return data || []; }
     catch (e) { return null; }
   };
   ON.deleteAccount = async () => {
-    const { error } = await withTimeout(sb.rpc("delete_my_account"));
+    const { error } = await withTimeout(R("delete_my_account"));
     if (error) return error.message;
     await ON.signOut(); ON.clearLink(); return null;
   };
