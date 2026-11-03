@@ -123,7 +123,7 @@
   /* une case de la bande qui défile : image et nom court du lot */
   function lotCell(lot, win) {
     const R = F.RAR[lot.r]; const C = lot.cons ? D.CONSUMABLES[lot.cons[0]] : null;
-    const img = lot.title ? "assets/ui/couronne.webp" : lot.item ? X().itemImg(lot.item) : lot.res ? X().resImg(lot.res[0]) : C && C.img ? `assets/ui/coffres/${C.img}.svg` : C && C.pimg ? `assets/ui/potions/${C.pimg}.png`
+    const img = lot.title ? "assets/ui/couronne.webp" : lot.item ? X().itemImg(lot.item) : lot.res ? X().resImg(lot.res[0]) : C && C.img ? `${window.coIco(C.img)}` : C && C.pimg ? `assets/ui/potions/${C.pimg}.png`
       : lot.cons ? (/^bonbon/.test(lot.cons[0]) ? "assets/ui/bonbon.webp" : /^parch/.test(lot.cons[0]) ? "assets/ui/parchemin_or.webp" : "assets/ui/cristal.webp") : lot.sab ? "assets/ui/cristal.webp" : lot.key ? "assets/ui/cle.webp" : "assets/ui/kamas.webp";
     const t = lot.title ? "Titre « " + lot.title + " »" : lot.item ? D.ITEMS[lot.item].name : lot.res ? `${lot.res[0]} ×${fmt(lot.res[1])}` : C ? `${C.name}${lot.cons[1] > 1 ? " ×" + lot.cons[1] : ""}` : lot.sab ? `Sablier ${lot.sab} h` : lot.key ? `${lot.key[1]} clé${lot.key[1] > 1 ? "s" : ""}` : kShort(lot.k);
     return `<div class="it${win ? " win" : ""}" style="--r:${R.color}"><img src="${img}" alt="" loading="lazy"><span>${h(t)}</span></div>`;
@@ -139,7 +139,7 @@
     return `<div class="small fo-c" id="foRes"><b style="color:${R.color}">${R.name} !</b> ${h(L.txt[0].toUpperCase() + L.txt.slice(1))}</div>`; };
   function cratesHtml() {
     const s = S(); const C = caisse(st.pick); const left = E.foireLeft(s);
-    const cards = F.CAISSES.map((c) => `<button class="fo-crate ${c.id === C.id ? "on" : ""}" data-act="fo-pick" data-v="${c.id}" aria-pressed="${c.id === C.id}"><img src="assets/ui/coffres/${c.img}.svg" alt=""><b class="small">${h(c.name)}</b><span class="xs">${fmt(c.cost)} k</span><span class="xs muted">lots de ${kShort(Math.round(c.cost * F.RAR[0].mult))} à ${kShort(c.cost * F.RAR[4].mult)}</span></button>`).join("");
+    const cards = F.CAISSES.map((c) => `<button class="fo-crate ${c.id === C.id ? "on" : ""}" data-act="fo-pick" data-v="${c.id}" aria-pressed="${c.id === C.id}"><img src="${window.coIco(c.img)}" alt=""><b class="small">${h(c.name)}</b><span class="xs">${fmt(c.cost)} k</span><span class="xs muted">lots de ${kShort(Math.round(c.cost * F.RAR[0].mult))} à ${kShort(c.cost * F.RAR[4].mult)}</span></button>`).join("");
     const odds = `<div class="fo-odds">${F.RAR.map((r) => `<span style="--r:${r.color}">${r.name}<br>${r.p} %</span>`).join("")}</div>`;
     const can = left > 0 && s.kamas >= C.cost && !st.rolling;
     return `<section class="panel" id="foCrates"><div class="phead"><h2>${X().IC("coffre")} Choisis ta caisse</h2><span class="xs muted">${left ? `encore ${left} ouverture${left > 1 ? "s" : ""} aujourd'hui` : "plus d'ouverture aujourd'hui"}</span></div>

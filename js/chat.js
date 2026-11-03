@@ -283,7 +283,7 @@
   }
   /* 2.1.35.3 : héros Monocompte d'un message du salon 'm' (data.mono posé par chat_send) ; ancien message : rien */
   /* Saison 1, lot 3 (js/garderobe.js) : titre coloré par sa rareté, couleur du pseudo choisie dans la Garde-robe (data.pc posé par chat_send) */
-  const PCOLS = ["braise", "sylve", "givre", "or", "temps", "voix"];
+  const PCOLS = ["braise", "sylve", "givre", "or", "temps", "voix", "v_cadran", "v_sablier"];
   const ttR = (t) => { const E = window.DX && window.DX.E; return E && E.titleRar ? " gr-t-" + E.titleRar(t) : ""; };
   const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; };
   const monoHero = (m) => (m && m.data && m.data.mono ? { cls: m.cls || null, lvl: m.lvl || 1, title: m.title || null } : { cls: null, lvl: 0, title: null });

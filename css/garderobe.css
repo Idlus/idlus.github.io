@@ -74,3 +74,20 @@
 @keyframes grFade{0%{opacity:0}10%,80%{opacity:1}100%{opacity:0}}
 @media (max-width:760px){.gr-wrap{grid-template-columns:1fr}.gr-prev{position:static}.gr-stage{height:220px}.gr-stage .gr-big{height:200px}.gr-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}}
 @media (prefers-reduced-motion:reduce){.gr-aura,.gr-aura::after,.gr-vfx i,.gr-win,.gr-win .gr-wh{animation:none!important}.gr-win{display:none}}
+/* lot 4 : objets de la vitrine de saison */
+.gr-a-v_aiguilles{--ga:#c9e8ff}.gr-a-v_rouages{--ga:#e0b25a}.gr-a-v_horloge{--ga:#7fe3ff}
+.gr-a-v_rouages::after{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--ga) 55%,transparent) 0 10deg,transparent 10deg 30deg);border-radius:50%;animation:grSpin 6s linear infinite}
+.gr-a-v_horloge::after{background:conic-gradient(from 0deg,transparent 0 80%,color-mix(in srgb,var(--ga) 70%,transparent) 95%,transparent);border-radius:50%;animation:grSpin 4s linear infinite}
+.gr-v-v_tictac i{--vc:#e0b25a!important;width:4px;height:12px;border-radius:2px}.gr-v-v_coucou i{--vc:#7fe3ff!important;width:8px;height:8px;border-radius:50% 0}
+.gr-pc-v_cadran{color:#7fe3ff;text-shadow:0 0 6px rgba(127,227,255,.55)}
+.gr-pc-v_sablier{background:linear-gradient(90deg,#fff1b0,#e0b25a,#7fe3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-fr="horloge"]{--m1:#1f4a6b;--m2:#e0b25a;--m3:#0b1a26;--gem:#7fe3ff;--glow:rgba(127,227,255,.5);--ring:repeating-conic-gradient(#e0b25a 0 6deg,#1f4a6b 0 30deg)}
+.head[data-fr="horloge"]{box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
+/* vitrine et caisse du jour (js/saisoncui.js) */
+.vit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.vit-it{display:grid;gap:4px;justify-items:center;text-align:center;padding:10px 8px;border-radius:12px;background:var(--panel2);border:2px solid color-mix(in srgb,var(--rc) 55%,transparent)}
+.vit-it.r-r{--rc:var(--r-r)}.vit-it.r-e{--rc:var(--r-e)}.vit-it.r-l{--rc:var(--r-l)}.vit-it.r-s{--rc:var(--r-s)}
+.vit-it b{font-size:13px}.vit-it small{color:var(--rc);font-weight:800;font-size:11px}.vit-it.own{opacity:.7}
+.vit-pic{height:56px;display:grid;place-items:center;width:100%}.vit-pic img{max-height:56px;max-width:100%;border-radius:8px;object-fit:cover}
+.vit-frag{display:inline-flex;align-items:center;gap:4px;font-weight:900}.vit-frag img{width:18px;height:18px}
+.s1t .s1case{width:44px;height:44px;object-fit:contain;justify-self:start}

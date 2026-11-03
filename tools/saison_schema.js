@@ -16,6 +16,8 @@ const SCHEMA = "s1";
 // fichiers dont tout reste partagé entre l'Éternel et la saison
 const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql", "supabase/vote.sql"]; // vote : récompense versée à la partie Éternel (à revoir pour la saison)
 // objets de supabase/schema.sql qui restent partagés : le compte, le pseudo, la suspension, le journal des admins
+// fichiers propres à la saison (pas dans la liste « tous ») : registre des Fragments et vitrine (lot 4)
+const EXTRA = ["supabase/saison1_vitrine.sql"];
 const SHARED_OBJ = ["profiles", "susp", "susp_lift", "delete_my_account", "admin_log", "alog", "adm_need", "adm_suspend", "is_admin", "is_staff", "my_role", "admins", "mods"];
 
 function files() {
@@ -26,7 +28,7 @@ function files() {
   // base neuve : defi.sql lit les guildes, il passe après guildes.sql (sur le serveur actuel, elles existaient déjà)
   const AFTER = { "supabase/defi.sql": "supabase/guildes.sql" };
   for (const [f, a] of Object.entries(AFTER)) { const i = L.indexOf(f); if (i >= 0 && L.indexOf(a) > i) { L.splice(i, 1); L.splice(L.indexOf(a) + 1, 0, f); } }
-  return L;
+  return L.concat(EXTRA); // fichiers propres à la saison, jamais installés dans le Classique
 }
 // noms créés par un fichier (tables, vues, fonctions, types, séquences)
 function defined(sql) {
@@ -63,7 +65,7 @@ alter default privileges in schema ${SCHEMA} grant all on sequences to postgres,
   const own = new Set(); for (const f of list) if (!SHARED_FILES.includes(f)) defined(fs.readFileSync(path.join(ROOT, f), "utf8")).forEach((n) => { if (!shared.has(n)) own.add(n); });
   return { sql: parts.join(""), shared: [...shared].sort(), own: [...own].sort() };
 }
-module.exports = { build, SCHEMA, SHARED_FILES, SHARED_OBJ };
+module.exports = { build, SCHEMA, SHARED_FILES, SHARED_OBJ, EXTRA };
 if (require.main === module) {
   const { sql, shared, own } = build();
   fs.writeFileSync(path.join(ROOT, "supabase/saison1.sql"), sql);

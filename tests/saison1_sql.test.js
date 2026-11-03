@@ -59,4 +59,21 @@ try {
     assert.strictEqual(open, "", `fonctions de saison plus ouvertes que le Classique pour ${role} : ${open}`);
   }
   console.log(`ok - saison1.sql chargé deux fois sur une base jetable : ${n} tables dans s1, Classique intact, mêmes règles et mêmes droits`);
+  // lot 4 : registre des Fragments et vitrine (supabase/saison1_vitrine.sql), seulement dans s1
+  assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname in ('frag_post', 'vit_buy')`), "0", "vitrine jamais dans le Classique");
+  const U = "00000000-0000-0000-0000-0000000000a1"; q(`insert into auth.users (id) values ('${U}')`);
+  const as = (s) => q(`set role authenticated; set request.jwt.claim.sub = '${U}'; ${s}`);
+  const post = (rows) => +as(`select s1.frag_post('${JSON.stringify(rows)}'::jsonb)`);
+  assert.strictEqual(post([{ src: "act:1:dj:1", n: 1 }, { src: "act:1:dj:9", n: 8 }]), 1, "borne du jour des donjons (8)");
+  assert.strictEqual(post([{ src: "act:1:dj:1", n: 1 }]), 1, "une source ne paie qu'une fois");
+  assert.strictEqual(post([{ src: "act:1:bidon:1", n: 5 }, { src: "achat:1", n: 5 }, { src: "act:1:arch:2", n: 9 }]), 1, "sources inconnues et montants trop gros refusés");
+  let rows = []; for (let d = 1; d <= 7; d++) for (const [k, m] of [["dj", 8], ["arch", 6], ["job", 4], ["bounty", 4]]) rows.push({ src: `act:${d}:${k}:${m}`, n: m });
+  rows = rows.filter((r) => r.src !== "act:1:dj:8"); const bal = post(rows.slice(0, 60));
+  assert(bal <= 100 && bal >= 92, "quota de la semaine : 100 Fragments au plus la première semaine : " + bal);
+  assert.strictEqual(as(`select coalesce(s1.vit_buy('v_aiguilles'), 'OK')`), "OK"); assert.strictEqual(as(`select coalesce(s1.vit_buy('v_aiguilles'), 'OK')`), "OK", "déjà acheté : rien à refaire");
+  assert.strictEqual(+as(`select coalesce(sum(n), 0) from s1.frag_led`), bal - 60, "60 payés une seule fois");
+  assert(/Il faut/.test(as(`select coalesce(s1.vit_buy('v_cadre'), 'OK')`)), "sans assez de Fragments : refusé");
+  assert.strictEqual(as(`select s1.vit_mine()::text`), '["v_aiguilles"]');
+  let e0 = null; try { as(`insert into s1.frag_led (user_id, src, n) values ('${U}', 'act:1:dj:99', 8)`); } catch (e) { e0 = e; } assert(e0, "le jeu n'écrit jamais directement dans le registre");
+  console.log("ok - registre des Fragments (bornes du jour, quota de la semaine, sources uniques) et vitrine gardés par le serveur, dans s1 seulement");
 } finally { q(`drop database if exists ${DB}`, URL0); }

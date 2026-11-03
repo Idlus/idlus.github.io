@@ -227,7 +227,7 @@ begin
   else
     insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
       values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item,
-        case when p_pc in ('braise', 'sylve', 'givre', 'or', 'temps', 'voix') then jsonb_build_object('pc', p_pc) end);
+        case when p_pc in ('braise', 'sylve', 'givre', 'or', 'temps', 'voix', 'v_cadran', 'v_sablier') then jsonb_build_object('pc', p_pc) end);
   end if;
   -- le chat ne garde que 48 heures de messages
   delete from chat_msgs where created_at < now() - interval '48 hours';
