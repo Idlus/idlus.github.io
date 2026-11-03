@@ -1537,7 +1537,10 @@
   let questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35 });
   E.setQuestReward = (f) => { questReward = f; }; // 0.1.49 : quetes.js donne les récompenses des chapitres 2 à 5
   E.questReward = (i) => questReward(i);
+  // Saison 1 (js/histoire.js) : la quête principale se joue en scènes ; mêmes objectifs et mêmes récompenses par objectif
+  E.questGive = (S, i) => { const r = questReward(i); const ex = giveQuestExtra(S, i); S.kamas += r.kamas; giveTeamXp(S, r.xp); return { kamas: r.kamas, ex }; };
   const checkQuest = (S) => {
+    if (E.histOn && E.histOn(S)) return E.histCheck(S);
     let guard = 0;
     while (guard++ < 5) {
       const q = E.questStep(S); if (!q) return; const [a, b] = E.questProgress(S); if (a < b) return;

@@ -92,9 +92,10 @@
   const splitNote = (html) => { const m = html.match(/^\s*<p class="note">([\s\S]*?)<\/p>/); return m ? [m[1], html.slice(m[0].length)] : ["", html]; };
 
   /* ---------- tableau du jour ---------- */
+  const HS = (s) => !!(window.HUI && window.HUI.on(s)); // Saison 1 : la quête principale en scènes (js/histoireui.js)
   function jourHtml(s) {
     const q = E.questStep(s); const qp = E.questProgress(s); const cur = s.quest.step;
-    const hero = q ? `<div class="qj-hero"><div class="qj-chap">${IC("quetes")}</div>
+    const hero = HS(s) ? window.HUI.heroHtml(s) : q ? `<div class="qj-hero"><div class="qj-chap">${IC("quetes")}</div>
         <div class="qj-hb"><span class="qj-eb">Quête principale · chapitre ${chapOf(cur) + 1} · étape ${cur + 1 - E.QUEST_CHAPTERS[chapOf(cur)].start} sur ${E.QUEST_CHAPTERS[chapOf(cur)].end - E.QUEST_CHAPTERS[chapOf(cur)].start}</span><h2>${h(q.title)}</h2><span class="small muted">${h(q.txt)}</span>
           ${qp ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
           ${E.questExtraText(cur) ? `<span class="qj-rew">${IC("coffre")} Récompense : <b>${h(E.questExtraText(cur))}</b></span>` : ""}</div>
@@ -166,6 +167,7 @@
   /* ---------- quête principale : 5 chapitres (0.1.49) ---------- */
   const chapOf = (i) => E.questChapter(Math.min(i, E.MAIN_QUEST.length - 1));
   function mainHtml(s) {
+    if (HS(s)) return window.HUI.mainHtml(s, head(s, "main", "La quête principale se joue en scènes : un personnage te parle et te donne 2 à 4 objectifs, qui avancent tous en même temps en jouant. Chaque objectif paie sa récompense dès qu'il est fini, chaque scène finie donne 2 boosters de cartes, et chaque chapitre fini un titre et 3 boosters de plus."));
     const Q = E.MAIN_QUEST; const cur = s.quest.step; const qp = E.questProgress(s); const CH = E.QUEST_CHAPTERS; const t = top(s);
     const curCh = cur >= Q.length ? CH.length - 1 : chapOf(cur);
     if (st.chap === null || !CH[st.chap]) st.chap = curCh;
@@ -426,7 +428,7 @@
       case "qj-af": st.af = d.v; break;
       case "qj-ach": st.cat = d.v; st.af = "all"; st.achq = ""; ui.tab = "quests"; ui.qt = "ach"; window.scrollTo(0, 0); break;
       case "qj-rqgive": case "qj-rqclaim": { const r = E.act(S(), a === "qj-rqgive" ? "rqGive" : "rqClaim", d.v); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
-      default: return;
+      default: if (window.HUI && window.HUI.act(a, t)) return; return;
     }
     X().render();
   }

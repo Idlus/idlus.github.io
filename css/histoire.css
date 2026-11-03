@@ -1,0 +1,40 @@
+/* Quête principale en scènes (Saison 1, js/histoireui.js) : portrait du personnage, répliques en bulles, objectifs ensemble */
+.hs-por{flex:none;width:60px;height:60px;border-radius:16px;border:2px solid var(--med-ring,#dcbb74);background:radial-gradient(circle at 40% 35%,var(--med-bg,#3c4d2e),var(--med-bg2,#172012));display:grid;place-items:center;overflow:hidden}
+.hs-por img{width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.hs-por.mon img{width:78%;height:78%;object-fit:contain}
+.hs-por.ini b{font-size:20px;color:var(--gold2,#e2f5ae);letter-spacing:.5px}
+.hs-por.big{width:96px;height:96px;border-radius:20px}
+.hs-por.big.ini b{font-size:30px}
+.hs-por.sm{width:34px;height:34px;border-radius:10px}
+.hs-por.sm.ini b{font-size:12px}
+.hs-top{display:flex;gap:12px;align-items:center}
+.hs-top h3{margin:0;font-size:19px}
+.hs-foe{width:58px;height:58px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.hs-foe img{width:48px;height:48px;object-fit:contain}
+.hs-talk{display:grid;gap:8px}
+.hs-bub{margin:0;position:relative;padding:9px 13px;border-radius:4px 14px 14px 14px;background:var(--panel2);border:1px solid var(--line);font-size:14px;line-height:1.45;max-width:760px}
+.hs-bub.end{border-color:var(--gold);font-style:italic}
+.hs-bub.muted{color:var(--muted);font-style:italic}
+.hs-goals{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.hs-goals li{display:flex;gap:10px;align-items:center;padding:9px 11px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.hs-goals li.ok{opacity:.72}
+.hs-goals li .grow{min-width:0}
+.hs-card .hs-goals li b,.hs-card .hs-goals li span.xs{white-space:normal!important;overflow:visible;text-overflow:clip;max-width:none}
+.hs-goals li.ok b{text-decoration:line-through;text-decoration-color:var(--gold)}
+.hs-ck{flex:none;width:24px;height:24px;border-radius:8px;border:2px solid var(--frame,#3e5232);display:grid;place-items:center;font-weight:900;color:#13200a}
+.hs-goals li.ok .hs-ck{background:var(--gold);border-color:var(--gold)}
+.hs-next{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;background:var(--panel2)}
+.hs-next.lock{opacity:.5}
+.hs-past{border-radius:12px;background:var(--panel2);border:1px solid var(--line);padding:6px 10px}
+.hs-past summary{display:flex;gap:10px;align-items:center;cursor:pointer;list-style:none}
+.hs-past summary::-webkit-details-marker{display:none}
+.hs-past[open]{display:grid;gap:8px}
+.hs-quote{font-style:italic;color:var(--muted)}
+.qj-hero .hs-por{width:72px;height:72px}
+@media (max-width:600px){
+  .hs-por.big{width:72px;height:72px}
+  .hs-goals li{flex-wrap:wrap;align-items:flex-start}
+  .hs-goals li .grow{flex:1 1 200px}
+  .hs-goals li .btn{margin-left:34px}
+  .hs-foe{display:none}
+}
