@@ -1,0 +1,35 @@
+# Boss des mondes · Saison 1 : bilan du lundi dans #annonces-idlus sur Discord (Mathis 03/11) : chute ou fuite du boss de la semaine
+# passée, podium, paliers, puis le nouveau boss et sa mécanique. s1.wb_recap() (supabase/wboss_s1.sql) ferme la semaine si besoin et
+# ne rend chaque bilan qu'une fois (colonne recap). Ne fait rien tant que la saison n'est pas ouverte (s1_cfg.debut vide ou à venir).
+# Secrets : VPS_HOST, VPS_USER, VPS_NEW_PASSWORD (base du serveur OVH) et DISCORD_BOT_TOKEN.
+name: Bilan du boss de la semaine
+on:
+  schedule:
+    - cron: "5 7 * * 1"   # lundi 8 h 05 (Paris, hiver) / 9 h 05 (été) : la semaine du boss finit à minuit
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: discord-wboss-s1
+  cancel-in-progress: false
+jobs:
+  bilan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: ./.github/actions/vps
+        with:
+          hote: ${{ secrets.VPS_HOST }}
+          util: ${{ secrets.VPS_USER }}
+          pass: ${{ secrets.VPS_NEW_PASSWORD }}
+      - name: Bilan de la semaine passée
+        run: |
+          q="select case when to_regprocedure('s1.wb_recap()') is null then '[]'::jsonb else s1.wb_recap() end as r"
+          bash tools/serveur/vps_sql.sh json "$q" > recap.json || { head -c 600 recap.json; echo; exit 1; }
+          head -c 600 recap.json; echo
+      - name: Annonce sur Discord
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: node tools/wboss_recap.js recap.json

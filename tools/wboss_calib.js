@@ -23,9 +23,14 @@ const team = (cls, lvl) => {
     E.refreshSpells(c, E.charStats(S, c)); });
   return S;
 };
-const POW = {}; const rows = [];
-for (let n = 1; n <= E.WB_ROT.length; n++) {
-  const def = Object.assign(E.wbDef(n), { pow: 1 }); const pts = [];
+const POW = Object.assign({}, E.WB_POW); const rows = [];
+/* Saison 1 (refonte du 03/11/2026) : les 5 boss de la rotation de saison, clés « s1_… » ; --s1 ne recalcule qu'eux */
+const S1 = process.argv.includes("--s1");
+const DEFS = [];
+if (!S1) for (let n = 1; n <= E.WB_ROT.length; n++) DEFS.push(E.wbDef(n));
+if (E.wbS1Def) Object.keys(E.WB_S1.B).forEach((k) => { const d = E.wbS1Def(E.WB_S1.rot.indexOf(k) + 1); d.key = "s1_" + k; DEFS.push(d); });
+for (const d0 of DEFS) {
+  const def = Object.assign({}, d0, { pow: 1 }); const pts = [];
   for (const lvl of [60, 120, 200]) for (const cls of ["iop", "cra", "sram", "osa"]) { const r = E.wbSim(team(cls, lvl), def, 1, 1000 + pts.length); pts.push(r.raw || 0); }
   pts.sort((a, b) => a - b); const med = Math.max(1, (pts[5] + pts[6]) / 2);
   rows.push(`${def.name.padEnd(20)} ${pts.join(" ").padEnd(50)} médiane ${String(Math.round(med)).padStart(5)} x${(TARGET / med).toFixed(2)}`);

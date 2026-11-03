@@ -40,6 +40,8 @@
   const consTxt = (cons) => Object.entries(cons || {}).map(([k, q]) => `${q > 1 ? q + " " : ""}${(window.DATA.CONSUMABLES[k] || {}).name || k}${q > 1 ? "" : ""}`.replace(/^(\d+) Coffre/, "$1 Coffres")).join(", ");
   const ELC = { n: "neutre", t: "terre", f: "feu", e: "eau", a: "air" };
 
+  const isS1 = () => !!(E.isS1c && S() && E.isS1c(S())); // Saison 1 : boss de la semaine (E.wbS1Def)
+  const defOf = (n) => (isS1() ? E.wbS1Def(n) : defOf(n));
   /* ---------- état du boss (serveur, ou boss local de la version de test) ---------- */
   function loc() {
     const L = pref.loc || (pref.loc = { n: 1, hp: LOCAL_HP, dmg: 0, started: Date.now(), day: day(), today: 0, pts: 0, best: 0, k: 0, bonus: 0, last: null });
@@ -47,6 +49,7 @@
     return L;
   }
   function st() {
+    if (isS1()) return stS1();
     if (mode() === "local") {
       const L = loc(); const me = { today: L.today, pts: L.pts, best: L.best || null, rank: 1 };
       return { n: L.n, hp: L.hp, dmg: L.dmg, phase: E.wbPhase(L.dmg, L.hp), started: L.started, players: L.pts ? 1 : 0, top: L.pts ? [{ u: "me", p: "Toi", pts: L.pts, n: L.k, best: L.best }] : [], me, last: L.last, bonus: L.bonus, local: true };
@@ -76,7 +79,8 @@
   }
 
   /* ---------- petits rendus ---------- */
-  const triesLeft = (s) => (s && s.me ? Math.max(0, E.WB_TRIES - (s.me.today || 0)) : 0);
+  const maxTries = (s) => (s && s.s1 ? (s.me && s.me.max) || E.wbS1Tries(s, Date.now()) : E.WB_TRIES);
+  const triesLeft = (s) => (s && s.me ? Math.max(0, maxTries(s) - (s.me.today || 0)) : 0);
   const left = (s) => Math.max(0, s.hp - s.dmg);
   const pctLeft = (s) => (s.hp > 0 ? Math.max(0, Math.min(100, (left(s) / s.hp) * 100)) : 0);
   const pctTxt = (p) => (p >= 10 || p === 0 ? Math.round(p) : p.toFixed(1).replace(".", ",")) + " %";
@@ -97,17 +101,18 @@
     w.innerHTML = pageHtml();
   }
   function pageHtml() {
+    if (isS1()) return s1Page();
     const s = st(); const m = mode();
     const top = `<div class="wb-top"><div><h1>Boss des mondes</h1><span class="small muted">Tout le serveur frappe le même boss. Quand ses PV tombent à zéro, le suivant arrive.</span></div><span class="tag boss">${m === "local" ? "Version de test : boss local" : "Tout le serveur"}</span></div>`;
     if (!s) return top + `<section class="panel wb-p"><p class="muted">${ui.err ? h(ui.err) + ` <button class="btn sm" data-act="wb-reload">Réessayer</button>` : "Chargement du boss…"}</p></section>`;
-    const def = E.wbDef(s.n);
+    const def = defOf(s.n);
     return top + heroHtml(s, def) + `<div class="wb-grid"><div class="stack" style="gap:14px">${gradesHtml(s)}${shopHtml(def)}${rotHtml(s)}</div><div class="stack" style="gap:14px">${lbHtml(s)}${killHtml(s, def)}</div></div>`;
   }
   function heroHtml(s, def) {
     const m = mode(); const tl = triesLeft(s); const ph = s.phase; const team = E.team(S()).length;
     const rate = s.dmg > 0 ? s.dmg / Math.max(60000, Date.now() - s.started) : 0;
     const eta = rate > 0 ? ` · au rythme actuel, il tombe dans environ ${dur(left(s) / rate)}` : "";
-    const next = E.wbDef(s.n + 1);
+    const next = defOf(s.n + 1);
     const side = m === "guest"
       ? solo() ? `<span class="small"><b>Partie solo</b> : le boss des mondes se joue avec ta partie 1. Ici, tu peux regarder le boss et le classement.</span><button class="btn primary" data-act="sv-menu">Changer de partie</button><button class="btn sm" data-act="wb-attack" ${team ? "" : "disabled"}>Essai d'entraînement (non compté)</button>`
       : `<span class="small"><b>Sans compte</b>, tu peux regarder le boss et le classement.</span><button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button><button class="btn sm" data-act="wb-attack" ${team ? "" : "disabled"}>Essai d'entraînement (non compté)</button>`
@@ -162,7 +167,7 @@
   }
   function rotHtml(s) {
     const L = [];
-    for (let i = 0; i < 6; i++) { const d = E.wbDef(s.n + i); L.push({ d, cls: i === 0 ? "now" : i === 1 ? "next" : "mys" }); }
+    for (let i = 0; i < 6; i++) { const d = defOf(s.n + i); L.push({ d, cls: i === 0 ? "now" : i === 1 ? "next" : "mys" }); }
     return `<section class="panel wb-p"><h3>La rotation</h3><p class="small muted" style="margin:0 0 8px">Dès que les PV d'un boss sont épuisés, le suivant apparaît. Ses PV s'ajustent pour qu'il tienne environ une journée. Après les ${E.WB_ROT.length} boss, Gargandyas revient.</p>
       <div class="wb-rot">${L.map((x, i) => `<div class="wb-rc ${x.cls}"><img class="${an(i ? 1 : s.phase).trim()}" src="${img(x.d)}" alt=""><b>${x.cls === "mys" ? "???" : h(x.d.name)}</b><span class="${i ? "muted" : ""}">${i === 0 ? "En cours" : i === 1 ? "Prochain" : "Bientôt"}</span><span class="xs muted">${i === 0 ? `${pctTxt(pctLeft(s))} de PV` : i === 1 ? `faible : ${E.wbElName(x.d.weak)}` : ""}</span></div>`).join("")}</div></section>`;
   }
@@ -174,7 +179,7 @@
     const m = mode(); const s = st(); if (!s) return;
     if (m === "guest") { train(s); return; }
     if (triesLeft(s) < 1) { X().toast("Plus d'essai aujourd'hui : il en revient 3 à minuit."); return; }
-    if (m === "local") { localAttack(s); return; }
+    if (m === "local") { if (isS1()) s1LocalAttack(); else localAttack(s); return; }
     ui.busy = true; paint();
     try { await X().onPush(); } catch (e) { /* le serveur rejoue avec la partie en ligne */ }
     const R = await ON().submitGuild({ wboss: 1 });
@@ -187,12 +192,12 @@
     watch(Object.assign({ dmg0: R.before != null ? R.before : Math.max(0, R.dmg - R.points) }, R));
   }
   function train(s) {
-    const seed = (Date.now() >>> 0) || 1; const def = E.wbDef(s.n);
+    const seed = (Date.now() >>> 0) || 1; const def = defOf(s.n);
     const r = E.wbSim(S(), def, s.phase, seed); if (r.err) { X().toast(r.err); return; }
     watch(Object.assign({ train: true, n: s.n, seed, phase: s.phase, name: def.name, hp: s.hp, dmg0: s.dmg, dmg: s.dmg }, r));
   }
   function localAttack() {
-    const s = S(); const L = loc(); const def = E.wbDef(L.n); const phase = E.wbPhase(L.dmg, L.hp); const seed = E.wbSeed(L.n, "local", L.k);
+    const s = S(); const L = loc(); const def = defOf(L.n); const phase = E.wbPhase(L.dmg, L.hp); const seed = E.wbSeed(L.n, "local", L.k);
     const r = E.wbSim(s, def, phase, seed); if (r.err) { X().toast(r.err); return; }
     const G = E.wbGrade(r.points);
     for (const k in G.cons) E.addCons(s, k, G.cons[k]);
@@ -211,7 +216,7 @@
     watch(R);
   }
   function watch(R) {
-    const s = S(); const def = E.wbDef(R.n);
+    const s = S(); const def = defOf(R.n);
     const W = E.wbWatch(s, def, R.phase, R.watchSeed || R.seed); if (W.err) { X().toast(W.err); return; }
     X().extWatchStart(W, { step: E.wbWatchStep, html: watchHtml, head: watchHead, end: watchEnd, back: "wb", res: R, def });
   }
@@ -268,18 +273,24 @@
 
   /* ---------- carte du chat Général (E1, E4) ---------- */
   function card(m) {
-    const d = m.data || {}; const def = E.wbDef(d.n || 1); const s = st(); const live = s && s.n === d.n;
+    const d = m.data || {}; const def = defOf(d.n || 1); const s = st(); const live = s && s.n === d.n;
     if (d.ev === "ph") return `<div class="ann-wb ph"><img class="b${live ? an(d.ph) : ""}" src="${img(def)}" alt=""><div><div class="k">Phase ${d.ph} · ${d.ph === 2 ? 66 : 33} %</div><div class="t">${h(def.name)} : ${h(phName(def, d.ph))} ! Il ${d.ph === 2 ? "frappe 30 % plus fort" : "est enragé et subit 25 % de dégâts en plus"}.</div></div>${live ? `<button class="btn sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
+    if (d.ev === "fled") return `<div class="ann-wb old"><img class="b" src="${img(def)}" alt=""><div><div class="k">Boss des mondes · fin de semaine</div><div class="t">${h(def.name)} s'est enfui à ${100 - (d.pct || 0)} % de vie.</div></div><div class="s">${d.players || 0} joueur${d.players > 1 ? "s l'ont" : " l'a"} frappé : les paliers atteints restent acquis. Ses PV s'ajustent pour le prochain.</div></div>`;
+    if (d.ev === "dead" && d.s1) {
+      const next = defOf((d.n || 1) + 1);
+      return `<div class="ann-wb dead">${confetti()}<img class="b" src="${img(def)}" alt=""><div><div class="k">Boss de la semaine vaincu${d.dur ? ` · ${dur(d.dur * 1000)}` : ""}</div><div class="t">${h(def.name)} est tombé !</div></div>
+        <div class="s">Dernier coup : <b>${h(m.pseudo || "?")}</b>. ${d.players || ""} joueur${d.players > 1 ? "s reçoivent" : " reçoit"} le coffre du palier 100 %. <b>+${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h.</b></div><div class="s muted">La semaine prochaine : ${h(next.name)}.</div></div>`;
+    }
     if (d.ev === "dead") {
       const top = (d.top || []).slice(0, 3).map((p, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${h(p)}</span>`).join("");
-      const next = E.wbDef((d.n || 1) + 1);
+      const next = defOf((d.n || 1) + 1);
       return `<div class="ann-wb dead">${confetti()}<img class="b" src="${img(def)}" alt=""><div><div class="k">Boss des mondes vaincu${d.dur ? ` · ${dur(d.dur * 1000)}` : ""}</div><div class="t">${h(def.name)} est tombé !</div></div>
         <div class="s">Dernier coup : <b>${h(m.pseudo || "?")}</b>. ${d.players || ""} joueur${d.players > 1 ? "s reçoivent" : " reçoit"} un Coffre en or${d.n === 1 ? " et le titre « Briseur de Titan »" : ""}. <b>+${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h.</b></div>${top ? `<div class="top">${top}</div>` : ""}<div class="s muted">${h(next.name)} arrive…</div></div>`;
     }
     const p = live ? pctLeft(s) : s && s.n > d.n ? 0 : 100;
     return `<div class="ann-wb${live ? "" : " old"}"><img class="b${live ? an(s.phase) : ""}" src="${img(def)}" alt=""><div><div class="k">Boss des mondes</div><div class="t">${h(def.name)} ${h(def.line)}</div></div><div class="s">${h(def.story)} Tout le serveur peut l'attaquer : ${E.WB_TRIES} essais par jour.</div><div class="hp"><i style="width:${p}%"></i></div>${live ? `<button class="btn primary sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
   }
-  function onAnn(m) { const d = m.data || {}; if (d.ev === "dead" && window.DX && window.DX.fanPlay) window.DX.fanPlay("boss"); load(true).then(() => { if (d.ev === "dead" && fxOn()) X().toast(`${E.wbDef(d.n || 1).name} est tombé : +${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h !`, "rare"); }); }
+  function onAnn(m) { const d = m.data || {}; if (d.ev === "dead" && window.DX && window.DX.fanPlay) window.DX.fanPlay("boss"); load(true).then(() => { if (d.ev === "dead" && fxOn()) X().toast(`${defOf(d.n || 1).name} est tombé : +${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h !`, "rare"); }); }
 
   /* ---------- effet plein écran à l'arrivée d'un boss (E2) : une fois par joueur, jamais par-dessus le chat ouvert ---------- */
   function maybeOverlay() {
@@ -289,7 +300,7 @@
     const a = document.activeElement;
     if ($("#chat.chat") || ($("#cele") && $("#cele").innerHTML.trim()) || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) || ($("#sheet") && $("#sheet").innerHTML) || (window.DX.ui && window.DX.ui.watch)) { setTimeout(maybeOverlay, 15000); return; } // pas pendant un combat qu'on regarde
     pref.seen = s.n; savePref();
-    const def = E.wbDef(s.n);
+    const def = defOf(s.n);
     const ch = [[18, 22, 30], [74, 18, -20], [12, 70, 60], [82, 66, -45], [30, 86, 15], [64, 84, -70], [44, 12, 80]].map(([x, y, r]) => `<span class="wbo-ch" style="left:${x}%;top:${y}%;--r:${r}deg"></span>`).join("");
     const o = document.createElement("div"); o.className = "wbo"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Nouveau boss des mondes");
     o.innerHTML = `${def.mon === "m8062" ? ch : ""}<div class="wbo-flash"></div><div class="wbo-in"><span class="wbo-k">Boss des mondes · nouveau boss</span><img class="wbo-boss" src="${img(def)}" alt=""><span class="wbo-t">${h(def.name)} ${h(def.line)}</span><span class="wbo-s">${h(def.story)}</span><div class="wbo-hp"><i style="width:${pctLeft(s)}%"></i></div><div class="row"><button class="btn primary" data-act="wb-go">Attaquer le boss</button><button class="btn" data-act="wb-ovclose">Plus tard</button></div><span class="xs wbo-n">Vu une seule fois · effets à couper dans Options</span></div>`;
@@ -304,7 +315,7 @@
     if (!b) { const up = $("#updbar"); if (!up) return; b = document.createElement("div"); b.id = "wbbar"; up.after(b); }
     const s = st(); const tab = window.DX && window.DX.ui ? window.DX.ui.tab : "";
     if (!s || !S() || (window.DX.ui && window.DX.ui.watch)) { b.innerHTML = ""; return; }
-    const def = E.wbDef(s.n); let html = "";
+    const def = defOf(s.n); let html = "";
     const C = X().tchip; // 1.0.4.7 : même pastille que le reste de la ligne du haut
     if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += C({ k: "bonus", ico: X().IC("bonbon"), t: `${h(s.last.name)} vaincu`, d: `+${E.WB_KILL.xp} % XP · ${dur(s.bonus - Date.now())}`, s: `+${E.WB_KILL.xp} % · ${dur(s.bonus - Date.now())}`, tip: `${s.last.name} est tombé ! +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.`, x: `data-act="wb-barclose" data-v="xp"` });
     const key = `${s.n}:${s.phase}`;
@@ -316,7 +327,7 @@
   function tile() {
     const m = mode(); if (m === "guest" || !S() || !E.team(S()).length) return null;
     const s = st(); if (!s) return null; const tl = triesLeft(s); if (!tl) return null;
-    const def = E.wbDef(s.n);
+    const def = defOf(s.n);
     return { ic: X().im(img(def), "ac-tm", def.name), t: "Boss des mondes", s: `${h(def.name)} · ${pctTxt(pctLeft(s))} de PV · ${tl} essai${tl > 1 ? "s" : ""}`, hot: true, act: `data-act="wb-go"`, badge: `<span class="tag">Attaquer</span>` };
   }
   const optHtml = () => `<section class="optsec"><div class="optsec-h"><b>Boss des mondes</b><span class="xs muted">annonces des boss qui touchent tout le serveur</span></div><label class="optline optchk"><span class="optname"><b>Effets du Boss des mondes</b><span class="xs muted">effet plein écran à l'arrivée d'un nouveau boss (une fois par boss) et portraits animés</span></span><input type="checkbox" data-act="wb-fx" ${fxOn() ? "checked" : ""}></label></section>`;
@@ -327,6 +338,10 @@
     switch (a) {
       case "wb-go": closeOverlay(); if (window.DX.ui.watch) X().watchStop(); window.DX.ui.tab = "wb"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return;
       case "wb-attack": attack(); return;
+      case "wb-train": { const s = st(); if (s) train(s); return; }
+      case "wb-tab": ui.s1tab = d.v; paint(); return;
+      case "wb-s1item": X().itemSheet(d.tpl); return;
+      case "wb-s1buy": { const s = S(); if (!s) return; const r = E.wbS1Buy(s, d.k, d.tpl); if (r.err) { X().toast(r.err); return; } X().markDirty(); X().toast(r.ap ? `${(AP()[r.ap] || {}).name} : dans ta Garde-robe !` : r.cons ? "Dans ton sac !" : `${window.DATA.ITEMS[d.tpl].name} : dans ton sac !`, "rare"); paint(); return; }
       case "wb-again": { X().watchStop(); window.DX.ui.tab = "wb"; X().render(); attack(); return; }
       case "wb-rewatch": { const w = window.DX.ui.watch; if (!w || !w.ext) return; watch(w.ext.res); return; }
       case "wb-reload": load(true); return;
@@ -343,6 +358,135 @@
   setInterval(() => { try { if (document.hidden) return; if (mode() === "local") sync(); else load(true); } catch (e) { /* jamais bloquer */ } }, 120000);
   document.addEventListener("click", () => setTimeout(() => { try { paintBar(); maybeOverlay(); } catch (e) { /* jamais bloquer */ } }, 0));
   window.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeOverlay(); });
+
+  /* ===================== SAISON 1 (refonte du 03/11/2026, js/wboss.js E.WB_S1) =====================
+     Une page à 3 onglets (12A) : Le boss (semaine, paliers du serveur, mécanique, calendrier), Boutique d'anomalie, Classement
+     (paliers d'essais et podium du meilleur essai). Version de test : un boss local par semaine de saison sur cet appareil. */
+  const C1 = () => E.WB_S1;
+  const tabS1 = () => ui.s1tab || "boss";
+  function locS1() {
+    const w = E.s1cWeek(S()); const L = pref.loc1 || (pref.loc1 = { n: w, hp: 2000, dmg: 0, started: Date.now(), day: day(), today: 0, week: 0, pts: 0, best: 0, k: 0, pal: [], tiers: [], cap: 0, last: null });
+    if (L.day !== day()) { L.day = day(); L.today = 0; }
+    if (L.n !== w) { const cap = L.cap; L.last = { n: L.n, name: E.wbS1Def(L.n).name, fled: L.dmg < L.hp }; Object.assign(L, { n: w, hp: Math.max(2000, Math.round(0.7 * (cap || 2000) * 1.2)), dmg: 0, started: Date.now(), week: 0, pts: 0, best: 0, k: 0, pal: [], tiers: [], cap: 0 }); savePref(); }
+    return L;
+  }
+  const weekEnd = (n) => E.s1cT0(S()) + n * C1().week;
+  function stS1() {
+    if (mode() === "local") { const L = locS1(); return { s1: true, n: L.n, hp: L.hp, dmg: L.dmg, phase: E.wbPhase(L.dmg, L.hp), started: L.started, ends: weekEnd(L.n), killed: L.dmg >= L.hp, players: L.k ? 1 : 0,
+      top: L.best ? [{ u: "me", p: "Toi", best: L.best, n: L.week, pts: L.pts }] : [], me: { today: L.today, week: L.week, pts: L.pts, best: L.best || null, rank: L.best ? 1 : null, tiers: L.tiers }, last: L.last, bonus: 0, local: true }; }
+    const I = ui.info; if (!I) return null;
+    return { s1: true, n: I.n, hp: +I.hp, dmg: +I.dmg, phase: I.phase, started: Date.parse(I.started) - ui.off, ends: Date.parse(I.ends) - ui.off, killed: !!I.killed, players: I.players || 0, top: I.top || [], me: I.me, last: I.last, bonus: I.bonus ? Date.parse(I.bonus) - ui.off : 0 };
+  }
+  const tierOf = (n) => E.wbS1Tier(n || 0);
+  function s1Page() {
+    const s = st(); const m = mode(); const t = tabS1();
+    const tabs = `<div class="wbs-tabs">${[["boss", "Le boss"], ["shop", "Boutique d'anomalie"], ["lb", "Classement"]].map(([k, n]) => `<button class="btn sm ${t === k ? "primary" : ""}" data-act="wb-tab" data-v="${k}">${n}</button>`).join("")}<span class="wb-frag" style="margin-left:auto">${fragImg()} ${nf(E.wbFrags(S()))} Fragments d'anomalie</span></div>`;
+    const top = `<div class="wb-top"><div><h1>Boss des mondes</h1><span class="small muted">Un grand boss par semaine pour tout le serveur. Abattez-le avant qu'il ne s'enfuie.</span></div><span class="tag boss">${m === "local" ? "Version de test : boss local" : "Saison 1 · tout le serveur"}</span></div>`;
+    if (!s) return top + `<section class="panel wb-p"><p class="muted">${ui.err ? h(ui.err) + ` <button class="btn sm" data-act="wb-reload">Réessayer</button>` : "Chargement du boss…"}</p></section>`;
+    const def = E.wbS1Def(s.n);
+    if (t === "shop") return top + tabs + s1Shop(s);
+    if (t === "lb") return top + tabs + `<div class="wb-grid"><div class="stack" style="gap:14px">${s1Tiers(s, def)}</div><div class="stack" style="gap:14px">${s1Podium(s, def)}</div></div>`;
+    return top + tabs + s1Hero(s, def) + `<div class="wb-grid"><div class="stack" style="gap:14px">${s1Mech(def)}${gradesHtml(s)}${s1Cal(s)}</div><div class="stack" style="gap:14px">${s1Tiers(s, def)}${s1Pal(s)}</div></div>`;
+  }
+  function s1Bar(s) {
+    const p = pctLeft(s); const done = 100 - p;
+    const marks = [25, 50, 75].map((q) => `<span class="wb-mark" style="left:${100 - q}%"></span><img class="wbp-ch ${done >= q ? "ok" : ""}" style="left:${100 - q}%" src="assets/ui/coffres/${q === 25 ? "argent" : "or"}.svg" alt="">`).join("") + `<img class="wbp-ch end ${s.killed ? "ok" : ""}" src="assets/ui/coffres/douze.svg" alt="">`;
+    return `<div class="wb-hp wbp-hp"><i style="width:${p}%"></i>${marks}<b>${nf(left(s) * E.WB_PV)} / ${nf(s.hp * E.WB_PV)} PV · ${pctTxt(p)}</b></div>`;
+  }
+  /* « Dernier soir » : bandeau le dernier jour de la semaine (Mathis 03/11) */
+  function s1Night(s) {
+    const N = E.WB_S1.night; const now = Date.now(); if (s.killed || !E.wbS1LastDay(s.ends, now)) return "";
+    const low = s.dmg * 100 >= s.hp * N.pct;
+    if (E.wbS1Night(s, now)) return `<span class="tag wbp-night on">Dernier soir : +1 essai pour tout le monde jusqu'à ${N.h1} h. Achevez-le avant sa fuite !</span>`;
+    return `<span class="tag wbp-night">Dernier soir ce soir de ${N.h0} h à ${N.h1} h : ${low ? "il est sous 25 %, chacun recevra +1 essai" : `s'il passe sous ${100 - N.pct} % de vie, chacun recevra +1 essai`}.</span>`;
+  }
+  function s1Hero(s, def) {
+    const m = mode(); const tl = triesLeft(s); const team = E.team(S()).length; const me = s.me || {};
+    const pal = [25, 50, 75, 100].filter((q) => (s.dmg / s.hp) * 100 >= q).length;
+    const left1 = Math.max(0, s.ends - Date.now());
+    const side = m === "guest" ? `<span class="small"><b>${solo() ? "Partie solo" : "Sans compte"}</b> : tu peux regarder le boss et t'entraîner.</span>${solo() ? `<button class="btn primary" data-act="sv-menu">Changer de partie</button>` : `<button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button>`}`
+      : `<span class="small"><b>${tl} essai${tl > 1 ? "s" : ""} sur ${maxTries(s)}</b> aujourd'hui</span><div class="wb-pips">${Array.from({ length: maxTries(s) }, (_, i) => `<i class="${i < tl ? "on" : ""}"></i>`).join("")}</div>
+        <button class="btn primary" data-act="wb-attack" ${tl && team && !ui.busy ? "" : "disabled"}>${X().IC("combat")} ${ui.busy ? "Le serveur joue ton essai…" : s.killed ? "Frapper encore (grades et paliers)" : "Attaquer le boss"}</button>
+        <span class="xs muted">${tl ? "3 combats de 15 tours avec ton équipe active" : `Nouveaux essais dans ${dur(nextMidnight() - Date.now())}`}</span>
+        <div class="wb-me">Tes dégâts : <b>${nf((me.pts || 0) * E.WB_PV)} PV</b>${me.best ? `<br>Meilleur essai : <b>${nf(me.best * E.WB_PV)} PV</b>, grade <b class="g g-${gradeOf(me.best)}">${gradeOf(me.best)}</b>${me.rank ? ` · ${me.rank}<sup>${me.rank === 1 ? "er" : "e"}</sup>` : ""}` : "<br>Pas encore d'essai cette semaine"}</div>`;
+    return `<section class="panel wb-hero"><div class="wb-img"><img class="${an(s.phase).trim()}" src="${img(def)}" alt=""></div><div class="wb-mid">
+      <span class="tag wbp-wk">Boss de la semaine · semaine ${s.n} sur ${C1().weeks} · manche ${Math.min(4, Math.ceil(s.n / 2))}${def.pass > 1 ? " · il revient plus fort" : ""}</span>
+      <span class="small">${s.killed ? `<b>Abattu !</b> Les essais comptent encore pour les grades et tes paliers jusqu'à la fin de la semaine (${dur(left1)}).` : `<b>Il s'enfuit dans ${dur(left1)}</b>. Ses PV ont été fixés d'après la semaine passée.`}</span>
+      <span class="wb-name">${h(def.name)}</span><div class="row" style="gap:6px;flex-wrap:wrap">${el(def.weak, `Faible : ${E.wbElName(def.weak)} +50 %`)}${el(def.res, `Résiste : ${E.wbElName(def.res)} −50 %`)}</div>
+      ${s1Night(s)}${s1Bar(s)}<span class="small muted">${h(def.story)} ${s.players} joueur${s.players > 1 ? "s l'ont" : " l'a"} frappé · ${pal} palier${pal > 1 ? "s" : ""} du serveur sur 4.</span>
+      ${m === "local" ? `<span class="xs muted">Version de test : pas de serveur, ce boss n'existe que sur cet appareil.</span>` : ""}</div>
+      <div class="wb-side">${team ? side : `<span class="small">Il faut au moins un héros dans l'équipe active.</span>`}${team ? `<button class="btn sm" data-act="wb-train">Entraînement (non compté)</button>` : ""}</div></section>`;
+  }
+  function s1Mech(def) {
+    const BM = E.BOSS_MECHS || {}; const sig = BM[def.sig] || {};
+    const others = def.mech.filter((k) => k !== def.sig).map((k) => `<span class="tag soft" title="${h((BM[k] || {}).desc || "")}">${h((BM[k] || {}).name || k)}${k === def.more ? " · nouveau" : ""}</span>`).join("");
+    return `<section class="panel wb-p"><h3>Sa mécanique de la semaine</h3><div class="wbp-mech"><span class="wbp-mi">${X().IC("couronne")}</span><div><b>${h(def.sigName || sig.name || "")}</b><p class="small" style="margin:2px 0">${h(sig.desc || "")}</p>${sig.tip ? `<p class="small wbp-ok" style="margin:0"><b>Conseil</b> : ${h(sig.tip)}.</p>` : ""}</div></div>
+      ${others ? `<div class="wbp-int"><span class="xs muted">Il a aussi :</span>${others}</div>` : ""}<div class="wb-phases" style="margin-top:8px"><span>Phase 2 sous 66 % : ${phTxt(2)}</span><span>Phase 3 sous 33 % : ${phTxt(3)}</span></div>
+      <p class="xs muted" style="margin:6px 0 0">Ses coups sont annoncés pendant le combat. L'entraînement permet de tester ton équipe contre lui sans dépenser d'essai.</p></section>`;
+  }
+  function s1Cal(s) {
+    return `<section class="panel wb-p"><h3>Les ${C1().weeks} boss de la Saison 1</h3><p class="small muted" style="margin:0 0 8px">Un boss par semaine. Les trois derniers reviennent avec une mécanique en plus.</p>
+      <div class="wb-rot">${C1().rot.map((k, i) => { const d = E.wbS1Def(i + 1); const cls = i + 1 < s.n ? "dead" : i + 1 === s.n ? "now" : "next"; return `<div class="wb-rc ${cls}"><img src="${img(d)}" alt=""><b>${h(d.name)}</b><span class="${cls === "now" ? "" : "muted"}">${cls === "dead" ? "Passé" : cls === "now" ? "Cette semaine" : "Semaine " + (i + 1)}</span>${d.pass > 1 ? `<span class="tag wbp-new">retour</span>` : ""}</div>`; }).join("")}</div></section>`;
+  }
+  function s1Tiers(s, def) {
+    const n = (s.me && s.me.week) || 0; const got = (s.me && s.me.tiers) || [];
+    const R = { bronze: "Coffre en argent", argent: "Coffre en or + 3 Fragments", or: `Coffre en or, 5 Fragments et le titre « Chasseur de ${def.name} »` };
+    return `<section class="panel wb-p"><h3>Ta contribution</h3><p class="xs muted" style="margin:0 0 6px">Des paliers que chacun peut atteindre : ils comptent tes essais de la semaine, pas tes dégâts.</p>
+      <div class="wbp-tiers">${C1().tiers.map((t) => `<div class="wbp-t ${got.includes(t.id) || n >= t.k ? "ok" : ""}"><b>${t.n}</b><span class="xs">${t.k} essais</span><span class="xs muted">${h(R[t.id])}</span></div>`).join("")}</div>
+      <div class="wbp-tb"><i style="width:${Math.min(100, (n / 18) * 100)}%"></i><b>${n} essai${n > 1 ? "s" : ""} sur 18 cette semaine</b></div></section>`;
+  }
+  function s1Podium(s, def) {
+    const me = mode() === "acc" ? ON().user.id : "me";
+    const rows = (s.top || []).map((r, i) => `<div class="wb-row ${r.u === me ? "me" : ""}"><span class="n">${i + 1}</span><span class="grow"><b>${h(r.p || "?")}</b><span class="xs muted">${r.n} essai${r.n > 1 ? "s" : ""} cette semaine</span></span><span class="small">${nf(r.best * E.WB_PV)} PV</span><b class="wb-lg g-${gradeOf(r.best)}">${gradeOf(r.best)}</b></div>`).join("");
+    const last = s.last ? `<p class="xs muted" style="margin:8px 0 0">Semaine passée : ${h(s.last.name)} ${s.last.fled ? "s'est enfui" : "est tombé"}.</p>` : "";
+    return `<section class="panel wb-p"><h3>Meilleur essai de la semaine</h3><p class="xs muted" style="margin:0 0 6px">Le podium compte ton meilleur essai, pas le nombre d'essais. À la fin de la semaine, les 3 premiers gagnent 30 Fragments et le titre « Fléau des mondes ».</p>${rows || `<p class="small muted">Personne ne l'a encore frappé.</p>`}${last}</section>`;
+  }
+  function s1Pal(s) {
+    const done = (s.dmg / s.hp) * 100;
+    const P = C1().pal.map((x) => { const ok = done >= x.p; const [k] = Object.keys(x.cons); return `<div class="wbp-pl ${ok ? "ok" : ""}">${chest(k)}<b>${x.p} %</b><span class="small">${h(consTxt(x.cons))} + ${x.frag} Fragments${x.xp ? ", +10 % d'XP 1 h pour tous" : ""}</span><span class="tag ${ok ? "" : "soft"}">${ok ? "Atteint" : "À venir"}</span></div>`; }).join("");
+    return `<section class="panel wb-p"><h3>Paliers du serveur</h3><p class="xs muted" style="margin:0 0 8px">Chaque palier atteint par tout le serveur récompense tous ceux qui ont frappé ce boss au moins une fois cette semaine, même en arrivant après. S'il s'enfuit, les paliers atteints restent gagnés.</p><div class="wbp-pal">${P}</div></section>`;
+  }
+  const AP = () => (E.WB_S1_ITEMS && E.WB_S1_ITEMS.ap) || {};
+  function s1Shop(s) {
+    const SS = S(); const n = E.wbFrags(SS); const KIND = { amulette: "Amulette", arme: "Arme", bouclier: "Bouclier", anneau: "Anneau", coiffe: "Coiffe", cape: "Cape", bottes: "Bottes", ceinture: "Ceinture" };
+    const card = (key, ref, p) => {
+      let icon, nm, sub, tag = "", owned = false, act = `data-act="wb-s1item" data-tpl="${ref}"`;
+      if (ref.startsWith("ap:")) { const A = AP()[ref.slice(3)] || {}; icon = `assets/i/${A.icon}.png`; nm = A.name; sub = A.kind; tag = `<span class="tag soft">cosmétique</span>`; owned = E.wbS1Owns(SS, ref.slice(3)); act = ""; }
+      else if (ref.startsWith("cons:")) { const k = ref.slice(5); nm = (window.DATA.CONSUMABLES[k] || {}).name || k; sub = "consommable"; act = ""; }
+      else { const T = window.DATA.ITEMS[ref]; icon = X().itemImg(ref); nm = T.name; sub = `${KIND[T.slot] || T.slot} niv. ${T.lvl}`; }
+      const pic = ref.startsWith("cons:") ? chest(ref.slice(5)) : `<img src="${icon}" alt="">`;
+      return `<div class="wb-it ${ref.startsWith("ap:") ? "ap" : ""}"><button class="wb-itb" ${act || 'data-act="none"'}>${pic}<b>${h(nm)}</b><span class="xs muted">${h(sub)}</span>${tag}</button>${owned ? `<span class="tag">Dans ta Garde-robe</span>` : `<button class="btn sm ${n >= p ? "primary" : ""}" data-act="wb-s1buy" data-k="${key}" data-tpl="${ref}" ${n >= p ? "" : "disabled"}>${fragImg("wb-fi sm")} ${p}</button>`}</div>`;
+    };
+    const shelves = Object.keys(E.WB_S1_SHOP).map((key) => {
+      const d = E.wbS1Def(E.WB_S1.rot.indexOf(key) + 1); const open = E.wbS1ShelfOpen(SS, key); const w0 = E.wbS1Weeks(key)[0];
+      return `<section class="wbs-shelf ${open ? "" : "locked"}"><div class="wbs-h"><img src="${img(d)}" alt=""><div><b>${h(d.name)}</b><span class="xs muted">${open ? (w0 === s.n ? "Cette semaine" : `Venu en semaine ${w0}`) : `Ouvre en semaine ${w0}`}</span></div></div>
+        ${open ? `<div class="wb-loot">${E.WB_S1_SHOP[key].map(([ref, p]) => card(key, ref, p)).join("")}</div>` : `<p class="small muted wbs-lock">Rayon fermé jusqu'à l'arrivée de ${h(d.name)}.</p>`}</section>`;
+    }).join("");
+    return `<div class="stack" style="gap:12px"><p class="small muted" style="margin:0">Chaque essai donne 1 à 6 Fragments d'anomalie selon le grade, les paliers du serveur et ta contribution en donnent aussi. Le rayon d'un boss ouvre à son arrivée et reste ouvert toute la saison. Les cosmétiques vont dans la Garde-robe.</p>${shelves}</div>`;
+  }
+  function s1LocalAttack() {
+    const s = S(); const L = locS1(); const def = E.wbS1Def(L.n); const phase = E.wbPhase(L.dmg, L.hp); const seed = E.wbSeed(L.n, "local", L.k);
+    const r = E.wbSim(s, def, phase, seed); if (r.err) { X().toast(r.err); return; }
+    r.points = E.wbS1Cap(r.points); const G = E.wbGrade(r.points);
+    for (const k in G.cons) E.addCons(s, k, G.cons[k]);
+    s.res[FRAG] = (s.res[FRAG] || 0) + G.frag;
+    const dmg0 = L.dmg; L.k++; L.today++; L.week++; L.pts += r.points; L.cap += r.points; L.best = Math.max(L.best || 0, r.points);
+    const T = C1().tiers.find((t) => t.k === L.week); if (T && !L.tiers.includes(T.id)) { L.tiers.push(T.id); for (const k in T.cons) E.addCons(s, k, T.cons[k]); s.res[FRAG] += T.frag; }
+    const was = L.dmg >= L.hp; if (!was) L.dmg = Math.min(L.hp, L.dmg + r.points);
+    C1().pal.forEach((x) => { if (!L.pal.includes(x.p) && (L.dmg / L.hp) * 100 >= x.p) { L.pal.push(x.p); for (const k in x.cons) E.addCons(s, k, x.cons[k]); s.res[FRAG] += x.frag; } });
+    const R = Object.assign({ local: true, s1: true, n: L.n, k: L.k - 1, seed, phase, name: def.name, frag: G.frag, cons: G.cons, hp: L.hp, dmg0, dmg: L.dmg, killed: !was && L.dmg >= L.hp, left: maxTries(stS1()) - L.today, rank: 1 }, r);
+    savePref(); X().markDirty(); sync(); watch(R);
+  }
+  /* cosmétiques d'apparat achetés (Garde-robe) : boucliers, familiers et montures d'apparat */
+  (function wireCos() {
+    if (!E.GR_SHIELDS || E.GR_SHIELDS.wb) return; E.GR_SHIELDS.wb = true;
+    Object.entries(AP()).forEach(([id, A]) => { if (A.kind === "Bouclier d'apparat" && !E.GR_SHIELDS.some((b) => b.id === id.slice(1))) E.GR_SHIELDS.push({ id: id.slice(1), n: A.name, lv: 1, ic: A.icon, w: { k: "wb", v: A.b }, rar: "l" }); });
+    const ok0 = E.grShieldOk, req0 = E.grShieldReq, comps0 = E.grComps, cok0 = E.grCompOk;
+    E.grShieldOk = (S0, b) => (b && b.w && b.w.k === "wb" ? E.wbS1Owns(S0, "i" + b.id) : ok0(S0, b));
+    E.grShieldReq = (b) => (b && b.w && b.w.k === "wb" ? "Boutique d'anomalie (boss des mondes, Saison 1)" : req0(b));
+    if (comps0) E.grComps = (S0) => comps0(S0).concat((S0.wbCos || []).filter((id) => AP()[id] && AP()[id].kind !== "Bouclier d'apparat").map((id) => ({ id: "wb_" + id, n: AP()[id].name, ic: AP()[id].icon, rar: "l" })));
+    if (cok0) E.grCompOk = (S0, id) => (String(id).startsWith("wb_") ? E.wbS1Owns(S0, String(id).slice(3)) : cok0(S0, id));
+  })();
 
   window.WBUI = { render, act, card, onAnn, tile, optHtml, paintBar, ui, st };
 })();
