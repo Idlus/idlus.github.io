@@ -94,7 +94,7 @@ function fake() {
   const boot = async (page, w) => {
     await page.goto(base, { waitUntil: "load" });
     // nouvelle partie (premier lancement) ou jeu rouvert (menu des parties : partie 1)
-    const b = await page.waitForSelector('[data-act="startgame"], .svc2[data-slot="1"] [data-act="sv-play"]', { timeout: 10000 });
+    const b = await page.waitForSelector('[data-act="startgame"], [data-slot="1"] [data-act="sv-play"]', { timeout: 10000 });
     await b.click();
     await page.waitForSelector("#nav [data-nk]", { timeout: 10000, state: "attached" });
     await page.waitForTimeout(400);

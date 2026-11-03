@@ -128,10 +128,10 @@ function fake() {
       await page.addInitScript(fake);
       page.on("console", (m) => { if (m.type() === "error") errors.push(`${w} px, console : ${m.text()}`); });
       page.on("pageerror", (e) => errors.push(`${w} px, exception : ${e.message}`));
-      const menu = async () => { await page.waitForSelector('.svc2[data-slot="4"]', { timeout: 15000 }); await page.waitForTimeout(300); };
+      const menu = async () => { await page.waitForSelector('[data-slot="4"]', { timeout: 15000 }); await page.waitForTimeout(300); };
       const toMenu = async () => { await page.evaluate(() => { try { sessionStorage.setItem("idlus-menu", "1"); } catch (e) {} }); await page.reload(); await menu(); };
       const start = async (slot, name) => {
-        await page.click(`.svc2[data-slot="${slot}"] [data-act="sv-play"]`);
+        await page.click(`[data-slot="${slot}"] [data-act="sv-play"]`);
         await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
         await page.fill("#startName", name);
         await page.click('[data-act="startgame"]');
@@ -139,7 +139,7 @@ function fake() {
         await page.waitForFunction(() => window.ONLINE && window.ONLINE.state === "ok", null, { timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(800);
       };
-      const play = async (slot) => { await page.click(`.svc2[data-slot="${slot}"] [data-act="sv-play"]`); await page.waitForSelector("#nav [data-nk]", { timeout: 10000, state: "attached" });
+      const play = async (slot) => { await page.click(`[data-slot="${slot}"] [data-act="sv-play"]`); await page.waitForSelector("#nav [data-nk]", { timeout: 10000, state: "attached" });
         await page.waitForFunction(() => window.ONLINE && window.ONLINE.state === "ok", null, { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(800); };
       const st = () => page.evaluate(() => { const S = window.DX.S; return { mono: !!S.mono, k: S.kamas, op: (S.hdv && S.hdv.op) || 0, slot: window.ONLINE.slot() }; });
       const go = async (k) => { await page.evaluate((x) => window.DX.go(x), k); await page.waitForTimeout(500); return page.textContent("#main"); };

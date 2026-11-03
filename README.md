@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.1 « Le hub en trois portes »
+
+- Écran de choix (Mathis 1A 2B 3A, maquette du 03/11) : trois portes Éternel, Classique · Saison 1, Monocompte (`hubHtml`, js/ui.js), ta partie sur une ligne (`hubRow`), grande carte gardée quand la partie demande un choix (versions, envoi, copie), « Reprendre » en haut (`hubResume`), anciennes cartes dans « Gérer mes parties » (`sv-gest`).
+- En jeu : pastille du serveur dans la barre du haut (`srvPill`), liste des serveurs (`srvListHtml`, action `sv-go` : sauvegarde, envoi, rechargement sur la partie choisie). Remplace le bouton ⇄ (2.1.37.11).
+- Corrigé : débordement de l'écran de choix au téléphone sans compte ; nom du serveur dans le portrait.
+
 ## 2.2.0.4 « Classement du Songe »
 - Ticket #166 (Zoubilus) : `js/songeui.js` : un refus passager du serveur (« aucun songe validé cette semaine », « en vérification »…, sauvegarde validée en retard) n'est plus gardé pour toujours : le record repart 10 minutes plus tard ; l'envoi (`idlus-songe-envoi`, champ `sl`) et les lots (`idlus-songe-lots`) sont rangés par partie (Éternel 1, Saison 1 5). Le Songe n'existe pas au Monocompte (page hors de `E.MONO.PAGES`).
 

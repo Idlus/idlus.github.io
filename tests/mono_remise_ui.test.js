@@ -83,12 +83,12 @@ function fake() {
       page.on("console", (m) => { if (m.type() === "error") errors.push(`${w} px, console : ${m.text()}`); });
       page.on("pageerror", (e) => errors.push(`${w} px, exception : ${e.message}`));
       const rz = (p) => page.evaluate((v) => { const x = JSON.parse(localStorage.getItem("__rz") || "null") || { gen: 0, remise: null, p: null, refus: 0, envois: 0 }; Object.assign(x, v); localStorage.setItem("__rz", JSON.stringify(x)); }, p);
-      const menu = async () => { await page.waitForSelector('.svc2[data-slot="4"]', { timeout: 15000 }); await page.waitForTimeout(300); };
+      const menu = async () => { await page.waitForSelector('[data-slot="4"]', { timeout: 15000 }); await page.waitForTimeout(300); };
       const msg = () => page.evaluate(() => (document.querySelector("#onMsg") || {}).textContent || "");
-      const card4 = () => page.textContent('.svc2[data-slot="4"]');
+      const card4 = () => page.textContent('[data-slot="4"]');
       const local = () => page.evaluate((k) => { const raw = localStorage.getItem(k); if (!raw) return null; const E = window.ENGINE; try { return E.deserialize(raw); } catch (e) { return "illisible"; } }, KEY);
       const startMono = async (name) => {
-        await page.click('.svc2[data-slot="4"] [data-act="sv-play"]');
+        await page.click('[data-slot="4"] [data-act="sv-play"]');
         await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
         await page.fill("#startName", name);
         await page.click('[data-act="startgame"]');

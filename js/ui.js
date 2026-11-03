@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.0.4";
+const GAME_VERSION = "2.2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.1", name: "Le hub en trois portes", items: [
+    "Écran de choix refait : les trois serveurs (Éternel, Saison 1, Monocompte) côte à côte, chacun avec ta partie sur une ligne et son bouton « Jouer ». Tout tient sur un écran PC",
+    "Grand bouton « Reprendre » en haut : ta dernière partie en un clic. Copies de secours et suppression sont dans « Gérer mes parties »",
+    "En jeu, une pastille du serveur dans la barre du haut montre où tu joues. Un clic ouvre la liste des serveurs : « Y aller » change de serveur en un clic, ta partie est sauvegardée et envoyée avant",
+    "Corrigé : au téléphone sans compte, l'écran de choix débordait sur le côté ; le portrait disait « Classique » dans une partie Saison 1" ] },
   { v: "2.2.0.4", name: "Classement du Songe", items: [
     "Classement du Songe infini : un record refusé parce que le serveur n'avait pas encore validé ta dernière sauvegarde repart tout seul 10 minutes plus tard (avant, il restait refusé jusqu'à un meilleur record)",
     "Ta partie de la Saison 1 et ta partie Éternel envoient chacune leur record du Songe et récupèrent chacune leurs lots du classement",
@@ -3271,12 +3276,12 @@ function statusHtml() {
   const op = ui.tbOpen;
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt=""><span class="hide-sm">idlus</span></button>${sea}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>${dust}${sabHtml()}
-    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span><span class="tb-grow"></span>${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
+    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span><span class="tb-grow"></span>${srvPill()}${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
     <button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>
     ${window.CHAT && window.CHAT.on ? `<button class="ic-btn tb-chat" data-act="ch-open" title="Chat" aria-label="Ouvrir le chat">${G("chat")}<span class="navcnt" id="tbChatN" hidden></span></button>` : ""}
     <button class="ic-btn tb-bell${op === "bell" ? " on" : ""}" data-act="tb-bell" aria-expanded="${op === "bell"}" title="Notifications : objectifs suivis, événements, annonces" aria-label="Notifications">${TB_BELL}<span class="navcnt" id="tbBellN" hidden></span></button>
     <button class="tb-acc${op === "acc" ? " on" : ""}" data-act="tb-acc" aria-expanded="${op === "acc"}" title="Mon compte : serveur, sauvegarde, son, bonus" aria-label="Mon compte">${heroMed()}<i class="tb-dn" aria-hidden="true"></i></button>
-    ${op === "acc" ? accPanelHtml() : ""}`;
+    ${op === "acc" ? accPanelHtml() : ""}${srvPopHtml()}`;
 }
 const TB_BELL = '<svg class="uico gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
 /* le panneau du portrait : serveur, sauvegarde, modération, son, puis les bonus en cours */
@@ -3286,8 +3291,8 @@ function accPanelHtml() {
     activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : "",
     E.almOn(S) ? `<span class="it boostchip" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""].filter(Boolean).join("");
   const c = mainHero();
-  return `<div class="tb-pop tb-accp" role="dialog" aria-label="Mon compte"><div class="tb-ph">${heroMed()}<span class="grow"><b>${h(c ? c.name : "")}</b><small>${S.mono ? `Monocompte · ${h(seasonName())}` : `Classique · ${team.length}/8 héros`}</small></span></div>
-    <div class="tb-row">${swapBtn()}${sndBtn()}${ON && window.CHAT ? `<span class="tb-adm">${window.CHAT.adminBtn()}</span>` : ""}</div>
+  return `<div class="tb-pop tb-accp" role="dialog" aria-label="Mon compte"><div class="tb-ph">${heroMed()}<span class="grow"><b>${h(c ? c.name : "")}</b><small>${S.mono ? `Monocompte · ${h(seasonName())}` : `${h((slotSrv(SLOT) || { nom: clNom() }).nom)} · ${team.length}/8 héros`}</small></span></div>
+    <div class="tb-row">${sndBtn()}${ON && window.CHAT ? `<span class="tb-adm">${window.CHAT.adminBtn()}</span>` : ""}</div>
     ${bon ? `<h4>Bonus en cours</h4><div class="tb-row">${bon}</div>` : ""}
     <div class="tb-row xs muted"><span class="it" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> monstres</span><span class="it">${(S.hunting && team.length) || S.dungeon || E.expActive(S) ? "équipe en chasse" : "équipe au repos"}</span></div>
     <div class="tb-row"><button class="btn sm" data-act="options">${G("gear")} Options</button><button class="btn sm" data-act="changelog">${G("sparkle")} Nouveautés ${h(GAME_VERSION)}</button></div></div>`;
@@ -3310,7 +3315,7 @@ function statusHtmlFull() {
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
     ${S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐ <b>Monocompte</b><span class="hide-sm">&nbsp;· ${h(E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom)}</span></span>` : ""}
-    ${swapBtn()}
+    ${srvPill()}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     ${sabHtml()}
     ${S.mono ? "" : `<span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>`}
@@ -3320,7 +3325,7 @@ function statusHtmlFull() {
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b></span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}${srvPopHtml()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
 }
 /* 2.1.37.11 (idée de Zoubilus) : passer du Classique au Monocompte et inversement en un clic depuis la barre du haut.
    La partie en cours est sauvegardée et envoyée, puis la page se recharge sur l'autre partie (chaque partie garde sa clé :
@@ -10768,7 +10773,7 @@ document.addEventListener("click", (ev) => {
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
   if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
-  if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.40 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
+  if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc,.srvpill") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.40 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   backMark(t);
@@ -11097,7 +11102,7 @@ document.addEventListener("click", (ev) => {
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navhelp": helpSheet(); return;
     case "navfull": S.settings.navFull = !navFullOn(); dirty = true; renderNav(); if ($("#sheet .navsheet")) navMenuSheet(); return;
-    case "tb-bell": case "tb-acc": { const w = a === "tb-bell" ? "bell" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
+    case "tb-bell": case "tb-acc": case "tb-srv": { const w = a === "tb-bell" ? "bell" : a === "tb-srv" ? "srv" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
  toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); if (t.closest(".helpsheet")) helpSheet(); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
@@ -11737,7 +11742,64 @@ function slotCard(sl) {
 }
 /* Saison 1, lot 0 : hub du choix de serveur (images ChatGPT validées par Mathis le 02/11, « 8A »). Les parties ne changent pas de place :
    1 à 3 et l'Éternel du Monocompte (101…) sous Éternel, la partie 4 sous Monocompte. Le Classique de saison s'ouvrira avec la saison. */
+/* 2.2.1 (Mathis 1A 2B 3A) : hub en trois portes (une par serveur, ta partie sur une ligne), grand bouton « Reprendre » en haut,
+   et pastille du serveur dans la barre du haut en jeu, qui ouvre la liste des serveurs (« Y aller » : sauvegarde, envoi, rechargement). */
+const SRVS = () => [
+  { id: "eter", ico: "🌍", nom: "Éternel", court: "Éternel", img: "srv-1", txt: "Tes parties de toujours, gardées pour de bon. Tes héros de saison y arrivent à la fin de chaque saison.", slots: [1, 2, 3, ...eterSlots()] },
+  { id: "s1", ico: "⏳", nom: `Classique · ${S1.nom}`, court: S1.nom, img: "srv-2", txt: "Tout le monde repart de zéro : classements de saison et récompenses exclusives.", slots: [S1_SLOT] },
+  { id: "mono", ico: "⭐", nom: `Monocompte · ${S1.nom}`, court: "Monocompte", img: "srv-3", txt: "Un seul héros, tout le monde repart de 0. À la fin de la saison, il rejoint l'Éternel.", slots: [MONO_SLOT] },
+].filter((v) => v.id !== "mono" || monoOk());
+const slotSrv = (n) => SRVS().find((v) => v.slots.includes(n));
+const SIMPLE = ["here", "sync", "own", "new", "resend"]; // rien de spécial à montrer : une ligne suffit (sinon la grande carte, avec sa note)
+const MENU_GEST = { on: false }; // « Gérer mes parties » : les grandes cartes (copies de secours, suppression, versions)
+function hubRow(sl, big) {
+  const n = sl.n, last = (menuPref().last || 1) === n;
+  if (!SIMPLE.includes(sl.plan) || MENU.confirm || sl.restored) return slotCard(sl);
+  if (!sl.st && !sl.rem) {
+    if (n === MONO_SLOT && !E.monoCurrent()) return `<div class="hrow empty" data-slot="${n}"><span class="hpt plus">⏳</span><span class="min0 grow"><b>Entre deux saisons</b><small>La prochaine saison arrive bientôt. Ton héros de la saison passée t'attend dans l'Éternel.</small></span></div>`;
+    const L = n === MONO_SLOT ? monoLegacyRead() : null, keep = L ? (L.t || []).length + (L.u || []).length + (L.aura ? 1 : 0) : 0;
+    const t = n === MONO_SLOT ? [MONO_BETA.on ? "Nouvelle partie de la bêta" : "Nouvelle partie Monocompte", `Un seul héros, niveau 1, sans rien, comme tout le monde${keep ? `. Tu gardes tes ${keep} titres et apparences des saisons passées` : ""}`] : n === S1_SLOT ? ["Nouvelle partie de saison", "Classements, Hôtel de vente, guilde"] : [`Partie ${n} · nouvelle partie`, n === 1 ? "Classements, Hôtel de vente, guilde" : "Solo, hors classements"];
+    return `<div class="hrow empty" data-slot="${n}"><span class="hpt plus">+</span><span class="min0 grow"><b>${t[0]}</b><small>${t[1]}</small></span><button class="btn sm${big ? " primary" : ""}" data-act="sv-play" data-n="${n}">Commencer</button></div>`;
+  }
+  const ci = cardInfo(sl.meta, sl.st), cls = CLASSES[ci.cls] || CLASSES.iop;
+  const pn = n <= 3 ? `Partie ${n} · ${rankSlot(n) ? "classements" : "solo"}` : isEter(n) ? "Éternel du Monocompte" : "";
+  const dev = ON && ON.user && !ON.slotOnline(n) ? `<small class="hdev">Gardée sur cet appareil (pas en ligne)</small>` : "";
+  return `<div class="hrow${big ? " big" : ""}${last ? " last" : ""}" data-slot="${n}" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></span><span class="min0 grow"><b>${h(ci.name || partName(n))}</b><small>${h(cls.name)} niv. ${ci.lvl} · ${ci.kamas == null ? "—" : kShort(ci.kamas)} kamas${monoSlot(n) ? "" : ` · ${ci.n} héros`}</small>${pn || last ? `<small class="hpn">${pn}${last ? `<span class="lastp">Dernière jouée</span>` : ""}</small>` : ""}${dev}</span><button class="btn ${big || last ? "primary" : "sm"}" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
+}
+function hubResume() {
+  const n = menuPref().last || 1, sl = MENU.slots.find((x) => x.n === n); if (!sl || !sl.st || !SIMPLE.includes(sl.plan)) return "";
+  const ci = cardInfo(sl.meta, sl.st), v = slotSrv(n), cls = CLASSES[ci.cls] || CLASSES.iop;
+  return `<div class="hresume" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></span><span class="min0 grow"><small>Reprendre là où tu t'es arrêté</small><b>${h(ci.name || partName(n))}</b><small>${v ? `${v.ico} ${h(v.nom)} · ` : ""}${h(cls.name)} niv. ${ci.lvl}</small></span><button class="btn primary big" data-act="sv-play" data-n="${n}">Reprendre</button></div>`;
+}
 function hubHtml() {
+  if (MENU_GEST.on) return `<div class="hgest"><button class="btn sm" data-act="sv-gest">← Retour aux serveurs</button></div>${hubHtmlOld()}`;
+  const last = menuPref().last || 1;
+  return `<div class="hubtop slim" style="background-image:linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,.1)),url(assets/s1/hub-1.webp)"><h2>Choisis ton serveur</h2><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a></div>
+    ${hubResume()}
+    <div class="hub3">${SRVS().map((v) => { const sls = MENU.slots.filter((sl) => v.slots.includes(sl.n));
+      const used = sls.filter((sl) => sl.st || sl.rem), free = sls.filter((sl) => !sl.st && !sl.rem && !isEter(sl.n));
+      const main = used.find((sl) => sl.n === last) || used.slice().sort((x, y) => y.at - x.at)[0] || free[0];
+      const others = used.filter((sl) => sl !== main), more = free.filter((sl) => sl !== main);
+      return `<div class="hdoor ${v.id}${sls.some((sl) => sl.n === last) ? " cur" : ""}"><div class="hdimg" style="background-image:url(assets/s1/${v.img}.webp)"><h3>${v.ico} ${h(v.nom)}</h3></div><span class="small muted hdtx">${v.txt}</span>
+        ${main ? hubRow(main, true) : ""}${others.map((sl) => hubRow(sl)).join("")}${more.length ? `<div class="hmore">${more.map((sl) => `<span class="empty" data-slot="${sl.n}"><button data-act="sv-play" data-n="${sl.n}" title="${sl.n === 1 ? "Classements, Hôtel de vente, guilde" : "Solo, hors classements : une autre aventure dans le même compte"}">+ Nouvelle partie ${sl.n}${sl.n === 1 ? "" : " (solo)"}</button></span>`).join("")}</div>` : ""}</div>`; }).join("")}</div>
+    <div class="hgest"><button class="lnk" data-act="sv-gest">Gérer mes parties (copies de secours, suppression)</button></div>`;
+}
+/* en jeu : la liste des serveurs, sous la pastille du serveur. Chaque serveur propose sa partie de l'appareil (la dernière jouée). */
+function srvListHtml() {
+  const cur = slotSrv(SLOT), pref = menuPref();
+  return `<div class="srvl">${SRVS().map((v) => {
+    const here = !!cur && cur.id === v.id;
+    const cand = v.slots.map((n) => ({ n, st: n === SLOT ? S : SV.peek(slotKey(n)).state })).filter((x) => x.st);
+    const pick = here ? { n: SLOT, st: S } : cand.find((x) => x.n === pref.lastEt) || cand.sort((x, y) => (y.st.savedAt || 0) - (x.st.savedAt || 0))[0];
+    const hero = pick ? pick.st.chars.find((c) => c.id === pick.st.mainHero) || pick.st.chars[0] : null;
+    const to = pick ? pick.n : v.slots[0];
+    return `<div class="srvr${here ? " here" : ""}"><span class="sic">${v.ico}</span><span class="min0 grow"><b>${h(v.nom)}</b><small>${hero ? `${h(hero.name)} · niv. ${hero.lvl}` : "Pas encore de partie sur cet appareil"}</small></span>${here ? `<span class="srvici">Tu es ici</span>` : `<button class="btn sm${hero ? " primary" : ""}" data-act="sv-go" data-n="${to}" data-tip="${h(`Ta partie est sauvegardée et envoyée, puis le jeu se recharge sur ${v.nom}.`)}">${hero ? "Y aller" : "Ouvrir"}</button>`}</div>`; }).join("")}
+    <button class="lnk" data-act="sv-menu">Toutes mes parties</button></div>`;
+}
+const srvPill = () => { const v = !TESTMODE && menuOn() ? slotSrv(SLOT) : null; if (!v) return "";
+  return `<button class="it srvpill${ui.tbOpen === "srv" ? " on" : ""}" data-act="tb-srv" aria-expanded="${ui.tbOpen === "srv"}" aria-haspopup="dialog" title="Tu joues sur ${h(v.nom)} : clique pour changer de serveur" aria-label="Serveur ${h(v.nom)} : changer de serveur">${v.ico}<b class="hide-sm">&nbsp;${h(v.court)}</b><i class="tb-dn" aria-hidden="true"></i></button>`; };
+const srvPopHtml = () => (ui.tbOpen === "srv" ? `<div class="tb-pop tb-srvp" role="dialog" aria-label="Changer de serveur"><h4>Changer de serveur</h4>${srvListHtml()}</div>` : "");
+function hubHtmlOld() {
   const srv = (img, cls, nom, tag, txt) => `<div class="hubsrv ${cls}"><img src="assets/s1/${img}.webp" alt="" loading="lazy"><div class="hs-tx"><h3>${nom}${tag ? ` <span class="srvtg">${h(tag)}</span>` : ""}</h3><span class="small muted">${txt}</span></div></div>`;
   const cl = MENU.slots.filter((sl) => sl.n !== S1_SLOT && (!monoSlot(sl.n) || isEter(sl.n))), s1 = MENU.slots.filter((sl) => sl.n === S1_SLOT), mo = MENU.slots.filter((sl) => sl.n === MONO_SLOT);
   return `<div class="hubtop" style="background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.55)),url(assets/s1/hub-1.webp)"><h2>Choisis ton serveur</h2>
@@ -11769,7 +11831,7 @@ function renderMenu() {
     <div class="svsrv mono"><h3>⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h3><span class="small muted">${MONO_BETA.on ? "Bêta fermée, sur clé bêta : saison de test en temps réel, partie gardée par le serveur, groupes en direct au Bureau des Aventuriers. Des bugs sont possibles, et tout repart de zéro avant l'ouverture de la Saison 1." : "Un seul héros par saison, tout le monde repart de 0. À la fin d'une saison, le héros rejoint l'Éternel avec ses kamas et ses objets."}</span></div>
     <div class="svgrid mono">${MENU.slots.filter((sl) => monoSlot(sl.n)).map(slotCard).join("")}</div>`}
     <label class="svopt"><input type="checkbox" data-act="sv-auto" ${pref.auto ? "checked" : ""}> Ouvrir directement ma dernière partie</label>
-    <div class="svfoot">Pour revenir ici en jeu : ${G("gear", "opt-in")}Options › ${ON ? "Compte" : "Sauvegarde"} › Changer de partie. Version ${GAME_VERSION}</div></section>`;
+    <div class="svfoot">En jeu, la pastille du serveur en haut change de serveur en un clic. Version ${GAME_VERSION}</div></section>`;
 }
 /* Copies de secours d'une partie, depuis l'écran de choix. */
 function menuCopies(n) {
@@ -11781,7 +11843,7 @@ function menuCopies(n) {
 }
 async function svPlay(n, which) {
   const sl = MENU.slots.find((x) => x.n === n) || slotRead(n); if (MENU.busy) return; MENU.busy = true;
-  setSlot(n); setMenuPref(monoSlot(n) ? { last: n } : { last: n, lastCl: n }); closeSheet();
+  setSlot(n); setMenuPref(Object.assign(monoSlot(n) ? { last: n } : { last: n, lastCl: n }, n <= 3 || isEter(n) ? { lastEt: n } : {})); closeSheet();
   if (menuStuck()) setTimeout(() => toast("Serveur injoignable : tu joues sur la partie de cet appareil. Recharge la page quand il reviendra pour retrouver ton compte."), 800);
   if (!menuLive() || !ON.slotOnline(n)) return bootGame();
   const uid = ON.user.id, rem = sl.rem;
@@ -11840,6 +11902,11 @@ async function svAct(a, t) {
         ON.monoCle(v).then((r) => { if (!r || r.err) { toast((r && r.err) || "Clé refusée."); return; } try { localStorage.setItem(MONO_BETA.key, "1"); } catch (e) {} toast(`${r.msg || "Bêta Monocompte débloquée."} Options › Compte › Changer de partie.`); optionsSheet(); })
           .catch(() => toast("Pas de connexion au serveur.")).finally(() => { monoCleBusy = false; }); return; }
       if (codeHash(v) !== MONO_BETA.hash) { toast("Code inconnu."); return; } try { localStorage.setItem(MONO_BETA.key, "1"); } catch (e) {} toast("Bêta Monocompte débloquée : Options › Compte › Changer de partie."); optionsSheet(); return; }
+    case "sv-gest": MENU_GEST.on = !MENU_GEST.on; return renderMenu();
+    case "sv-go": { const to = +t.dataset.n; // 2.2.1 : liste des serveurs en jeu (pastille du serveur)
+      if (!to || t.disabled) return; t.disabled = true;
+      if (S) { saveNow(); if (onLive() && ON.state !== "conflict") { try { await onPush(); } catch (e) {} } saveNow(); }
+      try { sessionStorage.setItem("idlus-reprise", String(to)); } catch (e) {} location.reload(); return; }
     case "sv-swap": { const to = swapTo(); if (!to || t.disabled) return; t.disabled = true; // 2.1.37.11 : bascule Classique ⇄ Monocompte
       if (S) { saveNow(); if (onLive() && ON.state !== "conflict") { try { await onPush(); } catch (e) {} } saveNow(); }
       try { sessionStorage.setItem("idlus-reprise", String(to)); } catch (e) {} location.reload(); return; }

@@ -6533,3 +6533,37 @@ body.tb1 #chat .chmin{display:none}
 .tab-lost{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.72)}
 .tab-lost-box{max-width:420px;padding:20px;border-radius:16px;background:var(--panel);color:var(--ink);box-shadow:inset 0 0 0 2px var(--frame);text-align:center;display:flex;flex-direction:column;gap:12px}
 .tab-lost-box b{font-size:18px}.tab-lost-box p{margin:0;color:var(--muted)}
+/* 2.2.1 (Mathis 1A 2B 3A) : hub en trois portes, « Reprendre », pastille et liste des serveurs en jeu */
+.hubtop.slim{min-height:84px;align-items:center;padding:12px 16px}
+.hresume{display:flex;gap:14px;align-items:center;padding:12px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(90deg,color-mix(in srgb,var(--cc) 22%,var(--panel2)),var(--panel2));box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.hresume b{font-family:var(--font-title);font-size:22px;color:var(--title);display:block;line-height:1.1}.hresume small{display:block;color:var(--muted);font-size:13px}
+.hresume .btn.big{font-size:19px;padding:12px 26px;font-family:var(--font-title)}
+.hpt{width:52px;height:60px;flex:none;border-radius:10px;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--cc,#888) 45%,transparent),transparent 70%),var(--panel3);border:2px solid var(--frame);display:grid;place-items:end center;overflow:hidden}
+.hpt img{height:58px;width:auto}.hpt.plus{place-items:center;font-size:24px;color:var(--gold);border-style:dashed}
+.hub3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.hdoor{border:2px solid var(--frame);border-radius:16px;background:var(--panel2);overflow:hidden;display:grid;gap:8px;padding-bottom:10px}
+.hdoor.cur{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 8px 22px rgba(0,0,0,.4)}
+.hdimg{height:118px;background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:10px 12px;box-shadow:inset 0 -60px 40px -20px rgba(0,0,0,.75)}
+.hdimg h3{margin:0;color:#fff;text-shadow:0 2px 6px #000;font-size:20px}
+.hdtx{padding:0 12px}
+.hdoor .svc2{margin:0 10px}
+.hrow{display:flex;gap:10px;align-items:center;margin:0 10px;padding:7px 8px;border-radius:12px;background:var(--panel3)}
+.hrow.big{padding:9px 10px}.hrow.big b{font-size:18px}
+.hrow b{font-family:var(--font-title);color:var(--title);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow small{display:block;color:var(--muted);font-size:12.5px}.hrow.empty{background:none;border:1px dashed var(--frame)}
+.lastp{background:var(--gold);color:#13200a;font-weight:900;font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:1px 6px;border-radius:6px;margin-left:6px}
+.hmore{display:flex;gap:10px;flex-wrap:wrap;padding:0 12px}.hmore button,.lnk{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;padding:0}
+.hgest{text-align:center}
+.srvl{display:grid;gap:6px}
+.srvr{display:flex;gap:10px;align-items:center;padding:7px 9px;border-radius:12px;background:var(--panel3);border:1px solid transparent}
+.srvr.here{border-color:var(--gold)}.srvr .sic{font-size:20px}.srvr b{display:block;font-size:14px}.srvr small{display:block;color:var(--muted);font-size:12px}
+.srvici{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--gold)}
+.srvl .lnk{justify-self:start;margin-top:2px}
+.srvpill{border:1px solid var(--gold)!important;cursor:pointer}.srvpill.on{background:rgba(var(--glw),.15)}
+.tb-srvp{width:min(360px,calc(100vw - 20px))}
+@media (max-width:900px){.hub3{grid-template-columns:minmax(0,1fr)}.hdimg{height:84px}}
+@media (max-width:640px){.hresume{flex-wrap:wrap}.hresume .btn.big{width:100%}.hubtop.slim{min-height:64px}}
+.hdoor,.hub3>*{min-width:0}.hrow .grow,.hresume .grow,.srvr .grow{flex:1;min-width:0}.hrow small{overflow-wrap:anywhere}
+.hubtop.slim h2{font-size:clamp(18px,5vw,26px)}
+.svm{grid-template-columns:minmax(0,1fr)}.svlog{min-width:0}.svmail input{width:0} /* 2.2.1 : l'écran de choix ne déborde plus sur le côté au téléphone (non connecté) */
+.srvpill{border-radius:999px!important;padding:4px 10px!important;background:var(--panel3)!important;position:relative;z-index:2}

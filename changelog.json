@@ -1,6 +1,16 @@
 {
-  "version": "2.2.0.4",
+  "version": "2.2.1",
   "versions": [
+    {
+      "v": "2.2.1",
+      "name": "Le hub en trois portes",
+      "items": [
+        "Écran de choix refait : les trois serveurs (Éternel, Saison 1, Monocompte) côte à côte, chacun avec ta partie sur une ligne et son bouton « Jouer ». Tout tient sur un écran PC",
+        "Grand bouton « Reprendre » en haut : ta dernière partie en un clic. Copies de secours et suppression sont dans « Gérer mes parties »",
+        "En jeu, une pastille du serveur dans la barre du haut montre où tu joues. Un clic ouvre la liste des serveurs : « Y aller » change de serveur en un clic, ta partie est sauvegardée et envoyée avant",
+        "Corrigé : au téléphone sans compte, l'écran de choix débordait sur le côté ; le portrait disait « Classique » dans une partie Saison 1"
+      ]
+    },
     {
       "v": "2.2.0.4",
       "name": "Classement du Songe",

@@ -439,9 +439,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // « Se connecter » depuis l'écran de départ : écran « Choisis ta partie » (1.0.11) avec Discord en haut, puis partie 1 sans compte
     await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
     // 2.2.0 : avec la Saison 1 ouverte, la partie de saison (5) s'ajoute aux 3 emplacements Classique et à la partie Monocompte
-    { const n = (await page.$$(".svm .svc2")).length, s1 = !!(await page.$(`.svm .svc2[data-slot="5"]`));
-      if (n !== (s1 ? 5 : 4) || !(await page.$(`.svm .svc2[data-slot="4"]`))) fail(`choix des parties : 3 emplacements Classique, la partie Monocompte${s1 ? " et la partie de saison" : ""} attendus (${n})`); }
-    await page.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector('[data-act="startgame"]');
+    { const n = (await page.$$(".svm [data-slot]")).length, s1 = !!(await page.$(`.svm [data-slot="5"]`));
+      if (n !== (s1 ? 5 : 4) || !(await page.$(`.svm [data-slot="4"]`))) fail(`choix des parties : 3 emplacements Classique, la partie Monocompte${s1 ? " et la partie de saison" : ""} attendus (${n})`); }
+    await page.click('[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector('[data-act="startgame"]');
     await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     if (await page.$(".svm")) fail("choix des parties : affiché alors qu'il n'y a aucune partie ni compte");
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
@@ -457,11 +457,11 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await mock()).profiles.length) fail("pseudo qui imite le créateur accepté");
     await page.fill("#onPseudo", "Bouftou"); await page.click('[data-act="on-pseudo"]');
     // la partie de l'appareil n'est pas encore sur le compte : la carte de la partie 1 le dit, « Jouer » l'envoie
-    await page.waitForSelector('.svc2[data-slot="1"] .svnote', { timeout: 10000 });
-    if (!/pas encore sur ton compte/.test(await page.textContent('.svc2[data-slot="1"]'))) fail("choix des parties : partie pas encore sur le compte non signalée");
-    if (!(await page.$('.svc2[data-slot="1"] [data-act="sv-fresh"]'))) fail("choix des parties : « Nouvelle partie à la place » absent");
-    if (!/4 321|4,3 k/.test((await page.textContent('.svc2[data-slot="1"]')).replace(/\s/g, " "))) fail("choix des parties : kamas de la partie absents de la carte");
-    await page.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector("#nav [data-nk]");
+    await page.waitForSelector('[data-slot="1"] .svnote', { timeout: 10000 });
+    if (!/pas encore sur ton compte/.test(await page.textContent('[data-slot="1"]'))) fail("choix des parties : partie pas encore sur le compte non signalée");
+    if (!(await page.$('[data-slot="1"] [data-act="sv-fresh"]'))) fail("choix des parties : « Nouvelle partie à la place » absent");
+    if (!/4 321|4,3 k/.test((await page.textContent('[data-slot="1"]')).replace(/\s/g, " "))) fail("choix des parties : kamas de la partie absents de la carte");
+    await page.click('[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector("#nav [data-nk]");
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     let m = await mock();
     if (!m.saves.u1 || JSON.parse(m.saves.u1.data).kamas < 4321) fail("la partie n'a pas été envoyée");
@@ -470,7 +470,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.reload(); await page.waitForSelector(".svm", { timeout: 10000 });
     if (await page.$(".svm .svver") || await page.$(".sheet .svc")) fail("question inattendue au rechargement");
     if (!/Bouftou/.test(await page.textContent(".svacc")) || !(await page.$('.svm [data-act="sv-logout"]'))) fail("choix des parties : compte connecté absent");
-    if (!/Classements/.test(await page.textContent('.svc2[data-slot="1"]')) || !/Solo/.test(await page.textContent('.svc2[data-slot="2"]'))) fail("choix des parties : rôle des parties absent");
+    if (!/Classements/i.test(await page.textContent('[data-slot="1"]')) || !/Solo/i.test(await page.textContent('[data-slot="2"]'))) fail("choix des parties : rôle des parties absent");
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/menu.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/menu-mob.png", fullPage: true }); await page.setViewportSize(vp); }
     // « Ouvrir directement ma dernière partie » : les rechargements suivants vont droit dans la partie
     await page.click('.svm [data-act="sv-auto"]');
@@ -505,10 +505,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // 6. conflit au lancement, on garde celle d'ici (envoi forcé)
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil-3" }); localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
     // 4A : même avec « Ouvrir directement », les deux versions sont montrées dans la carte, la plus avancée marquée
-    await page.reload(); await page.waitForSelector('.svc2[data-slot="1"] .svver', { timeout: 10000 });
-    if ((await page.$$('.svc2[data-slot="1"] .svver .vl')).length !== 2 || !(await page.$('.svc2[data-slot="1"] .svver .vl.best'))) fail("choix des parties : les deux versions ne sont pas montrées");
+    await page.reload(); await page.waitForSelector('[data-slot="1"] .svver', { timeout: 10000 });
+    if ((await page.$$('[data-slot="1"] .svver .vl')).length !== 2 || !(await page.$('[data-slot="1"] .svver .vl.best'))) fail("choix des parties : les deux versions ne sont pas montrées");
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/menu-conflit.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/menu-conflit-mob.png", fullPage: true }); await page.setViewportSize(vp); }
-    await page.click('.svc2[data-slot="1"] [data-act="sv-play"][data-w="local"]'); await page.waitForTimeout(1200);
+    await page.click('[data-slot="1"] [data-act="sv-play"][data-w="local"]'); await page.waitForTimeout(1200);
     m = await mock();
     if (JSON.parse(m.saves.u1.data).kamas < 77777) fail("conflit : version d'ici non envoyée");
     if (!(await page.evaluate(() => JSON.parse(localStorage.getItem("dofousxen-save-beta-copies") || "[]").some((c) => c.why === "enligne")))) fail("conflit : la version en ligne n'est pas gardée en copie de secours");
@@ -1454,7 +1454,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     p2.on("pageerror", (e) => fail(`parties, exception : ${e.message}`));
     const mock2 = () => p2.evaluate(() => JSON.parse(localStorage.getItem("__mock") || "{}"));
     const S2 = () => p2.evaluate(() => window.DX.S && { kamas: window.DX.S.kamas, n: window.DX.S.chars.length, name: window.DX.S.chars[0].name });
-    const card = (n) => `.svc2[data-slot="${n}"]`;
+    const card = (n) => `[data-slot="${n}"]`;
     // compte déjà connecté avec une partie 1 en ligne, aucune partie sur cet appareil (nouvel appareil)
     await p2.goto(base); await p2.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     await p2.fill("#startName", "Premier"); await p2.click('[data-act="startgame"]'); await p2.waitForSelector("#nav [data-nk]");
@@ -1504,7 +1504,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(await p2.evaluate(() => JSON.parse(localStorage.getItem("dofousxen-save-beta-2-copies") || "[]").some((c) => c.why === "avant")))) fail("parties : l'autre version de la partie 2 n'est pas gardée en copie");
     // supprimer la partie 2 : effacée de l'appareil et du compte, une copie reste
     await p2.evaluate(() => window.DX.social.options("sauvegarde")); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
+    // 2.2.1 : supprimer passe par « Gérer mes parties » (grandes cartes), puis retour aux trois portes
+    await p2.click('.svm [data-act="sv-gest"]'); await p2.waitForSelector(`.svm .svc2${card(2)}`, { timeout: 5000 });
     await p2.click(`${card(2)} [data-act="sv-del"]`); await p2.click(`${card(2)} [data-act="sv-delgo"]`); await p2.waitForSelector(`${card(2)}.empty`, { timeout: 5000 });
+    await p2.click('.svm [data-act="sv-gest"]'); await p2.waitForSelector(".svm .hub3", { timeout: 5000 });
     m2 = await mock2();
     if (m2.slots["u2:2"] || (await p2.evaluate(() => localStorage.getItem("dofousxen-save-beta-2")))) fail("parties : partie 2 pas supprimée");
     if (!m2.saves.u2) fail("parties : la suppression de la partie 2 a touché la partie 1");
@@ -1538,9 +1541,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-tel-3.png", fullPage: true });
     // sans compte (5A) : même écran, « Se connecter avec Discord » en haut
     await p3.click('.svm [data-act="sv-logout"]'); await p3.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
-    if ((await p3.$$(".svm .svc2:not(.empty)")).length !== 2) fail("parties : sans compte, les parties de l'appareil ne sont pas toutes montrées");
+    if ((await p3.$$(".svm [data-slot]:not(.empty)")).length !== 2) fail("parties : sans compte, les parties de l'appareil ne sont pas toutes montrées");
     // 1.0.30 : sans compte, la vente directe montre les prix et invite à créer un compte ; le surplus part au marchand de secours (v-guest)
-    await p3.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await p3.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    await p3.click('[data-slot="1"] [data-act="sv-play"]'); await p3.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
     await p3.evaluate(() => { const S = window.DX.S; S.res["Laine de Bouftou"] = 500; S.resCap["Laine de Bouftou"] = 100; window.ENGINE.emit(S, "harvest", { n: 1 }); window.DX.ui.tab = "cours"; window.DX.render(); });
     await p3.waitForSelector(".vd-cours", { timeout: 8000 }).catch(() => fail("vente directe (invité) : prix absents"));
     if (!(await p3.$('.vd-guest [data-act="on-loginscreen"]'))) fail("vente directe (invité) : pas d'invitation à créer un compte");
