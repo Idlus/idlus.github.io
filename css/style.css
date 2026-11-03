@@ -6500,3 +6500,11 @@ body.tb1 #chat .chmin{display:none}
 .qb-list{display:grid;gap:4px}.qb-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;border-radius:10px;background:var(--panel2)}.qb-row.ok{outline:1px solid var(--gold)}
 .qb-c{font-size:12px;padding:2px 8px;border-radius:8px;background:var(--panel3);white-space:nowrap}.qb-c.ok{background:var(--gold);color:#13200a;font-weight:800}
 @media (max-width:600px){.qb-row>b.grow{flex-basis:100%}}
+/* Saison 1, lot 7 (9A) : compteur du dernier combat */
+.ac-meter{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:3px 12px;margin-top:6px}
+.am-r{display:grid;grid-template-columns:minmax(0,72px) 1fr 34px;align-items:center;gap:6px}
+.am-r b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.am-r i{position:relative;height:6px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.am-r u{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#e8a33c,#f4d06f);border-radius:4px}
+.am-r s{position:absolute;left:0;bottom:0;height:2px;background:#7be39a;text-decoration:none}
+.am-r em{font-style:normal;text-align:right;opacity:.8}
