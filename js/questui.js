@@ -232,18 +232,26 @@
   }
 
   /* ---------- quêtes de région (0.1.49) ---------- */
+  // Saison 1 (5A) : à la fin, deux choix ; chacun donne son titre (le choix fait reste affiché)
+  function rqChoice(s, R, T, X) {
+    if (T.done) { const o = X[T.ch]; return o ? `<div class="hs-choice done"><span class="qj-lab">Ton choix</span><p class="hs-bub end">${h(o[2])}</p><span class="xs muted">titre « ${h(o[1])} »</span></div>` : ""; }
+    const ready = E.rqReady(s, R) && R.steps[T.i] && R.steps[T.i].t === "talk";
+    return `<div class="hs-choice ${ready ? "" : "lock"}"><span class="qj-lab">${ready ? "À toi de choisir" : "Le choix de la fin"}</span><p class="hs-bub">${h(X.q)}</p>
+      <div class="hs-opts">${["a", "b"].map((k) => `<button class="btn sm ${ready ? "primary" : ""}" ${ready ? `data-act="qj-rqclaim" data-v="${R.id}" data-o="${k}"` : "disabled"}><b>${h(X[k][0])}</b><small>titre « ${h(X[k][1])} »</small></button>`).join("")}</div></div>`;
+  }
   const regCls = (s, R) => { const T = E.rqState(s, R.id); return T.done ? "got" : E.rqOpen(s, R) ? "run" : "lock"; };
   const regFil = (s, R, f, t) => { const c = regCls(s, R); return f === "all" || (f === "lvl" ? c === "run" && (R.lvM >= t - 10 || E.rqState(s, R.id).i > 0) : f === "run" ? c === "run" && E.rqState(s, R.id).i > 0 : c === f); };
   function regionHtml(s) {
     const L = E.REGIONS; const t = top(s);
     if (!st.reg || !E.REGION[st.reg]) st.reg = (L.find((R) => E.rqReady(s, R)) || L.find((R) => regCls(s, R) === "run" && E.rqState(s, R.id).i > 0) || L.find((R) => regCls(s, R) === "run") || L[0]).id;
     const R = E.REGION[st.reg]; const T = E.rqState(s, R.id); const cls = regCls(s, R); const [pa, pb] = E.rqProgress(s, R);
+    const RS1 = E.histOn && E.histOn(s) && E.RQ_S1 ? E.RQ_S1[R.id] : null; // Saison 1 (5A) : dialogue et choix de fin
     const steps = R.steps.map((x, i) => { const c = T.done || i < T.i ? "ok" : i === T.i && cls === "run" ? "cur" : "todo"; let btn = "";
       if (c === "cur") {
         if (x.t === "kill") btn = `<button class="btn xs primary" data-act="zoneview" data-id="${x.sub}" data-gotab="world">Y aller</button>`;
         else if (x.t === "boss") btn = `<button class="btn xs primary" data-act="dgopen" data-id="${x.dg}">Voir le donjon</button>`;
         else if (x.t === "res") btn = `<button class="btn xs ${pa >= pb ? "primary" : ""}" data-act="qj-rqgive" data-v="${R.id}" ${pa >= pb ? "" : "disabled"}>Remettre</button>`;
-        else if (x.t === "talk") btn = `<button class="btn xs primary" data-act="qj-rqclaim" data-v="${R.id}">Terminer la quête</button>`;
+        else if (x.t === "talk") btn = RS1 ? "" : `<button class="btn xs primary" data-act="qj-rqclaim" data-v="${R.id}">Terminer la quête</button>`;
       }
       return `<li class="${c}"><span>${h(x.txt)}${c === "cur" && (x.t === "kill" || x.t === "res") ? ` <span class="num muted">${fmt(pa)}/${fmt(pb)}</span>` : ""}${c !== "ok" ? ` <span class="xs muted">· ${fmt(i === R.steps.length - 1 ? E.rqFinalRew(R) : E.rqStepRew(R, i))} k</span>` : ""}</span>${c === "cur" ? `<span class="row" style="gap:6px">${x.t !== "talk" ? X().pinBtn({ k: "rq", id: R.id }) : ""}${btn}</span>` : ""}</li>`; }).join("");
     const state = cls === "got" ? `<span class="qj-tag ok">Terminée ✓</span>` : cls === "run" ? `<span class="qj-tag todo">étape ${T.i + 1} sur ${R.steps.length}</span>` : `<span class="qj-tag">${R.lv > t + 5 ? `dès le niveau ${Math.max(1, R.lv - 5)}` : "zone à débloquer"}</span>`;
@@ -255,10 +263,10 @@
     return `${head(s, "region", "Chaque région du Monde des Douze a son histoire, donnée par un personnage de DOFUS : chasser, rapporter des ressources, vaincre les boss de la région. Les chasses et les boss se valident tout seuls ; les ressources se remettent avec un bouton. Au bout : kamas, un Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros. Une quête s'ouvre 5 niveaux avant la région.")}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-rf" data-v="${k}" aria-pressed="${k === st.rf}">${l} <b class="num">${L.filter((x) => regFil(s, x, k, t)).length}</b></button>`).join("")}<span class="grow"></span><span class="xs muted">${L.length} régions · ${L.reduce((a, x) => a + x.steps.length, 0)} étapes</span></div>
       <section class="panel qx-fiche2"><div class="pad qx-f2">
-        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc${NPCP[R.id] ? " port" : ""}">${npcImg(R)}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(R.npc)}</span></div>${state}</div>
-        <p class="small qx-story">« ${h(R.story)} »</p>
-        <ol class="qj-steps qx-steps">${steps}</ol></div>
-        <div class="qx-rewb"><span class="qj-lab">Récompense de fin</span><div class="qx-orprev">${hero ? X().heroCard(hero, "", { orn: "reg_" + R.id }) : ""}</div><div class="row" style="flex-wrap:nowrap"><img class="qx-omid" src="assets/ui/orn/orn_${R.id}.svg" alt=""><span><b>Emblème de ${h(R.name)}</b><br><span class="xs muted">ornement de carte de héros</span></span></div><span class="qj-rew">${IC("kamas")} <b>${fmt(E.rqFinalRew(R))} k</b> · ${IC("coffre")} <b>Coffre en argent</b> · ${IC("couronne")} <b>titre « ${h(E.regionTitle(R))} »</b></span><span class="xs muted">Chaque étape donne aussi des kamas et de l'XP.</span></div></div></section>
+        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc${NPCP[R.id] ? " port" : ""}">${npcImg(R)}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(E.rqNpc ? E.rqNpc(s, R) : R.npc)}</span></div>${state}</div>
+        ${RS1 ? `<div class="hs-talk">${RS1.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}</div>` : `<p class="small qx-story">« ${h(R.story)} »</p>`}
+        <ol class="qj-steps qx-steps">${steps}</ol>${RS1 ? rqChoice(s, R, T, RS1) : ""}</div>
+        <div class="qx-rewb"><span class="qj-lab">Récompense de fin</span><div class="qx-orprev">${hero ? X().heroCard(hero, "", { orn: "reg_" + R.id }) : ""}</div><div class="row" style="flex-wrap:nowrap"><img class="qx-omid" src="assets/ui/orn/orn_${R.id}.svg" alt=""><span><b>Emblème de ${h(R.name)}</b><br><span class="xs muted">ornement de carte de héros</span></span></div><span class="qj-rew">${IC("kamas")} <b>${fmt(E.rqFinalRew(R))} k</b> · ${IC("coffre")} <b>Coffre en argent</b> · ${IC("couronne")} <b>${RS1 ? `un titre au choix · ${E.RQ_BOOST} boosters` : `titre « ${h(E.regionTitle(R))} »`}</b></span><span class="xs muted">Chaque étape donne aussi des kamas et de l'XP.</span></div></div></section>
       <div class="qx-regs">${shown.map(card).join("") || `<p class="small muted">Aucune quête de région dans cette liste.</p>`}</div>`;
   }
 
@@ -427,7 +435,7 @@
       case "qj-rf": st.rf = d.v; break;
       case "qj-af": st.af = d.v; break;
       case "qj-ach": st.cat = d.v; st.af = "all"; st.achq = ""; ui.tab = "quests"; ui.qt = "ach"; window.scrollTo(0, 0); break;
-      case "qj-rqgive": case "qj-rqclaim": { const r = E.act(S(), a === "qj-rqgive" ? "rqGive" : "rqClaim", d.v); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
+      case "qj-rqgive": case "qj-rqclaim": { const r = a === "qj-rqgive" ? E.act(S(), "rqGive", d.v) : E.act(S(), "rqClaim", d.v, d.o); if (r) { X().toast(r, "warn"); return; } if (X().markDirty) X().markDirty(); if (a === "qj-rqgive") X().toast("Ressources remises.", "rare"); break; }
       default: if (window.HUI && window.HUI.act(a, t)) return; return;
     }
     X().render();

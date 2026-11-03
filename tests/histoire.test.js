@@ -56,3 +56,16 @@ console.log("ok - 10 scènes du chapitre 1 : boosters, Sablier à l'étape 6, ch
   S.chars[0].lvl = 5; E.emit(S, "win", { sub: "inc_route", mons: new Array(10).fill({ key: "x" }) });
   assert.strictEqual(S.hist, undefined); assert(S.quest.step >= 1, "l'Éternel garde ses étapes à la suite"); }
 console.log("ok - Éternel : quête principale inchangée");
+
+// quêtes de région (Saison 1, 5A) : un choix à la fin, son titre, 2 boosters ; l'Éternel finit comme avant
+{ const S = s1(); const R = E.REGION.incarnam; const T = E.rqState(S, "incarnam"); T.i = R.steps.length - 1;
+  assert.strictEqual(E.rqClaim(S, "incarnam"), "Fais ton choix pour finir la quête.");
+  const b0 = E.boosterLeft(S), k0 = S.kamas;
+  assert.strictEqual(E.act(S, "rqClaim", "incarnam", "b"), null);
+  assert.strictEqual(T.ch, "b"); assert(S.titlesExtra.includes(E.RQ_S1.incarnam.b[1])); assert(!S.titlesExtra.includes(E.regionTitle(R)), "le titre du choix remplace « l'Ami de … »");
+  assert.strictEqual(S.kamas - k0 >= E.rqFinalRew(R), true, "mêmes kamas"); assert.strictEqual(E.boosterLeft(S) - b0, E.RQ_BOOST);
+  Object.values(E.RQ_S1).forEach((x) => { [...x.in, x.q, x.a[2], x.b[2]].forEach((t) => assert(t.length <= 200)); [x.a[1], x.b[1]].forEach((t) => assert(t.length <= 40)); });
+  assert.deepStrictEqual(Object.keys(E.RQ_S1).sort(), E.REGIONS.map((x) => x.id).sort(), "un texte par région");
+  const S2 = E.newState("Héros", "iop"); E.refreshSystems(S2); const T2 = E.rqState(S2, "incarnam"); T2.i = R.steps.length - 1;
+  assert.strictEqual(E.rqClaim(S2, "incarnam"), null); assert(S2.titlesExtra.includes(E.regionTitle(R)), "Éternel : titre d'avant"); }
+console.log("ok - quêtes de région de la Saison 1 : choix obligatoire, titre du choix, 2 boosters ; Éternel inchangé");

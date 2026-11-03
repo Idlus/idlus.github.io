@@ -344,6 +344,100 @@
   const des0 = E.deserialize;
   E.deserialize = function () { const S = des0.apply(this, arguments); try { if (S && E.histOn(S)) { H(S); syncStep(S); } } catch (e) {} return S; };
 
+
+  /* ======================= QUÊTES DE RÉGION (Saison 1, 5A : dialogues et un choix) =======================
+     Mêmes étapes et mêmes récompenses que l'Éternel (js/quetes.js). En plus : le personnage parle, et à la fin on choisit
+     un camp ou une façon de faire. Le choix donne l'un des deux titres (cosmétique, sans effet sur l'équilibrage), et
+     chaque quête finie donne 2 boosters. in : 2 répliques ; q : la question ; a, b : [bouton, titre, réplique de fin]. */
+  E.RQ_S1 = {
+    incarnam: { in: ["Les âmes perdues errent sur la route d'Incarnam. Certaines ont peur, d'autres sont juste un peu perdues.", "Aide-moi à les guider. Rapporte-moi des Cendres Éternelles, elles éclairent leur chemin."],
+      q: "Les âmes sont rassemblées. Qu'en fais-tu ?", a: ["Les guider vers Astrub", "le Guide des âmes", "Elles partent vers Astrub, rassurées. Tu as un don pour ça."], b: ["Les garder à Incarnam", "le Gardien d'Incarnam", "Elles restent ici, sous ta garde. Incarnam aura un nouveau protecteur."] },
+    astrub: { in: ["Les archives d'Astrub ont été pillées ! Des pages entières ont disparu dans les souterrains.", "Retrouve les voleurs et ramène-moi de quoi réparer les reliures. Tout est noté, même les crimes."],
+      q: "Les voleurs sont pris. Que fais-tu des pages volées ?", a: ["Tout rendre aux archives", "l'Archiviste d'Astrub", "Chaque page à sa place. Ataman en pleure de joie."], b: ["En garder une pour toi", "le Lecteur curieux", "Une page manque, mais Ataman fait semblant de ne pas voir."] },
+    amakna: { in: ["Les champs du roi Allister sont envahis. Arakne, Bouftous, Scarafeuilles : tout le monde mange mon blé !", "Rapporte-moi des pattes d'Arakne, il me faut des preuves pour le roi. Et débarrasse-moi du Kwakwa."],
+      q: "Les champs sont libres. Comment les protéger ?", a: ["Planter un épouvantail", "l'Épouvantail d'Amakna", "Ton épouvantail fait peur à tout le monde, même à moi."], b: ["Monter la garde la nuit", "le Veilleur des champs", "Tu veilles sous la lune. Plus une bête n'ose approcher."] },
+    bontabrak: { in: ["Le Rat Blanc et le Rat Noir se disputent les égouts de Bonta et de Brâkmar. Les deux cités en ont assez.", "Fais le ménage dans les égouts et rends visite au Rat Blanc. Après, on verra qui a raison."],
+      q: "Le Rat Blanc est battu. Le Rat Noir te propose un marché. Tu acceptes ?", a: ["Soutenir le Rat Blanc", "l'Allié du Rat Blanc", "Le Rat Blanc garde ses égouts, et Bonta dort tranquille."], b: ["Écouter le Rat Noir", "le Complice du Rat Noir", "Le Rat Noir sourit dans l'ombre. Brâkmar saura s'en souvenir."] },
+    vulkania: { npc: "Volcanologue de Vulkania", in: ["Les volcans de Vulkania se réveillent, et les forêts d'Etraktopel brûlent à moitié.", "Rapporte-moi des Pierres de Cristal pour mes mesures, et calme les bêtes du cratère."],
+      q: "Le volcan gronde encore. Que fais-tu ?", a: ["Refroidir le cratère", "le Dompteur de lave", "La lave ralentit. L'archipel peut souffler."], b: ["Laisser le volcan parler", "l'Ami du volcan", "Tu laisses la lave couler où elle veut. Le volcan t'aime bien."] },
+    otomai: { in: ["Un coffret maudit s'est échoué sur l'île des naufragés. Je veux l'étudier, mais les Corailleurs le gardent.", "Rapporte-moi ces coffrets, et va voir le Corailleur Magistral dans sa grotte. Prudence, il pince."],
+      q: "Tu tiens le coffret maudit. Tu l'ouvres ?", a: ["Le donner à Otomaï", "l'Assistant d'Otomaï", "Otomaï l'étudie avec des gants. Sage décision."], b: ["L'ouvrir toi-même", "le Briseur de malédictions", "Le coffret claque, une fumée verte… et rien. Tu as eu de la chance."] },
+    cania: { in: ["Les Porkass piétinent tout et les Blops débordent du lac. Les plaines de Cania ont besoin de toi.", "Rapporte-moi des bouts de Blop, puis va voir le Blop Coco Royal. Et méfie-toi des Dopeuls du village."],
+      q: "Les Blops sont calmés. Que fais-tu du lac ?", a: ["Le rendre aux pêcheurs", "l'Ami des pêcheurs", "Les pêcheurs reviennent sur les rives. Cania sourit."], b: ["Le garder pour les Blops", "le Berger des Blops", "Les Blops restent, mais sages. Ils t'adorent maintenant."] },
+    abrak: { in: ["Les arbres vivants ont la mémoire longue, jeune pousse. Montre-leur que tu respectes la forêt.", "Rapporte-moi des racines tombées, sans en arracher une seule. Puis va voir la Reine Nyée."],
+      q: "La forêt t'accepte. Elle te demande un serment.", a: ["Protéger la forêt", "le Protecteur des Abraknydes", "Les branches s'inclinent. La forêt a un nouveau gardien."], b: ["Voyager librement", "le Marcheur des bois", "La forêt te laisse passer où tu veux. C'est un honneur rare."] },
+    wabbit: { in: ["Le Wa Wabbit a perdu la tête, et ses Wabbits avec lui. Moi, je me suis repenti. Aide-moi à ramener le calme.", "Rapporte-moi des dents de Wabbit, comme preuve. Puis va rendre visite au roi, deux fois s'il le faut."],
+      q: "Le Wa Wabbit est à genoux. Que fais-tu de lui ?", a: ["Lui pardonner", "le Clément des Wabbits", "Le Wa Wabbit renifle et promet d'être sage. On verra."], b: ["Le chasser de l'île", "le Fléau des Wabbits", "Le Wa Wabbit part en barque. L'île sera plus calme sans lui."] },
+    albuera: { in: ["Le Rakoopeur tient les futaies enneigées d'Albuera. Rejoins la rébellion, on a besoin de bras !", "Rapporte-nous de la résine pour nos torches, et va déloger le Rakoopeur de son refuge."],
+      q: "Le refuge est pris. La rébellion veut un chef.", a: ["Prendre la tête", "le Chef des rebelles", "Les rebelles lèvent leurs torches pour toi. Albuera est libre."], b: ["Laisser la place", "le Rebelle discret", "Tu repars sans bruit. On parlera longtemps du héros sans nom."] },
+    moon: { in: ["Des pirates ont pillé ma jungle, et les Kanniboul en profitent. Si tu me rapportes mon trésor, je saurai être généreux.", "Commence par les noix de Kokoko, mes préférées. Puis va voir les Kanniboul, ils me doivent des excuses."],
+      q: "Le trésor de Moon est retrouvé. Tu le lui rends ?", a: ["Tout rendre à Moon", "l'Ami de Moon", "Moon compte ses noix une par une. Il a l'air ému."], b: ["Garder une noix", "le Pirate de Moon", "Moon fronce les sourcils… puis rit. Un vrai pirate, enfin !"] },
+    pwak: { in: ["Les Chocomanciens ont volé la recette sacrée de Pwâk ! Sans elle, plus de gâteaux, plus de fête.", "Rapporte-moi de la viande pour la cuisine, et va reprendre la recette à Mawabouaino dans sa fonderie."],
+      q: "La recette est retrouvée. Qu'en fais-tu ?", a: ["La rendre au chef", "le Gardien de la recette", "Le chef serre la recette contre lui. Ce soir, on mange !"], b: ["La partager à toute l'île", "le Pâtissier de Pwâk", "Tout le monde cuisine, partout. L'île sent le chocolat."] },
+    koalaks: { in: ["Les Kaliptus dépérissent et le canyon gronde. La montagne compte sur toi, étranger.", "Rapporte-moi des fleurs de Kaliptus pour mes remèdes, et va voir le Koulosse dans sa caverne."],
+      q: "Le Koulosse est vaincu. La montagne veut un nom pour toi.", a: ["Grimpeur", "le Grimpeur des Koalaks", "Les Koalaks t'apprennent à grimper. Tu te débrouilles bien."], b: ["Gardien des Kaliptus", "le Gardien des Kaliptus", "Les Kaliptus refleurissent sous ta garde. La montagne est fière."] },
+    sidimote: { in: ["Quelque chose hurle la nuit dans les landes de Sidimote. Je veux savoir quoi, et le faire taire.", "Rapporte-moi du venin de scorbute, ça m'aide à rester éveillé. Puis suis les hurlements jusqu'à leur source."],
+      q: "Les hurlements se sont tus. Tu restes veiller ?", a: ["Veiller avec lui", "le Veilleur des landes", "Vous veillez ensemble. Les landes n'ont jamais été si calmes."], b: ["Repartir sur la route", "le Voyageur de Sidimote", "Tu repars au matin. Le Veilleur te salue de loin."] },
+    dragoeufs: { in: ["Les œufs du sanctuaire sont menacés. Un Dragoeuf ne pardonne jamais à qui touche à sa couvée.", "Rapporte-moi des coquilles tombées, puis passe l'épreuve de Draegnerys. Seuls les dignes approchent des œufs."],
+      q: "Un œuf éclot devant toi. Le petit te regarde.", a: ["Le rendre à sa mère", "l'Ami des Dragoeufs", "La mère dragoeuf baisse la tête devant toi. Un grand honneur."], b: ["Le laisser te suivre un peu", "le Parrain de Dragoeuf", "Le petit te suit jusqu'au village, puis rentre. Il reviendra."] },
+    saharach: { in: ["Le désert garde ses secrets sous le sable brûlant. Avec toi, nous irons jusqu'au cimetière des Mastodontes.", "Rapporte-moi de la graisse pour nos montures, puis va réveiller la Mantiscore… et la rendormir."],
+      q: "Le cimetière est ouvert. Que fais-tu des os des Mastodontes ?", a: ["Les laisser reposer", "le Respectueux des sables", "Le désert s'apaise. Les anciens dorment en paix."], b: ["Les étudier", "l'Explorateur de Saharach", "Tu repars les poches pleines de notes. Le Nomade est intrigué."] },
+    frigost: { in: ["La glace avance chaque nuit sur la bourgade. Il faut briser l'emprise d'Harebourg, pas à pas.", "Rapporte-moi de quoi tenir chaud aux habitants, puis va voir le Royalmouth dans sa serre."],
+      q: "La bourgade est sauvée cette nuit. Et demain ?", a: ["Rester protéger la bourgade", "le Rempart de Frigost", "La bourgade dort tranquille. Tu es son rempart."], b: ["Marcher vers Harebourg", "le Briseur de glace", "Tu regardes le château au loin. Un jour, tu iras."] },
+    asse: { in: ["Mon théâtre a besoin d'un héros pour sa prochaine pièce. Le rôle est dangereux, évidemment.", "Rapporte-moi des cornes de Rhinoféroce pour les décors, et va affronter le Maître des Pantins sur scène."],
+      q: "Le public applaudit. Tu fais une révérence ?", a: ["Saluer le public", "la Vedette de Dramak", "Le public hurle ton nom. Dramak te réserve le premier rôle."], b: ["Quitter la scène en silence", "le Héros des coulisses", "Tu disparais dans les coulisses. Le mystère fait ta légende."] },
+    divines: { in: ["Les mondes des dieux s'ouvrent à ceux qui ont fait leurs preuves. Les as-tu faites ?", "Rapporte-moi des cordes de Boursoin, puis va voir Malléfisk et Fraktale. Les dieux regardent."],
+      q: "Les dieux te proposent une bénédiction. Laquelle ?", a: ["Celle de la force", "le Béni des dieux", "Une chaleur te traverse. Les dieux t'ont choisi."], b: ["Aucune, merci", "l'Indépendant des Douze", "Les dieux sont vexés, mais impressionnés. Rares sont ceux qui refusent."] },
+    pandala: { in: ["Les quatre éléments de Pandala se querellent. Un sage doit rétablir l'équilibre, et tu es là.", "Rapporte-moi des tiges de Bambouto pour la méditation, puis va voir Damadrya et la Dame des eaux."],
+      q: "L'équilibre revient. Quel élément veux-tu honorer ?", a: ["La terre et le feu", "l'Élu de Feudala", "Le feu danse pour toi à Feudala."], b: ["L'eau et l'air", "l'Élu d'Akwadala", "L'eau chante pour toi à Akwadala."] },
+    minotoror: { in: ["Le Minotoror rôde au cœur du labyrinthe. Peu en reviennent : prouve que tu es de ceux-là.", "Rapporte-moi des peaux de Minos, puis entre. Deux fois, si tu veux mon respect."],
+      q: "Tu ressors du labyrinthe. Tu notes le chemin ?", a: ["Dessiner la carte", "le Cartographe du labyrinthe", "Ta carte est accrochée à l'entrée. Plus personne ne se perd."], b: ["Garder le secret", "le Maître du labyrinthe", "Toi seul connais le chemin. Le gardien te respecte."] },
+    grobe: { in: ["L'Armée de brume s'éveille dans les tombeaux. Les Yokai ne doivent pas quitter l'île de Grobe.", "Rapporte-moi des étoffes de samouraï fantôme pour les rites, puis va calmer le Shogun et Koumiho."],
+      q: "Les esprits sont calmes. Que leur offres-tu ?", a: ["Une prière", "le Pèlerin de Grobe", "Les esprits s'inclinent et retournent dormir."], b: ["Un combat d'honneur", "le Samouraï de brume", "Un esprit te salue, sabre levé. Tu as gagné son respect."] },
+    valonia: { in: ["Les galeries d'Ereboria ne sont plus sûres depuis que les Marteaux-Aigris s'y sont retranchés.", "Rapporte-moi du sel pour nos réserves, et va voir mon cousin Clochecuivre dans son bastion. Il a mauvais caractère."],
+      q: "Les Marteaux-Aigris se rendent. Que fais-tu d'eux ?", a: ["Les réconcilier", "le Pacificateur de Valonia", "Les Marteaux-Aigris trinquent avec les mineurs. Enfin."], b: ["Les chasser des galeries", "le Marteau de Valonia", "Les galeries sont vides et sûres. Barbéryl t'offre une bière."] },
+    obscure: { in: ["L'Ombre grandit dans sa pyramide. Il faut l'affronter avant qu'elle n'avale la lumière.", "Rapporte-moi des masques du Vide, ils protègent de son regard. Puis va la voir, deux fois s'il le faut."],
+      q: "L'Ombre est vaincue. Il reste un éclat d'ombre. Tu le gardes ?", a: ["Le détruire", "le Porteur de lumière", "L'éclat se dissout dans la lumière. Tu as bien fait."], b: ["Le garder", "le Maître des ombres", "L'éclat se blottit dans ta poche. Il est sage… pour l'instant."] },
+    nimotopia: { in: ["Le Comte Razof chasse tout ce qui bouge à Nimotopia. À notre tour de le chasser.", "Rapporte-moi du poivre pour brouiller les pistes, puis va le trouver dans son camp."],
+      q: "Le Comte Razof est pris. Que fais-tu de ses trophées ?", a: ["Libérer les bêtes", "l'Ami des bêtes", "Les bêtes repartent dans les bois. Nimotopia respire."], b: ["Garder un trophée", "le Chasseur de chasseurs", "Tu gardes le chapeau du Comte. Il te va bien."] },
+    sakai: { in: ["Les Gobelins ont repris la mine abandonnée. Il nous faut la récupérer avant l'hiver.", "Rapporte-moi des oreilles de Gobosteur comme preuve, puis va déloger Grolloum."],
+      q: "La mine est à vous. Tu partages le filon ?", a: ["Avec tous les mineurs", "le Camarade de Sakaï", "Tout le monde a sa part. Les mineurs chantent ton nom."], b: ["Avec le chef seulement", "le Contremaître de Sakaï", "Le chef te nomme contremaître. Ça grogne un peu."] },
+    ecailles: { in: ["Les Crocodailles ont pris Crocuzko. Torkélonia attend son champion.", "Rapporte-nous des aubergines, c'est ce qui les attire. Puis va au sanctuaire de Torkélonia."],
+      q: "Torkélonia est libérée. Elle te propose de rester.", a: ["Devenir son champion", "le Champion de Torkélonia", "Torkélonia pose sa carapace près de toi. Tu es son champion."], b: ["Repartir à l'aventure", "le Voyageur des Écailles", "Elle te regarde partir, lentement, comme une tortue."] },
+    possedes: { in: ["Kabahal prépare un rituel sur l'atoll. Le cauchemar de l'Aurore Pourpre ne doit pas recommencer.", "Rapporte-moi du sel pour tracer des cercles de protection, puis va briser l'Éternel Conflit et le rituel."],
+      q: "Le rituel est brisé. Tu dis la vérité aux survivants ?", a: ["Tout leur raconter", "le Témoin de l'Aurore", "Les survivants pleurent, puis sourient. Ils savent enfin."], b: ["Garder le secret", "le Gardien du cauchemar", "Tu gardes le cauchemar pour toi. Ils dormiront mieux."] },
+    sufokia: { in: ["Merkator a englouti la baie. Les trithons attendent un héros capable de respirer sous l'eau.", "Rapporte-moi des piles Steamer pour nos scaphandres, puis plonge vers l'Aquadôme et le vaisseau de Meno."],
+      q: "La baie est libre. La flotte te propose un grade.", a: ["Accepter", "l'Amiral de la baie", "Tu reçois ta casquette d'amiral. Elle prend un peu l'eau."], b: ["Rester simple marin", "le Marin de Sufokia", "Tu gardes ton bonnet de marin. Les trithons t'adorent."] },
+    cavaliers: { in: ["Les quatre Cavaliers chevauchent vers le Monde des Douze. Il faut les arrêter un à un.", "Rapporte-moi des haricots, oui, des haricots : ils détestent ça. Puis va voir Corruption et Guerre."],
+      q: "Deux Cavaliers sont tombés. Tu poursuis les autres ?", a: ["Les poursuivre", "le Chasseur de Cavaliers", "Tu pars sur leurs traces. Ils te craignent déjà."], b: ["Garder la frontière", "le Rempart des Douze", "Tu tiens la frontière. Aucun Cavalier ne passera."] },
+    harebourg: { in: ["Mon père, le Comte, a sombré dans la folie du temps. Avant lui, il faut passer mes propres défenses.", "Oui, les miennes : je dois savoir si tu es assez fort. Rapporte-moi de la bave de Nessil, puis viens me battre."],
+      q: "Tu as battu Ilyzaelle. Elle te demande de l'aide pour son père.", a: ["Lui promettre", "le Protecteur d'Ilyzaelle", "Ilyzaelle sourit, pour la première fois depuis longtemps."], b: ["Refuser, trop dangereux", "l'Héritier du froid", "Elle hoche la tête. Elle ira seule, mais tu as gagné son estime."] },
+    wukin: { in: ["L'encre et le papier se font la guerre. Un royaume entier risque de s'effacer.", "Rapporte-moi des haricots pour fabriquer de l'encre, puis va voir le roi Imagami et la reine Amirukam."],
+      q: "Les deux royaumes signent la paix. Avec quelle plume ?", a: ["La plume d'encre", "le Scribe de Wukin", "Le traité brille d'encre noire. Wukin est fier de toi."], b: ["La feuille de papier", "le Plieur de Wukang", "Le traité est plié en forme de grue. Wukang applaudit."] },
+  };
+  const rqClaim0 = E.rqClaim;
+  // Saison 1 : la fin de la quête demande un choix (a ou b) ; le titre vient du choix, le reste ne change pas, plus 2 boosters
+  E.rqClaim = function (S, id, opt) {
+    const X = E.RQ_S1[id];
+    if (!E.histOn(S) || !X) return rqClaim0.apply(this, arguments);
+    if (opt !== "a" && opt !== "b") return "Fais ton choix pour finir la quête.";
+    const t0 = (S.titlesExtra || []).slice();
+    const r = rqClaim0.call(this, S, id); if (r) return r;
+    const base = E.regionTitle(E.REGION[id]);
+    if (!t0.includes(base)) S.titlesExtra = (S.titlesExtra || []).filter((t) => t !== base); // le titre « l'Ami de … » laisse la place à celui du choix
+    const T = E.rqState(S, id); T.ch = opt; const ti = X[opt][1];
+    if (!S.titlesExtra.includes(ti)) S.titlesExtra.push(ti);
+    const nb = E.boosterGive ? E.boosterGive(S, E.RQ_BOOST) : 0;
+    E.note(S, `${E.rqNpc(S, E.REGION[id])} : « ${X[opt][2]} » (titre « ${ti} »${nb ? `, +${nb} boosters` : ""})`, "rare");
+    return null;
+  };
+  E.RQ_BOOST = 2;
+  // espaces insécables avant ? ! : ; et dans les guillemets, pour qu'un signe ne parte jamais seul à la ligne
+  const nb = (t) => (typeof t === "string" ? t.replace(/ ([?!:;»])/g, "\u00a0$1").replace(/« /g, "«\u00a0") : t);
+  SC.forEach((x) => { x.in = x.in.map(nb); x.out = nb(x.out); });
+  Object.values(E.RQ_S1).forEach((x) => { x.in = x.in.map(nb); x.q = nb(x.q); ["a", "b"].forEach((k) => { x[k] = x[k].map(nb); }); });
+  E.rqNpc = (S, R) => (E.histOn(S) && E.RQ_S1[R.id] && E.RQ_S1[R.id].npc) || R.npc;
+
   /* ---------------- personnage d'une scène ---------------- */
   E.histWho = (sc) => {
     if (sc.npc && E.HIST_NPC[sc.npc]) return E.HIST_NPC[sc.npc];

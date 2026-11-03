@@ -38,3 +38,10 @@
   .hs-goals li .btn{margin-left:34px}
   .hs-foe{display:none}
 }
+/* quêtes de région de la Saison 1 : le choix de fin */
+.hs-choice{display:grid;gap:8px;padding:10px 12px;border-radius:12px;border:2px dashed var(--gold);background:var(--panel2)}
+.hs-choice.lock{opacity:.6;border-style:dotted}
+.hs-choice.done{border-style:solid}
+.hs-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.hs-opts .btn{display:grid;gap:2px;text-align:left;padding:8px 10px;height:auto;white-space:normal}
+.hs-opts .btn small{font-weight:600;opacity:.8}
