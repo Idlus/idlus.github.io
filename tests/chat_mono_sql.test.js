@@ -266,6 +266,14 @@ try {
   assert.strictEqual(anon(`select count(*) from chat_msgs where ch = 's' and body = 'T:saison'`), "1", "salon 's' lisible par un visiteur");
   assert.strictEqual(anon(`select count(*) from chat_msgs where ch = 'g' and body = 'T:saison'`), "0", "rien dans le Général");
   assert.strictEqual(as(99, `select adm_chat_clear('s')`), "1", "Mathis peut vider le salon 's'");
+  // 2.2.0.1 : Monocompte ouvert à tous (saison hors test ouverte) : un compte sans accès de testeur lit et écrit 'm'
+  { const before = as(3, `select chat_mono_ok()`);
+    q(`insert into mono.saisons (id, nom, debut, etat, test) values (1, 'Saison 1', now() - interval '1 hour', 'ouverte', false) on conflict (id) do update set etat = 'ouverte', test = false`);
+    assert.strictEqual(as(3, `select chat_mono_ok()`), "t", "Saison 1 ouverte à tous : salon 'm' ouvert à tout compte (avant : " + before + ")");
+    assert.strictEqual(anon(`select chat_mono_ok()`), "f", "visiteur : toujours pas");
+    q(`update mono.saisons set etat = 'finie' where id = 1`);
+    assert.strictEqual(as(3, `select chat_mono_ok()`), before, "saison finie : retour à la règle des testeurs"); }
+  console.log("ok - 2.2.0.1 : salon Monocompte ouvert à tous pendant une saison hors test");
   console.log("ok - 2.2.0 : salon Saison 1 ('s') séparé du Général, lisible par tous, vidable par Mathis");
 } finally {
   run(`drop database if exists ${DB}`, URL0);

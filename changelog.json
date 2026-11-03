@@ -1,6 +1,15 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.0.1",
   "versions": [
+    {
+      "v": "2.2.0.1",
+      "name": "Partie de la bêta",
+      "items": [
+        "Monocompte : une partie de la bêta restée sur l'appareil empêchait d'entrer dans la Saison 1. Elle passe maintenant d'elle-même dans l'Éternel au lancement, rien n'est perdu",
+        "Monocompte : le chat disait « Ce salon est réservé aux joueurs du Monocompte » aux nouveaux joueurs. Le salon est maintenant ouvert à tous",
+        "Le chat de l'Éternel et de la Saison 1 ne montre plus le salon Monocompte : chaque partie voit son salon, plus Commerce, PvP et Privé"
+      ]
+    },
     {
       "v": "2.2.0",
       "name": "Saison 1",

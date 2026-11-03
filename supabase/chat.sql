@@ -65,7 +65,9 @@ alter table public.chat_msgs enable row level security;
 create or replace function public.chat_mono_ok() returns boolean language plpgsql stable security definer set search_path = public
 as $$ declare u uuid := auth.uid(); begin
   if u is null or to_regclass('mono.testeurs') is null then return false; end if;
-  return exists (select 1 from mono.testeurs where user_id = u) or exists (select 1 from public.admins where user_id = u);
+  if exists (select 1 from mono.testeurs where user_id = u) or exists (select 1 from public.admins where user_id = u) then return true; end if;
+  -- 2.2.0.1 : Monocompte ouvert à tous depuis la Saison 1 (comme mono.acces) : tout compte connecté a le salon 'm'
+  return to_regclass('mono.saisons') is not null and exists (select 1 from mono.saisons where etat in ('ouverte', 'cloture') and not test);
 end $$;
 revoke all on function public.chat_mono_ok() from public;
 grant execute on function public.chat_mono_ok() to anon, authenticated;

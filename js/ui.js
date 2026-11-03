@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.0";
+const GAME_VERSION = "2.2.0.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.0.1", name: "Partie de la bêta", items: [
+    "Monocompte : une partie de la bêta restée sur l'appareil empêchait d'entrer dans la Saison 1. Elle passe maintenant d'elle-même dans l'Éternel au lancement, rien n'est perdu",
+    "Monocompte : le chat disait « Ce salon est réservé aux joueurs du Monocompte » aux nouveaux joueurs. Le salon est maintenant ouvert à tous",
+    "Le chat de l'Éternel et de la Saison 1 ne montre plus le salon Monocompte : chaque partie voit son salon, plus Commerce, PvP et Privé" ] },
   { v: "2.2.0", name: "Saison 1", items: [
     "La Saison 1 « Les Fragments du Temps » commence ! Nouvelle partie Classique · Saison 1 : tout le monde repart de zéro, avec ses classements. Ta partie actuelle devient l'Éternel et ne change pas",
     "Le Monocompte sort de la bêta et ouvre sa Saison 1 pour tout le monde. Les héros de la bêta passent dans l'Éternel du Monocompte",

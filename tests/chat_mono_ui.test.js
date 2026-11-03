@@ -161,16 +161,18 @@ function fake() {
 
     await login(p1, true);
     t = await tabs(p1);
-    if (!t.includes("g:Éternel") || !t.includes("m:Monocompte") || t.indexOf("m:Monocompte") !== t.indexOf("g:Éternel") + 1) fail("compte avec accès : onglets Classique puis Monocompte : " + JSON.stringify(t));
+    // 2.2.0.1 (Mathis) : partie Classique (Éternel) : jamais le salon Monocompte, même avec l'accès
+    if (!t.includes("g:Éternel") || t.includes("m:Monocompte")) fail("compte avec accès, partie Classique : Éternel sans Monocompte : " + JSON.stringify(t));
     if ((await cur(p1)) !== "g") fail("partie Classique : onglet Classique par défaut, trouvé " + (await cur(p1)));
     if (!/Bonjour le Classique/.test(await listTxt(p1)) || /Bonjour le Monocompte/.test(await listTxt(p1))) fail("Classique : messages du salon g seulement");
     if (/Épinglé pour le Monocompte/.test(await p1.evaluate(() => document.querySelector("#chat").textContent))) fail("épinglé sur 'm' seulement : absent du Classique");
     a = await sendTxt(p1, "message classique");
     if ("p_ch" in a || a.p_body !== "message classique") fail("Classique : chat_send sans p_ch : " + JSON.stringify(a));
-    // non lus du salon 'm' : pastille de l'onglet
+    await p1.evaluate(() => { window.CHAT.state.tab = "m"; window.CHAT.repaint(); });
+    if ((await cur(p1)) === "m") fail("partie Classique : le salon Monocompte ne s'affiche jamais");
+    // message reçu dans 'm' pendant la partie Classique, puis passage dans une partie Monocompte
     await p1.evaluate(() => window.__CM.live({ new: { id: 500, ch: "m", user_id: "00000000-0000-0000-0000-000000000003", pseudo: "Bob", lvl: 3, body: "coucou les monos", kind: "msg", created_at: new Date().toISOString() } }));
-    const badge = await p1.evaluate(() => { const b = document.querySelector('#chat .ch-tab[data-v="m"] .n'); return b ? b.textContent : ""; });
-    if (badge !== "1") fail("message reçu dans 'm' : pastille 1 sur l'onglet Monocompte, trouvé " + JSON.stringify(badge));
+    await p1.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S); window.DX.render(); window.CHAT.repaint(); });
     await p1.click('#chat .ch-tab[data-v="m"]');
     if ((await cur(p1)) !== "m") fail("clic sur Monocompte : salon 'm' affiché");
     const lm = await listTxt(p1);
@@ -178,7 +180,7 @@ function fake() {
     if (await p1.evaluate(() => window.CHAT.state.unreadM)) fail("salon Monocompte ouvert : non lus remis à zéro");
     if (!/Épinglé pour le Monocompte/.test(await p1.evaluate(() => document.querySelector("#chat").textContent))) fail("épinglé sur 'm' : affiché dans le salon Monocompte");
     if ((await p1.getAttribute("#chIn", "placeholder")) !== "Écrire aux joueurs du Monocompte…") fail("Monocompte : texte d'aide de la zone d'écriture");
-    await profils(p1, 1280);
+    await profils(p1, 1280, true); // 2.2.0.1 : partie Monocompte, sans salon Éternel
     console.log("ok - 1280 px : 'm' montre le héros Monocompte (niv. 12, Crâ) sans titre, ailes ni camp Classique ; carte Monocompte au clic sur le pseudo ; 'g' garde le profil Classique");
     a = await sendTxt(p1, "message mono");
     if (a.p_ch !== "m" || a.p_body !== "message mono") fail("Monocompte : chat_send avec p_ch 'm' : " + JSON.stringify(a));

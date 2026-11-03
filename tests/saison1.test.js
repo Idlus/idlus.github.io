@@ -205,5 +205,16 @@ const at = (S, day) => { now = E.monoT0(S) + (day - 1) * DAY + 3600000; };
   for (let i = 0; i < 4; i++) E.tfPost(S2, 100, "defi", "t" + i); assert.strictEqual(E.tfBuy(S2, "emb"), null, "partie jamais en ligne : achat local, sans promesse");
   E.tfSrv = null;
   console.log("ok - registre du serveur : solde affiché, file des gains, achat fait par le serveur, repli sur la partie");
+  // 2.2.0.1 : partie de la bêta (sans numéro de saison, commencée avant l'ouverture de la Saison 1) : finie, elle passe dans l'Éternel
+  { const debut = new Date(E.now() + 3600e3).toISOString();
+    globalThis.ONLINE = { mono: { ok: true, saison: { id: 1, etat: "ouverte", test: false, debut } } };
+    const B = E.monoStart(E.newState("Beta", "cra")); delete B.mono.sid;
+    assert.ok(E.monoOtherSeason(B) && E.monoOver(B), "partie de la bêta d'avant l'ouverture : autre saison, finie");
+    const N = E.monoStart(E.newState("Neuf", "cra")); N.mono.t0 = Date.parse(debut) + 1000;
+    assert.ok(!E.monoOtherSeason(N), "partie sans numéro commencée après l'ouverture : saison en cours");
+    const C2 = E.monoStart(E.newState("S1", "cra")); C2.mono.sid = 1; assert.ok(!E.monoOtherSeason(C2), "partie de la Saison 1");
+    C2.mono.sid = 0; assert.ok(E.monoOtherSeason(C2), "partie marquée saison 0");
+    delete globalThis.ONLINE; }
+  console.log("ok - 2.2.0.1 : partie de la bêta d'avant la Saison 1 envoyée dans l'Éternel");
   console.log("saison1 : tout est bon");
 })().catch((e) => { console.error(e); process.exit(1); });
