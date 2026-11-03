@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -301,6 +301,36 @@ jobs:
           bash tools/serveur/vps_sql.sh fichier /tmp/cle.sql; rm -f /tmp/cle.sql
           bash tools/serveur/vps_sql.sh lecture "select (cle is not null) as cle_posee, actif, length(cle) as longueur from public.vote_cfg"
           bash tools/serveur/vps_sql.sh commande 'ls -l volumes/functions/vote/ && docker logs --since 10m supabase-edge-functions 2>&1 | grep -iE "vote" | grep -iE "error|erreur|exception" | tail -10'
+      - name: Saison 1, installation du Classique (sauvegarde de la base, schéma s1, API, date d'ouverture)
+        # Ne se lance que sur l'ordre écrit de Mathis (phrase d'installation de la Saison 1). Relançable : la date d'ouverture
+        # n'est posée qu'une fois (si elle est vide). Ne touche à aucune table du Classique actuel (l'Éternel) : saison1.sql
+        # crée le schéma s1 ; tournoi.sql ajoute le Tournoi des guildes dans public (nouvelles tables seulement).
+        if: inputs.etape == 'saison1-installer'
+        run: |
+          echo "SSHO=$SSHO" >> "$GITHUB_ENV"
+          echo '== Sauvegarde complète de la base avant installation'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-saison1-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > "$f"; ls -lh "$f"'
+          for f in supabase/tournoi.sql supabase/saison1.sql; do
+            echo "== $f"
+            { echo "set lock_timeout = '3s';"; cat "$f"; } > /tmp/q.sql
+            for essai in 1 2 3 4 5 6; do
+              if bash tools/serveur/vps_sql.sh fichier /tmp/q.sql > /tmp/r.txt 2>&1; then echo "OK (essai $essai)"; break; fi
+              tail -c 800 /tmp/r.txt; echo
+              if grep -qiE 'lock timeout|deadlock' /tmp/r.txt && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+              exit 1
+            done
+          done
+          echo '== API : schéma s1 exposé (PGRST_DB_SCHEMAS), puis redémarrage de l API'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; v=$(grep "^PGRST_DB_SCHEMAS=" .env | cut -d= -f2-); case ",$v," in *,s1,*) echo "déjà : $v" ;; *) sed -i "s|^PGRST_DB_SCHEMAS=.*$|PGRST_DB_SCHEMAS=$v,s1|" .env; echo "avant : $v"; grep "^PGRST_DB_SCHEMAS=" .env ;; esac; docker compose up -d rest >/dev/null 2>&1; echo "API relancée"'
+          sleep 10
+          echo '== Date d ouverture de la Saison 1 (posée une seule fois)'
+          printf '%s\n' "update s1.s1_cfg set debut = now() where id = 1 and debut is null;" "notify pgrst, 'reload schema';" > /tmp/q.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/q.sql
+      - name: Saison 1, état (lecture seule)
+        if: inputs.etape == 'saison1-installer' || inputs.etape == 'saison1-etat'
+        run: |
+          bash tools/serveur/vps_sql.sh lecture "select (select debut from s1.s1_cfg where id = 1) as debut, (select count(*) from information_schema.tables where table_schema = 's1') as tables_s1, (select count(*) from s1.saves) as parties_s1, (select count(*) from public.saves) as parties_eternel"
+          bash tools/serveur/vps_sql.sh commande 'grep "^PGRST_DB_SCHEMAS=" .env; curl -s -o /dev/null -w "API s1 : %{http_code}\n" -H "apikey: $(grep ^ANON_KEY= .env | cut -d= -f2-)" -H "Accept-Profile: s1" "http://localhost:8000/rest/v1/s1_cfg?select=debut"'
       - name: Monocompte, lot 3 (sauvegarde de la base, 5 fichiers SQL, fonction « mono », saison de test)
         # 21/10/2026, ordre écrit de Mathis : « Installe le lot 3 Monocompte sur le serveur ». Lancé depuis la branche de la bêta.
         # Ne touche ni aux tables du Classique ni à la fonction « record ».
