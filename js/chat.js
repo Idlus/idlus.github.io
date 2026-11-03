@@ -279,9 +279,13 @@
     const mono = m.ch === "m", mh = mono ? monoHero(m) : null;
     const cls = mono ? mh.cls : m.cls, lvl = mono ? mh.lvl : m.lvl, title = mono ? mh.title : m.title;
     const med = X().cmed(cls, lvl);
-    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null)}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${mono ? " mono" : ""}${X().staffCls(m.user_id)}">${!mono && window.ALIGNUI && window.ALIGNUI.wings ? window.ALIGNUI.wings(m.user_id, m.pseudo, med) : med}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${pcWrap(m, X().pname(m.pseudo || "?", m.user_id, mono ? { mono: true } : null))}</button>${lvl ? `<span class="lv">niv. ${lvl}</span>` : ""}${title ? `<span class="tt${ttR(title)}">${h(title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   /* 2.1.35.3 : héros Monocompte d'un message du salon 'm' (data.mono posé par chat_send) ; ancien message : rien */
+  /* Saison 1, lot 3 (js/garderobe.js) : titre coloré par sa rareté, couleur du pseudo choisie dans la Garde-robe (data.pc posé par chat_send) */
+  const PCOLS = ["braise", "sylve", "givre", "or", "temps", "voix"];
+  const ttR = (t) => { const E = window.DX && window.DX.E; return E && E.titleRar ? " gr-t-" + E.titleRar(t) : ""; };
+  const pcWrap = (m, html) => { const pc = m && m.data && m.data.pc; return PCOLS.includes(pc) ? `<span class="gr-pc gr-pc-${pc}">${html}</span>` : html; };
   const monoHero = (m) => (m && m.data && m.data.mono ? { cls: m.cls || null, lvl: m.lvl || 1, title: m.title || null } : { cls: null, lvl: 0, title: null });
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {

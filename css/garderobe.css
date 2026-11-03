@@ -1,0 +1,76 @@
+/* Saison 1, lot 3 : Garde-robe (js/garderobeui.js). Raretés : Commun gris, Rare bleu, Épique violet, Légendaire or, Saison glacier. */
+:root{--r-c:#a3a8a0;--r-r:#4ea3ff;--r-e:#b77cff;--r-l:#f4c84a;--r-s:#7fe3ff}
+/* sur la carte du héros : décor (derrière), aura (sous les pieds), compagnon (devant) */
+.hcard .art .gr-bg,.gr-stage .gr-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.6;z-index:0}
+.hcard .art .gr-bg::after,.gr-stage .gr-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.55))}
+.gr-aura{position:absolute;left:50%;bottom:2px;width:80%;height:34px;transform:translateX(-50%);border-radius:50%;z-index:1;pointer-events:none;
+  background:radial-gradient(closest-side,var(--ga,#ffb35a) 0,color-mix(in srgb,var(--ga,#ffb35a) 45%,transparent) 45%,transparent 100%);filter:blur(2px);animation:grPulse 2.6s ease-in-out infinite}
+.gr-aura::after{content:"";position:absolute;inset:-60% 10% 30%;background:radial-gradient(closest-side,color-mix(in srgb,var(--ga,#ffb35a) 35%,transparent),transparent);animation:grRise 3.2s ease-in-out infinite}
+.gr-aura.mini{position:relative;left:auto;bottom:auto;transform:none;display:block;width:54px;height:20px;margin:14px auto 0}
+.gr-a-braise{--ga:#ff8a3c}.gr-a-sylve{--ga:#7fe07a}.gr-a-givre{--ga:#9fe8ff}.gr-a-bonta{--ga:#ffe9a8}.gr-a-brakmar{--ga:#ff4a5e}
+.gr-a-eclat{--ga:#d6a8ff}.gr-a-dore{--ga:#ffd24a}.gr-a-sablier{--ga:#7fe3ff}.gr-a-fissure{--ga:#5ad1ff}.gr-a-voix{--ga:#f4c84a}
+.gr-a-fissure::after{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--ga) 50%,transparent) 0 6deg,transparent 6deg 24deg);border-radius:50%;animation:grSpin 9s linear infinite}
+.gr-a-voix::after{background:radial-gradient(closest-side,#fff7d6,transparent);animation:grRise 2s ease-in-out infinite}
+@keyframes grPulse{50%{opacity:.65;transform:translateX(-50%) scale(1.08)}}
+@keyframes grRise{50%{opacity:.4;transform:translateY(-6px)}}
+@keyframes grSpin{to{transform:rotate(360deg)}}
+.gr-aura.mini{animation:none}
+.hcard .art .gr-comp{position:absolute;right:6px;bottom:4px;width:40px;height:40px;object-fit:contain;z-index:4;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+/* titres colorés (5A) et couleur du pseudo (13A) */
+.gr-t-c{color:var(--r-c)}.gr-t-r{color:var(--r-r)}.gr-t-e{color:var(--r-e)}.gr-t-l{color:var(--r-l)}.gr-t-s{color:var(--r-s)}
+.ttl[class*="gr-t-"],.tt[class*="gr-t-"]{font-weight:800}
+.gr-ttl{display:inline-block;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 14%,transparent);border:1px solid color-mix(in srgb,currentColor 40%,transparent);font-size:12px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gr-pc{font-weight:900}
+.gr-pc-braise{color:#ff8a3c}.gr-pc-sylve{color:#7fe07a}.gr-pc-givre{color:#9fe8ff;text-shadow:0 0 6px rgba(159,232,255,.5)}
+.gr-pc-or,.gr-pc-voix,.gr-pc-temps{background:linear-gradient(90deg,#fff1b0,#f4c84a,#c58a1b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gr-pc-temps{background-image:linear-gradient(90deg,#d9fbff,#7fe3ff,#3a8fd6)}
+.gr-pc-voix{background-image:linear-gradient(90deg,#fff7d6,#f4c84a,#ff9d4a,#f4c84a)}
+/* la page */
+.gr-heroes{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}
+.gr-hb{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;width:76px;padding:4px;border-radius:12px;background:var(--panel2);border:2px solid transparent;cursor:pointer;color:inherit;font:inherit;font-size:11.5px;font-weight:700}
+.gr-hb.on{border-color:var(--gold)}.gr-hb .gr-hl{width:56px;height:56px;object-fit:contain}.gr-hb span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gr-wrap{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;align-items:start}
+.gr-prev{display:grid;gap:10px;padding:12px;position:sticky;top:10px}
+.gr-stage{position:relative;height:280px;border-radius:14px;overflow:hidden;background:radial-gradient(circle at 50% 80%,rgba(255,255,255,.08),transparent 60%),var(--panel2)}
+.gr-stage .gr-big{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);height:250px;width:auto;z-index:2;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5))}
+.gr-stage .gr-aura{bottom:0;height:46px;width:70%}
+.gr-stage .gr-comp{position:absolute;right:10px;bottom:8px;width:64px;height:64px;object-fit:contain;z-index:3}
+.gr-card{display:flex;justify-content:center}.gr-card .hcard{pointer-events:none}
+.gr-main{padding:12px;display:grid;gap:10px;min-width:0}
+.gr-tabs{margin:0}.gr-tabs .num{opacity:.7;font-size:11px}
+.gr-q{width:100%;max-width:320px}
+.gr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.gr-it{display:grid;gap:3px;justify-items:center;text-align:center;padding:8px 6px;border-radius:12px;background:var(--panel2);border:2px solid color-mix(in srgb,var(--rc) 55%,transparent);color:inherit;font:inherit;cursor:pointer;min-width:0}
+.gr-it b{font-size:12.5px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gr-it small{font-size:10.5px;color:var(--rc);font-weight:800;line-height:1.2;max-width:100%}
+.gr-it.lock{opacity:.55;border-style:dashed}.gr-it.lock small{color:var(--muted);font-weight:600}
+.gr-it.on{box-shadow:0 0 0 2px var(--gold) inset;background:color-mix(in srgb,var(--gold) 12%,var(--panel2))}
+.gr-it.r-c{--rc:var(--r-c)}.gr-it.r-r{--rc:var(--r-r)}.gr-it.r-e{--rc:var(--r-e)}.gr-it.r-l{--rc:var(--r-l)}.gr-it.r-s{--rc:var(--r-s)}
+.gr-pic{height:52px;display:grid;place-items:center;font-size:22px;width:100%;overflow:hidden}
+.gr-pic img{max-width:48px;max-height:48px;object-fit:contain}
+.gr-pic img.gr-bgpic{max-width:100%;width:100%;height:52px;object-fit:cover;border-radius:8px}
+.gr-tenue{display:grid;gap:10px;justify-items:start;padding:8px 0}
+.gr-vtog{gap:10px;align-items:center}
+/* effet de victoire (6A) */
+.gr-vfx{position:relative;display:block;pointer-events:none}
+.gr-vfx.mini{width:60px;height:46px;margin:0 auto}
+.gr-vfx i{position:absolute;left:50%;top:50%;width:6px;height:10px;border-radius:2px;background:var(--vc,#f4c84a);animation:grBurst 1.4s ease-out infinite;--a:0deg}
+.gr-vfx i:nth-child(6n+1){--a:20deg;--vc:#ff6b6b}.gr-vfx i:nth-child(6n+2){--a:80deg;--vc:#4ea3ff}.gr-vfx i:nth-child(6n+3){--a:140deg;--vc:#7fe07a}
+.gr-vfx i:nth-child(6n+4){--a:200deg;--vc:#f4c84a}.gr-vfx i:nth-child(6n+5){--a:260deg;--vc:#b77cff}.gr-vfx i:nth-child(6n){--a:320deg;--vc:#ff9d4a}
+.gr-vfx i:nth-child(n+7){animation-delay:.25s}.gr-vfx i:nth-child(n+13){animation-delay:.5s}
+.gr-v-etincelles i{width:4px;height:4px;border-radius:50%;--vc:#ffe08a!important;box-shadow:0 0 6px #ffd24a}
+.gr-v-givre i{--vc:#bff1ff!important;border-radius:1px;width:5px;height:5px;transform:rotate(45deg)}
+.gr-v-eclairs i{--vc:#c8a8ff!important;width:3px;height:16px;box-shadow:0 0 8px #b77cff}
+.gr-v-flammes i{--vc:#ff7a2e!important;border-radius:50% 50% 40% 40%;box-shadow:0 0 8px #ff7a2e}
+.gr-v-etoiles i{--vc:#ffe9a8!important;width:7px;height:7px;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.gr-v-sablier i{--vc:#7fe3ff!important;width:3px;height:3px;border-radius:50%;box-shadow:0 0 5px #7fe3ff}
+@keyframes grBurst{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(0);opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(-34px);opacity:0}}
+.gr-win{position:fixed;inset:0;display:grid;place-items:center;z-index:60;pointer-events:none;animation:grFade 2.6s ease forwards}
+.gr-win .gr-wh{animation:grJump 1.1s cubic-bezier(.3,1.6,.5,1) 2}.gr-win .gr-wl{height:220px;width:auto;filter:drop-shadow(0 10px 12px rgba(0,0,0,.6))}
+.gr-win .gr-vfx{position:absolute;left:50%;top:50%;width:0;height:0}.gr-win .gr-vfx i{width:9px;height:14px;animation-duration:1.6s}
+.gr-win .gr-vfx i{animation-name:grBurstBig}
+@keyframes grBurstBig{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(0);opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(-160px);opacity:0}}
+@keyframes grJump{40%{transform:translateY(-24px)}}
+@keyframes grFade{0%{opacity:0}10%,80%{opacity:1}100%{opacity:0}}
+@media (max-width:760px){.gr-wrap{grid-template-columns:1fr}.gr-prev{position:static}.gr-stage{height:220px}.gr-stage .gr-big{height:200px}.gr-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}}
+@media (prefers-reduced-motion:reduce){.gr-aura,.gr-aura::after,.gr-vfx i,.gr-win,.gr-win .gr-wh{animation:none!important}.gr-win{display:none}}

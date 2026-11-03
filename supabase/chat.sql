@@ -174,7 +174,9 @@ revoke all on function public.alog(text) from public, anon, authenticated;
 -- Renvoie null si le message est parti, sinon la raison du refus (affichée sous la zone de texte).
 -- 0.1.48.2 : p_ch choisit le salon public ('g' général, 'c' commerce, 'v' PvP, 'm' Général Monocompte) ; le commerce est limité à un message toutes les 30 s.
 drop function if exists public.chat_send(text, uuid, jsonb);
-create or replace function public.chat_send(p_body text, p_to uuid default null, p_item jsonb default null, p_ch text default 'g')
+-- Saison 1, lot 3 : p_pc = couleur du pseudo choisie dans la Garde-robe (js/garderobe.js), gardée dans data.pc si elle est connue
+drop function if exists public.chat_send(text, uuid, jsonb, text);
+create or replace function public.chat_send(p_body text, p_to uuid default null, p_item jsonb default null, p_ch text default 'g', p_pc text default null)
 returns text
 language plpgsql
 security definer
@@ -223,15 +225,16 @@ begin
     insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
       values (c, me, null, pr.pseudo, mh ->> 'cls', coalesce((mh ->> 'lvl')::int, 1), mh ->> 'title', b, p_item, jsonb_build_object('mono', true, 's', mh -> 's'));
   else
-    insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item)
-      values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item);
+    insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
+      values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item,
+        case when p_pc in ('braise', 'sylve', 'givre', 'or', 'temps', 'voix') then jsonb_build_object('pc', p_pc) end);
   end if;
   -- le chat ne garde que 48 heures de messages
   delete from chat_msgs where created_at < now() - interval '48 hours';
   return null;
 end $$;
-revoke all on function public.chat_send(text, uuid, jsonb, text) from public, anon;
-grant execute on function public.chat_send(text, uuid, jsonb, text) to authenticated;
+revoke all on function public.chat_send(text, uuid, jsonb, text, text) from public, anon;
+grant execute on function public.chat_send(text, uuid, jsonb, text, text) to authenticated;
 
 create or replace function public.chat_report(p_msg bigint, p_reason text)
 returns text language plpgsql security definer set search_path = public
