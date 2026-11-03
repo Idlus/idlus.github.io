@@ -27,7 +27,7 @@
      Un chapitre : { id, f: famille, n: nom, ic: icône (assets/ui), page: clé du menu (ou null), où, dé: déblocage,
      b: () => [blocs] }. Un bloc : ["p", texte] · ["ul", [lignes]] · ["h", sous-titre] · ["kv", [[nom, valeur], …]] · ["tip", texte].
      Le texte accepte **gras**. */
-  const FAM = ["Bien débuter", "Stratégie", "Aventure", "Défis", "Héros", "Classes", "Économie", "Communauté", "Journal", "Options"];
+  const FAM = ["Bien débuter", "Saison 1", "Stratégie", "Aventure", "Défis", "Héros", "Classes", "Économie", "Communauté", "Journal", "Options"];
   const CH = [];
   const add = (c) => CH.push(c);
 
@@ -797,6 +797,72 @@
       ["ul", ["Livrer des ressources rapporte kamas et XP de métier ; les livraisons partielles comptent.", "Les commandes urgentes paient ×1,5.", "3 livraisons : un coffre ; 10 : un Coffre en or.", "Changer une commande : gratuit la première fois du jour."]],
       ["h", "Temples et Dopeuls"],
       ["p", `Un Dopeul par classe que tu possèdes, une fois par jour : il vient affronter l'équipe au prochain combat de chasse. Chaque victoire donne des Doplons (1 + 1 tous les 40 niveaux, +3 tous les 7 jours de série) pour le Comptoir des temples. Battre ${N(() => E.TEMPLE_TITLE_N)} Dopeuls différents donne un titre.`],
+    ] });
+
+  /* ======================= Saison 1 (branche claude/saison1) ======================= */
+  const S1 = () => E.S1C || {};
+  add({ id: "s1", f: "Saison 1", n: "La Saison 1 : Les Fragments du Temps", ic: "cristal", page: null, k: "saison eternel manche fragments temps benediction plafond maitrise nouveau depart",
+    ou: "écran de choix de la partie : Classique · Saison 1", de: "à l'ouverture de la saison",
+    voir: ["s1quetes", "s1album", "s1garde", "s1chev", "s1xs1", "s1tour"],
+    b: () => [
+      ["p", `La Saison 1 est un **nouveau départ** pour tout le monde : une partie neuve, ${N(() => S1().jours)} jours, en ${N(() => S1().manches.length)} manches de ${N(() => S1().manche)} jours (${V(() => S1().manches.join(", "))}).`],
+      ["p", "Ta partie d'avant ne disparaît pas : elle devient l'**Éternel** et garde tout. À la fin de la saison, tes héros de saison la rejoignent avec leur niveau et leurs cosmétiques."],
+      ["h", "Les Fragments du Temps"],
+      ["p", `La monnaie de saison. Ils viennent des donjons, des archimonstres, des métiers et des avis de recherche, avec une borne par jour (${N(() => S1().DAYMAX)} au plus) et un quota de ${N(() => S1().frag.quota)} par semaine, cumulable jusqu'à ${N(() => S1().frag.cap)}. Ils s'échangent à la **vitrine** de la semaine contre des cosmétiques. Les Kolizetons et les autres monnaies restent.`],
+      ["h", "Bénédictions et Maîtrise"],
+      ["ul", ["Tous les 10 niveaux, tu choisis **1 bénédiction parmi 3** : un petit bonus (XP, kamas, butin, PV…) qui reste toute la saison.", `La **Maîtrise** a un plafond par manche (${V(() => S1().mtCap.join(", "))} points) : personne ne s'envole dès la première semaine.`]],
+      ["tip", "Rien de la saison ne s'achète avec de l'argent, et aucun cosmétique ne change la puissance."],
+    ] });
+  add({ id: "s1album", f: "Saison 1", n: "Album de cartes et boosters", ic: "carte", page: "album", k: "cartes booster brillante poussiere etoile album heros idlus legendes collection",
+    ou: "Héros › Album de cartes", de: "partie de saison (l'Éternel relit l'album du compte)",
+    b: () => [
+      ["p", `Une carte par boss de donjon (${N(() => E.CARTES.filter((c) => c.rar !== "h").length)}), en 4 raretés, et la page **Héros d'Idlus** : les héros des joueurs, à commencer par les 10 Légendes de la 1.1. Chaque carte existe aussi en **brillante** (1 chance sur ${N(() => Math.round(1 / E.CARTE_SHINY))}).`],
+      ["ul", ["Un booster offert par jour.", `Un de plus tous les ${N(() => E.BOOSTER_DJ)} donjons de saison, ${N(() => E.BOOSTER_DJ_JOUR)} par jour au plus ; d'autres en Chevauchée et en Expéditions.`, `${N(() => E.BOOSTER_N)} cartes par booster, la dernière rare ou mieux ; 1 booster sur ${N(() => Math.round(1 / E.CARTE_HEROS_P))} contient un héros d'Idlus.`, "Les doubles donnent de la **Poussière d'étoile**, qui fabrique la carte qui te manque (jamais une brillante)."]],
+      ["tip", "Tu veux la carte de ton héros ? Demande-la à Xener avec une capture de ton héros : elle arrive dans les boosters de tout le monde, et dans ton album d'office."],
+    ] });
+  add({ id: "s1garde", f: "Saison 1", n: "Garde-robe et bannière de profil", ic: "ailes", page: "garde", k: "cosmetique aura decor compagnon victoire pseudo bouclier banniere profil vitrine autocollant",
+    ou: "Héros › Garde-robe", de: "dès la saison ; certains cosmétiques se débloquent en jouant",
+    b: () => [
+      ["p", "Tout ce qui change l'allure de tes héros au même endroit : tenue, cadres, ornements, titres, auras au sol, boucliers d'apparat, compagnon, décor, effet de victoire, couleur du pseudo et **bannière de profil**."],
+      ["p", `La bannière se voit en haut de ton profil, quand un joueur l'ouvre depuis les Classements ou le chat. ${N(() => Object.keys(E.BANNERS).length)} bannières : 2 offertes, les autres en jouant la saison.`],
+      ["p", "La **vitrine** de la semaine vend 6 cosmétiques contre des Fragments du Temps, les mêmes pour tous. Ce qui part revient plus tard dans la saison."],
+      ["tip", "Aucun cosmétique ne change les caractéristiques."],
+    ] });
+  add({ id: "s1chev", f: "Saison 1", n: "Chevauchée des Cavaliers", ic: "combat", page: "chev", k: "cavaliers raid semaine eliocalypse corruption servitude misere guerre",
+    ou: "Aventure › Chevauchée des Cavaliers", de: `partie de saison, équipe niveau ${N(() => E.CHEV_LVL)} conseillé`,
+    b: () => [
+      ["p", "Le raid de la semaine : les **4 Cavaliers** à la suite, à la stasis que tu choisis. Les PV perdus restent d'un Cavalier au suivant, et un héros à terre ne revient pas avant la fin."],
+      ["ul", [`${N(() => E.CHEV_TRIES)} essais par semaine ; le meilleur compte (Cavaliers vaincus, puis stasis, puis tours).`, "Un coffre par Cavalier vaincu, un booster pour les 4, des titres pour les 4 en stasis 5 et 10.", "Le combat se joue sur une copie de ta partie : rien n'est perdu."]],
+    ] });
+  add({ id: "s1xs1", f: "Saison 1", n: "Expéditions de saison", ic: "monde", page: "xs1", k: "expedition manche regles defi bourse explorateur",
+    ou: "Aventure › Expéditions de saison", de: "partie de saison",
+    b: () => [
+      ["p", `Chaque manche ouvre **${N(() => E.EXPS1_N)} expéditions**, les mêmes pour tous : un donjon, une stasis, des modificateurs et des règles, comme le Défi du jour. Plus l'expédition est loin, plus elle est dure.`],
+      ["ul", [`${N(() => E.EXPS1_TRIES)} essais par jour et par expédition ; le meilleur score de la manche compte.`, "Bourses bronze, argent et or : un coffre chacune, un booster à l'or.", "3 bourses en or dans une manche : titre « Explorateur du Temps »."]],
+    ] });
+  add({ id: "s1tour", f: "Saison 1", n: "Tournoi des guildes", ic: "couronne", page: "tour", k: "tournoi guilde arene finale dimanche inscription equipe",
+    ou: "Joueurs › Tournoi des guildes", de: "membre d'une guilde, une équipe d'arène prête (pas en Monocompte)",
+    b: () => [
+      ["p", `Chaque semaine, ${N(() => E.TOUR.TEAMS)} membres par guilde inscrivent leur **équipe d'arène** (celle du Kolizéum) jusqu'au samedi midi. Le tableau se fait tout seul ; une rencontre, ce sont 5 combats 3 contre 3.`],
+      ["ul", ["Les tours se jouent le samedi après-midi, la **finale** le dimanche à 20 h.", "Un coffre pour chaque inscrit, selon le tour atteint.", `La guilde gagnante porte le titre « ${V(() => E.TOUR.TITLE)} ».`]],
+    ] });
+  add({ id: "s1quetes", f: "Saison 1", n: "Les quêtes de la saison", ic: "quetes", page: null, k: "quete principale scene dialogue campagne chapitre semaine coffre du jour region choix titre suivie y aller",
+    ou: "Journal › Quêtes", de: "dès la saison",
+    b: () => [
+      ["p", `La quête principale se joue en **${N(() => E.HIST_SC.length)} scènes**. Dans chaque scène, un personnage parle et donne 2 à 4 objectifs qui avancent **en même temps**. Chaque objectif paie comme avant ; chaque scène donne en plus ${N(() => E.HIST_BOOST)} boosters de cartes, et ${N(() => E.HIST_BOOST_CH)} de plus à la fin d'un chapitre.`],
+      ["h", "La campagne de saison"],
+      ["p", `${N(() => E.CAMP.length)} chapitres, **un par semaine**, les mêmes pour tout le serveur. Un chapitre en retard se rattrape à tout moment, dans l'ordre. Chacun donne ${N(() => E.CAMP_BOOST)} boosters et un Coffre en argent. Si ${N(() => E.CAMP_GOAL)} aventuriers le finissent pendant sa semaine, chacun d'eux reçoit aussi un **Coffre en or**.`],
+      ["h", "Le coffre du jour"],
+      ["p", `Fais **${N(() => E.DCH_NEED)} tâches au choix** parmi les ${N(() => E.DCH_TASKS.length)} de la liste (Almanax, commandes, temple, avis, défi, trésor, donjons, récolte, expédition) pour ouvrir un Coffre en argent. Le reste est en plus ; tout repart à minuit.`],
+      ["h", "Quêtes de région et quête suivie"],
+      ["ul", [`Chaque quête de région finit sur **un choix** : il donne son titre, et ${N(() => E.RQ_BOOST)} boosters.`, "La quête suivie reste dans un petit cadre sur tous les écrans, avec « Y aller ». Le ✕ la replie en pastille."]],
+      ["tip", "Le journal est rangé en 4 onglets : Histoire, Aujourd'hui, Chasses et Dofus."],
+    ] });
+  add({ id: "s1duel", f: "Saison 1", n: "Duel de caisses", ic: "coffre", page: "foire", k: "duel caisse foire trool kamas",
+    ou: "Économie › Foire du Trool", de: "partie de saison",
+    b: () => [
+      ["p", "Tu ouvres les mêmes caisses que 1 ou 3 adversaires du Trool (des personnages du jeu, jamais de vrais joueurs). Celui dont les lots valent le plus gagne tout."],
+      ["ul", [`${N(() => E.DUEL.DAY)} duels par jour au plus ; chaque manche compte dans les ouvertures de caisse du jour.`, "Des kamas seulement : rien ne s'achète avec de l'argent réel.", `${N(() => E.DUEL.WINS)} victoires : titre « ${V(() => E.DUEL.TITLE)} ».`]],
     ] });
 
   add({ id: "aventures", f: "Journal", n: "Quête principale et quêtes de région", ic: "quetes", page: "quests", pages: ["region", "main"], k: "quete principale chapitre region histoire personnage",

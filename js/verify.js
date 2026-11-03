@@ -20,7 +20,8 @@
     const heroes = S.chars.map((c) => ({ cls: c.cls, lvl: c.lvl || 1, ren: c.ren || 0, name: String(c.name || "").slice(0, 20), gear: gear(c),
       ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [], ...(E.mtCode && c.lvl >= 200 && c.mt ? { mc: E.mtCode(c) } : {}) } : {}) })); // 2.0 : Maîtrise (classement) ; 2.1 : code de l'arbre (« Voir l'arbre »)
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
-    if (main && E.sabMtLvl && S.sabMt) { const i = S.chars.indexOf(main); if (heroes[i]) heroes[i].smt = E.sabMtLvl(S); } // 2.1.27 (Mathis 4B) : niveau de Maîtrise du temps sur le profil public (porté par le héros principal)
+    if (main && E.sabMtLvl && S.sabMt) { const i = S.chars.indexOf(main); if (heroes[i]) heroes[i].smt = E.sabMtLvl(S); }
+    if (main && E.banWorn) { const b = E.banWorn(S), i = S.chars.indexOf(main); if (b && heroes[i]) heroes[i].ban = b; } // Saison 1 : bannière de profil (js/banniere.js) // 2.1.27 (Mathis 4B) : niveau de Maîtrise du temps sur le profil public (porté par le héros principal)
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
     // 2.1.12 : chaque point de Maîtrise compte un niveau ; mtl = Maîtrise comptée dans level (le serveur ne la prend pas pour une montée suspecte au premier envoi)
     const best = heroes.map((h) => ({ t: h.lvl + h.ren * V.REB_LVL + (h.mt || 0), mt: h.mt || 0 })).sort((x, y) => y.t - x.t).slice(0, 8);
@@ -91,6 +92,10 @@
     const r = V.summary(E, S);
     try { if (E.alignMeta) r.align = E.alignMeta(S); } catch (e) { /* sans alignement */ }
     try { if (E.dpotSublimes) { const L = E.dpotSublimes(S); if (L.length) r.dsub = L; } } catch (e) { /* sans Potentiel */ }
+    // Saison 1 : classements de la semaine (Chevauchée) et de la manche (Expéditions), lus dans la partie validée (supabase/classements_s1.sql)
+    try { const c = S.s1c; if (c && !S.mono) { const ch = c.chev, ex = c.exps, B = (ex && ex.best) || {};
+        r.s1lb = { w: ch && ch.best ? ch.w : -1, n: ch && ch.best ? Math.min(4, ch.best.n | 0) : 0, k: ch && ch.best ? Math.min(15, ch.best.k | 0) : 0, t: ch && ch.best ? Math.min(9999, ch.best.turns | 0) : 0,
+          m: ex ? ex.m : -1, x: Object.keys(B).slice(0, 3).reduce((a, k) => a + Math.max(0, Math.min(100000, Math.round((B[k] && B[k].score) || 0))), 0) }; } } catch (e) { /* sans saison */ }
     try { if (S.mounts && E.elevSummary) { r.elev = E.elevSummary(S); if (S.elev && S.elev.rare && S.elev.rare.length) r.mrare = S.elev.rare.slice(-10); } } catch (e) { /* sans élevage */ }
     return r;
   };

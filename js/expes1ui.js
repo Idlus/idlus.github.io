@@ -35,7 +35,15 @@
         <span class="xs muted">Une fois par manche et par expédition : un coffre en argent pour le bronze, un coffre en or pour l'argent, un coffre d'obsidienne et un booster de cartes pour l'or. Toutes les bourses en or : titre « Explorateur du Temps ». Le classement (la somme des meilleurs scores) ouvre avec la saison.</span></section>
       <div class="xs1-grid">${Array.from({ length: n }, (_, i) => card(s, i)).join("")}</div></div>`;
   }
-  const page = (main) => { main.innerHTML = pageHtml(); };
+  /* classement de la manche (supabase/classements_s1.sql : lb_exps1), lu sur la partie validée par le serveur */
+  const LB = { key: "", rows: null };
+  const lbHtml = () => `<section class="panel s1-lb"><div class="phead"><h2>Classement de la manche</h2></div><div class="pad" id="xs1Lb">${LB.rows == null ? `<div class="empty">Chargement…</div>`
+    : !LB.rows.length ? `<div class="empty">Personne pour l'instant cette manche.</div>` : `<ol class="s1-lbl">${LB.rows.map((r) => `<li><b class="num">${r.rang}</b><span class="grow">${h(r.pseudo || "?")}</span><span class="small num">${fr(r.score)} points</span></li>`).join("")}</ol>`}
+    <span class="xs muted">La somme de tes 3 meilleurs scores de la manche, d'après ta partie validée par le serveur.</span></div></section>`;
+  function lbLoad(m) { const ON = window.ONLINE, key = "m" + m; if (LB.key === key && LB.rows) return; LB.key = key; LB.rows = null;
+    if (!ON || !ON.user) { LB.rows = []; return; }
+    Promise.resolve(ON.rpc("lb_exps1", { p_m: m })).then((r) => { LB.rows = r && !r.err && Array.isArray(r.data) ? r.data : []; if (UI().tab === "xs1") repaint(); }, () => { LB.rows = []; repaint(); }); }
+  const page = (main) => { main.innerHTML = pageHtml(); const s = S(), e = E(); if (e.isS1c && e.isS1c(s) && window.ONLINE && window.ONLINE.user) { lbLoad(e.s1cManche(s)); main.querySelector(".xs1-page").insertAdjacentHTML("beforeend", lbHtml()); } };
   window.DX.pages.xs1 = page;
   const repaint = () => { const m = document.querySelector("#main"); if (UI().tab === "xs1" && m) page(m); };
   document.addEventListener("click", (ev) => {

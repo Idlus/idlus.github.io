@@ -8,7 +8,7 @@
   const X = () => window.DX.social, E = () => window.DX.E, S = () => window.DX.S, UI = () => window.DX.ui;
   const h = (s) => X().h(s);
   const RN = () => E().GR_RAR;
-  const TABS = [["tenue", "Tenue"], ["cadre", "Cadres"], ["orn", "Ornements"], ["titre", "Titres"], ["aura", "Auras"], ["shield", "Boucliers"], ["comp", "Compagnon"], ["bg", "Décor"], ["vic", "Victoire"], ["pcol", "Pseudo"]];
+  const TABS = [["tenue", "Tenue"], ["cadre", "Cadres"], ["orn", "Ornements"], ["titre", "Titres"], ["aura", "Auras"], ["shield", "Boucliers"], ["comp", "Compagnon"], ["bg", "Décor"], ["vic", "Victoire"], ["pcol", "Pseudo"], ["ban", "Bannière"]];
   const G = { tab: "aura", cid: null, q: "" };
   const hero = () => { const s = S(); return s.chars.find((c) => c.id === G.cid) || s.chars.find((c) => c.id === UI().cid) || s.chars[0]; };
 
@@ -35,13 +35,14 @@
       case "titre": { const own = e.titles(s); return none("titre", !c.title) + f(own.map((t) => ({ k: "titre", id: t, n: t, rar: e.titleRar(t), req: "", ok: true, on: c.title === t, pic: `<span class="gr-ttl gr-t-${e.titleRar(t)}">${h(t)}</span>` }))).map(card).join("") + (own.length ? "" : `<p class="small muted">Les succès, les quêtes et les classements donnent des titres.</p>`); }
       case "orn": return none("orn", !c.orn) + sortOk(f(Object.keys(e.ORN).map((id) => ({ k: "orn", id, n: e.ORN[id].name(s), rar: id === "pionnier" ? "l" : /^reg_/.test(id) ? "r" : "e", req: e.ORN[id].req || "voir la page Succès", ok: e.ornUnlocked(s, id), on: c.orn === id, pic: /^reg_/.test(id) ? `<img src="assets/ui/orn/orn_${id.slice(4)}.svg" alt="" loading="lazy">` : "✦" })))).map(card).join("");
       case "cadre": return none("cadre", !c.frame, "Cadre du niveau") + Object.keys(e.SFRAMES).map((id) => { const F = e.SFRAMES[id]; return card({ k: "cadre", id, n: F.name(s), rar: id === "pionnier" || id === "stasis" ? "l" : "e", req: F.req, ok: e.sframeOk(s, id), on: c.frame === id, pic: "▣" }); }).join("");
+      case "ban": { const bw = e.banWorn(s); return none("ban", !bw, "Pas de bannière") + Object.entries(e.BANNERS).map(([id, b]) => card({ k: "ban", id, n: b.n, rar: b.rar, req: b.req, ok: e.banOk(s, id), on: bw === id, pic: `<img class="gr-banpic" src="${e.banUrl(id)}" alt="" loading="lazy">` })).join(""); }
       default: return "";
     }
   }
   function pageHtml() {
     const s = S(), e = E(), c = hero(); if (!c) return "";
     const n = e.grCount(s);
-    const cnt = { aura: n.aura, vic: n.vic, pcol: n.pcol, shield: n.shield, comp: n.comp, bg: n.bg };
+    const cnt = { ban: e.banCount ? e.banCount(s) : null, aura: n.aura, vic: n.vic, pcol: n.pcol, shield: n.shield, comp: n.comp, bg: n.bg };
     const heroes = s.chars.map((x) => `<button class="gr-hb${x.id === c.id ? " on" : ""}" data-act="gr-hero" data-v="${x.id}">${X().lookImg(x, "gr-hl", { bare: false })}<span>${h(x.name)}</span></button>`).join("");
     const tabs = TABS.map(([id, nm]) => `<button data-act="gr-tab" data-v="${id}" aria-pressed="${G.tab === id}">${nm}${cnt[id] ? ` <span class="num">${cnt[id][0]}/${cnt[id][1]}</span>` : ""}</button>`).join("");
     const search = ["shield", "comp", "bg", "orn", "titre"].includes(G.tab) ? `<input class="gr-q" type="search" placeholder="Chercher…" value="${h(G.q)}" data-act="gr-q">` : "";
@@ -83,6 +84,7 @@
       if (k === "titre") { if (v && !e.titles(s).includes(v)) err = "Titre pas encore obtenu."; else c.title = v; }
       else if (k === "orn") err = e.setOrn(s, c.id, v);
       else if (k === "cadre") err = e.setFrame(s, c.id, v);
+      else if (k === "ban") err = e.banSet(s, v);
       else err = e.grSet(s, c.id, k, v);
       if (err) { X().toast(err); return; }
       X().markDirty(); X().render(); repaint(); }
