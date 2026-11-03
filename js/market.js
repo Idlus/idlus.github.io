@@ -105,7 +105,7 @@
       if (p.title) { s.titlesExtra = s.titlesExtra || []; if (!s.titlesExtra.includes(p.title)) s.titlesExtra.push(String(p.title).slice(0, 40)); } // 0.1.22 : titre du boss de guilde
       if (p.tdj && E.tdjUse) E.tdjUse(s, String(p.tdj.did || ""), String(p.tdj.d || "")); // 2.1.39 : entrée du Trousseau du jour prise par un donjon de groupe du Bureau
       if (p.jx && E.addJobXp) for (const j in p.jx) E.addJobXp(s, j, p.jx[j]); // 2.1.38.4 : XP de métier rendue par le serveur (ticket #146)
-      if (p.sab && E.sabGift) E.sabGift(s, Math.min(2, Math.max(0, Number(p.sab) || 0))); // 02/11 : Sablier de la récompense de vote (supabase/vote.sql)
+      if (p.sab && E.sabGift) E.sabGift(s, Math.min(4, Math.max(0, Number(p.sab) || 0))); // 02/11 : Sablier de la récompense de vote (supabase/vote.sql)
       if (p.bribes && E.songe) { const G = E.songe(s), n = Math.max(0, Math.round(Number(p.bribes) || 0)); G.br += n; G.tot = (G.tot || 0) + n; } // 1.0.30 : lots du classement du Songe infini
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
       (p.rmM || []).forEach((uid) => { if (E.mountGone) E.mountGone(s, +uid); }); (p.rmP || []).forEach((uid) => { if (E.petGone) E.petGone(s, +uid); }); // 2.1.30 : bêtes vendues ou échangées

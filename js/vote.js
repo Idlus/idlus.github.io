@@ -24,6 +24,10 @@
     if (!ON.user || monoP() || !ON.rpc) return;
     const r = await ON.rpc("vote_moi"); if (r.err || !r.data) return;
     V.st = r.data; if (V.st.now) V.off = Date.parse(V.st.now) - Date.now();
+    /* 3A+B : paliers de l'objectif du mois versés par vote_moi (Sablier par l'hôtel de vente) */
+    const P = Array.isArray(V.st.paye) ? V.st.paye : [];
+    if (V.st.titre) { X().toast(`Top 10 des votants du mois dernier : titre « ${V.st.titre.t} » !`, "rare"); if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); }
+    if (P.length) { const hrs = P.reduce((a, x) => a + (+x.h || 0), 0); X().toast(`Objectif des votes du mois atteint : +${hrs} h de Sablier !`, "rare"); if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); }
   }
 
   /* ligne de l'accueil (appelée par renderHome dans js/ui.js) ; rien tant que la récompense n'est pas ouverte */
@@ -35,7 +39,7 @@
       const m = Math.max(1, Math.ceil(ms / 60e3));
       return `<div class="dcline vtline done">${ic}<span class="grow">Merci pour ton vote ! <span class="xs muted">Prochaine récompense dans ${m} min.</span></span><a class="btn sm ghost" href="${URL_VOTE}" target="_blank" rel="noopener">Dofus Fan Games ›</a></div>`;
     }
-    return `<div class="dcline vtline">${ic}<span class="grow">Vote pour Idlus sur Dofus Fan Games <span class="xs muted">30 min de Sablier et des kamas à chaque vote, une fois par heure</span></span>`
+    return `<div class="dcline vtline">${ic}<span class="grow">Vote pour Idlus sur Dofus Fan Games <span class="xs muted">Sablier et kamas à chaque vote, une fois par heure</span></span>`
       + `<span class="vt-b"><a class="btn sm" href="${URL_VOTE}" target="_blank" rel="noopener" data-act="vt-go">Voter ›</a><button class="btn sm primary" data-act="vt-get" ${V.busy ? "disabled" : ""}>Récupérer</button></span></div>`;
   }
 
@@ -47,7 +51,7 @@
     const r = await ON.vote();
     V.busy = false;
     if (r && r.ok) {
-      X().toast(`Merci pour ton vote ! +${X().fmt(r.k || 0)} kamas et 30 min de Sablier.`, "rare");
+      X().toast(`Merci pour ton vote ! +${X().fmt(r.k || 0)} kamas et ${Math.round((r.sab || 0.5) * 60)} min de Sablier${r.bonus ? ` (série +${r.bonus} %)` : ""}.`, "rare");
       V.st = Object.assign({}, V.st, { last: new Date(Date.now() + V.off).toISOString() });
       if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); // les gains arrivent par l'hôtel de vente
     } else {
@@ -70,7 +74,7 @@
     const h = X().h, fmt = X().fmt, st = V.st || {};
     if (!ON.user) { main.innerHTML = `<section class="panel"><div class="pad stack"><h1>Voter pour Idlus</h1><div class="small">Connecte-toi à ton compte (Options › Compte) pour recevoir une récompense à chaque vote.</div></div></section>`; return; }
     const ms = leftMs(), m = Math.max(1, Math.ceil(ms / 60e3));
-    const serie = Math.max(0, st.serie || 0), bonus = Math.min(50, serie * 10);
+    const serie = Math.max(0, st.serie || 0), bonus = Math.max(0, Math.min(50, st.bonus || 0)); // bonus calculé par le serveur (jours d'affilée avant aujourd'hui)
     const k = Math.round(kamasOf(mainLvl()) * (1 + bonus / 100));
     const btns = ms > 0
       ? `<span class="vt-wait">Prochaine récompense dans <b class="num">${m} min</b></span>`
@@ -82,7 +86,7 @@
     main.innerHTML = `
     <section class="panel vt-hero"><div class="pad stack">
       <div class="row between wrap"><div class="stack" style="gap:2px"><h1>⏳ Voter pour Idlus</h1><span class="small muted">Chaque vote fait monter Idlus dans le classement des fan games Dofus et amène de nouveaux joueurs.</span></div>${st.rang ? `<span class="tag good">n° ${h(st.rang)} ce mois-ci</span>` : ""}</div>
-      <div class="vt-rew"><div><span class="xs muted">À chaque vote (une fois par heure)</span><div class="vt-rew-l"><span>⏳ <b>30 min</b> de Sablier</span><span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span>${bonus ? `<span class="tag good">+${bonus} % série</span>` : ""}</div></div></div>
+      <div class="vt-rew"><div><span class="xs muted">À chaque vote (une fois par heure)</span><div class="vt-rew-l"><span>⏳ <b>${Math.round(30 * (1 + bonus / 100))} min</b> de Sablier</span><span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span>${bonus ? `<span class="tag good">+${bonus} % série</span>` : ""}</div></div></div>
       <div class="row wrap vt-btns">${btns}</div>
       <span class="xs muted">Vote depuis le même appareil et le même réseau (Wi-Fi ou 4G) que le jeu : le site reconnaît ton vote à ta connexion.</span>
     </div></section>
@@ -90,15 +94,15 @@
       <section class="panel"><div class="phead"><h2>Tes votes</h2></div><div class="pad stack">
         <div class="vt-stats"><span><b class="num">${fmt(st.n || 0)}</b><small>au total</small></span><span><b class="num">${fmt(st.nm || 0)}</b><small>ce mois-ci</small></span><span><b class="num">${serie}</b><small>jour${serie > 1 ? "s" : ""} d'affilée</small></span></div>
         ${dots}
-        <span class="xs muted">Série : au moins un vote par jour. Chaque jour d'affilée ajoute 10 % de kamas, jusqu'à +50 %.</span>
+        <span class="xs muted">Série : au moins un vote par jour. Chaque jour d'affilée ajoute 10 % de kamas et de Sablier, jusqu'à +50 %.</span>
       </div></section>
       <section class="panel"><div class="phead"><h2>Objectif du mois</h2>${obj ? `<span class="xs muted">${h(obj.fin || "")}</span>` : ""}</div><div class="pad stack">
         ${obj ? `<div class="small">Tous ensemble : <b class="num">${fmt(obj.n)}</b> / ${fmt(obj.cible)} votes</div><div class="bar"><i style="width:${objP}%"></i></div>
         <div class="vt-paliers">${(obj.paliers || []).map((x) => `<span class="${obj.n >= x.n ? "on" : ""}"><b class="num">${fmt(x.n)}</b><small>${h(x.r)}</small></span>`).join("")}</div>
-        <span class="xs muted">Chaque palier atteint récompense tous les joueurs du serveur, votants ou non.</span>` : `<span class="small muted">Aucun objectif ce mois-ci.</span>`}
+        <span class="xs muted">Chaque palier atteint donne du Sablier à tous les joueurs du serveur, et 1 h de plus à ceux qui ont voté ce mois-ci.</span>` : `<span class="small muted">Aucun objectif ce mois-ci.</span>`}
       </div></section>
     </section>
-    ${top ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>Votants du mois</h2><span class="xs muted">pour le plaisir : aucun lot</span></div><div class="pad"><div class="list">${top}</div></div></section>` : ""}
+    ${top ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>Votants du mois</h2><span class="xs muted">top 10 du mois : titre « Voix d'Idlus »</span></div><div class="pad"><div class="list">${top}</div></div></section>` : ""}
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>Bon à savoir</h2></div><div class="pad stack small">
       <span>• Voter est libre : rien dans le jeu n'est réservé aux votants.</span>
       <span>• Le site compte un vote par heure et par connexion. VPN et votes automatiques sont interdits par le site et annulés.</span>
@@ -119,5 +123,6 @@
     setTimeout(poll, 3000);
     setInterval(() => { if (document.visibilityState === "visible" && Date.now() - V.last >= (V.st ? 5 * 60e3 : 20e3)) poll(); }, 30e3);
   }
-  window.VOTE = { start, line, poll, V };
+  const dot = () => ready() && leftMs() <= 0; // 5A : pastille du menu quand un vote est possible
+  window.VOTE = { start, line, poll, dot, V };
 })();

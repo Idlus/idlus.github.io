@@ -7,6 +7,7 @@
 -- Règles : un vote = une récompense (empreinte de l'IP + heure du vote), une récompense par compte toutes les 55 minutes
 -- (le site laisse revoter toutes les heures), comptes connectés seulement, partie Classique (hdv_ops), compte en vérification refusé.
 -- Aucune adresse IP n'est gardée : seulement une empreinte SHA-256 salée (le sel est dans vote_cfg), effacée après 30 jours.
+-- 03/11 (Mathis 2A + Sablier, 3A+B) : bonus de série (kamas et Sablier) et objectif du mois (paliers pour tout le serveur, +1 h aux votants).
 -- S'appuie sur hdv.sql (hdv_op) et classements.sql (ladder). Relançable sans danger.
 -- ============================================================================
 
@@ -42,6 +43,38 @@ create or replace function public.vote_kamas(p_lvl int) returns bigint language 
   select round(coalesce((select k0 + (k1 - k0) * ((select v from x) - l0)::numeric / (l1 - l0) from seg where (select v from x) <= l1 order by l1 limit 1), 870000) / 4)::bigint
 $$;
 
+-- Jour et mois de Paris d'un instant (série de jours, objectif du mois)
+create or replace function public.vote_jour(t timestamptz) returns date language sql immutable as $$ select (t at time zone 'Europe/Paris')::date $$;
+create or replace function public.vote_mois(t timestamptz) returns text language sql immutable as $$ select to_char(t at time zone 'Europe/Paris', 'YYYY-MM') $$;
+create index if not exists vote_claims_at on public.vote_claims (at);
+
+-- 2A (Mathis 03/11) : série = jours de Paris d'affilée avec au moins un vote récompensé, jusqu'à hier (aujourd'hui ne casse rien).
+-- Chaque jour d'affilée avant aujourd'hui ajoute 10 % de kamas ET de Sablier au vote, jusqu'à +50 %.
+create or replace function public.vote_serie(p_user uuid) returns int language plpgsql stable security definer set search_path = public
+as $$ declare d date := vote_jour(now()) - 1; n int := 0;
+begin
+  while exists (select 1 from vote_claims where user_id = p_user and at >= (d::timestamp at time zone 'Europe/Paris') and at < ((d + 1)::timestamp at time zone 'Europe/Paris')) and n < 400 loop
+    n := n + 1; d := d - 1;
+  end loop;
+  return n;
+end $$;
+create or replace function public.vote_bonus(p_user uuid) returns int language sql stable security definer set search_path = public
+as $$ select 10 * least(5, vote_serie(p_user)) $$;
+
+-- 3A+B : objectif du mois. Chaque palier atteint par tous les votes du mois donne du Sablier à tout joueur du Classique qui se
+-- connecte ce mois-ci (vote_moi le verse, une fois par palier), et 1 h de plus à ceux qui ont voté ce mois-ci.
+create table if not exists public.vote_paliers_pris (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  mois text not null,
+  palier int not null,
+  h real not null,
+  at timestamptz not null default now(),
+  primary key (user_id, mois, palier)
+);
+alter table public.vote_paliers_pris enable row level security;
+create or replace function public.vote_paliers() returns jsonb language sql immutable
+as $$ select '[{"n": 250, "h": 1}, {"n": 500, "h": 2}, {"n": 1000, "h": 3}]'::jsonb $$;
+
 -- ---------- côté serveur (fonction « vote », rôle service_role) ----------
 create or replace function public.vote_srv_cfg() returns jsonb language sql stable security definer set search_path = public
 as $$ select jsonb_build_object('cle', cle, 'sel', sel, 'actif', actif) from vote_cfg where id = 1 $$;
@@ -49,10 +82,11 @@ as $$ select jsonb_build_object('cle', cle, 'sel', sel, 'actif', actif) from vot
 create or replace function public.vote_srv_claim(p_user uuid, p_ip text, p_voted_at bigint) returns jsonb
 language plpgsql security definer set search_path = public
 as $$ declare
-  l ladder%rowtype; last timestamptz; k bigint; s real := 0.5; n int;
+  l ladder%rowtype; last timestamptz; k bigint; s real; b int; n int;
 begin
   if p_user is null or coalesce(p_ip, '') = '' or coalesce(p_voted_at, 0) <= 0 then return jsonb_build_object('err', 'Demande invalide.'); end if;
-  delete from vote_claims where at < now() - interval '30 days';
+  -- l'empreinte de l'adresse n'est gardée que 30 jours (les votes restent comptés : total, mois, série)
+  update vote_claims set ip = 'efface:' || id where at < now() - interval '30 days' and ip not like 'efface:%';
   select * into l from ladder where user_id = p_user;
   if found and l.flagged then return jsonb_build_object('err', 'Ton compte est en vérification : la récompense de vote attendra.'); end if;
   if exists (select 1 from vote_claims where ip = p_ip and voted_at = p_voted_at) then
@@ -62,27 +96,81 @@ begin
   if last is not null and last > now() - interval '55 minutes' then
     return jsonb_build_object('attente', ceil(extract(epoch from (last + interval '55 minutes' - now())))::int);
   end if;
-  k := vote_kamas(coalesce(l.main_lvl, 1));
+  b := vote_bonus(p_user);
+  k := round(vote_kamas(coalesce(l.main_lvl, 1)) * (100 + b) / 100.0);
+  s := 0.5 * (100 + b) / 100.0;
   insert into vote_claims (user_id, ip, voted_at, k, sab) values (p_user, p_ip, p_voted_at, k, s) on conflict do nothing;
   get diagnostics n = row_count;
   if n = 0 then return jsonb_build_object('deja', true); end if; -- deux clics en même temps : un seul passe
   perform hdv_op(p_user, jsonb_build_object('k', k, 'sab', s, 'vote', 1),
-    'Merci pour ton vote sur Dofus Fan Games : ' || replace(to_char(k, 'FM999G999G999'), ',', ' ') || ' kamas et 30 min de Sablier.');
-  return jsonb_build_object('ok', true, 'k', k, 'sab', s);
+    'Merci pour ton vote sur Dofus Fan Games : ' || replace(to_char(k, 'FM999G999G999'), ',', ' ') || ' kamas et ' || round(s * 60) || ' min de Sablier'
+    || case when b > 0 then ' (série +' || b || ' %).' else '.' end);
+  return jsonb_build_object('ok', true, 'k', k, 'sab', s, 'bonus', b);
 end $$;
 
 revoke all on function public.vote_srv_cfg() from public, anon, authenticated;
 revoke all on function public.vote_srv_claim(uuid, text, bigint) from public, anon, authenticated;
+revoke all on function public.vote_serie(uuid) from public, anon, authenticated;
+revoke all on function public.vote_bonus(uuid) from public, anon, authenticated;
 grant execute on function public.vote_srv_cfg() to service_role;
 grant execute on function public.vote_srv_claim(uuid, text, bigint) to service_role;
 
--- ---------- côté joueur : où j'en suis (sans rien révéler d'autre) ----------
-create or replace function public.vote_moi() returns jsonb language sql stable security definer set search_path = public
-as $$ select jsonb_build_object(
-  'actif', coalesce((select actif and cle is not null from vote_cfg where id = 1), false),
-  'last', (select max(at) from vote_claims where user_id = auth.uid()),
-  'n', (select count(*) from vote_claims where user_id = auth.uid()),
-  'now', now()) $$;
+-- ---------- côté joueur : où j'en suis, objectif du mois, votants du mois ; verse les paliers atteints ----------
+create or replace function public.vote_moi() returns jsonb language plpgsql security definer set search_path = public
+as $$ declare
+  me uuid := auth.uid(); m text := vote_mois(now()); d0 date := vote_jour(now());
+  debut timestamptz := (date_trunc('month', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris';
+  tot int; nm int; P jsonb := vote_paliers(); x jsonb; h real; paye jsonb := '[]'::jsonb; flag boolean;
+  avant timestamptz := (date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month') at time zone 'Europe/Paris'; mp text; rg int; titre jsonb := null;
+begin
+  if me is null then return jsonb_build_object('actif', false); end if;
+  select count(*) into tot from vote_claims where at >= debut;
+  select count(*) into nm from vote_claims where user_id = me and at >= debut;
+  select coalesce(l.flagged, false) into flag from ladder l where l.user_id = me;
+  if not coalesce(flag, false) then
+    for x in select * from jsonb_array_elements(P) loop
+      if tot >= (x->>'n')::int and not exists (select 1 from vote_paliers_pris where user_id = me and mois = m and palier = (x->>'n')::int) then
+        h := (x->>'h')::real + case when nm > 0 then 1 else 0 end;
+        insert into vote_paliers_pris (user_id, mois, palier, h) values (me, m, (x->>'n')::int, h) on conflict do nothing;
+        if found then
+          perform hdv_op(me, jsonb_build_object('sab', h, 'vote', 1), 'Objectif des votes du mois : ' || (x->>'n') || ' votes atteints, ' || h || ' h de Sablier pour toi' || case when nm > 0 then ' (dont 1 h pour ton vote).' else '.' end);
+          paye := paye || jsonb_build_object('n', (x->>'n')::int, 'h', h);
+        end if;
+      end if;
+    end loop;
+    -- 4 (Mathis 03/11 : « Réservés au top 10 ») : le top 10 des votants du mois précédent reçoit le titre « Voix d'Idlus »
+    mp := vote_mois(avant);
+    if not exists (select 1 from vote_paliers_pris where user_id = me and mois = mp and palier = 0) then
+      select r into rg from (select c.user_id, rank() over (order by count(*) desc) as r from vote_claims c left join ladder l on l.user_id = c.user_id
+        where c.at >= avant and c.at < debut and not coalesce(l.flagged, false) group by c.user_id) t where t.user_id = me;
+      if rg is not null and rg <= 10 then
+        insert into vote_paliers_pris (user_id, mois, palier, h) values (me, mp, 0, 0) on conflict do nothing;
+        if found then
+          perform hdv_op(me, jsonb_build_object('title', 'Voix d''Idlus', 'vote', 1), 'Top 10 des votants du mois dernier (n° ' || rg || ') : titre « Voix d''Idlus » !');
+          titre := jsonb_build_object('rang', rg, 't', 'Voix d''Idlus');
+        end if;
+      end if;
+    end if;
+  end if;
+  return jsonb_build_object(
+    'titre', titre,
+    'actif', coalesce((select actif and cle is not null from vote_cfg where id = 1), false),
+    'last', (select max(at) from vote_claims where user_id = me),
+    'n', (select count(*) from vote_claims where user_id = me),
+    'nm', nm,
+    'serie', vote_serie(me) + case when exists (select 1 from vote_claims where user_id = me and at >= (d0::timestamp at time zone 'Europe/Paris')) then 1 else 0 end,
+    'bonus', vote_bonus(me),
+    'jours', (select jsonb_agg(jsonb_build_object('d', to_char(g, 'DD/MM'), 'j', (array['dim','lun','mar','mer','jeu','ven','sam'])[extract(dow from g)::int + 1],
+        'n', (select count(*) from vote_claims c where c.user_id = me and vote_jour(c.at) = g::date)) order by g)
+      from generate_series(d0 - 6, d0, interval '1 day') g),
+    'obj', jsonb_build_object('n', tot, 'cible', 1000, 'fin', 'jusqu''au ' || to_char((date_trunc('month', d0) + interval '1 month - 1 day'), 'DD/MM'),
+      'paliers', (select jsonb_agg(jsonb_build_object('n', (y->>'n')::int, 'r', (y->>'h') || ' h de Sablier pour tous, +1 h aux votants')) from jsonb_array_elements(P) y)),
+    'paye', paye,
+    'top', (select coalesce(jsonb_agg(jsonb_build_object('p', t.pseudo, 'n', t.n, 'moi', t.user_id = me) order by t.n desc, t.pseudo), '[]'::jsonb) from (
+      select c.user_id, p.pseudo, count(*) as n from vote_claims c join profiles p on p.id = c.user_id left join ladder l on l.user_id = c.user_id
+      where c.at >= debut and not coalesce(l.flagged, false) group by c.user_id, p.pseudo order by count(*) desc, p.pseudo limit 10) t),
+    'now', now());
+end $$;
 revoke all on function public.vote_moi() from public;
 grant execute on function public.vote_moi() to authenticated;
 
@@ -93,7 +181,8 @@ as $$ begin
   return jsonb_build_object(
     'jour', (select count(*) from vote_claims where at > date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris'),
     'sept', (select count(*) from vote_claims where at > now() - interval '7 days'),
-    'trente', (select count(*) from vote_claims),
+    'trente', (select count(*) from vote_claims where at > now() - interval '30 days'),
+    'mois', (select count(*) from vote_claims where at >= (date_trunc('month', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris'),
     'joueurs', (select count(distinct user_id) from vote_claims where at > now() - interval '7 days'));
 end $$;
 revoke all on function public.adm_votes() from public;

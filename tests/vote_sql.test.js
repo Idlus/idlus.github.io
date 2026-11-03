@@ -34,7 +34,7 @@ const ROOT = path.join(__dirname, "..");
 /* ---------- jeu : Sablier par l'hôtel de vente, fichier chargé et mis en cache ---------- */
 {
   const m = fs.readFileSync(path.join(ROOT, "js/market.js"), "utf8");
-  assert(/p\.sab && E\.sabGift\) E\.sabGift\(s, Math\.min\(2,/.test(m), "market.js applique le Sablier (2 h au plus par opération)");
+  assert(/p\.sab && E\.sabGift\) E\.sabGift\(s, Math\.min\(4,/.test(m), "market.js applique le Sablier (4 h au plus par opération : palier 3 h + 1 h de votant)");
   assert(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").includes('src="js/vote.js?v='), "index.html charge js/vote.js");
   assert(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8").includes('"js/vote.js"'), "sw.js met js/vote.js en cache");
   assert(fs.readFileSync(path.join(ROOT, "js/mono.js"), "utf8").includes('"VOTE"'), "rien du vote dans une partie Monocompte");
@@ -64,6 +64,7 @@ try {
   file(path.join(ROOT, "supabase", "vote.sql")); file(path.join(ROOT, "supabase", "vote.sql")); // relancé : sans danger
   q(`grant select, insert, update, delete on all tables in schema public to anon, authenticated;`); // même après coup : RLS sans règle
   for (let i = 1; i <= 4; i++) q(`insert into auth.users values ('${U(i)}')`);
+  for (let i = 1; i <= 4; i++) q(`insert into profiles (id, pseudo) values ('${U(i)}', 'Joueur${i}')`);
   q(`insert into ladder (user_id, main_lvl) values ('${U(1)}', 200), ('${U(2)}', 1), ('${U(3)}', 60)`);
   q(`insert into ladder (user_id, main_lvl, flagged) values ('${U(4)}', 150, true)`);
 
@@ -80,7 +81,8 @@ try {
   fails(() => q(`set role anon; select vote_srv_claim('${U(1)}', 'x', 1)`), /permission denied/, "sans compte");
   assert.strictEqual(as(1, `select count(*) from vote_cfg`), "0", "table des réglages illisible");
   assert.strictEqual(as(1, `select count(*) from vote_claims`), "0", "table des votes illisible");
-  fails(() => as(1, `select adm_votes()`), /réservé à Mathis/, "compteurs du panel");
+  fails(() => as(2, `select adm_votes()`), /réservé à Mathis/, "compteurs du panel"); // le premier profil (Joueur1) est l'administrateur (classements.sql)
+  assert.strictEqual(JSON.parse(as(1, `select adm_votes()`)).jour, 0, "Mathis lit les compteurs");
   assert.strictEqual(srv(`vote_srv_cfg()`).cle, "CLE-SECRETE");
 
   // un vote récompensé : kamas + 30 min de Sablier par hdv_ops
@@ -104,10 +106,47 @@ try {
   assert.strictEqual(q(`select count(*) from hdv_ops where payload ? 'vote'`), "4");
   // mon état (jamais l'adresse ni la clé)
   const me = JSON.parse(as(1, `select vote_moi()`));
-  assert(me.actif === true && me.n === 2 && me.last && !("cle" in me) && !("ip" in me), JSON.stringify(me));
+  assert(me.actif === true && me.n === 2 && me.nm === 2 && me.last && !("cle" in me) && !("ip" in me), JSON.stringify(me));
+  assert(me.jours.length === 7 && me.jours[6].n === 2 && me.serie === 1 && me.bonus === 0, JSON.stringify(me.jours) + " " + me.serie);
+  assert.deepStrictEqual(me.top.map((x) => [x.p, x.n, x.moi]), [["Joueur1", 2, true], ["Joueur2", 1, false], ["Joueur3", 1, false]], "votants du mois (compte en vérification exclu)");
+  assert(me.obj.n === 4 && me.obj.cible === 1000 && me.obj.paliers.length === 3 && me.paye.length === 0, JSON.stringify(me.obj));
+  // 2A + Sablier : série de jours d'affilée (heure de Paris) : +10 % de kamas ET de Sablier par jour avant aujourd'hui, jusqu'à +50 %
+  q(`insert into auth.users values ('${U(5)}'); insert into profiles values ('${U(5)}', 'Serieux'); insert into ladder (user_id, main_lvl) values ('${U(5)}', 200)`);
+  const jour = (n) => `(((now() at time zone 'Europe/Paris')::date - ${n})::timestamp + interval '12 hours') at time zone 'Europe/Paris'`;
+  for (const n of [1, 2, 3]) q(`insert into vote_claims (user_id, ip, voted_at, at) values ('${U(5)}', 'old${n}', ${n}, ${jour(n)})`);
+  q(`insert into vote_claims (user_id, ip, voted_at, at) values ('${U(5)}', 'old5', 5, ${jour(5)})`); // trou au jour 4 : la série s'arrête à 3
+  assert.strictEqual(Number(q(`select vote_bonus('${U(5)}')`)), 30);
+  const rs = srv(`vote_srv_claim('${U(5)}', 'ipS', 7000)`);
+  assert(rs.ok && rs.bonus === 30 && rs.k === Math.round(217500 * 1.3) && Math.abs(rs.sab - 0.65) < 1e-6, JSON.stringify(rs));
+  assert(/39 min de Sablier \(série \+30 %\)/.test(q(`select txt from hdv_ops where user_id = '${U(5)}' order by id desc limit 1`)));
+  for (const n of [4, 6, 7]) q(`insert into vote_claims (user_id, ip, voted_at, at) values ('${U(5)}', 'more${n}', ${100 + n}, ${jour(n)})`);
+  assert.strictEqual(Number(q(`select vote_bonus('${U(5)}')`)), 50, "plafond +50 % (7 jours d'affilée)");
+  const ms = JSON.parse(as(5, `select vote_moi()`)); assert(ms.serie === 8 && ms.bonus === 50, JSON.stringify(ms));
+  // 3A+B : objectif du mois, paliers versés une fois à chaque joueur qui se connecte, +1 h aux votants du mois
+  q(`delete from vote_claims where user_id = '${U(5)}' and at < date_trunc('month', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris'`);
+  q(`insert into vote_claims (user_id, ip, voted_at, at) select '${U(5)}', 'masse' || g, 10000 + g, now() - interval '1 minute' from generate_series(1, 600) g`);
+  const p5 = JSON.parse(as(5, `select vote_moi()`));
+  assert.deepStrictEqual(p5.paye, [{ n: 250, h: 2 }, { n: 500, h: 3 }], "votant : 1 h + 2 h de palier, plus 1 h chacun");
+  assert.deepStrictEqual(JSON.parse(as(5, `select vote_moi()`)).paye, [], "versé une seule fois");
+  q(`insert into auth.users values ('${U(6)}')`);
+  assert.deepStrictEqual(JSON.parse(as(6, `select vote_moi()`)).paye, [{ n: 250, h: 1 }, { n: 500, h: 2 }], "non votant : le Sablier du palier sans le bonus");
+  assert.deepStrictEqual(JSON.parse(as(4, `select vote_moi()`)).paye, [], "compte en vérification : rien");
+  assert.strictEqual(q(`select string_agg(payload->>'sab', ',' order by id) from hdv_ops where user_id = '${U(6)}'`), "1,2");
+  fails(() => as(6, `select count(*) from vote_paliers_pris`).replace(/^0$/, "") || (() => { throw new Error("permission denied"); })(), /permission denied/, "table des paliers illisible");
+  // 4 : top 10 des votants du mois précédent : titre « Voix d'Idlus », une fois ; 11e et compte en vérification : rien
+  const mAvant = (k) => `(date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month' + interval '${k} hours') at time zone 'Europe/Paris'`;
+  for (let i = 10; i <= 21; i++) { q(`insert into auth.users values ('${U(i)}'); insert into profiles values ('${U(i)}', 'Votant${i}')`);
+    q(`insert into vote_claims (user_id, ip, voted_at, at) select '${U(i)}', 'pm${i}-' || g, ${i * 1000} + g, ${mAvant(1)} + g * interval '1 hour' from generate_series(1, ${40 - i}) g`); }
+  q(`insert into ladder (user_id, main_lvl, flagged) values ('${U(10)}', 10, true)`); // le 1er du mois dernier est en vérification
+  const tt = (i) => JSON.parse(as(i, `select vote_moi()`)).titre;
+  assert(tt(10) === null, "compte en vérification");
+  assert.deepStrictEqual(tt(11), { rang: 1, t: "Voix d'Idlus" }); assert.strictEqual(tt(11), null, "une seule fois");
+  assert.deepStrictEqual(tt(20), { rang: 10, t: "Voix d'Idlus" }); assert.strictEqual(tt(21), null, "11e : rien");
+  assert.strictEqual(q(`select payload->>'title' from hdv_ops where user_id = '${U(20)}' and payload ? 'title'`), "Voix d'Idlus");
   q(`update vote_cfg set actif = false`); assert.strictEqual(JSON.parse(as(1, `select vote_moi()`)).actif, false, "coupé depuis la base");
-  // vieux votes effacés au bout de 30 jours
+  // empreinte de l'adresse effacée au bout de 30 jours, le vote reste compté
   q(`update vote_claims set at = now() - interval '31 days' where user_id = '${U(2)}'`); srv(`vote_srv_claim('${U(3)}', 'ipG', 9999)`);
-  assert.strictEqual(q(`select count(*) from vote_claims where user_id = '${U(2)}'`), "0");
+  assert.strictEqual(q(`select string_agg(ip, ',') from vote_claims where user_id = '${U(2)}'`).startsWith("efface:"), true);
+  assert.strictEqual(as(1, `select count(*) from vote_claims`), "0");
   console.log("ok - vote : adresse du joueur, jeu, vote.sql (récompense, doublons, 55 min, vérification, droits)");
 } finally { psql(`drop database if exists ${DB}`); }
