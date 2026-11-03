@@ -199,8 +199,9 @@ async function main() {
         opt("Être prévenu à chaque mise à jour d'idlus", "Une mention à chaque nouvelle version", "🔔", "notif"),
         opt("Suivre le nouveau jeu", "Une mention à chaque nouvelle du prochain jeu du studio", "🌑", "notifnext"),
         opt("Les grosses annonces du studio", "Une mention pour les nouvelles importantes", "🌙", "notifstudio") ] },
-      { id: sid(), type: 0, title: "Ta classe préférée", single_select: true, required: false, in_onboarding: true,
-        options: CLASS_ROLES.map(([n]) => opt(n, "La couleur de ton pseudo", null, "cl_" + n)) },
+      ...[CLASS_ROLES.slice(0, 10), CLASS_ROLES.slice(10)].map((part) => ({ // Discord : 12 choix au plus par question
+        id: sid(), type: 0, title: `Ta classe préférée (${part[0][0]} à ${part[part.length - 1][0]})`, single_select: true, required: false, in_onboarding: true,
+        options: part.map(([n]) => opt(n, "La couleur de ton pseudo", null, "cl_" + n)) })),
       { id: sid(), type: 0, title: "Ton serveur dans idlus", single_select: false, required: false, in_onboarding: true, options: [
         opt("Classique", "Une équipe de héros", "⚔️", "srvclassic"),
         opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] } ] });
