@@ -60,7 +60,10 @@ create or replace function public.vit_prix(p_id text) returns int language sql i
   select case p_id when 'v_aiguilles' then 60 when 'v_tictac' then 60 when 'v_gardien' then 60
     when 'v_rouages' then 120 when 'v_coucou' then 120 when 'v_cadran' then 120 when 'v_voyageur' then 120 when 'v_village' then 120
     when 'v_horloge' then 200 when 'v_sablier' then 200 when 'v_rouagier' then 200 when 'v_cadre' then 200
-    when 'v_fissure' then 160 else 0 end $$;
+    when 'v_fissure' then 160
+    when 'v_st9' then 60 when 'v_st10' then 60 when 'v_st12' then 120 -- lot 5 : autocollants et meubles rares (js/saisonsoc.js)
+    when 'v_mb6' then 60 when 'v_mb3' then 120 when 'v_mb5' then 120 when 'v_mb9' then 120 when 'v_mb4' then 200 when 'v_mb7' then 200 when 'v_mb12' then 160
+    else 0 end $$;
 
 create or replace function public.vit_buy(p_id text)
 returns text language plpgsql security definer set search_path = public as $$

@@ -46,7 +46,7 @@
     <path d="M20 2 L20 41 M9 18 L20 24 L31 18" stroke="#fff" stroke-opacity=".45" stroke-width=".8" fill="none"/><circle cx="20" cy="15" r="2.2" fill="#fff" opacity=".9"/></svg>`; };
   const tagH = (a) => (a && a.tag ? `<span class="al-tag" style="--ac:${h(a.col)}">${h(a.tag)}</span>` : "");
   const chip = (a, extra) => `<span class="al-chip" style="--ac:${h(a.col)}">${prism(a.col, "")}${h(a.tag || a.name)}${extra ? ` <span class="muted" style="font-weight:600">${extra}</span>` : ""}</span>`;
-  const gemb = (g, sz) => `<span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:${sz}px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span>`;
+  const gemb = (g, sz) => `<span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:${sz}px"><img src="${h(window.gIco(g.ic))}" alt=""></span>`;
   const bonusTags = (p) => { const m = (p && p.mods) || {};
     return `<span class="tag good">+${E.ALLY.bonus} % kamas</span><span class="tag good">+${E.ALLY.bonus + (m.prospection || 0)} % butin</span><span class="tag good">+${E.ALLY.bonus + (m.sagesse || 0)} % XP</span><span class="tag good">Percepteurs alliés +${Math.round(E.ALLY.percoHp * 100)} % PV</span>`; };
   const modTags = (m) => { m = m || {}; const L = Object.keys(E.ALLY_MODS).filter((k) => m[k]);

@@ -40,8 +40,9 @@
   /* lot 4 : vitrine de la semaine (js/vitrine.js) */
   const FR = () => `<img src="assets/i/995001.png" alt="Fragments du Temps">`;
   const vitPic = (v) => (v.k === "bg" ? `<img src="${v.url}" alt="">` : v.k === "aura" ? `<span class="gr-aura gr-a-${v.id} mini"></span>` : v.k === "vic" ? `<span class="gr-vfx gr-v-${v.id} mini"><i></i><i></i><i></i><i></i><i></i></span>`
+    : v.k === "st" ? `<img src="assets/s1/st/${v.st}.webp" alt="">` : v.k === "mb" ? `<img src="assets/s1/mb/${v.mb}.webp" alt="">`
     : v.k === "pcol" ? `<span class="gr-pc gr-pc-${v.id}"><b>${h((ON() && ON().profile && ON().profile.pseudo) || S().chars[0].name)}</b></span>` : v.k === "titre" ? `<span class="gr-ttl gr-t-${v.rar}">${h(v.t)}</span>` : `<span class="head lg" data-fr="horloge"></span>`);
-  const KN = { aura: "Aura", vic: "Effet de victoire", pcol: "Couleur du pseudo", titre: "Titre", bg: "Décor", cadre: "Cadre" };
+  const KN = { aura: "Aura", vic: "Effet de victoire", pcol: "Couleur du pseudo", titre: "Titre", bg: "Décor", cadre: "Cadre", st: "Autocollant du chat", mb: "Meuble rare" };
   function ctrSheet() {
     const s = S(), e = E(), C = window.DATA.CONSUMABLES;
     X().openSheet(`<h2>Contrats de coffres</h2><span class="small muted">Des coffres d'un palier contre un coffre du palier au-dessus, sans hasard. C'est toujours un peu perdant : ça sert à ranger ton sac. Encore ${e.contratLeft(s)} aujourd'hui.</span>

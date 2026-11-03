@@ -20,8 +20,8 @@
   const C = { map: null, at: 0, off: 0, loading: false, err: false, f: "all", sort: "ok", dom: {} };
   const now = () => Date.now() + (C.off || 0);
   const left = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); const d = Math.floor(m / 1440), hh = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d} j ${hh} h` : hh ? (mm ? `${hh} h ${String(mm).padStart(2, "0")}` : `${hh} h`) : `${mm} min`; };
-  const emb = (g, sz) => `<span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:${sz}px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span>`;
-  const chip = (g, extra) => `<span class="pc-chip" style="--gc:${h(g.col || "#8cc63f")}"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt="">${h(g.name)}${extra || ""}</span>`;
+  const emb = (g, sz) => `<span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:${sz}px"><img src="${h(window.gIco(g.ic))}" alt=""></span>`;
+  const chip = (g, extra) => `<span class="pc-chip" style="--gc:${h(g.col || "#8cc63f")}"><img src="${h(window.gIco(g.ic))}" alt="">${h(g.name)}${extra || ""}</span>`;
   const resSum = (r) => Object.values(r || {}).reduce((a, b) => a + b, 0);
   const myGid = () => { const s = S(); return (s && s.guild && s.guild.id) || null; };
   const ex = () => (GU() && GU().G.ex) || null;

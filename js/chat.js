@@ -108,7 +108,8 @@
   const myPs = () => ((ON.profile && ON.profile.pseudo) || "").toLowerCase();
   const mentions = (b) => { const o = []; String(b || "").replace(MRE, (x, a, p) => { o.push(p.toLowerCase()); return x; }); return o; };
   const pingsMe = (m) => { const me = myPs(); return !!me && m.kind === "msg" && !!m.user_id && m.user_id !== myId() && !C.ign.has(m.user_id) && mentions(m.body).slice(0, 3).includes(me); };
-  const fmtBody = (b) => { const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
+  const fmtBody = (b) => { const st = /^:st:(\d{1,2}):$/.exec(b || ""); if (st && +st[1] >= 1 && +st[1] <= 12) return `<img class="ch-st" src="assets/s1/st/${+st[1]}.webp" alt="autocollant" loading="lazy">`; // Saison 1, lot 5 : autocollant
+    const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
   const PING = PUB;
   const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;
   const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
@@ -378,7 +379,7 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "a" ? "Écrire à ton alliance…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : C.tab === "m" ? "Écrire aux joueurs du Monocompte…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "a" ? "Écrire à ton alliance…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : C.tab === "m" ? "Écrire aux joueurs du Monocompte…" : "Écrire à tout le monde…"}">${stBtn()}<button class="btn sm primary" data-act="ch-send">Envoyer</button></div>${stPick()}
       <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`; // 1.0.12.8 : texte d'aide du PvP raccourci (coupé au téléphone)
   }
 
@@ -393,6 +394,10 @@
     c.textContent = `${i.value.length}/200`;
     if (C.err && C.err === C.errWait) { C.err = ""; const b = $("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; }
   }
+  /* Saison 1, lot 5 : autocollants (js/saisonsoc.js) : ceux de la partie ouverte, envoyés comme un message « :st:N: » */
+  const stMine = () => { const D = window.DX, E = D && D.E, S = D && D.S; return E && E.stMine && S ? E.stMine(S) : []; };
+  const stBtn = () => (stMine().length ? `<button class="btn sm ch-stb" data-act="ch-stb" aria-label="Autocollants" aria-expanded="${!!C.stOpen}" title="Autocollants">☺</button>` : "");
+  const stPick = () => (C.stOpen ? `<div class="ch-stp">${stMine().map((t) => `<button data-act="ch-st" data-v="${t.n}" title="${h(t.nm)}"><img src="assets/s1/st/${t.n}.webp" alt="${h(t.nm)}"></button>`).join("")}</div>` : "");
   async function send() {
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
@@ -696,6 +701,8 @@
       case "ch-tab": C.tab = d.v; C.picked = true; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "m") C.unreadM = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "a" && window.ALLY) { window.ALLY.chatSeen(); window.ALLY.chatPoll(); } if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
+      case "ch-stb": C.stOpen = !C.stOpen; paint(true); return;
+      case "ch-st": { const i = $("#chIn"); const D = window.DX; if (!i || !(D && D.E.stOk(D.S, +d.v))) return; i.value = `:st:${+d.v}:`; C.stOpen = false; send(); return; }
       case "ch-acpick": acPick(d.p); return;
       case "ch-ment": { closeMenu(); const i = $("#chIn"); if (!i) return; const v = i.value.replace(/\s+$/, ""); insertAt(i, 0, i.value.length, `${v ? v + " " : ""}@${d.p} `); return; }
       case "ch-who": menu(t); return;

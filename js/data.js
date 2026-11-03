@@ -419,7 +419,10 @@
     for (const k in NI) if (CONSUMABLES[k]) CONSUMABLES[k].nimg = NI[k];
     const CO = { bois: "bois", argent: "argent", or: "or", obsidienne: "obsidienne", douze: "douze", ticket_koli: "ticket", bourse_defi: "bourse", bourse_perco: "bourse", saison: "saison" };
     const coIco = (k) => (CO[k] ? `assets/s1/co/${CO[k]}.webp` : `assets/ui/coffres/${k}.svg`);
-    if (typeof window !== "undefined") window.coIco = coIco; }
+    if (typeof window !== "undefined") window.coIco = coIco;
+    /* Saison 1, lot 5 : emblème de guilde ; un blason (« bl_ » + 3 lettres, js/saisonsoc.js) charge sa forme, puis js/saisonsocui.js pose ses calques */
+    const gIco = (ic) => { ic = ic || "dofus"; const m = /^bl_([a-h])[a-x][a-p]$/.exec(ic); return m ? `assets/s1/bl/s${"abcdefgh".indexOf(m[1]) + 1}.webp#${ic}` : `assets/ui/${ic}.webp`; };
+    if (typeof window !== "undefined") window.gIco = gIco; }
   /* 0.1.53 « Armes » : potions de forgemagie élémentaire (DOFUS) : changent les dégâts Neutre d'une arme */
   [["seisme", "Potion de Séisme", "t", 26004, 0], ["incendie", "Potion d'Incendie", "f", 26001, 0], ["tsunami", "Potion de Tsunami", "e", 26002, 0], ["ouragan", "Potion d'Ouragan", "a", 26003, 0],
    ["secousse", "Potion de Secousse", "t", 26004, 1], ["etincelle", "Potion d'Étincelle", "f", 26001, 1], ["crachin", "Potion de Crachin", "e", 26002, 1], ["courant", "Potion de Courant d'Air", "a", 26003, 1]].forEach(([k, n, el, ic, half]) => {
