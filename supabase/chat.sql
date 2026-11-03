@@ -103,7 +103,7 @@ end $$;
 revoke all on function public.chat_mono_profil(uuid) from public, anon;
 grant execute on function public.chat_mono_profil(uuid) to authenticated;
 drop policy if exists "chat lisible" on public.chat_msgs;
-create policy "chat lisible" on public.chat_msgs for select using (ch in ('g', 'c', 'v') or (ch = 'm' and (select public.chat_mono_ok())) or user_id = auth.uid() or to_id = auth.uid());
+create policy "chat lisible" on public.chat_msgs for select using (ch in ('g', 'c', 'v', 's') or (ch = 'm' and (select public.chat_mono_ok())) or user_id = auth.uid() or to_id = auth.uid());
 grant select on public.chat_msgs to anon, authenticated;
 -- temps réel : les nouveaux messages arrivent tout seuls chez les joueurs
 do $$ begin
@@ -184,7 +184,7 @@ set search_path = public
 as $$
 declare
   me uuid := auth.uid(); pr record; sa record; lad record; st record; last record; mh jsonb;
-  b text := btrim(coalesce(p_body, '')); best int; c text := case when p_to is not null then 'p' when p_ch in ('c', 'v', 'm') then p_ch else 'g' end;
+  b text := btrim(coalesce(p_body, '')); best int; c text := case when p_to is not null then 'p' when p_ch in ('c', 'v', 'm', 's') then p_ch else 'g' end; -- 2.2.0 : 's' = salon de la Saison 1 du Classique
 begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
   if c = 'm' and not public.chat_mono_ok() then return 'Ce salon est réservé aux joueurs du Monocompte.'; end if;
@@ -242,7 +242,7 @@ as $$
 declare m record;
 begin
   if auth.uid() is null then return 'Connecte-toi pour signaler.'; end if;
-  select * into m from chat_msgs where id = p_msg and kind = 'msg' and (ch in ('g', 'c', 'v') or (ch = 'm' and public.chat_mono_ok()) or to_id = auth.uid());
+  select * into m from chat_msgs where id = p_msg and kind = 'msg' and (ch in ('g', 'c', 'v', 's') or (ch = 'm' and public.chat_mono_ok()) or to_id = auth.uid());
   if not found then return 'Message introuvable.'; end if;
   if m.user_id = auth.uid() then return 'C''est ton propre message.'; end if;
   insert into reports (msg_id, reporter, target, reason, body) values (p_msg, auth.uid(), m.user_id, left(p_reason, 40), m.body) on conflict do nothing;
@@ -352,7 +352,7 @@ end $$;
 create or replace function public.adm_msgs(p_user uuid) returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need_chat();
-  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v', 'm') and kind = 'msg' order by id desc limit 15) x);
+  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v', 'm', 's') and kind = 'msg' order by id desc limit 15) x);
 end $$;
 
 create or replace function public.adm_mute(p_user uuid, p_min int) returns void language plpgsql security definer set search_path = public
@@ -497,7 +497,7 @@ end $$;
 create or replace function public.adm_msg_purge(p_user uuid) returns int language plpgsql security definer set search_path = public
 as $$ declare n int; begin
   perform public.adm_need(true);
-  delete from chat_msgs where user_id = p_user and kind = 'msg' and ch in ('g', 'c', 'v', 'm');
+  delete from chat_msgs where user_id = p_user and kind = 'msg' and ch in ('g', 'c', 'v', 'm', 's');
   get diagnostics n = row_count;
   perform public.alog(format('%s messages de %s effacés', n, public.pseudo_of(p_user)));
   return n;
@@ -505,10 +505,10 @@ end $$;
 create or replace function public.adm_chat_clear(p_ch text) returns int language plpgsql security definer set search_path = public
 as $$ declare n int; begin
   perform public.adm_need(true);
-  if p_ch not in ('g', 'c', 'v', 'm') then raise exception 'salon inconnu'; end if;
+  if p_ch not in ('g', 'c', 'v', 'm', 's') then raise exception 'salon inconnu'; end if;
   delete from chat_msgs where ch = p_ch and kind = 'msg';
   get diagnostics n = row_count;
-  perform public.alog(format('salon %s vidé (%s messages)', case p_ch when 'g' then 'Général' when 'c' then 'Commerce' when 'm' then 'Monocompte' else 'PvP' end, n));
+  perform public.alog(format('salon %s vidé (%s messages)', case p_ch when 'g' then 'Général' when 'c' then 'Commerce' when 'm' then 'Monocompte' when 's' then 'Saison 1' else 'PvP' end, n));
   return n;
 end $$;
 create or replace function public.adm_chat_close(p_on boolean) returns void language plpgsql security definer set search_path = public

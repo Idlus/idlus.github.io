@@ -388,7 +388,7 @@
   ON.chatLoad = async (ch) => {
     if (!sb) return null;
     let q = F("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
-    q = q.eq("ch", ["p", "c", "v", "m"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
+    q = q.eq("ch", ["p", "c", "v", "m", "s"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
     try { const { data, error } = await withTimeout(q, 12000); return error ? null : (data || []).reverse(); } catch (e) { return null; } // 1.0.9.1 : une erreur du serveur (délai dépassé côté base) compte comme « pas chargé », le chat réessaie
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */

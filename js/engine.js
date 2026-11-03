@@ -1787,7 +1787,7 @@
     if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1 + 0.05 * evc;
     if (e.cls === "ougi" && tgt) { e.ougi = e.lastTgt === tgt ? Math.min(5, (e.ougi || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + (0.05 + 0.01 * evc) * e.ougi; }
     if (e.posture === "lance") v *= 1.2 + 0.05 * evc;
-    if (e.cls === "cra") v *= 1 + Math.max(0, 0.4 + 0.1 * evc - 0.1 * ((F ? F.round : 1) - 1));
+    if (e.cls === "cra") v *= 1 + Math.max(0, 0.25 + 0.1 * evc - 0.05 * ((F ? F.round : 1) - 1));
     if (e.cls === "panda") v *= 1 + (0.06 + 0.015 * evc) * (e.ivresse || 0);
     if (e.mask === "atk") v *= 1.3 + 0.1 * evc;
     v *= E.classPow(e.cls, e.lvl);
@@ -2718,7 +2718,7 @@
       case "forge": return e.posture ? { n: e.posture === "lance" ? "Posture Lance" : "Posture Rempart" } : null;
       case "zobal": return e.mask ? { n: e.mask === "atk" ? "Psychopathe" : e.mask === "def" ? "Pleutre" : "Hystérique" } : null;
       case "eca": return F && F.roulette ? { n: F.roulette === "pile" ? "Pile" : F.roulette === "face" ? "Face" : F.roulette === "jackpot" ? "Jackpot" : "Perdu" } : null;
-      case "cra": return F ? { n: `Distance +${Math.max(0, 40 - 10 * (F.round - 1))} %` } : null;
+      case "cra": return F ? { n: `Distance +${Math.max(0, 25 - 5 * (F.round - 1))} %` } : null;
     }
     return null;
   };

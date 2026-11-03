@@ -259,6 +259,14 @@ try {
   assert.strictEqual(as(1, `select coalesce(chat_send('T:inconnue', null, null, 'g', 'arc-en-ciel'), 'OK')`), "OK");
   assert.strictEqual(q(`select coalesce(data ->> 'pc', '-') from chat_msgs where body = 'T:inconnue'`), "-", "couleur inconnue ignorée");
   console.log("ok - Garde-robe : couleur du pseudo dans data.pc (liste connue seulement)");
+  // 2.2.0 : salon 's' de la Saison 1 du Classique, à part du Général (Éternel) ; lisible par tous, comme 'g'
+  reset();
+  assert.strictEqual(as(1, `select coalesce(chat_send('T:saison', null, null, 's'), 'OK')`), "OK");
+  assert.strictEqual(q(`select ch from chat_msgs where body = 'T:saison'`), "s", "message rangé dans le salon 's'");
+  assert.strictEqual(anon(`select count(*) from chat_msgs where ch = 's' and body = 'T:saison'`), "1", "salon 's' lisible par un visiteur");
+  assert.strictEqual(anon(`select count(*) from chat_msgs where ch = 'g' and body = 'T:saison'`), "0", "rien dans le Général");
+  assert.strictEqual(as(99, `select adm_chat_clear('s')`), "1", "Mathis peut vider le salon 's'");
+  console.log("ok - 2.2.0 : salon Saison 1 ('s') séparé du Général, lisible par tous, vidable par Mathis");
 } finally {
   run(`drop database if exists ${DB}`, URL0);
 }

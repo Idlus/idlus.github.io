@@ -163,7 +163,7 @@
      Chaque sort a des grades (niveau requis, PA, relance, effets). Le joueur équipe l'un OU l'autre sort d'une paire. */
   const SIGNATURE = {
     iop: "Colère : chaque sort lancé ajoute 1 charge (max 6). À 6 charges, la prochaine attaque inflige +40 % de dégâts et vide la jauge. Vigueur : vole 8 % des dégâts infligés. +10 % de dégâts contre les boss.",
-    cra: "Distance : +40 % de dégâts au tour 1, puis −10 % par tour (+30 % au tour 2, +20 % au tour 3, +10 % au tour 4, plus rien ensuite). Œil de lynx : joue en premier au tour 1, et ses attaques à cible unique marquent la cible (+10 % de dégâts subis pendant 2 tours).",
+    cra: "Distance : +25 % de dégâts au tour 1, puis −5 % par tour (+20 % au tour 2, +15 % au tour 3, +10 % au tour 4, +5 % au tour 5, plus rien ensuite). Œil de lynx : joue en premier au tour 1, et ses attaques à cible unique marquent la cible (+10 % de dégâts subis pendant 2 tours).",
     eni: "Mots liés : un soin (vol de vie compris) rend la prochaine attaque 25 % plus forte, une attaque rend le prochain soin 25 % plus fort. Soins +20 %, calculés avec sa meilleure caractéristique (Force, Intelligence, Chance ou Agilité), et le soin en trop de ses sorts, vol de vie compris, devient un bouclier (40 % du surplus, jusqu'à 25 % des PV).",
     feca: "Glyphes : au début de chacun de ses tours, pose un glyphe pour toute l'équipe jusqu'à son tour suivant, dans cet ordre : Protection (−15 % de dégâts subis), Renvoi (25 % des dégâts reçus renvoyés à l'attaquant), Soin (chaque allié récupère 6 % de ses PV max). Boucliers +25 %.",
     osa: "Dressage : jusqu'à 2 invocations à la fois, avec +30 % de PV ; elles gagnent la moitié de la Puissance et des Dommages de l'Osamodas. +5 % de PV pour toute l'équipe.",

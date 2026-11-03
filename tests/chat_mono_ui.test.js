@@ -150,10 +150,10 @@ function fake() {
     const p1 = await open(1280, 800, false);
     await openChat(p1);
     let t = await tabs(p1);
-    if (t.some((x) => /^m:/.test(x)) || !t.includes("g:Général")) fail("pas connecté : pas d'onglet Monocompte, Général inchangé : " + JSON.stringify(t));
+    if (t.some((x) => /^m:/.test(x)) || !t.includes("g:Éternel")) fail("pas connecté : pas d'onglet Monocompte, Général inchangé : " + JSON.stringify(t));
     await login(p1, false);
     t = await tabs(p1);
-    if (t.some((x) => /^m:/.test(x)) || !t.includes("g:Général")) fail("compte sans accès : pas d'onglet Monocompte : " + JSON.stringify(t));
+    if (t.some((x) => /^m:/.test(x)) || !t.includes("g:Éternel")) fail("compte sans accès : pas d'onglet Monocompte : " + JSON.stringify(t));
     if (await loadsM(p1)) fail("compte sans accès : salon 'm' chargé");
     let a = await sendTxt(p1, "salut tout le monde");
     if ("p_ch" in a) fail("Général : chat_send sans p_ch attendu : " + JSON.stringify(a));
@@ -161,7 +161,7 @@ function fake() {
 
     await login(p1, true);
     t = await tabs(p1);
-    if (!t.includes("g:Classique") || !t.includes("m:Monocompte") || t.indexOf("m:Monocompte") !== t.indexOf("g:Classique") + 1) fail("compte avec accès : onglets Classique puis Monocompte : " + JSON.stringify(t));
+    if (!t.includes("g:Éternel") || !t.includes("m:Monocompte") || t.indexOf("m:Monocompte") !== t.indexOf("g:Éternel") + 1) fail("compte avec accès : onglets Classique puis Monocompte : " + JSON.stringify(t));
     if ((await cur(p1)) !== "g") fail("partie Classique : onglet Classique par défaut, trouvé " + (await cur(p1)));
     if (!/Bonjour le Classique/.test(await listTxt(p1)) || /Bonjour le Monocompte/.test(await listTxt(p1))) fail("Classique : messages du salon g seulement");
     if (/Épinglé pour le Monocompte/.test(await p1.evaluate(() => document.querySelector("#chat").textContent))) fail("épinglé sur 'm' seulement : absent du Classique");
@@ -204,12 +204,13 @@ function fake() {
     if (a.p_ch !== "m") fail("partie Monocompte : envoi par défaut dans 'm' : " + JSON.stringify(a));
     /* 22/10 (Mathis, 1A) : partie Monocompte, aucun salon du Classique (ni Classique, Commerce, PvP, guilde, privé, hauts faits) */
     t = await tabs(p2);
-    if (JSON.stringify(t) !== JSON.stringify(["m:Monocompte"])) fail("partie Monocompte : seul l'onglet Monocompte : " + JSON.stringify(t));
+    // 2.2.0 (Mathis) : partie Monocompte : son salon, plus Commerce, PvP, Privé et Hauts faits ; jamais Éternel, Saison 1 ni guilde
+    if (JSON.stringify(t) !== JSON.stringify(["m:Monocompte", "c:Commerce", "v:PvP", "p:Privé", "h:Hauts faits"])) fail("partie Monocompte : Monocompte, Commerce, PvP, Privé, Hauts faits : " + JSON.stringify(t));
     await p2.evaluate(() => { window.CHAT.state.tab = "g"; window.CHAT.repaint(); });
     if ((await cur(p2)) !== "m" || /Bonjour le Classique/.test(await listTxt(p2))) fail("partie Monocompte : le salon Classique ne s'affiche jamais");
     await login(p2, false); // accès retiré par le serveur
     t = await tabs(p2);
-    if (t.length !== 1 || !/:Monocompte$/.test(t[0]) || (await cur(p2)) !== "m") fail("accès retiré : toujours seulement le salon Monocompte (verrouillé) : " + JSON.stringify(t) + " " + (await cur(p2)));
+    if (!/:Monocompte$/.test(t[0]) || t.some((x) => /^(g|s|u):/.test(x)) || (await cur(p2)) !== "m") fail("accès retiré : toujours seulement le salon Monocompte (verrouillé) : " + JSON.stringify(t) + " " + (await cur(p2)));
     const lr = await listTxt(p2);
     if (/Bonjour le Monocompte|Bonjour le Classique/.test(lr)) fail("accès retiré : aucun message affiché : " + lr.slice(0, 200));
     console.log("ok - partie Monocompte : seulement le salon Monocompte, jamais le Classique ; accès retiré : salon verrouillé, pas de retour au Classique");
