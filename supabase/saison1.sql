@@ -4368,6 +4368,17 @@ do $$ declare s record; moved int; begin
   insert into s1.wb_resets (id, info) values ('1.0.4.6', jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'hits', moved));
 end $$;
 
+-- 2.1.43.4 « Ougah débloqué » (Mathis 03/11 : « Débloque Ougah sur l'Éternel ») : Ougah (n° 14) avait des PV gonflés par les essais
+-- bogués sur Harebourg et ne tombait plus. Une seule fois, ses PV restants sont ramenés à environ 3 jours de dégâts du serveur
+-- (27 000 points) ; les essais déjà faits, leurs coffres et le classement restent.
+do $$ declare s record; begin
+  if exists (select 1 from s1.wb_resets where id = '2.1.43.4') then return; end if;
+  select * into s from s1.wb_state where id = 1;
+  if s.n is distinct from 14 then return; end if;
+  update s1.wb_state set hp = least(hp, dmg + 27000) where id = 1;
+  insert into s1.wb_resets (id, info) values ('2.1.43.4', jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'new_hp', least(s.hp, s.dmg + 27000)));
+end $$;
+
 -- ---------- outils internes ----------
 create or replace function s1.wb_grade(p int) returns text language sql immutable
 as $$ select case when p >= 1500 then 'SSS' when p >= 1050 then 'SS' when p >= 600 then 'S' when p >= 300 then 'A' when p >= 150 then 'B' else 'C' end $$;
@@ -4435,10 +4446,10 @@ begin
   return jsonb_build_object('ok', true, 'n', s.n, 'phase', wb_phase(s.dmg, s.hp), 'k', (select count(*) from wb_hits where user_id = p_user and n = s.n));
 end $$;
 
--- Enregistre l'essai rejoué : coffre du grade et Fragments, barre commune, phases, mort et rotation.
+-- Enregistre l'essai rejoué : coffre du grade et Fragments, barre commune, phases, mort et rotation. Un essai compte au plus 6 000 points (2.1.43.4).
 create or replace function s1.wb_done(p_user uuid, p_n int, p_k int, p_points int, p_phase int, p_lvl int, p_rounds int, p_alive int) returns jsonb language plpgsql security definer set search_path = s1, public
 as $$
-declare s wb_state; g text; pts int := greatest(0, p_points); before bigint; after bigint; ph0 int; ph1 int; killed boolean := false;
+declare s wb_state; g text; pts int := least(6000, greatest(0, p_points)); before bigint; after bigint; ph0 int; ph1 int; killed boolean := false;
   t3 jsonb; r record; dur numeric; nhp bigint; nm text; pl int; i int;
 begin
   perform pg_advisory_xact_lock(hashtext('wboss'));
@@ -4480,6 +4491,8 @@ begin
     -- le suivant : PV ajustés pour tenir environ un jour (entre la moitié et le double)
     dur := greatest(600, extract(epoch from (now() - s.started)));
     nhp := greatest(1800, least(s.hp * 2, greatest(s.hp / 2, round(s.hp * 86400 / dur))));
+    -- après Ougah débloqué : PV du suivant d'après les dégâts réels des 3 derniers jours (la durée de 11 jours fausserait la règle)
+    if p_n = 14 then nhp := greatest(1800, (select round(coalesce(sum(points), 0) / 3.0) from wb_hits where n = p_n and at > now() - interval '3 days')); end if;
     if p_n = 1 then nhp := greatest(1800, least(s.hp, round(s.hp * 86400 / dur))); end if; -- Gargandyas avait des PV pour 2 jours
     update wb_state set n = p_n + 1, hp = nhp, dmg = 0, started = now(), bonus_until = now() + interval '1 hour' where id = 1;
     perform wb_ann(jsonb_build_object('ev', 'dead', 'n', p_n, 'name', nm, 'dur', round(dur)::int, 'top', (select coalesce(jsonb_agg(e->>'p'), '[]'::jsonb) from jsonb_array_elements(t3) e), 'players', pl), p_user);
@@ -4487,7 +4500,7 @@ begin
   elsif ph1 > ph0 then
     perform wb_ann(jsonb_build_object('ev', 'ph', 'n', p_n, 'name', nm, 'ph', ph1));
   end if;
-  return jsonb_build_object('ok', true, 'grade', g, 'frag', wb_frag(g), 'cons', wb_cons(g), 'dmg', after, 'before', before, 'hp', s.hp, 'killed', killed,
+  return jsonb_build_object('ok', true, 'grade', g, 'frag', wb_frag(g), 'cons', wb_cons(g), 'dmg', after, 'before', before, 'hp', s.hp, 'killed', killed, 'points', pts,
     'left', 3 - (select count(*) from wb_hits where user_id = p_user and day = gb_day()),
     'rank', (select 1 + count(*) from (select sum(points) t from wb_hits where n = p_n group by user_id) x where x.t > (select sum(points) from wb_hits where user_id = p_user and n = p_n)));
 end $$;
