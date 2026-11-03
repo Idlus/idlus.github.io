@@ -42,6 +42,7 @@
   E.CARTE_HEROS_P = 0.02; // Mathis 03/11 : 1 booster sur 50
   const HEROS = (E.CARTE_HEROS = [
     { id: "legende_zeph", n: "Zeph", d: "Zeph-Crâ, 1re Légende de la 1.1", cls: "cra", el: "a", qui: "Zeph", leg: 1 },
+    { id: "legende_ley", n: "Ley", d: "Ley-Crâ, 9e Légende de la 1.1", cls: "cra", el: "a", qui: "Ley", leg: 9 },
     { id: "legende_gagou", n: "Gagou", d: "Sacrigag, 1er à réunir tous les Dofus", cls: "sacri", el: "f", qui: "Gagou", leg: 6 },
   ]);
   const BY = Object.fromEntries(C.map((c) => [c.id, c]));
@@ -53,7 +54,7 @@
 
   /* ---------------- l'album du compte ---------------- */
   const A = (S) => { const c = S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0 }; return c.cards; };
-  const me = () => { const p = root.ON && root.ON.profile && root.ON.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
+  const me = () => { const O = root.ONLINE || root.ON, p = O && O.profile && O.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
   const mine = (S) => { const a = (S.s1c && S.s1c.cards) || {}, x = S.xcards || {};
     const o = Object.assign({}, x.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, a.b || {}), m = me();
     if (m) HEROS.forEach((h) => { if (h.qui && h.qui.toLowerCase() === m) o[h.id] = o[h.id] || 1; }); // son propre héros, d'office

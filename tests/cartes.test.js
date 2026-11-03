@@ -59,8 +59,8 @@ console.log("ok - brillantes ≈ 1 sur 100, doubles en poussière, fabrication d
   for (let i = 0; i < 4000; i++) { T.s1c.cards.bst = 5; const o = E.boosterOpen(T); assert(Array.isArray(o)); boost++;
     const hs = o.filter((x) => E.carte(x.id).rar === "h"); assert(hs.length <= 1, "un héros au plus par booster"); if (hs.length) { heros++; assert.strictEqual(o.indexOf(hs[0]), 0, "à la place de la 1re carte"); } }
   assert(heros > 40 && heros < 130, "≈ 1 booster sur 50 : " + heros + " / " + boost);
-  global.ON = { profile: { pseudo: "testeur" } }; globalThis.ON = global.ON;
-  const U = E.newState("Autre", "cra"); assert(E.cardHas(U, "test_heros"), "le joueur a son propre héros d'office"); delete globalThis.ON;
+  globalThis.ONLINE = { profile: { pseudo: "testeur" } };
+  const U = E.newState("Autre", "cra"); assert(E.cardHas(U, "test_heros"), "le joueur a son propre héros d'office"); delete globalThis.ONLINE;
   assert(!E.cardHas(E.newState("X", "iop"), "test_heros"));
   assert.strictEqual(E.CARTE_CRAFT.h, 400); }
 console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de donjon, son héros d'office");

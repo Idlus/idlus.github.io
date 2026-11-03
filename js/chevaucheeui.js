@@ -25,7 +25,15 @@
           <button class="btn primary" data-act="chv-go"${left && !e.s1cOver(s) ? "" : " disabled"}>Lancer la chevauchée (${left} / ${e.CHEV_TRIES})</button></div>
         <span class="xs muted">Meilleur de la semaine ${e.s1cWeek(s)} : ${best}. Une fois par semaine et par stasis : un coffre par Cavalier vaincu, un booster de cartes pour les 4. Titres pour les 4 en stasis 5 et en stasis 10.</span></section></div>`;
   }
-  const page = (main) => { main.innerHTML = pageHtml(); };
+  /* classement de la semaine (supabase/classements_s1.sql : lb_chev), lu sur la partie validée par le serveur */
+  const LB = { key: "", rows: null };
+  const lbHtml = () => `<section class="panel s1-lb"><div class="phead"><h2>Classement de la semaine</h2></div><div class="pad" id="chvLb">${LB.rows == null ? `<div class="empty">Chargement…</div>`
+    : !LB.rows.length ? `<div class="empty">Personne pour l'instant cette semaine.</div>` : `<ol class="s1-lbl">${LB.rows.map((r) => `<li><b class="num">${r.rang}</b><span class="grow">${h(r.pseudo || "?")}</span><span class="small">${r.n} / 4 · stasis ${r.k} · ${r.t} tours</span></li>`).join("")}</ol>`}
+    <span class="xs muted">D'après ta partie validée par le serveur : un nouvel essai y apparaît quelques minutes après l'envoi.</span></div></section>`;
+  function lbLoad(w) { const ON = window.ONLINE, key = "w" + w; if (LB.key === key && LB.rows) return; LB.key = key; LB.rows = null;
+    if (!ON || !ON.user) { LB.rows = []; return; }
+    Promise.resolve(ON.rpc("lb_chev", { p_w: w })).then((r) => { LB.rows = r && !r.err && Array.isArray(r.data) ? r.data : []; const el = document.querySelector("#chvLb"); if (el && UI().tab === "chev") repaint(); }, () => { LB.rows = []; repaint(); }); }
+  const page = (main) => { main.innerHTML = pageHtml(); const s = S(), e = E(); if (e.isS1c && e.isS1c(s) && window.ONLINE && window.ONLINE.user) { lbLoad(e.s1cWeek(s)); main.querySelector(".chv-page").insertAdjacentHTML("beforeend", lbHtml()); } };
   window.DX.pages.chev = page;
   const repaint = () => { const m = document.querySelector("#main"); if (UI().tab === "chev" && m) page(m); };
   document.addEventListener("click", (ev) => {

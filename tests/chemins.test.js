@@ -12,7 +12,7 @@ const dir = path.join(__dirname, "..", "js");
 const ui = fs.readFileSync(path.join(dir, "ui.js"), "utf8");
 const navSrc = ui.slice(ui.indexOf("const NAV = ["), ui.indexOf("];", ui.indexOf("const NAV = [")));
 const GROUPS = {};
-for (const m of navSrc.matchAll(/n: "([^"]+)", ic: [^,]+, pages: ([^\n]+)/g)) GROUPS[m[1]] = [...m[2].matchAll(/\["[a-z]+", "([^"]+)"/g)].map((x) => x[1]);
+for (const m of navSrc.matchAll(/n: "([^"]+)", ic: [^,]+, pages: ([^\n]+)/g)) GROUPS[m[1]] = [...m[2].matchAll(/\["[a-z0-9]+", "([^"]+)"/g)].map((x) => x[1]);
 assert.deepStrictEqual(Object.keys(GROUPS), ["Aventure", "Héros", "Économie", "Joueurs", "Journal"], "les 5 familles du menu (2.1.40) sont lues");
 // 2.1.40 : le bouton Aide (NAV_HELP) et, en Monocompte, l'entrée Saison (pages posées par monoNav0 et js/monoplusui.js)
 { const hs = ui.slice(ui.indexOf("const NAV_HELP = ["), ui.indexOf(";", ui.indexOf("const NAV_HELP = ["))); GROUPS.Aide = [...hs.matchAll(/\["[a-z]+", "([^"]+)"/g)].map((x) => x[1]); }

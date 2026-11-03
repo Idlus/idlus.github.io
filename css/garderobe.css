@@ -228,3 +228,9 @@
 .xs1-m{display:inline-flex;align-items:center;gap:4px}.xs1-m img{width:18px;height:18px}
 .tr-champ{display:flex;align-items:center;gap:8px}.tr-champ img{width:40px;height:40px}
 @media (max-width:520px){.s1-mo{height:110px}}
+
+/* Saison 1 : bannière de profil (js/banniere.js) */
+.pban{height:96px;margin:-6px -6px 10px;border-radius:12px;background:center/cover no-repeat;box-shadow:inset 0 -30px 30px -20px rgba(0,0,0,.55)}
+.gr-it .gr-banpic{width:100%;height:44px;object-fit:cover;border-radius:6px}
+@media (max-width:600px){.pban{height:72px}}
+.s1-lb{margin-top:12px}.s1-lbl{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}.s1-lbl li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:8px;background:var(--panel2)}.s1-lbl li b{min-width:26px;color:var(--accent,#f0b43c)}
