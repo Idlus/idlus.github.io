@@ -27,6 +27,7 @@
         <div class="s1t"><span class="xs muted">Bénédictions</span><b class="num">${e.s1cBoonGot(s).length} / 20</b><span class="xs muted">${got.length ? h(got.join(" · ")) : "Une à choisir tous les 10 niveaux"}</span>${offer ? `<button class="btn sm primary" data-act="s1c-boon">Choisir (niv. ${offer.lvl})</button>` : ""}</div>
         <div class="s1t"><span class="xs muted">Vitrine de la semaine ${e.s1cWeek(s)}</span><b class="num">${e.VIT ? e.vitWeek(s).filter((v) => !e.vitOwned(s, v.id)).length : 0} / ${e.VIT_N || 0}</b><span class="xs muted">cosmétiques à prendre en Fragments du Temps</span><button class="btn sm" data-act="s1c-vit">Voir la vitrine</button></div>
         <div class="s1t"><span class="xs muted">Caisse du jour</span><img class="s1case" src="${window.coIco("saison")}" alt=""><span class="xs muted">${e.freeCaseLeft(s) ? "Gratuite, une par jour" : `Prochaine dans ${dur(e.freeCaseNext(s))}`}</span>${e.freeCaseLeft(s) && !over ? `<button class="btn sm primary" data-act="s1c-case">Ouvrir</button>` : ""}<button class="btn sm" data-act="s1c-ctr">Contrats (${e.contratLeft(s)})</button></div>
+        ${window.CARTEUI ? window.CARTEUI.tile(s) : ""}
         <div class="s1t"><span class="xs muted">Maîtrise de la manche</span><b class="num">${cap === Infinity ? "—" : cap}</b><span class="xs muted">points au plus pendant cette manche, relevé à la suivante</span></div>
       </div></section>`;
   }
