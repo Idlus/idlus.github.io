@@ -10,19 +10,17 @@ const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 const WELCOME = `# Bienvenue chez Ombrelune Studio !
 🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan. Ce serveur réunit tous ses jeux : **idlus** aujourd'hui, et bientôt un nouveau jeu en préparation (suis-le dans <#NEXT>).
 
-⚔️ **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
+⚔️ **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte donjons et boss jusqu'à la stasis 15. Tes héros se battent tout seuls, même quand tu n'es pas là.
 
 🎮 **Jouer** : ${GAME}
-Le jeu est en ligne : connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel de vente, rejoindre une guilde et entrer dans les classements. Le Sablier de Xélor fait filer le temps ×2 ou ×3 quand tu veux avancer plus vite.
-🧪 **Version de test** : ${BETA}
-Les nouveautés y arrivent en premier, à tester hors ligne avant leur sortie.
+Connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel des ventes, rejoindre une guilde, défier les autres au Kolizéum et entrer dans les classements. Le jeu s'installe aussi sur téléphone et sur PC.
 
-📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS>.
+📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS>, les notes de chaque mise à jour d'idlus dans <#UPDATES>.
 🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
 🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
 🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
-🧪 **Rôle Testeur, c'est toi qui choisis** : clique sur **Salons et rôles** tout en haut de la liste des salons, puis coche ou décoche « Tester les nouveautés en avant-première ». Ce rôle ouvre les salons de la version de test et te prévient de ses nouveautés. Tu peux changer d'avis quand tu veux, pareil pour 🔔 « Être prévenu à chaque mise à jour ».
+🔔 **Être prévenu à chaque mise à jour** : clique sur **Salons et rôles** tout en haut de la liste des salons et coche « Être prévenu à chaque mise à jour ». Tu peux changer d'avis quand tu veux.
 
 *Les jeux d'Ombrelune Studio sont des projets de fan non officiels : idlus n'a aucun lien avec Ankama.*`;
 const RULES = `# Règles du serveur
@@ -34,32 +32,25 @@ const RULES = `# Règles du serveur
 **6.** Écris de préférence en français.
 
 En cas de souci, mentionne un @Modérateur. Bon jeu ! ⚔️`;
-const ROADMAP = `# Feuille de route
+const ROADMAP = `# Feuille de route d'idlus
 Sans dates : chaque partie sort quand elle est prête.
 
 **✅ Déjà dans le jeu**
-• Niveau 200 : 839 monstres, 51 nouveaux donjons, Frigost, Saharach, Sakaï, l'Île des Wabbits…
-• Familiers, dragodindes, muldos et volkornes, avec l'élevage
-• Idoles, archimonstres et Dofus, Renaissance
-• L'Expédition sans fin, journal de quêtes, défi du jour, artisans et temples, chasse au trésor
-• Sablier de Xélor (temps ×2 ou ×3), cinq coffres à ouvrir, fabrication en série, menu rangé en 5 groupes
-• En ligne : compte Discord facultatif, chat, Hôtel de vente et échanges, guildes, boss de guilde, Percepteurs, classements
+• Niveaux 1 à 200, les 19 classes, stasis 1 à 15 avec les boss ultimes, qui préviennent avant leurs grosses attaques
+• Dofus et leurs quêtes, Maîtrise, Ascension, Songe, défi du jour, Almanax
+• Familiers, montures et élevage, forgemagie, métiers et récolte, Havre-Sac
+• En ligne : chat, Hôtel des ventes, guildes et boss de guilde, alliances, alignements, Kolizéum, classements
+• Deux serveurs : le Classique et le Monocompte (un seul héros, en bêta fermée)
 
 **🔨 En préparation**
-• Kolizéum : des combats contre l'équipe d'autres joueurs
-• Mode marchand : ta propre boutique, visible par tous les joueurs
-• La suite de l'Expédition sans fin : votez dans <#POLLS>
-
-**🚀 Version 1.0**
-• Les testeurs qui ont le rôle Pionnier reçoivent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
+• La Saison 1, sur le Classique et le Monocompte, avec un écran pour choisir son serveur
+• Vos idées les plus votées dans <#IDEAS> et les sondages de <#POLLS>`;
 const NEXT_TXT = `# Un nouveau jeu en préparation
 Ombrelune Studio prépare son prochain jeu : une aventure sombre où l'on part de rien pour devenir le plus fort.
 Il n'a pas encore de nom ni de date. Les premières images et les nouvelles arriveront ici en premier. Pour en parler, rendez-vous dans <#CHAT>.`;
 const BETA_TXT = `# Version de test
-${BETA}
-Les nouveautés arrivent ici avant le jeu public. La version de test n'a pas de serveur : en l'ouvrant, choisis « Tester hors ligne » (ta partie de test reste sur ton appareil) ou « Jouer en ligne » pour revenir au jeu public.
-• Chaque partie de test reçoit le titre « Pionnier d'Idlus » ; les testeurs actifs reçoivent le rôle Pionnier, qui le leur rendra à la 1.0.
-Les nouveautés de chaque mise à jour sont annoncées ici. Raconte ce que tu as testé dans <#BETAFB>.`;
+La version de test séparée est fermée depuis le 14/10 : les nouveautés arrivent maintenant directement dans le jeu (${GAME}), annoncées dans <#UPDATES>.
+Ces salons restent ouverts pour l'historique. Tes retours sur les nouveautés sont toujours les bienvenus dans <#BETAFB>, <#BUGS> ou <#IDEAS>.`;
 
 const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
@@ -170,13 +161,16 @@ async function main() {
   const me = (await api("GET", "/users/@me")).id;
   for (const s of PLAN) for (const c of s.chans) if (c.text) {
     const want = fill(c.text, ids);
-    const mine = (await api("GET", `/channels/${ids[c.key]}/pins`)).find((m) => m.author && m.author.id === me); // texte épinglé par le robot : on le met à jour
+    const recent = await api("GET", `/channels/${ids[c.key]}/messages?limit=20`);
+    const mine = (await api("GET", `/channels/${ids[c.key]}/pins`)).find((m) => m.author && m.author.id === me) // texte épinglé par le robot : on le met à jour
+      || recent.find((m) => m.type === 0 && m.author && m.author.id === me && m.content.startsWith("# ")); // (ou son texte qui n'est plus épinglé)
     if (mine) {
+      if (!mine.pinned) try { await api("PUT", `/channels/${ids[c.key]}/pins/${mine.id}`); } catch (e) {}
       if (mine.content === want) console.log("  texte à jour :", c.name);
       else { await api("PATCH", `/channels/${ids[c.key]}/messages/${mine.id}`, { content: want, allowed_mentions: { parse: [] } }); console.log("  texte mis à jour :", c.name); }
       continue;
     }
-    const last = await api("GET", `/channels/${ids[c.key]}/messages?limit=1`);
+    const last = recent.filter((m) => m.type === 0); // les avis « message épinglé » ne comptent pas
     if (last.length) { console.log("  texte déjà présent (pas du robot) :", c.name); continue; }
     const m = await api("POST", `/channels/${ids[c.key]}/messages`, { content: want, allowed_mentions: { parse: [] } });
     try { await api("PUT", `/channels/${ids[c.key]}/pins/${m.id}`); } catch (e) {}
@@ -187,8 +181,7 @@ async function main() {
     const visible = PLAN.filter((s) => !s.only).flatMap((s) => s.chans).filter((c) => c.type !== VOICE).map((c) => ids[c.key]);
     let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++); // Discord exige un identifiant pour chaque question et réponse
     await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [{
-      id: sid(), type: 0, title: "Tes rôles (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
-        { id: sid(), title: "Tester les nouveautés en avant-première", description: "Accès aux salons de la version de test", emoji: { name: "🧪" }, role_ids: [roles.tester], channel_ids: [] },
+      id: sid(), type: 0, title: "Tes notifications (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
         { id: sid(), title: "Être prévenu à chaque mise à jour", description: "Une mention à chaque nouvelle version", emoji: { name: "🔔" }, role_ids: [roles.notif], channel_ids: [] } ] }] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
   } catch (e) { console.log("Accueil des nouveaux non configuré, à faire à la main :", e.message); }
