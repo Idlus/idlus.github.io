@@ -14,7 +14,8 @@ const DAY = 86400000; let now = Date.UTC(2030, 0, 9, 12); E.setClock(() => now);
 const s1 = () => { const S = E.newState("Héros", "iop"); E.s1cStart(S, t0); return S; };
 
 // les cartes
-assert.strictEqual(E.CARTES.length, Object.keys(D.DUNGEONS).length, "une carte par donjon");
+assert.strictEqual(E.CARTES.filter((c) => c.rar !== "h").length, Object.keys(D.DUNGEONS).length, "une carte par donjon");
+E.CARTE_HEROS.forEach((x) => { assert(fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}.webp`)) && fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}-b.webp`)), "images du héros " + x.id); });
 const n = { c: 0, r: 0, e: 0, l: 0 }; E.CARTES.forEach((c) => n[c.rar]++);
 assert(n.c > n.r && n.r > n.e && n.e > n.l && n.l >= 10, "pyramide des raretés " + JSON.stringify(n));
 E.CARTES.forEach((c) => { assert(c.img || c.art, "image de " + c.id); if (c.art) assert(fs.existsSync(path.join(__dirname, "..", c.art)), c.art);

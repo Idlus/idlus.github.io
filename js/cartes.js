@@ -41,7 +41,7 @@
      cartes de donjon ne bougent pas quand la page grandit. */
   E.CARTE_HEROS_P = 0.02; // Mathis 03/11 : 1 booster sur 50
   const HEROS = (E.CARTE_HEROS = [
-    // { id: "legende_zeph", n: "Zeph", d: "Zeph-Crâ, 1re Légende de la 1.1", cls: "cra", el: "a", qui: "Zeph", leg: 1 },
+    { id: "legende_zeph", n: "Zeph", d: "Zeph-Crâ, 1re Légende de la 1.1", cls: "cra", el: "a", qui: "Zeph", leg: 1 },
     // { id: "legende_gagou", n: "Gagou", d: "Sacrigag, 1er à réunir tous les Dofus", cls: "sacri", el: "f", qui: "Gagou", leg: 6 },
   ]);
   const BY = Object.fromEntries(C.map((c) => [c.id, c]));
