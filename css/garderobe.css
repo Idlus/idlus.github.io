@@ -166,3 +166,17 @@
 @keyframes caIn{from{transform:translateY(30px);opacity:0}}
 .ca-cbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;color:#f3ecd8;min-height:40px;margin-top:10px}
 @media (max-width:560px){.ca-flip{width:calc((100vw - 56px)/3)}.ca-row{gap:24px 8px}}
+
+/* ---------- Saison 1, lot 8 : Chevauchée des Cavaliers (js/chevaucheeui.js) ---------- */
+.chv-top{display:grid;gap:12px}
+.chv-row{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.chv-b{flex:1 1 140px;display:grid;gap:4px;justify-items:center;text-align:center;padding:10px;border-radius:12px;background:var(--panel2);border:2px solid transparent}
+.chv-b img{width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.chv-b small{font-size:11px;color:var(--muted)}
+.chv-b i{width:100%;height:6px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.chv-b u{display:block;height:100%;background:#7be39a}
+.chv-b.win{border-color:#8cc63f}.chv-b.lose{border-color:#d9443a;opacity:.8}
+.chv-arr{align-self:center;font-size:22px;color:var(--muted)}
+.chv-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chv-k{display:flex;flex-wrap:wrap;gap:4px}.chv-k button{min-width:34px}
+@media (max-width:560px){.chv-arr{display:none}.chv-b{flex-basis:calc(50% - 6px)}.chv-b img{width:64px;height:64px}}
+.chv-k button.on{background:var(--accent,#8cc63f);color:#10200a}
