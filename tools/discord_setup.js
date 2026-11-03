@@ -255,7 +255,8 @@ async function main() {
       { id: sid(), type: 0, title: "Ton serveur dans idlus", single_select: false, required: false, in_onboarding: true, options: [
         opt("Classique", "Une équipe de héros", "⚔️", "srvclassic"),
         opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] },
-      { id: sid(), type: 0, title: "Ton ombre préférée dans Re:Arise", single_select: true, required: false, in_onboarding: true,
+      // Discord limite le nombre de questions de l'accueil : celle-ci n'apparaît que dans « Salons et rôles »
+      { id: sid(), type: 0, title: "Ton ombre préférée dans Re:Arise", single_select: true, required: false, in_onboarding: false,
         options: SHADOW_ROLES.map(([n]) => opt(n, "La couleur de ton pseudo", null, "sh_" + n)) } ] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
   } catch (e) { console.log("Accueil des nouveaux non configuré, à faire à la main :", e.message); }
