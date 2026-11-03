@@ -251,6 +251,14 @@ try {
   q(`update announce_loops set next_at = now() - interval '1 minute'`); as(1, `select ann_tick()`);
   assert.strictEqual(+q(`select count(*) from chat_msgs where kind = 'ann' and ch = 'g' and body = 'Boucle Classique'`), 1, "bandeau Classique déjà pris : la boucle passe dans le chat Général");
   console.log("ok - 2.1.36 : chat.sql réappliqué (annonces gardées et Classique, épinglé Monocompte repris de l'ancien, tables pas réécrites) ; adm_pin sans 'm', adm_pin_mono, adm_announce_mono (bandeau srv 'm', message dans 'm'), réservés à Mathis ; un bandeau Monocompte ne bloque pas les annonces en boucle du Classique");
+  // Saison 1, lot 3 (js/garderobe.js) : couleur du pseudo gardée dans data.pc si elle est connue, ignorée sinon ; 'm' ne la prend pas
+  reset();
+  assert.strictEqual(as(1, `select coalesce(chat_send('T:couleur', null, null, 'g', 'or'), 'OK')`), "OK");
+  assert.strictEqual(q(`select data ->> 'pc' from chat_msgs where body = 'T:couleur'`), "or", "couleur du pseudo gardée");
+  q(`update chat_msgs set created_at = created_at - interval '1 minute' where body like 'T:%'`);
+  assert.strictEqual(as(1, `select coalesce(chat_send('T:inconnue', null, null, 'g', 'arc-en-ciel'), 'OK')`), "OK");
+  assert.strictEqual(q(`select coalesce(data ->> 'pc', '-') from chat_msgs where body = 'T:inconnue'`), "-", "couleur inconnue ignorée");
+  console.log("ok - Garde-robe : couleur du pseudo dans data.pc (liste connue seulement)");
 } finally {
   run(`drop database if exists ${DB}`, URL0);
 }

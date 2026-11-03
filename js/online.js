@@ -48,6 +48,7 @@
   const S1_N = 5;
   ON.S1_N = S1_N;
   ON.s1Srv = !!SRV.s1;
+  ON.grSrv = !!SRV.gr; // Saison 1, lot 3 : chat_send accepte la couleur du pseudo (supabase/chat.sql)
   ON.s1Game = () => SLOT === S1_N;
   const S1_SET = new Set(root.S1_OBJ || []);
   ON.s1Obj = (name) => S1_SET.has(name);
@@ -408,7 +409,9 @@
   ON.chatLost = () => !!chan && lost; // 1.0.10.1 : temps réel coupé (incident Supabase Realtime) : le chat se met à jour sans lui
   ON.onlinePseudos = () => { try { return chan ? Object.values(chan.presenceState()).flat().map((x) => x && x.p).filter(Boolean) : []; } catch (e) { return []; } }; // 0.1.53.7 : proposés quand on tape « @ »
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
-  ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };
+  /* Saison 1, lot 3 : couleur du pseudo (js/garderobe.js), envoyée seulement quand le serveur la connaît (SRV.gr, posé à l'installation) */
+  const pcOf = () => { const D = root.DX, S = D && D.S, E = D && D.E; return ON.grSrv && S && E && E.grPcol ? E.grPcol(S) : null; };
+  ON.chatSend = async (body, to, item, ch) => { const pc = pcOf(); const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {}, pc ? { p_pc: pc } : {})); return r.err ? r.err : r.data || null; };
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
   // 2.1.35.3 : carte Monocompte d'un joueur (clic sur son pseudo dans le salon Monocompte du chat) ; serveur pas à jour : null
