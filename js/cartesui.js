@@ -27,14 +27,14 @@
     const s = S(), e = E(), R = e.CARTE_RAR, M = e.cardMine(s), S1 = e.isS1c && e.isS1c(s);
     const L = e.CARTES.filter((c) => (!G.r || c.rar === G.r) && (!G.miss || !M.o[c.id]));
     const cnt = (r) => e.CARTES.filter((c) => c.rar === r && M.o[c.id]).length + " / " + e.CARTES.filter((c) => c.rar === r).length;
-    const tabs = [["", "Toutes"]].concat(Object.entries(R)).map(([k, n]) => `<button class="${G.r === k ? "on" : ""}" data-act="ca-r" data-v="${k}">${n}${k ? ` <small>${cnt(k)}</small>` : ""}</button>`).join("");
+    const tabs = [["", "Toutes"]].concat(Object.entries(R).filter(([k]) => k !== "h" || e.CARTE_HEROS.length)).map(([k, n]) => `<button class="${G.r === k ? "on" : ""}" data-act="ca-r" data-v="${k}">${n}${k ? ` <small>${cnt(k)}</small>` : ""}</button>`).join("");
     const pal = e.CARTE_PAL.map(([k, nm]) => `<span class="ca-pal${e.cardCount(s) >= k ? " ok" : ""}">${k} · ${h(nm)}</span>`).join("");
     const head = S1 ? `<div class="ca-top"><span><img src="assets/ui/poussiere.webp" alt=""> <b>${e.cardDust(s)}</b> Poussière d'étoile</span>
         ${e.boosterLeft(s) && !e.s1cOver(s) ? `<button class="btn primary" data-act="ca-open">Ouvrir un booster (${e.boosterLeft(s)})</button>` : `<span class="xs muted">Prochain booster offert dans ${dur(e.boosterNext())}</span>`}</div>`
       : `<p class="small muted">L'album est lié à ton compte : il montre les cartes de ta partie Saison 1. Les boosters s'ouvrent dans la partie de saison.</p>`;
     return `<div class="ca-page"><div class="pagehead"><h1>Album de cartes</h1><span class="small muted">${e.cardCount(s)} / ${e.CARTES.length} cartes · ${e.cardShinyCount(s)} brillante${e.cardShinyCount(s) > 1 ? "s" : ""}</span></div>
       <section class="panel">${head}<div class="ca-pals">${pal}</div>
-        <span class="xs muted">Une carte par boss de donjon. Un booster offert par jour et un de plus tous les ${e.BOOSTER_DJ} donjons de saison (${e.BOOSTER_DJ_JOUR} par jour au plus). Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante. Les cartes ne changent pas la puissance.</span>
+        <span class="xs muted">Une carte par boss de donjon${e.CARTE_HEROS.length ? ", et la page Héros d'Idlus : les héros des joueurs (1 booster sur 50 en contient un)" : ""}. Un booster offert par jour et un de plus tous les ${e.BOOSTER_DJ} donjons de saison (${e.BOOSTER_DJ_JOUR} par jour au plus). Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante. Les cartes ne changent pas la puissance.</span>
         <nav class="subtabs ca-tabs">${tabs}<button class="${G.miss ? "on" : ""}" data-act="ca-miss">Manquantes</button></nav>
         <div class="ca-grid">${L.map((c) => `<button class="ca-cell" data-act="ca-see" data-v="${c.id}">${card(c, { own: !!M.o[c.id], sh: !!M.b[c.id], n: M.o[c.id] })}</button>`).join("") || `<p class="muted">Rien ici.</p>`}</div></section></div>`;
   }

@@ -29,11 +29,11 @@ console.log("ok - " + E.CARTES.length + " cartes, une par boss de donjon : " + J
   assert(E.CARTES.find((c) => c.id === o[4].id).rar !== "c", "la 5e est rare ou mieux");
   assert.strictEqual(typeof E.boosterOpen(S), "string", "un seul offert par jour");
   for (let i = 0; i < 40; i++) E.emit(S, "dungeon", { id: "cour_bouftou_royal" });
-  assert.strictEqual(E.boosterLeft(S), 2, "2 boosters de donjon par jour au plus");
-  now += DAY; assert.strictEqual(E.boosterLeft(S), 3, "le lendemain, le booster du jour revient"); now = t0;
+  assert.strictEqual(E.boosterLeft(S), 4, "4 boosters de donjon par jour au plus (1 tous les 5 donjons)");
+  now += DAY; assert.strictEqual(E.boosterLeft(S), 5, "le lendemain, le booster du jour revient"); now = t0;
   const Et = E.newState("Ancien", "iop"); assert.strictEqual(E.boosterLeft(Et), 0); assert.strictEqual(typeof E.boosterOpen(Et), "string", "hors saison : pas de booster");
   E.cardImport(Et, E.deserialize(E.serialize(S))); assert.strictEqual(E.cardCount(Et), E.cardCount(S), "album lié au compte : l'Éternel le relit"); }
-console.log("ok - boosters : un par jour, 2 de plus en donjon au plus, 5 cartes, seulement en saison, album lié au compte");
+console.log("ok - boosters : un par jour, 4 de plus en donjon au plus, 5 cartes, seulement en saison, album lié au compte");
 
 // brillantes, doubles, fabrication
 { const S = s1(); let sh = 0, cards = 0; let seed = 7; E.setRng(() => ((seed = (seed * 16807) % 2147483647) / 2147483647));
@@ -48,3 +48,18 @@ console.log("ok - boosters : un par jour, 2 de plus en donjon au plus, 5 cartes,
   assert(E.titles(T).includes("Maître de l'Album"), "titre de l'album complet");
   assert(E.ACH.some((a) => a.id === "s1ca30" && a.s1), "succès de l'album dans la saison"); }
 console.log("ok - brillantes ≈ 1 sur 100, doubles en poussière, fabrication d'une carte manquante, paliers de l'album");
+
+// Héros d'Idlus (03/11) : 1 booster sur 50 remplace une commune par un héros ; les cartes de donjon gardent leurs chances
+{ assert.strictEqual(E.CARTE_HEROS_P, 0.02); assert.strictEqual(E.CARTE_RAR.h, "Héros d'Idlus");
+  const nDj = E.CARTES.filter((c) => c.rar !== "h").length;
+  E.carteHerosAdd({ id: "test_heros", n: "Testeur", d: "Héros de test", el: "a", qui: "Testeur" });
+  assert.strictEqual(E.CARTES.filter((c) => c.rar !== "h").length, nDj, "les cartes de donjon ne changent pas");
+  const T = s1(); E.boosterGive(T, 1); let heros = 0, boost = 0;
+  for (let i = 0; i < 4000; i++) { T.s1c.cards.bst = 5; const o = E.boosterOpen(T); assert(Array.isArray(o)); boost++;
+    const hs = o.filter((x) => E.carte(x.id).rar === "h"); assert(hs.length <= 1, "un héros au plus par booster"); if (hs.length) { heros++; assert.strictEqual(o.indexOf(hs[0]), 0, "à la place de la 1re carte"); } }
+  assert(heros > 40 && heros < 130, "≈ 1 booster sur 50 : " + heros + " / " + boost);
+  global.ON = { profile: { pseudo: "testeur" } }; globalThis.ON = global.ON;
+  const U = E.newState("Autre", "cra"); assert(E.cardHas(U, "test_heros"), "le joueur a son propre héros d'office"); delete globalThis.ON;
+  assert(!E.cardHas(E.newState("X", "iop"), "test_heros"));
+  assert.strictEqual(E.CARTE_CRAFT.h, 400); }
+console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de donjon, son héros d'office");

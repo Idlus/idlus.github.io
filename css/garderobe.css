@@ -117,6 +117,7 @@
 .ca{--rc:#9aa3ad;position:relative;display:grid;grid-template-rows:1fr auto;aspect-ratio:2/3;width:100%;border-radius:12px;overflow:hidden;background:#1b1f1a;border:3px solid var(--rc);box-shadow:0 2px 8px rgba(0,0,0,.35);text-align:left}
 .ca.r-r{--rc:#3f8fd8}.ca.r-e{--rc:#a463e0}.ca.r-l{--rc:#f0b43c}
 .ca.r-l{box-shadow:0 0 14px rgba(240,180,60,.45)}
+.ca.r-h{--rc:#ff6fa8;box-shadow:0 0 16px rgba(255,111,168,.5)} /* Héros d'Idlus : cartes des joueurs */
 .ca-art{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc) 45%,#2a3326),#151a12 75%)}
 .ca[data-el=f] .ca-art{background:radial-gradient(circle at 50% 40%,#c4572e,#2a1510 75%)}
 .ca[data-el=e] .ca-art{background:radial-gradient(circle at 50% 40%,#3b8fd0,#0f1d2a 75%)}
@@ -160,7 +161,7 @@
 .ca-face{transform:rotateY(180deg)}.ca-flip.up .ca-face{transform:rotateY(0)}.ca-flip.up .ca-back{transform:rotateY(-180deg)}
 .ca-back{border-radius:12px;background:#1c2816 url(../assets/s1/ca/dos.webp) center/cover no-repeat;border:3px solid #9aa3ad;display:grid;place-items:center}
 .ca-back i{display:none}
-.ca-flip.r-r .ca-back{border-color:#3f8fd8}.ca-flip.r-e .ca-back{border-color:#a463e0;box-shadow:0 0 14px #a463e088}.ca-flip.r-l .ca-back{border-color:#f0b43c;box-shadow:0 0 22px #f0b43caa}
+.ca-flip.r-r .ca-back{border-color:#3f8fd8}.ca-flip.r-e .ca-back{border-color:#a463e0;box-shadow:0 0 14px #a463e088}.ca-flip.r-l .ca-back{border-color:#f0b43c;box-shadow:0 0 22px #f0b43caa}.ca-flip.r-h .ca-back{border-color:#ff6fa8;box-shadow:0 0 24px #ff6fa8bb}
 .ca-flip.sh .ca-back{box-shadow:0 0 22px #fff}
 .ca-pd{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:#e8c063}
 @keyframes caIn{from{transform:translateY(30px);opacity:0}}

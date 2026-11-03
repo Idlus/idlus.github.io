@@ -17,15 +17,15 @@
   const s1 = (S) => !!(E.isS1c && E.isS1c(S));
   const DAY = 86400000;
 
-  const RAR = (E.CARTE_RAR = { c: "Commune", r: "Rare", e: "Épique", l: "Légendaire" });
+  const RAR = (E.CARTE_RAR = { c: "Commune", r: "Rare", e: "Épique", l: "Légendaire", h: "Héros d'Idlus" });
   const POIDS = { c: 62, r: 27, e: 9, l: 2 }; // chances d'une carte de booster (la 5e : rare ou mieux)
-  const DUST = (E.CARTE_DUST = { c: 2, r: 5, e: 15, l: 40 }); // poussière d'un double (×5 pour une brillante)
-  const CRAFT = (E.CARTE_CRAFT = { c: 20, r: 50, e: 150, l: 400 }); // poussière pour fabriquer une carte manquante
+  const DUST = (E.CARTE_DUST = { c: 2, r: 5, e: 15, l: 40, h: 40 }); // poussière d'un double (×5 pour une brillante)
+  const CRAFT = (E.CARTE_CRAFT = { c: 20, r: 50, e: 150, l: 400, h: 400 }); // poussière pour fabriquer une carte manquante
   E.CARTE_SHINY = 0.01;
   E.BOOSTER_N = 5;
-  E.BOOSTER_DJ = 10; // donjons de saison pour un booster
-  E.BOOSTER_DJ_JOUR = 2; // boosters gagnés en donjon par jour, au plus
-  E.BOOSTER_MAX = 20; // boosters gardés en réserve, au plus
+  E.BOOSTER_DJ = 5; // donjons de saison pour un booster (03/11 : 10 → 5, Mathis veut plus de boosters)
+  E.BOOSTER_DJ_JOUR = 4; // boosters gagnés en donjon par jour, au plus (03/11 : 2 → 4)
+  E.BOOSTER_MAX = 30; // boosters gardés en réserve, au plus
   // cartes illustrées (1 : illustration, 2 : illustration + version brillante dessinée)
   const ART = (E.CARTE_ART = Object.assign(Object.fromEntries("akademie_gobs antichambre_gloursons antre_blop_multicolore antre_crocabulia antre_dragon_cochon antre_korriandre antre_reine_nyee aquadome_merkator arbre_moon arbre_mort atelier_tanukoui aurore_pourpre autel_dechireuse bambusaie_damadrya bastion_marteaux bateau_chouque belvedere_ilyzaelle biblio_corbac boyau_pere_ver brasserie_dazak breuil_venerable cache_kankreblath cale_arche_otomai camp_razof canopee_kimbo cave_toxoliath caverne_el_piko caverne_koulosse cavernes_kolosso chambre_malefices chambre_tal_kasha chapiteau_riktus chateau_ensable chateau_wa_wabbit cimetiere_mastodontes clairiere_chene_mou clos_blops cour_bouftou_royal croquanterie crypte_kardorim defi_chaloeil demeure_esprits dojo_vent domaine_ancestral donjon_bworks donjon_forgerons donjon_larves donjon_scarafeuilles donjon_squelettes donjon_tofus epave_grolandais epreuve_draegnerys excavation_mansot fabrique_foux fabrique_mallefisk fers_tyrannie fonderie_waddicts forgefroide_frizz galerie_phossile garde_manger_rat_blanc gelaxieme_dimension goulet_rasboul grange_tournesol grotte_bworker grotte_hesque grotte_kanigroula horologium_xlii hypogee_obsidiantre labo_brumen labo_nileza labo_tynril labyrinthe_minotoror maison_fantome manoir_katrepat megalithe_fraktale memoire_orukam miausolee_pounicheur mine_sakai nid_kwakwa oeil_vortex palais_dantinea palais_nidas pitons_craqueleur plateau_ush poste_supervizoeuf pyramide_ombre refuge_sylvestre repaire_kharnozor repaire_skeunk repaire_sphincter ring_ekarlatte rituel_kabahal salle_minotot salons_klime sanctuaire_torkelonia sentence_balance serre_royalmouth sousouriciere_rat_noir souvenir_imagiro taniere_givrefoux taniere_meulou tempete_eliocalypse temple_kao temple_koutoulou temple_ougah terrier_wa_wabbit tertre_long_sommeil theatre_dramak tofulailler_royal tombe_tofugawa tour_bethel tour_solar transporteur_sylargh trone_cour_sombre trone_sang vaisseau_meno vallee_dame_eaux ventre_baleine village_kanniboul voliere_haute_truche".split(" ").map((id) => [id, 1])), { donjon_harebourg: 2 }));
 
@@ -35,13 +35,29 @@
   const C = (E.CARTES = L.map(([id, d], i) => { const m = (D.MONSTERS || {})[d.boss] || {};
     return { id, n: m.name || d.name, d: d.name, lvl: d.lvl, el: m.el || "n", rar: i < cut[0] ? "c" : i < cut[1] ? "r" : i < cut[2] ? "e" : "l",
       img: m.img != null ? `assets/m/${m.img}.png` : "", art: ART[id] ? `assets/s1/ca/${id}.webp` : "", artB: ART[id] === 2 ? `assets/s1/ca/${id}-b.webp` : "" }; }));
+  /* Héros d'Idlus (Mathis, 03/11) : la carte d'un héros de joueur, les 10 Légendes de la 1.1 d'abord, puis toute carte demandée.
+     Une entrée par carte livrée (image assets/s1/ca/<id>.webp, brillante <id>-b.webp) ; « qui » = pseudo du joueur, qui a la
+     sienne d'office. Dans les boosters : 1 booster sur 50 remplace une commune par un héros tiré au hasard, donc les chances des
+     cartes de donjon ne bougent pas quand la page grandit. */
+  E.CARTE_HEROS_P = 0.02; // Mathis 03/11 : 1 booster sur 50
+  const HEROS = (E.CARTE_HEROS = [
+    // { id: "legende_zeph", n: "Zeph", d: "Zeph-Crâ, 1re Légende de la 1.1", cls: "cra", el: "a", qui: "Zeph", leg: 1 },
+    // { id: "legende_gagou", n: "Gagou", d: "Sacrigag, 1er à réunir tous les Dofus", cls: "sacri", el: "f", qui: "Gagou", leg: 6 },
+  ]);
   const BY = Object.fromEntries(C.map((c) => [c.id, c]));
+  const heroCard = (x) => { const c = { id: x.id, n: x.n, d: x.d, lvl: 200, el: x.el || "n", rar: "h", qui: x.qui || "", leg: x.leg || 0, img: "", art: `assets/s1/ca/${x.id}.webp`, artB: `assets/s1/ca/${x.id}-b.webp` };
+    C.push(c); BY[c.id] = c; return c; };
+  HEROS.forEach(heroCard);
+  E.carteHerosAdd = (x) => { if (BY[x.id]) return BY[x.id]; HEROS.push(x); return heroCard(x); }; // pour les tests
   E.carte = (id) => BY[id] || null;
 
   /* ---------------- l'album du compte ---------------- */
   const A = (S) => { const c = S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0 }; return c.cards; };
+  const me = () => { const p = root.ON && root.ON.profile && root.ON.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
   const mine = (S) => { const a = (S.s1c && S.s1c.cards) || {}, x = S.xcards || {};
-    return { o: Object.assign({}, x.o || {}, a.o || {}), b: Object.assign({}, x.b || {}, a.b || {}) }; };
+    const o = Object.assign({}, x.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, a.b || {}), m = me();
+    if (m) HEROS.forEach((h) => { if (h.qui && h.qui.toLowerCase() === m) o[h.id] = o[h.id] || 1; }); // son propre héros, d'office
+    return { o, b }; };
   E.cardMine = mine;
   E.cardHas = (S, id) => !!mine(S).o[id];
   E.cardShiny = (S, id) => !!mine(S).b[id];
@@ -67,9 +83,9 @@
     if (E.s1cOver(S)) return "La saison est finie : l'album reste, les boosters s'arrêtent.";
     const a = A(S); let from = "";
     if (E.boosterFree(S)) { a.free = E.now(); from = "jour"; } else if (a.bst > 0) { a.bst--; from = "reserve"; } else return "Plus de booster : un nouveau demain, ou en finissant des donjons de saison.";
-    const out = [];
+    const out = [], hero = HEROS.length && E.rnd() < E.CARTE_HEROS_P;
     for (let i = 0; i < E.BOOSTER_N; i++) {
-      const c = pick(roll(i === E.BOOSTER_N - 1)), sh = E.rnd() < E.CARTE_SHINY;
+      const c = hero && i === 0 ? pick("h") : pick(roll(i === E.BOOSTER_N - 1)), sh = E.rnd() < E.CARTE_SHINY;
       const had = sh ? !!a.b[c.id] : !!a.o[c.id];
       let pd = 0;
       if (sh) { if (had) pd = DUST[c.rar] * 5; a.b[c.id] = (a.b[c.id] || 0) + 1; a.o[c.id] = a.o[c.id] || 1; }
