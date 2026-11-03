@@ -1,6 +1,14 @@
 {
-  "version": "2.1.43.4",
+  "version": "2.1.43.5",
   "versions": [
+    {
+      "v": "2.1.43.5",
+      "name": "Un onglet par partie",
+      "items": [
+        "La même partie ouverte dans deux onglets s'écrasait : le dernier onglet qui sauvegardait gagnait. Maintenant, l'ancien onglet se met en pause et ne sauvegarde plus ; « Jouer dans cet onglet » le reprend",
+        "Deux parties différentes (Classique et Monocompte, par exemple) restent jouables en même temps dans deux onglets"
+      ]
+    },
     {
       "v": "2.1.43.4",
       "name": "Ougah débloqué",

@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.1.43.5 « Un onglet par partie »
+- Mathis (03/11) : deux onglets sur la même partie s'écrasaient (dernier qui sauvegarde gagne). `js/ui.js` : BroadcastChannel « idlus-onglets », l'onglet qui ouvre ou sauvegarde une partie l'annonce (clé de sauvegarde) ; l'onglet qui l'avait se met en pause (`tabPause` : plus de boucle, de sauvegarde ni d'envoi au serveur) avec « Jouer dans cet onglet ». Deux parties différentes restent jouables en même temps.
+
 ## 2.1.43.4 « Ougah débloqué »
 - Mathis (03/11) : « Débloque Ougah sur l'Éternel ». `supabase/wboss.sql` : marqueur unique `wb_resets` '2.1.43.4' (si le boss en cours est Ougah n° 14, PV = dégâts + 27 000 points, soit ~3 jours au rythme de ~9 000 points/jour), un essai plafonné à 6 000 points dans `wb_done`, PV du boss n° 15 = dégâts des 3 derniers jours ÷ 3. Vérifié par `tests/wboss_ougah_sql.test.js` (Postgres jetable).
 
