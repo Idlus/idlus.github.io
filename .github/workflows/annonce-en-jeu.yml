@@ -17,7 +17,7 @@ on:
         default: 24h
         options: [1h, 24h, 7j, permanent, "1h si libre", chat seul]
       chat:
-        description: "Aussi un message dans le chat Général"
+        description: "Aussi un message dans le chat (salons Éternel, Saison 1 et Monocompte)"
         type: boolean
         default: true
       essai:
