@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -260,6 +260,15 @@ jobs:
         run: |
           # Lecture seule : pseudo et date du succès « Tous les Dofus » (ach.dofus31), rien d'autre de la partie.
           bash tools/serveur/vps_sql.sh lecture "select row_number() over (order by ((s.data::jsonb)->'ach'->>'dofus31')::bigint) rang, public.pseudo_of(s.user_id) pseudo, case when ((s.data::jsonb)->'ach'->>'dofus31')::bigint > 1000 then to_char(to_timestamp(((s.data::jsonb)->'ach'->>'dofus31')::bigint / 1000.0) at time zone 'Europe/Paris', 'DD/MM HH24:MI') else 'date inconnue' end quand from public.saves s where coalesce((s.data::jsonb)->'ach'->>'dofus31', '') ~ '^[0-9]+$' order by ((s.data::jsonb)->'ach'->>'dofus31')::bigint limit 25"
+      - name: Relevé d'équilibrage de la Saison 1 (lecture seule, sans pseudo)
+        if: inputs.etape == 'releve-equilibrage'
+        run: |
+          # 03/11/2026 : équilibrage de la Saison 1 ; Mathis 28/10 : « lis les sauvegardes sans mon accord ». Lecture seule ;
+          # le journal n'affiche que des totaux et des médianes (tools/releve_equilibrage/releve.js) ; les relevés sont effacés.
+          d="$RUNNER_TEMP/releve"; mkdir -p "$d"
+          for t in classique jours mono; do bash tools/serveur/vps_sql.sh lecture "$(cat tools/releve_equilibrage/$t.sql)" > "$d/$t.json"; done
+          node tools/releve_equilibrage/releve.js "$d/classique.json" "$d/jours.json" "$d/mono.json"
+          rm -rf "$d"
       - name: Bouclier (lecture seule, sans pseudo)
         if: inputs.etape == 'bouclier-diagnostic'
         run: |
