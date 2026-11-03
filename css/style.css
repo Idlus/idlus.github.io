@@ -6496,3 +6496,9 @@ body.tb1 #chat .chmin{display:none}
 .s1boons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .s1b{display:grid;gap:4px;text-align:left;padding:14px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}.s1b:hover{border-color:var(--gold)}
 @media (max-width:640px){.s1grid,.s1boons{grid-template-columns:minmax(0,1fr)}}
+/* Saison 1, lot 2 : médailles des familles de succès et trois défis par boss */
+.qj-med{width:30px;height:30px;object-fit:contain;filter:grayscale(1) brightness(.75);flex:none}.qj-med.gold{filter:none;drop-shadow:0 0 6px rgba(255,210,90,.6)}
+.qj-cat.gold{border-color:var(--gold)}
+.qb-list{display:grid;gap:4px}.qb-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;border-radius:10px;background:var(--panel2)}.qb-row.ok{outline:1px solid var(--gold)}
+.qb-c{font-size:12px;padding:2px 8px;border-radius:8px;background:var(--panel3);white-space:nowrap}.qb-c.ok{background:var(--gold);color:#13200a;font-weight:800}
+@media (max-width:600px){.qb-row>b.grow{flex-basis:100%}}

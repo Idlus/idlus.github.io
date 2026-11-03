@@ -117,6 +117,19 @@
     return r;
   };
 
+  /* ---------------- Succès de la saison (lot 2, Mathis 19A et onglet Saison 1) ----------------
+     Seulement dans la partie de saison (s1: true, cachés ailleurs par js/questui.js) : la stasis 5 de chaque donjon (avec
+     « Vaincre » et « stasis 10 », trois défis par boss sur une ligne) et la famille « Saison 1 ». */
+  const ACH = E.ACH || [];
+  const has = (id) => ACH.some((a) => a.id === id);
+  const add = (o) => { if (!has(o.id)) ACH.push(Object.assign({ s1: true }, o)); };
+  const smax = (S, did) => ((S.stasis || {})[did] || {}).max || 0;
+  Object.entries(D.DUNGEONS || {}).sort((a, b) => a[1].lvl - b[1].lvl).forEach(([id, d]) => add({ id: "s5_" + id, cat: "Donjons", grp: "Stasis 5", name: `${d.name} · stasis 5`, desc: `Terminer ${d.name} en stasis 5.`, test: (S) => E.isS1c(S) && smax(S, id) >= 5, prog: (S) => [smax(S, id), 5], kamas: Math.round(d.lvl * 40 + 1000) }));
+  [[100, "Premiers Fragments"], [400, "Collectionneur du Temps"], [800, "Gardien des Fragments"]].forEach(([n, nm]) => add({ id: "s1f" + n, cat: "Saison 1", grp: "Fragments du Temps", name: nm, desc: `Gagner ${n} Fragments du Temps par les activités.`, test: (S) => E.isS1c(S) && E.s1cFragAct(S) >= n, prog: (S) => [Math.min(n, E.s1cFragAct(S)), n], kamas: n * 50 }));
+  [[5, "Béni du Temps"], [10, "Élu du Sablier"], [20, "Maître des bénédictions"]].forEach(([n, nm]) => add({ id: "s1b" + n, cat: "Saison 1", grp: "Bénédictions", name: nm, desc: `Choisir ${n} bénédictions de saison.`, test: (S) => E.isS1c(S) && E.s1cBoonGot(S).length >= n, prog: (S) => [Math.min(n, E.s1cBoonGot(S).length), n], kamas: n * 2000 }));
+  C.manches.slice(1).forEach((nm, i) => add({ id: "s1m" + (i + 2), cat: "Saison 1", grp: "Manches", name: `Manche ${i + 2} · ${nm}`, desc: `Jouer pendant la manche ${i + 2} de la saison.`, test: (S) => E.isS1c(S) && E.s1cManche(S) >= i + 2, kamas: 20000 * (i + 1) }));
+  E.achVisible = (S, a) => !a.s1 || E.isS1c(S);
+
   /* ---------------- écoute du moteur ---------------- */
   const DL = (id) => (D.DUNGEONS[id] ? D.DUNGEONS[id].lvl || 0 : 0);
   const emit0 = E.emit;
