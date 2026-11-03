@@ -1,4 +1,4 @@
-# Boss des mondes (0.1.49) : quand un boss tombe sur le jeu public, annonce dans #annonces sur Discord
+# Boss des mondes (0.1.49) : quand un boss tombe sur le jeu public, annonce dans #annonces-idlus sur Discord
 # (dernier coup, podium, boss suivant). Regarde toutes les 10 minutes la table wb_kills (supabase/wboss.sql)
 # et marque chaque mort annoncée (colonne posted) pour ne jamais la poster deux fois.
 # Secrets : VPS_HOST, VPS_USER, VPS_NEW_PASSWORD (base du serveur OVH) et DISCORD_BOT_TOKEN.

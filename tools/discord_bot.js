@@ -1,15 +1,15 @@
 /* Messages automatiques du robot idlus sur Discord (jeton dans DISCORD_BOT_TOKEN).
    node tools/discord_bot.js beta <changelog.json de la branche beta>  → annonce dans #bêta-nouveautés la dernière entrée des nouveautés de la version de test, si elle n'y est pas déjà
-   node tools/discord_bot.js semaine                                  → publie dans #annonces le mutateur de la semaine
+   node tools/discord_bot.js semaine                                  → publie dans #annonces-idlus le mutateur de la semaine
    node tools/discord_bot.js almanax                                  → publie dans #almanax le bonus et l'offrande du jour
    node tools/discord_bot.js idees                                    → envoie dans #notes le top 5 des idées du forum (votes 👍)
    node tools/discord_bot.js resume <révision>                        → envoie en message privé au créateur du serveur un résumé des changements de la branche beta jusqu'à cette révision
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
-   node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
-   node tools/discord_bot.js podium                                   → publie dans #annonces le podium des donjons de la semaine passée (classements de la version de test)
+   node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces-idlus et invite les joueurs à le partager
+   node tools/discord_bot.js podium                                   → publie dans #annonces-idlus le podium des donjons de la semaine passée (classements de la version de test)
    node tools/discord_bot.js captures <dossier>                       → publie les images et vidéos du dossier (png, jpg, webp, gif, mp4, webm ; 10 par message, 10 Mo par fichier) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js suggestions <idees.json>                 → publie dans le forum #idées les idées envoyées depuis le jeu (un fil par idée, avec son tag) ; écrit dans DISCORD_SORTIE la liste [{ id, url }] des idées publiées
-   node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
+   node tools/discord_bot.js annonce [texte.md]                       → publie un message libre dans le salon DISCORD_SALON (#annonces par défaut, ou annonces-idlus), texte dans DISCORD_TEXTE ou dans le fichier, en mentionnant le rôle DISCORD_ROLE (« aucun » par défaut)
    node tools/discord_bot.js notes <fichier.md>                       → publie dans le salon DISCORD_SALON (#note-de-mise-a-jour par défaut) un long patch note découpé en messages
                                                                         (séparateurs « ════════ Message N/M … ════════ », 2 000 caractères au plus chacun), dans l'ordre, sans mention ; un message déjà présent n'est pas renvoyé
    node tools/discord_bot.js bugs <bugs.json>                         → 1.1.1.3 : publie dans le forum #bugs les bugs signalés depuis le jeu (un fil par bug, étiquette « Ouvert »,
@@ -17,6 +17,8 @@
    node tools/discord_bot.js bugs-etats <etats.json>                  → change l'étiquette du fil (En cours, Corrigé, Pas un bug) et y répond quand l'état d'un bug change
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
+// messages propres à idlus : #annonces-idlus (03/11, serveur Ombrelune Studio), ou #annonces si ce salon n'existe pas encore
+const salonIdlus = async (gid) => { try { return await channelId(gid, "annonces-idlus"); } catch (e) { return channelId(gid, "annonces"); } };
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
 const DRY = process.argv.includes("--print"); const [cmd, file] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 
@@ -77,7 +79,7 @@ async function main() {
     console.log("Annoncée :", embed.title);
   } else if (cmd === "semaine") {
     const embed = weeklyMessage(); if (DRY) return console.log(JSON.stringify(embed, null, 1));
-    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const gid = await guildId(); const ch = await salonIdlus(gid);
     const last = await api("GET", `/channels/${ch}/messages?limit=10`);
     if (last.some((m) => (m.embeds || []).some((e) => e.title === embed.title && Date.now() - Date.parse(m.timestamp) < 6 * 86400000))) return console.log("Déjà publié cette semaine.");
     await api("POST", `/channels/${ch}/messages`, { embeds: [embed], allowed_mentions: { parse: [] } });
@@ -128,28 +130,28 @@ async function main() {
     const url = file.split("?")[0];
     const text = `📣 **Idlus est annoncé sur X !**\nUn like, une réponse ou un partage, c'est ce qui aide le plus le jeu à se faire voir. Merci à vous !\n${url}`;
     if (DRY) return console.log(text);
-    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const gid = await guildId(); const ch = await salonIdlus(gid);
     const last = await api("GET", `/channels/${ch}/messages?limit=20`);
     if (last.some((m) => (m.content || "").includes(url))) return console.log("Déjà relayé :", url);
-    const role = await roleId(gid, "Testeur");
+    const role = await roleId(gid, "Notif idlus");
     await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Relayé :", url);
   } else if (cmd === "podium") {
     const embed = await podiumMessage(); if (!embed) return console.log("Aucun record la semaine passée : rien à publier.");
     if (DRY) return console.log(JSON.stringify(embed, null, 1));
-    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const gid = await guildId(); const ch = await salonIdlus(gid);
     const last = await api("GET", `/channels/${ch}/messages?limit=10`);
     if (last.some((m) => (m.embeds || []).some((e) => e.title === embed.title && Date.now() - Date.parse(m.timestamp) < 6 * 86400000))) return console.log("Déjà publié cette semaine.");
-    const role = await roleId(gid, "Testeur");
+    const role = await roleId(gid, "Notif idlus");
     await api("POST", `/channels/${ch}/messages`, { content: role ? `<@&${role}>` : "", embeds: [embed], allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Podium publié.");
   } else if (cmd === "annonce") {
     const text = (process.env.DISCORD_TEXTE || (file ? fs.readFileSync(file, "utf8") : "")).trim();
     if (!text) { console.log("Texte attendu dans DISCORD_TEXTE ou dans un fichier."); process.exit(1); }
     if (text.length > 1900) { console.log("Texte trop long :", text.length, "caractères (1 900 au plus, mention comprise)."); process.exit(1); }
-    const roleName = (process.env.DISCORD_ROLE || "Testeur").trim();
-    if (DRY) return console.log(`[@${roleName}]\n${text}`);
-    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const roleName = (process.env.DISCORD_ROLE || "aucun").trim(), salon = (process.env.DISCORD_SALON || "annonces").trim();
+    if (DRY) return console.log(`[#${salon} @${roleName}]\n${text}`);
+    const gid = await guildId(); const ch = salon === "annonces-idlus" ? await salonIdlus(gid) : await channelId(gid, salon);
     const last = await api("GET", `/channels/${ch}/messages?limit=20`);
     if (last.some((m) => (m.content || "").includes(text.slice(0, 80)))) return console.log("Déjà publié.");
     const role = roleName === "aucun" ? null : await roleId(gid, roleName);

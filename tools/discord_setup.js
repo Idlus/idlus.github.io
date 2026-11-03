@@ -15,12 +15,12 @@ const WELCOME = `# Bienvenue chez Ombrelune Studio !
 🎮 **Jouer** : ${GAME}
 Connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel des ventes, rejoindre une guilde, défier les autres au Kolizéum et entrer dans les classements. Le jeu s'installe aussi sur téléphone et sur PC.
 
-📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS>, les notes de chaque mise à jour d'idlus dans <#UPDATES>.
+📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS> ; pour idlus, les nouvelles dans <#NEWSIDLUS> et les notes de chaque mise à jour dans <#UPDATES>. Pour parler d'autre chose : <#OFFTOPIC>.
 🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
 🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
 🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
-🔔 **Être prévenu à chaque mise à jour** : clique sur **Salons et rôles** tout en haut de la liste des salons et coche « Être prévenu à chaque mise à jour ». Tu peux changer d'avis quand tu veux.
+🎭 **Tes rôles** : clique sur **Salons et rôles** tout en haut de la liste des salons pour être prévenu des mises à jour d'idlus, suivre le nouveau jeu, afficher ta classe préférée et ton serveur. Tu peux changer d'avis quand tu veux.
 
 *Les jeux d'Ombrelune Studio sont des projets de fan non officiels : idlus n'a aucun lien avec Ankama.*`;
 const RULES = `# Règles du serveur
@@ -52,13 +52,22 @@ const BETA_TXT = `# Version de test
 La version de test séparée est fermée depuis le 14/10 : les nouveautés arrivent maintenant directement dans le jeu (${GAME}), annoncées dans <#UPDATES>.
 Ces salons restent ouverts pour l'historique. Tes retours sur les nouveautés sont toujours les bienvenus dans <#BETAFB>, <#BUGS> ou <#IDEAS>.`;
 
+// rôles « pour s'amuser » : la classe préférée de chacun (couleur du pseudo), choisie à l'arrivée
+const CLASS_ROLES = [["Féca", 0xd9b24c], ["Osamodas", 0x6fae4f], ["Enutrof", 0xb08d57], ["Sram", 0x8a7fa8], ["Xélor", 0x5b8fd1], ["Ecaflip", 0xe07b9a],
+  ["Eniripsa", 0xf09ac4], ["Iop", 0xd9534f], ["Crâ", 0x7cb35a], ["Sadida", 0x4f9a5c], ["Sacrieur", 0xb8323a], ["Pandawa", 0x7fc4c9], ["Roublard", 0x9b7a5a],
+  ["Zobal", 0xa36fc2], ["Steamer", 0x4fa3a8], ["Eliotrope", 0x56c1e0], ["Huppermage", 0xc46fd9], ["Ouginak", 0xc98f4f], ["Forgelance", 0x9aa6b5]];
 const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
   { key: "mod", name: "Modérateur", color: 0x5ab4f0, hoist: true, mentionable: true },
   { key: "tester", name: "Testeur", color: 0x7bd389 },
   // donné à la main aux testeurs actifs : au lancement du multijoueur, il débloque le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »
   { key: "pioneer", name: "Pionnier", color: 0x9bd84a, hoist: true },
-  { key: "notif", name: "Notif mises à jour", color: 0, mentionable: true },
+  { key: "notif", name: "Notif idlus", old: ["Notif mises à jour"], color: 0, mentionable: true },
+  { key: "notifstudio", name: "Notif studio", color: 0, mentionable: true },
+  { key: "notifnext", name: "Suivre le nouveau jeu", color: 0, mentionable: true },
+  { key: "srvclassic", name: "Joueur Classique", color: 0x8fb3c9 },
+  { key: "srvmono", name: "Joueur Monocompte", color: 0xc9a46b },
+  ...CLASS_ROLES.map(([n, color]) => ({ key: "cl_" + n, name: n, color })),
 ];
 // lock : lecture seule pour @everyone ; only : visible seulement par ces rôles
 const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
@@ -68,8 +77,10 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
     { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'Ombrelune Studio et de ses jeux" } ] },
   { cat: "💬 Communauté", chans: [
     { key: "CHAT", name: "général", topic: "Discussion libre entre joueurs de tous les jeux du studio" },
+    { key: "OFFTOPIC", name: "hors-sujet", topic: "Tout ce qui n'a rien à voir avec les jeux : films, mangas, autres jeux, la vie…" },
     { key: "VOICE", name: "Général", type: VOICE } ] },
   { cat: "⚔️ idlus", old: ["📢 Infos"], chans: [
+    { key: "NEWSIDLUS", name: "annonces-idlus", lock: true, topic: "Les nouvelles d'idlus : podium de la semaine, boss des mondes, tweets…" },
     { key: "UPDATES", name: "note-de-mise-a-jour", lock: true, topic: "Notes de chaque mise à jour d'idlus, publiées automatiquement" },
     { key: "ROADMAP", name: "feuille-de-route", lock: true, topic: "Ce qui est déjà dans idlus et ce qui arrive", text: ROADMAP },
     { key: "ALMANAX", name: "almanax", lock: true, topic: "Le bonus et l'offrande du jour d'idlus, publiés chaque matin" },
@@ -82,7 +93,7 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
       tags: [["Ouvert", "🔴"], ["En cours", "🟡"], ["Corrigé", "🟢"], ["Pas un bug", "⚪"]] },
     { key: "IDEAS", name: "idées", type: FORUM, topic: "Une idée par fil. Votez avec 👍 pour les idées que vous voulez voir dans le jeu.",
       tags: [["Combat", "⚔️"], ["Équipement", "🛡️"], ["Interface", "🖥️"], ["Contenu", "🗺️"], ["Retenue", "✅"]] } ] },
-  { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["tester", "mod", "creator"], chans: [
+  { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["mod", "creator"], chans: [ // version de test fermée le 14/10 : gardée pour l'historique, visible par l'équipe
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
   { cat: "🌑 Nouveau jeu", lock: true, chans: [
@@ -117,7 +128,9 @@ async function main() {
 
   const roles = {}; const have = await api("GET", `/guilds/${gid}/roles`);
   for (const r of ROLES) {
-    const ex = have.find((x) => x.name === r.name);
+    let ex = have.find((x) => x.name === r.name);
+    const was = !ex && (r.old || []).map((n) => have.find((x) => x.name === n)).find(Boolean);
+    if (was) { ex = was; await api("PATCH", `/guilds/${gid}/roles/${ex.id}`, { name: r.name }); console.log("  rôle renommé :", r.name); }
     roles[r.key] = ex ? ex.id : (await api("POST", `/guilds/${gid}/roles`, { name: r.name, color: r.color, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: "0" })).id;
     console.log(ex ? "  rôle déjà là :" : "  rôle créé :", r.name);
   }
@@ -180,9 +193,17 @@ async function main() {
   try {
     const visible = PLAN.filter((s) => !s.only).flatMap((s) => s.chans).filter((c) => c.type !== VOICE).map((c) => ids[c.key]);
     let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++); // Discord exige un identifiant pour chaque question et réponse
-    await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [{
-      id: sid(), type: 0, title: "Tes notifications (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
-        { id: sid(), title: "Être prévenu à chaque mise à jour", description: "Une mention à chaque nouvelle version", emoji: { name: "🔔" }, role_ids: [roles.notif], channel_ids: [] } ] }] });
+    const opt = (title, description, emoji, role) => ({ id: sid(), title, description, emoji: emoji ? { name: emoji } : undefined, role_ids: [roles[role]], channel_ids: [] });
+    await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [
+      { id: sid(), type: 0, title: "Tes notifications (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
+        opt("Être prévenu à chaque mise à jour d'idlus", "Une mention à chaque nouvelle version", "🔔", "notif"),
+        opt("Suivre le nouveau jeu", "Une mention à chaque nouvelle du prochain jeu du studio", "🌑", "notifnext"),
+        opt("Les grosses annonces du studio", "Une mention pour les nouvelles importantes", "🌙", "notifstudio") ] },
+      { id: sid(), type: 0, title: "Ta classe préférée", single_select: true, required: false, in_onboarding: true,
+        options: CLASS_ROLES.map(([n]) => opt(n, "La couleur de ton pseudo", null, "cl_" + n)) },
+      { id: sid(), type: 0, title: "Ton serveur dans idlus", single_select: false, required: false, in_onboarding: true, options: [
+        opt("Classique", "Une équipe de héros", "⚔️", "srvclassic"),
+        opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] } ] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
   } catch (e) { console.log("Accueil des nouveaux non configuré, à faire à la main :", e.message); }
 

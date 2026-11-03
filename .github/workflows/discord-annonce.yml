@@ -1,4 +1,4 @@
-# Publie un message libre dans #annonces sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+# Publie un message libre dans #annonces (studio) ou #annonces-idlus sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
 name: Annonce libre sur Discord
 on:
   workflow_dispatch:
@@ -10,8 +10,13 @@ on:
       role:
         description: "Rôle à mentionner"
         type: choice
-        default: Testeur
-        options: [Testeur, "Notif mises à jour", aucun]
+        default: aucun
+        options: [aucun, "Notif idlus", "Notif studio", "Suivre le nouveau jeu"]
+      salon:
+        description: "Salon"
+        type: choice
+        default: annonces
+        options: [annonces, annonces-idlus]
 jobs:
   annonce:
     runs-on: ubuntu-latest
@@ -24,3 +29,4 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_TEXTE: ${{ inputs.texte }}
           DISCORD_ROLE: ${{ inputs.role }}
+          DISCORD_SALON: ${{ inputs.salon }}

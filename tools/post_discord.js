@@ -33,8 +33,8 @@ if (STRICT && !DRY) {
   if (dup && process.env.RENVOYER !== "true") { console.log(`La ${c.v} est déjà annoncée (${dup.timestamp || "date inconnue"}) : rien envoyé.`); process.exit(1); }
   if (dup) console.log(`La ${c.v} est déjà annoncée (${dup.timestamp || "date inconnue"}) : renvoi demandé.`);
 }
-// mentionne le rôle « Notif mises à jour » si le robot (DISCORD_BOT_TOKEN) peut retrouver son identifiant
-if (process.env.DISCORD_BOT_TOKEN && !DRY) try { const D = require("./discord_api.js"); const r = await D.roleId(await D.guildId(), "Notif mises à jour");
+// mentionne le rôle « Notif idlus » si le robot (DISCORD_BOT_TOKEN) peut retrouver son identifiant
+if (process.env.DISCORD_BOT_TOKEN && !DRY) try { const D = require("./discord_api.js"); const r = await D.roleId(await D.guildId(), "Notif idlus");
   if (r) Object.assign(payload, { content: `<@&${r}>`, allowed_mentions: { roles: [r] } }); } catch (e) { console.log("Rôle de notification introuvable :", e.message); }
 const body = JSON.stringify(payload);
 if (DRY) { process.stdout.write(body); process.exit(0); }

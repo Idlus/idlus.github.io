@@ -1,4 +1,4 @@
-# Publie chaque lundi matin le podium des donjons de la semaine passée dans #annonces sur Discord (le mutateur est à l'heure depuis 0.1.47.1 : plus de post). Nécessite le secret DISCORD_BOT_TOKEN.
+# Publie chaque lundi matin le podium des donjons de la semaine passée dans #annonces-idlus sur Discord (le mutateur est à l'heure depuis 0.1.47.1 : plus de post). Nécessite le secret DISCORD_BOT_TOKEN.
 name: Podium de la semaine sur Discord
 on:
   schedule:

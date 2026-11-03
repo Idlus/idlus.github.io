@@ -1,4 +1,4 @@
-# Relaie un tweet d'annonce dans #annonces sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+# Relaie un tweet d'annonce dans #annonces-idlus sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
 name: Relayer un tweet sur Discord
 on:
   workflow_dispatch:

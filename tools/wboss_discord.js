@@ -1,5 +1,5 @@
 /* Boss des mondes (0.1.49) : texte Discord de chaque mort de boss lue par le workflow « Boss des mondes sur Discord ».
-   node tools/wboss_discord.js kills.json [--print]  → un message dans #annonces par mort (sans mention de rôle). */
+   node tools/wboss_discord.js kills.json [--print]  → un message dans #annonces-idlus par mort (sans mention de rôle). */
 "use strict";
 const fs = require("fs");
 const { execFileSync } = require("child_process");
@@ -15,5 +15,5 @@ for (const k of rows.sort((a, b) => a.n - b.n)) {
     + `${k.players} joueur${k.players > 1 ? "s reçoivent" : " reçoit"} un Coffre en or${k.n === 1 ? " et le titre « Briseur de Titan »" : ""}, et tout le monde gagne +10 % d'XP pendant 1 h.\n`
     + `**${k.next}** arrive : https://idlus.github.io/`;
   if (DRY) { console.log(text + "\n"); continue; }
-  execFileSync("node", ["tools/discord_bot.js", "annonce"], { stdio: "inherit", env: Object.assign({}, process.env, { DISCORD_TEXTE: text, DISCORD_ROLE: "aucun" }) });
+  execFileSync("node", ["tools/discord_bot.js", "annonce"], { stdio: "inherit", env: Object.assign({}, process.env, { DISCORD_TEXTE: text, DISCORD_ROLE: "aucun", DISCORD_SALON: "annonces-idlus" }) });
 }
