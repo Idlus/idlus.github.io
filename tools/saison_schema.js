@@ -17,7 +17,7 @@ const SCHEMA = "s1";
 const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql", "supabase/vote.sql"]; // vote : récompense versée à la partie Éternel (à revoir pour la saison)
 // objets de supabase/schema.sql qui restent partagés : le compte, le pseudo, la suspension, le journal des admins
 // fichiers propres à la saison (pas dans la liste « tous ») : registre des Fragments et vitrine (lot 4)
-const EXTRA = ["supabase/saison1_vitrine.sql"];
+const EXTRA = ["supabase/saison1_vitrine.sql", "supabase/wboss_s1.sql"]; // wboss_s1 : règles du boss des mondes de saison (remplace wb_info/wb_start/wb_done de s1)
 const SHARED_OBJ = ["profiles", "susp", "susp_lift", "delete_my_account", "admin_log", "alog", "adm_need", "adm_suspend", "is_admin", "is_staff", "my_role", "admins", "mods"];
 
 function files() {

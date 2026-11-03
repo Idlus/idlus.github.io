@@ -76,4 +76,47 @@ try {
   assert.strictEqual(as(`select s1.vit_mine()::text`), '["v_aiguilles"]');
   let e0 = null; try { as(`insert into s1.frag_led (user_id, src, n) values ('${U}', 'act:1:dj:99', 8)`); } catch (e) { e0 = e; } assert(e0, "le jeu n'écrit jamais directement dans le registre");
   console.log("ok - registre des Fragments (bornes du jour, quota de la semaine, sources uniques) et vitrine gardés par le serveur, dans s1 seulement");
+  // Boss des mondes de saison (supabase/wboss_s1.sql, refonte du 03/11) : semaine, plafond, paliers du serveur, paliers d'essais, fuite
+  {
+    const W = (sq) => q(`set client_min_messages = error; ${sq}`);
+    const U2 = "00000000-0000-0000-0000-0000000000b2";
+    W(`insert into auth.users (id) values ('${U2}') on conflict do nothing; insert into public.profiles (id, pseudo) values ('${U}', 'Aldric'), ('${U2}', 'Mimosa') on conflict do nothing;
+       update s1.s1_cfg set debut = now() - interval '1 day' where id = 1; delete from s1.wb_hits; update s1.wb_state set n = 1, hp = 20000, dmg = 0 where id = 1;`);
+    assert.strictEqual(+W(`select (s1.wb_info()->>'n')`), 1, "semaine 1");
+    const st = JSON.parse(W(`select s1.wb_start('${U}')::text`)); assert(st.ok && st.s1 && st.n === 1, "wb_start de saison");
+    const done = (u, k, p) => JSON.parse(W(`select s1.wb_done('${u}', 1, ${k}, ${p}, 1, 200, 15, 8)::text`));
+    let r = done(U, 0, 45000); assert.strictEqual(r.points, 6000, "plafond de 6 000 points"); assert.strictEqual(+W(`select count(*) from s1.wb_flags`), 1, "essai au-dessus du plafond noté");
+    assert.strictEqual(+W(`select count(*) from s1.wb_pal where user_id = '${U}'`), 1, "palier 25 % atteint (6 000 sur 20 000)");
+    r = done(U, 1, 3000); r = done(U, 2, 2000); assert.strictEqual(r.tier, "bronze", "Bronze au 3e essai");
+    assert(/Plus d'essai/.test(W(`select s1.wb_done('${U}', 1, 3, 100, 1, 200, 15, 8)::text`)), "3 essais par jour");
+    r = done(U2, 0, 6000); assert.strictEqual(+W(`select count(*) from s1.wb_pal where user_id = '${U2}'`), 3, "un joueur arrivé après les paliers les reçoit (25, 50, 75 %)");
+    r = done(U2, 1, 6000); assert(r.killed, "boss abattu à 100 %"); assert.strictEqual(+W(`select count(*) from s1.wb_pal where p = 100`), 2, "palier 100 % pour les deux");
+    r = done(U2, 2, 500); assert(!r.killed && r.dmg === 20000, "après sa mort, les essais comptent pour les grades mais plus pour la barre");
+    const ann0 = +W(`select count(*) from public.chat_msgs where data->>'t' = 'wb'`);
+    W(`update s1.s1_cfg set debut = now() - interval '8 days' where id = 1`);
+    const I = JSON.parse(W(`select s1.wb_info()::text`)); assert.strictEqual(I.n, 2, "semaine 2 : nouveau boss");
+    assert.strictEqual(+I.hp, Math.round(0.7 * 23500 * 1.2), "PV = 70 % des dégâts de la semaine passée (×1,2 la première fois)");
+    assert.strictEqual(I.last.name, "Gargandyas"); assert(+W(`select count(*) from public.chat_msgs where data->>'t' = 'wb'`) > ann0, "arrivée annoncée");
+    assert.strictEqual(+W(`select count(*) from s1.wb_kills where n = 1 and not fled`), 1, "semaine 1 notée comme abattue");
+    const RC = JSON.parse(W(`select s1.wb_recap()::text`)); assert.strictEqual(RC.length, 1, "bilan du lundi de la semaine 1");
+    assert(RC[0].n === 1 && RC[0].fled === false && RC[0].pct === 100 && RC[0].pal === 100 && RC[0].next_n === 2 && RC[0].top.length >= 1 && RC[0].tiers.bronze >= 1, JSON.stringify(RC[0]));
+    assert.strictEqual(W(`select s1.wb_recap()::text`), "[]", "le bilan n'est rendu qu'une fois");
+    W(`update s1.s1_cfg set debut = now() - interval '15 days' where id = 1`); W(`select s1.wb_info()`);
+    assert.strictEqual(+W(`select count(*) from s1.wb_kills where n = 2`), 0, "semaine sans essai : pas de fuite notée");
+    assert.strictEqual(q(`select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname in ('wb_roll', 'wb_pal_give')`), "0", "règles de saison jamais dans l'Éternel");
+    // « Dernier soir » : dernier soir de la semaine, 20 h - 22 h à Paris, boss sous 25 % de vie → 4e essai
+    W(`update s1.s1_cfg set debut = date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris' - interval '20 days' where id = 1`); W(`select s1.wb_info()`);
+    const nw = +W(`select n from s1.wb_state`); const fin = W(`select s1.wb_week_end(${nw})`);
+    W(`update s1.wb_state set hp = 10000, dmg = 7600 where id = 1`);
+    const at = (h) => `('${fin}'::timestamptz - interval '1 day' + interval '${h}')`;
+    const LN = (h, g = false) => W(`select s1.wb_last_night(${g}, ${at(h)})`);
+    assert.strictEqual(LN("20 hours 30 minutes"), "t", "dernier soir à 20 h 30");
+    assert.strictEqual(LN("19 hours 59 minutes"), "f", "pas avant 20 h"); assert.strictEqual(LN("22 hours 5 minutes"), "f", "fini à 22 h");
+    assert.strictEqual(LN("22 hours 5 minutes", true), "t", "15 min de grâce pour compter un essai commencé");
+    assert.strictEqual(W(`select s1.wb_last_night(false, ${at("20 hours 30 minutes")} - interval '1 day')`), "f", "seulement le dernier soir");
+    W(`update s1.wb_state set dmg = 7400 where id = 1`); assert.strictEqual(LN("20 hours 30 minutes"), "f", "boss encore au-dessus de 25 %");
+    console.log("ok - dernier soir : 4e essai le dernier soir de 20 h à 22 h si le boss est sous 25 %");
+    console.log("ok - boss des mondes de saison : semaine, plafond de 6 000, paliers du serveur et d'essais, mort puis nouvelle semaine");
+  }
+
 } finally { q(`drop database if exists ${DB}`, URL0); }

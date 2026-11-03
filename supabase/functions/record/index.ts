@@ -206,14 +206,15 @@ async function wboss(db: any, uid: string) {
   const g = await guildSave(db, uid, ":wboss"); if (g.err) return g.err;
   const { data: st, error } = await db.rpc("wb_start", { p_user: uid });
   if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
-  const def = E.wbDef(st.n); const seed = E.wbSeed(st.n, uid, st.k);
+  const def = st.s1 ? E.wbS1Def(st.n) : E.wbDef(st.n); const seed = E.wbSeed(st.n, uid, st.k); // Saison 1 : boss de la semaine (js/wboss.js, supabase/wboss_s1.sql)
   const r = E.wbSim(g.S, def, st.phase, seed, g.now);
   if (r.err) return json({ ok: false, err: r.err });
   const lvl = Math.max(1, ...E.team(g.S).map((c: { lvl: number; ren?: number }) => (c.ren ? 200 : c.lvl)));
   const { data: done, error: e2 } = await db.rpc("wb_done", { p_user: uid, p_n: st.n, p_k: st.k, p_points: r.points, p_phase: st.phase, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, wboss: true, n: st.n, k: st.k, seed, phase: st.phase, name: def.name, points: r.points, pv: r.pv, rounds: r.rounds, alive: r.alive, fights: r.fights, watchSeed: r.watchSeed,
-    grade: done.grade, frag: done.frag, cons: done.cons, dmg: done.dmg, before: done.before, hp: done.hp, killed: done.killed, left: done.left, rank: done.rank });
+    grade: done.grade, frag: done.frag, cons: done.cons, dmg: done.dmg, before: done.before, hp: done.hp, killed: done.killed, left: done.left, rank: done.rank,
+    s1: !!st.s1, counted: done.points ?? r.points, week: done.week, tier: done.tier });
 }
 // deno-lint-ignore no-explicit-any
 async function perco(db: any, uid: string, id: number) {

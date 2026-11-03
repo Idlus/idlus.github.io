@@ -2377,6 +2377,7 @@
         const ts = w === "f" ? hs.filter((h) => rowOf(h) === "f") : w === "b" ? hs.filter((h) => rowOf(h) === "b") : w === "low" ? hs.slice().sort((a, b) => a.hpMax - b.hpMax).slice(0, 1) : [];
         if (kind === "hit" && !ts.length) return;
         add(k, nx(N, r), kind, w === "f" ? "la première ligne" : w === "b" ? "l'arrière" : w === "low" ? ts[0].name : "", ts); });
+      if (E.wbForecast && F.wboss) E.wbForecast(F, m, t, add, nx, hs); // Saison 1 : annonces des mécaniques des boss des mondes (js/wboss.js)
       if (has("condamne")) { if (m.doom) { const h = F.ents[m.doom.i]; if (h && h.alive) add("condamne", Math.max(1, m.doom.t - t), "hit", h.name, [h]); } else add("condamne", nx(4, 1), "mark", "un héros", []); }
       if (has("charge")) add("charge", m.charging === "ready" ? 1 : nx(3, 2) + 1, "hit", "toute l'équipe", hs);
       if (has("inventions")) { alive(F, "m").filter((b) => b.bomb).forEach((b) => add("inventions", Math.max(1, b.fuse), "hit", "toute l'équipe", hs)); add("inventions", nx(4, 1), "mark", "une bombe", []); }
@@ -2458,6 +2459,7 @@
     if (has("seisme") && t % 4 === 0) { const fr = alive(F, "c").filter((h) => rowOf(h) === "f"); if (fr.length) { say(`${e.name} fait trembler le sol sous la première ligne !`, "Séisme"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(fr, 1.6, "seisme"); skip = true; } }
     if (has("maree") && t % 3 === 0) { const bk = heroesOf(F).filter((h) => rowOf(h) === "b"); if (bk.length) { say(`La marée de ${e.name} submerge l'arrière !`, "Marée"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(bk, 1.4, "maree"); skip = true; } }
     if (has("taureau") && t % 3 === 0 && !skip) { const h = heroesOf(F).sort((a, b) => a.hpMax - b.hpMax)[0]; if (h) { F.fx.push({ seq: F.seq, k: "cast", s: ei }); let d = 0; parade(F, e, "taureau", [h], () => { d = dealDamage(F, e, h, e.dmg * 2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); }); say(`${e.name} charge ${h.name} tête baissée (−${d}) !`, "Charge"); skip = true; } }
+    if (E.wbMechHook && F.wboss && E.wbMechHook(F, e, t, { has, say, hitAll, parade, dealDamage, doHeal, heroesOf, flog, ei, pick })) skip = true; // Saison 1 : mécaniques propres aux boss des mondes (js/wboss.js)
     if (has("charge") && t % 3 === 2 && !e.charging) { e.charging = "ready"; say(`${e.name} prépare une attaque dévastatrice… (protégez l'équipe !)`, "⚠ Charge"); }
     else if (e.charging === "ready") e.charging = "fire";
     return skip;
