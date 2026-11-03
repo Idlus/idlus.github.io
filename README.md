@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.0 « Saison 1 »
+- Ouverture de la Saison 1 (Mathis 03/11) : `S1.open` (js/ui.js), serveur public `s1: true, gr: true` (js/online.js). Contenu : lots 1 à 8 de la branche claude/saison1 (moteur de saison js/saisonc.js, espace s1 du serveur supabase/saison1.sql, vitrine, garde-robe, album, quêtes, boss des mondes de saison, modes, équilibrage). Installation serveur : étape `saison1-installer` du workflow serveur-ovh.yml.
+
 ## 2.1.43.5 « Un onglet par partie »
 - Mathis (03/11) : deux onglets sur la même partie s'écrasaient (dernier qui sauvegarde gagne). `js/ui.js` : BroadcastChannel « idlus-onglets », l'onglet qui ouvre ou sauvegarde une partie l'annonce (clé de sauvegarde) ; l'onglet qui l'avait se met en pause (`tabPause` : plus de boucle, de sauvegarde ni d'envoi au serveur) avec « Jouer dans cet onglet ». Deux parties différentes restent jouables en même temps.
 

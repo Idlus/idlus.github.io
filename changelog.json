@@ -1,6 +1,19 @@
 {
-  "version": "2.1.43.5",
+  "version": "2.2.0",
   "versions": [
+    {
+      "v": "2.2.0",
+      "name": "Saison 1",
+      "items": [
+        "La Saison 1 « Les Fragments du Temps » commence ! Nouvelle partie Classique · Saison 1 : tout le monde repart de zéro, avec ses classements. Ta partie actuelle devient l'Éternel et ne change pas",
+        "4 manches, les Fragments du Temps, la vitrine de saison, une caisse gratuite par jour et les contrats",
+        "Quêtes réécrites : la quête principale en 41 scènes, des quêtes de région avec des choix, une campagne de saison en 8 chapitres, le journal à 4 onglets et le coffre du jour",
+        "Album de 121 cartes de boss avec boosters, brillantes et cartes Héros d'Idlus ; garde-robe avec boucliers, stickers, blason de guilde, meubles et bannières de profil",
+        "Nouveaux modes : Chevauchée des Cavaliers et Expéditions de saison (classements de la semaine), Tournoi des guildes et Duel dans la Foire",
+        "Boss des mondes de la semaine (Gargandyas et 4 géants), paliers Bronze, Argent, Or, boutique de Fragments d'anomalie et Dernier soir",
+        "Équilibrage de saison : 9 donjons plus durs, retouches Xélor, Pandawa et Enutrof, un week-end Double gain par manche ; nouveaux ordres d'équipe"
+      ]
+    },
     {
       "v": "2.1.43.5",
       "name": "Un onglet par partie",

@@ -492,7 +492,7 @@
 
   /* tuile du Havre-Sac : une montée en cours ou un choix qui attend */
   function tile() {
-    const s = S(); if (!s) return null; const Q = s.asc; const R = Q && Q.run;
+    const s = S(); if (!s || (E.isS1c && E.isS1c(s))) return null; const Q = s.asc; const R = Q && Q.run; // 2.2.0 : pas d'Ascension en saison
     return { ic: `<span class="as-tileico">✦</span>`, t: "L'Ascension", s: R ? `${E.ASC_MODES[R.mode]} · étage ${R.f}${R.pend ? " · un choix t'attend" : ""}` : `Volonté ${Q ? E.ascVolSync(s) : A.volMax} / ${A.volMax}`, hot: !!(R && R.pend), act: `data-act="as-go-page"`,
       badge: R ? `<span class="tag">${R.pend ? "Choisir" : "Reprendre"}</span>` : `<span class="tag">Monter</span>` };
   }

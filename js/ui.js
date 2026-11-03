@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.43.5";
+const GAME_VERSION = "2.2.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.0", name: "Saison 1", items: [
+    "La Saison 1 « Les Fragments du Temps » commence ! Nouvelle partie Classique · Saison 1 : tout le monde repart de zéro, avec ses classements. Ta partie actuelle devient l'Éternel et ne change pas",
+    "4 manches, les Fragments du Temps, la vitrine de saison, une caisse gratuite par jour et les contrats",
+    "Quêtes réécrites : la quête principale en 41 scènes, des quêtes de région avec des choix, une campagne de saison en 8 chapitres, le journal à 4 onglets et le coffre du jour",
+    "Album de 121 cartes de boss avec boosters, brillantes et cartes Héros d'Idlus ; garde-robe avec boucliers, stickers, blason de guilde, meubles et bannières de profil",
+    "Nouveaux modes : Chevauchée des Cavaliers et Expéditions de saison (classements de la semaine), Tournoi des guildes et Duel dans la Foire",
+    "Boss des mondes de la semaine (Gargandyas et 4 géants), paliers Bronze, Argent, Or, boutique de Fragments d'anomalie et Dernier soir",
+    "Équilibrage de saison : 9 donjons plus durs, retouches Xélor, Pandawa et Enutrof, un week-end Double gain par manche ; nouveaux ordres d'équipe" ] },
   { v: "2.1.43.5", name: "Un onglet par partie", items: [
     "La même partie ouverte dans deux onglets s'écrasait : le dernier onglet qui sauvegardait gagnait. Maintenant, l'ancien onglet se met en pause et ne sauvegarde plus ; « Jouer dans cet onglet » le reprend",
     "Deux parties différentes (Classique et Monocompte, par exemple) restent jouables en même temps dans deux onglets" ] },
@@ -2899,6 +2907,14 @@ function monoSeal() {
   if (!E.monoPageOk(ui.tab)) ui.tab = "home";
 }
 function monoNav() { monoNav0(); monoSeal(); }
+/* 2.2.0 (Mathis 19A, 01/11 : « Ascension retirée des saisons, l'Éternel la garde ») : la partie de saison n'a pas L'Ascension */
+const S1_OFF = ["asc"];
+function s1Seal() {
+  if (!S || !E.isS1c || !E.isS1c(S)) return;
+  NAV.forEach((F) => { for (let i = F.pages.length - 1; i >= 0; i--) if (S1_OFF.includes(F.pages[i][0])) F.pages.splice(i, 1); });
+  if (S.settings && Array.isArray(S.settings.pins)) S.settings.pins = S.settings.pins.filter((k) => !S1_OFF.includes(k));
+  if (S1_OFF.includes(ui.tab)) ui.tab = "home";
+}
 /* 2.1.40 (Mathis 6B) : en Monocompte, les pages de la saison forment la famille « df », montrée comme une seule entrée « Saison » sous le Havre-Sac */
 function monoNav0() {
   let F = NAV.find((x) => x.id === "df");
@@ -3467,18 +3483,24 @@ function headPick(id, sex) {
 const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
 const hasPublicSave = () => !!SV.store().get("dofousxen-save");
 /* Monocompte : au tout premier lancement, choix du serveur au-dessus du choix du héros ; depuis l'écran des parties, la carte Monocompte y mène directement */
-const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && !SV.local.get(slotKey(MONO_SLOT)) && monoOk();
-const startMono = () => SLOT === MONO_SLOT || (srvFirst() && ui.startSrv === "mono");
+/* 2.2.0 : à l'ouverture de la Saison 1, un nouveau joueur choisit aussi la partie de saison (proposée d'abord) ; avant, il
+   arrivait directement dans l'Éternel quand le Monocompte (bêta fermée) ne lui était pas ouvert. */
+const s1Pick = () => !!(S1.open && window.ONLINE && window.ONLINE.s1Srv);
+const monoPick = () => !SV.local.get(slotKey(MONO_SLOT)) && monoOk();
+const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && (monoPick() || s1Pick());
+const startSrvOf = () => ui.startSrv || (s1Pick() ? "s1" : "cl");
+const startMono = () => SLOT === MONO_SLOT || (srvFirst() && startSrvOf() === "mono");
 const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, échanges et HdV : avec le serveur Monocompte, bientôt`];
 function srvPick() {
   if (!menuOn() || TESTMODE) return "";
   if (SLOT === MONO_SLOT) return `<div class="panel"><div class="pad stack"><h2 class="srvh">⭐ Monocompte <span class="srvtg">${MONO_BETA.on ? "BÊTA FERMÉE" : h(monoNom().toUpperCase())}</span></h2><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul><span class="small muted">Ta partie du serveur ${clNom()} ne change pas : chaque serveur garde sa propre partie.</span></div></div>`;
   if (!srvFirst()) return "";
-  const on = ui.startSrv === "mono" ? "mono" : "cl";
+  const on = startSrvOf();
   return `<div class="panel"><div class="pad stack"><h2>Choisis ton serveur</h2><div class="srvpick">
+    ${s1Pick() ? `<button class="srvc ${on === "s1" ? "on" : ""}" data-act="startsrv" data-v="s1" aria-pressed="${on === "s1"}"><span class="srvh">⏳ Classique · ${S1.nom} <span class="srvtg">NOUVEAU</span></span><span class="srvwho">Tout le monde repart de zéro, avec toute ton équipe</span><ul class="srvul"><li>Classements de saison et Fragments du Temps</li><li>Quêtes, album de cartes, Chevauchée, Tournoi des guildes</li><li>Hôtel de vente, guildes et Boss des mondes de la saison</li></ul></button>` : ""}
     <button class="srvc ${on === "cl" ? "on" : ""}" data-act="startsrv" data-v="cl" aria-pressed="${on === "cl"}"><span class="srvh">🌍 ${clNom()}</span><span class="srvwho">L'aventure complète, avec toute ton équipe</span><ul class="srvul"><li>Jusqu'à 19 héros, 8 en combat</li><li>Classements, Hôtel de vente, guildes, Kolizéum</li><li>Alliances et Boss des mondes</li></ul></button>
-    <button class="srvc ${on === "mono" ? "on" : ""}" data-act="startsrv" data-v="mono" aria-pressed="${on === "mono"}"><span class="srvh">⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></span><span class="srvwho">Tout le monde repart de 0, à égalité</span><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul></button>
-  </div><span class="small muted">Tu peux jouer sur les deux : chaque serveur garde sa propre partie (Options › Sauvegarde › Changer de partie).</span></div></div>`;
+    ${monoPick() ? `<button class="srvc ${on === "mono" ? "on" : ""}" data-act="startsrv" data-v="mono" aria-pressed="${on === "mono"}"><span class="srvh">⭐ Monocompte <span class="srvtg">${h(E.MONO.nom.toUpperCase())}</span></span><span class="srvwho">Tout le monde repart de 0, à égalité</span><ul class="srvul">${MONO_PTS().map((x) => `<li>${x}</li>`).join("")}</ul></button>` : ""}
+  </div><span class="small muted">Tu peux jouer sur ${s1Pick() && monoPick() ? "les trois" : "les deux"} : chaque serveur garde sa propre partie (Options › Sauvegarde › Changer de partie).</span></div></div>`;
 }
 function renderStart() {
   renderStatus(); renderNav();
@@ -9104,6 +9126,7 @@ function render() {
   clearDonePins(); document.body.classList.toggle("dense", !detailOn()); if (window.AMB && ambWas !== ambPage()) applyAmbiance(); renderNav(); renderStatus(); renderUpdBar(); // 2.1.40 (4A) : pages resserrées sauf « Affichage détaillé »
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
+  if (S && S1_OFF.includes(ui.tab) && E.isS1c && E.isS1c(S)) ui.tab = "home"; // 2.2.0 : pas d'Ascension en saison
   if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
@@ -10743,10 +10766,11 @@ document.addEventListener("click", (ev) => {
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "mercpick": ui.mercCls = t.dataset.v || null; if (ui.dgSel) dungeonSheet(ui.dgSel); else render(); return;
-    case "startsrv": ui.startSrv = t.dataset.v === "mono" ? "mono" : null; render(); return;
+    case "startsrv": ui.startSrv = ["mono", "s1", "cl"].includes(t.dataset.v) ? t.dataset.v : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      if (!mono && srvFirst() && startSrvOf() === "s1") { setSlot(S1_SLOT); setMenuPref({ last: S1_SLOT, lastCl: S1_SLOT }); } // 2.2.0 : nouvelle partie de saison
+      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -11483,7 +11507,7 @@ const MONO_BETA = { on: true, key: "idlus-mono-beta", hash: "47db16f5" };
 /* Saison 1, lot 0 (Mathis 02/11, « lance le lot 0 ») : règles de saison. Tant que S1.open est faux, rien ne change pour les joueurs :
    le Classique garde son nom et l'écran de choix reste celui d'avant. L'aperçu (adresse ?apercu=s1, ?apercu=off pour l'enlever)
    montre déjà le hub de la saison : Éternel (le Classique renommé, avec l'Éternel du Monocompte), Classique · Saison 1 et Monocompte · Saison 1. */
-const S1 = { open: false, key: "idlus-apercu-s1", nom: "Saison 1" };
+const S1 = { open: true, key: "idlus-apercu-s1", nom: "Saison 1" };
 try { const q = new URLSearchParams(location.search).get("apercu"); if (q === "s1") localStorage.setItem(S1.key, "1"); else if (q === "off") localStorage.removeItem(S1.key); } catch (e) {}
 const s1Apercu = () => { try { return localStorage.getItem(S1.key) === "1"; } catch (e) { return false; } };
 const s1Vue = () => S1.open || s1Apercu();
@@ -12614,7 +12638,7 @@ function bootGame(pushNow) {
   if (S) {
     if (S.mono && !S.mono.eternel && S.mono.gen == null && monoSrvSaison()) S.mono.gen = monoGenOf(S); // 2.1.35.2 : génération de la partie (remise à zéro)
     if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
-    if (S.mono) monoNav();
+    if (S.mono) monoNav(); else s1Seal();
     if (SLOT === S1_SLOT && E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} // 9A : exclusifs de l'Éternel portés en saison (js/garderobe.js)
     else if (!S.mono && E.vitImport) try { const St = SV.peek(slotKey(S1_SLOT)).state; E.vitImport(S, St); if (E.cardImport) E.cardImport(S, St); } catch (e) {} // lots 4 et 6 : vitrine et album de saison liés au compte (js/vitrine.js, js/cartes.js)
     setTheme(S.settings.theme || "dark");

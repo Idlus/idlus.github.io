@@ -6058,7 +6058,7 @@ button.pset.open{outline:1px solid var(--action)}
 .offc-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){.offc-bar i{transition:none}}
 /* Monocompte (js/mono.js) : choix du serveur, cartes de l'écran des parties, pastille du statut */
-.srvpick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.srvpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:12px}
 .srvc{all:unset;box-sizing:border-box;cursor:pointer;border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:color-mix(in srgb,var(--panel2) 70%,transparent);transition:border-color .15s,box-shadow .15s}
 .srvc:hover{border-color:var(--frame)}.srvc:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .srvc.on{border-color:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent),0 6px 22px rgba(0,0,0,.3);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 12%,transparent),transparent)}
