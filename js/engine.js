@@ -1852,7 +1852,8 @@
     if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
       const focus = (S.settings && S.settings.focus) || "auto";
       const inv = (m) => (m.mech && m.mech.includes("totems") && foes.some((x) => x.totem)) || (m.ult >= 14 && foes.some((x) => x.guardU));
-      const prio = (m) => (m.bomb ? 5 : m.totem || m.guardU ? 4 : 0) + (inv(m) ? -9 : 0) + (focus === "auto" && ["soigneur", "chef", "invoc", "protect"].includes(m.role) ? 2 : 0) + (focus === "boss" && m.boss ? 2 : 0);
+      const prep = focus === "prep" ? new Set(E.bossForecast(F).filter((x) => x.kind === "hit" && x.in <= 2).map((x) => x.mi)) : null; // Saison 1, lot 7 (5A) : ordres d'équipe « celui qui prépare un coup » et « les sbires d'abord »
+      const prio = (m) => (m.bomb ? 5 : m.totem || m.guardU ? 4 : 0) + (inv(m) ? -9 : 0) + (focus === "auto" && ["soigneur", "chef", "invoc", "protect"].includes(m.role) ? 2 : 0) + (focus === "boss" && m.boss ? 2 : 0) + (focus === "adds" && !m.boss ? 2 : 0) + (prep && prep.has(F.ents.indexOf(m)) ? 2 : 0);
       const best = foes.slice().sort((a, b) => prio(b) - prio(a) || a.hp - b.hp);
       if (prio(best[0]) > 0 || foes.some(inv)) prim = best[0];
     }
@@ -1860,6 +1861,7 @@
     if (!prim) prim = sorted[0];
     return [prim, ...sorted.filter((x) => x !== prim)].slice(0, Math.max(1, n));
   };
+  E._pickFoes = pickFoes; // tests (tests/ordres_equipe.test.js)
   const SUM_LIMIT = (e) => Math.min(E.TACT.invMax, (e.cls === "osa" ? 2 : 1) + ((e.st && e.st.inv) || 0));
   /* invocations posées par un héros (les recrues et l'âme de boss de l'Ascension ne comptent pas) */
   const ownSums = (F, own) => alive(F, "c").filter((a) => a.summon && a.owner === own && a.recruit === undefined && !a.soul);
