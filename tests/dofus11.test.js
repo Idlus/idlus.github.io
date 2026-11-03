@@ -97,7 +97,9 @@ const N4 = ["alliances", "trool", "onirique", "idlus"];
   ea.alive = eb.alive = true; // le combat a pu tourner pendant l'attente : les deux porteurs debout pour la mesure
   const d1 = hit(); ea.alive = false; const d2 = hit(); eb.alive = false; const d3 = hit(); ea.alive = eb.alive = true;
   assert.ok(Math.abs(d1 / d3 - 1.03) < 0.002 && Math.abs(d2 / d3 - 1.03) < 0.002, `+3 % une seule fois (${d1} ${d2} ${d3})`);
-  F.round = 4; F.dpOni = null; E.dofpTurn(S, F, F.ents.find((e) => e.cid === c.id));
+  // le combat a pu tourner pendant l'attente : porteur debout, un ennemi vivant, et aucun ralentissement déjà posé par un autre effet
+  const ec = F.ents.find((e) => e.cid === c.id); ec.alive = true; m.alive = true; F.ents.forEach((e) => { e.slowR = 0; });
+  F.round = 4; F.dpOni = null; E.dofpTurn(S, F, ec);
   const slow = F.ents.filter((e) => e.side === "m" && e.slowR === 5); assert.strictEqual(slow.length, 1, "un ennemi assoupi");
   const S2 = team(200); wear(S2, S2.chars[0], ["idlus"]); const k0 = E.bonus(S2, "kamas"); E.dpOffline = true; const k1 = E.bonus(S2, "kamas"); E.dpOffline = false;
   assert.ok(k1 > k0 && E.bonus(S2, "kamas") === k0, "Temps suspendu seulement hors ligne");
