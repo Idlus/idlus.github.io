@@ -57,7 +57,7 @@
     X().markDirty(); G.open = { L: o, up: 0 };
     let el = document.querySelector(".ca-cer"); if (el) el.remove();
     el = document.createElement("div"); el.className = "ca-cer"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Ouverture du booster");
-    el.innerHTML = `<div class="ca-pack" data-act="ca-tear"><span class="ca-pk-t">Saison 1</span><img src="assets/s1/co/ticket.webp" alt=""><b>Booster de cartes</b><small>Touche pour ouvrir</small></div>
+    el.innerHTML = `<div class="ca-pack" data-act="ca-tear"><span class="ca-pk-t">Saison 1</span><img src="assets/s1/ca/booster.webp" alt=""><b>Booster de cartes</b><small>Touche pour ouvrir</small></div>
       <div class="ca-row"></div><div class="ca-cbar"></div>`;
     document.body.appendChild(el);
   }

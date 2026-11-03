@@ -19,7 +19,7 @@
     const ks = Array.from({ length: e.CHEV_KMAX }, (_, i) => i + 1).map((k) => `<button class="${G.k === k ? "on" : ""}" data-act="chv-k" data-v="${k}">${k}</button>`).join("");
     const rew = L && L.rew && (L.rew.cons.length || L.rew.booster || L.rew.title) ? `<p class="small chv-rew">Récompenses : ${[L.rew.cons.length ? `${L.rew.cons.length} coffre${L.rew.cons.length > 1 ? "s" : ""}` : "", L.rew.booster ? "1 booster de cartes" : "", L.rew.title ? `titre « ${h(L.rew.title)} »` : ""].filter(Boolean).join(" · ")}</p>` : "";
     return `<div class="chv-page">${head}
-      <section class="panel chv-top"><p class="small">Les 4 Cavaliers à la suite, dans leur salle, à la stasis choisie. Les PV perdus restent d'un Cavalier au suivant, et un héros à terre ne revient pas. ${e.CHEV_TRIES} essais par semaine : le meilleur compte. Équipe conseillée : niveau ${e.CHEV_LVL} et plus.</p>
+      <section class="panel chv-top"><img class="s1-mo" src="assets/s1/mo/chev.webp" alt="" loading="lazy"><p class="small">Les 4 Cavaliers à la suite, dans leur salle, à la stasis choisie. Les PV perdus restent d'un Cavalier au suivant, et un héros à terre ne revient pas. ${e.CHEV_TRIES} essais par semaine : le meilleur compte. Équipe conseillée : niveau ${e.CHEV_LVL} et plus.</p>
         <div class="chv-row">${row}</div>${rew}
         <div class="chv-ctl"><span class="small">Stasis</span><div class="seg chv-k">${ks}</div>
           <button class="btn primary" data-act="chv-go"${left && !e.s1cOver(s) ? "" : " disabled"}>Lancer la chevauchée (${left} / ${e.CHEV_TRIES})</button></div>

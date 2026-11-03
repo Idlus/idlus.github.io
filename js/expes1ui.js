@@ -14,7 +14,7 @@
     const st = e.exps1State(s), b = st.best[i], left = e.exps1Left(s, i), L = G.last[i];
     const mods = def.mods.map((k) => (e.STASIS_MODS[k] ? `<span class="tag soft" title="${h(e.STASIS_MODS[k].desc)}">${h(e.STASIS_MODS[k].name)}</span>` : "")).join("");
     const rules = def.rules.map((k) => (e.CHALLENGES[k] ? `<span class="tag" title="${h(e.CHALLENGES[k].desc || "")}">${h(e.CHALLENGES[k].name)}</span>` : "")).join("");
-    const meds = e.DEFI_MEDALS.map((x) => `<span class="xs1-m m-${x.id}${st.got[i + x.id] ? " ok" : ""}" title="${x.name} : ${fr(x.pts)} points">${x.name}</span>`).join("");
+    const TRI = { br: 3, ar: 2, or: 1 }; const meds = e.DEFI_MEDALS.map((x) => `<span class="xs1-m m-${x.id}${st.got[i + x.id] ? " ok" : ""}" title="${x.name} : ${fr(x.pts)} points"><img src="assets/s1/tr/${TRI[x.id]}.webp" alt="">${x.name}</span>`).join("");
     const res = L ? `<p class="small xs1-res ${L.r.win ? "win" : "lose"}">${L.r.win ? `Réussie : ${fr(L.r.score)} points en ${L.r.turns} tours${L.medal ? `, bourse ${L.medal.of}` : ""}.` : L.r.err ? h(L.r.err) : "Échec : l'équipe est tombée."}${L.rew.cons.length ? ` ${L.rew.cons.length} coffre${L.rew.cons.length > 1 ? "s" : ""}${L.rew.booster ? " et un booster de cartes" : ""} !` : ""}</p>` : "";
     return `<article class="panel xs1-c">
       <header><img src="${m && m.img != null ? `assets/m/${m.img}.png` : ""}" alt="" loading="lazy"><div class="grow"><span class="xs muted">Expédition ${i + 1}${s.mono ? " · Défi de la manche" : ""}</span><h3>${h(e.EXPS1_NAMES[i])}</h3><span class="small">${h(dg ? dg.name : def.did)} · stasis ${def.k} · palier ${h(T ? T.name : def.tier)}</span></div></header>
@@ -30,7 +30,7 @@
     if (!S1) return `<div class="xs1-page">${head}<section class="panel"><p>Les Expéditions de saison sont un mode de la Saison 1 : elles se jouent dans la partie de saison.</p></section></div>`;
     const n = e.exps1Count(s), m = e.s1cManche(s), left = e.s1cMancheLeft(s), dj = Math.ceil(left / 86400000);
     return `<div class="xs1-page">${head}
-      <section class="panel xs1-top"><p class="small">Chaque manche ouvre ${n === 1 ? "une expédition" : `${n} expéditions`}, les mêmes pour tous : un donjon, des modificateurs, des règles à tenir et une règle d'équipe. Le score est celui du Défi du jour. ${e.EXPS1_TRIES} essais par jour et par expédition, le meilleur de la manche compte.</p>
+      <section class="panel xs1-top"><img class="s1-mo" src="assets/s1/mo/expe.webp" alt="" loading="lazy"><p class="small">Chaque manche ouvre ${n === 1 ? "une expédition" : `${n} expéditions`}, les mêmes pour tous : un donjon, des modificateurs, des règles à tenir et une règle d'équipe. Le score est celui du Défi du jour. ${e.EXPS1_TRIES} essais par jour et par expédition, le meilleur de la manche compte.</p>
         <div class="xs1-sum"><span><span class="xs muted">Manche ${m}</span><b>${h(e.S1C.manches[m - 1] || "")}</b></span><span><span class="xs muted">Total de la manche</span><b class="num">${fr(e.exps1Total(s))}</b></span><span><span class="xs muted">Fin de la manche</span><b>${dj} jour${dj > 1 ? "s" : ""}</b></span></div>
         <span class="xs muted">Une fois par manche et par expédition : un coffre en argent pour le bronze, un coffre en or pour l'argent, un coffre d'obsidienne et un booster de cartes pour l'or. Toutes les bourses en or : titre « Explorateur du Temps ». Le classement (la somme des meilleurs scores) ouvre avec la saison.</span></section>
       <div class="xs1-grid">${Array.from({ length: n }, (_, i) => card(s, i)).join("")}</div></div>`;

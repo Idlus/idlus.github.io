@@ -19,7 +19,7 @@
       const wa = m.d.filter((d) => d.w === 0).length, wb = m.d.filter((d) => d.w === 1).length;
       const row = (i, w) => `<span class="tr-g${m.win === i && i >= 0 ? " win" : ""}${i === mine && i >= 0 ? " me" : ""}"><span class="grow">${gName(st, i)}</span>${m.a >= 0 && m.b >= 0 && m.d.length ? `<b class="num">${w}</b>` : ""}</span>`;
       return `<div class="tr-m">${row(m.a, wa)}${row(m.b, wb)}${m.win === null && m.a >= 0 && m.b >= 0 ? `<span class="xs muted">${R.length === 1 ? "dimanche 20 h" : "à jouer"}</span>` : ""}</div>`; }).join("")}</div>`).join("");
-    const champ = st.champ !== null ? `<p class="tr-champ">🏆 ${gName(st, st.champ)} gagne le Tournoi des guildes !</p>` : "";
+    const champ = st.champ !== null ? `<p class="tr-champ"><img src="assets/s1/tr/1.webp" alt=""> ${gName(st, st.champ)} gagne le Tournoi des guildes !</p>` : "";
     return `${champ}<div class="tr-br">${col}</div>`;
   }
   function pageHtml() {
@@ -39,7 +39,7 @@
     const claim = done && st.seeds.some((g) => g.teams.some((x) => x.u === me())) ? (got ? `<span class="tag good">Récompense reçue</span>` : `<button class="btn primary" data-act="tr-claim">Recevoir ma récompense</button>`) : "";
     const nG = Object.keys(byG).length;
     return `${head}<div class="stack tr-page">
-      <section class="panel"><div class="pad stack"><span class="small">Chaque guilde inscrit jusqu'à ${T.TEAMS} équipes d'arène (celle du Kolizéum de chaque membre). Le samedi à midi, le tableau se fait tout seul ; une rencontre, c'est ${T.TEAMS} combats 3 contre 3, la guilde qui en gagne le plus passe. Finale le dimanche à 20 h.</span>
+      <section class="panel"><img class="s1-mo" src="assets/s1/mo/tour.webp" alt="" loading="lazy"><div class="pad stack"><span class="small">Chaque guilde inscrit jusqu'à ${T.TEAMS} équipes d'arène (celle du Kolizéum de chaque membre). Le samedi à midi, le tableau se fait tout seul ; une rencontre, c'est ${T.TEAMS} combats 3 contre 3, la guilde qui en gagne le plus passe. Finale le dimanche à 20 h.</span>
         <div class="tr-sum"><span><span class="xs muted">Cette semaine</span><b>${when}</b></span><span><span class="xs muted">Guildes inscrites</span><b class="num">${nG}</b></span><span><span class="xs muted">Ta guilde</span><b>${myG ? `${h(myG.name)} · ${myG.L.length} / ${T.TEAMS}` : "pas inscrite"}</b></span></div>
         ${team ? `<ul class="tr-team">${team}</ul>` : ""}<div class="row">${btns}${claim}<button class="btn sm" data-act="tr-ref">Actualiser</button></div>
         ${G.err ? `<span class="small bad">${h(G.err)}</span>` : ""}

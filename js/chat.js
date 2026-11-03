@@ -108,7 +108,7 @@
   const myPs = () => ((ON.profile && ON.profile.pseudo) || "").toLowerCase();
   const mentions = (b) => { const o = []; String(b || "").replace(MRE, (x, a, p) => { o.push(p.toLowerCase()); return x; }); return o; };
   const pingsMe = (m) => { const me = myPs(); return !!me && m.kind === "msg" && !!m.user_id && m.user_id !== myId() && !C.ign.has(m.user_id) && mentions(m.body).slice(0, 3).includes(me); };
-  const fmtBody = (b) => { const st = /^:st:(\d{1,2}):$/.exec(b || ""); if (st && +st[1] >= 1 && +st[1] <= 12) return `<img class="ch-st" src="assets/s1/st/${+st[1]}.webp" alt="autocollant" loading="lazy">`; // Saison 1, lot 5 : autocollant
+  const fmtBody = (b) => { const st = /^:st:(\d{1,2}):$/.exec(b || ""); if (st && +st[1] >= 1 && +st[1] <= 36) return `<img class="ch-st" src="assets/s1/st/${+st[1]}.webp" alt="autocollant" loading="lazy">`; // Saison 1, lot 5 : autocollant
     const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
   const PING = PUB;
   const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;

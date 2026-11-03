@@ -15,6 +15,8 @@
   const nAch = (S) => (E.achCount ? E.achCount(S) : 0);
   const stMax = (S, id) => (((S.stasis || {})[id] || {}).max || 0);
   const vit = (id) => (S) => !!(E.vitOwned && E.vitOwned(S, id));
+  const cards = (S) => (E.cardCount ? E.cardCount(S) : 0);
+  const s1v = (S, k) => (S.s1c && S.s1c[k]) || 0;
 
   /* ---------------- autocollants ---------------- */
   E.STICKERS = [
@@ -30,6 +32,31 @@
     { n: 10, nm: "Sanglier blasé", ok: vit("v_st10"), req: "Vitrine de la Saison 1" },
     { n: 11, nm: "Arakne paniquée", ok: (S) => nAch(S) >= 200, req: "Obtenir 200 succès" },
     { n: 12, nm: "Craqueleur au top", ok: vit("v_st12"), req: "Vitrine de la Saison 1" },
+    // 03/11 : 2e lot (planches ST-3 à ST-6 de Mathis, ChatGPT)
+    { n: 13, nm: "Iop dépité", ok: () => true, req: "Offert" },
+    { n: 14, nm: "Bisou !", ok: () => true, req: "Offert" },
+    { n: 15, nm: "Roi Wabbit hilare", ok: (S) => cards(S) >= 30, req: "30 cartes dans l'album" },
+    { n: 16, nm: "Comte satisfait", ok: (S) => s1v(S, "chevMax") >= 1, req: "Vaincre les 4 Cavaliers à la suite" },
+    { n: 17, nm: "Familier attendri", ok: (S) => nAch(S) >= 250, req: "Obtenir 250 succès" },
+    { n: 18, nm: "Coffre gourmand", ok: (S) => !!(S.s1c && S.s1c.duel && S.s1c.duel.wins), req: "Gagner un Duel de caisses" },
+    { n: 19, nm: "Sieste sur l'or", ok: () => true, req: "Offert" },
+    { n: 20, nm: "Fière de ses muscles", ok: (S) => nAch(S) >= 300, req: "Obtenir 300 succès" },
+    { n: 21, nm: "Bélier royal en larmes", ok: vit("v_st21"), req: "Vitrine de la Saison 1" },
+    { n: 22, nm: "Comte timide", ok: vit("v_st22"), req: "Vitrine de la Saison 1" },
+    { n: 23, nm: "Œuf de dragon", ok: (S) => cards(S) >= 60, req: "60 cartes dans l'album" },
+    { n: 24, nm: "Gobelin aux maracas", ok: vit("v_st24"), req: "Vitrine de la Saison 1" },
+    { n: 25, nm: "Œuf doré !", ok: (S) => !!(E.cardShinyCount && E.cardShinyCount(S)), req: "Trouver une carte brillante" },
+    { n: 26, nm: "Aventurière blasée", ok: () => true, req: "Offert" },
+    { n: 27, nm: "Sablier pressé", ok: (S) => s1v(S, "expBest") >= 2000, req: "Bourse en or d'une Expédition de saison" },
+    { n: 28, nm: "Champignon coucou", ok: () => true, req: "Offert" },
+    { n: 29, nm: "Pirate hilare", ok: (S) => nAch(S) >= 350, req: "Obtenir 350 succès" },
+    { n: 30, nm: "Bombe paniquée", ok: vit("v_st30"), req: "Vitrine de la Saison 1" },
+    { n: 31, nm: "Pouce levé", ok: () => true, req: "Offert" },
+    { n: 32, nm: "Hein ?", ok: () => true, req: "Offert" },
+    { n: 33, nm: "Comte enrhumé", ok: (S) => nAch(S) >= 400, req: "Obtenir 400 succès" },
+    { n: 34, nm: "Trophée en fête", ok: (S) => !!(S.tour && S.tour.best >= 0), req: "Jouer un Tournoi des guildes" },
+    { n: 35, nm: "Nuage triste", ok: vit("v_st35"), req: "Vitrine de la Saison 1" },
+    { n: 36, nm: "Tope là !", ok: (S) => nAch(S) >= 500, req: "Obtenir 500 succès" },
   ];
   E.stOk = (S, n) => { const t = E.STICKERS.find((x) => x.n === +n); return !!(t && t.ok(S)); };
   E.stMine = (S) => E.STICKERS.filter((t) => t.ok(S));
@@ -62,7 +89,7 @@
 
   /* ---------------- dans la vitrine de saison (js/vitrine.js) ---------------- */
   if (E.VIT) {
-    [[9, "r"], [10, "r"], [12, "e"]].forEach(([n, rar]) => E.VIT.push({ id: "v_st" + n, k: "st", n: "Autocollant « " + E.STICKERS[n - 1].nm + " »", st: n, rar }));
+    [[9, "r"], [10, "r"], [12, "e"], [21, "r"], [22, "e"], [24, "r"], [30, "e"], [35, "r"]].forEach(([n, rar]) => E.VIT.push({ id: "v_st" + n, k: "st", n: "Autocollant « " + E.STICKERS[n - 1].nm + " »", st: n, rar }));
     [[3, "e"], [4, "l"], [5, "e"], [6, "r"], [7, "l"], [9, "e"], [12, "s"]].forEach(([n, rar]) => E.VIT.push({ id: "v_mb" + n, k: "mb", n: E.RARE_FURN[n - 1].nm, mb: n, rar }));
     const P = { r: 60, e: 120, l: 200, s: 160 }; E.VIT.forEach((v) => { if (!v.prix) v.prix = P[v.rar]; });
   }

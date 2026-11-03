@@ -149,8 +149,8 @@
 @media (max-width:560px){.ca-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.ca-foot b{font-size:11px}.ca-foot small{display:none}.ca-see{grid-template-columns:1fr}.ca-see .ca.big{max-width:220px;margin:0 auto}}
 /* cérémonie */
 .ca-cer{position:fixed;inset:0;z-index:200;display:grid;place-items:center;align-content:center;gap:18px;padding:16px;background:radial-gradient(circle at 50% 40%,rgba(30,40,24,.94),rgba(5,8,4,.97));backdrop-filter:blur(6px)}
-.ca-pack{cursor:pointer;display:grid;justify-items:center;gap:6px;width:190px;padding:22px 14px;border-radius:16px;background:linear-gradient(160deg,#3a5a2a,#1d2c16);border:3px solid #e8c063;box-shadow:0 0 30px rgba(232,192,99,.35);color:#f3ecd8;animation:caPk 1.6s ease-in-out infinite}
-.ca-pack img{width:96px;height:96px;object-fit:contain}.ca-pk-t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#e8c063}
+.ca-pack{cursor:pointer;display:grid;justify-items:center;gap:6px;width:200px;padding:6px;color:#f3ecd8;animation:caPk 1.6s ease-in-out infinite}
+.ca-pack img{width:180px;height:248px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(232,192,99,.55))}.ca-pk-t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#e8c063}
 .ca-pack.torn{animation:caTorn .45s forwards;pointer-events:none}
 @keyframes caPk{50%{transform:translateY(-6px) rotate(-1deg)}}
 @keyframes caTorn{to{transform:scale(1.3);opacity:0;height:0;padding:0;margin:-20px}}
@@ -158,8 +158,8 @@
 .ca-flip{all:unset;cursor:pointer;position:relative;width:140px;aspect-ratio:2/3;perspective:900px;animation:caIn .4s var(--d) both}
 .ca-flip>span{position:absolute;inset:0;backface-visibility:hidden;transition:transform .55s}
 .ca-face{transform:rotateY(180deg)}.ca-flip.up .ca-face{transform:rotateY(0)}.ca-flip.up .ca-back{transform:rotateY(-180deg)}
-.ca-back{border-radius:12px;background:repeating-linear-gradient(45deg,#24331c 0 8px,#1c2816 8px 16px);border:3px solid #9aa3ad;display:grid;place-items:center}
-.ca-back i{width:46px;height:46px;border-radius:50%;background:url(../assets/s1/co/ticket.webp) center/contain no-repeat}
+.ca-back{border-radius:12px;background:#1c2816 url(../assets/s1/ca/dos.webp) center/cover no-repeat;border:3px solid #9aa3ad;display:grid;place-items:center}
+.ca-back i{display:none}
 .ca-flip.r-r .ca-back{border-color:#3f8fd8}.ca-flip.r-e .ca-back{border-color:#a463e0;box-shadow:0 0 14px #a463e088}.ca-flip.r-l .ca-back{border-color:#f0b43c;box-shadow:0 0 22px #f0b43caa}
 .ca-flip.sh .ca-back{box-shadow:0 0 22px #fff}
 .ca-pd{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:#e8c063}
@@ -168,7 +168,7 @@
 @media (max-width:560px){.ca-flip{width:calc((100vw - 56px)/3)}.ca-row{gap:24px 8px}}
 
 /* ---------- Saison 1, lot 8 : Chevauchée des Cavaliers (js/chevaucheeui.js) ---------- */
-.chv-top{display:grid;gap:12px}
+.chv-top{display:grid;gap:12px;padding:12px}
 .chv-row{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
 .chv-b{flex:1 1 140px;display:grid;gap:4px;justify-items:center;text-align:center;padding:10px;border-radius:12px;background:var(--panel2);border:2px solid transparent}
 .chv-b img{width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
@@ -221,3 +221,9 @@
 .tr-g.win{background:color-mix(in srgb,var(--accent,#f0a030) 25%,transparent);font-weight:700}
 .tr-g.me{box-shadow:inset 0 0 0 1px var(--accent,#f0a030)}
 .tr-champ{font-weight:700;font-size:16px;margin:0 0 10px}
+/* 03/11 : en-têtes des modes de saison (images de Mathis, ChatGPT) */
+.s1-mo{display:block;width:100%;height:150px;object-fit:cover;object-position:center 40%;border-radius:12px}
+#foDuel .s1-mo,.tr-page .s1-mo{border-radius:0}
+.xs1-m{display:inline-flex;align-items:center;gap:4px}.xs1-m img{width:18px;height:18px}
+.tr-champ{display:flex;align-items:center;gap:8px}.tr-champ img{width:40px;height:40px}
+@media (max-width:520px){.s1-mo{height:110px}}

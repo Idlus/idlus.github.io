@@ -11,11 +11,13 @@ require("../js/garderobe.js"); require("../js/vitrine.js"); require("../js/saiso
 const D = require("../js/data.js");
 
 const S = E.newState("Héros", "iop");
-assert.strictEqual(E.stMine(S).length, 4, "4 autocollants offerts");
+assert.strictEqual(E.stMine(S).length, 11, "11 autocollants offerts (4 + 7 du 2e lot)");
+assert.strictEqual(E.STICKERS.length, 36); E.STICKERS.forEach((t) => assert(require("fs").existsSync(require("path").join(__dirname, "..", `assets/s1/st/${t.n}.webp`)), "image " + t.n));
+assert(require("fs").readFileSync(require("path").join(__dirname, "../js/chat.js"), "utf8").includes("<= 36) return"), "le chat montre les 36");
 assert(!E.stOk(S, 9) && !E.stOk(S, 99));
 S.s1c = { shop: { v_st9: 1 } }; assert(E.stOk(S, 9), "autocollant de la vitrine");
 assert(E.ST_RE.test(":st:12:") && !E.ST_RE.test(":st:12: coucou"));
-console.log("ok - autocollants : 4 offerts, les autres par les succès et la vitrine");
+console.log("ok - autocollants : 36, 11 offerts, les autres par les succès et la vitrine");
 
 for (let sh = 0; sh < 8; sh++) for (const em of [0, 7, 23]) for (const c2 of [0, 15]) {
   const code = E.crestCode(sh, em, c2); assert(/^[a-z_]{2,20}$/.test(code), "accepté par guild_set : " + code);

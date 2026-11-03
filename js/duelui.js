@@ -19,7 +19,7 @@
         <span class="num small">${fmt(x.v)} k</span></div>`).join("")}</div>
       <p class="small fo-c du-out ${L.gain ? "good" : ""}">${L.gain ? `Gagné ! Tu remportes ${fmt(L.gain)} kamas${L.win.length > 1 ? " (égalité, pot partagé)" : ""}.` : `Perdu : ${h(L.seats[L.win[0]].n)} remporte les ${fmt(L.pot)} kamas.`}</p>` : "";
     return `<section class="panel" id="foDuel"><div class="phead"><h2>${X().IC("coffre")} Duel de caisses</h2><span class="xs muted">Saison 1 · encore ${e.duelLeft(s)} duel${e.duelLeft(s) > 1 ? "s" : ""} aujourd'hui</span></div>
-      <div class="pad stack"><span class="small">Toi contre des adversaires du Trool : chacun ouvre les mêmes caisses, celui dont les lots valent le plus remporte tout, en kamas. En moyenne, la même part de la mise revient qu'en ouvrant seul.</span>
+      <img class="s1-mo" src="assets/s1/mo/duel.webp" alt="" loading="lazy"><div class="pad stack"><span class="small">Toi contre des adversaires du Trool : chacun ouvre les mêmes caisses, celui dont les lots valent le plus remporte tout, en kamas. En moyenne, la même part de la mise revient qu'en ouvrant seul.</span>
         <div class="du-ctl"><span class="xs muted">Caisse</span>${seg("du-c", F.CAISSES.map((x) => x.id), G.c, (v) => h(F.CAISSES.find((x) => x.id === v).name))}
           <span class="xs muted">Manches</span>${seg("du-r", [1, 2, 3], G.r, (v) => v)}
           <span class="xs muted">Adversaires</span>${seg("du-f", DL.FOES, G.f, (v) => v)}</div>

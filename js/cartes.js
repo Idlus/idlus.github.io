@@ -3,7 +3,7 @@
    plan du 02/11 : « album au niveau du compte, cartes illustrées + version brillante rare, ouverture carte par carte,
    pas de duels de cartes »).
    - Une carte par boss de donjon (121), rangées en 4 raretés selon le niveau du donjon. Les cartes illustrées (images
-     générées par Mathis avec ChatGPT) sont dans assets/s1/ca/<donjon>.webp ; les autres montrent le boss du jeu en attendant.
+     générées par Mathis avec ChatGPT, toutes livrées le 03/11) sont dans assets/s1/ca/<donjon>.webp ; un nouveau donjon sans image montre son boss.
    - Boosters dans la partie de saison seulement : un offert par jour, un de plus tous les 10 donjons de saison (2 par jour
      au plus). 5 cartes, la 5e rare ou mieux ; chaque carte a 1 chance sur 100 d'être brillante.
    - Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante (jamais une brillante).
@@ -27,7 +27,7 @@
   E.BOOSTER_DJ_JOUR = 2; // boosters gagnés en donjon par jour, au plus
   E.BOOSTER_MAX = 20; // boosters gardés en réserve, au plus
   // cartes illustrées (1 : illustration, 2 : illustration + version brillante dessinée)
-  const ART = (E.CARTE_ART = { cour_bouftou_royal: 1, chateau_wa_wabbit: 1, donjon_harebourg: 2 });
+  const ART = (E.CARTE_ART = Object.assign(Object.fromEntries("akademie_gobs antichambre_gloursons antre_blop_multicolore antre_crocabulia antre_dragon_cochon antre_korriandre antre_reine_nyee aquadome_merkator arbre_moon arbre_mort atelier_tanukoui aurore_pourpre autel_dechireuse bambusaie_damadrya bastion_marteaux bateau_chouque belvedere_ilyzaelle biblio_corbac boyau_pere_ver brasserie_dazak breuil_venerable cache_kankreblath cale_arche_otomai camp_razof canopee_kimbo cave_toxoliath caverne_el_piko caverne_koulosse cavernes_kolosso chambre_malefices chambre_tal_kasha chapiteau_riktus chateau_ensable chateau_wa_wabbit cimetiere_mastodontes clairiere_chene_mou clos_blops cour_bouftou_royal croquanterie crypte_kardorim defi_chaloeil demeure_esprits dojo_vent domaine_ancestral donjon_bworks donjon_forgerons donjon_larves donjon_scarafeuilles donjon_squelettes donjon_tofus epave_grolandais epreuve_draegnerys excavation_mansot fabrique_foux fabrique_mallefisk fers_tyrannie fonderie_waddicts forgefroide_frizz galerie_phossile garde_manger_rat_blanc gelaxieme_dimension goulet_rasboul grange_tournesol grotte_bworker grotte_hesque grotte_kanigroula horologium_xlii hypogee_obsidiantre labo_brumen labo_nileza labo_tynril labyrinthe_minotoror maison_fantome manoir_katrepat megalithe_fraktale memoire_orukam miausolee_pounicheur mine_sakai nid_kwakwa oeil_vortex palais_dantinea palais_nidas pitons_craqueleur plateau_ush poste_supervizoeuf pyramide_ombre refuge_sylvestre repaire_kharnozor repaire_skeunk repaire_sphincter ring_ekarlatte rituel_kabahal salle_minotot salons_klime sanctuaire_torkelonia sentence_balance serre_royalmouth sousouriciere_rat_noir souvenir_imagiro taniere_givrefoux taniere_meulou tempete_eliocalypse temple_kao temple_koutoulou temple_ougah terrier_wa_wabbit tertre_long_sommeil theatre_dramak tofulailler_royal tombe_tofugawa tour_bethel tour_solar transporteur_sylargh trone_cour_sombre trone_sang vaisseau_meno vallee_dame_eaux ventre_baleine village_kanniboul voliere_haute_truche".split(" ").map((id) => [id, 1])), { donjon_harebourg: 2 }));
 
   /* ---------------- les cartes : un boss par donjon, rareté selon le niveau ---------------- */
   const L = Object.entries(D.DUNGEONS || {}).sort((a, b) => a[1].lvl - b[1].lvl || (a[0] < b[0] ? -1 : 1));
