@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.43.4";
+const GAME_VERSION = "2.1.43.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.43.5", name: "Un onglet par partie", items: [
+    "La même partie ouverte dans deux onglets s'écrasait : le dernier onglet qui sauvegardait gagnait. Maintenant, l'ancien onglet se met en pause et ne sauvegarde plus ; « Jouer dans cet onglet » le reprend",
+    "Deux parties différentes (Classique et Monocompte, par exemple) restent jouables en même temps dans deux onglets" ] },
   { v: "2.1.43.4", name: "Ougah débloqué", items: [
     "Boss des mondes : Ougah avait reçu trop de PV à cause des essais bogués sur Harebourg. Ses PV restants sont ramenés à environ 3 jours de combat du serveur : vos essais, coffres et le classement restent",
     "Un essai compte au plus 6 000 points (600 000 PV) : un essai anormal ne peut plus gonfler le boss suivant. Après Ougah, la rotation repart avec des PV pour environ un jour" ] },
@@ -11378,7 +11381,23 @@ document.addEventListener("input", (ev) => {
 let dirty = false, lastSaveOk = 0, sinceTip = 0, saveWarnAt = 0;
 /* La lecture et l'écriture de la partie sont dans js/save.js (support interchangeable : navigateur aujourd'hui, serveur demain). */
 SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
+/* 2.1.43.5 : une partie, un onglet. Deux onglets sur la même partie s'écrasaient (le dernier qui sauvegarde gagne). L'onglet qui
+   ouvre ou sauvegarde une partie l'annonce aux autres onglets ; celui qui l'avait déjà se met en pause et ne sauvegarde plus.
+   Deux parties différentes (Classique et Monocompte, par exemple) restent jouables en même temps. */
+let tabLost = false, tabClaimed = "";
+const TAB_ID = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const tabBc = (() => { try { return typeof BroadcastChannel === "function" ? new BroadcastChannel("idlus-onglets") : null; } catch (e) { return null; } })();
+function tabClaim() { if (!tabBc || tabLost || tabClaimed === LS_KEY) return; tabClaimed = LS_KEY; try { tabBc.postMessage({ k: LS_KEY, id: TAB_ID }); } catch (e) {} }
+function tabPause() {
+  if (tabLost) return; tabLost = true;
+  const d = document.createElement("div"); d.className = "tab-lost";
+  d.innerHTML = `<div class="tab-lost-box"><b>Partie ouverte dans un autre onglet</b><p>Cet onglet est en pause et ne sauvegarde plus, pour ne pas écraser ta partie.</p><button class="btn primary" data-tab-here>Jouer dans cet onglet</button></div>`;
+  d.querySelector("[data-tab-here]").onclick = () => { try { sessionStorage.setItem("idlus-reprise", String(SLOT)); } catch (e) {} location.reload(); };
+  document.body.appendChild(d);
+}
+if (tabBc) tabBc.onmessage = (ev) => { const m = ev.data || {}; if (m.id !== TAB_ID && m.k && m.k === tabClaimed) tabPause(); };
 function saveNow(manual) {
+  if (tabLost) return; tabClaim();
   if (!S || offRun) return; // calcul de l'absence en cours : la partie d'avant reste sauvegardée
   S.savedAt = E.now(); S.lastTick = E.now();
   let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
@@ -11783,7 +11802,7 @@ async function takeRemote(info) {
   offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée."); });
 }
 function onPush(force) {
-  if (!onLive() || offRun) return Promise.resolve(null);
+  if (!onLive() || offRun || tabLost) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
   return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
@@ -12527,6 +12546,7 @@ let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRe
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
+  if (tabLost) return; // une autre fenêtre a pris la partie (tabPause)
   if (offRun) { last = performance.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
@@ -12587,6 +12607,7 @@ document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.c
 function bootGame(pushNow) {
   if (booted) return; booted = true; closeSheet();
   S = loadSave();
+  if (S) tabClaim();
   copyBeforeUpdate(S);
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
   if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
