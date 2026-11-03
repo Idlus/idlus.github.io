@@ -3,33 +3,35 @@
    Usage : DISCORD_BOT_TOKEN=... [DISCORD_GUILD_ID=...] node tools/discord_setup.js   (sans jeton : affiche seulement le plan) */
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
+const RA = "https://re-arise.pages.dev"; // Re:Arise, le deuxième jeu du studio (dépôt Mathiss29/re-arise)
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
 const SERVER = "Ombrelune Studio";
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
 const WELCOME = `# Bienvenue chez Ombrelune Studio !
-🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan. Ce serveur réunit tous ses jeux : **idlus** aujourd'hui, et bientôt un nouveau jeu en préparation (suis-le dans <#NEXT>).
+🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan gratuits. Ce serveur réunit ses jeux : **idlus** et **Re:Arise**.
 
-⚔️ **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte donjons et boss jusqu'à la stasis 15. Tes héros se battent tout seuls, même quand tu n'es pas là.
+⚔️ **idlus**, inspiré de DOFUS : monte une équipe parmi les 19 classes et affronte donjons et boss jusqu'à la stasis 15, même quand tu n'es pas là.
+🎮 ${GAME} · connecte-toi avec Discord (facultatif) pour garder ta partie partout, le chat, l'Hôtel des ventes, les guildes, le Kolizéum et les classements.
+📣 Nouvelles : <#NEWSIDLUS> · notes : <#UPDATES> · feuille de route : <#ROADMAP> · sondages : <#POLLS> · captures : <#SHOTS>
+🐞 Bug : <#BUGS> (bouton « Signaler un bug » dans Options) · 💡 idées : <#IDEAS>, votez avec 👍
 
-🎮 **Jouer** : ${GAME}
-Connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel des ventes, rejoindre une guilde, défier les autres au Kolizéum et entrer dans les classements. Le jeu s'installe aussi sur téléphone et sur PC.
+🌑 **Re:Arise**, inspiré de Solo Leveling : incarne Sung Jinwoo depuis le double donjon, relève les ennemis vaincus en ombres et mène ton armée. 1.0 bêta : 8 chapitres, jusqu'au Portail rouge.
+🎮 ${RA} · gratuit, dans le navigateur, installable sur PC et téléphone. Tout est expliqué dans <#PRESRA>.
 
-📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>. Les grosses nouvelles du studio arrivent dans <#NEWS> ; pour idlus, les nouvelles dans <#NEWSIDLUS> et les notes de chaque mise à jour dans <#UPDATES>. Pour parler d'autre chose : <#OFFTOPIC>.
-🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
-🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
-🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
+📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT> (ou <#OFFTOPIC> pour le reste). Les grosses nouvelles du studio : <#NEWS>.
 
-🎭 **Tes rôles** : clique sur **Salons et rôles** tout en haut de la liste des salons pour être prévenu des mises à jour d'idlus, suivre le nouveau jeu, afficher ta classe préférée et ton serveur. Tu peux changer d'avis quand tu veux.
+🎭 **Tes rôles** : clique sur **Salons et rôles** en haut de la liste des salons pour être prévenu des nouveautés de chaque jeu et afficher ta classe ou ton ombre préférée. Modifiable à tout moment.
 
-*Les jeux d'Ombrelune Studio sont des projets de fan non officiels : idlus n'a aucun lien avec Ankama.*`;
+*Projets de fan non officiels : idlus n'a aucun lien avec Ankama, ni Re:Arise avec les ayants droit de Solo Leveling.*`;
 const RULES = `# Règles du serveur
 **1.** Respecte tout le monde : pas d'insultes, de harcèlement ni de propos discriminatoires.
 **2.** Pas de spam, de flood ni de mentions en masse.
 **3.** Pas de publicité ni de liens vers d'autres serveurs sans accord.
-**4.** Reste dans le bon salon : chaque jeu a sa catégorie ; pour idlus, bugs dans <#BUGS> et idées dans <#IDEAS>. Discussion libre dans <#CHAT>.
+**4.** Reste dans le bon salon : chaque jeu a sa catégorie ; bugs dans <#BUGS> (idlus) ou <#BUGSRA> (Re:Arise), idées dans <#IDEAS> ou <#IDEASRA>. Discussion libre dans <#CHAT>.
 **5.** Pas de triche partagée publiquement ni de fichiers douteux.
-**6.** Écris de préférence en français.
+**6.** Pas de spoilers de Solo Leveling en dehors de <#SPOILRA> : tout le monde n'a pas fini l'œuvre.
+**7.** Écris de préférence en français.
 
 En cas de souci, mentionne un @Modérateur. Bon jeu ! ⚔️`;
 const ROADMAP = `# Feuille de route d'idlus
@@ -45,9 +47,34 @@ Sans dates : chaque partie sort quand elle est prête.
 **🔨 En préparation**
 • La Saison 1, sur le Classique et le Monocompte, avec un écran pour choisir son serveur
 • Vos idées les plus votées dans <#IDEAS> et les sondages de <#POLLS>`;
-const NEXT_TXT = `# Un nouveau jeu en préparation
-Ombrelune Studio prépare son prochain jeu : une aventure sombre où l'on part de rien pour devenir le plus fort.
-Il n'a pas encore de nom ni de date. Les premières images et les nouvelles arriveront ici en premier. Pour en parler, rendez-vous dans <#CHAT>.`;
+const PRES_RA = `# Re:Arise
+🌑 **Re:Arise** est un idle game de fan inspiré de **Solo Leveling**. Tu incarnes Sung Jinwoo, le chasseur le plus faible, depuis le double donjon. Le Système te fait monter de niveau ; plus tard, tu relèves les ennemis vaincus en **ombres** (maintiens le bouton **ARISE**) et ton armée se bat avec toi, même quand tu n'es pas là.
+
+🎮 **Jouer** : ${RA}
+Gratuit, directement dans le navigateur. Le jeu s'installe aussi comme une appli sur PC et téléphone et marche hors ligne.
+
+📖 **Dans la 1.0 bêta** : 8 chapitres, du double donjon au Portail rouge ; Igris, Iron et Tank dans ton armée ; rangs des ombres, portails rouges du jour, Épreuves, QG, journal de quêtes, Atelier et boutique ; gains pendant ton absence.
+💾 La sauvegarde reste sur ton appareil : pense à l'**exporter** de temps en temps (onglet **Plus**).
+
+📣 Les nouvelles arrivent dans <#NEWSRA>, les notes de chaque mise à jour dans <#UPDATESRA>, ce qui arrive dans <#ROADMAPRA>.
+💬 Parle du jeu dans <#CHATRA>, demande de l'aide dans <#HELPRA>, montre ton armée dans <#SHOTSRA>. La suite de l'œuvre se discute dans <#SPOILRA>.
+🐞 Un bug ? <#BUGSRA>. ⚖️ Trop dur, trop facile ? <#BALANCERA>. 💡 Une idée ? <#IDEASRA>.
+🔔 Pour être prévenu des nouveautés : prends le rôle **Notif Re:Arise** dans **Salons et rôles**.
+
+*Re:Arise est un fan game gratuit et non officiel, sans lien avec les ayants droit de Solo Leveling. Aucune image du manhwa ou de l'anime n'est utilisée.*`;
+const ROADMAP_RA = `# Feuille de route de Re:Arise
+Le jeu suit l'histoire de Solo Leveling, un chapitre par arc. Sans dates : chaque partie sort quand elle est prête.
+
+**✅ Déjà dans le jeu (1.0 bêta)**
+• Chapitres 1 à 8 : double donjon, réveil, donjon d'instance, raids de Hwang Dongsuk, des prisonniers et de Yoo Jin-Ho, changement de classe (Igris), Portail rouge (Iron et Tank)
+• Niveaux et points de stats, compétences et passives, équipement et forge, cristaux et Association
+• Extraction des ombres, armée et rangs des ombres
+• Portails rouges du jour, Épreuves, quête du jour, QG, journal de quêtes, Atelier et boutique, gains pendant l'absence
+
+**🔨 En préparation**
+• La suite de l'histoire, en commençant par le Château des démons
+• L'équilibrage de la bêta, grâce à vos retours dans <#BALANCERA>
+• Vos idées les plus votées dans <#IDEASRA>`;
 const BETA_TXT = `# Version de test
 La version de test séparée est fermée depuis le 14/10 : les nouveautés arrivent maintenant directement dans le jeu (${GAME}), annoncées dans <#UPDATES>.
 Ces salons restent ouverts pour l'historique. Tes retours sur les nouveautés sont toujours les bienvenus dans <#BETAFB>, <#BUGS> ou <#IDEAS>.`;
@@ -56,6 +83,8 @@ Ces salons restent ouverts pour l'historique. Tes retours sur les nouveautés so
 const CLASS_ROLES = [["Féca", 0xd9b24c], ["Osamodas", 0x6fae4f], ["Enutrof", 0xb08d57], ["Sram", 0x8a7fa8], ["Xélor", 0x5b8fd1], ["Ecaflip", 0xe07b9a],
   ["Eniripsa", 0xf09ac4], ["Iop", 0xd9534f], ["Crâ", 0x7cb35a], ["Sadida", 0x4f9a5c], ["Sacrieur", 0xb8323a], ["Pandawa", 0x7fc4c9], ["Roublard", 0x9b7a5a],
   ["Zobal", 0xa36fc2], ["Steamer", 0x4fa3a8], ["Eliotrope", 0x56c1e0], ["Huppermage", 0xc46fd9], ["Ouginak", 0xc98f4f], ["Forgelance", 0x9aa6b5]];
+// Re:Arise : l'ombre préférée de chacun (couleur du pseudo), choisie à l'arrivée ; la liste s'allonge avec les chapitres
+const SHADOW_ROLES = [["Igris", 0xc2404f], ["Iron", 0x8d9aae], ["Tank", 0x7a5fb0], ["Gobelin d'ombre", 0x6f9a4f], ["Archer d'ombre", 0x4f97b3], ["Chevalier de sang", 0x9e2f3d]];
 const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
   { key: "mod", name: "Modérateur", color: 0x5ab4f0, hoist: true, mentionable: true },
@@ -64,10 +93,14 @@ const ROLES = [
   { key: "pioneer", name: "Pionnier", color: 0x9bd84a, hoist: true },
   { key: "notif", name: "Notif idlus", old: ["Notif mises à jour"], color: 0, mentionable: true },
   { key: "notifstudio", name: "Notif studio", color: 0, mentionable: true },
-  { key: "notifnext", name: "Suivre le nouveau jeu", color: 0, mentionable: true },
+  { key: "notifnext", name: "Notif Re:Arise", old: ["Suivre le nouveau jeu"], color: 0, mentionable: true },
+  { key: "testerra", name: "Testeur Re:Arise", color: 0x8f7fe0 },
+  // donné à la main à ceux qui ont joué à la 1.0 bêta de Re:Arise
+  { key: "pioneerra", name: "Pionnier Re:Arise", color: 0x6b5bd6, hoist: true },
   { key: "srvclassic", name: "Joueur Classique", color: 0x8fb3c9 },
   { key: "srvmono", name: "Joueur Monocompte", color: 0xc9a46b },
   ...CLASS_ROLES.map(([n, color]) => ({ key: "cl_" + n, name: n, color })),
+  ...SHADOW_ROLES.map(([n, color]) => ({ key: "sh_" + n, name: n, color })),
 ];
 // lock : lecture seule pour @everyone ; only : visible seulement par ces rôles
 const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
@@ -93,11 +126,25 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
       tags: [["Ouvert", "🔴"], ["En cours", "🟡"], ["Corrigé", "🟢"], ["Pas un bug", "⚪"]] },
     { key: "IDEAS", name: "idées", type: FORUM, topic: "Une idée par fil. Votez avec 👍 pour les idées que vous voulez voir dans le jeu.",
       tags: [["Combat", "⚔️"], ["Équipement", "🛡️"], ["Interface", "🖥️"], ["Contenu", "🗺️"], ["Retenue", "✅"]] } ] },
+  { cat: "🌑 Re:Arise", old: ["🌑 Nouveau jeu"], chans: [
+    { key: "PRESRA", name: "présentation-re-arise", old: ["en-préparation"], lock: true, topic: "Re:Arise, idle game de fan inspiré de Solo Leveling : présentation et lien pour jouer", text: PRES_RA },
+    { key: "NEWSRA", name: "annonces-re-arise", lock: true, topic: "Les nouvelles de Re:Arise : nouvelles versions, nouveaux chapitres" },
+    { key: "UPDATESRA", name: "notes-re-arise", lock: true, topic: "Les notes de chaque mise à jour de Re:Arise" },
+    { key: "ROADMAPRA", name: "feuille-de-route-re-arise", lock: true, topic: "Ce qui est déjà dans Re:Arise et ce qui arrive", text: ROADMAP_RA },
+    { key: "CHATRA", name: "discussion-re-arise", topic: "Discussion libre sur Re:Arise (sans spoilers de la suite de l'œuvre)" },
+    { key: "HELPRA", name: "entraide-re-arise", topic: "Questions et conseils entre joueurs de Re:Arise" },
+    { key: "SHOTSRA", name: "captures-re-arise", topic: "Montre ton armée d'ombres et tes exploits. Les aperçus des prochaines nouveautés arrivent aussi ici" },
+    { key: "SPOILRA", name: "spoilers-solo-leveling", slow: 10, topic: "La suite de Solo Leveling (manhwa, roman, anime) : spoilers autorisés ici et seulement ici" } ] },
+  { cat: "🛠️ Retours Re:Arise", chans: [
+    { key: "BUGSRA", name: "bugs-re-arise", type: FORUM, slow: 300, topic: "Un fil par bug de Re:Arise : ton chapitre, ce que tu faisais, ce qui s'est passé, une capture si possible.",
+      tags: [["Ouvert", "🔴"], ["En cours", "🟡"], ["Corrigé", "🟢"], ["Pas un bug", "⚪"]] },
+    { key: "BALANCERA", name: "équilibrage-re-arise", type: FORUM, slow: 300, topic: "Un passage trop dur, trop facile ou trop long ? Un fil par souci : ton chapitre, ton niveau, ton armée.",
+      tags: [["Trop dur", "🔺"], ["Trop facile", "🔻"], ["Trop long", "⏳"], ["Ressources", "💎"], ["Pris en compte", "✅"]] },
+    { key: "IDEASRA", name: "idées-re-arise", type: FORUM, slow: 300, topic: "Une idée par fil pour Re:Arise. Votez avec 👍 pour celles que vous voulez voir dans le jeu.",
+      tags: [["Combat", "⚔️"], ["Ombres", "🌑"], ["Interface", "🖥️"], ["Histoire", "📖"], ["Équilibrage", "⚖️"], ["Retenue", "✅"]] } ] },
   { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["mod", "creator"], chans: [ // version de test fermée le 14/10 : gardée pour l'historique, visible par l'équipe
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
-  { cat: "🌑 Nouveau jeu", lock: true, chans: [
-    { key: "NEXT", name: "en-préparation", topic: "Le prochain jeu d'Ombrelune Studio : les nouvelles arrivent ici", text: NEXT_TXT } ] },
   { cat: "🔐 Équipe", only: ["mod", "creator"], chans: [
     { key: "MODS", name: "modération", topic: "Salon privé de l'équipe" },
     { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
@@ -153,8 +200,11 @@ async function main() {
         const type = c.type ?? TEXT; if ((type === FORUM) !== forums) { cpos++; continue; }
         const body = { parent_id: cat.id, position: cpos++, permission_overwrites: overwrites(gid, roles, s, c) };
         if (c.topic && type !== VOICE) body.topic = c.topic;
+        if (c.slow) body.rate_limit_per_user = c.slow; // mode lent (forum : délai entre deux nouveaux fils)
         if (c.tags) body.available_tags = c.tags.map(([name, emoji_name]) => ({ name, emoji_name }));
         let ch = find(c.name, type, cat.id);
+        const was = !ch && (c.old || []).map((n) => find(n, type)).find(Boolean); // ancien nom : le salon est renommé (ses messages restent)
+        if (was) { ch = was; await api("PATCH", `/channels/${ch.id}`, { name: c.name }); ch.name = c.name; console.log("  salon renommé :", c.name); }
         if (ch) { const keep = ch.available_tags?.length ? { ...body, available_tags: undefined } : body; await api("PATCH", `/channels/${ch.id}`, keep); console.log("  salon rangé :", c.name); }
         else { ch = await api("POST", `/guilds/${gid}/channels`, { name: c.name, type, ...body }); chans.push(ch); fresh.add(c.key); console.log("  salon créé :", c.name); }
         ids[c.key] = ch.id;
@@ -197,14 +247,17 @@ async function main() {
     await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [
       { id: sid(), type: 0, title: "Tes notifications (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
         opt("Être prévenu à chaque mise à jour d'idlus", "Une mention à chaque nouvelle version", "🔔", "notif"),
-        opt("Suivre le nouveau jeu", "Une mention à chaque nouvelle du prochain jeu du studio", "🌑", "notifnext"),
+        opt("Être prévenu des nouveautés de Re:Arise", "Une mention à chaque nouvelle version ou nouveau chapitre", "🌑", "notifnext"),
         opt("Les grosses annonces du studio", "Une mention pour les nouvelles importantes", "🌙", "notifstudio") ] },
       ...[CLASS_ROLES.slice(0, 10), CLASS_ROLES.slice(10)].map((part) => ({ // Discord : 12 choix au plus par question
         id: sid(), type: 0, title: `Ta classe préférée (${part[0][0]} à ${part[part.length - 1][0]})`, single_select: true, required: false, in_onboarding: true,
         options: part.map(([n]) => opt(n, "La couleur de ton pseudo", null, "cl_" + n)) })),
       { id: sid(), type: 0, title: "Ton serveur dans idlus", single_select: false, required: false, in_onboarding: true, options: [
         opt("Classique", "Une équipe de héros", "⚔️", "srvclassic"),
-        opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] } ] });
+        opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] },
+      // Discord limite le nombre de questions de l'accueil : celle-ci n'apparaît que dans « Salons et rôles »
+      { id: sid(), type: 0, title: "Ton ombre préférée dans Re:Arise", single_select: true, required: false, in_onboarding: false,
+        options: SHADOW_ROLES.map(([n]) => opt(n, "La couleur de ton pseudo", null, "sh_" + n)) } ] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
   } catch (e) { console.log("Accueil des nouveaux non configuré, à faire à la main :", e.message); }
 
@@ -226,6 +279,10 @@ async function main() {
     const inv = await api("POST", `/channels/${ids.BUGS}/invites`, { max_age: 0, max_uses: 0, unique: false });
     console.log(`Lien du forum des bugs : https://discord.gg/${inv.code}`);
   } catch (e) { console.log("Invitation du forum des bugs non créée :", e.message); }
+  try { // même chose pour un bouton « Signaler un bug » dans Re:Arise
+    const inv = await api("POST", `/channels/${ids.BUGSRA}/invites`, { max_age: 0, max_uses: 0, unique: false });
+    console.log(`Lien du forum des bugs de Re:Arise : https://discord.gg/${inv.code}`);
+  } catch (e) { console.log("Invitation du forum des bugs de Re:Arise non créée :", e.message); }
 
   console.log(`\nTerminé. Invitation : ${INVITE}`);
 }
