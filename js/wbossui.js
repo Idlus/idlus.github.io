@@ -41,7 +41,7 @@
   const ELC = { n: "neutre", t: "terre", f: "feu", e: "eau", a: "air" };
 
   const isS1 = () => !!(E.isS1c && S() && E.isS1c(S())); // Saison 1 : boss de la semaine (E.wbS1Def)
-  const defOf = (n) => (isS1() ? E.wbS1Def(n) : defOf(n));
+  const defOf = (n) => (isS1() ? E.wbS1Def(n) : E.wbDef(n));
   /* ---------- état du boss (serveur, ou boss local de la version de test) ---------- */
   function loc() {
     const L = pref.loc || (pref.loc = { n: 1, hp: LOCAL_HP, dmg: 0, started: Date.now(), day: day(), today: 0, pts: 0, best: 0, k: 0, bonus: 0, last: null });
