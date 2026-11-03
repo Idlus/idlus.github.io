@@ -99,7 +99,7 @@ function fake() {
 
       /* ---------- 1. partie créée avant la remise ---------- */
       await page.goto(base, { waitUntil: "load" }); await menu();
-      if (!/Nouvelle partie de la bêta/.test(await card4())) fail(`${w} px : carte « Nouvelle partie de la bêta » attendue au départ`);
+      if (!/Nouvelle partie (de la bêta|Monocompte)/.test(await card4())) fail(`${w} px : carte « Nouvelle partie de la bêta » attendue au départ`);
       await startMono("Avant");
       let L = await local();
       if (!L || !L.mono || L.mono.gen !== 0) fail(`${w} px : partie d'avant la remise : génération 0 attendue, trouvé ${JSON.stringify(L && L.mono && L.mono.gen)}`);
@@ -109,7 +109,7 @@ function fake() {
       await rz({ gen: 1, remise: new Date().toISOString(), p: null });
       await toMenu();
       if (!MSG.test(await msg())) fail(`${w} px : message de remise attendu, trouvé « ${await msg()} »`);
-      if (!/Nouvelle partie de la bêta/.test(await card4())) fail(`${w} px : après la remise, carte « Nouvelle partie de la bêta » attendue`);
+      if (!/Nouvelle partie (de la bêta|Monocompte)/.test(await card4())) fail(`${w} px : après la remise, carte « Nouvelle partie de la bêta » attendue`);
       if (await page.evaluate((k) => localStorage.getItem(k), KEY)) fail(`${w} px : l'ancienne partie est encore la partie Monocompte`);
       const aside = await page.evaluate((k) => { const raw = localStorage.getItem(k); try { return raw ? window.ENGINE.deserialize(raw).chars[0].name : null; } catch (e) { return "illisible"; } }, AK);
       if (aside !== "Avant") fail(`${w} px : ancienne partie mise de côté sous ${AK} attendue, trouvé ${aside}`);
@@ -126,7 +126,7 @@ function fake() {
       if (MSG.test(await msg())) fail(`${w} px : partie d'après la remise : aucun message attendu`);
       L = await local();
       if (!L || L.chars[0].name !== "Apres") fail(`${w} px : partie d'après la remise touchée`);
-      if (/Nouvelle partie de la bêta/.test(await card4())) fail(`${w} px : partie d'après la remise : sa carte doit rester`);
+      if (/Nouvelle partie (de la bêta|Monocompte)/.test(await card4())) fail(`${w} px : partie d'après la remise : sa carte doit rester`);
       if ((await page.evaluate((k) => localStorage.getItem(k), AK)) == null) fail(`${w} px : la copie mise de côté a disparu`);
       console.log(`ok - ${w} px : partie d'après la remise (génération 1) intacte au démarrage suivant`);
 

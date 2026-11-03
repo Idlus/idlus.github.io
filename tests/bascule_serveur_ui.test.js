@@ -64,7 +64,10 @@ function fake() {
       // 2.1.40 (3A) : le bouton ⇄ est dans le panneau du portrait (Mon compte)
       const acc = () => page.evaluate(() => { const q = (x) => document.querySelector(x); if (!q("#status .tb-accp") && q("#status .tb-acc")) q("#status .tb-acc").click(); });
       // 1. pas d'accès au Monocompte : pas de bouton
-      await acc(); if (await page.$('#status [data-act="sv-swap"]')) fail(`${w} px : bouton ⇄ montré sans accès au Monocompte`);
+      // 2.2.0 : bêta finie, le Monocompte est ouvert à tous, donc le bouton est toujours là
+      const beta = await page.evaluate(() => window.DX.monoBetaOn());
+      await acc(); if (beta && await page.$('#status [data-act="sv-swap"]')) fail(`${w} px : bouton ⇄ montré sans accès au Monocompte`);
+      if (!beta && !(await page.$('#status [data-act="sv-swap"]'))) fail(`${w} px : bêta finie, bouton ⇄ attendu`);
       // 2. une partie Monocompte existe sur l'appareil : le bouton apparaît dans la partie Classique
       await page.evaluate(() => { const { E } = window.DX; const N = E.newState("Mono", "cra"); E.monoStart(N); N.kamas = 777; localStorage.setItem("dofousxen-save-mono", E.serialize(N)); window.DX.S.kamas = 12345; window.DX.social.renderStatus(); });
       await acc(); await page.waitForSelector('#status [data-act="sv-swap"].to-mo', { timeout: 5000 }).catch(() => fail(`${w} px : bouton ⇄ Monocompte absent de la partie Classique`));
