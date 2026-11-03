@@ -159,7 +159,7 @@
     const s = S(); const G = E.foireState(s); const d = J.data;
     const head = `<div class="pagehead"><h1>Foire du Trool</h1><span class="small muted"><span class="coin"></span> <b class="num" id="foKamas">${fmt(s.kamas)}</b> kamas</span></div>`;
     const hd = `<div class="fo-hd"><img src="assets/m/129.png" alt=""><div class="stack" style="gap:4px"><b class="fo-t">Caisses et Jackpot du Trool</b><span class="small">Mise des kamas, et repars avec un lot. Les chances sont affichées. Rien ne s'y achète avec de l'argent réel, et on n'y gagne jamais de Dofus.</span><span class="xs muted">Aujourd'hui : ${G.n} partie${G.n > 1 ? "s" : ""} sur ${F.DAY}${d && d.mine ? ` · ${fmt(d.mine)} ticket${d.mine > 1 ? "s" : ""} de Jackpot cette heure` : ""}</span></div></div>`;
-    main.innerHTML = `${head}<div class="stack">${hd}${jackHtml()}${cratesHtml()}${feedHtml()}</div>`;
+    main.innerHTML = `${head}<div class="stack">${hd}${jackHtml()}${cratesHtml()}${window.DUELUI ? window.DUELUI.html() : ""}${feedHtml()}</div>`;
   }
   window.DX.pages.foire = (main) => { if (st.rolling && $("#foRoll")) return; st.rolling = false; page(main); if (online() && Date.now() - J.at > 60000) jLoad().then(paintJack); };
 

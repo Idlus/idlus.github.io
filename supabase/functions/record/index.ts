@@ -12,6 +12,8 @@
 // tombé sur un boss (vérifiée ici, puis envoyée à tous les joueurs connectés par le chat ; js/giga.js).
 // Songe infini (1.0.30) : avec { songe: 1 }, le record de la semaine (js/songe.js, supabase/songe.sql).
 // Alliances (1.1) : avec { prism: région }, un combat de la bataille des prismes (js/alliance.js, supabase/alliances.sql).
+// Saison 1, lot 8 : avec { tournoi: { join: 1 } }, l'inscription au Tournoi des guildes (équipe d'arène copiée de la partie) ;
+// avec { tournoi: { w? } }, le tableau (joué ici par morceaux après le samedi midi) — js/tournoi.js, supabase/tournoi.sql.
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -38,7 +40,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { saison?: number; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
+  let body: { saison?: number; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string; tournoi?: any } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   /* Saison 1, lot 0b : partie Classique · Saison 1 (saison: 1) : tout ce que la fonction lit et écrit est dans l'espace « s1 »
      (supabase/saison1.sql), sauf le compte et ce qui reste commun (profils, chat, admins, codes cadeaux). */
@@ -52,6 +54,7 @@ Deno.serve(async (req) => {
   if (body.dofus) return dofusAnn(db, user.id, body.dofus);
   if (body.songe) return songe(db, user.id);
   if (body.prism) return prism(db, user.id, String(body.prism));
+  if (body.tournoi) return tournoi(db, user.id, body.tournoi);
   if (body.verif) return json(await validate(db, user.id, false));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
@@ -285,6 +288,41 @@ async function prism(db: any, uid: string, zone: string) {
   const { data: done, error: e2 } = await db.rpc("ps_done", { p_user: uid, p_w: st.w, p_zone: zone, p_n: st.n, p_def: !!st.def, p_win: !!r.win, p_rounds: r.rounds });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, prism: true, zone, def: !!st.def, free: !!st.free, win: !!r.win, rounds: r.rounds, used: done.used, extra: !!done.extra, pts: done.pts || {} });
+}
+
+// ---------- Saison 1, lot 8 : Tournoi des guildes (js/tournoi.js, supabase/tournoi.sql) ----------
+// L'inscription copie l'équipe d'arène de la partie en ligne (comme le Kolizéum). Après le samedi midi, chaque lecture joue
+// au plus TOUR_STEP combats du tableau (même hasard pour tous : le résultat ne dépend pas de qui appelle) et le garde.
+const TOUR_STEP = 40;
+// deno-lint-ignore no-explicit-any
+async function tournoi(db: any, uid: string, t: any) {
+  if (t && t.join) {
+    const g = await guildSave(db, uid, ":tour"); if (g.err) return g.err;
+    if (g.S.mono) return json({ ok: false, err: "Pas de tournoi en Monocompte." });
+    // deno-lint-ignore no-explicit-any
+    const A = E.koliSnap(g.S, E.koliState(g.S, g.now).team).filter((x: any) => x);
+    if (!A.length) return json({ ok: false, err: "Choisis ton équipe d'arène (Kolizéum) : c'est elle qui combat." });
+    const { data: prof } = await db.from("profiles").select("pseudo").eq("id", uid).maybeSingle();
+    const heads = A.map((x: { cls: string; sex: string; head: number; lvl: number }) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl }));
+    const { data, error } = await db.rpc("tour_join", { p_user: uid, p_w: E.tourWeek(g.now), p_pseudo: (prof && prof.pseudo) || "", p_team: A, p_lvl: E.koliLvl(g.S), p_heads: heads });
+    if (error || !data || data.err) return json({ ok: false, err: (data && data.err) || "serveur indisponible" });
+    return json({ ok: true, joined: true });
+  }
+  const now = Date.now(), w = E.tourWeek(now), want = t && Number(t.w) ? Number(t.w) : w;
+  if (want === w && E.tourPhase(now) !== "inscr" && now - (lastTry.get(uid + ":tourrun") || 0) > 3000) {
+    lastTry.set(uid + ":tourrun", now);
+    const { data: row } = await db.from("tour_state").select("data,done").eq("w", w).maybeSingle();
+    if (!row || !row.done) {
+      let st = row && row.data;
+      if (!st) { const { data: L, error } = await db.rpc("tour_entries", { p_w: w }); if (error) return json({ ok: false, err: "serveur indisponible" }); st = E.tourInit(w, L || []); }
+      const n = E.tourStep(st, TOUR_STEP, now); E.events.length = 0;
+      const done = !!st.void || st.champ !== null;
+      if (n || !row || done) await db.rpc("tour_save", { p_w: w, p_data: st, p_done: done });
+    }
+  }
+  const { data: v, error } = await db.rpc("tour_view", { p_w: want });
+  if (error || !v) return json({ ok: false, err: "serveur indisponible" });
+  return json({ ok: true, view: v });
 }
 
 // ---------- Kolizéum (js/koli.js) : 3 contre 3 contre l'équipe d'arène d'un autre joueur, jouée par l'IA ----------

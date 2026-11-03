@@ -479,6 +479,10 @@
   };
   /* 0.1.44 : Kolizéum. { opps: 1, r } : 3 adversaires ; { fight: { id | slot }, r } : un combat classé (joué par le serveur). */
   ON.koli = (body) => ON.submitGuild({ koli: body });
+  /* Saison 1, lot 8 : Tournoi des guildes (js/tournoi.js, supabase/tournoi.sql) */
+  ON.tourView = (w) => ON.submitGuild({ tournoi: w ? { w } : { view: 1 } });
+  ON.tourJoin = () => ON.submitGuild({ tournoi: { join: 1 } });
+  ON.tourLeave = (uid) => rpc("tour_leave", uid ? { p_user: uid } : {});
   ON.koliMe = async (w) => { const r = await rpc("koli_me", { p_w: w }); return r.err ? null : r.data; };
   ON.koliFights = async () => {
     if (!sb || !ON.user) return [];
