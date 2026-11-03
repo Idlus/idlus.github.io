@@ -1,6 +1,15 @@
 {
-  "version": "2.2.0.1",
+  "version": "2.2.0.2",
   "versions": [
+    {
+      "v": "2.2.0.2",
+      "name": "Une seule musique",
+      "guide": "options",
+      "items": [
+        "Nouvelle musique « Idlus » : la même dans tous les menus (accueil, inventaire, Monde, Quêtes, HdV…), sans changer à chaque page. Les menus n'ont plus chacun leur air",
+        "Les combats gardent leur air (zones, donjons, salle du boss, Songe infini, Kolizéum, Boss des mondes). Le Gramophone du Havre-Sac, le juke-box et les partitions ne changent pas"
+      ]
+    },
     {
       "v": "2.2.0.1",
       "name": "Partie de la bêta",

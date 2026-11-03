@@ -789,6 +789,10 @@
   }
   /* 2.1.43 : airs enregistrés (fichier audio en boucle, au volume de la musique) ; gain réglé pour sonner comme les airs composés (fichier à -15,8 LUFS, airs ≈ -18,5) */
   const FILES = { horloge: { name: "Le Village de l'Horloge", src: "assets/son/horloge.mp3", gain: 0.73 } };
+  /* 2.2.0.2 : LA musique d'idlus, jouée dans tous les menus (les combats gardent leur air). Pour l'ajouter : déposer le fichier
+     assets/son/idlus.mp3 (mp3 128k, en boucle), puis remplacer null par { name: "Titre", src: "assets/son/idlus.mp3", gain: 0.73 }
+     (gain : viser ≈ -18,5 LUFS comme les autres airs). Si c'est null, les menus jouent l'air du combat en cours. */
+  const THEME = { name: "Idlus", src: "assets/son/idlus.mp3", gain: 0.77 }; // 2.2.0.2 : musique de Mathis (Suno), -16,8 LUFS, réglée au niveau de « Le Village de l'Horloge »
   function playFile(id, F, fade) {
     const el = new Audio(); el.src = F.src; el.loop = true; el.preload = "auto";
     const out = ctx.createGain(); let src = null; try { src = ctx.createMediaElementSource(el); src.connect(out); } catch (e) { return; }
@@ -808,6 +812,8 @@
   };
   A.playing = () => (seq ? seq.id : null);
   A.tracks = Object.fromEntries(Object.entries(TRACKS).map(([k, T]) => [k, T.name]).concat(Object.entries(FILES).map(([k, F]) => [k, F.name])));
+  if (THEME) FILES.idlus = THEME;
+  A.theme = THEME ? "idlus" : null; // pas une partition : ajoutée après A.tracks, elle n'entre pas au juke-box
   A.setMusicVol = (v) => { if (init()) [musicBus, musicRv].concat(fanOwn ? [] : [fanBus]).forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
   let fanOwn = false; // 1.3 : les fanfares ont leur propre volume (Fanfares et récompenses) dès qu'on le règle
   A.setFanVol = (v) => { if (init()) { fanOwn = true; fanBus.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05); } };

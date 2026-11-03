@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.0.2 « Une seule musique »
+- Mathis (03/11) : « Stop les musiques pour chaque menu, on va faire une vraie musique d'idlus pour tous les menus », puis son fichier Suno « Idlus ». `js/ui.js` : `musPlace` ne renvoie plus l'air de la page ; écran Combat, Boss des mondes, Kolizéum et Songe infini (`MUS_FIGHT_PAGES`) gardent leur air, les autres pages jouent `IdlusAudio.theme` (sinon l'air du combat en cours, `musFight`). Gramophone et juke-box « Un air fixe » inchangés ; partitions et ambiances suivent toujours `musSpot`.
+- `js/musique.js` : `THEME` = « Idlus » (`assets/son/idlus.mp3`, 128k, silence de fin coupé pour la boucle, gain 0.77 = même niveau que horloge). Pour la changer : remplacer le fichier (même nom) et régler `gain`. Ce n'est pas une partition (hors juke-box). `THEME = null` = les menus jouent l'air du combat en cours.
+
 ## 2.2.0.1 « Partie de la bêta »
 
 - Monocompte : une partie de la bêta restée sur l'appareil passe dans l'Éternel au lancement au lieu de bloquer l'entrée dans la Saison 1.

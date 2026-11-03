@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.0.1";
+const GAME_VERSION = "2.2.0.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.0.2", name: "Une seule musique", guide: "options", items: [
+    "Nouvelle musique « Idlus » : la même dans tous les menus (accueil, inventaire, Monde, Quêtes, HdV…), sans changer à chaque page. Les menus n'ont plus chacun leur air",
+    "Les combats gardent leur air (zones, donjons, salle du boss, Songe infini, Kolizéum, Boss des mondes). Le Gramophone du Havre-Sac, le juke-box et les partitions ne changent pas" ] },
   { v: "2.2.0.1", name: "Partie de la bêta", items: [
     "Monocompte : une partie de la bêta restée sur l'appareil empêchait d'entrer dans la Saison 1. Elle passe maintenant d'elle-même dans l'Éternel au lancement, rien n'est perdu",
     "Monocompte : le chat disait « Ce salon est réservé aux joueurs du Monocompte » aux nouveaux joueurs. Le salon est maintenant ouvert à tous",
@@ -10423,8 +10426,21 @@ const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et
 const MUS_MORE = { horloge: "page d'accueil, l'air de la Saison 1", donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
 const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
-/* l'air « selon l'endroit » : page du Havre-Sac (le Gramophone d'abord), page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
-function musPlace() { return (ui.tab === "home" && ui.home === "havre" && gramTrack()) || musSpot(); }
+/* 2.2.0.2 (Mathis, 03/11 : « Stop les musiques pour chaque menu, on va faire une vraie musique d'idlus pour tous les menus ») :
+   les menus n'ont plus chacun leur air. Les combats gardent le leur (écran Combat : zone, donjon, salle du boss, Songe ; Boss des mondes, Kolizéum, Songe infini).
+   Dans les menus : la musique d'idlus (IdlusAudio.theme, js/musique.js) dès que son fichier est là, en attendant l'air du combat en cours, sans changer à chaque page.
+   Le Gramophone du Havre-Sac et le juke-box (« Un air fixe ») restent : c'est le joueur qui choisit. Les partitions se trouvent toujours au même endroit (musSpot). */
+const MUS_FIGHT_PAGES = ["combat", "wb", "koli", "exp"];
+function musFight() {
+  if (E.expActive && E.expActive(S)) return "songe";
+  if (S.dungeon) { const dg = DUNGEONS[S.dungeon.id]; return dg && dg.rooms && S.dungeon.room >= dg.rooms.length ? "salleboss" : "donjon"; }
+  return musOfSub(S.sub);
+}
+function musPlace() {
+  if (ui.tab === "home" && ui.home === "havre" && gramTrack()) return gramTrack();
+  if (MUS_FIGHT_PAGES.includes(ui.tab)) return musSpot();
+  return (window.IdlusAudio && window.IdlusAudio.theme) || musFight();
+}
 /* l'air de l'endroit lui-même, sans le Gramophone : c'est lui qu'on trouve comme partition */
 function musSpot() {
   if (ui.tab === "home" && ui.home === "havre") { const h0 = new Date().getHours(); return musEvent() || (h0 >= 21 || h0 < 7 ? "nuit" : "boite"); }
@@ -10453,12 +10469,7 @@ const AMB_OF = { incarnam: ["birds", "wind"], marche: ["crowd"], taverne: ["crow
   bonta: ["crowd", "birds"], brakmar: ["crowd", "fire"], obscure: ["drip", "wind"], harebourg: ["wind", "owl"], sufokia: ["waves"], wukin: ["stream", "birds"], vulkania: ["lava", "waves"],
   donjon: ["drip"], salleboss: ["drip", "fire"], boite: ["fire"], nuit: ["fire", "crickets", "owl"], halouine: ["wind", "owl"], fetes: ["fire"], koli: ["crowd"], songe: ["wind", "drip"], guilde: ["fire"],
   comptoirs: ["crowd"], foire: ["crowd"], montures: ["birds", "wind"] };
-function ambPlace() {
-  const p = musSpot(); if (AMB_OF[p]) return p;
-  if (E.expActive && E.expActive(S)) return "songe";
-  if (S.dungeon) { const dg = DUNGEONS[S.dungeon.id]; return dg && dg.rooms && S.dungeon.room >= dg.rooms.length ? "salleboss" : "donjon"; }
-  return musOfSub(S.sub);
-}
+function ambPlace() { const p = musSpot(); return AMB_OF[p] ? p : musFight(); }
 function ambSync(A) {
   if (!A.ambience) return; const c = sndCfg();
   const on = S && SND.gest && c.amb && !c.mute && (c.mbg || document.visibilityState === "visible");
@@ -10601,7 +10612,7 @@ function soundOptionsHtml() {
   const th = sndTheme();
   return optSec("Volumes", "chaque famille de sons a son volume ; le haut-parleur en haut de l'écran coupe tout d'un coup et garde ces réglages",
       `<div class="optline mixrow">${optName("Volume général", "")}<span class="optctl">${rng("gvol")}<button class="btn sm" data-act="vi-mute">${G(sndOn() ? "spkoff" : "spk")} ${sndOn() ? "Tout couper" : "Remettre"}</button></span></div>`
-    + row("mus", "mvol", "Musique", "l'air de chaque endroit ; démarre au premier clic")
+    + row("mus", "mvol", "Musique", "« Idlus » dans les menus, l'air de la zone en combat ; démarre au premier clic")
     + row("on", "rvol", "Fanfares et récompenses", "niveau, donjon, Dofus, coffre, succès, quête, butin rare, vente", ply("vi-rtest"))
     + row("ui", "ivol", "Interface", "menus, pages, onglets, cases, fenêtres, recherche", ply("vi-itest"))
     + row("cbt", "cvol", "Combat", "sorts, coups, soins, victoire, quand un combat est affiché", ply("vi-cbttest"))
@@ -10637,7 +10648,7 @@ function jukeboxHtml(c, T) {
   const n = S ? partN(S) : 0, N = Object.keys(T).length; // 1.0.30 : partitions trouvées
   return optSec("Juke-box", `Partitions ${n}/${N} · un air se trouve en passant quelques secondes à son endroit`,
       `<div class="jk-bar" title="${n} partitions trouvées sur ${N}"><i style="width:${pct(n, N)}%"></i></div>` +
-      optLine("Quel air jouer", "« Selon l'endroit » suit la zone et la page", `<span class="seg2"><button class="btn sm${fixe ? "" : " primary"}" data-act="vi-jkmode" data-v="zone" aria-pressed="${!fixe}">Selon l'endroit</button><button class="btn sm${fixe ? " primary" : ""}" data-act="vi-jkmode" data-v="fixe" aria-pressed="${fixe}">Un air fixe</button></span>`)
+      optLine("Quel air jouer", "« Selon l'endroit » suit le combat en cours (zone, donjon, Songe…)", `<span class="seg2"><button class="btn sm${fixe ? "" : " primary"}" data-act="vi-jkmode" data-v="zone" aria-pressed="${!fixe}">Selon l'endroit</button><button class="btn sm${fixe ? " primary" : ""}" data-act="vi-jkmode" data-v="fixe" aria-pressed="${fixe}">Un air fixe</button></span>`)
     + list + `<div class="row"><button class="btn sm" data-act="vi-jkall">${ui.jukeAll ? "Replier la liste" : `Voir les ${N} airs`}</button></div>`, "jukebox");
 }
 function viChange(a, t) {
@@ -10677,7 +10688,7 @@ function viAct(a, t) {
     case "vi-fantest": { const A = window.IdlusAudio; if (!A || !A.fanfare) return; SND.gest = true; const K = ["donjon", "niveau", "dofus", "boss"], k = K[(SND.fanN = ((SND.fanN || 0) + 1)) % K.length]; A.setMusicVol(sndCfg().mvol / 100); A.fanfare(k); toast(`Fanfare : ${A.fanfares[k]}.`); return; }
     case "vi-cbttest": SND.gest = true; cbtTest(); return;
     case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true, nv13: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
-    case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
+    case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musSpot() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
     case "vi-jkall": ui.jukeAll = !ui.jukeAll; optionsSheet(); return;
     case "vi-optcons": pageGo("consignes"); return;
   }
