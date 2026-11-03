@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.1.42.2";
+const GAME_VERSION = "2.1.43";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.1.43", name: "Voter pour Idlus", items: [
+    "Nouvelle page Joueurs › Voter pour Idlus : vote pour le jeu sur Dofus Fan Games, puis clique « Récupérer ». Chaque vote rapporte 30 min de Sablier et des kamas selon ton niveau, une fois par heure",
+    "Série : chaque jour de vote d'affilée ajoute 10 % de kamas et de Sablier, jusqu'à +50 %",
+    "Objectif du mois : à 250, 500 et 1 000 votes de tout le serveur, 1 h, 2 h puis 3 h de Sablier pour tous les joueurs, et 1 h de plus pour ceux qui ont voté",
+    "Votants du mois : le top 10 reçoit le titre « Voix d'Idlus » au début du mois suivant",
+    "Vote depuis le même appareil et le même réseau que le jeu : le site reconnaît ton vote à ta connexion. Une ligne sur l'accueil et une pastille dans le menu te rappellent quand un vote est possible",
+  ] },
   { v: "2.1.42.2", name: "Le hub de la Saison 1", items: [
     "Préparation de la Saison 1 : le futur écran de choix du serveur (Éternel, Classique · Saison 1, Monocompte) est prêt en coulisses. Rien ne change pour l'instant, il s'ouvrira avec la saison",
   ] },

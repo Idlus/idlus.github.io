@@ -1,6 +1,17 @@
 {
-  "version": "2.1.42.2",
+  "version": "2.1.43",
   "versions": [
+    {
+      "v": "2.1.43",
+      "name": "Voter pour Idlus",
+      "items": [
+        "Nouvelle page Joueurs › Voter pour Idlus : vote pour le jeu sur Dofus Fan Games, puis clique « Récupérer ». Chaque vote rapporte 30 min de Sablier et des kamas selon ton niveau, une fois par heure",
+        "Série : chaque jour de vote d'affilée ajoute 10 % de kamas et de Sablier, jusqu'à +50 %",
+        "Objectif du mois : à 250, 500 et 1 000 votes de tout le serveur, 1 h, 2 h puis 3 h de Sablier pour tous les joueurs, et 1 h de plus pour ceux qui ont voté",
+        "Votants du mois : le top 10 reçoit le titre « Voix d'Idlus » au début du mois suivant",
+        "Vote depuis le même appareil et le même réseau que le jeu : le site reconnaît ton vote à ta connexion. Une ligne sur l'accueil et une pastille dans le menu te rappellent quand un vote est possible"
+      ]
+    },
     {
       "v": "2.1.42.2",
       "name": "Le hub de la Saison 1",
