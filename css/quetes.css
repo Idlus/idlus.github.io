@@ -224,6 +224,7 @@
 .qx-reg[aria-pressed="true"]{border-color:var(--gold);background:var(--panel3);opacity:1}
 .qx-npc{width:60px;height:60px;border-radius:16px;border:2px solid var(--med-ring,#dcbb74);background:radial-gradient(circle at 40% 35%,var(--med-bg,#3c4d2e),var(--med-bg2,#172012));display:grid;place-items:center;flex:none}
 .qx-npc img{width:48px;height:48px;object-fit:contain}
+.qx-npc.port{width:84px;height:84px;overflow:hidden;align-items:end}.qx-npc.port img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}.qx-ri img[src*="npc-"]{width:36px;height:36px;object-fit:cover;border-radius:10px}
 .qx-story{margin:0;font-style:italic;color:var(--muted);border-left:3px solid var(--gold);padding-left:10px}
 .qx-steps li{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .qx-rewb{display:grid;gap:5px;padding:10px 12px;border-radius:12px;background:var(--panel2)}

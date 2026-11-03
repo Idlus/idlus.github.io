@@ -60,7 +60,7 @@
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
       case "dofus": { const d = E.dofusCount(s); return [`${d}/${E.DOFUS_ORDER.length}`, d >= E.DOFUS_ORDER.length ? "ok" : ""]; }
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
-      case "ach": { const d = E.achCount(s); return [`${d}/${E.ACH.length}`, d >= E.ACH.length ? "ok" : ""]; }
+      case "ach": { const d = E.achCount(s); return [`${d}/${AL(s).length}`, d >= AL(s).length ? "ok" : ""]; }
       case "orn": { const ids = Object.keys(E.ORN); const d = ids.filter((id) => E.ornUnlocked(s, id)).length; return [`${d}/${ids.length}`, d >= ids.length ? "ok" : ""]; }
     }
     return ["", ""];
@@ -147,7 +147,7 @@
   /* ---------- « À faire ensuite » : le plus utile du moment, en une rangée ---------- */
   const daysLeft = () => { const ms = E.weekLeft(); const d = Math.floor(ms / 86400000); return d >= 1 ? `encore ${d} j` : `encore ${Math.max(1, Math.round(ms / 3600000))} h`; };
   const achRatio = (s, a) => { if (s.ach[a.id]) return 2; const p = E.achProgress(s, a.id); return p && p[1] ? Math.min(0.999, p[0] / p[1]) : 0; };
-  function nearAch(s, n) { return E.ACH.filter((a) => !s.ach[a.id] && !a.secret).map((a) => [a, achRatio(s, a)]).filter((x) => x[1] > 0 && x[1] < 1).sort((x, y) => y[1] - x[1]).slice(0, n); }
+  function nearAch(s, n) { return AL(s).filter((a) => !s.ach[a.id] && !a.secret).map((a) => [a, achRatio(s, a)]).filter((x) => x[1] > 0 && x[1] < 1).sort((x, y) => y[1] - x[1]).slice(0, n); }
   function nextUp(s) {
     const out = [];
     const L = E.REGIONS || [];
@@ -247,13 +247,13 @@
     const state = cls === "got" ? `<span class="qj-tag ok">Terminée ✓</span>` : cls === "run" ? `<span class="qj-tag todo">étape ${T.i + 1} sur ${R.steps.length}</span>` : `<span class="qj-tag">${R.lv > t + 5 ? `dès le niveau ${Math.max(1, R.lv - 5)}` : "zone à débloquer"}</span>`;
     const hero = X().mainHero ? X().mainHero() : s.chars[0];
     const card = (x) => { const c = regCls(s, x); const TT = E.rqState(s, x.id);
-      return `<button class="qx-reg ${c}" data-act="qj-reg" data-v="${x.id}" aria-pressed="${x.id === st.reg}"><span class="qx-ri">${X().im(X().imgM(x.img), "", "")}</span><span class="grow"><b>${h(x.name)}</b><small>niv. ${x.lv}–${x.lvM} · ${h(x.npc)}</small></span><img class="qx-ro" src="assets/ui/orn/orn_${x.id}.svg" alt="" loading="lazy"><span class="qx-rs ${E.rqReady(s, x) ? "hot" : ""}">${c === "got" ? "✓" : c === "run" ? `${TT.i}/${x.steps.length}` : `niv. ${x.lv}`}</span></button>`; };
+      return `<button class="qx-reg ${c}" data-act="qj-reg" data-v="${x.id}" aria-pressed="${x.id === st.reg}"><span class="qx-ri">${npcImg(x)}</span><span class="grow"><b>${h(x.name)}</b><small>niv. ${x.lv}–${x.lvM} · ${h(x.npc)}</small></span><img class="qx-ro" src="assets/ui/orn/orn_${x.id}.svg" alt="" loading="lazy"><span class="qx-rs ${E.rqReady(s, x) ? "hot" : ""}">${c === "got" ? "✓" : c === "run" ? `${TT.i}/${x.steps.length}` : `niv. ${x.lv}`}</span></button>`; };
     const fil = [["lvl", "À mon niveau"], ["run", "En cours"], ["got", "Terminées"], ["all", "Toutes"]];
     const shown = L.filter((x) => regFil(s, x, st.rf, t));
     return `${head(s, "region", "Chaque région du Monde des Douze a son histoire, donnée par un personnage de DOFUS : chasser, rapporter des ressources, vaincre les boss de la région. Les chasses et les boss se valident tout seuls ; les ressources se remettent avec un bouton. Au bout : kamas, un Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros. Une quête s'ouvre 5 niveaux avant la région.")}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-rf" data-v="${k}" aria-pressed="${k === st.rf}">${l} <b class="num">${L.filter((x) => regFil(s, x, k, t)).length}</b></button>`).join("")}<span class="grow"></span><span class="xs muted">${L.length} régions · ${L.reduce((a, x) => a + x.steps.length, 0)} étapes</span></div>
       <section class="panel qx-fiche2"><div class="pad qx-f2">
-        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc">${X().im(X().imgM(R.img), "", "")}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(R.npc)}</span></div>${state}</div>
+        <div class="stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap"><span class="qx-npc${NPCP[R.id] ? " port" : ""}">${npcImg(R)}</span><div class="grow"><span class="qj-eb">${h(R.name)} · niv. ${R.lv}–${R.lvM}</span><h3>${h(R.title)}</h3><span class="xs muted">donnée par ${h(R.npc)}</span></div>${state}</div>
         <p class="small qx-story">« ${h(R.story)} »</p>
         <ol class="qj-steps qx-steps">${steps}</ol></div>
         <div class="qx-rewb"><span class="qj-lab">Récompense de fin</span><div class="qx-orprev">${hero ? X().heroCard(hero, "", { orn: "reg_" + R.id }) : ""}</div><div class="row" style="flex-wrap:nowrap"><img class="qx-omid" src="assets/ui/orn/orn_${R.id}.svg" alt=""><span><b>Emblème de ${h(R.name)}</b><br><span class="xs muted">ornement de carte de héros</span></span></div><span class="qj-rew">${IC("kamas")} <b>${fmt(E.rqFinalRew(R))} k</b> · ${IC("coffre")} <b>Coffre en argent</b> · ${IC("couronne")} <b>titre « ${h(E.regionTitle(R))} »</b></span><span class="xs muted">Chaque étape donne aussi des kamas et de l'XP.</span></div></div></section>
@@ -299,6 +299,23 @@
   /* ---------- succès : points, paliers, classement, filtres, recherche, secrets (0.1.49) ---------- */
   const CAT_IC = { Progression: "trophee", Combat: "combat", Donjons: "cle", Chasse: "carte", Objets: "dofus", Métiers: "pioche", Forgemagie: "forge", Quêtes: "quetes", Alignement: "ailes", "Havre-Sac": "havre", Archimonstres: "dofus", Expédition: "carte", Exploration: "monde", "Songe infini": "cristal", Régions: "monde", Classes: "couronne", Kolizéum: "combat", Économie: "bourse", Chasses: "carte", Collection: "sac", Secrets: "idee" };
   const catIc = (c) => (c === "Idoles" ? `<img class="uico" src="assets/id/pro.webp" alt="">` : IC(CAT_IC[c] || "trophee"));
+  // Saison 1 (lot 2) : les succès de saison (a.s1, js/saisonc.js) n'existent que dans la partie Classique · Saison 1
+  const AL = (s) => (E.achVisible ? E.ACH.filter((a) => E.achVisible(s, a)) : E.ACH);
+  /* Saison 1 (lot 2, Mathis 02/11 « F » amélioré + images ChatGPT 6) : une médaille par famille, dorée quand la famille est finie */
+  const MED = { Combat: 1, Kolizéum: 1, Chasse: 1, Chasses: 1, Donjons: 2, Archimonstres: 2, Progression: 3, "Saison 1": 3, "Havre-Sac": 3, Collection: 4, Objets: 4, Métiers: 4, Forgemagie: 4, Économie: 5, Alignement: 5, Secrets: 6, Classes: 7, Idoles: 7, Régions: 8, Quêtes: 8 };
+  const medImg = (c, gold) => `<img class="qj-med${gold ? " gold" : ""}" src="assets/s1/med-${MED[c] || 3}.webp" alt="">`;
+  /* Saison 1 (19A) : trois défis par boss sur une ligne (vaincre, stasis 5, stasis 10) */
+  /* Saison 1, lot 2 : portraits des donneurs de quête (images ChatGPT de Mathis, 02/11) ; sinon le premier monstre de la région */
+  const NPCP = { incarnam: 1, cania: 2, wabbit: 3 };
+  const npcImg = (R) => (NPCP[R.id] ? `<img src="assets/s1/npc-${NPCP[R.id]}.webp" alt="${h(R.npc)}" loading="lazy">` : X().im(X().imgM(R.img), "", ""));
+  function bossRows(s) {
+    const D = window.DATA.DUNGEONS; const ids = Object.keys(D).sort((a, b) => D[a].lvl - D[b].lvl);
+    const chip = (id, l) => { const a = E.ACH.find((x) => x.id === id); if (!a) return ""; const ok = s.ach[id]; const p = !ok && a.prog ? a.prog(s) : null;
+      return `<span class="qb-c ${ok ? "ok" : ""}" data-tip="${h(a.desc)}">${ok ? "✓" : "·"} ${l}${p ? ` <small class="num">${p[0]}/${p[1]}</small>` : ""}</span>`; };
+    const rows = ids.map((id) => { const n = ["dg_", "s5_", "s10_"].filter((k) => s.ach[k + id]).length;
+      return `<div class="qb-row${n === 3 ? " ok" : ""}"><b class="grow">${h(D[id].name)} <span class="xs muted">niv. ${D[id].lvl}</span></b>${chip("dg_" + id, "Vaincre")}${chip("s5_" + id, "Stasis 5")}${chip("s10_" + id, "Stasis 10")}</div>`; }).join("");
+    return `<div class="pad"><h3 class="sec">Trois défis par boss</h3><div class="qb-list">${rows}</div></div>`;
+  }
   const hidden = (s, a) => a.secret && !s.ach[a.id];
   function achItem(s, a) {
     const got = s.ach[a.id]; const sec = hidden(s, a); const pr = !got && !sec && E.achProgress(s, a.id);
@@ -311,13 +328,13 @@
     return `<div class="pad stack">${grps.map((g) => { const L = sorted.filter((a) => (a.grp || "") === g); return `<h3 class="sec">${h(g || "Autres")} <span class="xs muted num">${L.filter((a) => s.ach[a.id]).length}/${L.length}</span></h3><div class="achgrid">${L.map((a) => achItem(s, a)).join("")}</div>`; }).join("")}</div>`;
   }
   function achHtml(s) {
-    const cats = [...new Set(E.ACH.map((a) => a.cat))];
+    const cats = [...new Set(AL(s).map((a) => a.cat))];
     const P = E.achPoints(s); const PL = E.ACH_PALIERS; const maxP = PL[PL.length - 1].n; const nx = PL.find((x) => x.n > P); const prv = PL.filter((x) => x.n <= P).pop();
-    const nGot = E.ACH.filter((a) => s.ach[a.id]).length;
+    const nGot = AL(s).filter((a) => s.ach[a.id]).length;
     const lb = X().achLb ? X().achLb() : null;
     const lbHtml = lb && lb.rows && lb.rows.length ? `${lb.rows.map((r, i) => `<div class="row between ${r.me ? "me" : ""}"><span><b class="num">${i + 1}.</b> ${h(r.p)}</span><span class="num">${fmt(r.v)}</span></div>`).join("")}${lb.me && lb.me.rank > 3 ? `<div class="row between me"><span><b class="num">${fmt(lb.me.rank)}.</b> toi</span><span class="num">${fmt(lb.me.v)}</span></div>` : ""}<button class="btn xs" data-act="nav" data-v="ladder">Tout le classement</button>`
       : `<span class="xs muted">${window.ONLINE && window.ONLINE.user && window.ONLINE.solo && window.ONLINE.solo() ? "Partie solo : le classement des points suit ta partie 1." : window.ONLINE && window.ONLINE.enabled ? "Connecte-toi pour entrer au classement des points (Joueurs › Classements › Succès)." : "Le classement des points est sur le jeu en ligne."}</span>`;
-    const track = `<div class="qx-pts"><div class="qx-pbig">${IC("trophee")}<span><b class="num">${fmt(P)}</b><small>points de succès</small></span></div><div class="grow stack" style="gap:6px"><div class="row between"><span class="small">${nx ? `Prochain palier : <b>${fmt(nx.n)} pts</b> · ${h(nx.txt)}` : "<b>Tous les paliers sont atteints !</b>"}</span><span class="xs muted">${fmt(nGot)} / ${fmt(E.ACH.length)} succès</span></div>
+    const track = `<div class="qx-pts"><div class="qx-pbig">${IC("trophee")}<span><b class="num">${fmt(P)}</b><small>points de succès</small></span></div><div class="grow stack" style="gap:6px"><div class="row between"><span class="small">${nx ? `Prochain palier : <b>${fmt(nx.n)} pts</b> · ${h(nx.txt)}` : "<b>Tous les paliers sont atteints !</b>"}</span><span class="xs muted">${fmt(nGot)} / ${fmt(AL(s).length)} succès</span></div>
       <div class="qx-pal">${PL.map((x) => `<span class="${x.n <= P ? "ok" : nx && x.n === nx.n ? "cur" : ""}" style="left:${Math.sqrt(x.n / maxP) * 100}%" data-tip="${h(x.txt)}"><i></i><small>${fmt(x.n)}</small></span>`).join("")}<b style="width:${Math.min(100, Math.sqrt(P / maxP) * 100)}%"></b></div>
       <span class="xs muted">${prv ? `Dernier palier : ${h(prv.txt)} ✓ · ` : ""}les paliers donnent coffres, ornements et titres</span></div>
       <div class="qx-lb"><span class="qj-lab">Classement des points</span>${lbHtml}</div></div>`;
@@ -327,17 +344,18 @@
     const fil = (a) => st.af === "all" || (st.af === "got" ? s.ach[a.id] : st.af === "sec" ? a.secret : st.af === "near" ? !s.ach[a.id] && !hidden(s, a) && achRatio(s, a) >= 0.5 : !s.ach[a.id] && !hidden(s, a) && achRatio(s, a) > 0);
     let main;
     if (q || st.af !== "all") {
-      const L = E.ACH.filter((a) => fil(a) && (!q || (!hidden(s, a) && E.searchNorm(a.name + " " + a.desc).includes(q))));
+      const L = AL(s).filter((a) => fil(a) && (!q || (!hidden(s, a) && E.searchNorm(a.name + " " + a.desc).includes(q))));
       main = `<section class="panel"><div class="phead"><h2>${q ? `Recherche « ${h(st.achq)} »` : h(FIL.find((x) => x[0] === st.af)[1])}</h2><span class="xs muted num">${L.length} succès</span></div>${L.length ? achList(s, L.slice(0, 300)) : `<div class="pad small muted">Aucun succès ne correspond.</div>`}</section>`;
     } else {
       const near = nearAch(s, 3);
       if (!st.cat || !cats.includes(st.cat)) st.cat = near.length ? near[0][0].cat : cats[0];
-      const tiles = cats.map((c) => { const all = E.ACH.filter((a) => a.cat === c); const g = all.filter((a) => s.ach[a.id]).length;
-        return `<button class="qj-cat" data-act="qj-cat" data-v="${h(c)}" aria-pressed="${st.cat === c}"><span class="row" style="flex-wrap:nowrap">${catIc(c)}<b class="grow">${h(c)}</b><span class="num xs muted">${g}/${all.length}</span></span><div class="bar"><i style="width:${X().pct(g, all.length)}%"></i></div></button>`; }).join("");
+      const s1 = E.isS1c && E.isS1c(s);
+      const tiles = cats.map((c) => { const all = AL(s).filter((a) => a.cat === c); const g = all.filter((a) => s.ach[a.id]).length;
+        return `<button class="qj-cat${s1 && g === all.length && all.length ? " gold" : ""}" data-act="qj-cat" data-v="${h(c)}" aria-pressed="${st.cat === c}"><span class="row" style="flex-wrap:nowrap">${s1 ? medImg(c, g === all.length && all.length) : catIc(c)}<b class="grow">${h(c)}</b><span class="num xs muted">${g}/${all.length}</span></span><div class="bar"><i style="width:${X().pct(g, all.length)}%"></i></div></button>`; }).join("");
       main = `${near.length ? `<div class="stack" style="gap:8px"><span class="qj-lab">Presque terminés</span><div class="qj-near">${near.map(([a, r]) => { const p = E.achProgress(s, a.id);
         return `<div class="qj-nc"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${h(a.name)}</b>${X().pinBtn({ k: "ach", id: a.id })}</div><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k · ${E.achPts(a)} pts${a.title ? ` · titre « ${h(a.title)} »` : ""}</span><div class="row"><div class="bar grow"><i style="width:${Math.round(r * 100)}%"></i></div><span class="num xs">${fmt(Math.min(p[0], p[1]))}/${fmt(p[1])}</span></div></div>`; }).join("")}</div></div>` : ""}
       <div class="qj-cats">${tiles}</div>
-      <section class="panel"><div class="phead"><h2>${catIc(st.cat)} ${h(st.cat)}</h2><span class="xs muted">${st.cat === "Secrets" ? "cachés jusqu'à ce qu'on les trouve" : "les plus proches en haut, les obtenus en bas"}</span></div>${achList(s, E.ACH.filter((a) => a.cat === st.cat))}</section>`;
+      <section class="panel"><div class="phead"><h2>${catIc(st.cat)} ${h(st.cat)}</h2><span class="xs muted">${st.cat === "Secrets" ? "cachés jusqu'à ce qu'on les trouve" : "les plus proches en haut, les obtenus en bas"}</span></div>${s1 && st.cat === "Donjons" ? bossRows(s) + achList(s, AL(s).filter((a) => a.cat === st.cat && !/^(dg_|s5_|s10_)/.test(a.id))) : achList(s, AL(s).filter((a) => a.cat === st.cat))}</section>`;
     }
     return `${head(s, "ach", "Les succès se débloquent tout seuls en jouant et donnent des kamas, des points de succès et parfois un titre. Les points ouvrent des paliers (coffres, ornements, titres) et comptent pour le classement. Les succès secrets ne montrent qu'un indice. Le bouton épingle suit un succès dans la bande d'objectifs.")}${track}${tools}${main}`;
   }
