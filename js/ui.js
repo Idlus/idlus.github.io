@@ -26,6 +26,8 @@ const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord
 const CHANGELOG = [
   { v: "2.2.0", name: "Saison 1", items: [
     "La Saison 1 « Les Fragments du Temps » commence ! Nouvelle partie Classique · Saison 1 : tout le monde repart de zéro, avec ses classements. Ta partie actuelle devient l'Éternel et ne change pas",
+    "Le Monocompte sort de la bêta et ouvre sa Saison 1 pour tout le monde. Les héros de la bêta passent dans l'Éternel du Monocompte",
+    "Nouveau joueur : l'écran « Choisis ton serveur » propose la Saison 1 en premier. L'Ascension reste dans l'Éternel, pas en saison",
     "4 manches, les Fragments du Temps, la vitrine de saison, une caisse gratuite par jour et les contrats",
     "Quêtes réécrites : la quête principale en 41 scènes, des quêtes de région avec des choix, une campagne de saison en 8 chapitres, le journal à 4 onglets et le coffre du jour",
     "Album de 121 cartes de boss avec boosters, brillantes et cartes Héros d'Idlus ; garde-robe avec boucliers, stickers, blason de guilde, meubles et bannières de profil",
@@ -10770,7 +10772,7 @@ document.addEventListener("click", (ev) => {
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
       const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
       if (!mono && srvFirst() && startSrvOf() === "s1") { setSlot(S1_SLOT); setMenuPref({ last: S1_SLOT, lastCl: S1_SLOT }); } // 2.2.0 : nouvelle partie de saison
-      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) S.mono.gen = +A.gen || 0; } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) { S.mono.gen = +A.gen || 0; if (A.etat === "ouverte") S.mono.sid = A.id; } } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -11453,7 +11455,7 @@ const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
 let booted = false, sincePush = 0;
 /* 1.0.11 : + héros principal (nom, apparence) et kamas, pour la carte de la partie sur l'écran « Choisis ta partie » */
 const onMeta = (st) => { if (!st || !st.chars) return {}; const mh = st.chars.find((c) => c.id === st.mainHero) || st.chars[0];
-  return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }, st.mono && !st.mono.eternel ? { gen: monoGenOf(st) } : {}); };
+  return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }, st.mono && !st.mono.eternel ? { gen: monoGenOf(st), sid: monoSidOf(st) } : {}); };
 const onLive = () => !!(ON && ON.user && ON.profile && booted && S && ON.slotOnline());
 /* 1.0.11 : la partie 1 seule entre aux classements et joue avec les autres (Hôtel de vente, guilde, Kolizéum classé…) */
 const ranked = () => onLive() && rankSlot(SLOT);
@@ -11503,7 +11505,7 @@ const partName = (n) => (n === S1_SLOT ? `Classique · ${S1.nom}` : n === MONO_S
 const eterSlots = () => SV.local.keys().map((k) => (k.startsWith(`${BASE_KEY}-eternel-`) ? +k.slice(`${BASE_KEY}-eternel-`.length) : 0)).filter((i) => i > 0 && Number.isInteger(i)).sort((a, b) => a - b).map((i) => ETER + i);
 /* 2.1.33 bêta fermée du Monocompte (Mathis 21/10) : la partie n'apparaît qu'aux testeurs (code dans Options › Compte),
    aux admins, ou quand elle existe déjà sur l'appareil. Elle sera remise à zéro avant l'ouverture de la Saison 1. */
-const MONO_BETA = { on: true, key: "idlus-mono-beta", hash: "47db16f5" };
+const MONO_BETA = { on: false, key: "idlus-mono-beta", hash: "47db16f5" };
 /* Saison 1, lot 0 (Mathis 02/11, « lance le lot 0 ») : règles de saison. Tant que S1.open est faux, rien ne change pour les joueurs :
    le Classique garde son nom et l'écran de choix reste celui d'avant. L'aperçu (adresse ?apercu=s1, ?apercu=off pour l'enlever)
    montre déjà le hub de la saison : Éternel (le Classique renommé, avec l'Éternel du Monocompte), Classique · Saison 1 et Monocompte · Saison 1. */
@@ -11545,6 +11547,10 @@ function monoSeasonEnd() {
    et les envoie (meta.gen). Une partie sans numéro (jeu d'avant 2.1.35.2) est de la génération en cours si elle a commencé
    après la remise, sinon de la précédente. */
 const monoSrvSaison = () => (ON && ON.mono && ON.mono.ok && ON.mono.saison) || null;
+/* 2.2.0 : saison du serveur de la partie (meta.sid, vérifié par mono.push) : celle que la partie a vue, sinon la saison ouverte si
+   la partie a commencé après son ouverture ; une partie de la bêta n'en a pas (le serveur la refuse hors saison de test). */
+const monoSidOf = (st) => { if (!st || !st.mono) return null; if (st.mono.sid != null) return st.mono.sid;
+  const A = monoSrvSaison(), d = A ? Date.parse(A.debut) : 0; return A && d > 0 && (st.mono.t0 || 0) >= d ? A.id : null; };
 const monoGenOf = (st, A) => {
   if (!st || !st.mono) return 0; if (st.mono.gen != null) return +st.mono.gen || 0;
   A = A || monoSrvSaison(); const g = A ? +A.gen || 0 : 0, r = A && A.remise ? Date.parse(A.remise) : 0;

@@ -57,7 +57,11 @@
   };
   /* le calendrier de la saison lit la date de saison */
   E.monoManche = (S) => Math.max(1, Math.floor((E.monoDate(S) - E.monoT0(S)) / M.dur.manche) + 1);
-  E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && (E.monoDate(S) >= E.monoEnd(S) || !!E.monoSeasonDef(S.mono.s).closed)); // 6c : closed = saison fermée par le serveur
+  E.monoOver = (S) => !!(S && S.mono && !S.mono.eternel && (E.monoDate(S) >= E.monoEnd(S) || !!E.monoSeasonDef(S.mono.s).closed || E.monoOtherSeason(S)));
+  /* 2.2.0 : le serveur a ouvert une autre vraie saison que celle de la partie (la bêta, saison de test 0, quand la Saison 1 s'ouvre) :
+     la partie a fini sa saison, elle passe dans l'Éternel au prochain écran des parties (monoSeasonEnd, js/ui.js). */
+  E.monoOtherSeason = (S) => { const O = root.ONLINE, A = O && O.mono && O.mono.ok && O.mono.saison; if (!A || A.test || A.etat !== "ouverte" || !S || !S.mono) return false;
+    return S.mono.sid != null ? S.mono.sid !== A.id : !!S.mono.test; }; // 6c : closed = saison fermée par le serveur
   E.monoDay = (S) => Math.max(1, Math.floor((Math.min(E.monoDate(S), E.monoEnd(S) - 1) - E.monoT0(S)) / DAY) + 1); // 1 à 56
   E.monoWeek = (S) => Math.floor((E.monoDay(S) - 1) / 7) + 1; // 1 à 8
 

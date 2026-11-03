@@ -409,8 +409,11 @@ as $$ select (((x.debut at time zone 'Europe/Paris')::date + x.duree_j)::timesta
 create or replace function mono.gel(p_s int) returns boolean language sql stable set search_path = mono, public
 as $$ select coalesce((select x.etat <> 'ouverte' or mono.date_saison(x.id) >= mono.fin(x.id) - interval '24 hours' from mono.saisons x where x.id = p_s), true) $$;
 
+-- 03/11/2026 (Mathis, « Saison 1 ouverte à tous ») : dès qu'une vraie saison (pas de test) est ouverte ou en clôture, tout compte
+-- connecté entre ; pendant une saison de test, seulement les testeurs et l'administrateur, comme pendant la bêta.
 create or replace function mono.acces(u uuid) returns boolean language sql stable security definer set search_path = mono, public
-as $$ select u is not null and (exists (select 1 from mono.testeurs where user_id = u) or exists (select 1 from public.admins where user_id = u)) $$;
+as $$ select u is not null and (exists (select 1 from mono.saisons where etat in ('ouverte', 'cloture') and not test)
+  or exists (select 1 from mono.testeurs where user_id = u) or exists (select 1 from public.admins where user_id = u)) $$;
 create or replace function mono.need() returns uuid language plpgsql stable security definer set search_path = mono, public
 as $$ begin
   if auth.uid() is null then raise exception 'non connecté'; end if;
@@ -536,6 +539,10 @@ as $$ declare s int := mono.saison_ouverte(); r timestamptz; jr date := (now() a
   g := case when coalesce(p_meta ->> 'gen', '') ~ '^[0-9]{1,9}$' then (p_meta ->> 'gen')::int else 0 end;
   -- for share : attend la fin d'une remise à zéro en cours (tools/serveur/mono_remise_zero.sql) et lit sa génération
   if g < (select gen from mono.saisons where id = s for share) then raise exception 'partie d''avant la remise à zéro de la bêta : recharge le jeu'; end if;
+  -- 03/11/2026 (Saison 1) : hors saison de test, la partie dit de quelle saison elle est (meta.sid, jeu 2.2.0) ; une partie de la
+  -- bêta (ou d'un jeu plus ancien) n'entre jamais dans la saison ouverte : le jeu rechargé la passe dans l'Éternel.
+  if not (select test from mono.saisons where id = s) and coalesce(p_meta ->> 'sid', '') is distinct from s::text then
+    raise exception 'partie d''une autre saison : recharge le jeu'; end if;
   if p_data is null or length(p_data) >= 3000000 then raise exception 'partie trop grande'; end if;
   perform mono.verrou(u);
   if p_force and exists (select 1 from mono.parties where user_id = u and saison = s and meta ? 'remise') then p_force := false; end if;
