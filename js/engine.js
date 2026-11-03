@@ -1484,7 +1484,23 @@
   E.DG_DIFF = { tertre_long_sommeil: 1.7, refuge_sylvestre: 1.45, chateau_wa_wabbit: 1.34, caverne_koulosse: 1.3, cour_bouftou_royal: 1.3, theatre_dramak: 1.18, miausolee_pounicheur: 1.17, gelaxieme_dimension: 0.7 };
   /* Mathis : « tous les dj 200 plus difficiles » (bon équipement visé 7, optimisé 9, au moins ×1,05 chacun) */
   Object.assign(E.DG_DIFF, { aquadome_merkator: 1.09, arbre_mort: 1.24, aurore_pourpre: 1.08, autel_dechireuse: 1.05, belvedere_ilyzaelle: 1.5, brasserie_dazak: 1.26, breuil_venerable: 1.23, chambre_malefices: 1.05, chambre_tal_kasha: 1.05, defi_chaloeil: 1.26, donjon_harebourg: 1.1, fers_tyrannie: 1.11, forgefroide_frizz: 1.26, labo_nileza: 1.55, manoir_katrepat: 1.1, memoire_orukam: 1.15, oeil_vortex: 1.22, palais_dantinea: 1.05, palais_nidas: 1.37, rituel_kabahal: 1.11, salons_klime: 1.22, sanctuaire_torkelonia: 1.05, sentence_balance: 1.09, souvenir_imagiro: 1.05, tempete_eliocalypse: 1.05, temple_kao: 1.05, temple_koutoulou: 1.11, tour_bethel: 1.33, tour_solar: 1.05, transporteur_sylargh: 1.31, trone_cour_sombre: 1.42, trone_sang: 1.23, vaisseau_meno: 1.05, ventre_baleine: 1.05 });
-  const applyDiff = (S, mons) => { const m = E.DG_DIFF[S.dungeon && S.dungeon.id]; if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
+  /* Saison 1 (Mathis 03/11, « Équilibrage de la Saison 1 ») : règles des parties de saison seulement (Classique · Saison 1 et
+     Monocompte hors Éternel) ; l'Éternel et les anciennes parties ne changent pas. E.SEASON_SIM = true force ces règles (simulateur).
+     4A : les 9 donjons trop faciles avec un bon équipement (stasis 9 et plus, moyenne 7,8) sont un peu durcis, à toutes les stasis.
+     7A : les 4 donjons « murs » (bloqués vers la stasis 8 même avec l'équipe la mieux équipée) sont adoucis à partir de la
+     stasis 8 seulement : les stasis 1 à 7 ne changent pas. Valeurs réglées par simulation (équipes de 8, investie et maximale). */
+  E.seasonRules = (S) => !!(E.SEASON_SIM || (S && ((S.s1c && !S.mono) || (S.mono && !S.mono.eternel))));
+  E.DG_DIFF_S1 = { ring_ekarlatte: 1.05, crypte_kardorim: 1.15, galerie_phossile: 1.08, grange_tournesol: 1.15, boyau_pere_ver: 1.15, demeure_esprits: 1.15, cave_toxoliath: 1.1, oeil_vortex: 1.15, defi_chaloeil: 1.15 };
+  E.DG_HI_S1 = { epave_grolandais: 0.6, horologium_xlii: 0.62, epreuve_draegnerys: 0.65, goulet_rasboul: 0.7 }; // × à partir de la stasis 8
+  E.DG_HI_FROM = 8;
+  /* 3A (Mathis 03/11, « ok pour les retouches ») : retouches des classes en retard dans les trois profils simulés, en saison
+     seulement et hors Kolizéum. Xélor : l'horloge sonne toutes les 6 heures (au lieu de 12). Pandawa : il cuve sans passer son tour
+     (ivresse à 0 et bouclier de 5 % de ses PV). Enutrof : Pelle à 25 % (au lieu de 10 %), aussi sur les sorts de zone. */
+  E.RET_S1 = { xelorClock: 6, pandaCuve: 0.05, enuPelle: 0.25 };
+  const s1r = (S, F) => !!(E.seasonRules(S) && !(F && F.pvp));
+  E.xelorClock = (S, F) => (s1r(S, F) ? E.RET_S1.xelorClock : 12);
+  E.dgDiff = (S, did) => (E.DG_DIFF[did] || 1) * (E.seasonRules(S) ? E.DG_DIFF_S1[did] || 1 : 1) * (E.seasonRules(S) && ((S.dungeon && S.dungeon.stasis) || 1) >= E.DG_HI_FROM ? E.DG_HI_S1[did] || 1 : 1);
+  const applyDiff = (S, mons) => { const m = E.dgDiff(S, S.dungeon && S.dungeon.id); if (!m || m === 1) return; mons.forEach((x) => { x.hpMax = x.hp = Math.round(x.hpMax * m); x.dmg *= m; }); };
   const applyStasis = (S, F, mons, room, isBoss) => {
     applyDiff(S, mons);
     const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1 && !(D2.mods || []).length) return mons;
@@ -1927,7 +1943,7 @@
           if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < psv(e).enuPelle + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") { doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); eniSh += eniSurplus(F, e, e); } if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
+            if (e.cls === "enu" && (f.n === 1 || s1r(S, F)) && t.alive && t.pelle !== F.round && rnd() < (s1r(S, F) ? E.RET_S1.enuPelle : psv(e).enuPelle) + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") { doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); eniSh += eniSurplus(F, e, e); } if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
@@ -1971,7 +1987,7 @@
     if (e.cls === "iop") e.stack = Math.min(6, (e.stack || 0) + 1);
     if (e.cls === "panda") e.ivresse = Math.min(5, (e.ivresse || 0) + 1);
     if (e.posture === "rempart" && dealt) e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.05));
-    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; if (e.clock >= 12 - (e.evc || 0)) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
+    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; e.clkMax = E.xelorClock(S, F); if (e.clock >= e.clkMax - (e.evc || 0)) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
     e.nCast = (e.nCast || 0) + 1;
     // challenges liés aux sorts
     const cs = F.cs; const key = e.cid;
@@ -2143,6 +2159,7 @@
       if (E.srTurn && e.cls === "sram") E.srTurn(F, e); // Sram (sram.js)
       if (e.stun > 0) { e.stun--; flog(F, `${e.name} ne peut pas bouger et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.gold > 0) { e.gold--; flog(F, `${e.name} est une statue d'or et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
+      if (e.cuve && s1r(S, F)) { e.cuve = false; e.ivresse = 0; e.shield = (e.shield || 0) + Math.round(e.hpMax * E.RET_S1.pandaCuve); flog(F, `${e.name} cuve son ivresse sans s'arrêter : bouclier de ${Math.round(E.RET_S1.pandaCuve * 100)} % de ses PV.`, "dim"); }
       if (e.cuve) { e.cuve = false; e.ivresse = 0; flog(F, `${e.name} cuve son ivresse et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cls === "feca") { e.glyphI = ((e.glyphI ?? -1) + 1) % 3; const gk = ["prot", "renvoi", "soin"][e.glyphI]; F.glyph = gk;
         { const P = psv(e); flog(F, `${e.name} pose un Glyphe ${gk === "prot" ? `de Protection (−${Math.round(P.fecaProt * 100)} % de dégâts subis)` : gk === "renvoi" ? `de Renvoi (${Math.round(P.fecaRenvoi * 100)} % des dégâts renvoyés)` : `de Soin (+${Math.round(P.fecaSoin * 100)} % des PV)`}.`, "buff"); }
@@ -2692,7 +2709,7 @@
   E.passiveInfo = (e, F) => {
     switch (e.cls) {
       case "iop": return { n: "Colère", v: e.stack || 0, m: 6 };
-      case "xelor": return { n: "Horloge", v: e.clock || 0, m: 12 };
+      case "xelor": return { n: "Horloge", v: e.clock || 0, m: e.clkMax || 12 };
       case "panda": return { n: e.cuve ? "Cuve" : "Ivresse", v: e.ivresse || 0, m: 5 };
       case "ougi": return { n: "Proie", v: e.ougi || 0, m: 5 };
       case "hupper": return { n: "Runes", v: (e.els || []).length, m: 4 };

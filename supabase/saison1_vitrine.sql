@@ -26,7 +26,7 @@ revoke insert, update, delete on public.frag_led from anon, authenticated;
 
 -- bornes des activités (mêmes valeurs que E.S1C.ACT dans js/saisonc.js)
 create or replace function public.frag_act_max(k text) returns int language sql immutable as $$
-  select case k when 'dj' then 8 when 'arch' then 6 when 'job' then 4 when 'bounty' then 4 else 0 end $$;
+  select case k when 'dj' then 8 when 'arch' then 6 when 'job' then 4 when 'bounty' then 4 when 'mt' then 4 else 0 end $$;
 
 -- p_rows : [{ src: 'act:<jour>:<activité>:<cumul>', n }] ; renvoie le solde du serveur
 create or replace function public.frag_post(p_rows jsonb)

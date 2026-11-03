@@ -631,6 +631,8 @@
       ["kv", [1, 5, 10, 15].map((k) => [`Stasis ${k}`, V(() => { const m = E.stasisMult(k); return `vie ×${fr(Math.round(m.hp * 100) / 100)} · dégâts ×${fr(Math.round(m.dmg * 100) / 100)} · gains ×${fr(Math.round(m.rew * 100) / 100)}`; })])],
       ["p", V(() => { const all = Object.keys(E.DG_DIFF || {}).filter((k) => D.DUNGEONS[k] && E.DG_DIFF[k] !== 1); const top = all.filter((k) => D.DUNGEONS[k].lvl >= E.MAX_LVL), L = all.filter((k) => D.DUNGEONS[k].lvl < E.MAX_LVL); const tv = top.map((k) => E.DG_DIFF[k]);
         return all.length ? `Quelques donjons ont leur propre réglage (vie et dégâts des monstres), pour que la stasis 7 demande partout un bon équipement${L.length ? ` : ${L.map((k) => `${D.DUNGEONS[k].name} ×${fr(E.DG_DIFF[k])}`).join(", ")}` : ""}.${top.length ? ` Les ${top.length} donjons de niveau ${E.MAX_LVL} sont tous plus durs (×${fr(Math.min(...tv))} à ×${fr(Math.max(...tv))}).` : ""}` : ""; }, "")],
+      ["p", V(() => { const nm = (o) => Object.keys(o || {}).filter((k) => D.DUNGEONS[k]).map((k) => D.DUNGEONS[k].name).join(", "); const z = nm(E.DG_DIFF_S1), w = nm(E.DG_HI_S1);
+        return z || w ? `Saison 1 : ${z ? `${z} sont un peu plus durs` : ""}${z && w ? ", et " : ""}${w ? `${w} sont plus doux à partir de la stasis ${E.DG_HI_FROM}` : ""} (les stasis plus basses ne changent pas). L'Éternel garde les anciens réglages.` : ""; }, "")],
       ["ul", V(() => (Array.isArray(E.STASIS_STEPS) ? E.STASIS_STEPS : Object.values(E.STASIS_STEPS)).map((x, i) => (typeof x === "string" ? x : x.t || x.txt || x.desc ? `**Stasis ${x.k || i + 1}** : ${x.t || x.txt || x.desc}` : "")).filter(Boolean), [])],
       ["h", "Sorts des monstres et des boss"],
       ["ul", [

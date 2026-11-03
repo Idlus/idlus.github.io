@@ -48,6 +48,48 @@ console.log("ok - bénédictions : un choix tous les 10 niveaux parmi 3, même o
   now = t0 + 15 * DAY; for (let i = 0; i < 400; i++) E.giveXp(S, c, 1e12); assert.strictEqual(E.mt(c).lvl, C.mtCap[1]); now = t0; }
 console.log("ok - Maîtrise : plafond par manche, relevé à la manche suivante");
 
+// équilibrage 2A + B : l'XP au plafond donne des Fragments (4 par jour), le reste est versé à la manche suivante
+{ const S = s1(); const c = S.chars[0]; c.lvl = E.MAX_LVL; const M = E.mt(c);
+  E.giveXp(S, c, E.mtXpTot(C.mtCap[0]) - 10); assert.strictEqual(M.lvl, C.mtCap[0] - 1, "sous le plafond : rien ne change");
+  const f0 = E.s1cFrag(S); E.giveXp(S, c, 10 + C.fragXp(S) * 2); assert.strictEqual(M.lvl, C.mtCap[0]); assert.strictEqual(E.s1cFrag(S) - f0, 2, "2 Fragments pour 2 quarts de point");
+  E.giveXp(S, c, C.fragXp(S) * 10); assert.strictEqual(E.s1cFrag(S) - f0, C.ACT.mt.max, "4 par jour au plus");
+  assert.strictEqual(E.s1cBanked(S, c), C.fragXp(S) * 8, "le reste est gardé");
+  E.s1cBankPay(S); assert.strictEqual(M.lvl, C.mtCap[0], "pas versé dans la même manche");
+  const keep = E.s1cBanked(S, c); now = t0 + 14 * DAY + 3600000; const pts = E.s1cBankPay(S);
+  assert(pts > 0 && M.lvl > C.mtCap[0] && M.lvl <= C.mtCap[1], "versé à l'ouverture de la manche 2, dans son plafond");
+  assert.strictEqual(E.s1cBanked(S, c), 0); assert.strictEqual(E.s1cBankPay(S), 0, "versé une seule fois");
+  assert(keep > 0); now = t0; }
+console.log("ok - XP au plafond : Fragments du Temps (4 par jour) puis réserve versée à la manche suivante");
+
+// équilibrage 1B : un week-end Double gain par manche (2e week-end, vendredi 18 h → dimanche 22 h UTC)
+{ const ev0 = E.EVENT; assert.deepStrictEqual(E.s1Weekends(), [], "sans date d'ouverture : pas de week-end");
+  C.debut = Date.UTC(2026, 10, 28, 18, 0); const W = E.s1Weekends(); assert.strictEqual(W.length, 4);
+  W.forEach((w, m) => { const d = new Date(w.from); assert.strictEqual(d.getUTCDay(), 5); assert.strictEqual(d.getUTCHours(), 18); assert(w.from >= C.debut + (m * 14 + 7) * DAY && w.from < C.debut + (m * 14 + 14) * DAY, "dans la 2e semaine de la manche"); assert.strictEqual(new Date(w.to).getUTCDay(), 0); });
+  E.EVENT = { name: "vieux", from: 0, to: 1, xp: 2, drop: 2 }; E.s1EventSync(W[0].from - DAY); assert(E.EVENT.s1 === 1 && !E.eventOn(W[0].from - DAY), "annoncé, pas encore ouvert");
+  assert(E.eventOn(W[0].from + 3600000) && E.evMult("xp", W[0].from + 3600000) >= 2);
+  E.s1EventSync(W[0].to + 1); assert.strictEqual(E.EVENT.s1, 2, "puis le week-end de la manche 2");
+  const hand = { name: "à la main", from: W[1].from - 5 * DAY, to: W[1].from + DAY, xp: 3, drop: 3 }; E.EVENT = hand; E.s1EventSync(W[1].from); assert.strictEqual(E.EVENT, hand, "un événement prévu à la main passe avant");
+  E.EVENT = W[3]; E.s1EventSync(W[3].to + 1); assert.strictEqual(E.EVENT, null, "fini après la saison");
+  C.debut = null; E.EVENT = ev0; }
+console.log("ok - week-end Double gain : 1 par manche, dans la 2e semaine, sans écraser un événement prévu");
+
+// équilibrage 4A / 7A : réglage des donjons pour les parties de saison seulement
+{ const S = s1(), O = E.newState("Héros", "iop"); const M = E.monoStart(E.newState("Mono", "iop"));
+  const at = (X, did, k) => { X.dungeon = { id: did, stasis: k }; const v = E.dgDiff(X, did); X.dungeon = null; return v; };
+  assert(at(S, "crypte_kardorim", 1) > at(O, "crypte_kardorim", 1), "4A : plus dur en saison");
+  assert.strictEqual(at(O, "crypte_kardorim", 1), E.DG_DIFF.crypte_kardorim || 1, "4A : Éternel inchangé");
+  assert(at(M, "crypte_kardorim", 1) > at(O, "crypte_kardorim", 1), "4A : Monocompte de saison aussi");
+  assert.strictEqual(at(S, "epave_grolandais", 7), at(O, "epave_grolandais", 7), "7A : stasis 1 à 7 inchangées");
+  assert(at(S, "epave_grolandais", 8) < at(O, "epave_grolandais", 8), "7A : adouci dès la stasis 8");
+  assert.strictEqual(at(O, "epave_grolandais", 12), E.DG_DIFF.epave_grolandais || 1, "7A : Éternel inchangé"); }
+console.log("ok - donjons de saison : 9 durcis, 4 murs adoucis dès la stasis 8, Éternel inchangé");
+
+// équilibrage 3A : retouches Xélor, Pandawa, Enutrof en saison seulement, jamais au Kolizéum
+{ const S = s1(), O = E.newState("Héros", "iop");
+  assert.strictEqual(E.xelorClock(S, {}), E.RET_S1.xelorClock); assert.strictEqual(E.xelorClock(O, {}), 12, "Éternel : horloge à 12");
+  assert.strictEqual(E.xelorClock(S, { pvp: true }), 12, "Kolizéum : inchangé"); }
+console.log("ok - retouches de classes : saison seulement, hors Kolizéum");
+
 // rien hors de la saison
 { const S = E.newState("Héros", "iop"); for (let i = 0; i < 10; i++) E.s1cActivity(S, "dj"); assert.strictEqual(E.s1cFrag(S), 0); S.res[RES] = 50; E.s1cSync(S); assert.strictEqual(S.res[RES], undefined, "Éternel : pas de Fragments");
   S.chars[0].lvl = 50; assert.strictEqual(E.s1cBoonOffer(S), null); const c = S.chars[0]; c.lvl = E.MAX_LVL; for (let i = 0; i < 200; i++) E.giveXp(S, c, 1e12); assert(E.mt(c).lvl > C.mtCap[0], "Éternel : pas de plafond");

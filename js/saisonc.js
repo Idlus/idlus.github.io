@@ -28,6 +28,7 @@
     arch: { n: "Archimonstres", gain: 2, max: 6 },
     job: { n: "Métiers (1 toutes les 50 actions)", gain: 1, max: 4, per: 50 },
     bounty: { n: "Avis de recherche", gain: 2, max: 4 },
+    mt: { n: "XP au plafond de Maîtrise", gain: 1, max: 4 }, // équilibrage 2A (03/11)
   };
   C.DAYMAX = Object.values(C.ACT).reduce((a, x) => a + x.max, 0); // 22
   // bénédictions (3A) : petits bonus de saison, cumulables ; les mêmes 3 choix pour tous les joueurs à chaque palier
@@ -107,14 +108,52 @@
 
   /* ---------------- Maîtrise par manche (4A) ---------------- */
   E.s1cMtCap = (S) => (E.isS1c(S) ? C.mtCap[E.s1cManche(S) - 1] : Infinity);
+  /* Équilibrage de la Saison 1 (Mathis 03/11, choix 2 = A + B) : au plafond de la manche, l'XP n'est plus perdue.
+     A : elle donne d'abord des Fragments du Temps (1 par quart de point de Maîtrise, 4 par jour au plus, dans le quota de la semaine) ;
+     B : le reste est gardé par héros et versé à l'ouverture de la manche suivante (à nouveau dans son plafond). */
+  E.s1cBank = (S) => { const s = S.s1c; s.bank = s.bank || { m: E.s1cManche(S), x: {} }; return s.bank; };
+  E.s1cBanked = (S, c) => (E.isS1c(S) && S.s1c.bank && c ? S.s1c.bank.x[c.id] || 0 : 0);
+  C.fragXp = (S) => Math.max(1, Math.round(E.mtNeed(E.s1cMtCap(S)) / 4)); // XP au plafond pour 1 Fragment
   const give0 = E.giveXp;
   E.giveXp = function (S, c, g) {
-    if (!E.isS1c(S) || !c || c.lvl < E.MAX_LVL) return give0.apply(this, arguments);
+    if (!E.isS1c(S) || !c || c.lvl < E.MAX_LVL || !(g > 0)) return give0.apply(this, arguments);
     const cap = E.s1cMtCap(S), M = E.mt(c);
-    if (M.lvl >= cap) return false; // plafond de la manche : l'XP attendra la manche suivante
-    const r = give0.apply(this, arguments);
-    if (M.lvl > cap) { M.lvl = cap; M.xp = 0; }
+    const room = M.lvl >= cap ? 0 : Math.max(0, E.mtXpTot(cap) - E.mtXpTot(M.lvl) - (M.xp || 0)); // XP qui manque jusqu'au plafond
+    const inG = Math.min(g, room); let r = false;
+    if (inG > 0) r = give0.call(this, S, c, inG);
+    if (M.lvl >= cap) { M.lvl = cap; M.xp = 0; }
+    let rest = g - inG; if (rest <= 0 || !open(S)) return r;
+    const T = F(S), per = C.fragXp(S), acc = (T.mtAcc || 0) + rest, n = Math.floor(acc / per);
+    const got = n > 0 ? E.s1cActivity(S, "mt", n) : 0;
+    if (n > 0 && got < n) { T.mtAcc = 0; rest = acc - got * per; } else { T.mtAcc = acc - n * per; rest = 0; }
+    if (rest > 0 && E.s1cManche(S) < C.manches.length) { const B = E.s1cBank(S); B.x[c.id] = (B.x[c.id] || 0) + Math.round(rest); }
     return r;
+  };
+  // ouverture d'une manche : l'XP gardée est versée (ce qui dépasse le nouveau plafond repart en Fragments puis en réserve)
+  E.s1cBankPay = (S) => {
+    if (!open(S) || !S.s1c.bank) return 0; const B = S.s1c.bank, m = E.s1cManche(S); if (B.m >= m) return 0;
+    const L = B.x; B.m = m; B.x = {}; let pts = 0;
+    Object.keys(L).forEach((id) => { const c = S.chars.find((h) => String(h.id) === id); if (!c || !(L[id] > 0)) return; const M = E.mt(c), l0 = M.lvl; E.giveXp(S, c, L[id]); pts += M.lvl - l0; });
+    if (pts > 0) E.note(S, `Manche ${m} : l'XP gardée au plafond de Maîtrise est versée (+${pts} point${pts > 1 ? "s" : ""}).`, "rare");
+    return pts;
+  };
+
+  /* Équilibrage de la Saison 1 (Mathis 03/11, choix 1B) : un week-end Double gain par manche, pour tout le monde (XP et butin ×2,
+     sans la Maîtrise, comme les autres événements). Le 2e week-end de chaque manche : du vendredi 19 h au dimanche 23 h (Paris, heure
+     d'hiver). La date vient de l'ouverture de la saison (Classique, sinon Monocompte) ; sans date, pas de week-end. Le week-end prend
+     la place de E.EVENT quand aucun autre événement n'est prévu, donc toutes les pages qui montrent l'événement le montrent. */
+  C.WE = { name: "Week-end du Temps", xp: 2, drop: 2, h0: 18, len: 52 * 3600000 };
+  E.s1Weekends = () => {
+    const t0 = C.debut || (E.monoSeasonDef && E.monoSeasonDef(1).debut) || null; if (!t0) return [];
+    return C.manches.map((nm, m) => { const a = new Date(t0 + (m * C.manche + 7) * DAY); a.setUTCHours(C.WE.h0, 0, 0, 0);
+      while (a.getUTCDay() !== 5 || a.getTime() < t0 + (m * C.manche + 7) * DAY) a.setTime(a.getTime() + DAY);
+      const from = a.getTime(); return { name: `${C.WE.name} · manche ${m + 1}`, from, to: from + C.WE.len, xp: C.WE.xp, drop: C.WE.drop, s1: m + 1 }; });
+  };
+  E.s1EventSync = (t = E.now()) => {
+    const cur = E.EVENT; if (cur && !cur.s1 && t < cur.to) return cur; // un événement prévu à la main passe toujours avant
+    const nx = E.s1Weekends().find((w) => t < w.to);
+    if (nx && (!cur || cur.from !== nx.from)) E.EVENT = nx; else if (!nx && cur && cur.s1) E.EVENT = null;
+    return E.EVENT;
   };
 
   /* ---------------- Succès de la saison (lot 2, Mathis 19A et onglet Saison 1) ----------------
@@ -150,7 +189,7 @@
   // Fragments du Temps : jamais vendus au jeu, ni ailleurs que dans la saison
   if (E.venteOk) { const v0 = E.venteOk; E.venteOk = function (n) { return n !== C.frag.res && v0.apply(this, arguments); }; }
   const tick0 = E.tick;
-  E.tick = function (S) { const r = tick0.apply(this, arguments); if (S && S.res && S.s1c) E.s1cSync(S); return r; };
+  E.tick = function (S) { try { E.s1EventSync(); } catch (e) {} const r = tick0.apply(this, arguments); if (S && S.s1c && !S.mono && S.s1c.bank) try { E.s1cBankPay(S); } catch (e) {} if (S && S.res && S.s1c) E.s1cSync(S); return r; };
   const des0 = E.deserialize;
   E.deserialize = function () { const S = des0.apply(this, arguments); try { if (S) E.s1cSync(S); } catch (e) {} return S; };
 })(typeof window !== "undefined" ? window : globalThis);
