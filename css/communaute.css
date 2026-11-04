@@ -77,6 +77,34 @@
 .px-srv button:hover{background:var(--panel2)}
 .px-srv button.on{background:var(--gold);color:#1b1206}
 @media (max-width:520px){.px-srv button{padding:7px 11px}}
+/* 04/11 (refonte du panel, choix 1A 2A 3A) : quatre cases colorées (Éternel, Saison 1, Monocompte, Tous les serveurs), bandeau
+   « tu agis sur… », menu bordé de la couleur du serveur, accueil en colonnes, cases de serveurs des annonces */
+.px-e{--pxc:#e2b94b}.px-s{--pxc:#9bd65a}.px-m{--pxc:#5aa7e8}.px-t{--pxc:#b9a6d9}
+.px-srv.px-sp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0;border:0;background:none;align-self:stretch}
+.px-sp button{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 12px 9px 15px;border-radius:12px;border:2px solid var(--frame);background:var(--panel);text-align:left;white-space:normal}
+.px-sp button::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--pxc)}
+.px-sp button b{display:flex;align-items:center;gap:6px;font-size:15px}
+.px-sp button span{font-size:11.5px;font-weight:600;color:var(--muted)}
+.px-sp button i.d{width:9px;height:9px;border-radius:50%;background:var(--pxc);flex:none}
+.px-sp button em{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:900;padding:0 6px;border-radius:999px;background:var(--danger);color:#fff}
+.px-sp button:hover{background:var(--panel2)}
+.px-sp button.on{border-color:var(--pxc);background:linear-gradient(90deg,color-mix(in srgb,var(--pxc) 28%,transparent),var(--panel));color:var(--ink)}
+.px-where{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 12px;border-radius:10px;background:color-mix(in srgb,var(--pxc) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--pxc) 50%,transparent)}
+.px-where i{width:10px;height:10px;border-radius:50%;background:var(--pxc);flex:none}
+.px-nav.px-col{border-color:color-mix(in srgb,var(--pxc) 70%,var(--frame))}
+.px-tag{display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:11px;font-weight:900;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--pxc) 22%,transparent);border:1px solid var(--pxc);color:var(--ink);white-space:nowrap;text-shadow:none}
+.px-tag::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pxc)}
+.px-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.box.px-col3{border-top:5px solid var(--pxc)}
+.px-big{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 4px}
+.px-big div{padding:8px 10px;border-radius:10px;background:var(--panel2);min-width:0}
+.px-big b{display:block;font-size:20px}.px-big span{font-size:11.5px;color:var(--muted)}
+.px-big .w b{color:var(--danger)}
+.px-chks{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.px-chk{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:10px;border:2px solid var(--pxc);background:color-mix(in srgb,var(--pxc) 14%,var(--panel2));font-weight:800;font-size:13.5px;cursor:pointer}
+.px-chk:has(input:not(:checked)){border-color:var(--frame);background:var(--panel2);opacity:.8}
+@media (max-width:900px){.px-srv.px-sp{grid-template-columns:repeat(2,minmax(0,1fr))}.px-cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.px-sp button span{display:none}.px-sp button{padding:8px 10px 8px 13px}.px-sp button b{font-size:14px}}
 .px-kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center}
 .px-kv input[type=number]{width:90px}
 .px-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}

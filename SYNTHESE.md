@@ -81,6 +81,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **03/11/2026 : Saison 1 ouverte à 23h10 sur les deux serveurs (2.2.0).** Le Classique a sa partie Saison 1 (schéma s1), le Monocompte sort de la bêta (héros de la bêta dans l'Éternel). Trois chats : Saison 1, Éternel, Monocompte. À suivre : inscriptions et parties de saison la première semaine, relevé d'équilibrage en fin de semaine 1, cartes Légendes et chat de guilde en Monocompte plus tard.
 
+**04/11 : panel de l'équipe par serveur (2.2.4, Mathis 1A 2A 3A + idée 1).** Accueil « Ce qui t'attend », quatre cases (Éternel, Saison 1, Monocompte, Tous les serveurs) au même menu, une seule page « Annoncer » avec les serveurs cochés. Une annonce sur une partie seulement des serveurs (ex. Éternel + Saison 1) attend l'installation de `adm_announce_srv` (supabase/annonces_srv.sql) sur le serveur, avec l'accord écrit de Mathis. Idées gardées pour plus tard : fermer le chat serveur par serveur, journal des actions avec le serveur.
+
 **03/11 : mode Ironman du Monocompte (2.2.1.1, Mathis 1C 2A 3A 4A).** Retour d'un joueur : 3 métiers 200 trop limitant pour jouer seul. Mode au choix : 12 métiers à 200 contre pas d'HdV, d'échange ni de renfort. À mesurer : combien de joueurs le prennent. Badge au classement et au salon : SQL prêt, pas installé.
 
 1. **Stabiliser (accord de Mathis, 22/10) :** corriger les tickets graves du tri, regrouper les publications en lots plutôt qu'une version par petite modification.

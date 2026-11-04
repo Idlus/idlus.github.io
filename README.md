@@ -9,6 +9,15 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.4 « Panel par serveur »
+
+- js/panel.js, js/admin.js, js/chat.js, css/communaute.css (Mathis 04/11 : « une refonte de mon panel pour qu'il soit plus simple à gérer pour chaque serveur », maquette choisie 1A 2A 3A + idée 1) :
+  - Accueil (ouverture du panel) : « Ce qui t'attend » (bugs nouveaux, signalements, joueurs à vérifier par serveur, refus du Bouclier Monocompte) et une colonne par serveur (en ligne, à vérifier, Hôtel de vente, saison du Monocompte). Lectures seulement (`ONLINE.rpcSp` : espace public ou s1 sans changer l'espace choisi). Les pastilles des cases en viennent.
+  - Quatre cases colorées Éternel, Saison 1, Monocompte, Tous les serveurs, bandeau « Tu agis sur… ». Éternel et Saison 1 ont le même menu (Vue d'ensemble, En ligne, À vérifier, Fiches, Hôtel de vente, Guildes, Builds, Salon), le Monocompte le même ordre ; comptes, signalements, annonces, codes, réglages du chat, bugs, idées, équipe et partie de test sont dans « Tous les serveurs ».
+  - Page « Annoncer » : cases Éternel / Saison 1 / Monocompte. Les trois = `adm_announce`, Monocompte seul = `adm_announce_mono`, autre choix = `adm_announce_srv` (nouveau fichier supabase/annonces_srv.sql, hors de la liste automatique, à installer à la main avec l'accord de Mathis : bandeau `srv` = 'e,s'…, message dans les salons cochés ; sans elle, la page le dit et propose les trois serveurs ou le Monocompte seul). Message épinglé avec les mêmes cases. Le jeu lit `announces.srv` comme une liste de serveurs.
+  - Page Salon de chaque serveur (épinglé du salon, vider avec confirmation dans la page) ; « Réglages du chat » commun (fermer le chat des trois serveurs, vider Commerce et PvP). Les boutons disent le serveur visé (« Retirer de la Saison 1 », « Vider le salon Éternel »).
+  - Tests : tests/panel_serveurs_ui.test.js (PC 1280 et téléphone 390), tests/annonce_srv_sql.test.js (adm_announce_srv sur une vraie base, avec IDLUS_PG).
+
 ## 2.2.3.5 « Saison bien gardée »
 
 - js/ui.js (import) : la partie Classique · Saison 1 refuse une sauvegarde sans `S.s1c` (née hors de la saison). js/verify.js `V.S1_T0`, `V.s1Bad` : partie de saison sans `S.s1c` ou temps de jeu supérieur au temps écoulé depuis l'ouverture ×2,25 + 2 h ; appelé par la fonction « record » (validate) pour l'espace s1 (`db.isS1`). Le Bouclier signale seulement (Mathis décide).

@@ -1,6 +1,14 @@
 {
-  "version": "2.2.3.5",
+  "version": "2.2.4",
   "versions": [
+    {
+      "v": "2.2.4",
+      "name": "Panel par serveur",
+      "items": [
+        "Panel de l'équipe refait : un accueil « Ce qui t'attend » avec une colonne par serveur, puis quatre cases Éternel, Saison 1, Monocompte et Tous les serveurs, avec le même menu pour chaque serveur",
+        "Annonces : une seule page pour écrire aux joueurs, en cochant les serveurs visés (Éternel, Saison 1, Monocompte). Un bandeau n'apparaît que sur les serveurs choisis"
+      ]
+    },
     {
       "v": "2.2.3.5",
       "name": "Saison bien gardée",

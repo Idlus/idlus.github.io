@@ -810,20 +810,20 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // 7d. panel admin
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector('#status [data-act="adm-open"]', { timeout: 5000 });
-    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
-    if (!(await page.$('.adm [data-act="adm-test"]'))) fail("panel admin : bouton Panel de test absent"); // 1.0.8.2
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .px-cols", { timeout: 5000 }); // 2.2.4 : le panel s'ouvre sur l'accueil
+    if (!(await page.$('.px-sp [data-v="t"]'))) fail("panel admin : case « Tous les serveurs » absente");
     if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
-    await page.click('.adm [data-act="adm-tab"][data-v="joueurs"]'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "joueurs"); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-sel"]'); await page.waitForSelector(".adm .fiche", { timeout: 5000 });
     await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);
     // 2.1.4 « Bouclier du serveur » (4A) : onglet En vérification › Détails : raisons, ventes, remettre la partie à un jour
-    await page.click('.adm [data-act="adm-tab"][data-v="verif"]'); await page.waitForSelector('.adm [data-act="adm-bdet"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "verif"); await page.waitForSelector('.adm [data-act="adm-bdet"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-bdet"]'); await page.waitForSelector('.adm .bq-det [data-act="adm-brest"]', { timeout: 5000 });
     if (!/En retard|signale seulement/.test(await page.textContent(".adm .bq-det")) || !/Tofuline/.test(await page.textContent(".adm .bq-det"))) fail("bouclier : détails incomplets dans le panel");
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/bouclier-pc.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); const cx = await page.$('#chat [data-act="ch-close"]'); if (cx) { await cx.click(); await page.waitForTimeout(300); } await page.evaluate(() => { const e = document.querySelector(".adm .bq-det"); if (e) e.scrollIntoView({ block: "center" }); }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/bouclier-mob.png" }); await page.setViewportSize(vp); await page.waitForTimeout(200); if (cx) { const op = await page.$('[data-act="ch-open"]'); if (op) { await op.click(); await page.waitForTimeout(300); } } }
     page.once("dialog", (dg) => dg.accept()); await page.click('.adm .bq-det [data-act="adm-brest"]'); await page.waitForTimeout(500);
     m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_save_restore" && x[1].p_user === "u9")) fail("bouclier : remise en arrière non envoyée");
-    await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admAnn", { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "ann"); await page.waitForSelector("#admAnn", { timeout: 5000 });
     await page.fill("#admAnn", "Maintenance ce soir"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(600);
     // 1.2.10.1 : tous les droits de Mathis sur le chat : supprimer un message, sanctions depuis le pseudo, fermer le chat
     await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(200);
@@ -833,12 +833,13 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     const delId = +(await page.getAttribute('#chMenu [data-act="adm-del"]', "data-id")); await page.click('#chMenu [data-act="adm-del"]'); await page.waitForTimeout(500);
     m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_msg_del" && x[1].p_id === delId)) fail("chat admin : suppression non envoyée");
     if (await page.$(`#chat [data-id="${delId}"]`)) fail("chat admin : message supprimé encore affiché");
-    await page.click('.adm [data-act="adm-tab"][data-v="vue"]'); await page.waitForSelector('.adm [data-act="adm-chclose"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "chat"); await page.waitForSelector('.adm [data-act="adm-chclose"]', { timeout: 5000 }); // 2.2.4 : Tous les serveurs › Réglages du chat
+    if (!(await page.$('.px-nav [data-v="test"]'))) fail("panel admin : Partie de test absente de « Tous les serveurs »");
     await page.click('.adm [data-act="adm-chclose"][data-v="1"]'); await page.waitForTimeout(500);
     m = await mock(); if (!m.chatClosed) fail("chat admin : fermeture du chat non envoyée");
     if (!(await page.$('.adm [data-act="adm-chclose"][data-v="0"]'))) fail("chat admin : bouton Rouvrir absent");
     await page.click('.adm [data-act="adm-chclose"][data-v="0"]'); await page.waitForTimeout(500);
-    await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admPin", { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "ann"); await page.waitForSelector("#admPin", { timeout: 5000 });
     m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
     if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
     if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
@@ -881,7 +882,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.evaluate((k) => { window.DX.S.kamas = k; }, rk0);
     await page.evaluate(() => window.CHAT.openAdmin("vue")); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     // 1.0.5.2 : codes cadeaux, la liste de choix reste ouverte quand le panel se redessine
-    await page.click('.adm [data-act="adm-tab"][data-v="codes"]'); await page.waitForSelector("#gcCode", { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "codes"); await page.waitForSelector("#gcCode", { timeout: 5000 });
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.30 : le menu a deux pages de plus, la bulle « Équiper un objet » descend sur le bouton
     await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcN1"); await page.click("#gcN1"); await page.keyboard.type("coffr"); await page.waitForTimeout(300);
     await page.evaluate(() => window.CHAT.repaintAdmin()); await page.waitForTimeout(200);
@@ -894,10 +895,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcT3"); await page.selectOption("#gcT3", "x:m"); await page.waitForSelector("#gcN3");
     await page.click("#gcN3"); await page.keyboard.type("Kolizet"); await page.waitForTimeout(300); await page.click("#gcN3 ~ .gc-sug .gc-opt"); await page.fill("#gcQ3", "40"); await page.waitForTimeout(400);
     { const t = await page.textContent(".gc-card"); if (!/monture Dragodinde Rousse/.test(t) || !/40 Kolizetons/.test(t)) fail("codes cadeaux : monture ou monnaie absente de l'aperçu : " + t); }
-    await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "hdv"); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 0.1.52.1 : fiches joueurs (réservées à l'admin), avec la partie lue par le jeu
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.12.8 : chat ouvert à 1280 px, le menu en icônes laisse la bulle « Découverte » sur la liste des joueurs
-    await page.click('.adm [data-act="adm-tab"][data-v="fiches"]'); await page.waitForSelector('.adm [data-act="fj-sel"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "fiches"); await page.waitForSelector('.adm [data-act="fj-sel"]', { timeout: 5000 });
     await page.click('.adm [data-act="fj-sel"]'); await page.waitForSelector(".adm .fj-hero", { timeout: 5000 });
     { const tx = await page.textContent(".adm .fj-main"); if (!/Les Tofus/.test(tx) || !/Quête principale/.test(tx) || !/Kolizéum/.test(tx)) fail("fiches joueurs : fiche incomplète"); }
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/fiche.png", fullPage: true });
@@ -929,9 +930,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!(await page.$('.sheet [data-act="bg-idea"][disabled]')) || !/Prochaine idée dans 1 min/.test(await page.textContent(".sheet"))) fail("bugs : onglet Idée sans l'attente d'une minute");
     await page.click('.sheet [data-act="closesheet"]');
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
-    await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "idees"); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });
     if (!/Bouftou Royal/.test(await page.textContent(".adm"))) fail("idées : absente du panel admin");
-    await page.click('.adm [data-act="adm-tab"][data-v="bugs"]'); await page.waitForFunction(() => /Ma cape a disparu/.test((document.querySelector(".adm") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : absent du panel admin"));
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "bugs"); await page.waitForFunction(() => /Ma cape a disparu/.test((document.querySelector(".adm") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : absent du panel admin"));
     // 7d ter (1.0.23). builds partagés : liste, build de la semaine, filtres, recherche, fiche, j'aime, favori, appliquer, signaler, publier, mise à jour en un clic, panel admin
     await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true, nv13: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // 1.0.22 : la bulle « Jouer en musique ? » ne cache pas les clics du test
     const myCls = await page.evaluate(() => { const D = window.DATA, E = window.ENGINE, S = window.DX.S;
@@ -1028,8 +1029,8 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!/Tu n'as encore publié aucun build/.test(await page.textContent("#bdPage"))) fail("builds : « Mes builds » vide sans message");
     await page.click('#bdPage [data-act="bd-tab"][data-v="all"]'); await page.waitForSelector("#bdPage #bdSort", { timeout: 5000 });
     // panel admin : onglet Builds, cacher un build
-    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector('.adm [data-act="adm-tab"][data-v="builds"]', { timeout: 5000 });
-    await page.click('.adm [data-act="adm-tab"][data-v="builds"]'); await page.waitForSelector('.adm [data-act="bd-adm"]', { timeout: 5000 });
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector('.adm .px-sp', { timeout: 5000 });
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "builds"); await page.waitForSelector('.adm [data-act="bd-adm"]', { timeout: 5000 });
     await page.click('.adm [data-act="bd-adm"][data-id="2"][data-v="hide"]'); await page.waitForTimeout(500);
     m = await mock(); if (!(m.builds.find((x) => x.id === 2) || {}).hidden) fail("builds : « Cacher » du panel admin sans effet");
     // téléphone : la page et la fiche tiennent dans l'écran
@@ -1389,10 +1390,10 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click("#pxQ"); await page.keyboard.type("Krala"); await page.waitForTimeout(200);
     if (await page.$('#pxRes button:has-text("Chercher le joueur")')) { await page.click('#pxRes button:has-text("Chercher le joueur")'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 }).catch(() => fail("Panel Xener : la recherche d'un pseudo n'ouvre pas Joueurs")); }
     else fail("Panel Xener : « Chercher le joueur » absent de la recherche");
-    await page.click('.adm [data-act="adm-tab"][data-v="test"]'); await page.waitForSelector('.adm [data-adm="preset"]', { timeout: 5000 }).catch(() => fail("Panel Xener : onglet Test absent"));
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "test"); await page.waitForSelector('.adm [data-adm="preset"]', { timeout: 5000 }).catch(() => fail("Panel Xener : onglet Test absent"));
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "mod"; localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForTimeout(300);
-    await page.click('#status [data-act="adm-open"]'); await page.click('.adm [data-act="adm-tab"][data-v="vue"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 }).catch(() => fail("Panel Xener : vue des modérateurs absente"));
+    await page.click('#status [data-act="adm-open"]'); await page.evaluate((x) => window.CHAT.openAdmin(x), "vue"); await page.waitForSelector(".adm .kpis", { timeout: 5000 }).catch(() => fail("Panel Xener : vue des modérateurs absente"));
     { const V = await page.$$eval('.adm [data-act="adm-tab"]', (L) => L.map((b) => b.dataset.v)); if (V.some((v) => !["vue", "joueurs", "sig", "test"].includes(v)) || (await page.$(".adm #pxQ"))) fail("Panel Xener : un modérateur voit des outils réservés à l'admin : " + V.join(", ")); } // « test » : outils de la version de test, sur la partie de l'appareil seulement
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForTimeout(300);

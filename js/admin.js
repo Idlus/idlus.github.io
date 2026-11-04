@@ -705,3 +705,84 @@ P.register({ id: "enligne", name: "En ligne", group: "Joueurs", html, count: () 
 P.register({ id: "monoenligne", srv: "m", name: "En ligne", group: "Joueurs", html, count: () => mine().length });
 window.ENLIGNE = { all, mine, html };
 })();
+
+/* ============================================================================
+   04/11 (Mathis : « une refonte de mon panel pour qu'il soit plus simple à gérer pour chaque serveur », maquette choisie 1A 2A 3A) :
+   - « Accueil » (espace "a", choix 2A) : ce qui t'attend (bugs nouveaux, signalements, joueurs à vérifier) puis une colonne par serveur
+     (en ligne, à vérifier, Hôtel de vente, saison du Monocompte) avec un bouton pour y entrer. Les pastilles des quatre cases en
+     haut du panel (PANEL.badge) viennent d'ici.
+   - « Vue d'ensemble » d'un serveur du Classique (srvvue, Éternel ou Saison 1, choix 1A) : en ligne, à vérifier, Hôtel de vente.
+   Lectures seulement (ON.rpcSp : l'espace "e" public ou "s1"), rien n'est écrit.
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const NAME = { e: "Éternel", s: "Saison 1", m: "Monocompte" };
+const SP = { e: "e", s: "s1" };
+const repaint = () => { if (DX.ui.tab === "admin") P.repaint(); };
+const when = (t) => { if (!t) return ""; const s = (Date.now() - new Date(t)) / 1000; return s < 60 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
+const online = (k) => (ON.onlineList ? ON.onlineList() : []).filter((x) => x.s === k).length;
+const arr = (r) => (r && !r.err && Array.isArray(r.data) ? r.data : null);
+/* à vérifier d'un serveur du Classique : public.adm_flagged (Éternel) ou s1.admin_flagged (Saison 1) */
+async function verif(k) {
+  if (k === "s") { const L = arr(await ON.rpcSp("s1", "admin_flagged")); return L && L.map((x) => ({ pseudo: x.pseudo, reason: x.reason, at: x.updated_at })); }
+  const L = arr(await ON.rpcSp("e", "adm_flagged")); return L && L.map((x) => ({ pseudo: x.pseudo, reason: x.reason, at: x.updated_at }));
+}
+const hdv = async (k) => { const r = await ON.rpcSp(SP[k], "adm_hdv"); return r && !r.err && r.data ? +r.data.open || 0 : null; };
+
+/* ---------- Accueil ---------- */
+const H = { d: null, at: 0 };
+async function loadHome() {
+  const [ve, vs, he, hs, mv, ov, bugs] = await Promise.all([verif("e"), verif("s"), hdv("e"), hdv("s"), ON.rpc("mono_adm_vue"), ON.rpcSp("e", "adm_overview"), ON.rpcSp("e", "adm_bugs")]);
+  const m = mv && !mv.err ? mv.data || {} : null, o = ov && !ov.err ? ov.data || {} : null;
+  const bl = arr(bugs); const nb = bl ? bl.filter((b) => (b.status || "nouveau") === "nouveau").length : null;
+  H.d = { ve, vs, he, hs, m, o, nb }; H.at = Date.now();
+  P.badge("e", ve ? ve.length : 0); P.badge("s", vs ? vs.length : 0); P.badge("m", m ? +m.refus || 0 : 0); P.badge("t", (o ? +o.reports || 0 : 0) + (nb || 0));
+}
+const n = (v) => (v == null ? "?" : v);
+function homeHtml() {
+  const d = H.d; if (!d) return `<div class="box"><div class="empty">Chargement…</div></div>`;
+  const todo = [];
+  if (d.nb) todo.push([`${d.nb} bug${d.nb > 1 ? "s" : ""} nouveau${d.nb > 1 ? "x" : ""}`, "Tous les serveurs", "t", "bugs"]);
+  if (d.o && d.o.reports) todo.push([`${d.o.reports} joueur${d.o.reports > 1 ? "s" : ""} signalé${d.o.reports > 1 ? "s" : ""} dans le chat`, "Tous les serveurs", "t", "sig"]);
+  [["e", d.ve], ["s", d.vs]].forEach(([k, L]) => { if (L && L.length) todo.push([`${L.length} joueur${L.length > 1 ? "s" : ""} à vérifier`, `${NAME[k]} : ${L.slice(0, 3).map((x) => x.pseudo).join(", ")}${L.length > 3 ? "…" : ""}`, k, "verif"]); });
+  if (d.m && d.m.refus) todo.push([`${d.m.refus} refus du Bouclier (7 jours)`, `Monocompte${(d.m.derniers || []).length ? ` : ${d.m.derniers.slice(0, 3).map((x) => x.pseudo).join(", ")}` : ""}`, "m", "monobouclier"]);
+  const tile = (v, t, w) => `<div class="${w ? "w" : ""}"><b>${n(v)}</b><span>${t}</span></div>`;
+  const col = (k, tiles, txt) => `<div class="box px-col3 px-${k}"><h2><span class="px-tag px-${k}">${NAME[k]}</span></h2><div class="px-big">${tiles}</div><div class="small muted">${txt}</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="adm-pxgo" data-s="${k}">Ouvrir ${NAME[k]}</button></div></div>`;
+  const vTxt = (L) => (!L ? "À vérifier : lecture impossible." : L.length ? `À vérifier : ${L.slice(0, 3).map((x) => h(x.pseudo)).join(", ")}${L.length > 3 ? "…" : ""}.` : "Rien à vérifier.");
+  const s = d.m && d.m.saison;
+  return `<div class="box"><div class="row between"><h2>Ce qui t'attend</h2><span class="small muted">mis à jour ${when(H.at) || "à l'instant"}</span></div>
+      ${todo.map(([a, b, k, v]) => `<div class="ln"><b>${a}</b><span class="xs muted grow">${h(b)}</span><button class="btn sm" data-act="adm-pxgo" data-s="${k}" data-v="${v}">Voir</button></div>`).join("") || `<div class="ln muted">Rien à faire pour l'instant.</div>`}</div>
+    <div class="px-cols">
+      ${col("e", tile(online("e"), "en ligne") + tile(d.ve && d.ve.length, "à vérifier", d.ve && d.ve.length) + tile(d.he, "offres à l'Hôtel de vente") + tile(d.o && d.o.active, "parties envoyées (24 h, Classique)"), vTxt(d.ve))}
+      ${col("s", tile(online("s"), "en ligne") + tile(d.vs && d.vs.length, "à vérifier", d.vs && d.vs.length) + tile(d.hs, "offres à l'Hôtel de vente"), vTxt(d.vs))}
+      ${col("m", tile(online("m"), "en ligne") + tile(d.m && d.m.refus, "refus du Bouclier (7 j)", d.m && d.m.refus) + tile(d.m && d.m.parties, "parties de la saison") + tile(s ? `Jour ${s.jour == null ? "?" : s.jour}` : "?", s ? `sur ${s.duree || 56}` : "saison"), d.m ? (d.m.refus ? "Des refus du Bouclier à regarder." : "Rien à vérifier.") : "Monocompte : lecture impossible.")}
+    </div>`;
+}
+P.register({ id: "accueil", srv: "a", name: "Accueil", group: "", html: homeHtml, load: loadHome });
+
+/* ---------- Vue d'ensemble d'un serveur du Classique ---------- */
+const V = { k: null, L: null, hdv: null };
+async function loadVue() {
+  const k = P.space && P.space() === "s" ? "s" : "e";
+  const [L, o] = await Promise.all([verif(k), hdv(k)]);
+  Object.assign(V, { k, L, hdv: o }); P.badge(k, L ? L.length : 0);
+}
+function vueHtml() {
+  const k = P.space && P.space() === "s" ? "s" : "e";
+  if (V.k !== k) return `<div class="box"><div class="empty">Chargement…</div></div>`;
+  const L = V.L;
+  const kpi = (v, t, w) => `<div class="kpi${w ? " warn" : ""}"><b>${n(v)}</b><span>${t}</span></div>`;
+  return `<div class="kpis">${kpi(online(k), "en ligne")}${kpi(L && L.length, "à vérifier", L && L.length)}${kpi(V.hdv, "offres à l'Hôtel de vente")}</div>
+    <div class="two"><div class="box"><div class="row between"><h2>À vérifier</h2><button class="btn sm" data-act="adm-tab" data-v="verif">Voir</button></div>
+      ${!L ? `<div class="ln muted">Lecture impossible.</div>` : L.slice(0, 6).map((x) => `<div class="ln"><b>${h(x.pseudo)}</b><span class="xs muted grow">${h(x.reason || "")}</span><span class="t">${when(x.at)}</span></div>`).join("") || `<div class="ln muted">Personne à vérifier.</div>`}</div>
+    <div class="box"><h2>Raccourcis</h2>${[["hdv", "Hôtel de vente"], ["guildes", "Guildes"], ["fiches", "Fiches joueurs"], ["salon", `Salon ${NAME[k]}`]].map(([v, t]) => `<div class="ln"><span class="grow">${t}</span><button class="btn sm" data-act="adm-tab" data-v="${v}">Ouvrir</button></div>`).join("")}</div></div>`;
+}
+P.register({ id: "srvvue", name: "Vue d'ensemble", group: "", html: vueHtml, load: loadVue });
+document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act='adm-reload']"); if (t && DX.ui.tab === "admin") { H.d = null; V.k = null; } });
+setTimeout(repaint, 0);
+})();

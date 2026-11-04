@@ -57,6 +57,8 @@ function fake() {
       case "adm_chat_clear": return 3;
       case "adm_announce": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: null }); return null;
       case "adm_announce_mono": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: "m" }); return null;
+      case "adm_announce_srv": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: a.p_srv }); return null;
+      case "adm_bugs": return [{ id: 1, status: "nouveau", body: "Bouton cassé" }, { id: 2, status: "corrige", body: "Vieux bug" }];
       case "adm_announce_end": F.anns = F.anns.filter((x) => x.id !== a.p_id); return null;
       case "mono_adm_vue": return { saison: { id: 0, nom: "Saison de test", etat: "ouverte", test: true, jour: 10, duree: 56, date: "2026-10-30T12:00:00Z", vitesse: 24, pause: true, horloge: true },
         testeurs: F.testeurs.length, parties: 5, validees: 4, actives: 2, refus: 1, derniers: [{ user: "u3", pseudo: "Bob", why: "niveau impossible", at: "2026-10-21T08:00:00Z" }] };
@@ -130,84 +132,71 @@ function fake() {
   const shot = async (page, n) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, n), fullPage: true }); };
   const body = (page) => page.evaluate(() => document.querySelector(".px-body").innerText);
   const annbar = (page) => page.evaluate(() => (document.querySelector("#annbar") || {}).textContent || "");
-  const MONO = ["monovue", "monotesteurs", "clesbeta", "monobouclier", "monojournal", "monoremise", "monobureau", "mchat", "mann"];
-  const CLASSIC = ["vue", "joueurs", "ann", "equipe", "test"];
+
+  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mchat"];
+  const CLASSIC = ["srvvue", "enligne", "verif", "fiches", "hdv", "guildes", "builds", "salon"];
+  const TOUS = ["joueurs", "sig", "vue", "ann", "codes", "chat", "bugs", "idees", "equipe", "test"];
+  const badges = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".px-sp button")].map((b) => [b.dataset.v, (b.querySelector("em") || {}).textContent || ""])));
+  const same = (a, b) => a.join(",") === b.join(",");
 
   const run = async (w, h, full) => {
     let page = await open(w, h);
     const W = `${w} px`;
     await panel(page);
-    /* ---------- Classique par défaut ---------- */
-    if ((await srvOn(page)) !== "e") fail(`${W} : Éternel attendu par défaut`);
+    /* ---------- accueil (2A) : aucune case choisie, pas de menu, ce qui t'attend, une colonne par serveur ---------- */
+    if (await srvOn(page)) fail(`${W} : l'accueil doit s'ouvrir sans case choisie`);
+    if (await page.$(".px-nav")) fail(`${W} : l'accueil n'a pas de menu`);
+    await page.waitForFunction(() => /Saisonnier/.test(document.querySelector(".px-body").innerText), null, { timeout: 6000 }).catch(() => fail(`${W} : accueil sans le joueur à vérifier de la Saison 1`));
+    let t = await body(page);
+    if (!/Ce qui t'attend/.test(t) || !/1 bug nouveau/.test(t) || !/1 refus du Bouclier/.test(t) || !/Jour 10/.test(t) || !/Ouvrir Éternel/.test(t) || !/Ouvrir Monocompte/.test(t)) fail(`${W}, accueil : ` + t.slice(0, 600));
+    if ((await where(page, "admin_flagged")).some((x) => x !== "s1") || (await where(page, "adm_flagged")).some((x) => x !== "public")) fail(`${W}, accueil : à vérifier lu dans le mauvais espace`);
+    if (await page.evaluate(() => window.ONLINE.admSp) !== "e") fail(`${W}, accueil : l'espace des fonctions d'admin a changé après la lecture de la Saison 1`);
+    await page.evaluate(() => window.PANEL.repaint());
+    const bd = await badges(page); if (bd.s !== "1" || bd.m !== "1" || bd.t !== "1" || bd.e) fail(`${W} : pastilles des cases ` + JSON.stringify(bd));
+    await shot(page, `panel-accueil-${w}.png`); await noScroll(page, `${W}, accueil`);
+    /* « Voir » : Saison 1 › À vérifier, dans s1, boutons qui disent le serveur (idée 1) */
+    await page.click('[data-act="adm-pxgo"][data-s="s"][data-v="verif"]');
+    await page.waitForFunction(() => /Saisonnier/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => fail(`${W} : « Voir » ne mène pas à la liste de la Saison 1`));
+    if ((await srvOn(page)) !== "s" || !(await page.$('.px-nav button.on[data-v="verif"]'))) fail(`${W} : « Voir » doit ouvrir Saison 1 › À vérifier`);
+    if (!/Tu agis sur la Saison 1/.test(await page.evaluate(() => document.querySelector(".px-where").innerText))) fail(`${W} : bandeau « Tu agis sur la Saison 1 » absent`);
+    if (!/Retirer de la Saison 1/.test(await body(page))) fail(`${W} : le bouton Retirer doit dire « de la Saison 1 »`);
+    await page.click('[data-act="adm-flag"][data-u="u7"][data-v="0"]'); await page.waitForTimeout(300);
+    { const uf = await where(page, "admin_unflag"); if (uf[uf.length - 1] !== "s1" || (await calls(page, "adm_flag")).length) fail(`${W}, Saison 1 : « C'est bon » doit viser s1.admin_unflag`); }
     let N = await nav(page);
-    if (MONO.some((k) => N.includes(k))) fail(`${W}, Classique : page Monocompte dans le menu : ${N.join(",")}`);
-    if (CLASSIC.some((k) => !N.includes(k))) fail(`${W}, Classique : pages d'avant absentes : ${N.join(",")}`);
-    if (full) {
-      let r = await search(page, "clés bêta"); if (r.some((x) => /Clés bêta/.test(x))) fail("Classique : la recherche propose une page Monocompte : " + r.join(" | "));
-      r = await search(page, "bouclier"); if (r.some((x) => /Bouclier Monocompte/.test(x))) fail("Classique : la recherche propose le Bouclier Monocompte");
-      r = await search(page, "annonces"); if (!r.some((x) => /Aller à : Annonces$/.test(x)) || r.some((x) => /Monocompte/.test(x))) fail("Classique : recherche « annonces » : " + r.join(" | "));
-      r = await search(page, "nouveau joueur"); if (!r.some((x) => /Partie de test/.test(x))) fail("Classique : départs rapides de test absents de la recherche");
-      if (await page.$('[data-act="adm-chclear"][data-v="m"]')) fail("Classique : « Vider Monocompte » encore là");
-      if (!(await page.$('[data-act="adm-chclear"][data-v="g"]')) || !(await page.$('[data-act="adm-chclear"][data-v="s"]'))) fail("Classique : « Vider Éternel » ou « Vider Saison 1 » absent");
-      await go(page, "ann");
-      await page.waitForSelector("#admPin", { timeout: 5000 });
-      if (await page.$("#admPinm")) fail("Classique : case « Monocompte » dans le message épinglé");
-      if (!(await page.$("#admPing")) || !(await page.$("#admPinc")) || !(await page.$("#admPinv"))) fail("Classique : cases Général, Commerce, PvP attendues");
-      // 03/11 : une annonce du Classique part aussi en Monocompte (bandeau et salon 'm'), la page le dit ; épinglé : Saison 1, Éternel, Commerce, PvP
-      if (!/salons Éternel, Saison 1 et Monocompte/.test(await body(page)) || !(await page.$("#admPins"))) fail("Classique : annonce dans les trois salons et case « Saison 1 » de l'épinglé attendues");
-      await page.fill("#admPin", "Nouvel épinglé du Classique"); await page.check("#admPinc"); await page.click('[data-act="adm-pin"]'); await page.waitForTimeout(400);
-      const pn = await calls(page, "adm_pin"); if (!pn.length || pn[pn.length - 1].p_chs !== "g,c") fail("Classique : épinglé envoyé sans 'm' : " + JSON.stringify(pn));
-      await shot(page, `panel-classique-${w}.png`);
-    }
-    await noScroll(page, `${W}, Classique`);
-    /* ---------- Saison 1 du Classique (03/11) ---------- */
-    let t0;
-    await page.click('.px-srv button[data-v="s"]'); await page.waitForTimeout(500);
-    if ((await srvOn(page)) !== "s") fail(`${W} : Saison 1 pas choisie`);
-    N = await nav(page);
-    if (MONO.some((k) => N.includes(k)) || CLASSIC.some((k) => !N.includes(k))) fail(`${W}, Saison 1 : pages du Classique attendues : ${N.join(",")}`);
-    if (!/Saison 1 du Classique/.test(await page.evaluate(() => document.querySelector(".adm").innerText))) fail(`${W}, Saison 1 : explication de l'espace absente`);
-    if (N.includes("hdv")) { await go(page, "hdv"); await page.waitForTimeout(300); const w0 = await where(page, "adm_hdv"); if (w0[w0.length - 1] !== "s1") fail(`${W}, Saison 1 : Hôtel de vente lu dans ${w0.join(",")}`); }
-    if (N.includes("verif")) {
-      await go(page, "verif"); await page.waitForFunction(() => /Saisonnier/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => fail(`${W}, Saison 1 : « En vérification » sans la liste de la saison`));
-      if ((await where(page, "admin_flagged")).some((x) => x !== "s1")) fail(`${W}, Saison 1 : admin_flagged hors s1`);
-      await page.click('[data-act="adm-flag"][data-u="u7"][data-v="0"]'); await page.waitForTimeout(300);
-      const uf = await where(page, "admin_unflag"); if (uf[uf.length - 1] !== "s1" || (await calls(page, "adm_flag")).length) fail(`${W}, Saison 1 : « C'est bon » doit viser s1.admin_unflag`);
-      await shot(page, `panel-saison1-${w}.png`);
-    }
-    await go(page, "enligne"); t0 = await body(page);
-    if (!/Zoé/.test(t0) || !/Vieux/.test(t0) || /Bob|Lou/.test(t0) || !/1 Éternel · 1 Saison 1 · 1 Monocompte/.test(t0)) fail(`${W}, Saison 1 : En ligne : ` + t0.slice(0, 300));
-    await noScroll(page, `${W}, Saison 1`);
-    /* retour à l'Éternel : public, même si la partie jouée était la Saison 1 */
-    await page.click('.px-srv button[data-v="e"]'); await page.waitForTimeout(400);
-    if (N.includes("hdv")) { await go(page, "hdv"); await page.waitForTimeout(300); const w1 = await where(page, "adm_hdv"); if (w1[w1.length - 1] !== "public") fail(`${W}, Éternel : Hôtel de vente lu dans ${w1.join(",")}`); }
+    if (!same(N, CLASSIC)) fail(`${W}, Saison 1 : menu ${N.join(",")}`);
+    await shot(page, `panel-saison1-${w}.png`); await noScroll(page, `${W}, Saison 1`);
+    /* Saison 1 › Salon : épinglé lu, vider avec confirmation dans la page */
+    await go(page, "salon"); t = await body(page);
+    if (!/Salon Saison 1/.test(t) || !/Vider le salon Saison 1/.test(t)) fail(`${W}, Salon Saison 1 : ` + t.slice(0, 300));
+    await page.click('[data-act="adm-clr"][data-v="s"]'); await page.waitForTimeout(150);
+    if ((await calls(page, "adm_chat_clear")).length) fail(`${W} : salon vidé sans confirmation`);
+    await page.click('[data-act="adm-clr"][data-v="s"][data-ok="1"]'); await page.waitForTimeout(400);
+    { const cl = await calls(page, "adm_chat_clear"); if (cl.length !== 1 || cl[0].p_ch !== "s") fail(`${W} : vider Saison 1 ` + JSON.stringify(cl)); }
+    /* Éternel : même menu, la page reste, Hôtel de vente dans public */
+    await page.click('.px-srv button[data-v="e"]'); await page.waitForTimeout(500);
+    N = await nav(page); if (!same(N, CLASSIC)) fail(`${W}, Éternel : menu ${N.join(",")}`);
+    if (!(await page.$('.px-nav button.on[data-v="salon"]')) || !/Salon Éternel/.test(await body(page))) fail(`${W} : d'un serveur du Classique à l'autre, la page reste (Salon Éternel)`);
+    await go(page, "hdv"); await page.waitForTimeout(300); { const w1 = await where(page, "adm_hdv"); if (w1[w1.length - 1] !== "public") fail(`${W}, Éternel : Hôtel de vente lu dans ${w1.join(",")}`); }
+    await go(page, "srvvue"); await page.waitForTimeout(300); t = await body(page);
+    if (!/en ligne/.test(t) || !/Personne à vérifier/.test(t)) fail(`${W}, Éternel : vue d'ensemble ` + t.slice(0, 300));
+    await go(page, "enligne"); t = await body(page);
+    if (!/Bob/.test(t) || !/Vieux/.test(t) || /Zoé|Lou/.test(t)) fail(`${W}, Éternel : En ligne : ` + t.slice(0, 300));
+    await noScroll(page, `${W}, Éternel`);
     /* ---------- Monocompte ---------- */
     await page.click('.px-srv button[data-v="m"]'); await page.waitForTimeout(500);
     if ((await srvOn(page)) !== "m") fail(`${W} : Monocompte pas choisi`);
-    if ((await page.evaluate(() => localStorage.getItem("idlus-panel-srv"))) !== "m") fail(`${W} : choix pas gardé dans le navigateur`);
-    N = await nav(page);
-    if (MONO.some((k) => !N.includes(k))) fail(`${W}, Monocompte : pages attendues : ${N.join(",")}`);
-    if (CLASSIC.some((k) => N.includes(k)) || N.includes("hdv") || N.includes("codes")) fail(`${W}, Monocompte : page Classique dans le menu : ${N.join(",")}`);
+    N = await nav(page); if (!same(N, MONO)) fail(`${W}, Monocompte : menu ${N.join(",")}`);
     if (await page.$('[data-act="adm-test"]')) fail(`${W}, Monocompte : bouton Partie de test`);
     await page.waitForFunction(() => /Saison de test/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => fail(`${W}, Monocompte : vue d'ensemble sans la saison`));
-    let t = await body(page);
-    if (!/×24, en pause/.test(t) || !/Jour 10 sur 56/.test(t) || !/niveau impossible/.test(t) || !/testeurs/.test(t)) fail(`${W}, vue Monocompte : ` + t.slice(0, 400));
-    await go(page, "monoenligne"); t0 = await body(page);
-    if (!/Lou/.test(t0) || /Bob|Zoé/.test(t0)) fail(`${W}, Monocompte : En ligne : ` + t0.slice(0, 300));
-    await go(page, "monovue");
-    if ((await calls(page, "mono_adm_horloge")).length) fail("vue Monocompte : l'horloge ne doit pas être changée (mono_adm_horloge écrit)");
-    await shot(page, `panel-mono-${w}.png`);
-    await noScroll(page, `${W}, Monocompte`);
+    if ((await calls(page, "mono_adm_horloge")).length) fail("vue Monocompte : l'horloge ne doit pas être changée");
+    await go(page, "mchat"); t = await body(page);
+    if (!/Salon Monocompte/.test(t) || !/Épinglé du Monocompte/.test(t)) fail(`${W}, Salon Monocompte : ` + t.slice(0, 300));
+    await page.click('[data-act="adm-clr"][data-v="m"]'); await page.click('[data-act="adm-clr"][data-v="m"][data-ok="1"]'); await page.waitForTimeout(400);
+    { const cl = await calls(page, "adm_chat_clear"); if (cl[cl.length - 1].p_ch !== "m") fail(`${W} : vider Monocompte ` + JSON.stringify(cl)); }
+    await shot(page, `panel-mono-${w}.png`); await noScroll(page, `${W}, Monocompte`);
     if (full) {
       let r = await search(page, "clés"); if (!r.some((x) => /Aller à : Clés bêta/.test(x))) fail("Monocompte : recherche « clés » : " + r.join(" | "));
-      r = await search(page, "nouveau joueur"); if (r.length && r.some((x) => /Partie de test/.test(x))) fail("Monocompte : départs rapides de test dans la recherche");
-      r = await search(page, "Zoé"); if (r.some((x) => /Chercher le joueur/.test(x))) fail("Monocompte : recherche d'un joueur du Classique proposée");
-      r = await search(page, "annonces"); if (!r.some((x) => /Annonces Monocompte/.test(x)) || r.some((x) => /Aller à : Annonces$/.test(x))) fail("Monocompte : recherche « annonces » : " + r.join(" | "));
-      /* choix gardé : le jeu rouvert dans un nouvel onglet du même navigateur (même stockage local) */
-      { const ctx = page.context(); await page.close(); page = await hook(await ctx.newPage(), w); }
-      await panel(page);
-      if ((await srvOn(page)) !== "m") fail("choix Monocompte perdu après rechargement");
-      if (!(await nav(page)).includes("monovue") || !(await page.$('.px-nav button.on[data-v="monovue"]'))) fail("après rechargement : Vue d'ensemble Monocompte attendue");
+      r = await search(page, "nouveau joueur"); if (r.some((x) => /Partie de test/.test(x))) fail("Monocompte : départs rapides de test dans la recherche");
       /* Testeurs */
       await go(page, "monojournal"); await page.waitForFunction(() => /Acceptée/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => {});
       t = await body(page);
@@ -253,53 +242,65 @@ function fake() {
       await page.click('[data-act="mbur-del"][data-v="2"]'); await page.click('[data-act="mbur-del"][data-v="2"][data-ok="1"]'); await page.waitForTimeout(300);
       if (await page.$("#mbH-2")) fail("Bureau : créneau supprimé encore affiché");
       await shot(page, `panel-mono-bureau-${w}.png`);
-      /* Chat Monocompte */
-      await go(page, "mchat"); await page.waitForSelector("#admMPin", { timeout: 5000 });
-      if ((await page.inputValue("#admMPin")) !== "Épinglé du Monocompte") fail("Chat Monocompte : épinglé actuel attendu");
-      await page.fill("#admMPin", "Bienvenue aux testeurs !"); await page.click('[data-act="adm-mpin"]'); await page.waitForTimeout(400);
-      const mp = await calls(page, "adm_pin_mono"); if (!mp.length || mp[0].p_body !== "Bienvenue aux testeurs !") fail("Chat Monocompte : épinglé " + JSON.stringify(mp));
-      if ((await calls(page, "adm_pin")).length > 1) fail("Chat Monocompte : l'épinglé du Classique a été changé");
-      await page.click('[data-act="adm-mclear"]'); await page.waitForTimeout(150);
-      if ((await calls(page, "adm_chat_clear")).length) fail("Chat Monocompte : salon vidé sans confirmation");
-      await page.click('[data-act="adm-mclear"][data-v="1"]'); await page.waitForTimeout(400);
-      const cl = await calls(page, "adm_chat_clear"); if (cl.length !== 1 || cl[0].p_ch !== "m") fail("Chat Monocompte : vider " + JSON.stringify(cl));
-      /* Annonces Monocompte */
-      await go(page, "mann"); await page.waitForSelector("#admMAnn", { timeout: 5000 });
-      if (/Annonce du Classique/.test(await body(page))) fail("Annonces Monocompte : bandeau du Classique listé");
-      await page.fill("#admMAnn", "Nouvelle saison de test lundi"); await page.click('[data-act="adm-mannounce"]'); await page.waitForTimeout(500);
-      const am = await calls(page, "adm_announce_mono"); if (!am.length || am[0].p_body !== "Nouvelle saison de test lundi" || !am[0].p_banner || !am[0].p_chat) fail("Annonces Monocompte : " + JSON.stringify(am));
-      if ((await calls(page, "adm_announce")).length) fail("Annonces Monocompte : annonce Classique envoyée");
-      if (!/Nouvelle saison de test lundi/.test(await body(page))) fail("Annonces Monocompte : bandeau pas listé");
-      await shot(page, `panel-mono-annonces-${w}.png`);
-      /* bandeaux : partie Classique → seulement le Classique */
-      await page.waitForTimeout(300);
-      let ab = await annbar(page);
-      if (!/Annonce du Classique/.test(ab) || /Nouvelle saison/.test(ab)) fail("partie Classique : bandeau attendu « Annonce du Classique » seul : " + ab);
-      /* épinglés : 'g' Classique, 'm' Monocompte */
-      const pins = await page.evaluate(() => { const C = window.CHAT.state, out = {}, o0 = C.open; C.open = true; for (const k of ["g", "m"]) { C.tab = k; window.CHAT.repaint(); const p = document.querySelector("#chat .ch-pin"); out[k] = p ? p.textContent : ""; } C.tab = "g"; C.open = o0; window.CHAT.repaint(); return out; });
-      if (!/Nouvel épinglé du Classique/.test(pins.g) || /Bienvenue aux testeurs/.test(pins.g)) fail("épinglé de 'g' : " + pins.g);
-      if (!/Bienvenue aux testeurs/.test(pins.m) || /Classique/.test(pins.m)) fail("épinglé de 'm' : " + pins.m);
-      /* fiche d'un joueur depuis le côté Monocompte : retour au Classique */
-      await page.evaluate(() => window.CHAT.openAdmin("joueurs", "Zoé")); await page.waitForTimeout(500);
-      if ((await srvOn(page)) !== "e" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail("fiche d'un joueur : le panel doit repasser au Classique (Éternel, dernier espace choisi)");
-      /* partie Monocompte → seulement l'annonce Monocompte */
+    }
+    /* fiche d'un joueur depuis le Monocompte : « Tous les serveurs › Comptes » */
+    await page.evaluate(() => window.CHAT.openAdmin("joueurs", "Zoé")); await page.waitForTimeout(500);
+    if ((await srvOn(page)) !== "t" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail(`${W} : fiche d'un joueur : « Tous les serveurs › Comptes » attendu`);
+    /* ---------- Tous les serveurs ---------- */
+    N = await nav(page); if (!same(N, TOUS)) fail(`${W}, Tous les serveurs : menu ${N.join(",")}`);
+    if (full) { const r = await search(page, "annoncer"); if (!r.some((x) => /Aller à : Annoncer/.test(x))) fail("Tous : recherche « annoncer » : " + r.join(" | ")); }
+    await go(page, "ann"); await page.waitForSelector("#admAnn", { timeout: 5000 });
+    t = await body(page);
+    if (!/Sur quels serveurs/.test(t) || !(await page.$("#admAnnSe")) || !(await page.$("#admAnnSs")) || !(await page.$("#admAnnSm"))) fail(`${W}, Annoncer : cases des serveurs absentes`);
+    // Éternel et Saison 1 : adm_announce_srv 'e,s'
+    await page.fill("#admAnn", "Pour le Classique"); await page.uncheck("#admAnnSm"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(500);
+    { const x = await calls(page, "adm_announce_srv"); if (x.length !== 1 || x[0].p_srv !== "e,s" || x[0].p_body !== "Pour le Classique" || (await calls(page, "adm_announce")).length) fail(`${W}, Annoncer Éternel + Saison 1 : ` + JSON.stringify(x)); }
+    // Monocompte seul : adm_announce_mono
+    await page.fill("#admAnn", "Nouvelle saison de test lundi"); await page.uncheck("#admAnnSe"); await page.uncheck("#admAnnSs"); await page.check("#admAnnSm"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(500);
+    { const x = await calls(page, "adm_announce_mono"); if (x.length !== 1 || x[0].p_body !== "Nouvelle saison de test lundi") fail(`${W}, Annoncer Monocompte seul : ` + JSON.stringify(x)); }
+    // les trois : adm_announce
+    await page.fill("#admAnn", "Pour tout le monde"); await page.check("#admAnnSe"); await page.check("#admAnnSs"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(500);
+    { const x = await calls(page, "adm_announce"); if (x.length !== 1 || x[0].p_body !== "Pour tout le monde") fail(`${W}, Annoncer les trois : ` + JSON.stringify(x)); }
+    await page.fill("#admAnn", "Personne"); for (const k of ["e", "s", "m"]) await page.uncheck("#admAnnS" + k); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(300);
+    if ((await calls(page, "adm_announce_srv")).length !== 1) fail(`${W} : annonce envoyée sans serveur coché`);
+    t = await body(page);
+    if (!/Pour le Classique/.test(t) || !/Nouvelle saison de test lundi/.test(t) || !/Pour tout le monde/.test(t)) fail(`${W}, Bandeaux affichés : ` + t.slice(0, 800));
+    // message épinglé : Éternel + Saison 1 + Monocompte
+    await page.fill("#admPin", "Nouvel épinglé partout"); await page.check("#admPing"); await page.check("#admPins"); await page.check("#admPinm"); await page.click('[data-act="adm-pin"]'); await page.waitForTimeout(500);
+    { const a = await calls(page, "adm_pin"), b = await calls(page, "adm_pin_mono");
+      if (!a.length || a[a.length - 1].p_chs !== "s,g" || a[a.length - 1].p_body !== "Nouvel épinglé partout" || !b.length || b[b.length - 1].p_body !== "Nouvel épinglé partout") fail(`${W}, épinglé : ` + JSON.stringify([a, b])); }
+    await shot(page, `panel-annoncer-${w}.png`); await noScroll(page, `${W}, Annoncer`);
+    // Réglages du chat : Commerce vidé avec confirmation
+    await go(page, "chat"); t = await body(page);
+    if (!/Fermer le chat des trois serveurs/.test(t)) fail(`${W}, Réglages du chat : ` + t.slice(0, 300));
+    await page.click('[data-act="adm-clr"][data-v="c"]'); await page.click('[data-act="adm-clr"][data-v="c"][data-ok="1"]'); await page.waitForTimeout(400);
+    { const cl = await calls(page, "adm_chat_clear"); if (cl[cl.length - 1].p_ch !== "c") fail(`${W} : vider Commerce ` + JSON.stringify(cl)); }
+    await noScroll(page, `${W}, Réglages du chat`);
+    /* retour à l'accueil */
+    await page.click('[data-act="adm-pxsrv"][data-v="a"]'); await page.waitForTimeout(500);
+    if (await srvOn(page) || !/Ce qui t'attend/.test(await body(page))) fail(`${W} : bouton Accueil`);
+    if (full) {
+      /* bandeaux : partie Éternel → « Pour le Classique » (e,s) oui, « Nouvelle saison » (m) non */
+      await page.evaluate(() => { window.DX.ui.tab = "home"; window.DX.render(); });
+      const seenAnn = async () => page.evaluate(() => (window.ONLINE.announces ? window.ONLINE.announces() : Promise.resolve([])).then(() => (document.querySelector("#annbar") || {}).textContent || ""));
+      let ab = await seenAnn();
+      if (/Nouvelle saison/.test(ab)) fail("partie Éternel : bandeau Monocompte affiché : " + ab);
+      /* jeu rouvert : le panel revient à l'accueil */
+      { const ctx = page.context(); await page.close(); page = await hook(await ctx.newPage(), w); }
+      await panel(page);
+      if (await srvOn(page)) fail("jeu rouvert : le panel doit s'ouvrir sur l'accueil");
+      /* partie Monocompte → l'annonce Monocompte, jamais celle de l'Éternel et de la Saison 1 */
       await page.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S); window.DX.ui.tab = "home"; window.DX.render(); });
-      await page.waitForFunction(() => /Nouvelle saison de test lundi/.test((document.querySelector("#annbar") || {}).textContent || ""), null, { timeout: 6000 }).catch(() => {});
+      await page.waitForFunction(() => /Nouvelle saison de test lundi|Pour tout le monde/.test((document.querySelector("#annbar") || {}).textContent || ""), null, { timeout: 6000 }).catch(() => {});
       ab = await annbar(page);
-      if (!/Nouvelle saison de test lundi/.test(ab) || /Annonce du Classique/.test(ab)) fail("partie Monocompte : bandeau attendu « Nouvelle saison… » seul : " + ab);
-      await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(200);
-      // 2.1.40 (3A) : l'annonce est dans la cloche de la barre du haut
-      if (!(await page.evaluate(() => document.body.classList.contains("bellopen")))) { await page.click("#status .tb-bell"); await page.waitForTimeout(200); }
-      await page.click('#annbar [data-act="ch-annok"]'); await page.waitForTimeout(400);
-      if (await annbar(page)) fail("partie Monocompte : bandeau fermé encore là (et pas de bandeau Classique à la place)");
-      await shot(page, `panel-mono-bandeau-${w}.png`);
+      if (/Pour le Classique/.test(ab) || !/Nouvelle saison de test lundi|Pour tout le monde/.test(ab)) fail("partie Monocompte : bandeau attendu du Monocompte : " + ab);
       await noScroll(page, `${W}, partie Monocompte`);
     }
     await page.context().close();
   };
   try {
     await run(1280, 900, true);
-    console.log("ok - 1280 px : sélecteur Éternel | Saison 1 | Monocompte (Éternel par défaut, choix gardé, Saison 1 dans s1), pages et recherche par serveur, épinglé Classique sans 'm', pages Monocompte (vue, testeurs, remise confirmée dans la page, Bureau, chat, annonces), bandeau Monocompte seulement en partie Monocompte");
+    console.log("ok - 1280 px : accueil (ce qui t'attend, colonnes, pastilles), quatre cases (Éternel et Saison 1 au même menu, Saison 1 dans s1, Monocompte, Tous les serveurs), salons vidés avec confirmation, page Annoncer (e,s → adm_announce_srv, m → adm_announce_mono, les trois → adm_announce), épinglé sur les trois, bandeaux par serveur");
     await run(390, 844, true);
     console.log("ok - téléphone 390 px : mêmes parcours, sans défilement de côté");
   } catch (e) { fail("exception : " + (e.stack || e.message)); }

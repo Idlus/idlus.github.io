@@ -263,6 +263,9 @@
   const R = (name, args, n) => dbOf(name, n).rpc(name, args || {});
   const F = (table, n) => dbOf(table, n).from(table);
   ON.dbOf = dbOf;
+  /* 04/11 (accueil du Panel Xener) : une fonction d'admin dans un espace donné ("e" public, "s1" Saison 1), sans changer l'espace
+     choisi : rpc lit ON.admSp avant sa première attente, l'espace est remis tout de suite */
+  ON.rpcSp = (sp, name, args) => { const o = ON.admSp; ON.admSp = sp; try { return ON.rpc(name, args); } finally { ON.admSp = o; } };
   const s1b = (b) => (SLOT === S1_N ? Object.assign({ saison: 1 }, b) : b); // fonction « record » (Bouclier, records, défi) : espace de la partie
   /* ---------- la partie en ligne ---------- */
   /* Renvoie null s'il n'y a pas encore de partie en ligne ; lève une erreur hors ligne. */
