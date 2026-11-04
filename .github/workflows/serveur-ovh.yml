@@ -31,7 +31,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -258,6 +258,20 @@ jobs:
             (select coalesce(json_agg(x), '[]') from (select j.day, j.at, j.data from public.saves_jour j where j.user_id = p.id) x) as jours
             from public.profiles p left join public.saves s on s.user_id = p.id where lower(p.pseudo) = lower('$p')" > "$f"
           node tools/enquete_joueur.js "$f"
+          rm -f "$f"
+      - name: Enquête stasis, rejeu des plus hautes stasis d'un joueur (lecture seule, demande de Mathis du 04/11)
+        if: inputs.etape == 'enquete-stasis'
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          # 04/11/2026 : « Solonk a fait un stasis 15 il triche » (Mathis). Lecture seule, Éternel (public) : le journal n'affiche
+          # que des chiffres de jeu (tools/enquete_stasis.js), la partie reste dans le dossier temporaire et elle est effacée.
+          p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_-'); [ -n "$p" ] || { echo "Pseudo manquant." >&2; exit 1; }
+          f="$RUNNER_TEMP/stasis.json"
+          bash tools/serveur/vps_sql.sh lecture "select p.pseudo, o.at as ok_at, o.data as ok_data,
+            (select coalesce(json_agg(x order by x.k desc), '[]') from (select r.dname, r.k, r.t, r.at from public.records r where r.user_id = p.id) x) as records
+            from public.profiles p join public.saves_ok o on o.user_id = p.id where lower(p.pseudo) = lower('$p')" > "$f"
+          node tools/enquete_stasis.js "$f"
           rm -f "$f"
       - name: Enquête sur un joueur, 3 serveurs (lecture seule, demande de Mathis)
         if: inputs.etape == 'enquete-3-serveurs'
