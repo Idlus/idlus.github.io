@@ -6621,3 +6621,12 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .qx-pos>.row .num{flex:none}
 .qx-pos .bar{min-width:0}
 .qx-prime{text-wrap:balance;max-width:100%}
+/* 2.2.3.3 : jets réels des objets d'un build (js/builds.js) */
+.bd-roll{border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.bd-roll>summary{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;list-style:none;flex-wrap:wrap}
+.bd-roll>summary::-webkit-details-marker{display:none}
+.bd-roll>summary img{width:30px;height:30px;border-radius:6px;background:var(--panel3);flex:none}
+.bd-roll>summary .grow{min-width:0;flex:1 1 140px}
+.bd-roll[open]>summary{border-bottom:1px solid var(--line)}
+.bd-roll .tipstats{padding:6px 10px 8px;display:flex;flex-direction:column;gap:2px}
+.bd-exos{gap:4px;flex-wrap:wrap;margin-top:2px}

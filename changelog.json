@@ -3,9 +3,12 @@
   "versions": [
     {
       "v": "2.2.3.3",
-      "name": "À l'heure du serveur",
+      "name": "Builds aux vrais jets",
       "items": [
-        "Connecté, le jeu suit l'heure du serveur pour le temps qui passe (absence, Sablier, journées). Si l'heure de ton appareil est fausse, un message te le signale : règle-la en automatique"
+        "Un build publié montre maintenant les vrais jets de chaque objet du héros, ses exos (PA, PM, Portée…), ses objets Parfaits et sa gravure, au lieu des jets moyens. Ses caractéristiques sont celles du héros",
+        "Nouvelle partie « Jets des objets » sur la fiche d'un build : touche un objet pour voir toutes ses lignes ; les exos s'affichent aussi sur les cartes",
+        "Tes builds déjà publiés : touche « Mettre à jour » dans Mes builds (ou le menu ⋯ du héros) pour qu'ils montrent leurs vrais jets",
+        "Builds a sa propre place dans le menu Joueurs, et un bouton « Build » sur la fiche de chaque héros"
       ]
     },
     {

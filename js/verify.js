@@ -172,10 +172,6 @@
     return null;
   };
   /* rythmes de V.rates, marge comprise : 180 points par heure pour l'équipe, 30 pour un seul héros (4,8 mesurés × 5, arrondi) */
-  /* 04/11/2026 (choix de Mathis « Oui, exception horloge ») : raisons du Bouclier qui prouvent du temps de jeu inventé (horloge de
-     l'appareil avancée) : plus de temps de jeu que de temps réel, ou plus d'XP de Maîtrise du temps que de temps écoulé. Seule
-     exception au « signaler seulement » : une telle partie ne s'affiche pas (classements, profil) tant que Mathis n'a pas dit « C'est bon ». */
-  V.horlogeFaussee = (why) => /Maîtrise du temps|h de temps de jeu en .* h réelles/.test(String(why || ""));
   V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 2000; V.MT_XP_H_MONO = 225; V.MT_PAD = 20;
   V.SAB_T0 = Date.UTC(2026, 9, 18, 18, 15); V.SAB_H0 = 73; V.SAB_H_DAY = 30;
 

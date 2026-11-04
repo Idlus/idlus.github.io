@@ -24,8 +24,11 @@ let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie
 const GAME_VERSION = "2.2.3.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "2.2.3.3", name: "À l'heure du serveur", items: [
-    "Connecté, le jeu suit l'heure du serveur pour le temps qui passe (absence, Sablier, journées). Si l'heure de ton appareil est fausse, un message te le signale : règle-la en automatique" ] },
+  { v: "2.2.3.3", name: "Builds aux vrais jets", items: [
+    "Un build publié montre maintenant les vrais jets de chaque objet du héros, ses exos (PA, PM, Portée…), ses objets Parfaits et sa gravure, au lieu des jets moyens. Ses caractéristiques sont celles du héros",
+    "Nouvelle partie « Jets des objets » sur la fiche d'un build : touche un objet pour voir toutes ses lignes ; les exos s'affichent aussi sur les cartes",
+    "Tes builds déjà publiés : touche « Mettre à jour » dans Mes builds (ou le menu ⋯ du héros) pour qu'ils montrent leurs vrais jets",
+    "Builds a sa propre place dans le menu Joueurs, et un bouton « Build » sur la fiche de chaque héros" ] },
   { v: "2.2.3.2", name: "Où ? toujours là", items: [
     "Artisanat : « Où ? » et « Offre HdV » restent sur chaque ressource de la recette, même quand tu en as assez. Pratique pour en racheter ou savoir où la récolter avant de lancer 10 fabrications" ] },
   { v: "2.2.3.1", name: "Enchaîner avec un ami", items: [
@@ -2962,7 +2965,7 @@ const NAV = [
   { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["wb", "Boss des mondes", "couronne"], ["chev", "Chevauchée des Cavaliers", "trophee"], ["xs1", "Expéditions de saison", "carte"]] },
   { id: "he", n: "Héros", ic: null, pages: [["team", "Équipe et héros", null], ["garde", "Garde-robe", "parchemin_or"], ["album", "Album de cartes", "../s1/co/ticket"], ["maitrise", "Maîtrise", "cristal"], ["inv", "Inventaire", "sac"], ["dofus", "Dofus", "dofus"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["chasse", "Chasse", "trophee"]] }, // 2.0 : la Renaissance est devenue la Maîtrise
   { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["grav", "Gravure runique", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
-  { id: "co", n: "Joueurs", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["tour", "Tournoi des guildes", "trophee"], ["amis", "Amis", "havre"]] : []).concat([["koli", "Kolizéum", "combat"], ["align", "Alignement", "ailes"]], navOnline() ? [["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"], ["vote", "Voter pour Idlus", "couronne"]] : []) }, // 2.1.31.1 : l'Alignement ouvre l'onglet Quêtes › Alignement
+  { id: "co", n: "Joueurs", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["tour", "Tournoi des guildes", "trophee"], ["amis", "Amis", "havre"]] : []).concat([["koli", "Kolizéum", "combat"], ["align", "Alignement", "ailes"]], navOnline() ? [["builds", "Builds", "parchemin_or"], ["ladder", "Classements", "trophee"], ["vote", "Voter pour Idlus", "couronne"]] : []) }, // 2.1.31.1 : l'Alignement ouvre l'onglet Quêtes › Alignement
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
 ];
 /* bouton Aide (bas du menu, Menu du téléphone) : pages hors des familles, toujours trouvées par la recherche ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js */
@@ -3004,13 +3007,13 @@ const SEASON_GRP = [["Progression", ["pass", "fragments"]], ["Défis", ["manche"
 const seasonGroups = () => SEASON_GRP.map(([n, L]) => [n, L.filter((k) => navPage(k))]).filter(([, L]) => L.length);
 const seasonName = () => (S && S.mono ? (E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom) : "Saison");
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", chev: "Saison 1 : les 4 Cavaliers à la suite, 3 essais par semaine", xs1: "Saison 1 : 3 expéditions par manche, règles et classement", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", garde: "Auras, boucliers, compagnons, décors, titres et couleurs", album: "Une carte par boss de donjon, boosters de saison", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", tour: "5 équipes par guilde, tableau le samedi, finale le dimanche", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", vote: "Un vote par heure : Sablier et kamas", admin: "Le panneau de Xener" };
-const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"], ladder: ["builds"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.40 : Gravure dans Forgemagie, Builds dans Classements
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", chev: "Saison 1 : les 4 Cavaliers à la suite, 3 essais par semaine", xs1: "Saison 1 : 3 expéditions par manche, règles et classement", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", garde: "Auras, boucliers, compagnons, décors, titres et couleurs", album: "Une carte par boss de donjon, boosters de saison", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", tour: "5 équipes par guilde, tableau le samedi, finale le dimanche", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les builds des joueurs : vrais jets, exos et sorts", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", vote: "Un vote par heure : Sablier et kamas", admin: "Le panneau de Xener" };
+const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.40 : Gravure dans Forgemagie ; 2.2.3.3 : Builds redevient une page du menu (Mathis : « mettre en valeur l'onglet build »)
 /* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
 const navSheet = (k) => (NAV_SHEETS[k] ? (NAV_SHEETS[k][1](), true) : false);
 const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
-const NAV_NEW = { until: Date.UTC(2026, 9, 29), pages: ["grav"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
+const NAV_NEW = { until: Date.UTC(2026, 10, 12), pages: ["builds"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
 const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
 const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } { const p = NAV_HELP.find((x) => x[0] === k); if (p) return p; } return NAV_SHEETS[k] ? NAV_SHEETS[k][0] : k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
 const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
@@ -6708,7 +6711,7 @@ function heroesHtml() {
       ${c.renMt ? `<div class="small muted renev">Ses vies passées sont devenues ${fmt(c.renMt.lv + c.renMt.bn)} points de Maîtrise.</div>` : ""}
       ${mtSheetHtml(c)}
       </div>
-    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
+    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}" data-tip="${window.BUILDS && navOnline() && !S.mono ? "Publier ce build dans Joueurs › Builds, ou copier son code" : "Copier le code du build (sorts, caractéristiques, objets et leurs jets)"}">${IC("parchemin_or")} Build</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
   ${setupBar(c)}<nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
@@ -9327,7 +9330,6 @@ const MERGE_HOST = { hdv: ".subtabs", forge: ".subtabs", pets: ".seg" };
 { const mm = document.getElementById("main"); if (mm && window.MutationObserver) { let q = 0; new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; pageTabs(); stripTabs(); }); }).observe(mm, { childList: true, subtree: true }); } } // les modules redessinent leur page eux-mêmes
 function pageTabs() {
   if (!S || ui.tab === "combat" || ui.tab === "home") return; const m = $("#main"); if (!m || m.querySelector(".mg-tab, .pg-mtabs")) return;
-  if (ui.tab === "builds" && !S.mono) { m.insertAdjacentHTML("afterbegin", `<div class="pg-mtabs">${lbGroupsHtml()}</div>`); return; }
   const k = navKey(), kk = navParent(k); if (kk === "quests" || kk === "ladder") return;
   const kids = (NAV_MERGE[kk] || []).filter((x) => navPage(x)); if (!kids.length) return;
   const b = (x) => `<button class="mg-tab" data-act="nav" data-v="${x}" data-nk="${x}" aria-pressed="${x === k}">${h(navPage(x)[1])}</button>`;
@@ -12177,42 +12179,10 @@ async function onAct(a, t) {
       ON.setLink({ skip: true }); ui.confirm = null; closeSheet(); renderStatus(); toast("Compte supprimé. Ta partie reste sur cet appareil."); return; }
   }
 }
-/* 04/11/2026 (Mathis : « comment faire pour empêcher cette triche ? ») : le jeu suit l'heure du serveur.
-   Avant, tout le temps du jeu (Sablier, absence, journées) venait de l'heure de l'appareil : en l'avançant, on gagnait des jours.
-   - Au lancement (avant le calcul de l'absence), au retour sur l'onglet et toutes les 10 minutes : écart avec le serveur
-     (ON.horloge). Un écart de plus de 2 minutes est corrigé : le jeu compte avec l'heure du serveur.
-   - Entre deux relevés, un saut de l'heure de l'appareil (plus d'une minute d'écart avec le chronomètre du navigateur) est
-     ignoré : le jeu continue au chronomètre jusqu'au relevé suivant, lancé aussitôt.
-   - Serveur injoignable : l'heure de l'appareil reste la référence (jeu hors ligne) ; le Bouclier du serveur vérifie au retour. */
-const HZ = { off: 0, d0: null, srv: 0, perf: 0, busy: null, essai: 0, vu: false };
-function horlogeNow() {
-  const p = performance.now(), d = Date.now() - p;
-  if (HZ.d0 != null && Math.abs(d - HZ.d0) > 60000) { horlogeSync(); return Math.round(HZ.srv + (p - HZ.perf)); }
-  return Date.now() + HZ.off;
-}
-function horlogeRegle(off) {
-  HZ.off = off != null && Math.abs(off) > 120000 ? Math.round(off) : 0;
-  HZ.perf = performance.now(); HZ.d0 = Date.now() - HZ.perf; HZ.srv = Date.now() + HZ.off;
-  E.setBaseClock(horlogeNow);
-  const t = E.now();
-  if (S) { if (S.lastTick > t) S.lastTick = t; if (S.sablier && S.sablier.at > t) S.sablier.at = t; }
-  if (HZ.off < -600000 && !HZ.vu && booted) { HZ.vu = true; toast("L'heure de ton appareil n'est pas à l'heure : le jeu suit l'heure du serveur. Règle l'heure en automatique.", "warn", 12000); }
-}
-function horlogeSync(ms) {
-  if (!ON || !ON.horloge || HZ.busy) return HZ.busy || Promise.resolve();
-  if (Date.now() - HZ.essai < 15000 && HZ.d0 != null && HZ.essai) { const p = performance.now(), d = Date.now() - p; if (Math.abs(d - HZ.d0) <= 60000) return Promise.resolve(); }
-  HZ.essai = Date.now();
-  HZ.busy = ON.horloge(ms || 4000).then((off) => {
-    if (off != null) horlogeRegle(off);
-    else if (HZ.d0 != null) { const p = performance.now(); HZ.srv = Math.round(HZ.srv + (p - HZ.perf)); HZ.perf = p; HZ.off = HZ.srv - Date.now(); if (Math.abs(HZ.off) <= 120000) HZ.off = 0; HZ.d0 = Date.now() - p; } // serveur muet : l'appareil fait foi
-  }).catch(() => {}).finally(() => { HZ.busy = null; });
-  return HZ.busy;
-}
 async function onBoot() {
   ON.init({ key: LS_KEY, version: GAME_VERSION });
   const err = ON.urlError();
   onBlank("Chargement…");
-  if (ON.horloge) { horlogeRegle(ON.horlogeGardee ? ON.horlogeGardee() : null); await horlogeSync(3000); setInterval(() => horlogeSync(), 600000); }
   await ON.ready();
   // 14/10/2026 : nouveau serveur, la connexion de l'ancien ne vaut plus : une reconnexion avec Discord, la partie est gardée
   const moved = ON.moved ? "Idlus a déménagé sur un nouveau serveur. Reconnecte-toi une fois avec Discord : ta partie et ta progression sont gardées." : "";
@@ -12622,9 +12592,9 @@ function raceChip() {
 }
 /* 2.1.40 (Mathis 3A des onglets) : 6 groupes au lieu de 11 onglets, les classements du groupe en pastilles ;
    l'Ascension et le Kolizéum y sont rangés (leur page garde « Ton rang »), Builds devient le 6e groupe */
-const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds", ["#builds"]]];
+const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds ↗", ["#builds"]]];
 function lbGroupsHtml() {
-  const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ↗", "#koli": "Kolizéum ↗" };
+  const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ↗", "#koli": "Kolizéum ↗", "#builds": "Builds ↗" };
   const onB = ui.tab === "builds"; const cur = onB ? LB_GRP[5] : LB_GRP.find(([, L]) => L.includes(LB.tab)) || LB_GRP[0];
   const btn = (x, on, lbl) => x[0] === "#" ? `<button data-act="nav" data-v="${x.slice(1)}" aria-pressed="${on}">${lbl}</button>` : `<button data-act="lb-tab" data-v="${x}" aria-pressed="${on}">${lbl}</button>`;
   return `<nav class="subtabs lb-grp">${LB_GRP.map((g) => btn(g[1][0], g === cur, g[0])).join("")}</nav>`
@@ -12890,12 +12860,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S && !offRun) {
-    // 04/11/2026 : l'heure du serveur d'abord (au plus 2,5 s), puis l'absence depuis le dernier passage de la boucle
-    const lt = S.lastTick, s0 = S;
-    horlogeSync(2500).then(() => { if (S !== s0 || offRun) return; const now = E.now(), gap = (now - (lt || now)) / 1000;
-      if (gap > 60) { S.lastTick = lt; offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); } last = performance.now(); });
-  }
+  else if (S && !offRun) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -13138,7 +13103,7 @@ Object.assign(window.DX.social, { questGoBtn, cmdGoBtn, chestImg, jobImg, tresor
 Object.assign(window.DX.social, { lookSheet }); // 1.0.33 : teinture chromatique (js/chromaui.js)
 Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
 Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "forge" && ui.fg === "brisage" && !brisageOnly() && !isEditing() && !$("#sheet").innerHTML) render(); } }); // 1.0.30 : prix de l'HdV reçus (js/forgeui.js)
-Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, eqMarks, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 window.DX.animLvl = () => animLvl(); // 2.1.42 : bandeau du boss (js/formation.js)

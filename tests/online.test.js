@@ -936,7 +936,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true, nv13: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // 1.0.22 : la bulle « Jouer en musique ? » ne cache pas les clics du test
     const myCls = await page.evaluate(() => { const D = window.DATA, E = window.ENGINE, S = window.DX.S;
       const pick = (sl, L) => Object.keys(D.ITEMS).filter((k) => D.ITEMS[k].slot === sl && D.ITEMS[k].lvl <= L && D.ITEMS[k].craft).sort((a, b) => D.ITEMS[b].lvl - D.ITEMS[a].lvl)[0];
-      const code = (cls, lvl, st) => { const eq = {}; ["coiffe", "cape", "amulette", "ceinture", "bottes"].forEach((sl) => (eq[sl] = pick(sl, lvl))); eq.dofus1 = "dofus_cacao"; return E.BUILD_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, cls, lvl, n: "Héros", st, as: "", ac: 200, at: "vit", sp: [], eq })))); };
+      const code = (cls, lvl, st) => { const eq = {}; ["coiffe", "cape", "amulette", "ceinture", "bottes"].forEach((sl) => (eq[sl] = pick(sl, lvl))); eq.dofus1 = "dofus_cacao";
+        const rx = lvl === 200 ? Object.fromEntries(Object.entries(eq).map(([sl, t]) => [sl, [Object.fromEntries(Object.entries(D.ITEMS[t].stats || {}).map(([k, r]) => [k, r[1]])), sl === "coiffe" ? "pa" : undefined].filter((x) => x !== undefined)])) : undefined; // 2.2.3.3 : vrais jets (au maximum) et un exo PA
+        return E.BUILD_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, cls, lvl, n: "Héros", st, as: "", ac: 200, at: "vit", sp: [], eq, rx, gv: rx ? { bottes: 5 } : undefined })))); };
       const mk = (id, uid, pseudo, cls, lvl, el, bud, title, likers, views) => { const c = code(cls, lvl, { vit: 300, [el]: 200 }); const j = JSON.parse(decodeURIComponent(escape(atob(c.slice(7)))));
         return { id, user_id: uid, pseudo, hid: 1, cls, lvl, el, bud, tags: ["Donjon"], title, note: "Passer en Colère dès le 3e tour.", code: c, items: Object.values(j.eq), sex: "m", head: 0, likers, views, reports: [], hidden: false, removed: false, at: new Date().toISOString(), new: new Date().toISOString() }; };
       const mc = S.chars[0].cls; const other = mc === "eni" ? "cra" : "eni";
@@ -964,6 +966,17 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.$$("#bdPage .bd-st")).length < 3) fail("builds : fiche, caractéristiques absentes");
     if (!(await page.$("#bdPage .bd-cmpt"))) fail("builds : fiche, comparaison avec mon héros absente");
     if (!(await page.$("#bdPage .bd-dofp .dofp"))) fail("builds : fiche, passif du Dofus absent");
+    // 2.2.3.3 : vrais jets, exo, Parfait et gravure (Mathis : « l'onglet build ne met pas les vrais stats et exo des items »)
+    if ((await page.$$("#bdPage .bd-roll")).length !== 6) fail("builds : fiche, il faut les jets des 6 objets");
+    if (!/Exo PA/.test(await page.textContent("#bdPage .bd-dgrid")) || !(await page.$("#bdPage .bd-doll .exo-badge"))) fail("builds : fiche, exo PA absent");
+    if (!/Parfait/.test(await page.textContent("#bdPage .bd-dgrid")) || !/Gravure 5/.test(await page.textContent("#bdPage .bd-dgrid"))) fail("builds : fiche, Parfait ou gravure absent");
+    if (!/jets réels/.test(await page.textContent("#bdPage .bd-dgrid"))) fail("builds : fiche, caractéristiques encore aux jets moyens");
+    { const pa = await page.evaluate(() => { const x = [...document.querySelectorAll("#bdPage .bd-st")].find((e) => /^PA/.test(e.textContent.trim())); return x ? parseInt(x.querySelector("b").textContent, 10) : 0; });
+      const base = await page.evaluate(() => { const E = window.ENGINE, D = window.DATA, S = window.DX.S; const b = E.parseBuild(JSON.parse(localStorage.getItem("__mock")).builds[0].code); let n = 0; for (const sl in b.eq) n += ((D.ITEMS[b.eq[sl]].stats || {}).pa || [0, 0])[1]; return n; });
+      if (!(pa >= base + 1)) fail(`builds : fiche, l'exo PA n'est pas compté (${pa} PA)`); }
+    await page.click("#bdPage .bd-roll summary"); await page.waitForTimeout(150);
+    if (!(await page.$("#bdPage .bd-roll[open] .tipstats .statl"))) fail("builds : fiche, les lignes d'un objet ne s'ouvrent pas");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/build-jets-pc.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.screenshot({ path: process.env.SHOTS + "/build-jets-tel.png", fullPage: true }); await page.setViewportSize(vp); await page.waitForTimeout(300); }
     await page.waitForTimeout(300);
     if (!/👁 121/.test(await page.textContent("#bdPage .bd-dhead"))) fail("builds : vue non comptée");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/build-fiche.png", fullPage: true });

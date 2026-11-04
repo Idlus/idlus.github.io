@@ -3,7 +3,8 @@
    Page Joueurs › Builds, « un peu comme Huzounet » (choix de Mathis : tout en A).
    - Liste en cartes (héros en pied, objets, Dofus, ❤, vues), bandeau « Build de la semaine »,
      filtres en haut : classe, tranche de niveau, élément, budget, recherche (titre, objet, Dofus), tri.
-   - Fiche : équipement en « poupée » comme l'onglet Équipement, panoplies, caractéristiques aux jets moyens,
+   - Fiche : équipement en « poupée » comme l'onglet Équipement, panoplies, caractéristiques aux vrais jets du héros
+     (2.2.3.3 : jets, exos et gravure dans le code ; jets moyens pour un build publié avant),
      « Comparer avec mon héros », sorts, conseil de l'auteur ; Appliquer (sorts + caractéristiques),
      Liste de courses, Copier le code, ☆ Favori, ⚑ Signaler.
    - Publication depuis la fenêtre « Partager le build » du héros (compte Discord, 30 builds au plus),
@@ -86,19 +87,26 @@
     return sc < 0.75 ? "abo" : sc < 1.3 ? "moy" : "pre";
   }
 
-  /* ---------- caractéristiques aux jets moyens (4A), avec les bonus de panoplie ---------- */
+  /* ---------- caractéristiques : vrais jets (2.2.3.3), jets moyens pour un vieux build, avec les bonus de panoplie ---------- */
   const mid = (r) => Math.round((r[0] + r[1]) / 2);
+  /* 2.2.3.3 : un build publié depuis la 2.2.3.3 garde les vrais jets de ses objets et leur exo (b.rx) ; un plus ancien : jets moyens */
+  const real = (b) => !!(b && b.rx);
+  function itemOf(b, sl) {
+    const t = b.eq[sl], T = ITEMS[t] || {}; const r = b.rx && b.rx[sl];
+    if (r) return { tpl: t, stats: Object.assign({}, r.st), exo: r.exo || undefined };
+    const st = {}; for (const [sk, v] of Object.entries(T.stats || {})) st[sk] = mid(v); return { tpl: t, stats: st };
+  }
   function withItems(b, fn) {
     const s = S(); const eq = {}; let k = -900;
     try {
-      for (const [sl, t] of Object.entries(b.eq)) { const T = ITEMS[t]; if (!T) continue; const st = {}; for (const [sk, r] of Object.entries(T.stats || {})) st[sk] = mid(r); s.items[k] = { uid: k, tpl: t, stats: st }; eq[sl] = k; k--; }
+      for (const [sl, t] of Object.entries(b.eq)) { const T = ITEMS[t]; if (!T) continue; const it = itemOf(b, sl); it.uid = k; s.items[k] = it; eq[sl] = k; k--; }
       return fn(eq);
     } finally { for (let i = -900; i > k; i--) delete s.items[i]; }
   }
   /* le build seul : sans les bonus du compte de celui qui regarde (familles, Vitrine des trophées) */
   function statsOf(b) {
     const S2 = Object.create(S()); S2.families = {}; S2.trophies = {};
-    return disp(withItems(b, (eq) => E().charStats(S2, { id: -1, cls: b.cls, lvl: b.lvl, alloc: Object.assign({}, b.st), scrolls: {}, equip: eq, pet: null, mount: null, spells: [] })));
+    return disp(withItems(b, (eq) => E().charStats(S2, { id: -1, cls: b.cls, lvl: b.lvl, alloc: Object.assign({}, b.st), scrolls: {}, equip: eq, grav: Object.assign({}, b.gv), pet: null, mount: null, spells: [] })));
   }
   /* « Comparer avec mon héros » (15A) : le héros avec cet équipement et ces caractéristiques, ramenées à son niveau
      (comme « Appliquer »), en gardant ses parchemins, son familier et sa monture */
@@ -147,8 +155,14 @@
     return `<div class="bd-card" data-act="bd-open" data-id="${x.id}" style="--cc:${C.color}">
       <div class="bd-top">${look(x, "bd-look")}<img class="bd-wm" src="${X().symImg(x.cls)}" alt=""><span class="bd-lv num">${x.lvl}</span>${elTag(x.el)}${x.hidden ? `<span class="tag warn bd-hid">Caché</span>` : ""}</div>
       <div class="bd-body"><b class="bd-t">${h(x.title)}</b><span class="xs muted">${h(C.name)} · par <b>${h(x.by)}</b> · ${ago(x.at)}</span>
-        <div class="bd-gear">${gear}</div>${df ? `<div class="bd-gear dof">${df}</div>` : ""}
+        <div class="bd-gear">${gear}</div>${df ? `<div class="bd-gear dof">${df}</div>` : ""}${exoTags(x.b)}
         <div class="row bd-foot">${budTag(x.bud)}${(x.tags || []).map((t) => `<span class="tag soft">${h(t)}</span>`).join("")}<span class="grow"></span>${viewTag(x)}${votes(x)}</div>${tab() === "mine" && x.mine ? ownActs(x) : ""}</div></div>`;
+  }
+  /* 2.2.3.3 : les exos du build sur sa carte */
+  function exoTags(b) {
+    if (!b.rx) return ""; const n = {}; for (const sl in b.rx) { const k = b.rx[sl].exo; if (k) n[k] = (n[k] || 0) + 1; }
+    const t = Object.entries(n).map(([k, c]) => `<span class="tag exo xs">Exo ${h((STATS[k] || {}).short || k)}${c > 1 ? " ×" + c : ""}</span>`).join("");
+    return t ? `<div class="row bd-exos">${t}</div>` : "";
   }
   /* « Mes builds » : le héros relié (mise à jour en un clic s'il a changé) et la suppression, sur la carte */
   function ownActs(x) {
@@ -227,13 +241,36 @@
   /* ---------- fiche d'un build ---------- */
   function gearHtml(x) {
     const C = CLASSES[x.cls];
-    const ds = (s) => { const t = x.b.eq[s]; return t && ITEMS[t] ? `<button class="dslot filled" data-act="encitem" data-v="${t}" data-tip="${h(tipOf(t))}">${X().im(X().itemImg(t), "", ITEMS[t].name)}</button>` : `<span class="dslot" data-tip="${h(D.SLOTS[s])} : vide"><span class="dlabel">${h(D.SLOTS[s].split(" ")[0])}</span></span>`; };
+    const dsF = (s) => { const t = x.b.eq[s]; const it = real(x.b) ? itemOf(x.b, s) : null; const pf = it && E().isPerfect(it);
+      return `<button class="dslot filled ${pf ? "perf" : ""}" data-act="encitem" data-v="${t}" data-tip="${h(tipReal(x.b, s))}">${X().im(X().itemImg(t), "", ITEMS[t].name)}${it && X().eqMarks ? X().eqMarks(it, pf, ITEMS[t].dofus) : ""}</button>`; };
+    const ds = (s) => { const t = x.b.eq[s]; return t && ITEMS[t] ? dsF(s) : `<span class="dslot" data-tip="${h(D.SLOTS[s])} : vide"><span class="dlabel">${h(D.SLOTS[s].split(" ")[0])}</span></span>`; };
     return `<section class="panel pad stack" style="gap:10px"><h3>Équipement</h3>
       <div class="doll bd-doll"><div class="dcol">${X().DOLL_L.map(ds).join("")}</div>
         <div class="dcenter" style="--cc:${C.color}"><div class="dfig">${look(x, "dlook")}<span class="dlv">Niveau ${x.lvl}</span></div><b>${h(C.name)}</b>${elTag(x.el)}</div>
         <div class="dcol">${X().DOLL_R.map(ds).join("")}</div>
         <div class="drow">${ds("arme")}<span class="dsep"></span>${DOF.map(ds).join("")}</div></div>
-      <p class="xs muted" style="margin:0;text-align:center">Touche un objet pour voir sa fiche : caractéristiques, recette et où le trouver.</p></section>`;
+      <p class="xs muted" style="margin:0;text-align:center">Touche un objet pour voir sa fiche : recette et où le trouver. Ses vrais jets sont juste en dessous.</p></section>`;
+  }
+  /* 2.2.3.3 : les jets de chaque objet du build, son exo, Parfait et la gravure de l'emplacement */
+  const quality = (it) => { try { return Math.round(E().itemQuality(it) * 100); } catch (e) { return null; } };
+  function tipReal(b, sl) {
+    const t = b.eq[sl], T = ITEMS[t]; if (!real(b)) return tipOf(t) + " · build publié avant la 2.2.3.3 : jets du modèle";
+    const it = itemOf(b, sl); const q = quality(it); const pf = E().isPerfect(it); const g = (b.gv || {})[sl];
+    const lines = Object.entries(it.stats).filter(([, v]) => v).map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${(STATS[k] || {}).name || k}`);
+    return `${T.name} · niv. ${T.lvl}${q !== null && Object.keys(T.stats || {}).length ? ` · jet ${q} %` : ""}${pf ? " · Parfait" : ""}${it.exo ? ` · exo +1 ${(STATS[it.exo] || {}).name || it.exo}` : ""}${g ? ` · gravure rang ${g}` : ""}${lines.length ? " · " + lines.join(", ") : ""}`;
+  }
+  function rollsHtml(x) {
+    const b = x.b; const sls = ORDER.concat(DOF).filter((sl) => b.eq[sl] && ITEMS[b.eq[sl]]);
+    if (!sls.length) return "";
+    if (!real(b)) return `<section class="panel pad stack" style="gap:6px"><h3>Jets des objets</h3><p class="small muted" style="margin:0">Ce build a été publié avant la 2.2.3.3 : il ne garde que le nom des objets, la fiche compte donc des jets moyens. ${x.mine ? "Mets-le à jour depuis ton héros pour montrer ses vrais jets et ses exos." : "Son auteur peut le mettre à jour pour montrer ses vrais jets et ses exos."}</p></section>`;
+    const rows = sls.map((sl) => {
+      const t = b.eq[sl], T = ITEMS[t]; const it = itemOf(b, sl); const q = quality(it); const pf = E().isPerfect(it); const g = (b.gv || {})[sl];
+      const tags = [it.exo ? `<span class="tag exo">Exo ${h((STATS[it.exo] || {}).short || it.exo)}</span>` : "", pf ? `<span class="tag" style="background:var(--gold);color:#1a1200">Parfait</span>` : "", g ? `<span class="tag soft" data-tip="Gravure runique de l'emplacement : +${g} % aux caractéristiques positives">Gravure ${g}</span>` : ""].join("");
+      let st = ""; try { st = X().itemStatsHtml(it); } catch (e) { st = ""; }
+      return `<details class="bd-roll"><summary>${X().im(X().itemImg(t), "", T.name)}<span class="grow"><b class="small">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl}${q !== null && Object.keys(T.stats || {}).length ? ` · jet ${q} %` : ""}</span></span>${tags}</summary><div class="tipstats">${st}</div></details>`;
+    }).join("");
+    const nx = sls.filter((sl) => b.rx[sl] && b.rx[sl].exo).length;
+    return `<section class="panel pad stack" style="gap:6px"><h3>Jets des objets <span class="xs muted">(ceux du héros${nx ? ` · ${nx} exo${nx > 1 ? "s" : ""}` : ""})</span></h3>${rows}<p class="xs muted" style="margin:0">Touche un objet pour voir toutes ses lignes.</p></section>`;
   }
   const statName = (k, n) => h(n || ((STATS[k] || {}).name || k).replace("% ", ""));
   function statRows(x, st) {
@@ -242,7 +279,7 @@
   }
   function statsHtml(x, st) {
     const rows = statRows(x, st).filter(([k]) => ["hpMax", "pa", "pm"].includes(k) || st[k]).map(([k, n, ic]) => `<div class="bd-st">${X().sIco(ic || k)}<span class="grow small">${statName(k, n)}</span><b class="num">${X().fmt(st[k] || 0)}${k === "cri" ? " %" : ""}</b></div>`).join("");
-    return `<section class="panel pad stack" style="gap:8px"><h3>Caractéristiques <span class="xs muted">(jets moyens)</span></h3><div class="bd-sts">${rows}</div></section>`;
+    return `<section class="panel pad stack" style="gap:8px"><h3>Caractéristiques <span class="xs muted">(${real(x.b) ? "jets réels du héros" : "jets moyens"})</span></h3><div class="bd-sts">${rows}</div></section>`;
   }
   function cmpHtml(x, st) {
     const s = S(); const mine = s.chars.filter((c) => c.cls === x.cls);
@@ -257,7 +294,7 @@
     return `<section class="panel pad stack bd-cmp" style="gap:6px"><div class="row"><h3 class="grow">Comparer avec mon héros</h3>${pick}</div>
       <div class="bd-cmpt"><span></span><b class="xs">Avec ce build</b><b class="xs">${h(c.name)}</b><b class="xs">Écart</b>
       ${rows.map(([k, n, ic]) => { const a = as[k] || 0, m = now[k] || 0, d = Math.round(a - m); return `<span class="small bd-cn">${X().sIco(ic || k)}<span>${statName(k, n)}</span></span><b class="num">${X().fmt(a)}</b><span class="num">${X().fmt(m)}</span><b class="num ${d > 0 ? "bd-up" : d < 0 ? "bd-dn" : ""}">${d > 0 ? "+" : ""}${X().fmt(d)}</b>`; }).join("")}</div>
-      <p class="xs muted" style="margin:0">${h(c.name)} avec cet équipement (jets moyens) et cette répartition ramenée à son niveau, en gardant ses parchemins. En vert : ce qu'il gagnerait.${high > c.lvl ? ` Certains objets demandent le niveau ${high}.` : ""}</p></section>`;
+      <p class="xs muted" style="margin:0">${h(c.name)} avec cet équipement (${real(x.b) ? "jets et exos du build" : "jets moyens"}) et cette répartition ramenée à son niveau, en gardant ses parchemins. En vert : ce qu'il gagnerait.${high > c.lvl ? ` Certains objets demandent le niveau ${high}.` : ""}</p></section>`;
   }
   /* 1.0.16 : le passif de chaque Dofus du build, et l'Éveil des Dragons avec les 6 primordiaux */
   function dofpHtml(x) {
@@ -286,7 +323,7 @@
           ${x.hidden ? `<div class="small bad">Ce build est caché : il a été signalé plusieurs fois et attend la décision de l'équipe.</div>` : ""}
           <div class="row">${votes(x, true)}${viewTag(x)}</div></div></div>
       <div class="bd-dgrid">
-        <div class="stack" style="gap:12px">${gearHtml(x)}
+        <div class="stack" style="gap:12px">${gearHtml(x)}${rollsHtml(x)}
           ${sets.length ? `<section class="panel pad stack" style="gap:8px"><h3>Panoplies</h3>${sets.map(([z, n]) => X().setBlock(z, n)).join("")}</section>` : ""}
           ${dofpHtml(x)}</div>
         <div class="stack" style="gap:12px">${statsHtml(x, st)}${cmpHtml(x, st)}

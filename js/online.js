@@ -179,24 +179,6 @@
       return error.message;
     } catch (e) { return "Pas de connexion au serveur. Vérifie ton Internet."; }
   };
-  /* 04/11/2026 (Mathis : « comment faire pour empêcher cette triche ? ») : heure du serveur. Le jeu comptait le temps avec
-     l'heure de l'appareil : en l'avançant, le Sablier se remplissait et l'absence rapportait des jours de jeu. Le serveur
-     répond avec son heure (en-tête Date, à la seconde) ; ON.horloge() renvoie l'écart serveur − appareil en millisecondes
-     (null si le serveur ne répond pas), et le garde sur l'appareil pour le prochain lancement hors ligne. */
-  const HORLOGE_KEY = "idlus-horloge";
-  ON.horlogeGardee = () => { try { const v = JSON.parse(localStorage.getItem(HORLOGE_KEY) || "null"); return v && isFinite(v.off) ? +v.off : null; } catch (e) { return null; } };
-  ON.horloge = async (ms) => {
-    if (!/^https:/.test(URL_ || "") || typeof fetch !== "function") return null;
-    try {
-      const t0 = Date.now();
-      const r = await withTimeout(fetch(URL_ + "/auth/v1/health", { headers: { apikey: KEY_ }, cache: "no-store" }), ms || 4000);
-      const t1 = Date.now(), d = Date.parse(r.headers.get("date") || "");
-      if (!isFinite(d) || t1 - t0 > 10000) return null;
-      const off = Math.round(d + 500 - (t0 + t1) / 2); // l'en-tête est à la seconde près : + 0,5 s en moyenne
-      try { localStorage.setItem(HORLOGE_KEY, JSON.stringify({ off, at: d })); } catch (e) {}
-      return off;
-    } catch (e) { return null; }
-  };
   ON.signOut = async () => { try { await withTimeout(sb.auth.signOut(), 5000); } catch (e) {} ON.user = null; ON.profile = null; setState("anon"); };
   /* Nom affiché pour le compte (Discord ou e-mail). */
   ON.identities = () => {

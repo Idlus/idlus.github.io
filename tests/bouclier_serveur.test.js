@@ -101,11 +101,8 @@ if (!L.suspect) fail("le signalement d'une partie impossible s'efface tout seul 
 L.suspect = false;
 const S5 = E.deserialize(T.saves_ok[0].data); S5.stats.playtime += 160 * 3600; delete S5.items[it4.uid];
 Object.assign(T.saves[0], { data: E.serialize(S5), updated_at: iso(t0 + 4000e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
-const src5 = T.saves_ok[0].src_at;
 r = await call("u1", { verif: 1 }); if (!r.signale || !L.suspect) fail("+160 h de temps de jeu non signalé sur un compte vérifié");
-// 04/11 (choix de Mathis « Oui, exception horloge ») : du temps de jeu inventé ne s'affiche pas, la partie validée d'avant reste
-if (r.ok || !r.held || T.saves_ok[0].src_at !== src5) fail("temps de jeu inventé affiché quand même : " + JSON.stringify(r));
-console.log("ok - compte vérifié : temps de jeu et impossible toujours signalés ; temps de jeu inventé non affiché");
+console.log("ok - compte vérifié : temps de jeu et impossible toujours signalés, jamais bloqués");
 // 6. combats rejoués : ils partent de la partie validée (un record de donjon sur une partie retenue ne voit pas les retouches)
 if (!/okSave\\(db, uid\\)/.test(${JSON.stringify(src)})) fail("les combats ne lisent pas la partie validée");
 console.log("ok - les combats rejoués lisent la partie validée");
