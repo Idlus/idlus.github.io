@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.3 « Panel complet sur chaque serveur »
+
+- js/panel.js (Mathis 04/11 : « y'a plein de parties que je ne vois pas dans les panels ») : groupe « Commun aux 3 serveurs » (Comptes, Signalements, Annoncer, Codes cadeaux, Bugs, Suggestions, Inscriptions et journal, Réglages du chat, Modérateurs) au bas du menu d'Éternel, Saison 1 et Monocompte ; on reste dans le serveur choisi. tools/saison_schema.js : annonces_srv.sql partagé (pas de copie dans s1).
+
 ## 2.2.4.2 « Builds en Monocompte »
 
 - Mathis 04/11 : « la page des builds n'est pas sur monocompte ». supabase/mono_builds.sql (fabriqué par tools/mono_builds.js depuis builds.sql : tables mono_builds, mono_build_likes, mono_build_views, mono_build_reports ; fonctions mono_builds_list, mono_builds_me, mono_build_publish/delete/like/view/report, adm_builds_mono, adm_build_set_mono), installé par l'étape Serveur OVH monocompte-builds (sauvegarde complète d'abord). Les builds du Monocompte ne se mélangent pas à ceux du Classique ; le Classique ne change pas (tests/mono_builds_sql.test.js dans un Postgres jetable).

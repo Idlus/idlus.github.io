@@ -133,8 +133,9 @@ function fake() {
   const body = (page) => page.evaluate(() => document.querySelector(".px-body").innerText);
   const annbar = (page) => page.evaluate(() => (document.querySelector("#annbar") || {}).textContent || "");
 
-  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mbuilds", "mchat"]; // 2.2.4.2 : Builds du Monocompte;
-  const CLASSIC = ["srvvue", "enligne", "verif", "fiches", "hdv", "guildes", "builds", "salon"];
+  const COMMUN = ["joueurs", "sig", "ann", "codes", "bugs", "idees", "vue", "chat", "equipe"]; // 04/11 : pages communes aussi au bas du menu de chaque serveur
+  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mbuilds", "mchat"].concat(COMMUN); // 2.2.4.2 : Builds du Monocompte
+  const CLASSIC = ["srvvue", "enligne", "verif", "fiches", "hdv", "guildes", "builds", "salon"].concat(COMMUN);
   const TOUS = ["joueurs", "sig", "vue", "ann", "codes", "chat", "bugs", "idees", "equipe", "test"];
   const badges = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".px-sp button")].map((b) => [b.dataset.v, (b.querySelector("em") || {}).textContent || ""])));
   const same = (a, b) => a.join(",") === b.join(",");
@@ -243,9 +244,10 @@ function fake() {
       if (await page.$("#mbH-2")) fail("Bureau : créneau supprimé encore affiché");
       await shot(page, `panel-mono-bureau-${w}.png`);
     }
-    /* fiche d'un joueur depuis le Monocompte : « Tous les serveurs › Comptes » */
+    /* fiche d'un joueur depuis le Monocompte : Comptes (commun) s'ouvre sans quitter le Monocompte (04/11) */
     await page.evaluate(() => window.CHAT.openAdmin("joueurs", "Zoé")); await page.waitForTimeout(500);
-    if ((await srvOn(page)) !== "t" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail(`${W} : fiche d'un joueur : « Tous les serveurs › Comptes » attendu`);
+    if ((await srvOn(page)) !== "m" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail(`${W} : fiche d'un joueur : « Monocompte › Comptes » attendu`);
+    await page.click('.px-sp [data-v="t"]'); await page.waitForTimeout(400);
     /* ---------- Tous les serveurs ---------- */
     N = await nav(page); if (!same(N, TOUS)) fail(`${W}, Tous les serveurs : menu ${N.join(",")}`);
     if (full) { const r = await search(page, "annoncer"); if (!r.some((x) => /Aller à : Annoncer/.test(x))) fail("Tous : recherche « annoncer » : " + r.join(" | ")); }

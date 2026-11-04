@@ -834,7 +834,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_msg_del" && x[1].p_id === delId)) fail("chat admin : suppression non envoyée");
     if (await page.$(`#chat [data-id="${delId}"]`)) fail("chat admin : message supprimé encore affiché");
     await page.evaluate((x) => window.CHAT.openAdmin(x), "chat"); await page.waitForSelector('.adm [data-act="adm-chclose"]', { timeout: 5000 }); // 2.2.4 : Tous les serveurs › Réglages du chat
+    await page.click('.px-sp [data-v="t"]'); await page.waitForTimeout(300); // 2.2.4.2 : Réglages du chat est aussi dans le menu de chaque serveur
     if (!(await page.$('.px-nav [data-v="test"]'))) fail("panel admin : Partie de test absente de « Tous les serveurs »");
+    await page.evaluate((x) => window.CHAT.openAdmin(x), "chat"); await page.waitForSelector('.adm [data-act="adm-chclose"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-chclose"][data-v="1"]'); await page.waitForTimeout(500);
     m = await mock(); if (!m.chatClosed) fail("chat admin : fermeture du chat non envoyée");
     if (!(await page.$('.adm [data-act="adm-chclose"][data-v="0"]'))) fail("chat admin : bouton Rouvrir absent");

@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.2",
+  "version": "2.2.4.3",
   "versions": [
+    {
+      "v": "2.2.4.3",
+      "name": "Panel complet sur chaque serveur",
+      "items": [
+        "Panel de l'équipe : les pages communes (Comptes, Annoncer, Codes cadeaux, Bugs, Suggestions, Modérateurs…) sont aussi au bas du menu d'Éternel, de Saison 1 et du Monocompte"
+      ]
+    },
     {
       "v": "2.2.4.2",
       "name": "Builds en Monocompte",

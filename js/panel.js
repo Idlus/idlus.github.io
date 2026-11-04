@@ -67,15 +67,18 @@
   const SRV_TIP = { e: "Serveur Classique, espace Éternel (les parties d'avant la saison)", s: "Serveur Classique, espace de la Saison 1", m: "Serveur Monocompte (saison en cours)", t: "Pages communes aux trois serveurs" };
   const SRV_WHERE = { e: "Tu agis sur l'<b>Éternel</b> du Classique (les parties d'avant la saison).", s: "Tu agis sur la <b>Saison 1</b> du Classique.", m: "Tu agis sur le <b>Monocompte</b>. Rien ici ne touche au Classique.", t: "Pages <b>communes aux trois serveurs</b> : un compte, un code ou une annonce vaut partout." };
   const HOME = { a: "accueil", e: "srvvue", s: "srvvue", m: "monovue", t: "ann" };
+  /* 04/11 (Mathis : « plein de parties que je ne vois pas dans les panels ») : les pages communes aux trois serveurs sont aussi au
+     bas du menu de chaque serveur (on reste dans le serveur choisi) */
+  const COMMUN = ["Commun aux 3 serveurs", [["joueurs", "Comptes", "couronne"], ["sig", "Signalements du chat", "combat"], ["ann", "Annoncer", "parchemin_or"], ["codes", "Codes cadeaux", "coffre"], ["bugs", "Bugs", "bug"], ["idees", "Suggestions", "idee"], ["vue", "Inscriptions et journal", "trophee"], ["chat", "Réglages du chat", "parchemin_or"], ["equipe", "Modérateurs", "couronne"]]];
   const MENU = {
     c: [["", [["srvvue", "Vue d'ensemble", "trophee"], ["enligne", "En ligne", "couronne"]]],
       ["Joueurs", [["verif", "À vérifier (Bouclier)", "cristal"], ["fiches", "Fiches joueurs", "parchemin_or"]]],
       ["Jeu", [["hdv", "Hôtel de vente", "bourse"], ["guildes", "Guildes", "couronne"], ["builds", "Builds", "parchemin_or"]]],
-      ["Salon", [["salon", "", "parchemin_or"]]]],
+      ["Salon", [["salon", "", "parchemin_or"]]], COMMUN],
     m: [["", [["monovue", "Vue d'ensemble", "trophee"], ["monoenligne", "En ligne", "couronne"]]],
       ["Joueurs", [["monobouclier", "À vérifier (Bouclier)", "cristal"], ["monojournal", "Journal du Bouclier", "parchemin_or"], ["monoremise", "Copies des parties", "phenix"], ["monotesteurs", "Testeurs", "couronne"], ["clesbeta", "Clés bêta", "cle"]]],
       ["Jeu", [["monobureau", "Bureau des Aventuriers", "combat"], ["mbuilds", "Builds", "parchemin_or"]]],
-      ["Salon", [["mchat", "Salon Monocompte", "parchemin_or"]]]],
+      ["Salon", [["mchat", "Salon Monocompte", "parchemin_or"]]], COMMUN],
     t: [["", [["joueurs", "Comptes", "couronne"], ["sig", "Signalements du chat", "combat"], ["vue", "Inscriptions et journal", "trophee"]]],
       ["Communiquer", [["ann", "Annoncer", "parchemin_or"], ["codes", "Codes cadeaux", "coffre"], ["chat", "Réglages du chat", "parchemin_or"]]],
       ["Retours", [["bugs", "Bugs", "bug"], ["idees", "Suggestions", "idee"]]],
