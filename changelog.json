@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.5",
+  "version": "2.2.4.6",
   "versions": [
+    {
+      "v": "2.2.4.6",
+      "name": "Connexion plus sûre",
+      "items": [
+        "Une connexion qui se renouvelle en boucle est maintenant coupée même quand le temps du navigateur est faussé : le jeu compte avec l'heure du serveur. Ta partie est gardée, il suffit de te reconnecter"
+      ]
+    },
     {
       "v": "2.2.4.5",
       "name": "Codes cadeaux par le serveur",

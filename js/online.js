@@ -130,10 +130,17 @@
      session le faisait 3 fois par seconde (12 000 renouvellements par heure, +11 Mo par heure dans la base). Au-delà de 20
      renouvellements en une minute (normalement un par heure), la connexion est fermée sur cet appareil et le joueur prévenu ;
      la partie reste sur l'appareil. ON.onLoop(texte) : message affiché par l'interface. */
+  /* 2.2.4.6 (04/11, sessions en boucle du matin) : le garde-fou comptait avec l'horloge de l'appareil. Un logiciel qui accélère
+     le temps du navigateur (Date, chronomètre et minuteries ensemble) étirait sa minute : 270 renouvellements par vraie minute
+     n'en faisaient que quelques-uns par « minute » de l'appareil, et la session a tourné des heures (16 000 par heure). On compte
+     maintenant avec l'heure du serveur portée par chaque jeton (expires_at - expires_in, à l'émission), que l'appareil ne peut
+     pas accélérer : plus de 20 renouvellements en 60 s du serveur, ou plus de 40 en 30 min, coupent la session. */
   let renewals = [], looping = false;
+  const srvSec = (session) => session && +session.expires_at > 0 && +session.expires_in > 0 ? +session.expires_at - +session.expires_in : Date.now() / 1000;
   const renewed = (session) => {
-    const t = Date.now(); renewals = renewals.filter((x) => t - x < 60000); renewals.push(t);
-    if (renewals.length <= 20 || looping) return;
+    const t = srvSec(session); renewals = renewals.filter((x) => t - x < 1800 && x - t < 1800); renewals.push(t);
+    const minute = renewals.filter((x) => t - x < 60).length;
+    if ((minute <= 20 && renewals.length <= 40) || looping) return;
     looping = true; renewals = [];
     // hors du rappel de la bibliothèque : y appeler signOut directement la bloquerait
     setTimeout(() => stopLoop(session).finally(() => { looping = false; }), 0);
@@ -146,6 +153,9 @@
       : "Connexion en ligne coupée : elle se renouvelait en boucle. Reconnecte-toi, et vérifie l'heure de ton appareil si ça recommence. Ta partie est gardée.";
     try { await sb.auth.stopAutoRefresh(); } catch (e) {}
     try { await withTimeout(sb.auth.signOut({ scope: "local" }), 5000); } catch (e) {} // ferme cette session seulement (les autres appareils restent connectés)
+    // 2.2.4.6 : si la déconnexion n'a pas abouti (serveur lent, minuteries faussées), la session est quand même retirée de
+    // l'appareil : la bibliothèque la relit à chaque appel, elle ne peut donc plus se renouveler
+    try { const ref = (/^https:\/\/([^.]+)\./.exec(URL_) || [])[1]; if (ref) root.localStorage.removeItem("sb-" + ref + "-auth-token"); } catch (e) {}
     ON.user = null; ON.profile = null; setState("anon");
     if (ON.onLoop) { try { ON.onLoop(txt); } catch (e) {} }
   };

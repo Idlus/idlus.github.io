@@ -1450,6 +1450,17 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.evaluate((s) => { const d = JSON.parse(localStorage.getItem("__mock")); d.session = s; delete d.signOutScope; localStorage.setItem("__mock", JSON.stringify(d)); }, sess);
     await page.reload(); await page.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
+    // 8 quater bis. 2.2.4.6 : le garde-fou compte avec l'heure du serveur portée par les jetons (pas l'horloge de l'appareil, qu'un
+    // accélérateur de temps fausse) : 21 renouvellements espacés de 40 s du serveur ne coupent rien, 41 en moins de 30 min coupent
+    const renewSrv = (from, n) => page.evaluate(([from, n]) => { const t0 = Math.round(Date.now() / 1000); const u = JSON.parse(localStorage.getItem("__mock")).session;
+      for (let i = from; i < from + n; i++) window.__authCb("TOKEN_REFRESHED", { expires_in: 3600, expires_at: t0 + 3600 + 40 * i, user: u }); }, [from, n]);
+    await renewSrv(0, 21); await page.waitForTimeout(300);
+    if (!(await mock()).session || (await page.$eval("#onPill", (e) => e.dataset.st)) === "anon") fail("boucle de connexion : coupée alors que les renouvellements sont espacés de 40 s (heure du serveur)");
+    await renewSrv(21, 20); await page.waitForTimeout(400);
+    if ((await mock()).session) fail("boucle de connexion : 41 renouvellements en moins de 30 min (heure du serveur) non coupés");
+    await page.evaluate((s) => { const d = JSON.parse(localStorage.getItem("__mock")); d.session = s; delete d.signOutScope; localStorage.setItem("__mock", JSON.stringify(d)); }, sess);
+    await page.reload(); await page.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     // 8 quinquies. 1.0.30 : un Dofus Sublimé part dans le résumé envoyé (meta.dsub) : le serveur l'annonce (supabase/collections.sql)
     await page.evaluate(() => { const { E, S } = window.DX; E.rollItem(S, "dofus_emeraude", { radiant: false }); (S.dofPot = S.dofPot || {}).emeraude = { r: 10, e: 0 }; return window.DX.social.onPush(); });
     await page.waitForTimeout(300);
