@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
       await page.addStyleTag({ content: ".wtip{display:none!important}" });
       const st = await page.evaluate(() => {
         const { E, S } = window.DX; const D = window.DATA; const IT = D.ITEMS;
-        E.monoStart(S); E.monoBoot(S); const me = S.chars[0]; me.lvl = 55; E.autoAllocate(S, me);
+        E.monoStart(S); E.monoBoot(S); const me = S.chars[0]; me.lvl = 55; E.autoAllocate(S, me); S.kamas = Math.max(S.kamas, E.MONO.merc.cost); // 2.2.7.1 : le renfort se paie
         // l'ami : un Crâ niveau 60 équipé chez lui
         const F = E.monoStart(E.newState("Zeph", "cra")); E.monoBoot(F); const f = F.chars[0]; f.lvl = 60; E.autoAllocate(F, f);
         ["coiffe", "cape", "amulette", "ceinture", "bottes"].forEach((sl) => { const id = Object.keys(IT).find((k) => IT[k].slot === sl && IT[k].lvl <= 60 && IT[k].lvl >= 40 && IT[k].stats && IT[k].stats.vit); if (id) { const it = E.rollItem(F, id, {}); E.equip(F, f.id, it.uid, sl); } });

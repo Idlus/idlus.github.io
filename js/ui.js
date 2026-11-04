@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.7";
+const GAME_VERSION = "2.2.7.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.7.1", name: "Renfort d'un ami payant", items: [
+    "Monocompte : le renfort d'un ami coûte maintenant 25 000 kamas par donjon, comme le mercenaire (payé à chaque course enchaînée). Les kamas sont détruits : ton ami ne gagne toujours rien, seulement son compteur d'aides" ] },
   { v: "2.2.7", name: "Refonte des drops", items: [
     "Plus de drops à haut niveau : rien ne change jusqu'au niveau 60, puis les chances montent jusqu'à ×3 au niveau 200",
     "Paliers de jet : 12 % des équipements dropés sont « Beau » (lignes ≥ 50 %) et 3 % « Superbe » (lignes ≥ 80 %, jusqu'à 8 % en stasis 15). Un Superbe n'est jamais brisé automatiquement",
@@ -4642,6 +4644,7 @@ function monoDgBox() {
 let renfBusy = false;
 async function enterRenfort(did, stasis, u, chain, climb) {
   if (renfBusy) return; if (!window.AMIS || !window.AMIS.prendre) { toast("Le renfort d'un ami passe par le serveur Monocompte."); return; }
+  if (S.kamas < E.MONO.merc.cost) { toast(`Il faut ${fmt(E.MONO.merc.cost)} kamas pour le renfort d'un ami.`); return; } // 2.2.7.1 : avant d'appeler le serveur
   renfBusy = true; let R;
   try { R = await window.AMIS.prendre(u, did, stasis || 1); } finally { renfBusy = false; }
   if (!R || R.err) { toast((R && R.err) || "Ce renfort n'est pas disponible."); return; }

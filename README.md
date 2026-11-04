@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.7.1 « Renfort d'un ami payant »
+
+- Choix de Mathis (04/11, option A) : au Monocompte, le renfort d'un ami coûte le prix du mercenaire (`E.MONO.merc.cost`, 25 000 kamas) à l'entrée (`E.monoEnterRenfort`, js/monoplus.js) puis à chaque course enchaînée (`E.enterDungeon`, js/mono.js). Kamas détruits, rien pour l'ami. Sans les kamas, le choix du renfort est grisé et le jeu n'appelle pas le serveur. Test monoplus.
+
 ## 2.2.7 « Refonte des drops »
 
 - Plus de drops à haut niveau : rien ne change jusqu'au niveau 60, puis les chances montent jusqu'à ×3 au niveau 200.

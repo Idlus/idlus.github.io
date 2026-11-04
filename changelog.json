@@ -1,6 +1,13 @@
 {
-  "version": "2.2.7",
+  "version": "2.2.7.1",
   "versions": [
+    {
+      "v": "2.2.7.1",
+      "name": "Renfort d'un ami payant",
+      "items": [
+        "Monocompte : le renfort d'un ami coûte maintenant 25 000 kamas par donjon, comme le mercenaire (payé à chaque course enchaînée). Les kamas sont détruits : ton ami ne gagne toujours rien, seulement son compteur d'aides"
+      ]
+    },
     {
       "v": "2.2.7",
       "name": "Refonte des drops",

@@ -65,7 +65,9 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   assert.strictEqual(enter(S, did, 1, { ami: R }), null);
   const rc = S.chars.find((c) => c.merc); assert(rc && rc.renfort && rc.renfort.p === "Ombrelune" && rc.snap, "renfort dans l'équipe");
   assert.strictEqual(S.chars.filter((c) => c.merc).length, 1, "un seul : pas de mercenaire en plus");
-  assert.strictEqual(S.kamas, k0, "le renfort ne coûte rien");
+  assert.strictEqual(S.kamas, k0 - E.MONO.merc.cost, "2.2.7.1 : le renfort coûte le prix du mercenaire (kamas détruits)");
+  { const P = mono(55); P.kamas = E.MONO.merc.cost - 1; assert.match(enter(P, did, 1, { ami: R }) || "", /kamas pour le renfort/, "pas assez de kamas : renfort refusé");
+    assert.strictEqual(P.kamas, E.MONO.merc.cost - 1, "rien payé"); assert(!P.chars.some((c) => c.merc), "pas de renfort sans payer"); }
   assert.strictEqual(E.monoPlayers(S, E.team(S)), 1.5, "compte pour un demi-joueur, comme le mercenaire");
   // 22/10 : la copie se bat et s'affiche avec ses caractéristiques équipement compris, et garde ses objets à elle
   assert.deepStrictEqual(E.charStats(S, rc), snap.st, "caractéristiques de la copie (équipement compris)");
@@ -90,7 +92,7 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   // trop fort, photo illisible, sous serment
   assert.match(enter(mono(30), did, 1, { ami: R }), /trop fort/);
   { // copie d'un ami en « Ma rotation » : elle garde sa rotation (avant : « Mon ordre », refait sans son arme)
-    const G = mono(55); const rot = [{ id: snap.sp[0].id }, { id: "arme" }];
+    const G = mono(55); G.kamas = 5e5; const rot = [{ id: snap.sp[0].id }, { id: "arme" }];
     assert.strictEqual(enter(G, did, 1, { ami: Object.assign({}, R, { snap: Object.assign({}, snap, { am: 2, rot }) }) }), null);
     const g = G.chars.find((c) => c.merc); assert.strictEqual(g.atkMode, "rot"); assert.deepStrictEqual(g.rot, rot, "rotation de l'ami");
   }
@@ -100,7 +102,7 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
 { // 2.2.3 (Mathis : « pouvoir enchaîner les combats avec un ami dans un donjon ») : le renfort reste pour tout l'enchaînement
   const F = mono(60); E.autoAllocate(F, F.chars[0]); E.refreshSpells(F.chars[0], E.charStats(F, F.chars[0]));
   const R = { u: "00000000-0000-0000-0000-000000000003", p: "Zeph", snap: E.monoSnap(F, F.chars[0]) };
-  const S = mono(55); const did = dj(1); const key = D.DUNGEONS[did].key;
+  const S = mono(55); const did = dj(1); const key = D.DUNGEONS[did].key; S.kamas = 5e5;
   S.res[key] = 3; // 3 clés
   const SI = E.stasisInfo(S, did); SI.max = Math.max(SI.max, 0);
   assert.strictEqual(E.monoEnter(S, did, 1, { ami: R }, 3, 0), null, "entrée avec le renfort et 3 donjons enchaînés");
@@ -112,6 +114,12 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   assert.deepStrictEqual([...runs], [1, 2, 3], "trois courses avec le même renfort");
   assert(!S.chars.some((c) => c.merc), "le renfort repart à la fin de l'enchaînement");
   assert.strictEqual(E.monoAide(S).ren, 1, "un renfort pris (une seule demande au serveur)");
+  // 2.2.7.1 : chaque course enchaînée se paie, comme le mercenaire ; sans les kamas, l'enchaînement s'arrête
+  const P = mono(55); P.res[key] = 3; E.stasisInfo(P, did).max = Math.max(E.stasisInfo(P, did).max, 0); P.kamas = E.MONO.merc.cost;
+  assert.strictEqual(E.monoEnter(P, did, 1, { ami: R }, 3, 0), null); assert(P.kamas < 1000, "première course payée");
+  const runsP = new Set(); for (let t = 0; P.dungeon && t < 6 * 3600 * 1000; t += 1000) { runsP.add(P.dungeon.run || 1); E.tick(P, 1000); }
+  assert.deepStrictEqual([...runsP], [1], "sans 25 000 kamas, pas de deuxième course avec le renfort");
+  assert(!P.chars.some((c) => c.merc), "le renfort repart");
 }
 
 // 3. Mutation de la semaine : rotation, semaines suivantes, stasis 7 et plus seulement, jamais au Classique

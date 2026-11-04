@@ -97,6 +97,7 @@
   E.horlogerBuy = function (S) { if (E.monoFer(S)) return "Serment de fer : l'Horloger ne te vend pas de temps pendant la saison."; return horloger0.apply(this, arguments); };
 
   /* ======================= Mercenaire et renfort d'un ami ======================= */
+  const kamTxt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   M.renfort = { ecart: 10, get: null }; // get(u) : le renfort prêté par un ami (js/amis.js, pour l'affichage) ; la copie d'un ami : son héros au plus 10 niveaux au-dessus du tien
   const enter0 = E.monoEnter;
   /* mercCls : classe du mercenaire, ou { ami: { u, p, snap } } pour le renfort d'un ami (l'un ou l'autre ; snap = la copie
@@ -119,6 +120,7 @@
     if (!R || !R.u || !E.monoSnapOk(R.snap)) return "Ce renfort n'est pas disponible.";
     const me = hero(S); if (!me) return "Héros introuvable.";
     if (R.snap.lvl > me.lvl + M.renfort.ecart) return `Le héros de ${R.p || "ton ami"} est trop fort pour t'accompagner (${M.renfort.ecart} niveaux au-dessus du tien au plus).`;
+    if (S.kamas < E.MONO.merc.cost) return `Il faut ${kamTxt(E.MONO.merc.cost)} kamas pour le renfort d'un ami.`; // 2.2.7.1 (Mathis 04/11) : le prix du mercenaire, kamas détruits
     return null;
   };
   E.monoEnterRenfort = (S, did, stasis, R, chain, climb) => {
@@ -132,9 +134,10 @@
     E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
     const e2 = E.enterDungeon(S, did, stasis, chain, climb); // la copie reste pour tout l'enchaînement (elle repart à la fin, comme le mercenaire)
     if (e2) { E.monoMercClear(S); return e2; }
+    S.kamas -= E.MONO.merc.cost; // 2.2.7.1 : payé à l'entrée (puis à chaque course enchaînée, js/mono.js), comme le mercenaire ; rien pour l'ami
     S.mono.merc = c.id; E.monoAide(S).ren++;
     S.mono.renN = (S.mono.renN || 0) + 1;
-    if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ${(chain || 1) > 1 ? "cet enchaînement de donjons" : "ce donjon"} (renfort, sans gain pour lui).`, "info");
+    if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ${(chain || 1) > 1 ? "cet enchaînement de donjons" : "ce donjon"} (renfort, ${kamTxt(E.MONO.merc.cost)} kamas${(chain || 1) > 1 ? " par donjon" : ""}).`, "info");
     return null;
   };
 

@@ -185,12 +185,12 @@
     }
     return E.enterDungeon(S, did, stasis, chain, climb);
   };
-  /* 2.1.38.x : donjons enchaînés avec mercenaire : il reste pour la course suivante, payée à chaque nouvelle entrée (le renfort d'un ami ne coûte rien) */
+  /* 2.1.38.x : donjons enchaînés avec mercenaire : il reste pour la course suivante, payée à chaque nouvelle entrée ; 2.2.7.1 (Mathis 04/11) : le renfort d'un ami aussi, au même prix */
   const enterDg0 = E.enterDungeon;
   E.enterDungeon = function (S, did) {
     const c = S && S.mono && S.mono.merc != null && !S.dungeon ? S.chars.find((x) => x.merc && x.id === S.mono.merc) : null;
-    if (!c || c.renfort) return enterDg0.apply(this, arguments);
-    if (S.kamas < M.merc.cost) return `il faut ${kam(M.merc.cost)} kamas pour garder le mercenaire.`;
+    if (!c) return enterDg0.apply(this, arguments);
+    if (S.kamas < M.merc.cost) return `il faut ${kam(M.merc.cost)} kamas pour garder ${c.renfort ? "le renfort de ton ami" : "le mercenaire"}.`;
     const r = enterDg0.apply(this, arguments);
     if (!r) S.kamas -= M.merc.cost;
     return r;
