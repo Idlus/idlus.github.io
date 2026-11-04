@@ -337,6 +337,10 @@ jobs:
             from public.profiles p join mono.parties m on m.user_id = p.id where lower(p.pseudo) = lower('$p') order by m.saison desc limit 1" > "$d/mono.json"
           echo; echo "################ Serveur Monocompte ################"
           node tools/enquete_joueur.js "$d/mono.json" || true
+          echo "== Monocompte : opérations du serveur depuis la dernière partie validée (sans contenu, #172)"
+          bash tools/serveur/vps_sql.sh lecture "select o.id, o.at, (select array_agg(k) from jsonb_object_keys(o.payload) k) as cles, o.payload->'k' as k, o.payload ? 'vote' as vote,
+            o.payload ? 'sold' as sold, o.payload ? 'got' as got, left(o.txt, 70) as txt from mono.ops o join public.profiles p on p.id = o.user_id
+            where lower(p.pseudo) = lower('$p') and o.id > coalesce((select (x.bilan->>'op')::bigint from mono.parties_ok x where x.user_id = p.id order by x.saison desc limit 1), 0) - 5 order by o.id" || true
           rm -rf "$d"
       - name: Francois suspendu 7 jours et partie Monocompte remise à zéro (essai ou pour de vrai, ordre écrit de Mathis du 04/11)
         if: inputs.etape == 'francois-0411-essai' || inputs.etape == 'francois-0411'
