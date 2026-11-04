@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.3.1";
+const GAME_VERSION = "2.2.3.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.3.2", name: "Où ? toujours là", items: [
+    "Artisanat : « Où ? » et « Offre HdV » restent sur chaque ressource de la recette, même quand tu en as assez. Pratique pour en racheter ou savoir où la récolter avant de lancer 10 fabrications" ] },
   { v: "2.2.3.1", name: "Enchaîner avec un ami", items: [
     "Monocompte : le renfort d'un ami suit maintenant les donjons enchaînés (et la montée de stasis). Choisis le nombre de clés, prends le héros de ton ami : il reste jusqu'à la fin de l'enchaînement, toujours gratuit et sans gain pour lui" ] },
   { v: "2.2.3", name: "Menu réorganisé", guide: "menus", items: [
@@ -2094,7 +2096,7 @@ const CHANGELOG = [
     "Forgemagie refaite : établi avec la liste des objets à gauche et l'objet à droite (plein écran au téléphone), jauge de chaque caractéristique, historique en couleurs, onglet Plans, aide « Comment ça marche »",
     "Brisage : filtres, cases à cocher et « Briser la sélection ». Runes : une carte par caractéristique avec « Fusionner tout »",
     "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
-    "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
+    "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » sur chaque ressource",
     "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier",
   ] },
   { v: "0.1.42", name: "Accueil du jour", items: [
@@ -8433,7 +8435,7 @@ function recDetail(r, job) {
       <button class="btn sm ghost" data-act="recfav" data-id="${h(r.id)}" title="Favori">${r.fav ? "★" : "☆"}</button></div>
     ${stats}
     <h3 class="sec">Ressources</h3>
-    <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b>${ok ? "" : `<button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${q - have}">Offre HdV</button>` : ""}`}</div>`; }).join("")}</div>
+    <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b><button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${ok ? q : q - have}">Offre HdV</button>` : ""}</div>`; }).join("")}</div>
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
     ${galetBox(r)}
     ${r.T ? (() => { const R = E.recyCfg(S); return `<label class="small recycraft"><input type="checkbox" data-act="recyset" data-k="craft" ${R.craft ? "checked" : ""}><span>♻ <b>Recycler aussitôt</b> : garder les <input type="number" min="1" max="99" data-act="recynum" data-k="keep" value="${R.keep}" style="width:52px"> meilleurs exemplaires, recycler les autres dès leur fabrication. La fabrication ne s'arrête plus quand le sac est plein.</span></label>`; })() : ""}

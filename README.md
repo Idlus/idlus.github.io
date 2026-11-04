@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.3.2 « Où ? toujours là »
+
+- js/ui.js (fiche de recette de l'Artisanat, Mathis 04/11 : « avoir cette option même si on possède assez de ressources pour le craft ») : les boutons « Où ? » et « Offre HdV » s'affichent sur chaque ingrédient, plus seulement quand il manque. Quand la ressource suffit, l'offre HdV propose la quantité d'une fabrication.
+
 ## 2.2.3.1 « Enchaîner avec un ami »
 
 - js/monoplus.js `E.monoEnter` / `E.monoEnterRenfort`, js/ui.js `enterRenfort` (Mathis 04/11 : « pouvoir enchaîner les combats avec un ami dans un donjon ») : l'entrée avec le renfort d'un ami ignorait l'enchaînement et la montée choisis (un seul donjon). Ils sont maintenant transmis à `E.enterDungeon` ; la copie reste pour toutes les courses (comme le mercenaire) et repart à la fin. Une seule demande au serveur (`mono_renfort_prendre`) par enchaînement, aucune modification du serveur. Test : tests/monoplus.test.js (3 courses avec le même renfort).

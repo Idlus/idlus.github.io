@@ -1,6 +1,13 @@
 {
-  "version": "2.2.3.1",
+  "version": "2.2.3.2",
   "versions": [
+    {
+      "v": "2.2.3.2",
+      "name": "Où ? toujours là",
+      "items": [
+        "Artisanat : « Où ? » et « Offre HdV » restent sur chaque ressource de la recette, même quand tu en as assez. Pratique pour en racheter ou savoir où la récolter avant de lancer 10 fabrications"
+      ]
+    },
     {
       "v": "2.2.3.1",
       "name": "Enchaîner avec un ami",
@@ -3854,7 +3861,7 @@
         "Forgemagie refaite : établi avec la liste des objets à gauche et l'objet à droite (plein écran au téléphone), jauge de chaque caractéristique, historique en couleurs, onglet Plans, aide « Comment ça marche »",
         "Brisage : filtres, cases à cocher et « Briser la sélection ». Runes : une carte par caractéristique avec « Fusionner tout »",
         "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
-        "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
+        "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » sur chaque ressource",
         "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier"
       ]
     },
