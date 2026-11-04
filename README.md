@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.10 « Vote et Ironman »
+
+- Bouclier Monocompte (ticket #172, Nerisia) : `VM.iron` (js/verify_mono.js) ignorait le drapeau `vote` des opérations du serveur ; la récompense de vote (`{ k, sab, vote }`, supabase/vote.sql) était prise pour une vente, chaque envoi d'un joueur Ironman qui vote était refusé et son niveau restait figé dans `mono.lb_saison` (une règle Ironman enfreinte ne s'affiche pas). Les opérations `vote` sont maintenant ignorées par la règle. Test mono_iron. Fonction « mono » redéployée. Outil d'enquête : quête principale, boosters et opérations Monocompte depuis la partie validée.
+
 ## 2.2.4.9 « Hauts faits par serveur »
 
 - Chat (Mathis 04/11, après un stasis 15 de l'Éternel pris pour de la triche en Saison 1) : les hauts faits restent communs, mais chacun porte son serveur (`data.srv` : 'e' Éternel, 's' Saison 1), affiché en pastille dans l'onglet Hauts faits (js/chat.js `srvTag`, css `.ann-srv`). `public.chat_ann` (supabase/chat.sql) pose 'e' ; nouvelle `s1.chat_ann` (supabase/chat_s1.sql, dans saison1.sql) pose 's' et lit le classement de la saison ; la fonction « record » pose le serveur des annonces top1 et GIGA. Les anciens hauts faits restent sans pastille. Étape Serveur OVH hauts-faits-serveur (sauvegarde avant, s1.chat_ann). Tests hauts_faits_srv_sql et hauts_faits_srv_ui. Étape enquete-stasis (lecture seule : rejoue les plus hautes stasis d'un joueur, tools/enquete_stasis.js).

@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.9",
+  "version": "2.2.4.10",
   "versions": [
+    {
+      "v": "2.2.4.10",
+      "name": "Vote et Ironman",
+      "items": [
+        "Monocompte : la récompense de vote (kamas et Sablier) ne compte plus comme une vente en mode Ironman. Ton niveau se remet à jour dans les classements de saison dès ton prochain envoi"
+      ]
+    },
     {
       "v": "2.2.4.9",
       "name": "Hauts faits par serveur",
