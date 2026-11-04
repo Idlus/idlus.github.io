@@ -525,6 +525,19 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   let why: string | null = null, res: number | null = ok ? ok.res : null;
   // deno-lint-ignore no-explicit-any
   let prev: any = ok ? ok.bilan : null;
+  // 04/11 (fil « Fermer les failles de triche ») : prev.t = date de la dernière partie qui a passé la vérification. Une partie
+  // signalée s'affiche (saves_ok) mais ne devient pas la référence : sans ça, l'envoi suivant se comparait à la partie trichée
+  // et passait, et un compte vérifié se « blanchissait » tout seul 30 s plus tard (échanges de l'hôtel de vente rouverts)
+  let t0 = ok && ok.src_at ? new Date(ok.src_at).getTime() : 0;
+  if (prev && Number(prev.t) > 0) t0 = Number(prev.t);
+  // Classique · Saison 1 : premier envoi d'un compte comparé à une partie vide au début de la saison (avant, il n'était pas
+  // contrôlé du tout : une partie jouée hors ligne, horloge avancée ou retouchée, passait au premier envoi)
+  let first = false;
+  if (!ok && db.isS1) {
+    const { data: cfg } = await db.from("s1_cfg").select("debut").eq("id", 1).maybeSingle();
+    const d0 = cfg && cfg.debut ? new Date(cfg.debut).getTime() : 0;
+    if (d0 > 0 && d0 < new Date(cur.updated_at).getTime()) { first = true; t0 = d0; prev = { k: 0, r: 0, mt: 0, bn: 0, lv: 0, dof: 0, rec: 0, pt: 0, sl: 1, sx: 0, mn: 0, ms: 0, pn: 0, op: 0, nu0: Number(S.nextUid) || 0 }; }
+  }
   if (ok && !prev) { // partie validée d'avant le bouclier : son bilan est calculé une fois
     const { data: od } = await db.from("saves_ok").select("data").eq("user_id", uid).maybeSingle();
     try { const O = E.deserialize(od.data); E.events.length = 0; prev = Object.assign(V.bilan(E, O), { op: Number((O.hdv && O.hdv.op) || 0), nu0: Number(O.nextUid) || 0 }); } catch (_) { prev = null; }
@@ -540,8 +553,8 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
     if (!why && db.isS1) why = V.s1Bad(E, S);
     // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») a une marge plus large sur les kamas, ressources et Dofus (V.check, sure) ;
     // 2.1.25 : la Maîtrise, les niveaux et le temps de jeu restent contrôlés comme pour tout le monde
-    if (!why && ok && prev && !ok.accept) {
-      const hours = Math.max(0, (new Date(cur.updated_at).getTime() - new Date(ok.src_at).getTime()) / 3600000);
+    if (!why && prev && (first || (ok && !ok.accept))) {
+      const hours = Math.max(0, (new Date(cur.updated_at).getTime() - t0) / 3600000);
       // ce que le serveur a donné entre-temps : opérations de l'hôtel de vente (et lots, Jackpot, Pluie…) pas encore dans
       // la partie validée, et codes cadeaux utilisés depuis
       const gift = { k: 0, r: 0, dof: 0, mt: 0, ms: 0, pt: 0 }; // 2.1.30 : montures (nombre, étoiles) et familiers reçus de l'HdV ou d'un échange
@@ -557,14 +570,14 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
           (p.addM || []).forEach((m: any) => { gift.mt++; gift.ms += Math.max(1, Math.floor(Number(m && m.st) || 1)); });
           gift.pt += (p.addP || []).length; });
       }
-      const { data: codes } = await db.from("gift_uses").select("code, gift_codes(reward)").eq("user_id", uid).gte("at", new Date(new Date(ok.src_at).getTime() - 600000).toISOString());
+      const { data: codes } = await db.from("gift_uses").select("code, gift_codes(reward)").eq("user_id", uid).gte("at", new Date(t0 - 600000).toISOString());
       // deno-lint-ignore no-explicit-any
       (codes || []).forEach((u: any) => { const w = (u.gift_codes && u.gift_codes.reward) || {}; gift.k += Math.max(0, Number(w.k) || 0);
         // deno-lint-ignore no-explicit-any
         (w.r || []).forEach((x: any) => { gift.r += Math.max(0, Number(x[1]) || 0); });
         // deno-lint-ignore no-explicit-any
         (w.i || []).forEach((x: any) => { if (/^dofus_/.test(String(x[0]))) gift.dof += Math.max(0, Number(x[1]) || 1); }); });
-      const c = V.check(E, prev, bil, hours, gift, res, top, !!(lad && lad.verified));
+      const c = V.check(E, prev, bil, hours, gift, first ? 0 : res, top, !!(lad && lad.verified));
       if (!c.ok) why = c.why; else res = c.res;
     }
   }
@@ -580,9 +593,11 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // 04/11/2026 (choix de Mathis « Oui, exception horloge ») : seule exception au « signaler seulement » : du temps de jeu inventé
   // (horloge de l'appareil avancée) ne s'affiche pas. La partie validée d'avant reste (classements, profil) jusqu'au « C'est bon ».
   if (why && V.horlogeFaussee && V.horlogeFaussee(why)) return { ok: false, held: true, signale: true };
-  bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0;
+  bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0; bil.t = new Date(cur.updated_at).getTime();
+  // partie signalée : on garde le bilan de la dernière partie honnête (et sa date) comme référence ; « C'est bon » (accept) la remplace
+  const ref = why && prev && !(ok && ok.accept) ? Object.assign({}, prev, { t: t0 }) : bil;
   const now = new Date().toISOString();
-  const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: bil, res: res == null ? V.RES_MAX : res, src_at: cur.updated_at, at: now, accept: false });
+  const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: ref, res: res == null ? (first ? 0 : V.RES_MAX) : res, src_at: cur.updated_at, at: now, accept: false });
   if (error) return { ok: false, err: "écriture impossible" };
   // 2.1.18 : compte vérifié par Mathis signalé seulement par le Bouclier : la partie passe, le signalement s'efface
   if (!why && lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);

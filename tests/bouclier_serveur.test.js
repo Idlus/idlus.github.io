@@ -19,7 +19,7 @@ const game = JSON.stringify(path.join(ROOT, "supabase/functions/record/game.js")
 
 /* base en mémoire : juste ce que la fonction utilise (select / eq / gt / lte / gte / lt / order / limit / maybeSingle, upsert, insert, delete, rpc) */
 const fake = `
-const T = globalThis.__T = { saves: [], saves_ok: [], admins: [], ladder: [], hdv_ops: [], gift_uses: [], bouclier_log: [], saves_jour: [] };
+const T = globalThis.__T = { saves: [], saves_ok: [], admins: [], ladder: [], hdv_ops: [], gift_uses: [], bouclier_log: [], saves_jour: [], s1_cfg: [] };
 const q = (t) => { const f = []; let ord = null, lim = null, mode = "select", payload = null, conf = null;
   const rows = () => { let r = T[t].filter((x) => f.every((g) => g(x))); if (ord) r = r.slice().sort((a, b) => (a[ord.k] < b[ord.k] ? -1 : 1) * (ord.asc ? 1 : -1)); if (lim != null) r = r.slice(0, lim); return r; };
   const run = () => {
@@ -35,8 +35,8 @@ const q = (t) => { const f = []; let ord = null, lim = null, mode = "select", pa
       if (i >= 0) { if (!(o && o.ignoreDuplicates)) T[t][i] = Object.assign({}, T[t][i], row); } else T[t].push(Object.assign({}, row)); return Promise.resolve({ error: null }); },
     insert(row) { T[t].push(Object.assign({ at: new Date().toISOString() }, row)); return Promise.resolve({ error: null }); } };
   return b; };
-const createClient = () => ({ auth: { getUser: async (j) => ({ data: { user: j ? { id: j } : null } }) }, from: q,
-  rpc: async (name, a) => { if (name === "bouclier_signal") { const l = T.ladder.find((x) => x.user_id === a.p_user); if (l) Object.assign(l, { suspect: true, flag_reason: "Bouclier : " + a.p_why }); else T.ladder.push({ user_id: a.p_user, suspect: true, flag_reason: "Bouclier : " + a.p_why }); } return { data: null, error: null }; } });
+const createClient = () => { const c = ({ auth: { getUser: async (j) => ({ data: { user: j ? { id: j } : null } }) }, from: q,
+  rpc: async (name, a) => { if (name === "bouclier_signal") { const l = T.ladder.find((x) => x.user_id === a.p_user); if (l) Object.assign(l, { suspect: true, flag_reason: "Bouclier : " + a.p_why }); else T.ladder.push({ user_id: a.p_user, suspect: true, flag_reason: "Bouclier : " + a.p_why }); } return { data: null, error: null }; } }); c.schema = () => c; return c; }; // Saison 1 : mêmes tables en mémoire (comptes différents)
 let H = null; globalThis.Deno = { serve(h) { H = h; }, env: { get() { return "x"; } } };
 `;
 fs.writeFileSync(tmp, fake + `import { D, E, V } from ${game};\n` + src.replace(/^import .*$/gm, "") + `
@@ -124,6 +124,43 @@ console.log("ok - les combats rejoués lisent la partie validée");
   const back = E.deserialize(T.saves_ok.find((x) => x.user_id === "u2").data); if (Object.values(back.items).filter((x) => /^hon_/.test(x.tpl)).length !== 5) fail("pièces de rang perdues");
   if (T.saves_ok.find((x) => x.user_id === "u2").meta.align.r !== 10) fail("rang perdu"); }
 console.log("ok - alignements : honneur et rang calculés par le serveur, partie v13 convertie, pièces de rang acceptées");
+// 8. 04/11 (fil « Fermer les failles de triche ») : une partie signalée s'affiche mais ne devient pas la référence ;
+//    un compte vérifié ne se « blanchit » plus à l'envoi suivant (échanges de l'hôtel de vente rouverts avec les kamas trichés)
+{ const W = E.newState("Verifie", "iop"); W.kamas = 1000; const tw = Date.now() - 7200e3;
+  T.saves.push({ user_id: "u3", data: E.serialize(W), meta: {}, updated_at: iso(tw) });
+  r = await call("u3", { verif: 1 }); if (!r.ok || r.signale) fail("u3 : partie honnête refusée");
+  T.ladder.push({ user_id: "u3", verified: true, flagged: false, suspect: false });
+  const L3 = T.ladder.find((x) => x.user_id === "u3"), ok3 = () => T.saves_ok.find((x) => x.user_id === "u3"), sv3 = T.saves.find((x) => x.user_id === "u3");
+  W.kamas += 5e10; Object.assign(sv3, { data: E.serialize(W), updated_at: iso(tw + 60e3) }); ok3().at = iso(Date.now() - 60e3);
+  r = await call("u3", { verif: 1 }); if (!r.signale || !L3.suspect) fail("u3 : 50 milliards de kamas non signalés");
+  if (ok3().src_at !== sv3.updated_at) fail("u3 : la partie signalée ne s'affiche pas");
+  if (ok3().bilan.k !== 1000) fail("u3 : la partie signalée est devenue la référence (" + ok3().bilan.k + ")");
+  W.kamas += 1000; Object.assign(sv3, { data: E.serialize(W), updated_at: iso(tw + 90e3) }); ok3().at = iso(Date.now() - 60e3);
+  r = await call("u3", { verif: 1 }); if (!r.signale) fail("u3 : l'envoi suivant passe en se comparant à la partie trichée");
+  if (!L3.suspect) fail("u3 : le compte vérifié s'est blanchi tout seul");
+  // « C'est bon » de Mathis : la partie devient la référence, les envois suivants passent
+  ok3().accept = true; W.kamas += 1000; Object.assign(sv3, { data: E.serialize(W), updated_at: iso(tw + 120e3) });
+  r = await call("u3", { verif: 1 }); if (!r.ok || r.signale) fail("u3 : « C'est bon » refusé");
+  if (ok3().bilan.k !== W.kamas) fail("u3 : « C'est bon » ne remplace pas la référence");
+  W.kamas += 1000; Object.assign(sv3, { data: E.serialize(W), updated_at: iso(tw + 150e3) }); ok3().at = iso(Date.now() - 60e3);
+  r = await call("u3", { verif: 1 }); if (!r.ok || r.signale) fail("u3 : petit gain après « C'est bon » signalé"); }
+console.log("ok - partie signalée affichée mais jamais prise comme référence ; pas de blanchiment d'un compte vérifié");
+// 9. Classique · Saison 1 : le premier envoi d'un compte est comparé à une partie vide au début de la saison
+{ T.s1_cfg.push({ id: 1, debut: iso(Date.now() - 3 * 3600e3) });
+  const N = E.newState("Nouveau", "iop"); N.kamas = 500; N.stats.playtime = 2 * 3600;
+  T.saves.push({ user_id: "u4", data: E.serialize(N), meta: {}, updated_at: iso(Date.now()) });
+  r = await call("u4", { verif: 1, saison: 1 }); if (!r.ok || r.signale) fail("S1 : premier envoi honnête signalé : " + JSON.stringify(r));
+  const C = E.newState("Pressé", "iop"); C.kamas = 9e10; C.stats.playtime = 2 * 3600;
+  T.saves.push({ user_id: "u5", data: E.serialize(C), meta: {}, updated_at: iso(Date.now()) });
+  r = await call("u5", { verif: 1, saison: 1 }); if (!r.signale) fail("S1 : premier envoi à 90 milliards de kamas non signalé");
+  const k5 = T.saves_ok.find((x) => x.user_id === "u5"); if (!k5 || k5.bilan.k !== 0) fail("S1 : le premier envoi signalé est devenu la référence");
+  const H = E.newState("Horloge", "iop"); H.stats.playtime = 60 * 3600;
+  T.saves.push({ user_id: "u6", data: E.serialize(H), meta: {}, updated_at: iso(Date.now()) });
+  r = await call("u6", { verif: 1, saison: 1 }); if (!r.held) fail("S1 : 60 h de jeu en 3 h de saison au premier envoi : " + JSON.stringify(r));
+  // le Classique (Éternel) ne change pas : un premier envoi n'y est pas comparé (anciennes parties)
+  const O = E.newState("Ancien", "iop"); O.kamas = 9e10; T.saves.push({ user_id: "u7", data: E.serialize(O), meta: {}, updated_at: iso(Date.now()) });
+  r = await call("u7", { verif: 1 }); if (!r.ok || r.signale) fail("Éternel : premier envoi signalé"); }
+console.log("ok - Saison 1 : premier envoi contrôlé (kamas, temps de jeu inventé), Éternel inchangé");
 process.exit(0);
 `);
 try { const out = execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", tmp], { stdio: "pipe" }); process.stdout.write(out.toString()); }

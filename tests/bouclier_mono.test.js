@@ -119,6 +119,9 @@ assert(/kamas au jour 1/.test(RES[RES.length - 1].why), "226 M : mauvaise règle
 { VM.CURSEUR_REFUS = false; const r0 = one((T) => { T.hdv = { op: 500, log: [] }; }, { ctx: Object.assign({ opMax: 3 }, J1) }); assert(r0.ok && /Classique/.test(r0.note || ""), "curseur sauté avant la remise à 0 : " + JSON.stringify(r0)); console.log(`ok - curseur du Classique : note sans refus tant que les curseurs ne sont pas remis à 0 (${r0.note})`);
   VM.CURSEUR_REFUS = true; const r = one((T) => { T.hdv = { op: 500, log: [] }; }, { ctx: Object.assign({ opMax: 3 }, J1) });
   assert(!r.ok && /Classique/.test(r.why), "curseur du Classique accepté : " + JSON.stringify(r)); console.log(`ok - refusé : opérations du Classique dans la partie, une fois les curseurs remis à 0 (${r.why})`); RES.push(r); }
+{ const r = one((T) => { T.stats.playtime = 61 * 3600; }); assert(!r.ok && /h de temps de jeu en .* h réelles/.test(r.why) && V.horlogeFaussee(r.why), "premier envoi à 61 h de jeu en 20 h de saison accepté : " + JSON.stringify(r));
+  console.log(`ok - refusé : premier envoi à 61 h de jeu en 20 h de saison (${r.why})`); RES.push(r);
+  const r2 = one((T) => { T.stats.playtime = 25 * 3600; }); assert(r2.ok, "25 h de jeu en 20 h de saison refusées : " + JSON.stringify(r2)); }
 { const r = one((T) => { T.kamas = 20e6; }, { ctx: Object.assign({ opsK: 30e6 }, J1) }); assert(r.ok, "ventes de l'HdV de saison refusées : " + JSON.stringify(r)); console.log("ok - 20 M au jour 1 acceptés quand l'HdV de saison en a versé 30 M"); }
 { const r = one((T) => { T.kamas = 200e6; }, { accept: true }); assert(r.ok, "« C'est bon » de Mathis refusé : " + JSON.stringify(r)); console.log("ok - « C'est bon » du panel passe le plafond absolu"); }
 { const f0 = VM.OBS_FIN; VM.OBS_FIN = now + 48 * 3600e3;

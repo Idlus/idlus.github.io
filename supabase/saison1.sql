@@ -1082,6 +1082,8 @@ begin
   if coalesce(b->>'id', '') = '' or coalesce(hdv_num(coalesce(b->>'st', '0')), 99) > 5 or coalesce(hdv_num(coalesce(b->>'g', '1')), 999) > 100 then raise exception 'Familier illisible : il ne peut pas être vendu.'; end if;
   return b - 'uid' - 'got' - 'skin';
 end $$;
+-- 04/11 (fil « Fermer les failles de triche ») : outil interne des échanges, plus appelable depuis le jeu ou sans compte
+revoke all on function s1.hdv_beast(uuid, jsonb, text, bigint) from public, anon, authenticated;
 
 create or replace function s1.hdv_op(p_user uuid, p jsonb, t text) returns void language sql security definer set search_path = s1, public
 as $$ insert into hdv_ops (user_id, payload, txt) values (p_user, p, t) $$;
@@ -5001,6 +5003,9 @@ as $$
 declare me uuid := auth.uid(); wk int := songe_wk(); x int; rk int; br int := 0; top boolean := false; got jsonb := '[]'::jsonb; last_top int; last_un int;
 begin
   if me is null then return g_err('non connecté'); end if;
+  -- 04/11 (fil « Fermer les failles de triche ») : compte signalé par le Bouclier ou retiré : les lots attendent la décision de Mathis
+  -- (rien n'est noté, ils restent à prendre après son « C'est bon », dans les 4 semaines)
+  if exists (select 1 from ladder where user_id = me and (flagged or suspect)) then return g_err('Ta partie est en vérification : tes lots du Songe attendent.'); end if;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   for x in wk - 4 .. wk - 1 loop
     if exists (select 1 from songe_lots where user_id = me and w = x) then continue; end if;

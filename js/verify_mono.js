@@ -237,6 +237,10 @@
   VM.absolu = (E, S, ctx) => {
     const k = Math.floor(+S.kamas || 0), cap = VM.kamasCap(ctx);
     if (k > cap) return `${k.toLocaleString("fr-FR")} kamas au jour ${Math.floor(days(ctx)) + 1} (au plus ${cap.toLocaleString("fr-FR")})`;
+    // 04/11 (fil « Fermer les failles de triche ») : temps de jeu au plus 1,5 fois le temps écoulé depuis le début de la saison (+ 2 h),
+    // premier envoi compris (même marge que V.check) : une partie jouée horloge avancée puis envoyée d'un coup ne passe plus
+    const pt = Math.max(0, +(S.stats && S.stats.playtime) || 0) / 3600, h = days(ctx) * 24;
+    if (ctx && ctx.debut && pt > h * 1.5 + 2) { const h1 = (n) => (Math.round(n * 10) / 10).toLocaleString("fr-FR"); return `${h1(pt)} h de temps de jeu en ${h1(h)} h réelles depuis le début de la saison`; }
     return null;
   };
   // curseur au-delà du registre Monocompte : les parties sautées avant le 22/10 (asc_claim) gardent un curseur du Classique

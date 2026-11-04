@@ -147,6 +147,8 @@ begin
   if coalesce(b->>'id', '') = '' or coalesce(hdv_num(coalesce(b->>'st', '0')), 99) > 5 or coalesce(hdv_num(coalesce(b->>'g', '1')), 999) > 100 then raise exception 'Familier illisible : il ne peut pas être vendu.'; end if;
   return b - 'uid' - 'got' - 'skin';
 end $$;
+-- 04/11 (fil « Fermer les failles de triche ») : outil interne des échanges, plus appelable depuis le jeu ou sans compte
+revoke all on function public.hdv_beast(uuid, jsonb, text, bigint) from public, anon, authenticated;
 
 create or replace function public.hdv_op(p_user uuid, p jsonb, t text) returns void language sql security definer set search_path = public
 as $$ insert into hdv_ops (user_id, payload, txt) values (p_user, p, t) $$;
