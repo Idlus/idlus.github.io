@@ -200,6 +200,26 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   const S2 = E.deserialize(E.serialize(S)); assert.deepStrictEqual(S2.mono.serment, S.mono.serment); assert.deepStrictEqual(S2.mono.aide, S.mono.aide);
 }
 
+// 5b. 04/11 (idée de Fulfutor) : sous serment, le Sablier gagné devient des kamas (1 h = un quart d'heure de gains, barème du vote)
+{
+  now += 2 * DAY;
+  const S = mono(12); E.monoSwear(S, "fer"); S.chars[0].lvl = 200; S.quest = S.quest || {}; S.quest.step = 99;
+  const B = E.sab(S); const r0 = B.r; assert.strictEqual(E.sabFerKh(S), 217500, "niveau 200 : 217 500 kamas par heure de Sablier");
+  let k0 = S.kamas; E.sabGift(S, 0.5); assert.strictEqual(S.kamas - k0, 108750, "un vote (30 min) : +108 750 kamas"); assert.strictEqual(E.sab(S).r, r0, "la réserve ne bouge pas");
+  k0 = S.kamas; assert.strictEqual(E.sabEarn(S, "defi"), 0); assert.strictEqual(S.kamas - k0, 217500, "Défi du jour : 1 h changée en kamas");
+  k0 = S.kamas; E.sabEarn(S, "defi"); assert.strictEqual(S.kamas, k0, "une fois par jour, comme le Sablier");
+  assert.strictEqual(S.mono.ferK, 108750 + 217500);
+  S.chars[0].lvl = 1; assert.strictEqual(E.sabFerKh(S), 5000, "niveau 1 : 5 000 kamas par heure"); S.chars[0].lvl = 200;
+  // Fiole de temps : changée en kamas même réserve pleine ; Horloger et boutiques : pas de temps acheté
+  E.addCons(S, "fiole_temps"); B.r = E.sabGiftMaxOf(S); k0 = S.kamas; assert.strictEqual(E.useConsumable(S, "fiole_temps"), null); assert.strictEqual(S.kamas - k0, 217500); assert(!S.cons.fiole_temps);
+  S.kamas = 1e9; assert.match(E.horlogerBuy(S), /Serment de fer/);
+  // le Bouclier Monocompte : 24 votes par jour pendant 7 jours restent très loin du plafond de kamas
+  assert(24 * 7 * 108750 < VM.K_D * 7, "conversion bien sous le plafond de kamas par jour du Bouclier");
+  // sans serment (ordinaire) : le Sablier reste du Sablier
+  const O = mono(12); E.monoSwear(O, "ord"); O.quest = O.quest || {}; O.quest.step = 99; E.sab(O).r = 0; const kO = O.kamas; E.sabGift(O, 0.5);
+  assert.strictEqual(E.sab(O).r, 1800); assert.strictEqual(O.kamas, kO);
+}
+
 // 6. Classique : rien ne change (pas de serment, pas d'aide comptée, pas de mutation)
 {
   const C = E.newState("Classique", "iop"); C.sablier = { r: 3600, at: now, spd: 2, open: true }; C.dungeon = { id: dj(10), room: 0 };

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.5";
+const GAME_VERSION = "2.2.5.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.5.1", name: "Sablier du Serment de fer", items: [
+    "Monocompte, Serment de fer : le Sablier que tu gagnes (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas. 1 h de Sablier = un quart d'heure de gains à ton niveau (un vote rapporte 50 % de kamas en plus)",
+    "La fiche du Sablier affiche le taux et les kamas déjà reçus. Sous serment, l'Horloger et les boutiques ne vendent plus de temps" ] },
   { v: "2.2.5", name: "Changer de classe", items: [
     "Nouvelle pastille « ⇄ Classe » à côté du nom d'un héros : il change de classe en gardant son niveau, son équipement, ses Dofus et toute sa Maîtrise (ses points sont rendus pour le nouveau ciel)",
     "Premier changement gratuit pour chaque héros, puis niveau × 5 000 kamas, doublé à chaque nouveau changement. Un changement tous les 7 jours par héros",
@@ -3520,6 +3523,7 @@ addEventListener("resize", () => dustPlace());
 function sabSheet() {
   const B = E.sab(S); const MX = E.sabMaxOf(S); const fill = Math.min(100, Math.round((B.r / MX) * 100)); const L = E.sabMtLvl(S);
   openSheet(`<h2>⏳ Sablier de Xélor</h2>
+    ${E.monoFer && E.monoFer(S) ? `<p class="small" style="margin:0"><b>Serment de fer :</b> pas de Sablier pendant la saison. Le temps que tu gagnes (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas : 1 h = <b class="num">${fmt(E.sabFerKh(S))}</b> kamas à ton niveau. Kamas reçus ainsi : <b class="num">${fmt((S.mono && S.mono.ferK) || 0)}</b>.</p>` : ""}
     ${B.open ? `<p style="margin:0">Le temps file plus vite tant que le sablier n'est pas vide : combats, donjons, expédition, récolte, ateliers, familiers et enclos.</p>
     <div class="bar"><i style="width:${fill}%"></i></div>
     <div class="row between small"><span>Réserve : <b class="num">${sabLeft(B.r)}</b> / ${MX / 3600} h</span><span class="muted">+${sabDur(E.sabRate(S) * 86400)} par jour, même jeu fermé</span></div>
@@ -11191,7 +11195,7 @@ document.addEventListener("click", (ev) => {
         openSheet(`<h2>${IC("quetes")} ${h(C.name)}</h2><p class="small muted">${h(C.desc)} Choisissez le héros.</p><div class="list">${S.chars.map((x) => `<div class="li">${head(x)}<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${STATS[C.stat].name} par parchemins : ${(x.scrolls || {})[C.stat] || 0}/${E.SCROLL_MAX}</span></span><button class="btn sm primary" data-act="scrollto" data-id="${x.id}" data-sid="${d.id}" ${E.scrollRoom(x, C.stat) <= 0 ? "disabled" : ""}>Utiliser</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       if (d.id === "potion_savoir") { openSheet(`<h2>${IC("parchemin_or")} Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`);
-      if (C.kind === "sab") { toast(`${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier.`); dirty = true; renderStatus(); if ($("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) { sabSheet(); return; } } break; }
+      if (C.kind === "sab") { toast(E.monoFer && E.monoFer(S) ? `${C.name} : changée en ${fmt(Math.round(C.h * E.sabFerKh(S)))} kamas (Serment de fer).` : `${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier.`); dirty = true; renderStatus(); if ($("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) { sabSheet(); return; } } break; }
     case "chestall": { if (!E.openAllChests(S)) { toast("Aucun coffre à ouvrir."); return; } break; }
     case "chestauto": { S.settings.autoChest = d.v === "1"; if (S.settings.autoChest) E.openAllChests(S, true); toast(S.settings.autoChest ? "Ouverture automatique des coffres activée." : "Ouverture automatique désactivée : les coffres attendent dans le sac."); break; }
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }

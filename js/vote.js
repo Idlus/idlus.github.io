@@ -81,6 +81,7 @@
     const ms = leftMs(), m = Math.max(1, Math.ceil(ms / 60e3));
     const serie = Math.max(0, st.serie || 0), bonus = Math.max(0, Math.min(50, st.bonus || 0)); // bonus calculé par le serveur (jours d'affilée avant aujourd'hui)
     const k = Math.round(kamasOf(mainLvl()) * (1 + bonus / 100));
+    const E = window.ENGINE, fer = !!(E && E.monoFer && window.DX.S && E.monoFer(window.DX.S)); // 04/11 : sous Serment de fer, le Sablier du vote devient des kamas
     const btns = ms > 0
       ? `<span class="vt-wait">Prochaine récompense dans <b class="num">${m} min</b></span>`
       : `<a class="btn primary vt-big" href="${URL_VOTE}" target="_blank" rel="noopener" data-act="vt-go">1. Voter sur Dofus Fan Games ›</a><button class="btn vt-big" data-act="vt-get" ${V.busy ? "disabled" : ""}>2. Récupérer ma récompense</button>`;
@@ -91,7 +92,7 @@
     main.innerHTML = `
     <section class="panel vt-hero"><div class="pad stack">
       <div class="row between wrap"><div class="stack" style="gap:2px"><h1>⏳ Voter pour Idlus</h1><span class="small muted">Chaque vote fait monter Idlus dans le classement des fan games Dofus et amène de nouveaux joueurs.</span></div>${st.rang ? `<span class="tag good">n° ${h(st.rang)} ce mois-ci</span>` : ""}</div>
-      <div class="vt-rew"><div><span class="xs muted">À chaque vote (une fois par heure)</span><div class="vt-rew-l"><span>⏳ <b>${Math.round(30 * (1 + bonus / 100))} min</b> de Sablier</span><span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span>${bonus ? `<span class="tag good">+${bonus} % série</span>` : ""}</div></div></div>
+      <div class="vt-rew"><div><span class="xs muted">À chaque vote (une fois par heure)</span><div class="vt-rew-l">${fer ? `<span>⏳ ${Math.round(30 * (1 + bonus / 100))} min de Sablier changées en <b class="num">${fmt(Math.round(0.5 * (1 + bonus / 100) * E.sabFerKh(window.DX.S)))}</b> kamas <span class="xs muted">(Serment de fer)</span></span>` : `<span>⏳ <b>${Math.round(30 * (1 + bonus / 100))} min</b> de Sablier</span>`}<span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span>${bonus ? `<span class="tag good">+${bonus} % série</span>` : ""}</div></div></div>
       <div class="row wrap vt-btns">${btns}</div>
       ${V.c ? `<span class="small">La récompense arrive dans la partie ouverte : <b>${h(NOM[V.c])}</b>.</span>` : ""}${st.partie ? `<span class="small" style="color:var(--danger)">${h(st.partie)}</span>` : ""}
       <span class="xs muted">Vote depuis le même appareil et le même réseau (Wi-Fi ou 4G) que le jeu : le site reconnaît ton vote à ta connexion.</span>

@@ -628,8 +628,8 @@
     if (C.kind === "chest") { take(); E.openChest(S, id); return null; }
     if (C.kind === "sab") {
       if (!E.sabUnlocked(S)) return "Le Sablier de Xélor se débloque à la fin d'Incarnam.";
-      const B = E.sab(S); if (B.r + C.h * 3600 > E.sabGiftMaxOf(S)) return `Ta réserve de Sablier est presque pleine (${E.sabGiftMaxOf(S) / 3600} h au plus).`;
-      take(); E.sabGift(S, C.h); note(S, `${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier de Xélor.`, "info"); return null;
+      const B = E.sab(S); if (!(E.monoFer && E.monoFer(S)) && B.r + C.h * 3600 > E.sabGiftMaxOf(S)) return `Ta réserve de Sablier est presque pleine (${E.sabGiftMaxOf(S) / 3600} h au plus).`;
+      take(); if (E.monoFer && E.monoFer(S)) { E.sabGift(S, C.h); return null; } E.sabGift(S, C.h); note(S, `${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier de Xélor.`, "info"); return null;
     }
     return "Inutilisable.";
   };
@@ -659,6 +659,7 @@
     if (shop === "cite" && !S.align) return "Choisissez d'abord un alignement.";
     if (E.shopOwned(S, it)) return "Déjà obtenu.";
     const n = it.many ? clamp(Math.floor(+qty || 1), 1, 100) : 1; const cost = it.cost * n;
+    if (it.sab && E.monoFer && E.monoFer(S)) return "Serment de fer : pas de Sablier à acheter pendant la saison."; // 04/11 : le temps acheté n'est pas changé en kamas
     if (it.sab && E.sab && E.sab(S).r + it.sab * n * 3600 > E.sabGiftMaxOf(S)) return `Ta réserve de Sablier est presque pleine (${E.sabGiftMaxOf(S) / 3600} h au plus).`;
     if (n > E.shopWeekLeft(S, it)) { const l = E.shopWeekLeft(S, it); const p = it.day ? "aujourd'hui" : "cette semaine"; return l ? `Encore ${l} ${p} au plus.` : `Limite atteinte ${p} (${it.day || it.week}). Retour ${it.day ? "demain" : "lundi"}.`; }
     if (it.key && !E.shopKeys(S).includes(arg)) return "Choisis un donjon débloqué.";

@@ -1,6 +1,14 @@
 {
-  "version": "2.2.5",
+  "version": "2.2.5.1",
   "versions": [
+    {
+      "v": "2.2.5.1",
+      "name": "Sablier du Serment de fer",
+      "items": [
+        "Monocompte, Serment de fer : le Sablier que tu gagnes (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas. 1 h de Sablier = un quart d'heure de gains à ton niveau (un vote rapporte 50 % de kamas en plus)",
+        "La fiche du Sablier affiche le taux et les kamas déjà reçus. Sous serment, l'Horloger et les boutiques ne vendent plus de temps"
+      ]
+    },
     {
       "v": "2.2.5",
       "name": "Changer de classe",

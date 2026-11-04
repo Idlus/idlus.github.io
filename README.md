@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.5.1 « Sablier du Serment de fer »
+
+- Idée de joueur (Fulfutor), choix de Mathis (option 1) : sous Serment de fer, le Sablier gagné (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas au moment du gain, au barème du vote : 1 h = un quart d'heure de gains ordinaires au niveau du héros (`E.sabFerKh`, js/monoplus.js), compteur `S.mono.ferK`. La recharge gratuite n'est pas changée ; Horloger et boutiques refusent le temps acheté sous serment. Calcul : hors votes au plus 1,5 h par jour en Monocompte (≈ +1,5 % de gains) ; 24 votes par jour restent très loin du plafond de kamas du Bouclier. Test monoplus.
+
 ## 2.2.5 « Changer de classe »
 
 - Héros (Mathis 04/11 : 1A 2A+2C 3A 4A 5A) : `E.changeClass(S, cid, cls, look)` (js/engine.js), pastille « ⇄ Classe » à côté de « Renommer » et fiche `classSheet` (js/ui.js). Garde niveau, XP, équipement, Dofus, familier, monture, nom, titre et Maîtrise (niveau, XP, points ; étoiles `mt.t` rendues, joyaux `mt.j` au sac, objectif retiré). Sorts de la nouvelle classe en automatique (stratégies, rotation effacées), caractéristiques rendues puis replacées (`autoStat` = élément principal de la classe).

@@ -73,6 +73,28 @@
     if (r > 1 && season(S)) { const A = E.monoAide(S); A.sab += Math.max(1, Math.round(((+realMs || 0) * (r - 1)) / 1000)); }
     return r;
   };
+  /* 04/11 (idée de Fulfutor, Mathis option 1) : sous serment, le Sablier gagné devient des kamas au moment du gain.
+     1 h de Sablier = un quart d'heure de gains ordinaires au niveau du héros (même barème que vote_kamas, supabase/vote.sql) :
+     un vote (30 min) rapporte donc +50 % de kamas. La recharge gratuite (3 h par jour) n'est pas changée ; le temps acheté
+     (Horloger, boutiques) est refusé pour ne pas faire de boucle monnaie → kamas. Compteur S.mono.ferK (kamas reçus ainsi). */
+  const KPTS = [[1, 20000], [20, 75000], [60, 385000], [120, 510000], [200, 870000]]; // V.KAMAS_PTS (js/verify.js), par heure
+  E.sabFerKh = (S) => { const l = Math.max(1, Math.min(200, (hero(S) || {}).lvl || 1)); for (let i = 1; i < KPTS.length; i++) if (l <= KPTS[i][0]) { const [a, x] = KPTS[i - 1], [b, y] = KPTS[i]; return Math.round((x + (y - x) * (l - a) / (b - a)) / 4); } return 217500; };
+  E.sabFerConv = (S, hours, why) => {
+    const k = Math.round(Math.max(0, +hours || 0) * E.sabFerKh(S)); if (k <= 0) return 0;
+    S.kamas = (S.kamas || 0) + k; S.mono.ferK = (S.mono.ferK || 0) + k;
+    if (E.note) E.note(S, `Serment de fer : ${why ? why + " : " : ""}${hours >= 1 ? Math.round(hours * 10) / 10 + " h" : Math.round(hours * 60) + " min"} de Sablier changées en ${k.toLocaleString("fr-FR")} kamas.`, "info");
+    return k;
+  };
+  const sabGift0 = E.sabGift;
+  E.sabGift = function (S, hours) { if (E.monoFer(S)) { E.sabFerConv(S, hours); return E.sab(S).r; } return sabGift0.apply(this, arguments); };
+  const sabEarn0 = E.sabEarn;
+  E.sabEarn = function (S, k) {
+    if (!E.monoFer(S)) return sabEarn0.apply(this, arguments);
+    const R = E.SAB_EARN[k]; if (!R || !E.sabUnlocked(S) || !E.sabEarnLeft(S, k)) return 0;
+    const D0 = E.sabDay(S); D0[k] = (D0[k] || 0) + 1; E.sabFerConv(S, R[0], R[2]); return 0; // 0 h de Sablier : rien n'est ajouté à la réserve
+  };
+  const horloger0 = E.horlogerBuy;
+  E.horlogerBuy = function (S) { if (E.monoFer(S)) return "Serment de fer : l'Horloger ne te vend pas de temps pendant la saison."; return horloger0.apply(this, arguments); };
 
   /* ======================= Mercenaire et renfort d'un ami ======================= */
   M.renfort = { ecart: 10, get: null }; // get(u) : le renfort prêté par un ami (js/amis.js, pour l'affichage) ; la copie d'un ami : son héros au plus 10 niveaux au-dessus du tien
