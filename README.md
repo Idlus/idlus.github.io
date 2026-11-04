@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.4.1 « Bouclier renforcé »
+
+- Le serveur vérifie davantage les parties : une progression signalée ne sert plus de point de départ aux vérifications suivantes, et la première partie envoyée dans une saison est contrôlée elle aussi.
+- Les lots du classement du Songe infini attendent la vérification d'une partie signalée.
+
 ## 2.2.4 « Panel par serveur »
 
 - js/panel.js, js/admin.js, js/chat.js, css/communaute.css (Mathis 04/11 : « une refonte de mon panel pour qu'il soit plus simple à gérer pour chaque serveur », maquette choisie 1A 2A 3A + idée 1) :

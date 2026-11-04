@@ -1,6 +1,14 @@
 {
-  "version": "2.2.4",
+  "version": "2.2.4.1",
   "versions": [
+    {
+      "v": "2.2.4.1",
+      "name": "Bouclier renforcé",
+      "items": [
+        "Le serveur vérifie davantage les parties : une progression signalée ne sert plus de point de départ aux vérifications suivantes, et la première partie envoyée dans une saison est contrôlée elle aussi",
+        "Les lots du classement du Songe infini attendent la vérification d'une partie signalée avant d'être donnés"
+      ]
+    },
     {
       "v": "2.2.4",
       "name": "Panel par serveur",

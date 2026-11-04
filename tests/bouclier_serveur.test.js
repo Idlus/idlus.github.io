@@ -147,16 +147,16 @@ console.log("ok - alignements : honneur et rang calculés par le serveur, partie
 console.log("ok - partie signalée affichée mais jamais prise comme référence ; pas de blanchiment d'un compte vérifié");
 // 9. Classique · Saison 1 : le premier envoi d'un compte est comparé à une partie vide au début de la saison
 { T.s1_cfg.push({ id: 1, debut: iso(Date.now() - 3 * 3600e3) });
-  const N = E.newState("Nouveau", "iop"); N.kamas = 500; N.stats.playtime = 2 * 3600;
+  const N = E.newState("Nouveau", "iop"); N.s1c = {}; N.kamas = 500; N.stats.playtime = 2 * 3600;
   T.saves.push({ user_id: "u4", data: E.serialize(N), meta: {}, updated_at: iso(Date.now()) });
   r = await call("u4", { verif: 1, saison: 1 }); if (!r.ok || r.signale) fail("S1 : premier envoi honnête signalé : " + JSON.stringify(r));
-  const C = E.newState("Pressé", "iop"); C.kamas = 9e10; C.stats.playtime = 2 * 3600;
+  const C = E.newState("Pressé", "iop"); C.s1c = {}; C.kamas = 9e10; C.stats.playtime = 2 * 3600;
   T.saves.push({ user_id: "u5", data: E.serialize(C), meta: {}, updated_at: iso(Date.now()) });
   r = await call("u5", { verif: 1, saison: 1 }); if (!r.signale) fail("S1 : premier envoi à 90 milliards de kamas non signalé");
   const k5 = T.saves_ok.find((x) => x.user_id === "u5"); if (!k5 || k5.bilan.k !== 0) fail("S1 : le premier envoi signalé est devenu la référence");
-  const H = E.newState("Horloge", "iop"); H.stats.playtime = 60 * 3600;
+  const H = E.newState("Horloge", "iop"); H.s1c = {}; H.stats.playtime = 60 * 3600;
   T.saves.push({ user_id: "u6", data: E.serialize(H), meta: {}, updated_at: iso(Date.now()) });
-  r = await call("u6", { verif: 1, saison: 1 }); if (!r.held) fail("S1 : 60 h de jeu en 3 h de saison au premier envoi : " + JSON.stringify(r));
+  r = await call("u6", { verif: 1, saison: 1 }); if (!r.signale) fail("S1 : 60 h de jeu en 3 h de saison au premier envoi : " + JSON.stringify(r));
   // le Classique (Éternel) ne change pas : un premier envoi n'y est pas comparé (anciennes parties)
   const O = E.newState("Ancien", "iop"); O.kamas = 9e10; T.saves.push({ user_id: "u7", data: E.serialize(O), meta: {}, updated_at: iso(Date.now()) });
   r = await call("u7", { verif: 1 }); if (!r.ok || r.signale) fail("Éternel : premier envoi signalé"); }

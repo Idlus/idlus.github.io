@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.4";
+const GAME_VERSION = "2.2.4.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.4.1", name: "Bouclier renforcé", items: [
+    "Le serveur vérifie davantage les parties : une progression signalée ne sert plus de point de départ aux vérifications suivantes, et la première partie envoyée dans une saison est contrôlée elle aussi",
+    "Les lots du classement du Songe infini attendent la vérification d'une partie signalée avant d'être donnés",
+  ] },
   { v: "2.2.4", name: "Panel par serveur", items: [
     "Panel de l'équipe refait : un accueil « Ce qui t'attend » avec une colonne par serveur, puis quatre cases Éternel, Saison 1, Monocompte et Tous les serveurs, avec le même menu pour chaque serveur",
     "Annonces : une seule page pour écrire aux joueurs, en cochant les serveurs visés (Éternel, Saison 1, Monocompte). Un bandeau n'apparaît que sur les serveurs choisis" ] },
