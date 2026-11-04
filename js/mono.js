@@ -176,6 +176,7 @@
       const me = S.chars.find((c) => !c.merc); if (!me) return "Héros introuvable.";
       E.monoMercClear(S);
       const c = E.addChar(S, mercCls, E.monoMercName(mercCls), me.lvl); c.merc = 1; c.inTeam = true; mercGear(S, c, () => E.rnd());
+      E.monoMercGearBack(S, c); // 2.2.4.12 : ses tenues enregistrées reviennent avec lui
       E.autoAllocate(S, c); c.spellsManual = false; E.refreshSpells(c, E.charStats(S, c)); E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
       const err = E.enterDungeon(S, did, stasis, chain, climb);
       if (err) { E.monoMercClear(S); return err; }
@@ -194,10 +195,48 @@
     if (!r) S.kamas -= M.merc.cost;
     return r;
   };
+  /* 2.2.4.12 (idée de Nerisia) : les tenues enregistrées sur un mercenaire sont gardées par classe (S.mono.mercGear[cls]) quand
+     il repart, et reviennent au prochain mercenaire de cette classe. Seuls les objets du joueur sont gardés (ceux du
+     mercenaire repartent avec lui) ; ces objets restent verrouillés et protégés comme dans une tenue d'un héros. */
+  const mercKeep = (S, c) => {
+    if (!c || c.renfort || c.snap || !S.mono) return;
+    const L = (c.gear || []).map((g) => { if (!g) return null; const eq = {}, tp = {};
+      for (const sl in g.eq) { const it = S.items[g.eq[sl]]; if (it && !it.merc) { eq[sl] = g.eq[sl]; if (g.tp && g.tp[sl]) tp[sl] = g.tp[sl]; } }
+      return Object.assign({ name: g.name, eq }, g.tp ? { tp } : {}); });
+    const M0 = (S.mono.mercGear = S.mono.mercGear || {});
+    if (L.some(Boolean)) M0[c.cls] = L; else delete M0[c.cls];
+    if (!Object.keys(M0).length) delete S.mono.mercGear;
+  };
+  E.monoMercGearBack = (S, c) => {
+    const L = S.mono && S.mono.mercGear && S.mono.mercGear[c.cls]; if (!L) return;
+    c.gear = L.map((g) => (g ? Object.assign({ name: g.name, eq: Object.assign({}, g.eq) }, g.tp ? { tp: Object.assign({}, g.tp) } : {}) : null));
+    delete S.mono.mercGear[c.cls]; if (!Object.keys(S.mono.mercGear).length) delete S.mono.mercGear; // elle vit sur le mercenaire jusqu'à son départ
+  };
+  /* tenue d'un mercenaire : ses propres objets restent dans les emplacements que la tenue laisse vides */
+  const applyGear0 = E.applyGear;
+  E.applyGear = function (S, cid) {
+    const c = S && S.chars.find((x) => x.id === cid);
+    if (!c || !c.merc) return applyGear0.apply(this, arguments);
+    const own = {}; for (const sl in c.equip) { const it = S.items[c.equip[sl]]; if (it && it.merc) own[sl] = c.equip[sl]; }
+    const r = applyGear0.apply(this, arguments);
+    for (const sl in own) if (!c.equip[sl] && S.items[own[sl]]) c.equip[sl] = own[sl];
+    return r;
+  };
+  /* objets d'une tenue gardée : protégés (ni vendus, ni brisés, cadenas) même quand le mercenaire n'est pas là */
+  const keptOf = (S, uid) => { const G = S && S.mono && S.mono.mercGear; if (!G) return null;
+    for (const cls in G) for (const g of G[cls]) if (g && Object.values(g.eq).some((u) => +u === +uid)) return { c: { name: E.monoMercName(cls) }, g };
+    return null; };
+  const inGear0 = E.inGear, gearOf0 = E.gearOf, sync0 = E.syncGearLocks;
+  E.inGear = (S, uid) => inGear0(S, uid) || (keptOf(S, uid) || {}).c || null;
+  E.gearOf = (S, uid) => gearOf0(S, uid) || keptOf(S, uid);
+  E.syncGearLocks = (S) => { sync0(S); const G = S && S.mono && S.mono.mercGear; if (!G) return;
+    for (const cls in G) for (const g of G[cls]) if (g) for (const u of Object.values(g.eq)) { const it = S.items[u]; if (it && !it.locked) { it.locked = true; it.glock = 1; } } };
   E.monoMercClear = (S) => {
+    S.chars.forEach((c) => { if (c.merc) mercKeep(S, c); });
     Object.keys(S.items || {}).forEach((u) => { if (S.items[u].merc) delete S.items[u]; }); // même un objet du mercenaire déséquipé en route
     S.chars.forEach((c) => { if (!c.merc) Object.keys(c.equip || {}).forEach((sl) => { if (!S.items[c.equip[sl]]) delete c.equip[sl]; }); });
     S.chars = S.chars.filter((c) => !c.merc); if (S.mono) delete S.mono.merc;
+    if (E.syncGearLocks) E.syncGearLocks(S);
   };
   /* le mercenaire repart dès que le donjon est fini (ou quitté) */
   const tick0 = E.tick;

@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.11",
+  "version": "2.2.4.12",
   "versions": [
+    {
+      "v": "2.2.4.12",
+      "name": "Tenues des mercenaires",
+      "items": [
+        "Monocompte : les tenues enregistrées sur un mercenaire ne disparaissent plus quand il repart. Elles reviennent avec ton prochain mercenaire de la même classe, avec tes objets (protégés par le cadenas en attendant). Idée de Nerisia, merci !"
+      ]
+    },
     {
       "v": "2.2.4.11",
       "name": "Annonce des Dofus par serveur",

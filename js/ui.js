@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.4.11";
+const GAME_VERSION = "2.2.4.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.4.12", name: "Tenues des mercenaires", items: [
+    "Monocompte : les tenues enregistrées sur un mercenaire ne disparaissent plus quand il repart. Elles reviennent avec ton prochain mercenaire de la même classe, avec tes objets (protégés par le cadenas en attendant). Idée de Nerisia, merci !" ] },
   { v: "2.2.4.11", name: "Annonce des Dofus par serveur", items: [
     "La grande annonce en plein écran d'un Dofus (et du Jackpot du Trool) ne s'affiche plus que sur le serveur où il est tombé : Éternel, Saison 1 ou Monocompte" ] },
   { v: "2.2.4.10", name: "Vote et Ironman", items: [
@@ -7363,7 +7365,8 @@ function gearHtml(c) {
       <span class="row" style="gap:3px;margin-top:4px">${Object.values(g.eq).map((u) => S.items[u] ? `<img src="${itemImg(S.items[u].tpl)}" alt="" data-tipitem="${u}" style="width:24px;height:24px;border-radius:5px;background:var(--panel3)">` : "").join("")}</span></span>
       <span class="row" style="gap:4px"><button class="btn sm ${on ? "" : "primary"}" data-act="gload" data-i="${i}" ${on ? "disabled" : ""}>${on ? "Portée" : "Mettre"}</button><button class="btn sm" data-act="gsave" data-i="${i}" title="Remplacer par l'équipement actuel">Écraser</button><button class="btn sm" data-act="gren" data-i="${i}" title="Renommer">${G("edit")}</button><button class="btn sm" data-act="gdel" data-i="${i}" title="Supprimer">✕</button></span></div>`;
   }).join("");
-  return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}
+  return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}${c.merc && !c.renfort && !c.snap ? `
+    <p class="note xs" style="margin:0">Mercenaire : ses tenues sont gardées pour ton prochain ${h(E.monoMercName ? E.monoMercName(c.cls) : "mercenaire")}, avec tes objets seulement (les siens repartent avec lui).</p>` : ""}
     <p class="note xs" style="margin:0">${G("lock")} Enregistrer une tenue verrouille ses objets : ils ne peuvent être ni brisés, ni mis en vente, même par les règles automatiques. Le cadenas s'enlève tout seul quand l'objet quitte la tenue (Écraser ou ✕). S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
 }
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());

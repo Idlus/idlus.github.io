@@ -252,4 +252,40 @@ E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
   E.KOLI.size = 3; E.HERO_MAX = 19; E.TEAM_MAX = 8;
   console.log("ok - petites règles de saison");
 }
+// 2.2.4.12 (idée de Nerisia) : la tenue enregistrée sur un mercenaire revient au prochain mercenaire de la même classe.
+{
+  E.HERO_MAX = 19; E.TEAM_MAX = 8;
+  const did = Object.keys(D.DUNGEONS).find((k) => D.DUNGEONS[k].lvl === 60);
+  const S = E.monoStart(E.newState("Solo", "iop")); const me = S.chars[0]; me.lvl = 60; me.inTeam = true; S.res[D.DUNGEONS[did].key] = 5; S.kamas = 1e7;
+  const tpl = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].slot === "amulette" && D.ITEMS[k].lvl <= 60 && !D.ITEMS[k].noDrop);
+  const mine = E.rollItem(S, tpl, { radiant: false });
+  assert.strictEqual(E.monoEnter(S, did, 1, "cra"), null); let m = E.monoMercOf(S);
+  const coiffe0 = m.equip.coiffe; assert.ok(coiffe0 && S.items[coiffe0].merc, "le mercenaire a sa coiffe");
+  assert.strictEqual(E.equip(S, m.id, mine.uid, "amulette"), null);
+  E.saveGear(S, m.id, 0, "Farm Crâ"); assert.ok(S.items[mine.uid].locked, "objet de la tenue verrouillé");
+  for (let i = 0; i < 4000 && S.dungeon; i++) E.tick(S, 1000);
+  assert.ok(!E.monoMercOf(S), "le mercenaire est reparti");
+  assert.ok(S.items[mine.uid] && !E.equippedBy(S, mine.uid), "mon amulette revient dans le sac");
+  assert.ok(E.inGear(S, mine.uid) && S.items[mine.uid].locked, "toujours protégée par la tenue gardée");
+  const T = E.deserialize(E.serialize(S)); assert.ok(T.mono.mercGear && T.mono.mercGear.cra, "la tenue gardée survit à la sauvegarde");
+  assert.deepStrictEqual(Object.values(S.mono.mercGear.cra[0].eq).map(Number), [mine.uid], "seuls mes objets sont gardés");
+  // un mercenaire d'une autre classe n'a pas cette tenue
+  assert.strictEqual(E.monoEnter(S, did, 1, "eni"), null); assert.ok(!(E.monoMercOf(S).gear || []).some(Boolean), "Eniripsa : pas de tenue");
+  for (let i = 0; i < 4000 && S.dungeon; i++) E.tick(S, 1000);
+  assert.ok(S.mono.mercGear.cra, "la tenue Crâ reste après un mercenaire Eniripsa");
+  // nouveau mercenaire Crâ : la tenue est là, la mettre remet mon amulette sans lui enlever le reste
+  assert.strictEqual(E.monoEnter(S, did, 1, "cra"), null); m = E.monoMercOf(S);
+  assert.strictEqual(m.gear[0].name, "Farm Crâ", "la tenue revient");
+  const coiffe1 = m.equip.coiffe; const r = E.applyGear(S, m.id, 0);
+  assert.ok(r && m.equip.amulette === mine.uid, "la tenue remet mon amulette");
+  assert.strictEqual(m.equip.coiffe, coiffe1, "il garde sa propre coiffe");
+  for (let i = 0; i < 4000 && S.dungeon; i++) E.tick(S, 1000);
+  assert.ok(S.items[mine.uid] && !Object.values(S.items).some((it) => it.merc), "fin : mon objet reste, les siens repartent");
+  // supprimer la tenue libère l'objet
+  assert.strictEqual(E.monoEnter(S, did, 1, "cra"), null); m = E.monoMercOf(S); E.deleteGear(S, m.id, 0);
+  for (let i = 0; i < 4000 && S.dungeon; i++) E.tick(S, 1000);
+  assert.ok(!S.mono.mercGear && !E.inGear(S, mine.uid) && !S.items[mine.uid].locked, "tenue supprimée : plus rien de gardé ni verrouillé");
+  E.HERO_MAX = 19; E.TEAM_MAX = 8;
+  console.log("ok - tenues du mercenaire gardées par classe");
+}
 console.log("Monocompte : tout est bon");
