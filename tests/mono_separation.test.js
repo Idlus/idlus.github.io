@@ -143,7 +143,7 @@ function fake() {
       const hors = keys.filter((k) => !E.monoPageOk(k));
       if (hors.length) fail(`${w} px : pages hors de la liste blanche dans le menu Monocompte : ` + hors.join(", "));
       for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
-      for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
+      for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder", "garde"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
       const pins = await p.evaluate(() => window.DX.S.settings.pins);
       if (pins.some((k) => !E.monoPageOk(k))) fail(`${w} px : épingles du Classique gardées : ` + JSON.stringify(pins));
       const mods = await p.evaluate((L) => L.filter((k) => window[k]), E.MONO.CLASSIC_MODS);

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.9 « Garde-robe en Monocompte »
+
+- js/mono.js `M.PAGES` (Mathis 04/11 : « pourquoi la garde robe n'est pas sur monocompte ») : la page `garde` (lot 3 Saison 1, prévue pour toutes les parties) manquait à la liste blanche du Monocompte, `monoSeal` la retirait du menu. Ajoutée ; tests/mono_separation.test.js vérifie qu'elle est au menu Monocompte. Classique · Saison 1 l'avait déjà (seule L'Ascension y est retirée, `S1_OFF`).
+
 ## 2.2.2.8 « Quête suivie à côté du chat »
 
 - js/histoireui.js `trkPlace` (Mathis 04/11 : « réadapter le bouton du suivi de quete car il est caché derrière le tchat ») : chat ouvert, le cadre `#hs-trk` n'est plus masqué. PC : posé à gauche du chat (mesuré, suit la colonne « Combat en direct ») ; s'il manque de place à côté du chat, classe `hid`. Téléphone (≤ 640 px, chat plein écran) : classe `dock`, au-dessus du menu du bas, et le chat se raccourcit de `--trkh` (css/histoire.css). Test : tests/quete_suivie_chat_ui.test.js.

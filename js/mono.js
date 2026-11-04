@@ -96,7 +96,7 @@
      tests/mono_separation.test.js échoue si un nouvel appel au serveur n'est rangé ni ici ni dans M.CLASSIC_RPC. */
   M.PAGES = new Set(["home", "havre", "combat", "world", "dungeons", "defi", "enc", "team", "heroes", "maitrise", "ren", "grav", "inv", "dofus", "pets",
     "chasse", "metiers", "forge", "hdv", "koli", "align", "quests", "succes", "carnet", "guide", "amis", "ladder", "sugg", "bug", "archis", "admin",
-    "fragments", "boutique", "pass", "manche", "guerre", "album", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau", "vote"]); // 04/11 : vote sur Dofus Fan Games, récompense versée au Monocompte
+    "fragments", "boutique", "pass", "manche", "guerre", "album", "garde", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau", "vote"]); // 04/11 : vote sur Dofus Fan Games, récompense versée au Monocompte ; 2.2.2.9 : la Garde-robe (oubliée de la liste)
   E.monoPageOk = (k) => M.PAGES.has(k);
   /* fonctions du serveur permises dans une partie Monocompte ; hdv_* et trade_* passent renommées en mono_* (HdV de saison) */
   M.RPC = /^(mono_|amis_|couronne_temps$|chat_(send|report|me|mono_profil)$|cosm_mine$|bug_(send|mine)$|idea_send$|my_role$|staff_list$|ann_tick$|carnet_(send|admin)$|pseudo_(info|change)$|delete_my_account$|adm_(?!rain|hdv))/;

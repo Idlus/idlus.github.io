@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.2.8";
+const GAME_VERSION = "2.2.2.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.2.9", name: "Garde-robe en Monocompte", guide: "s1garde", items: [
+    "Monocompte : la Garde-robe (Héros › Garde-robe) était oubliée dans le menu. Auras, boucliers, compagnon, décor, effet de victoire, couleur du pseudo, bannière : tout s'y choisit, comme en Classique · Saison 1 et en Éternel" ] },
   { v: "2.2.2.8", name: "Quête suivie à côté du chat", items: [
     "Le cadre « Quête suivie » (Y aller, La scène) ne se cache plus derrière le chat : sur PC il se place à gauche du chat ouvert, sur téléphone il reste au-dessus du menu du bas et le chat s'arrête juste au-dessus. Classique et Monocompte" ] },
   { v: "2.2.2.7", name: "Voter en Saison 1", items: [

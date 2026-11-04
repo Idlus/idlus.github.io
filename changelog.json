@@ -1,6 +1,14 @@
 {
-  "version": "2.2.2.8",
+  "version": "2.2.2.9",
   "versions": [
+    {
+      "v": "2.2.2.9",
+      "name": "Garde-robe en Monocompte",
+      "guide": "s1garde",
+      "items": [
+        "Monocompte : la Garde-robe (Héros › Garde-robe) était oubliée dans le menu. Auras, boucliers, compagnon, décor, effet de victoire, couleur du pseudo, bannière : tout s'y choisit, comme en Classique · Saison 1 et en Éternel"
+      ]
+    },
     {
       "v": "2.2.2.8",
       "name": "Quête suivie à côté du chat",
