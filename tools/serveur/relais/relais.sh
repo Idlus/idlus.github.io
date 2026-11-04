@@ -20,5 +20,5 @@ docker run --rm --network host -e DISCORD_BOT_TOKEN -v "$D/app:/app:ro" -v "$W:/
    node /app/sortie_sql.js /w > /w/maj.sql'
 s=$?
 if [ -s "$W/maj.sql" ]; then docker exec -i supabase-db psql -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 < "$W/maj.sql" || s=1; fi
-echo "$(date -Is) idées $(grep -c 'ideas' "$W/maj.sql" 2>/dev/null || echo 0), bugs $(grep -c 'bugs' "$W/maj.sql" 2>/dev/null || echo 0), code $s"
+echo "$(date -Is) idées $(grep -c 'ideas' "$W/maj.sql" 2>/dev/null || true), bugs $(grep -c 'bugs' "$W/maj.sql" 2>/dev/null || true), code $s"
 exit $s
