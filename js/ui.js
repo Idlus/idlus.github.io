@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.3.2";
+const GAME_VERSION = "2.2.3.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.3.3", name: "À l'heure du serveur", items: [
+    "Connecté, le jeu suit l'heure du serveur pour le temps qui passe (absence, Sablier, journées). Si l'heure de ton appareil est fausse, un message te le signale : règle-la en automatique" ] },
   { v: "2.2.3.2", name: "Où ? toujours là", items: [
     "Artisanat : « Où ? » et « Offre HdV » restent sur chaque ressource de la recette, même quand tu en as assez. Pratique pour en racheter ou savoir où la récolter avant de lancer 10 fabrications" ] },
   { v: "2.2.3.1", name: "Enchaîner avec un ami", items: [

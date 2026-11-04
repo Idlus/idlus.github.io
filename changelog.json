@@ -1,6 +1,13 @@
 {
-  "version": "2.2.3.2",
+  "version": "2.2.3.3",
   "versions": [
+    {
+      "v": "2.2.3.3",
+      "name": "À l'heure du serveur",
+      "items": [
+        "Connecté, le jeu suit l'heure du serveur pour le temps qui passe (absence, Sablier, journées). Si l'heure de ton appareil est fausse, un message te le signale : règle-la en automatique"
+      ]
+    },
     {
       "v": "2.2.3.2",
       "name": "Où ? toujours là",

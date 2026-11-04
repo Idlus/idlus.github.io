@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.3.3 « À l'heure du serveur »
+
+- js/engine.js `E.setBaseClock`, js/online.js `ON.horloge`, js/ui.js `horlogeSync` (Mathis 04/11) : connecté, le jeu relève l'heure du serveur au lancement, au retour sur l'onglet et toutes les 10 minutes, et compte le temps (absence, Sablier, journées) avec elle quand l'appareil a plus de 2 minutes d'écart. Bouclier (fonctions « record » et « mono », `V.horlogeFaussee`) : une partie avec du temps de jeu impossible n'est plus affichée tant que Mathis n'a pas dit « C'est bon » (choix de Mathis). Test : tests/horloge.test.js.
+
 ## 2.2.3.2 « Où ? toujours là »
 
 - js/ui.js (fiche de recette de l'Artisanat, Mathis 04/11 : « avoir cette option même si on possède assez de ressources pour le craft ») : les boutons « Où ? » et « Offre HdV » s'affichent sur chaque ingrédient, plus seulement quand il manque. Quand la ressource suffit, l'offre HdV propose la quantité d'une fabrication.
