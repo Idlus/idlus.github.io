@@ -10,6 +10,7 @@
 #               lecture ni écriture des joueurs), puis fait la copie finale. Accord écrit de Mathis (14/10/2026).
 #   rouvrir   : rend l'accès du jeu à l'ancien serveur (retour en arrière).
 #   diagnostic: lecture seule : état des services, journaux récents du direct (Realtime), joueurs connectés récemment.
+#   relais-discord : installe ou met à jour le relais Discord du serveur (idées et fils des bugs toutes les 5 min, tools/serveur/relais).
 #   envois-discord : lecture seule : les derniers bugs et idées envoyés depuis le jeu et s'ils sont arrivés sur Discord (chiffres seulement).
 #   boucle-enquete : lecture seule : quelle session se renouvelle en boucle, à quel rythme, avec quel navigateur.
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
@@ -32,7 +33,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, hauts-faits-serveur, envois-discord]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, hauts-faits-serveur, envois-discord, relais-discord]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -240,6 +241,11 @@ jobs:
       - name: Enquête sur la session qui se renouvelle en boucle (lecture seule, 04/11)
         if: inputs.etape == 'boucle-enquete'
         run: bash tools/serveur/boucle_enquete.sh
+      - name: Relais Discord du serveur (idées et fils des bugs toutes les 5 min)
+        if: inputs.etape == 'relais-discord'
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: bash tools/serveur/relais/installer.sh
       - name: Bugs et idées envoyés vers Discord (lecture seule)
         if: inputs.etape == 'envois-discord'
         run: |
@@ -249,6 +255,7 @@ jobs:
           q "15 derniers bugs" "select id, to_char(created_at at time zone 'Europe/Paris','DD/MM HH24:MI') as recu, version, status, issue, discord is not null as fil_discord, user_id is null as invite from public.bugs order by id desc limit 15"
           q "Idées par jour (7 jours) : reçues / cachées / publiées sur Discord" "select to_char(created_at at time zone 'Europe/Paris','DD/MM') as jour, count(*) as recues, count(*) filter (where hidden) as cachees, count(relayed_at) as publiees from public.ideas where created_at > now() - interval '7 days' group by 1 order by 1"
           q "15 dernières idées" "select id, to_char(created_at at time zone 'Europe/Paris','DD/MM HH24:MI') as recue, tag, hidden, to_char(relayed_at at time zone 'Europe/Paris','DD/MM HH24:MI') as publiee, url is not null as lien from public.ideas order by id desc limit 15"
+          echo "== Relais du serveur (derniers passages)"; bash tools/serveur/vps_sql.sh commande 'tail -n 6 /var/log/idlus-relais.log 2>/dev/null || echo "pas encore installé"'
           q "En attente" "select (select count(*) from public.bugs where issue is null and status = 'nouveau') as bugs_sans_ticket, (select count(*) from public.bugs where issue is not null and discord is null) as bugs_sans_fil, (select count(*) from public.ideas where relayed_at is null and not hidden) as idees_non_publiees"
       - name: Enquête sur un joueur (lecture seule, demande de Mathis)
         if: inputs.etape == 'enquete-joueur'

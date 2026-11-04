@@ -1,3 +1,4 @@
+# 2.2.4.8 : c'est le relais du serveur OVH (tools/serveur/relais, toutes les 5 min) qui publie ; ce workflow reste en secours (idées en attente depuis 15 min).
 # Suggestions vers Discord (0.1.36) : toutes les 10 minutes, publie dans le forum #idées les idées envoyées depuis le jeu
 # (Communauté › Suggestions, table « ideas » de supabase/idees.sql), un fil par idée avec son tag, puis note l'adresse du fil.
 # Secrets : VPS_HOST, VPS_USER, VPS_NEW_PASSWORD (serveur OVH : lire et marquer les idées) et DISCORD_BOT_TOKEN (publier).
@@ -32,7 +33,7 @@ jobs:
           sql() { bash tools/serveur/vps_sql.sh json "$1" > /tmp/r.json || { echo "Erreur de la base"; head -c 600 /tmp/r.json; echo; exit 1; }; }
           sql "select to_regclass('public.ideas') is not null as ok"
           if [ "$(jq -r '.[0].ok' /tmp/r.json)" != "true" ]; then echo "Table ideas absente : rien à faire."; exit 0; fi
-          sql "select id, tag, title, body, pseudo, info, (user_id is null) as guest from public.ideas where relayed_at is null and not hidden order by id limit 10"
+          sql "select id, tag, title, body, pseudo, info, (user_id is null) as guest from public.ideas where relayed_at is null and not hidden and created_at < now() - interval '15 minutes' order by id limit 10"
           cp /tmp/r.json /tmp/idees.json; n=$(jq length /tmp/idees.json); echo "Idées en attente : $n"
           if [ "$n" = "0" ]; then exit 0; fi
           echo '[]' > "$DISCORD_SORTIE"
@@ -40,7 +41,7 @@ jobs:
           if [ "$(jq length "$DISCORD_SORTIE")" != "0" ]; then
             # seulement des numéros et des adresses discord.com fabriqués par le robot
             j=$(jq -c '[.[] | {id: (.id | tonumber), url: (.url | select(test("^https://discord\\.com/channels/[0-9]+/[0-9]+$")))}]' "$DISCORD_SORTIE")
-            sql "update public.ideas i set relayed_at = now(), url = v.url from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, url text) where i.id = v.id returning i.id"
+            sql "update public.ideas i set relayed_at = now(), url = v.url from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, url text) where i.id = v.id and i.relayed_at is null returning i.id"
             echo "Idées marquées publiées : $(jq length "$DISCORD_SORTIE")"
           fi
           exit $status

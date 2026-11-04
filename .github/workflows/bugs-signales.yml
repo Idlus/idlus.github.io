@@ -35,7 +35,7 @@ jobs:
           sql() { bash tools/serveur/vps_sql.sh json "$1" > /tmp/r.json || { echo "Erreur de la base"; head -c 600 /tmp/r.json; echo; exit 1; }; }
           sql "select to_regclass('public.bugs') is not null as ok"
           if [ "$(jq -r '.[0].ok' /tmp/r.json)" != "true" ]; then echo "Table bugs absente : rien à faire."; exit 0; fi
-          sql "select id, pseudo, version, page, device, what, expected, diag, (user_id is null) as guest from public.bugs where issue is null and status = 'nouveau' order by id limit 10"
+          sql "select id, pseudo, version, page, device, what, expected, diag, (user_id is null) as guest, discord, (created_at < now() - interval '15 minutes') as vieux from public.bugs where issue is null and status = 'nouveau' order by id limit 10"
           cp /tmp/r.json /tmp/bugs.json; n=$(jq length /tmp/bugs.json); echo "Nouveaux bugs : $n"
           status=0
           if [ "$n" != "0" ]; then
@@ -47,11 +47,16 @@ jobs:
               echo "Bugs transmis : $(jq length /tmp/tickets.json)"
               # fil Discord pour chaque bug transmis (une panne de Discord ne bloque pas les tickets)
               jq -s '.[1] as $t | [.[0][] | . as $b | ($t[] | select(.id == ($b.id | tonumber)) | .issue) as $i | $b + {issue: $i}]' /tmp/bugs.json /tmp/tickets.json > /tmp/bugs_t.json
+              # 2.2.4.8 : le relais du serveur OVH ouvre le fil dans les 5 minutes ; ici seulement en secours (bug sans fil depuis 15 min),
+              # et le lien du ticket est ajouté dans le fil déjà ouvert
+              jq '[.[] | select(.discord == null and .vieux)]' /tmp/bugs_t.json > /tmp/bugs_nf.json
+              jq '[.[] | select(.discord != null)]' /tmp/bugs_t.json > /tmp/bugs_lien.json
               echo '[]' > /tmp/fils.json
-              if [ -n "$DISCORD_BOT_TOKEN" ]; then DISCORD_SORTIE=/tmp/fils.json node tools/discord_bot.js bugs /tmp/bugs_t.json || echo "::warning::Discord : fils de bugs non publiés"; fi
+              if [ -n "$DISCORD_BOT_TOKEN" ] && [ "$(jq length /tmp/bugs_nf.json)" != "0" ]; then DISCORD_SORTIE=/tmp/fils.json node tools/discord_bot.js bugs /tmp/bugs_nf.json || echo "::warning::Discord : fils de bugs non publiés"; fi
+              if [ -n "$DISCORD_BOT_TOKEN" ] && [ "$(jq length /tmp/bugs_lien.json)" != "0" ]; then node tools/discord_bot.js bugs-ticket /tmp/bugs_lien.json || echo "::warning::Discord : liens de tickets non ajoutés"; fi
               if [ "$(jq length /tmp/fils.json)" != "0" ]; then
                 j=$(jq -c '[.[] | {id: (.id | tonumber), thread: (.thread | select(test("^[0-9]{5,25}$")))}]' /tmp/fils.json)
-                sql "update public.bugs b set discord = v.thread from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, thread text) where b.id = v.id returning b.id"
+                sql "update public.bugs b set discord = v.thread from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, thread text) where b.id = v.id and b.discord is null returning b.id"
                 echo "Fils Discord : $(jq length /tmp/r.json)"
               fi
             fi

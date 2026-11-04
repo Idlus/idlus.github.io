@@ -15,6 +15,7 @@
                                                                         (séparateurs « ════════ Message N/M … ════════ », 2 000 caractères au plus chacun), dans l'ordre, sans mention ; un message déjà présent n'est pas renvoyé
    node tools/discord_bot.js bugs <bugs.json>                         → 1.1.1.3 : publie dans le forum #bugs les bugs signalés depuis le jeu (un fil par bug, étiquette « Ouvert »,
                                                                         lien du ticket GitHub) ; écrit dans DISCORD_SORTIE la liste [{ id, thread }]
+   node tools/discord_bot.js bugs-ticket <bugs.json>                  → ajoute le lien du ticket GitHub dans un fil déjà ouvert par le relais du serveur
    node tools/discord_bot.js bugs-etats <etats.json>                  → change l'étiquette du fil (En cours, Corrigé, Pas un bug) et y répond quand l'état d'un bug change
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
@@ -248,7 +249,7 @@ async function main() {
       }
     } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
     console.log("Actions envoyées dans #modération :", done.length);
-  } else if (cmd === "bugs" || cmd === "bugs-etats") {
+  } else if (cmd === "bugs" || cmd === "bugs-etats" || cmd === "bugs-ticket") {
     // 1.1.1.3 : bugs signalés depuis le jeu (table bugs, workflow « Bugs signalés ») ; textes des joueurs sans mention ni lien actif
     const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
     const clean = (t, n) => String(t || "").replace(/@/g, "@\u200b").replace(/https?:\/\//g, "").slice(0, n);
@@ -261,13 +262,17 @@ async function main() {
     const reply = (x) => x.status === "corrige" ? `✅ **Corrigé${x.fixed_in ? ` dans la ${clean(x.fixed_in, 16)}` : ""}**${x.note ? ` : ${clean(x.note, 200)}` : ""}. Rechargez le jeu pour avoir la correction.`
       : x.status === "pas_un_bug" ? `⚪ **Pas un bug**${x.note ? ` : ${clean(x.note, 200)}` : " : le jeu fonctionne comme prévu ici."}`
       : x.status === "en_cours" ? "🟡 **Correction en cours.**" : x.status === "a_voir" ? "🟡 **Regardé par Xener**, la correction arrive." : "";
-    if (DRY) { list.forEach((x) => { if (cmd === "bugs") { const p = first(x); console.log(`${p.name}\n${p.content}\n`); } else console.log(`[${TAG[x.status]}] fil ${x.discord} : ${reply(x)}`); }); return; }
+    if (DRY) { list.forEach((x) => { if (cmd === "bugs-ticket") console.log(`fil ${x.discord} : ticket #${x.issue}`); else if (cmd === "bugs") { const p = first(x); console.log(`${p.name}\n${p.content}\n`); } else console.log(`[${TAG[x.status]}] fil ${x.discord} : ${reply(x)}`); }); return; }
     if (!list.length) return console.log("Rien à publier.");
     const gid = await guildId(); const forum = await channelId(gid, "bugs");
     const tags = (await api("GET", `/channels/${forum}`)).available_tags || []; const tagId = (st) => { const t = tags.find((x) => norm(x.name) === norm(TAG[st] || "Ouvert")); return t ? [t.id] : []; };
     try {
       for (const x of list) {
-        if (cmd === "bugs") {
+        if (cmd === "bugs-ticket") { // 2.2.4.8 : fil ouvert par le relais du serveur avant le ticket GitHub, on y ajoute le lien
+          if (!/^[0-9]{5,25}$/.test(String(x.discord || "")) || !(+x.issue > 0)) continue;
+          await api("POST", `/channels/${x.discord}/messages`, { content: `🔧 Ticket de correction : <${REPO}${+x.issue}>`, allowed_mentions: { parse: [] } });
+          done.push({ id: +x.id });
+        } else if (cmd === "bugs") {
           const p = first(x);
           const th = await api("POST", `/channels/${forum}/threads`, { name: p.name, applied_tags: tagId("transmis"), message: { content: p.content.slice(0, 2000), allowed_mentions: { parse: [] } } });
           done.push({ id: +x.id, thread: String(th.id) });
@@ -282,7 +287,7 @@ async function main() {
         await new Promise((r) => setTimeout(r, 1200));
       }
     } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
-    console.log(cmd === "bugs" ? "Bugs publiés dans #bugs :" : "Fils de bugs mis à jour :", done.length);
+    console.log(cmd === "bugs" ? "Bugs publiés dans #bugs :" : cmd === "bugs-ticket" ? "Liens de tickets ajoutés :" : "Fils de bugs mis à jour :", done.length);
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
