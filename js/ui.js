@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.4.4";
+const GAME_VERSION = "2.2.4.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.4.5", name: "Codes cadeaux par le serveur", items: [
+    "Les codes cadeaux sont tous vérifiés par le serveur (il faut être connecté à Internet pour en utiliser un)",
+    "Une récompense de code perdue en route n'est redonnée qu'à une partie du même serveur (Éternel ou Saison 1)",
+    "Le serveur vérifie davantage les parties" ] },
   { v: "2.2.4.4", name: "Parties des joueurs", items: [
     "Panel de l'équipe : nouvelle page « Parties des joueurs » sur Éternel, Saison 1 et Monocompte, et les parties de chaque compte sur les trois serveurs dans « Comptes »",
     "Sur téléphone, le menu du panel montre toutes ses pages d'un coup, sans défiler de côté" ] },

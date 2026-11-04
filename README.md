@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.5 « Codes cadeaux par le serveur »
+
+- Tous les codes cadeaux passent par `gift_redeem` (supabase/codes.sql) ; le jeu ne fabrique ni ne valide plus aucun code (js/systems.js : `E.legacyGiftCode` lit seulement le nom d'un ancien code IDLUS-…, que le serveur accepte ou non ; tools/code_cadeau.js et le bouton « Code pour le jeu public » retirés).
+- `gift_uses.srv` (eternel, s1, solo) : `gift_redeem(p_code, p_guest, p_srv)` le note, `gift_mine(p_guest, p_srv)` ne redonne une récompense perdue qu'à une partie du même serveur.
+- Bouclier (js/verify.js `V.cadeaux`, fonction record et verify_mono.js) : une clé de S.gifts que le serveur n'a pas enregistrée pour le compte est signalée (seulement les clés nouvelles depuis la partie validée, `bilan.gk`) ; en Monocompte, tout nouveau code est signalé.
+
 ## 2.2.4.4 « Parties des joueurs »
 
 - supabase/panel_parties.sql `adm_parties(p_srv, p_ids)` (lecture seule, étape « panel-parties » de Serveur OVH, sauvegarde d'abord) : parties de chaque compte sur l'Éternel (public), la Saison 1 (s1) et le Monocompte (mono.parties) ; test tests/panel_parties_sql.test.js.

@@ -33,6 +33,9 @@ create table if not exists public.gift_uses (
 create unique index if not exists gift_uses_user on public.gift_uses (code, user_id) where user_id is not null;
 create unique index if not exists gift_uses_guest on public.gift_uses (code, guest) where guest is not null;
 alter table public.gift_uses enable row level security;
+-- 2.2.4.5 : serveur de la partie qui a reçu le code (eternel, s1, solo ; vide = utilisé avant la 2.2.4.4, compté pour l'Éternel).
+-- gift_mine ne redonne une récompense perdue qu'à une partie du même serveur.
+alter table public.gift_uses add column if not exists srv text;
 
 -- Essais ratés récents, pour qu'on ne puisse pas deviner les codes en essayant au hasard.
 create table if not exists public.gift_tries (who text not null, at timestamptz not null default now());
@@ -40,9 +43,11 @@ create index if not exists gift_tries_who on public.gift_tries (who, at desc);
 alter table public.gift_tries enable row level security;
 
 -- ---------- utiliser un code (joueurs, avec ou sans compte) ----------
-create or replace function public.gift_redeem(p_code text, p_guest text default null) returns jsonb
+drop function if exists public.gift_redeem(text, text);
+create or replace function public.gift_redeem(p_code text, p_guest text default null, p_srv text default null) returns jsonb
 language plpgsql security definer set search_path = public
 as $$ declare
+  sv text := case when p_srv in ('s1', 'solo') then p_srv else 'eternel' end;
   c text := upper(regexp_replace(coalesce(p_code, ''), '\s', '', 'g'));
   u uuid := auth.uid();
   g text := case when auth.uid() is null then left(btrim(coalesce(p_guest, '')), 64) end;
@@ -70,32 +75,34 @@ begin
   update gift_codes set uses = uses + 1 where code = c and (max_uses is null or uses < max_uses);
   if not found then return jsonb_build_object('err', 'Ce code a déjà été utilisé par tous les joueurs prévus.'); end if;
   begin
-    insert into gift_uses (code, user_id, guest) values (c, u, g);
+    insert into gift_uses (code, user_id, guest, srv) values (c, u, g, sv);
   exception when unique_violation then
     update gift_codes set uses = uses - 1 where code = c;
     return jsonb_build_object('err', 'Tu as déjà utilisé ce code.');
   end;
   return jsonb_build_object('ok', true, 'code', c, 'reward', x.reward, 'msg', x.msg);
 end $$;
-revoke all on function public.gift_redeem(text, text) from public;
-grant execute on function public.gift_redeem(text, text) to anon, authenticated;
+revoke all on function public.gift_redeem(text, text, text) from public;
+grant execute on function public.gift_redeem(text, text, text) to anon, authenticated;
 
 -- ---------- codes déjà utilisés par ce joueur (1.0.6.3) ----------
 -- Le jeu redonne au chargement les récompenses d'un code utilisé dont la partie n'a pas gardé la trace
 -- (réponse perdue en route, autre onglet ou autre appareil qui a écrasé la sauvegarde…).
-create or replace function public.gift_mine(p_guest text default null) returns jsonb
+drop function if exists public.gift_mine(text);
+create or replace function public.gift_mine(p_guest text default null, p_srv text default null) returns jsonb
 language plpgsql security definer set search_path = public
 as $$ declare
+  sv text := case when p_srv in ('s1', 'solo') then p_srv else 'eternel' end;
   u uuid := auth.uid();
   g text := case when auth.uid() is null then left(btrim(coalesce(p_guest, '')), 64) end;
 begin
   if u is null and (g is null or length(g) < 8) then return '[]'::jsonb; end if;
   return (select coalesce(jsonb_agg(jsonb_build_object('code', c.code, 'reward', c.reward, 'msg', c.msg) order by gu.at), '[]'::jsonb)
     from gift_uses gu join gift_codes c on c.code = gu.code
-    where (u is not null and gu.user_id = u) or (g is not null and gu.guest = g));
+    where ((u is not null and gu.user_id = u) or (g is not null and gu.guest = g)) and coalesce(gu.srv, 'eternel') = sv);
 end $$;
-revoke all on function public.gift_mine(text) from public;
-grant execute on function public.gift_mine(text) to anon, authenticated;
+revoke all on function public.gift_mine(text, text) from public;
+grant execute on function public.gift_mine(text, text) to anon, authenticated;
 
 -- ---------- panel admin (Mathis seulement) ----------
 create or replace function public.adm_gifts() returns jsonb language plpgsql security definer set search_path = public

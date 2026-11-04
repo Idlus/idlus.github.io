@@ -1184,23 +1184,19 @@
   /* panoplie « connue » : une pièce possédée, une recette à portée de métier, ou un monstre qui la lâche déjà vu */
   E.setKnown = (S, setId, owned) => E.setPieces(setId).some((t) => owned[t] || (ITEMS[t].craft && S.crafts[ITEMS[t].craft.job] && S.crafts[ITEMS[t].craft.job].lvl >= E.craftReq(t)) || (setIdx().drops[t] || []).some(([m]) => S.bestiary[m]));
 
-  /* ---------------- Codes cadeaux (0.1.10.1) ----------------
-     Code = « IDLUS- » + contenu (JSON en base64url) + « - » + signature. Fabriqué par tools/code_cadeau.js, vérifié sans serveur :
-     ce n'est pas inviolable, mais un code inventé ou modifié est refusé. Contenu : id (unique), k kamas, r ressources [[nom, n]],
-     c consommables [[id, n]], i objets [[modèle, n]] (0.1.26), t titre, o ornement (clé d'un ornement à débloquer), e date de fin (AAAA-MM-JJ), m message. Un code par partie. */
-  E.GIFT_SALT = "idlus·cadeau·v1·pousse-du-pionnier";
-  const fnv = (str, seed) => { let x = seed >>> 0; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619) >>> 0; return x >>> 0; };
-  E.giftSig = (body) => (fnv(E.GIFT_SALT + body, 2166136261).toString(36).padStart(7, "0") + fnv(body + E.GIFT_SALT, 33554467).toString(36).padStart(7, "0")).toUpperCase();
-  const b64u = { enc: (txt) => { const b = typeof Buffer !== "undefined" ? Buffer.from(txt, "utf8").toString("base64") : btoa(unescape(encodeURIComponent(txt))); return b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
-    dec: (s) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return typeof Buffer !== "undefined" ? Buffer.from(s, "base64").toString("utf8") : decodeURIComponent(escape(atob(s))); } };
-  E.makeGift = (data) => { const body = b64u.enc(JSON.stringify(data)); return `IDLUS-${body}-${E.giftSig(body)}`; };
-  E.readGift = (code) => {
-    const m = /^IDLUS-([A-Za-z0-9_-]+)-([0-9A-Z]{14})$/.exec(String(code || "").trim().replace(/\s+/g, ""));
-    if (!m) return { err: "Ce code n'a pas le bon format (il commence par IDLUS-)." };
-    if (E.giftSig(m[1]) !== m[2].toUpperCase()) return { err: "Ce code n'est pas valide." };
-    let d; try { d = JSON.parse(b64u.dec(m[1])); } catch (e) { return { err: "Ce code n'est pas valide." }; }
-    if (!d || !d.id) return { err: "Ce code n'est pas valide." };
-    return { data: d };
+  /* ---------------- Codes cadeaux ----------------
+     2.2.4.5 : tous les codes sont vérifiés et donnés par le serveur seulement (supabase/codes.sql, gift_redeem) : le jeu ne sait
+     plus ni fabriquer ni valider un code. Un ancien code « IDLUS-… » est lu ici uniquement pour retrouver son nom (id) : le
+     serveur décide s'il est encore valable. Contenu d'une récompense : k kamas, r ressources [[nom, n]], c consommables [[id, n]],
+     i objets [[modèle, n]], s heures de Sablier, t titre, o ornement, x lignes de E.GIFT_X. */
+  const b64dec = (s) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return typeof Buffer !== "undefined" ? Buffer.from(s, "base64").toString("utf8") : decodeURIComponent(escape(atob(s))); };
+  /* nom de code du serveur d'un ancien code IDLUS-… (son id en majuscules, lettres et chiffres seulement), ou null */
+  E.legacyGiftCode = (code) => {
+    const m = /^IDLUS-([A-Za-z0-9_-]+)-[0-9A-Za-z]{14}$/.exec(String(code || "").trim().replace(/\s+/g, ""));
+    if (!m) return null;
+    let d; try { d = JSON.parse(b64dec(m[1])); } catch (e) { return null; }
+    const c = d && d.id ? String(d.id).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) : "";
+    return c.length >= 4 ? { code: c, id: String(d.id) } : null;
   };
   E.giftText = (d) => { const p = [];
     if (d.k) p.push(`${d.k.toLocaleString("fr-FR")} kamas`);
@@ -1212,7 +1208,7 @@
     if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name({})} »`);
     (d.x || []).forEach((row) => { if (gxOk(row)) p.push(E.GIFT_X[row[0]].txt(row[1], gxQ(row))); }); // 1.1.1.4 : tout le reste
     return p.join(", "); };
-  /* Donne le contenu d'un code déjà vérifié (ancien code IDLUS-… ou code du serveur, 0.1.26). */
+  /* Donne le contenu d'un code que le serveur vient d'accepter (gift_redeem, ou gift_mine pour une récompense perdue en route). */
   E.giveGift = (S, d, now = E.now()) => {
     S.gifts = S.gifts || {};
     if (d.k) S.kamas += Math.max(0, Math.round(+d.k) || 0);
@@ -1228,13 +1224,8 @@
     const txt = E.giftText(d); note(S, `Code cadeau : ${txt}${d.m ? ` · ${d.m}` : ""}`, "rare");
     return { ok: true, txt, msg: d.m || "" };
   };
-  E.redeemGift = (S, code, now = E.now()) => {
-    const r = E.readGift(code); if (r.err) return r;
-    const d = r.data; S.gifts = S.gifts || {};
-    if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
-    if (d.e && now > new Date(d.e + "T23:59:59").getTime()) return { err: `Ce code a expiré le ${new Date(d.e).toLocaleDateString("fr-FR")}.` };
-    return E.giveGift(S, d, now);
-  };
+  /* sans le module en ligne (js/codes.js), aucun code n'est accepté : seul le serveur donne des récompenses */
+  E.redeemGift = () => ({ err: "Les codes cadeaux ont besoin d'Internet. Réessaie une fois connecté." });
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
   const ORN = {

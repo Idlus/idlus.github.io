@@ -54,4 +54,21 @@ const S3 = E.newState("C", "eca"); const df = E.DOFUS_ORDER[0];
 E.giveGift(S3, { id: "d1", x: [["dofus", df]] }); E.giveGift(S3, { id: "d2", x: [["dofus", df]] });
 assert.strictEqual(Object.values(S3.items).filter((it) => it.tpl === "dofus_" + df).length, 1);
 assert.ok(new RegExp(E.DOFUS[df].name).test(E.giftText({ x: [["dofus", df]] })));
+/* 2.2.4.5 : le jeu ne sait plus fabriquer ni valider un code : tout passe par le serveur */
+{ assert.strictEqual(E.makeGift, undefined, "plus de fabrique de codes dans le jeu"); assert.strictEqual(E.GIFT_SALT, undefined); assert.strictEqual(E.giftSig, undefined);
+  const S6 = E.newState("F", "iop"); const k0 = S6.kamas;
+  const body = Buffer.from(JSON.stringify({ id: "faux", k: 1e9 })).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const r6 = E.redeemGift(S6, `IDLUS-${body}-ABCDEFGHIJKLMN`); assert.ok(r6.err, "code fabriqué refusé sans le serveur"); assert.strictEqual(S6.kamas, k0);
+  assert.deepStrictEqual(E.legacyGiftCode(`IDLUS-${body}-ABCDEFGHIJKLMN`), { code: "FAUX", id: "faux" }, "seul le nom est lu, le serveur décide");
+  assert.strictEqual(E.legacyGiftCode("IDLUS-xx"), null);
+  /* Bouclier : un code que le serveur n'a pas donné à ce compte est signalé */
+  const V = require("../js/verify.js"); const t = V.GIFT_T0 + 3600000;
+  const P = { gifts: { "srv:MERCI": t, "srv:FAUX": t, vieux: V.GIFT_T0 - 1e6 } };
+  assert.ok(/FAUX/.test(V.cadeaux(P, null, new Set(["MERCI"]))), "code inconnu du serveur signalé");
+  assert.ok(!/vieux|MERCI/.test(V.cadeaux(P, null, new Set(["MERCI"]))), "anciennes clés et codes enregistrés : rien");
+  assert.strictEqual(V.cadeaux(P, ["srv:FAUX", "srv:MERCI", "vieux"], new Set(["MERCI"])), null, "déjà dans la partie validée : pas re-signalé");
+  assert.ok(V.cadeaux({ gifts: { nouveau: 5 } }, ["srv:MERCI"], new Set()), "nouvelle clé hors serveur signalée même datée d'avant");
+  assert.ok(V.cadeaux({ gifts: { "srv:MERCI": t } }, [], null), "Monocompte : aucun code");
+  assert.strictEqual(V.cadeaux({}, null, new Set()), null);
+  assert.deepStrictEqual(V.giftKeys(P), ["srv:FAUX", "srv:MERCI", "vieux"]); }
 console.log(`codes cadeaux : OK (${n} choix offrables)`);

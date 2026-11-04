@@ -2,7 +2,8 @@
    CODES CADEAUX — Idlus (0.1.26, bêta)
    Les codes sont créés par Mathis dans le panel admin (onglet « Codes cadeaux ») et gardés par le
    serveur (supabase/codes.sql) : le jeu ne les connaît pas, il demande seulement à gift_redeem si un
-   code est valable et reçoit alors ses récompenses. Les anciens codes IDLUS-… restent vérifiés sur place.
+   code est valable et reçoit alors ses récompenses. 2.2.4.5 : les anciens codes IDLUS-… passent aussi par le serveur (leur nom
+   seulement ; le serveur garde la liste des codes encore valables et leurs récompenses).
    Lien partageable : …/beta/?code=HALLOWEEN26 ouvre les options avec le code déjà rempli.
    ========================================================================== */
 (function () {
@@ -15,18 +16,25 @@
   const OK = /^[A-Z0-9]{4,20}$/;
 
   /* ---------- côté joueur ---------- */
+  /* 2.2.4.5 : partie qui reçoit le code (Éternel, Saison 1 ou partie solo) : les récompenses perdues en route ne sont redonnées
+     qu'à une partie du même serveur (avant, une partie de la Saison 1 recevait aussi les codes utilisés dans l'Éternel) */
+  const srvOf = () => (ON && ON.s1Game && ON.s1Game() ? "s1" : ON && ON.solo && ON.solo() ? "solo" : "eternel");
   async function redeem(S, raw) {
     const code = String(raw || "").trim();
     if (!code) return { err: "Tape un code d'abord." };
     if (E.isMono && E.isMono(S)) return { err: "Les codes cadeaux sont pour le serveur Classique : change de partie pour l'utiliser." }; // 2.1.35.1 : rien du Classique dans le Monocompte
-    if (/^IDLUS-/i.test(code)) return E.redeemGift(S, code);
-    const c = norm(code);
-    if (!OK.test(c)) return { err: "Ce code n'existe pas." };
     S.gifts = S.gifts || {};
+    let c;
+    if (/^IDLUS-/i.test(code)) { // 2.2.4.5 : ancien code : le serveur décide à partir de son nom
+      const L = E.legacyGiftCode(code); if (!L) return { err: "Ce code n'existe pas." };
+      if (S.gifts[L.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
+      c = L.code;
+    } else c = norm(code);
+    if (!OK.test(c)) return { err: "Ce code n'existe pas." };
     if (S.gifts["srv:" + c]) return { err: "Ce code a déjà été utilisé sur cette partie." };
     if (!ON || !ON.enabled || !ON.db()) return { err: "Les codes cadeaux ont besoin d'Internet. Réessaie une fois connecté." };
     if (!S.gid) S.gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); // identifiant de la partie pour les joueurs sans compte
-    const r = await ON.rpc("gift_redeem", { p_code: c, p_guest: ON.user ? null : S.gid });
+    const r = await ON.rpc("gift_redeem", { p_code: c, p_guest: ON.user ? null : S.gid, p_srv: srvOf() });
     if (r.err) return { err: /fetch|connexion|network/i.test(r.err) ? "Pas de connexion au serveur. Réessaie dans un moment." : "Impossible de vérifier ce code pour le moment." };
     const d = r.data || {};
     if (d.err) return { err: d.err };
@@ -45,9 +53,9 @@
     if (E.isMono && E.isMono(S)) return; // 2.1.35.1 : les codes du compte appartiennent à la partie Classique, jamais redonnés au Monocompte ni à l'Éternel
     if (!($("#nav") && $("#nav").innerHTML) || ($("#sheet") && $("#sheet").innerHTML)) return; // partie pas encore affichée, ou choix de partie en cours
     if (ON.user ? ON.state !== "ok" : !S.gid) return;
-    const who = ON.user ? ON.user.id : "g:" + S.gid;
+    const who = (ON.user ? ON.user.id : "g:" + S.gid) + "/" + srvOf();
     if (recovered[who]) return; recovered[who] = 1;
-    const r = await ON.rpc("gift_mine", { p_guest: ON.user ? null : S.gid });
+    const r = await ON.rpc("gift_mine", { p_guest: ON.user ? null : S.gid, p_srv: srvOf() });
     if (r.err || !Array.isArray(r.data)) { recovered[who] = 0; return; } // on réessaiera plus tard
     const cur = window.DX.S; if (!cur || cur !== S) { recovered[who] = 0; return; }
     cur.gifts = cur.gifts || {}; const got = [];
@@ -169,8 +177,7 @@
       <label class="gc-f"><b>Message affiché au joueur</b><input type="text" id="gcMsg" maxlength="120" value="${h(F.msg)}" placeholder="Merci de jouer à Idlus !"></label>
       <label class="row small"><input type="checkbox" id="gcAcc" ${F.acc ? "checked" : ""}> Réservé aux joueurs avec un compte</label>
       <label class="row small"><input type="checkbox" id="gcAnn" ${F.ann ? "checked" : ""}> Annoncer le code dans le chat du jeu</label>
-      <div class="row"><button class="btn primary" data-act="gc-create">Créer le code</button><button class="btn" data-act="gc-pub" data-tip="Le jeu public n'a pas encore de serveur : il garde les anciens codes IDLUS-…">Code pour le jeu public</button></div>
-      ${F.pub ? `<div class="gc-pub"><b class="small">Code pour le jeu public</b><span class="xs muted">Même contenu, vérifié par le jeu lui-même. Il marche aussi sur la bêta. Pas de limite d'utilisations.</span><textarea id="gcPubTxt" readonly>${h(F.pub)}</textarea><div><button class="btn sm" data-act="gc-copy" data-v="pub">Copier</button></div></div>` : ""}
+      <div class="row"><button class="btn primary" data-act="gc-create">Créer le code</button></div>
       </div>`;
     const preview = `<div class="box"><h2>Ce que verra le joueur</h2><div class="gc-card"><span class="gc-code">${h(c || "TONCODE")}</span>
       <span>${pre.reward ? h(E.giftText(pre.reward)) : `<span class="muted">${h(pre.err)}</span>`}</span>${F.msg ? `<span class="muted small">${h(F.msg)}</span>` : ""}</div>
@@ -198,12 +205,6 @@
       case "gc-add": F.rows.push({ t: "c", n: "", q: "1" }); repaint(); return;
       case "gc-del": F.rows.splice(+d.i, 1); if (!F.rows.length) F.rows.push({ t: "k", n: "", q: "" }); repaint(); return;
       case "gc-rand": { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 10; i++) s += A[Math.floor(Math.random() * A.length)]; F.code = s; repaint(); return; }
-      case "gc-pub": {
-        const r = buildReward(); if (r.err) return X().toast(r.err);
-        const data = Object.assign({ id: (norm(F.code) || "code").toLowerCase() + "-" + Date.now().toString(36) }, r.reward);
-        if (F.end) data.e = F.end; if (F.msg.trim()) data.m = F.msg.trim().slice(0, 120);
-        F.pub = E.makeGift(data); repaint(); return;
-      }
       case "gc-create": {
         const c = norm(F.code); if (!OK.test(c)) return X().toast("Le code doit faire 4 à 20 lettres ou chiffres, sans espace ni accent.");
         const r = buildReward(); if (r.err) return X().toast(r.err);

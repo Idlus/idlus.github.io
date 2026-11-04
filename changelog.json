@@ -1,6 +1,15 @@
 {
-  "version": "2.2.4.4",
+  "version": "2.2.4.5",
   "versions": [
+    {
+      "v": "2.2.4.5",
+      "name": "Codes cadeaux par le serveur",
+      "items": [
+        "Les codes cadeaux sont tous vérifiés par le serveur (il faut être connecté à Internet pour en utiliser un)",
+        "Une récompense de code perdue en route n'est redonnée qu'à une partie du même serveur (Éternel ou Saison 1)",
+        "Le serveur vérifie davantage les parties"
+      ]
+    },
     {
       "v": "2.2.4.4",
       "name": "Parties des joueurs",

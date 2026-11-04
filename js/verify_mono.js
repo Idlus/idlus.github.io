@@ -308,6 +308,8 @@
       if (lvx0 > 0) { const h = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000), t0 = +prev.bilan.lvt || cap + lvx0;
         lvA = Math.max(lvx0, t0 + VM.LVL_M + Math.ceil(VM.LVL_H * h) - cap); }
       why = VM.impossible(E, S, ctx, nu0, o.accept ? Infinity : lvA) || VM.registre(E, S, o.reg);
+      // 2.2.4.5 : aucun code cadeau ne s'utilise en Monocompte : un nouveau code dans la partie est signalé
+      if (!why && !o.accept && V.cadeaux) why = V.cadeaux(S, prev && prev.bilan && Array.isArray(prev.bilan.gk) ? prev.bilan.gk : null, null);
       const top0 = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
       bil.lvx = o.accept ? Math.max(lvx0, top0 - cap) : lvx0; if (bil.lvx > 0) bil.lvt = top0; else delete bil.lvx;
       const obs = (o.at || 0) < VM.OBS_FIN; // 48 h d'observation : les nouvelles règles notent, les anciennes décident
@@ -331,7 +333,7 @@
        classements de saison (mono_srv_afficher : affichage seulement, ni bons de butin, ni défis payés, ni partie validée qui bouge).
        Exception : une règle Ironman enfreinte ne s'affiche pas (le badge et le classement de fer resteraient faux). */
     if (why) { let resume = null; if (!iron) try { resume = VM.resume(E, S, ctx); } catch (e) { resume = null; } return resume ? { ok: false, why, resume } : { ok: false, why }; }
-    bil.nu0 = nu0;
+    bil.nu0 = nu0; if (V.giftKeys) bil.gk = V.giftKeys(S).slice(0, 400);
     return Object.assign({ ok: true, bilan: bil, res: res == null ? VM.RES_MAX : res, resume: VM.resume(E, S, ctx), acts: VM.acts(E, S) }, note ? { note } : {});
   };
 

@@ -251,5 +251,21 @@
   };
 
   root.VERIFY = V;
+  /* 2.2.4.5 : codes cadeaux. Seul le serveur donne un code (gift_redeem) : une partie ne garde dans S.gifts que des clés
+     « srv:CODE » que le serveur a enregistrées pour ce compte (gift_uses). Seules les clés nouvelles depuis la dernière partie
+     validée (prevKeys) sont contrôlées ; pour une partie validée d'avant la 2.2.4.5 (prevKeys absent), celles datées d'après
+     V.GIFT_T0. uses : codes enregistrés pour ce compte (Set, ou null en Monocompte, où aucun code ne s'utilise). */
+  V.GIFT_T0 = Date.UTC(2026, 10, 4, 12, 0);
+  V.giftKeys = (S) => (S && S.gifts && typeof S.gifts === "object" ? Object.keys(S.gifts).sort() : []);
+  V.cadeaux = (S, prevKeys, uses) => {
+    const G = (S && S.gifts) || {}, old = new Set(Array.isArray(prevKeys) ? prevKeys : []);
+    const bad = V.giftKeys(S).filter((k) => {
+      if (old.has(k)) return false;
+      if (!Array.isArray(prevKeys) && !(Number(G[k]) > V.GIFT_T0)) return false;
+      return !uses || !/^srv:/.test(k) || !uses.has(k.slice(4));
+    });
+    return bad.length ? `code cadeau que le serveur n'a pas donné : ${bad.slice(0, 3).map((k) => String(k).slice(0, 24)).join(", ")}${bad.length > 3 ? ` (+${bad.length - 3})` : ""}` : null;
+  };
+
   if (typeof module !== "undefined" && module.exports) module.exports = V;
 })(typeof window !== "undefined" ? window : globalThis);

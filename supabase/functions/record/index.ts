@@ -551,6 +551,12 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
     why = V.impossible(E, S, nu0);
     // 04/11 (Kenan) : partie de saison née hors de la saison (sauvegarde importée) ou temps de jeu plus long que la saison
     if (!why && db.isS1) why = V.s1Bad(E, S);
+    // 2.2.4.5 : un code cadeau dans la partie que le serveur n'a pas donné à ce compte (gift_uses) est signalé ; « C'est bon » l'accepte
+    if (!why && !(ok && ok.accept) && V.cadeaux) {
+      const { data: mine } = await db.from("gift_uses").select("code").eq("user_id", uid).limit(1000);
+      // deno-lint-ignore no-explicit-any
+      why = V.cadeaux(S, prev && Array.isArray(prev.gk) ? prev.gk : null, new Set((mine || []).map((u: any) => String(u.code))));
+    }
     // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») a une marge plus large sur les kamas, ressources et Dofus (V.check, sure) ;
     // 2.1.25 : la Maîtrise, les niveaux et le temps de jeu restent contrôlés comme pour tout le monde
     if (!why && prev && (first || (ok && !ok.accept))) {
@@ -594,6 +600,8 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // (horloge de l'appareil avancée) ne s'affiche pas. La partie validée d'avant reste (classements, profil) jusqu'au « C'est bon ».
   if (why && V.horlogeFaussee && V.horlogeFaussee(why)) return { ok: false, held: true, signale: true };
   bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0; bil.t = new Date(cur.updated_at).getTime();
+  // deno-lint-ignore no-explicit-any
+  if (V.giftKeys) (bil as any).gk = V.giftKeys(S).slice(0, 400); // 2.2.4.5 : codes cadeaux de la partie validée (référence de V.cadeaux)
   // partie signalée : on garde le bilan de la dernière partie honnête (et sa date) comme référence ; « C'est bon » (accept) la remplace
   const ref = why && prev && !(ok && ok.accept) ? Object.assign({}, prev, { t: t0 }) : bil;
   const now = new Date().toISOString();

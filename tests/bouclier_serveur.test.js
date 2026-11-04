@@ -161,6 +161,20 @@ console.log("ok - partie signalée affichée mais jamais prise comme référence
   const O = E.newState("Ancien", "iop"); O.kamas = 9e10; T.saves.push({ user_id: "u7", data: E.serialize(O), meta: {}, updated_at: iso(Date.now()) });
   r = await call("u7", { verif: 1 }); if (!r.ok || r.signale) fail("Éternel : premier envoi signalé"); }
 console.log("ok - Saison 1 : premier envoi contrôlé (kamas, temps de jeu inventé), Éternel inchangé");
+// 10. 2.2.4.5 : codes cadeaux : seul un code que le serveur a donné à ce compte (gift_uses) passe
+{ const G = E.newState("Cadeau", "iop"); const tg = Date.now();
+  T.saves.push({ user_id: "u8", data: E.serialize(G), meta: {}, updated_at: iso(tg) });
+  r = await call("u8", { verif: 1 }); if (!r.ok || r.signale) fail("codes : première partie signalée : " + JSON.stringify(r));
+  const sv8 = T.saves.find((x) => x.user_id === "u8"), ok8 = () => T.saves_ok.find((x) => x.user_id === "u8");
+  T.gift_uses.push({ code: "MERCI", user_id: "u8", at: iso(tg + 30e3) });
+  G.gifts = { "srv:MERCI": tg + 30e3 }; Object.assign(sv8, { data: E.serialize(G), updated_at: iso(tg + 60e3) }); ok8().at = iso(Date.now() - 60e3);
+  r = await call("u8", { verif: 1 }); if (!r.ok || r.signale) fail("codes : code donné par le serveur signalé : " + JSON.stringify(r));
+  G.gifts.faux = tg + 70e3; Object.assign(sv8, { data: E.serialize(G), updated_at: iso(tg + 90e3) }); ok8().at = iso(Date.now() - 60e3);
+  r = await call("u8", { verif: 1 }); if (!r.signale) fail("codes : code fabriqué dans la partie non signalé");
+  if (!/code cadeau/.test(T.bouclier_log.filter((x) => x.user_id === "u8").map((x) => x.why).join(" "))) fail("codes : raison absente du journal du Bouclier");
+  delete G.gifts.faux; G.gifts["srv:INVENTE"] = tg + 100e3; Object.assign(sv8, { data: E.serialize(G), updated_at: iso(tg + 120e3) }); ok8().at = iso(Date.now() - 60e3);
+  r = await call("u8", { verif: 1 }); if (!r.signale) fail("codes : code « du serveur » inventé non signalé"); }
+console.log("ok - codes cadeaux : seuls les codes donnés par le serveur passent");
 process.exit(0);
 `);
 try { const out = execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", tmp], { stdio: "pipe" }); process.stdout.write(out.toString()); }
