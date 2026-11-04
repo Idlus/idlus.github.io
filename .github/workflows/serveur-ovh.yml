@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, kenan-0411-essai, kenan-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -295,6 +295,19 @@ jobs:
             grep -qx "\\\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
             echo "Sauvegarde complète de la base avant l'envoi :"
             bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
+          fi
+          bash tools/serveur/vps_sql.sh fichier "$f"
+      - name: Kenan suspendu 7 jours, partie S1 remise à zéro, retiré du classement de la saison (essai ou pour de vrai, ordre écrit de Mathis du 04/11)
+        if: inputs.etape == 'kenan-0411-essai' || inputs.etape == 'kenan-0411'
+        run: |
+          # 04/11/2026 (Mathis) : « on va ban Kenan 7 jours et reset sa sauvegarde, enleve le aussi du classement ». Partie Éternel non touchée.
+          f="$RUNNER_TEMP/kenan.sql"
+          if [ "${{ inputs.etape }}" = kenan-0411 ]; then
+            node tools/serveur/kenan_0411.js VRAI > "$f"
+            echo "Sauvegarde complète de la base avant l'envoi :"
+            bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
+          else
+            node tools/serveur/kenan_0411.js > "$f"
           fi
           bash tools/serveur/vps_sql.sh fichier "$f"
       - name: Premiers comptes à avoir tous les Dofus (lecture seule, carte Légende de Gagou, 03/11)
