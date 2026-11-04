@@ -12175,10 +12175,42 @@ async function onAct(a, t) {
       ON.setLink({ skip: true }); ui.confirm = null; closeSheet(); renderStatus(); toast("Compte supprimé. Ta partie reste sur cet appareil."); return; }
   }
 }
+/* 04/11/2026 (Mathis : « comment faire pour empêcher cette triche ? ») : le jeu suit l'heure du serveur.
+   Avant, tout le temps du jeu (Sablier, absence, journées) venait de l'heure de l'appareil : en l'avançant, on gagnait des jours.
+   - Au lancement (avant le calcul de l'absence), au retour sur l'onglet et toutes les 10 minutes : écart avec le serveur
+     (ON.horloge). Un écart de plus de 2 minutes est corrigé : le jeu compte avec l'heure du serveur.
+   - Entre deux relevés, un saut de l'heure de l'appareil (plus d'une minute d'écart avec le chronomètre du navigateur) est
+     ignoré : le jeu continue au chronomètre jusqu'au relevé suivant, lancé aussitôt.
+   - Serveur injoignable : l'heure de l'appareil reste la référence (jeu hors ligne) ; le Bouclier du serveur vérifie au retour. */
+const HZ = { off: 0, d0: null, srv: 0, perf: 0, busy: null, essai: 0, vu: false };
+function horlogeNow() {
+  const p = performance.now(), d = Date.now() - p;
+  if (HZ.d0 != null && Math.abs(d - HZ.d0) > 60000) { horlogeSync(); return Math.round(HZ.srv + (p - HZ.perf)); }
+  return Date.now() + HZ.off;
+}
+function horlogeRegle(off) {
+  HZ.off = off != null && Math.abs(off) > 120000 ? Math.round(off) : 0;
+  HZ.perf = performance.now(); HZ.d0 = Date.now() - HZ.perf; HZ.srv = Date.now() + HZ.off;
+  E.setBaseClock(horlogeNow);
+  const t = E.now();
+  if (S) { if (S.lastTick > t) S.lastTick = t; if (S.sablier && S.sablier.at > t) S.sablier.at = t; }
+  if (HZ.off < -600000 && !HZ.vu && booted) { HZ.vu = true; toast("L'heure de ton appareil n'est pas à l'heure : le jeu suit l'heure du serveur. Règle l'heure en automatique.", "warn", 12000); }
+}
+function horlogeSync(ms) {
+  if (!ON || !ON.horloge || HZ.busy) return HZ.busy || Promise.resolve();
+  if (Date.now() - HZ.essai < 15000 && HZ.d0 != null && HZ.essai) { const p = performance.now(), d = Date.now() - p; if (Math.abs(d - HZ.d0) <= 60000) return Promise.resolve(); }
+  HZ.essai = Date.now();
+  HZ.busy = ON.horloge(ms || 4000).then((off) => {
+    if (off != null) horlogeRegle(off);
+    else if (HZ.d0 != null) { const p = performance.now(); HZ.srv = Math.round(HZ.srv + (p - HZ.perf)); HZ.perf = p; HZ.off = HZ.srv - Date.now(); if (Math.abs(HZ.off) <= 120000) HZ.off = 0; HZ.d0 = Date.now() - p; } // serveur muet : l'appareil fait foi
+  }).catch(() => {}).finally(() => { HZ.busy = null; });
+  return HZ.busy;
+}
 async function onBoot() {
   ON.init({ key: LS_KEY, version: GAME_VERSION });
   const err = ON.urlError();
   onBlank("Chargement…");
+  if (ON.horloge) { horlogeRegle(ON.horlogeGardee ? ON.horlogeGardee() : null); await horlogeSync(3000); setInterval(() => horlogeSync(), 600000); }
   await ON.ready();
   // 14/10/2026 : nouveau serveur, la connexion de l'ancien ne vaut plus : une reconnexion avec Discord, la partie est gardée
   const moved = ON.moved ? "Idlus a déménagé sur un nouveau serveur. Reconnecte-toi une fois avec Discord : ta partie et ta progression sont gardées." : "";
@@ -12856,7 +12888,12 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S && !offRun) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); last = performance.now(); }
+  else if (S && !offRun) {
+    // 04/11/2026 : l'heure du serveur d'abord (au plus 2,5 s), puis l'absence depuis le dernier passage de la boucle
+    const lt = S.lastTick, s0 = S;
+    horlogeSync(2500).then(() => { if (S !== s0 || offRun) return; const now = E.now(), gap = (now - (lt || now)) / 1000;
+      if (gap > 60) { S.lastTick = lt; offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); } last = performance.now(); });
+  }
 });
 window.addEventListener("pagehide", () => saveNow());
 

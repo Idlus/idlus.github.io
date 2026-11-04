@@ -575,6 +575,9 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
     if (!last || last.why !== why || Date.now() - new Date(last.at).getTime() > 3600000) await db.from("bouclier_log").insert({ user_id: uid, why });
     await db.rpc("bouclier_signal", { p_user: uid, p_why: why });
   }
+  // 04/11/2026 (choix de Mathis « Oui, exception horloge ») : seule exception au « signaler seulement » : du temps de jeu inventé
+  // (horloge de l'appareil avancée) ne s'affiche pas. La partie validée d'avant reste (classements, profil) jusqu'au « C'est bon ».
+  if (why && V.horlogeFaussee && V.horlogeFaussee(why)) return { ok: false, held: true, signale: true };
   bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0;
   const now = new Date().toISOString();
   const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: bil, res: res == null ? V.RES_MAX : res, src_at: cur.updated_at, at: now, accept: false });

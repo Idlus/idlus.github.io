@@ -44,8 +44,12 @@
   E.getRng = () => rnd; // 0.1.19 : le défi du jour rend le hasard tel qu'il l'a trouvé
   /* Horloge du jeu : toute la logique lit l'heure ici (jamais Date.now() directement).
      Aujourd'hui c'est l'heure de l'appareil ; demain le serveur pourra imposer la sienne (anti-triche). */
-  let clock = () => Date.now();
-  E.setClock = (f) => { clock = f || (() => Date.now()); };
+  /* 04/11/2026 : heure de base réglable (E.setBaseClock) : en ligne, le jeu suit l'heure du serveur (js/ui.js, horlogeRegle).
+     E.setClock(null) revient à cette base, pas à l'heure brute de l'appareil. */
+  let base = () => Date.now();
+  let clock = base;
+  E.setClock = (f) => { clock = f || base; };
+  E.setBaseClock = (f) => { const was = clock === base; base = f || (() => Date.now()); if (was) clock = base; };
   E.now = () => clock();
   E.getClock = () => clock;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
