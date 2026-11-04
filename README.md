@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.8 « Bouton Bug / idée »
+
+- Barre du haut (js/ui.js, statusHtml) : bouton `.tb-bug` (data-act reportbug) avant la recherche, « Bug / idée » sur PC, coccinelle seule sous 860 px (choix de Mathis 1A).
+- Fenêtre de signalement (js/bugs.js `modes`) : les onglets Bug / Idée deviennent deux grandes cartes `.bg-big` (choix 2A).
+
 ## 2.2.4.7 « Commerce par serveur »
 
 - Chat (Mathis 04/11 : « les canaux commerce ect associés à chaque serveur ») : Commerce et PvP à part pour chaque serveur, 'c'/'v' Éternel, 'sc'/'sv' Saison 1, 'mc'/'mv' Monocompte (héros Monocompte, réservés aux comptes du Monocompte). supabase/chat.sql (lecture, chat_send, 30 s par Commerce, modération, salon vidé), koli.sql (grade du Kolizéum dans le PvP du serveur, s1.koli_done → 'sv'), js/chat.js (onglets c/v → salon du serveur de la partie, direct d'un autre serveur ignoré), js/online.js (chatSend envoie aussi 's' : le salon Saison 1 partait dans le Général 'g'). Installé le 04/11 par l'étape Serveur OVH chat-par-serveur (sauvegarde avant-chat-serveurs-2026-11-04-1354). Tests chat_srv_sql et chat_commerce_srv_ui.

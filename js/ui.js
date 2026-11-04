@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.4.7";
+const GAME_VERSION = "2.2.4.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.4.8", name: "Bouton Bug / idée", items: [
+    "Nouveau bouton « Bug / idée » toujours visible dans la barre du haut, à côté de la recherche (la coccinelle au téléphone) : un clic suffit",
+    "La fenêtre s'ouvre sur deux grands choix, « Un bug » ou « Une idée », pour signaler un problème ou proposer une amélioration" ] },
   { v: "2.2.4.7", name: "Commerce par serveur", items: [
     "Chat : chaque serveur a son propre Commerce et son propre PvP. Dans l'Éternel, la Saison 1 ou le Monocompte, tu ne vois que les ventes et les messages des joueurs de ton serveur",
     "Le salon Saison 1 garde bien ses messages : avant, un message écrit dedans partait dans le salon de l'Éternel" ] },
@@ -3391,6 +3394,7 @@ function statusHtml() {
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt=""><span class="hide-sm">idlus</span></button>${sp ? "" : sea}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>${dust}${sabHtml()}
     <span class="tb-grow"></span>${sp}${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
+    <button class="ic-btn tb-bug" data-act="reportbug" title="Signaler un bug ou proposer une idée" aria-label="Signaler un bug ou proposer une idée"><img class="uico" src="assets/ui/bug.webp" alt=""><span class="tb-bugl">Bug / idée</span></button>
     <button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>
     ${window.CHAT && window.CHAT.on ? `<button class="ic-btn tb-chat" data-act="ch-open" title="Chat" aria-label="Ouvrir le chat">${G("chat")}<span class="navcnt" id="tbChatN" hidden></span></button>` : ""}
     <button class="ic-btn tb-bell${op === "bell" ? " on" : ""}" data-act="tb-bell" aria-expanded="${op === "bell"}" title="Notifications : objectifs suivis, événements, annonces" aria-label="Notifications">${TB_BELL}<span class="navcnt" id="tbBellN" hidden></span></button>

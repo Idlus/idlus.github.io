@@ -1,6 +1,14 @@
 {
-  "version": "2.2.4.7",
+  "version": "2.2.4.8",
   "versions": [
+    {
+      "v": "2.2.4.8",
+      "name": "Bouton Bug / idée",
+      "items": [
+        "Nouveau bouton « Bug / idée » toujours visible dans la barre du haut, à côté de la recherche (la coccinelle au téléphone) : un clic suffit",
+        "La fenêtre s'ouvre sur deux grands choix, « Un bug » ou « Une idée », pour signaler un problème ou proposer une amélioration"
+      ]
+    },
     {
       "v": "2.2.4.7",
       "name": "Commerce par serveur",

@@ -44,7 +44,8 @@
     return `<div class="bg-mine"><b class="small">Tes signalements</b>${rows}</div>`;
   }
   /* 1.2.3.2 (demande de Mathis) : onglet « Idée » dans la même fenêtre ; l'idée part dans la Boîte à idées (forum Idées du Discord), jamais en ticket de bug */
-  const modes = () => `<div class="chips bg-mode" role="tablist"><button role="tab" aria-pressed="${F.mode === "bug"}" data-act="bg-mode" data-v="bug"><img class="uico" src="assets/ui/bug.webp" alt=""> Bug</button><button role="tab" aria-pressed="${F.mode === "idee"}" data-act="bg-mode" data-v="idee">${X().IC("idee")} Idée</button></div>`;
+  /* 2.2.4.8 (Mathis 2A) : deux grands choix en haut de la fenêtre, « Un bug » ou « Une idée » */
+  const modes = () => `<div class="bg-big" role="tablist"><button role="tab" aria-pressed="${F.mode === "bug"}" data-act="bg-mode" data-v="bug"><img src="assets/ui/bug.webp" alt=""><span><b>Un bug</b><small>Quelque chose ne marche pas</small></span></button><button role="tab" aria-pressed="${F.mode === "idee"}" data-act="bg-mode" data-v="idee">${X().IC("idee")}<span><b>Une idée</b><small>Proposer une amélioration</small></span></button></div>`;
   function ideaHtml() {
     const I = window.IDEES; const on = online(); const left = on ? I.waitLeft() : 0;
     const chips = I.TAGS.map(([n, e]) => `<button aria-pressed="${F.tag === n}" data-act="bg-tag" data-v="${h(n)}">${e} ${h(n)}</button>`).join("");
