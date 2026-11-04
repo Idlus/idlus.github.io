@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.2.6";
+const GAME_VERSION = "2.2.2.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.2.7", name: "Voter en Saison 1", items: [
+    "Voter pour Idlus sur Dofus Fan Games paie aussi en Saison 1 : la récompense (Sablier et kamas) arrive dans la partie ouverte quand tu cliques « Récupérer » : Éternel, Classique · Saison 1 ou Monocompte",
+    "Les kamas suivent le niveau du héros de cette partie. Un vote ne paie toujours qu'une partie, une fois par heure ; la série, l'objectif du mois et le top 10 restent communs" ] },
   { v: "2.2.2.6", name: "Vérification qui ne bloque plus", items: [
     "Vérification des parties : une partie que le serveur trouve étonnante n'est plus mise en attente. Classements, profil, Songe et records se mettent à jour tout de suite, et c'est Xener qui regarde et décide",
     "Monocompte : les classements de saison montrent aussi ta dernière partie pendant une vérification" ] },

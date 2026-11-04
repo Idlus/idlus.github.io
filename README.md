@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.7 « Voter en Saison 1 »
+- La récompense de vote sur Dofus Fan Games va dans la partie ouverte : Éternel, Classique · Saison 1 (s1.hdv_ops) ou Monocompte de la saison ouverte (mono.ops). Kamas au niveau du héros de cette partie, un vote = une seule partie (supabase/vote.sql : vote_partie, vote_verse ; mono_vote_moi pour le Monocompte).
+
 ## 2.2.2.6 « Vérification qui ne bloque plus »
 
 - Bouclier en « signaler seulement » (Mathis 04/11 : « il ne bloque jamais l'affichage, c'est moi qui ai la décision finale ») : la fonction `record` écrit quand même `saves_ok` pour une partie signalée (`bouclier_signal`, `bouclier_log`), sans copie du jour. Restent : échanges HdV en pause et pas de Premier tant que le compte est suspect, partie illisible refusée.
