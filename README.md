@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.7.3 « Objectifs qui ne bougeaient pas »
+
+- Défi « Premiers outils » (Monocompte, d2) : meilleur niveau de tous les métiers de récolte et d'artisanat (`E.monoBestJob`, js/mono.js) au lieu des seules spécialités (0 sans spécialité ou en Ironman). Ironman : « Spécialiste » (a_spec) et le défi 11 comptent tous les métiers (`E.monoSpecJob`).
+- Hauts faits de saison : g_dj, g_st, g_four (groupes du Bureau) et g_koli (victoires de Kolizéum, `E.koliApply` enveloppé dans js/monopass.js) ne sont plus « soon » ; une famille ne demande plus les hauts faits encore « soon » (Groupe, Camp).
+- Succès impossibles en Monocompte cachés (`E.ACH_MONO_NO`, js/saisonc.js). Guide : étape « Expéditions » lit `S.mis`. Test objectifs_casses.
+
 ## 2.2.7.2 « Vote bloqué ? »
 - Page Voter pour Idlus : aide quand un filtre (box, antivirus, réseau d'école ou de travail, catégorie « New Domains ») bloque dofusfangames.com : voter et récupérer en 4G sur le même appareil.
 

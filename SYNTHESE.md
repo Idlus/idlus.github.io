@@ -81,6 +81,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **03/11/2026 : Saison 1 ouverte à 23h10 sur les deux serveurs (2.2.0).** Le Classique a sa partie Saison 1 (schéma s1), le Monocompte sort de la bêta (héros de la bêta dans l'Éternel). Trois chats : Saison 1, Éternel, Monocompte. À suivre : inscriptions et parties de saison la première semaine, relevé d'équilibrage en fin de semaine 1, cartes Légendes et chat de guilde en Monocompte plus tard.
 
+**04/11 : objectifs qui ne bougeaient pas (2.2.7.3, signalé par Mathis).** « Premiers outils » ne comptait que les spécialités (0 sans spécialité ou en Ironman) : il compte tous les métiers. Hauts faits de groupe et Duelliste comptés, familles débloquées, succès impossibles en Monocompte cachés. Limite : audit fait dans le code (compteurs lus et jamais écrits, événements jamais émis), pas encore sur les sauvegardes des joueurs.
+
 **04/11 : renfort d'un ami payant (2.2.7.1, Mathis option A).** Le renfort était gratuit et souvent plus fort que le mercenaire à 25 000 kamas : plus personne n'avait de raison de payer le mercenaire. Il coûte maintenant le même prix par donjon, kamas détruits, rien pour l'ami. À suivre : nombre de renforts pris (compteur d'aides) avant / après. Idée en attente : prix du mercenaire selon le niveau (25 000 kamas = 30 min de chasse au niveau 20).
 
 **04/11 : album de cartes refait (2.2.6, Mathis 1A 2A 3A 4A 5A 6A).** Bandeau de progression, sections par rareté, manquantes en gris avec ⚒ si fabricable, fiche complète qu'on feuillette, « Nouvelle » après un booster ; page téléphone 8 500 → 5 300 px. Mathis veut ensuite de vraies nouveautés pour l'album : maquette à suivre (aucune ne doit donner de puissance).

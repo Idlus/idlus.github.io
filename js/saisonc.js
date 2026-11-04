@@ -167,7 +167,9 @@
   [[100, "Premiers Fragments"], [400, "Collectionneur du Temps"], [800, "Gardien des Fragments"]].forEach(([n, nm]) => add({ id: "s1f" + n, cat: "Saison 1", grp: "Fragments du Temps", name: nm, desc: `Gagner ${n} Fragments du Temps par les activités.`, test: (S) => E.isS1c(S) && E.s1cFragAct(S) >= n, prog: (S) => [Math.min(n, E.s1cFragAct(S)), n], kamas: n * 50 }));
   [[5, "Béni du Temps"], [10, "Élu du Sablier"], [20, "Maître des bénédictions"]].forEach(([n, nm]) => add({ id: "s1b" + n, cat: "Saison 1", grp: "Bénédictions", name: nm, desc: `Choisir ${n} bénédictions de saison.`, test: (S) => E.isS1c(S) && E.s1cBoonGot(S).length >= n, prog: (S) => [Math.min(n, E.s1cBoonGot(S).length), n], kamas: n * 2000 }));
   C.manches.slice(1).forEach((nm, i) => add({ id: "s1m" + (i + 2), cat: "Saison 1", grp: "Manches", name: `Manche ${i + 2} · ${nm}`, desc: `Jouer pendant la manche ${i + 2} de la saison.`, test: (S) => E.isS1c(S) && E.s1cManche(S) >= i + 2, kamas: 20000 * (i + 1) }));
-  E.achVisible = (S, a) => !a.s1 || E.isS1c(S);
+  /* 2.2.7.3 : Monocompte (un seul héros, Élevage, Songe et Tournoi fermés) : on cache les succès qu'il est impossible d'y obtenir */
+  E.ACH_MONO_NO = /^(team4|team8|sec_famille|sec_clones|sec_arcenciel|tour\d|exp\d+|exprel100|expdbl10|expcamp|sgw10|elv[a-z0-9]*)$/;
+  E.achVisible = (S, a) => (!a.s1 || E.isS1c(S)) && !(E.isMono && E.isMono(S) && E.ACH_MONO_NO.test(a.id));
 
   /* ---------------- écoute du moteur ---------------- */
   const DL = (id) => (D.DUNGEONS[id] ? D.DUNGEONS[id].lvl || 0 : 0);

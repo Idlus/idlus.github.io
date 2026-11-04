@@ -302,6 +302,11 @@
   const jobObj = (S, j) => (D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts = S.crafts || {})[j] || (S.crafts[j] = { lvl: 1, xp: 0 }));
   E.monoManche = (S) => Math.max(1, Math.floor((E.now() - E.monoT0(S)) / M.jobs.manche) + 1);
   E.monoSpecs = (S) => (S.mono && S.mono.spec) || [];
+  /* meilleur niveau de métier (récolte ou artisanat) ; spec : seulement les spécialités (en Ironman, tous les métiers montent à 200 : tous comptent) */
+  E.monoJobLvl = (S, j) => (((D.GATHER_JOBS[j] ? (S.jobs || {})[j] : (S.crafts || {})[j]) || {}).lvl || 0);
+  E.monoBestJob = (S, spec) => { const L = spec && !E.monoIron(S) ? E.monoSpecs(S).filter(Boolean) : Object.keys(D.GATHER_JOBS).concat(Object.keys(D.CRAFT_JOBS));
+    return Math.max(0, ...L.map((j) => E.monoJobLvl(S, j))); };
+  E.monoSpecJob = (S, j) => E.monoIron(S) || E.monoSpecs(S).includes(j); // métier qui peut monter jusqu'au niveau 200
   const cap0 = E.jobCap;
   E.jobCap = (S, kind, job) => {
     if (!E.isMono(S)) return cap0(S, kind, job);

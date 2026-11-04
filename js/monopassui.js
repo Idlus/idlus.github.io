@@ -69,7 +69,7 @@
       return `<div class="bp-fam"><div class="bp-fi">${{ solo: "⚔", groupe: "👥", artisan: "⚒", camp: "🛡" }[f]}</div><b>${F.n}</b><div class="bp-qb"><div style="width:${Math.round((n / L.length) * 100)}%"></div></div><span class="small muted">${n} / ${L.length} hauts faits</span><span class="small">${B.fam && B.fam[f] ? "✓ " : ""}Famille complète : ${h(F.txt)}</span></div>`; }).join("");
     const row = (H) => { const m = B.hf[H.id] || 0; const v = E.hfValue(s, H); const hid = H.secret && !m;
       const thr = H.secret ? "" : H.m.map((x, i) => `${["bronze", "argent", "or"][i]} ${fmt(x)}`).join(" · ");
-      const sub = hid ? "haut fait secret" : H.soon ? `${h(H.d)} · pas encore compté pendant la bêta` : `${h(H.d)} : ${fmt(v)}${thr ? ` · <span class="bp-thr">${thr}</span>` : ""}`;
+      const sub = hid ? "haut fait secret" : H.soon ? `${h(H.d)} · pas encore compté : arrive avec le serveur Monocompte` : `${h(H.d)} : ${fmt(v)}${thr ? ` · <span class="bp-thr">${thr}</span>` : ""}`;
       return `<div class="bp-hf${H.soon ? " soon" : ""}"><span class="bp-md">${hid ? "❔" : MED[m]}</span><span class="grow"><b>${hid ? "???" : h(H.n)}</b><br><span class="small muted">${sub}</span></span><span class="bp-pp">${m ? "+" + m : hid ? "?" : ""}</span></div>`; };
     const fam = UI().bpFam || "solo"; const list = HF.filter((H) => (fam === "secret" ? H.secret : H.fam === fam));
     return `<div class="panel"><div class="pad stack"><div class="bp-head"><h2 style="margin:0">Hauts faits de saison</h2><span class="pill">${got} / ${HF.length}</span></div>

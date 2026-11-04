@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.7.2";
+const GAME_VERSION = "2.2.7.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.7.3", name: "Objectifs qui ne bougeaient pas", items: [
+    "Monocompte : le défi « Premiers outils » compte maintenant ton meilleur métier de récolte ou d'artisanat (il ne comptait que les spécialités et restait à 0 sans spécialité choisie, ou en Ironman)",
+    "Ironman : « Spécialiste » et le défi « Horloger » comptent tous tes métiers, puisqu'ils montent tous au niveau 200",
+    "Hauts faits de groupe (donjons en groupe, en stasis, à 4) et « Duelliste » (Kolizéum) sont enfin comptés ; les familles Groupe et Camp ne sont plus bloquées par les hauts faits qui attendent le serveur",
+    "Monocompte : les succès impossibles avec un seul héros ou des modes fermés (Élevage, Songe, Tournoi, 4 et 8 héros…) sont cachés" ] },
   { v: "2.2.7.2", name: "Vote bloqué ?", items: [
     "Voter pour Idlus : si ta box, ton antivirus ou ton réseau bloque le site (« New Domains »), la page Voter explique quoi faire : passe en 4G pour voter, puis récupère ta récompense en 4G sur le même appareil" ] },
   { v: "2.2.7.1", name: "Renfort d'un ami payant", items: [

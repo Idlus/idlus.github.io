@@ -82,7 +82,7 @@
   const DL = (id) => (D.DUNGEONS[id] || {}).lvl || 0;
   TF.DEFIS = [
     { id: "d1", m: 0, c: 0, n: "Refermer la Fissure", d: "Finir des donjons de niveau 1 à 100", need: [10, 25, 50] },
-    { id: "d2", m: 0, c: 1, n: "Premiers outils", d: "Monter une spécialité de métier", need: [40, 70, 100], u: "niv.", val: (S) => Math.max(0, ...E.monoSpecs(S).filter(Boolean).map((j) => ((D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts || {})[j]) || {}).lvl || 0)) },
+    { id: "d2", m: 0, c: 1, n: "Premiers outils", d: "Monter un métier de récolte ou d'artisanat", need: [40, 70, 100], u: "niv.", val: (S) => E.monoBestJob(S) }, // 2.2.7.3 : tous les métiers (avant : spécialités seulement, 0 sans spécialité choisie)
     { id: "d3", m: 0, c: 2, n: "Jamais seul", d: "Finir des donjons en groupe ou avec un mercenaire", need: [1, 5, 15] },
     { id: "d4", m: 1, c: 0, n: "Échos des archimonstres", d: "Vaincre des archimonstres", need: [5, 15, 30] },
     { id: "d5", m: 1, c: 1, n: "Mémoire des artisans", d: "Fabriquer des objets de niveau 100 ou plus", need: [30, 100, 250] },
@@ -269,9 +269,9 @@
       }
       if (t === "craft" && d.tpl && D.ITEMS[d.tpl]) {
         const I = D.ITEMS[d.tpl]; if (I.lvl >= 100) bump(S, "d5", 1);
-        if (I.lvl >= 200 && I.craft && E.monoSpecs(S).includes(I.craft.job)) bump(S, "d11", 1);
+        if (I.lvl >= 200 && I.craft && E.monoSpecJob(S, I.craft.job)) bump(S, "d11", 1); // Ironman : tous ses métiers montent à 200
       }
-      if (t === "joblvl" || t === "craft" || t === "level") { const x = E.tfDefi("d2"); if (E.tfDefiOpen(S, x)) pay(S, x); }
+      if (t === "joblvl" || t === "craft" || t === "level" || t === "harvest" || t === "commande") { const x = E.tfDefi("d2"); if (E.tfDefiOpen(S, x)) pay(S, x); }
       if (t === "agression" && d.win) bump(S, "d9", 1); // agressions gagnées (js/honneur.js, E.agrEnd)
     } catch (e) {}
     return r;

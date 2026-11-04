@@ -1095,7 +1095,7 @@
     const sk = stasisTop();
     L.push(sk >= 4 ? { t: `Meilleure stasis réussie : ${sk}.`, ok: 1 } : { t: `Monte un donjon jusqu'à la stasis 4 (meilleure pour l'instant : ${sk}).`, ic: "coffre", nav: "dungeons", ch: "donjons#la-stasis" });
     const lvlStep = (req, has, okT, t, ic, nav, ch) => L.push(has ? { t: okT, ok: 1 } : lv < req ? { t: `Niveau ${req} : ${t}`, ic: "cle", ch } : { t: t.charAt(0).toUpperCase() + t.slice(1), ic, nav, ch });
-    lvlStep(V(() => E.EXP_MIN_LVL, 10), (s.cnt.exp || 0) > 0 || cnt(s.atelier) > 0, "Expéditions découvertes.", "envoie un héros en expédition depuis le Havre-Sac.", "carte", "home", "expeditions");
+    lvlStep(V(() => E.EXP_MIN_LVL, 10), !!(s.mis && ((s.mis.n || 0) > 0 || (s.mis.runs || []).length || (s.mis.log || []).length)) || (s.cnt.exp || 0) > 0 || cnt(s.atelier) > 0, "Expéditions découvertes.", "envoie un héros en expédition depuis le Havre-Sac.", "carte", "home", "expeditions");
     lvlStep(V(() => E.PET_LVL, 10), cnt(s.pets) > 0, "Premier familier obtenu.", "trouve ou achète un premier familier.", "../p/18003", "pets", "familiers");
     lvlStep(V(() => E.ALIGN_MIN_LVL, 30), !!s.align, "Alignement choisi.", "choisis ton camp, Bonta ou Brâkmar.", "ailes", "quests", "alignement");
     lvlStep(V(() => E.MOUNT_LVL, 60), cnt(s.mounts) > 0, "Première monture.", "capture ta première monture.", "../mt/97021", "pets", "montures");

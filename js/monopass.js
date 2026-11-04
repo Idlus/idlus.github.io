@@ -129,15 +129,15 @@
     { id: "s_clean", fam: "solo", n: "Sans une égratignure", d: "Donjons finis sans qu'aucun héros tombe", m: [10, 50, 150], v: C("clean") },
     { id: "s_tour", fam: "solo", n: "Tour du monde", d: "Donjons différents finis", m: [10, 30, 60], v: (B) => Object.keys(B.cnt.djs || {}).length },
     { id: "g_merc", fam: "groupe", n: "Compagnon d'armes", d: "Donjons finis avec un mercenaire", m: [5, 20, 60], v: C("merc") },
-    { id: "g_dj", fam: "groupe", n: "Toujours à plusieurs", d: "Donjons finis en groupe", m: [5, 25, 100], v: C("grp"), soon: 1 },
-    { id: "g_st", fam: "groupe", n: "Cordée", d: "Finir un donjon en groupe en stasis", m: [7, 8, 9], v: C("grpSt"), soon: 1 },
-    { id: "g_four", fam: "groupe", n: "Groupe complet", d: "Donjons finis à 4 joueurs", m: [1, 10, 40], v: C("grp4"), soon: 1 },
+    { id: "g_dj", fam: "groupe", n: "Toujours à plusieurs", d: "Donjons finis en groupe", m: [5, 25, 100], v: C("grp") },
+    { id: "g_st", fam: "groupe", n: "Cordée", d: "Finir un donjon en groupe en stasis", m: [7, 8, 9], v: C("grpSt") },
+    { id: "g_four", fam: "groupe", n: "Groupe complet", d: "Donjons finis à 4 joueurs", m: [1, 10, 40], v: C("grp4") },
     { id: "g_boss", fam: "groupe", n: "Briseur de Comte", d: "Boss de saison vaincus avec ton camp", m: [1, 5, 15], v: C("sboss"), soon: 1 },
-    { id: "g_koli", fam: "groupe", n: "Duelliste", d: "Combats de Kolizéum 1 contre 1 gagnés", m: [5, 25, 100], v: C("koli"), soon: 1 },
+    { id: "g_koli", fam: "groupe", n: "Duelliste", d: "Combats de Kolizéum 1 contre 1 gagnés", m: [5, 25, 100], v: C("koli") },
     { id: "a_craft", fam: "artisan", n: "Établi chaud", d: "Objets fabriqués", m: [50, 250, 1000], v: C("craft") },
     { id: "a_harv", fam: "artisan", n: "Moissonneur", d: "Ressources récoltées", m: [2000, 10000, 40000], v: C("harv") },
     { id: "a_fm", fam: "artisan", n: "Main de forgemage", d: "Runes de forgemagie tentées", m: [100, 500, 2000], v: C("fm") },
-    { id: "a_spec", fam: "artisan", n: "Spécialiste", d: "Niveau de ta meilleure spécialité", m: [100, 150, 200], v: (B, S) => Math.max(0, ...E.monoSpecs(S).filter(Boolean).map((j) => ((D.GATHER_JOBS[j] ? S.jobs[j] : (S.crafts || {})[j]) || {}).lvl || 0)) },
+    { id: "a_spec", fam: "artisan", n: "Spécialiste", d: "Niveau de ta meilleure spécialité", m: [100, 150, 200], v: (B, S) => E.monoBestJob(S, true) }, // Ironman : tous ses métiers comptent
     { id: "a_jobs", fam: "artisan", n: "Touche-à-tout", d: "Métiers au niveau 100", m: [3, 6, 10], v: (B, S) => Object.values(S.jobs || {}).concat(Object.values(S.crafts || {})).filter((J) => J && J.lvl >= 100).length },
     { id: "a_exo", fam: "artisan", n: "Exotique", d: "Runes exotiques passées", m: [1, 3, 10], v: C("exo") },
     // P-A4 : l'ancien « niveau d'alignement 20/50/100 » devient le rang d'honneur (5 niveaux par rang : rangs 4, 10, 20)
@@ -161,8 +161,8 @@
     if (!E.isMono(S)) return; const B = E.bpState(S);
     HF.forEach((H) => { if (H.soon) return; const m = E.hfMedal(S, H), o = B.hf[H.id] || 0; if (m <= o) return; B.hf[H.id] = m;
       E.note(S, `Haut fait de saison${H.secret ? " secret" : ""} : « ${H.n} » ${["", "bronze", "argent", "or"][m]} (+${m - o} Prestige).`, "rare"); });
-    Object.keys(E.MONO_FAM).forEach((f) => { const L = HF.filter((H) => H.fam === f); if (B.fam && B.fam[f]) return;
-      if (L.every((H) => (B.hf[H.id] || 0) >= 1)) { (B.fam = B.fam || {})[f] = E.now(); giveR(S, E.MONO_FAM[f].gift); E.note(S, `Famille ${E.MONO_FAM[f].n} complète : ${E.MONO_FAM[f].txt}.`, "rare"); } });
+    Object.keys(E.MONO_FAM).forEach((f) => { const L = HF.filter((H) => H.fam === f); /* 2.2.7.3 : les hauts faits « soon » (pas encore comptés) ne bloquent plus la famille */ if (B.fam && B.fam[f]) return;
+      if (L.every((H) => H.soon || (B.hf[H.id] || 0) >= 1)) { (B.fam = B.fam || {})[f] = E.now(); giveR(S, E.MONO_FAM[f].gift); E.note(S, `Famille ${E.MONO_FAM[f].n} complète : ${E.MONO_FAM[f].txt}.`, "rare"); } });
   };
 
 
@@ -230,6 +230,10 @@
   };
   if (E.ORN) E.ORN.mono_sb = { name: () => "Horloge du Comte", req: "Monocompte : Boss de saison 5 soirs", ok: (S) => !!(S.unlocks && S.unlocks.gift_o_mono_sb) };
   /* ---------- écoute du moteur ---------- */
+  /* 2.2.7.3 : combats de Kolizéum 1 contre 1 gagnés (haut fait « Duelliste ») */
+  if (E.koliApply) { const ka0 = E.koliApply; E.koliApply = function (S, o, r) { const out = ka0.apply(this, arguments);
+    try { if (S && S.mono && !S.mono.eternel && r && r.win) { const B = E.bpState(S); if (B) { B.cnt.koli = (B.cnt.koli || 0) + 1; E.hfCheck(S); } } } catch (e) {}
+    return out; }; }
   const inc = (B, k, n = 1) => (B.cnt[k] = (B.cnt[k] || 0) + n);
   const emit0 = E.emit;
   E.emit = function (S, t, d) {
