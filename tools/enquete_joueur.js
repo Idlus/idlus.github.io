@@ -8,7 +8,7 @@
 const fs = require("fs");
 const path = require("path");
 globalThis.window = globalThis;
-const FILES = ["gamedata", "armes", "drops", "pieces", "data", "engine", "systems", "pets", "mounts", "elevage", "idols", "renaissance", "maitrise_moteur", "identite", "identmon", "identboss", "archis", "defi", "gboss", "verify", "koli", "legendaires", "dofusp", "collections", "champions", "wboss", "songe", "alliance"];
+const FILES = ["gamedata", "armes", "drops", "pieces", "data", "engine", "systems", "pets", "mounts", "elevage", "idols", "renaissance", "maitrise_moteur", "identite", "identmon", "identboss", "archis", "defi", "gboss", "verify", "koli", "legendaires", "dofusp", "collections", "champions", "wboss", "songe", "alliance", "honneur"];
 for (const f of FILES) { const p = path.join(__dirname, "../js", f + ".js"); if (fs.existsSync(p)) require(p); }
 const E = globalThis.ENGINE, V = globalThis.VERIFY;
 const quiet = (fn) => { const l = console.log, w = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = l; console.warn = w; } };
@@ -43,6 +43,14 @@ const sum = (label, txt, at) => {
     const M = c.mt || {}; const ids = (M.t && M.t[M.lo || 0]) || [];
     console.log(`  - ${String(c.name).slice(0, 20)} (${c.cls}) niv ${c.lvl} · Maîtrise ${M.lvl || 0} + ${M.bn || 0} · ${ids.length} étoiles · conversion ${JSON.stringify(c.renMt || null)} · ren ${c.ren || 0} · points ${JSON.stringify(c.alloc || {})} (+${c.pts || 0} libres) · parchemins ${JSON.stringify(c.scrolls || {})}`);
   });
+  // 28/10 : carnet de bord (d'où viennent les kamas, jour par jour) et derniers grands moments, pour distinguer un bug d'une partie modifiée
+  const C = raw.carnet;
+  if (C) {
+    const D = (C.L && C.L.days) || []; const i0 = C.L && C.L.i0;
+    console.log(`  carnet : kLast ${fm(C.kLast)} (kamas ${fm(raw.kamas)}) · opérations HdV ${fm(raw.hdv && raw.hdv.op)} / ${fm(C.hop)}`);
+    D.forEach((d, i) => { if (d && typeof d === "object" && Object.keys(d).length) console.log(`    jour ${i0 + i} (${new Date((i0 + i) * 86400000).toISOString().slice(5, 10)}) : ${Object.entries(d).map(([k, v]) => `${k} ${fm(v)}`).join(", ")}`); });
+    (C.mom || []).slice(0, 8).forEach((m) => console.log(`    moment ${new Date(m.t).toISOString().slice(5, 16)} ${m.k} : ${String(m.txt).slice(0, 100)}`));
+  }
   return { at: new Date(at).getTime(), B, top: Math.max(1, ...(raw.chars || []).map((c) => c.lvl || 1)), pt };
 };
 
