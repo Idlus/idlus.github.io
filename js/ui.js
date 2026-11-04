@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.7.3";
+const GAME_VERSION = "2.2.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8", name: "Late game : Sceaux et boss de la semaine", items: [
+    "Sceaux ultimes : des paliers avant le légendaire. 100 Sceaux pour 3 Bons de fusion (fusion de doublons sans kamas) ou 3 Galets brasillants, 300 pour 3 Pierres d'âme dorées, 600 pour le nouveau Cadre ultime",
+    "Boss ultime de la semaine : chaque lundi, le donjon de la semaine des niveaux 161 à 200 double les Sceaux ultimes en stasis 11 à 15",
+    "Son classement de la semaine range les temps de victoire, stasis 15 en tête. Tout est dans la fiche du donjon, dès la stasis 11" ] },
   { v: "2.2.7.3", name: "Objectifs qui ne bougeaient pas", items: [
     "Monocompte : le défi « Premiers outils » compte maintenant ton meilleur métier de récolte ou d'artisanat (il ne comptait que les spécialités et restait à 0 sans spécialité choisie, ou en Ironman)",
     "Ironman : « Spécialiste » et le défi « Horloger » comptent tous tes métiers, puisqu'ils montent tous au niveau 200",
@@ -4628,9 +4632,12 @@ function ultBox(did, k) {
   const sel = pool.find((x) => x.k === ui.ultLeg) || pool[0]; const cost = sel ? E.ultCost(S, sel.k) : 0;
   const shop = sel ? `<div class="ultshop"><span class="xs"><b>${E.ultTr(U.tr).replace(/^\S+/, fmt(U.tr))}</b></span><select class="small" data-act="ultsel">${pool.map((x) => `<option value="${x.k}" ${x === sel ? "selected" : ""}>${h(x.name)} · niv. ${x.lvl}${(S.legSeen || {})[x.k] ? " · copie" : ""}</option>`).join("")}</select><button class="btn sm ${U.tr >= cost ? "primary" : ""}" data-act="ultbuy" data-id="${did}" ${U.tr >= cost ? "" : "disabled"}>Échanger ${fmt(cost)}</button>
     <span class="xs muted">Un légendaire jamais obtenu coûte ${fmt(E.ULT_LEG)} Sceaux ultimes, une copie de plus pour l'Éveil d'un légendaire déjà obtenu ${fmt(E.ULT_COPY)}. Liés au compte.</span></div>` : "";
-  return `<div class="ultbox"><div class="hd"><span class="tag">Boss ultime</span><b>Stasis 11 à 15 : une règle de plus à chaque palier</b></div>
+  const tiers = E.ULT_SHOP ? `<div class="ultshop2">${E.ULT_SHOP.map((o) => { const r = E.ultShopOk(S, o.id); const done = o.once && r === "Déjà obtenu.";
+    return `<div class="ulttier ${done ? "done" : ""}"><b class="num">${fmt(o.cost)}</b><span><b>${h(o.name)}</b><span class="xs muted"> · ${h(o.desc)}</span></span><button class="btn sm ${r ? "" : "primary"}" data-act="ultshop" data-id="${o.id}" data-did="${did}" ${r ? "disabled" : ""}>${done ? "Obtenu" : "Acheter"}</button></div>`; }).join("")}</div>` : "";
+  const wk = E.ultWeek && E.ultWeek(); const wkBox = wk && DUNGEONS[wk] ? `<div class="ultweek"><span class="tag">Boss ultime de la semaine</span> <b>${h(DUNGEONS[wk].name)}</b> · Sceaux ultimes ×${E.ULT_WEEK_MULT} en stasis 11 à 15, classement de la semaine au temps de victoire (stasis 15 en tête). Nouveau boss lundi.${wk === did ? "" : ` <button class="btn sm" data-act="searchdg" data-id="${wk}">Voir</button>`}</div>` : "";
+  return `<div class="ultbox">${wkBox}<div class="hd"><span class="tag">Boss ultime</span><b>Stasis 11 à 15 : une règle de plus à chaque palier</b></div>
     <ol>${E.ULT_TIERS.map(([n, t, x]) => `<li class="${n === k ? "on" : n > k ? "off" : ""}"><span class="n">${n}</span><span><b>${h(t)}</b> · ${h(x)}</span></li>`).join("")}</ol>
-    <div class="note">En stasis ${k}, les règles des paliers 11 à ${k} s'additionnent. Le boss ultime a aussi +${Math.round((E.ULT.hp[k - 11] - 1) * 100)} % de vie et +${Math.round((E.ULT.dmg[k - 11] - 1) * 100)} % de dégâts, en plus des +12 % par palier${k >= 12 ? ", des trois modificateurs" : ""}${k >= 14 ? " et des 4 mécaniques du boss légendaire" : ""}.</div>${shop}</div>`;
+    <div class="note">En stasis ${k}, les règles des paliers 11 à ${k} s'additionnent. Le boss ultime a aussi +${Math.round((E.ULT.hp[k - 11] - 1) * 100)} % de vie et +${Math.round((E.ULT.dmg[k - 11] - 1) * 100)} % de dégâts, en plus des +12 % par palier${k >= 12 ? ", des trois modificateurs" : ""}${k >= 14 ? " et des 4 mécaniques du boss légendaire" : ""}.</div>${shop}${tiers}</div>`;
 }
 /* Monocompte : bonus Héros unique et mercenaire, sur la fiche du donjon */
 function monoDgBox() {
@@ -7907,7 +7914,7 @@ function invGroups() {
 /* 1.0.25.11 : cadenas posé par une tenue enregistrée */
 function lockTip(it) { const gg = E.gearOf(S, it.uid); return gg ? `Verrouillé par la tenue « ${gg.g.name} » de ${gg.c.name}` : it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"; }
 function fuseHtml(it) { const L = E.fuseLines(S, it.uid); if (!L.length) return ""; const c = E.fuseCost(it.tpl); // 2.2.5 (4B) : fusion des doublons
-  return `<div class="fusebox"><div class="small"><b>Fusion des doublons</b> <span class="xs muted">· ${fmt(c)} kamas par ligne</span></div><div class="xs muted">Sacrifie un doublon : la ligne choisie prend la meilleure des deux valeurs (jusqu'à 1 sous le maximum, le Parfait reste à la Forgemagie).</div><div class="row" style="gap:6px;flex-wrap:wrap">${L.map((l) => `<button class="btn sm" data-act="fuse" data-uid="${it.uid}" data-dup="${l.dup}" data-k="${l.k}" ${S.kamas < c ? "disabled" : ""}>${h(STATS[l.k] ? STATS[l.k].name : l.k)} ${fmt(l.cur)} → <b class="plus">${fmt(l.v)}</b></button>`).join("")}</div></div>`; }
+  return `<div class="fusebox"><div class="small"><b>Fusion des doublons</b> <span class="xs muted">· ${S.fuseFree > 0 ? `gratuit (${S.fuseFree} bon${S.fuseFree > 1 ? "s" : ""} de fusion)` : `${fmt(c)} kamas par ligne`}</span></div><div class="xs muted">Sacrifie un doublon : la ligne choisie prend la meilleure des deux valeurs (jusqu'à 1 sous le maximum, le Parfait reste à la Forgemagie).</div><div class="row" style="gap:6px;flex-wrap:wrap">${L.map((l) => `<button class="btn sm" data-act="fuse" data-uid="${it.uid}" data-dup="${l.dup}" data-k="${l.k}" ${S.kamas < c ? "disabled" : ""}>${h(STATS[l.k] ? STATS[l.k].name : l.k)} ${fmt(l.cur)} → <b class="plus">${fmt(l.v)}</b></button>`).join("")}</div></div>`; }
 function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
   const worn = invShowEq() ? null : wornMap();
@@ -11326,6 +11333,7 @@ document.addEventListener("click", (ev) => {
     case "dgfclr": { const F = dgF(); if (d.k === "all") Object.assign(F, DGF0, { view: F.view }); else F[d.k] = DGF0[d.k]; dirty = true; break; }
     case "dgzone": { const O = S.settings.dgOpen || (S.settings.dgOpen = {}); O[d.id] = t.getAttribute("aria-expanded") !== "true"; dirty = true; break; }
     case "dgzall": { const O = S.settings.dgOpen = {}; ZONES.forEach((z) => { O[z.id] = d.v === "1"; }); dirty = true; break; }
+    case "ultshop": { const r = E.act(S, "ultShop", d.id); if (r) { toast(r, "warn"); return; } dirty = true; toast("Achat fait avec tes Sceaux ultimes."); dungeonSheet(d.did); return; } // 2.2.8
     case "ultbuy": { const sel = document.querySelector('#sheet [data-act="ultsel"]'); const r = E.act(S, "ultBuy", sel ? sel.value : ui.ultLeg); if (r) { toast(r, "warn"); return; } dirty = true; dungeonSheet(d.id); return; }
     case "dgstasis": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgStasis = +d.v; dungeonSheet(id); return; }
     case "dgcraftkey": { const r = E.craftMany(S, "special", DUNGEONS[d.id].key, +d.n || 1); if (typeof r === "string") { toast(r); return; } toast(r.n > 1 ? `${fmt(r.n)} clés fabriquées.` : "Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }

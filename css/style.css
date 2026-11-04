@@ -6653,3 +6653,12 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .bgauge,.fusebox,.trackbox{margin:8px 0;padding:10px 12px;border-radius:12px;background:var(--panel2);border:2px solid var(--frame);display:grid;gap:6px}
 .fusebox{margin:8px 12px}
 .lootup2{font-weight:800}
+/* 2.2.8 : late game (paliers de Sceaux ultimes, boss ultime de la semaine, cadre ultime) */
+[data-fr="ultime"]{--m1:#7a1020;--m2:#ffd36a;--m3:#0b0610;--gem:#ff3a5a;--glow:rgba(255,80,110,.6);--ring:conic-gradient(from var(--ang),#ffd36a,#7a1020,#ff3a5a,#0b0610,#ffd36a)}
+.head[data-fr="ultime"]{box-shadow:0 0 0 1px #000a,0 0 9px var(--glow);animation:spin 6s linear infinite}
+.ultshop2{display:grid;gap:6px;border-top:1px solid rgba(216,169,58,.35);padding-top:6px;margin-top:6px}
+.ulttier{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13px}
+.ulttier>b.num{min-width:42px;text-align:center;padding:2px 6px;border-radius:99px;background:rgba(216,169,58,.18);color:var(--gold2)}
+.ulttier.done{opacity:.6}
+.ultweek{margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:13px;background:color-mix(in srgb,#ff3a5a 12%,transparent);border:1px solid color-mix(in srgb,#ff3a5a 45%,transparent)}
+@media (max-width:520px){.ulttier{grid-template-columns:auto 1fr}.ulttier .btn{grid-column:1/-1;justify-self:start}}

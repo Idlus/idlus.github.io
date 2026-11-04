@@ -1382,6 +1382,7 @@
     koli:     { name: () => "Cadre du Kolizéum", req: "Atteindre le grade Or au Kolizéum (cote 1 300)", ok: (S) => { if (S.unlocks && S.unlocks.frKoli) return true; const ok = !!S.koli && Math.max(S.koli.best || 0, S.koli.cote || 0) >= 1300; if (ok && S.unlocks) S.unlocks.frKoli = 1; return ok; } },
     songe:    { name: () => "Cadre du Songe", req: "Valider le Songe infini en Cauchemar 1", ok: (S) => !!S.songe && (S.songe.unl || 0) >= 6 },
     guilde:   { name: () => "Cadre de guilde", req: "Être dans une guilde de niveau 10 ou plus (aux couleurs de la guilde)", ok: (S) => !!(S.guild && S.guild.id) && (S.guild.lvl || 1) >= 10 },
+    ultime:   { name: () => "Cadre ultime", req: "L'acheter avec 600 Sceaux ultimes (fiche d'un donjon, stasis 11 à 15)", ok: (S) => !!(S.unlocks && S.unlocks.frUlt) }, // 2.2.8
     halouine: { name: () => "Cadre d'Halouine", req: "Gagner un combat pendant Halouine (du 24 octobre au 3 novembre)", ok: (S) => !!(S.unlocks && S.unlocks.frHal) },
   };
   E.sframeOk = (S, id) => !!E.SFRAMES[id] && (!!(S.unlocks && S.unlocks["gift_f_" + id]) || E.SFRAMES[id].ok(S)); // 1.1.1.4 : ou offert par un code cadeau

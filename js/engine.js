@@ -3000,8 +3000,8 @@
     const it = S.items[uid], d = S.items[dup]; const T = it && ITEMS[it.tpl]; if (!T || !d || d.tpl !== it.tpl || uid === dup) return "Doublon introuvable.";
     if (!fuseOk(S, d)) return "Ce doublon est porté, protégé, rangé dans une tenue ou Rayonnant.";
     const l = E.fuseLines(S, uid).find((x) => x.k === k && x.dup === dup); if (!l) return "Rien à gagner sur cette ligne.";
-    const c = E.fuseCost(it.tpl); if (S.kamas < c) return `Il faut ${c} kamas.`;
-    S.kamas -= c; it.stats[k] = l.v; if (it.roll) delete it.roll; delete S.items[dup]; S.fused = (S.fused || 0) + 1; return null;
+    const free = (S.fuseFree || 0) > 0; const c = free ? 0 : E.fuseCost(it.tpl); if (S.kamas < c) return `Il faut ${c} kamas.`; // 2.2.8 : bon de fusion (Sceaux ultimes)
+    if (free) S.fuseFree--; S.kamas -= c; it.stats[k] = l.v; if (it.roll) delete it.roll; delete S.items[dup]; S.fused = (S.fused || 0) + 1; return null;
   };
   /* 5B : jauge du boss. Chaque victoire en donjon remplit la jauge de son boss (+1 par niveau de stasis, +10 au plus) ;
      à 200, une pièce de sa panoplie jamais obtenue (ou une au hasard s'il n'en manque plus), garantie. */
@@ -3483,6 +3483,30 @@
     const U = E.ultSt(S), c = E.ultCost(S, k); if (U.tr < c) return `Il faut ${E.ultTr(c)}.`;
     U.tr -= c; E.giveLeg(S, k, "Sceaux ultimes"); return null;
   };
+  /* 2.2.8 (late game, Mathis « ok pour les 3 ») : paliers d'achat en Sceaux ultimes avant le légendaire */
+  E.ULT_SHOP = [
+    { id: "fusion", cost: 100, name: "3 Bons de fusion", desc: "3 fusions de doublons sans kamas." },
+    { id: "galets", cost: 100, name: "3 Galets brasillants", desc: "Bonus de fabrication des objets de niveau 195 à 200." },
+    { id: "doree", cost: 300, name: "3 Pierres d'âme dorées", desc: "Chances d'archimonstre ×3 pendant 1 h chacune." },
+    { id: "cadre", cost: 600, once: true, name: "Cadre ultime", desc: "Cadre de héros réservé aux Sceaux ultimes." },
+  ];
+  E.ultShopOk = (S, id) => { const o = E.ULT_SHOP.find((x) => x.id === id); if (!o) return "Achat inconnu."; if (o.once && S.unlocks && S.unlocks.frUlt) return "Déjà obtenu.";
+    return E.ultSt(S).tr < o.cost ? `Il faut ${E.ultTr(o.cost)}.` : null; };
+  E.ultShop = (S, id) => {
+    const r = E.ultShopOk(S, id); if (r) return r; const o = E.ULT_SHOP.find((x) => x.id === id); E.ultSt(S).tr -= o.cost;
+    if (id === "fusion") S.fuseFree = (S.fuseFree || 0) + 3;
+    else if (id === "galets") addRes(S, "Galet brasillant", 3);
+    else if (id === "doree") E.addCons(S, "pierre_ame_doree", 3);
+    else if (id === "cadre") { S.unlocks = S.unlocks || {}; S.unlocks.frUlt = 1; }
+    note(S, `Sceaux ultimes : ${o.name} !`, "rare"); return null;
+  };
+  /* 2.2.8 : boss ultime de la semaine = le donjon de la semaine des niveaux 161 à 200 (même tirage que js/verify.js, chaque lundi),
+     Sceaux ultimes ×2 en stasis 11 à 15 ; son classement de la semaine (records_week) range les temps de victoire */
+  E.ULT_WEEK_MULT = 2;
+  E.ultWeek = (t = E.now()) => {
+    const w = E.weekIdx(t), i = 4, ids = Object.keys(DUNGEONS).sort().filter((d) => DUNGEONS[d].lvl >= 161 && DUNGEONS[d].lvl <= 200); if (!ids.length) return null;
+    let x = Math.imul((w + i * 7919) ^ 0x2545f491, 0x9e3779b1) >>> 0; x = Math.imul(x ^ (x >>> 15), 0x85ebca6b) >>> 0; x = (x ^ (x >>> 13)) >>> 0; return ids[x % ids.length];
+  };
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
@@ -3507,7 +3531,7 @@
     if (k > (SI.sk || 0)) { SI.sk = k; SI.st = t; } else if (k === SI.sk && t > 0 && (!SI.st || t < SI.st)) SI.st = t;
     if (k >= 10) S.unlocks.stasis10 = true;
     if (k >= 15) { S.unlocks.stasis15 = true; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.STASIS15_TITLE)) { S.titlesExtra.push(E.STASIS15_TITLE); note(S, `Stasis 15 : titre « ${E.STASIS15_TITLE} » !`, "rare"); } }
-    if (k >= 11 && !E.ULT_OFF) { const n = E.ULT_TR[k - 11] || 1; const U = E.ultSt(S); U.tr += n; U.tot = (U.tot || 0) + n; out.push(E.ultTr(n)); // 2.1.38 : Sceaux ultimes (liés au compte)
+    if (k >= 11 && !E.ULT_OFF) { const n = (E.ULT_TR[k - 11] || 1) * (did === E.ultWeek() ? E.ULT_WEEK_MULT : 1); const U = E.ultSt(S); U.tr += n; U.tot = (U.tot || 0) + n; out.push(E.ultTr(n)); // 2.1.38 : Sceaux ultimes (liés au compte)
       if (k >= 15 && DUNGEONS[did] && MONSTERS[DUNGEONS[did].boss]) { const tt = E.ultTitle(did); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(tt)) { S.titlesExtra.push(tt); note(S, `Boss ultime vaincu en stasis 15 : titre « ${tt} » !`, "rare"); } } }
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
     if (rew) rew.stasis = { k, out, dust };
@@ -4552,7 +4576,7 @@
     equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
     startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement", releaseMount: "relâcher une monture",
     // divers
-    ultBuy: "échanger des Sceaux ultimes", almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
+    ultBuy: "échanger des Sceaux ultimes", ultShop: "acheter avec des Sceaux ultimes", almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
   };
   E.act = (S, name, ...args) => {
     if (!Object.prototype.hasOwnProperty.call(E.ACTIONS, name) || typeof E[name] !== "function") return `Action inconnue : ${name}`;

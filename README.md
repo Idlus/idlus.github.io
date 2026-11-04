@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8 « Late game : Sceaux et boss de la semaine »
+
+- Idées late game 2 et 3 (Mathis 04/11 : « ok pour les 3 »). `E.ULT_SHOP` / `E.ultShop` (js/engine.js, action `ultShop`) : 100 Sceaux ultimes = 3 Bons de fusion (`S.fuseFree`, utilisés par `E.fuseItem` à la place des kamas) ou 3 Galets brasillants, 300 = 3 Pierres d'âme dorées, 600 = Cadre ultime (`S.unlocks.frUlt`, cadre spécial `ultime` de js/systems.js). Fiche du donjon dès la stasis 11 (`ultBox` de js/ui.js).
+- `E.ultWeek(t)` : boss ultime de la semaine = donjon de la semaine de la tranche 161-200 (même tirage que `VERIFY.weeklyDungeons`, chaque lundi UTC). Sceaux ultimes × `E.ULT_WEEK_MULT` (2) dans `stasisClear`. Classement : le classement de la semaine existant (`records_week`, rang par stasis puis temps), rien à installer au serveur. Test `tests/ultime.test.js`.
 ## 2.2.7.3 « Objectifs qui ne bougeaient pas »
 
 - Défi « Premiers outils » (Monocompte, d2) : meilleur niveau de tous les métiers de récolte et d'artisanat (`E.monoBestJob`, js/mono.js) au lieu des seules spécialités (0 sans spécialité ou en Ironman). Ironman : « Spécialiste » (a_spec) et le défi 11 comptent tous les métiers (`E.monoSpecJob`).

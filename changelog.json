@@ -1,6 +1,15 @@
 {
-  "version": "2.2.7.3",
+  "version": "2.2.8",
   "versions": [
+    {
+      "v": "2.2.8",
+      "name": "Late game : Sceaux et boss de la semaine",
+      "items": [
+        "Sceaux ultimes : des paliers avant le légendaire. 100 Sceaux pour 3 Bons de fusion (fusion de doublons sans kamas) ou 3 Galets brasillants, 300 pour 3 Pierres d'âme dorées, 600 pour le nouveau Cadre ultime",
+        "Boss ultime de la semaine : chaque lundi, le donjon de la semaine des niveaux 161 à 200 double les Sceaux ultimes en stasis 11 à 15",
+        "Son classement de la semaine range les temps de victoire, stasis 15 en tête. Tout est dans la fiche du donjon, dès la stasis 11"
+      ]
+    },
     {
       "v": "2.2.7.3",
       "name": "Objectifs qui ne bougeaient pas",
