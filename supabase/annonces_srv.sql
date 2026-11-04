@@ -1,6 +1,5 @@
--- Idlus · annonces par serveur (2.2.4, refonte du Panel Xener, choix 3A). À INSTALLER À LA MAIN, après chat.sql (hors de la liste
--- automatique de « Serveur en ligne » : chaque changement de la base attend les mots écrits de Mathis). Sans cette fonction, la page
--- « Annoncer » publie seulement sur les trois serveurs (adm_announce) ou sur le Monocompte seul (adm_announce_mono).
+-- Idlus · annonces par serveur (2.2.4, refonte du Panel Xener, choix 3A). Appliqué après chat.sql par « Serveur en ligne »
+-- (ajouté à sa liste le 04/11 sur les mots de Mathis : « installe les annonces par serveur sur le serveur »).
 -- Relançable sans danger. Test : tests/annonce_srv_sql.test.js
 -- 04/11 (refonte du Panel Xener, choix 3A « une seule page Annoncer ») : annonce sur les serveurs cochés, p_srv = 'e' (Éternel),
 -- 's' (Classique · Saison 1), 'm' (Monocompte), séparés par des virgules. Bandeau : srv null si les trois (comme adm_announce), sinon
