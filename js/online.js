@@ -437,6 +437,9 @@
   ON.vitBuy = async (id) => { const r = await s1call("vit_buy", { p_id: id }); return r.err ? r.err : r.data || null; };
   ON.vitMine = async () => { const r = await s1call("vit_mine", {}); return r.err ? null : r.data || []; };
   // Saison 1, quêtes : campagne de saison (supabase/histoire_s1.sql) : chapitre fini pendant sa semaine, nombres du serveur
+  // 2.2.2.4 : la même campagne en Monocompte (supabase/mono_campagne.sql, fonctions mono_camp_done / mono_camp_count)
+  ON.monoCampDone = async (ch) => { if (!ON.user) return null; const r = await ON.rpc("mono_camp_done", { p_ch: ch }); return r.err ? null : r.data; };
+  ON.monoCampCount = async () => { const r = await ON.rpc("mono_camp_count", {}); return r.err ? null : r.data || {}; };
   ON.campDone = async (ch) => { const r = await s1call("camp_done", { p_ch: ch }); return r.err ? null : r.data; };
   ON.campCount = async () => { const r = await s1call("camp_count", {}); return r.err ? null : r.data || {}; };
   /* Saison 1, lot 3 : couleur du pseudo (js/garderobe.js), envoyée seulement quand le serveur la connaît (SRV.gr, posé à l'installation) */

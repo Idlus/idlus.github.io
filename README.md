@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.5 « Objectif commun en Monocompte »
+
+- supabase/mono_campagne.sql (Mathis 04/11 : « installe l'objectif de campagne sur le serveur Monocompte », installé le 04/11 00:52Z) : table `mono.camp_fin` (compte, saison, chapitre), `mono_camp_done(p_ch)` (compté pendant la semaine du chapitre seulement), `mono_camp_count()` (saison ouverte). Déploiement manuel : étape `monocompte-campagne` de « Serveur OVH », et `monocompte-installer` après mono_cles.sql. Test : tests/mono_campagne_sql.test.js.
+- Client : `ON.monoCampDone` / `ON.monoCampCount` (js/online.js), `campSync` de js/histoireui.js choisit le serveur selon la partie ; la ligne « Objectif du serveur » revient en Monocompte.
+
 ## 2.2.2.4 « Sceaux lisibles »
 Héros › Chasse : les cartes des Sceaux étaient réduites à 84 px par la règle des autocollants du chat (même classe `ch-st`). Les autocollants utilisent maintenant `ch-sti`.
 

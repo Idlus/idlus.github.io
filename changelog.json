@@ -1,6 +1,15 @@
 {
-  "version": "2.2.2.4",
+  "version": "2.2.2.5",
   "versions": [
+    {
+      "v": "2.2.2.5",
+      "name": "Objectif commun en Monocompte",
+      "guide": "s1quetes",
+      "items": [
+        "Monocompte · Saison 1 : la campagne de saison a aussi son objectif du serveur. Si 30 joueurs finissent le chapitre pendant sa semaine, chacun d'eux reçoit un Coffre en or en plus",
+        "Le compteur « aventuriers » du chapitre compte les joueurs du Monocompte seulement, à part de ceux du Classique"
+      ]
+    },
     {
       "v": "2.2.2.4",
       "name": "Sceaux lisibles",

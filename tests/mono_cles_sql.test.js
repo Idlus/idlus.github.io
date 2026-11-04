@@ -18,7 +18,7 @@ const URL0 = process.env.IDLUS_PG;
 { const yml = fs.readFileSync(path.join(ROOT, ".github/workflows/supabase.yml"), "utf8"); const tous = (/tous="([^"]+)"/.exec(yml) || [])[1] || "";
   assert(tous.includes("supabase/schema.sql"), "liste des fichiers déployés introuvable"); assert(!/mono_cles|monocompte/.test(tous), "mono_cles.sql ne doit pas être déployé automatiquement");
   const ovh = fs.readFileSync(path.join(ROOT, ".github/workflows/serveur-ovh.yml"), "utf8");
-  assert(/supabase\/mono_bureau\.sql supabase\/mono_cles\.sql; do/.test(ovh), "monocompte-installer : mono_cles.sql après mono_bureau.sql"); }
+  assert(/supabase\/mono_bureau\.sql supabase\/mono_cles\.sql( supabase\/mono_campagne\.sql)?; do/.test(ovh), "monocompte-installer : mono_cles.sql après mono_bureau.sql"); }
 if (!URL0) { console.log("ok - mono_cles.sql hors du déploiement automatique (IDLUS_PG absent : test SQL sauté)"); process.exit(0); }
 
 const DB = "idlus_mono_cles";

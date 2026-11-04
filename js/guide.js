@@ -860,7 +860,7 @@
       ["ul", [`Chaque quête de région finit sur **un choix** : il donne son titre, et ${N(() => E.RQ_BOOST)} boosters.`, "La quête suivie reste dans un petit cadre sur tous les écrans, avec « Y aller ». Le ✕ la replie en pastille."]],
       ["tip", "Le journal est rangé en 4 onglets : Histoire, Aujourd'hui, Chasses et Dofus."],
       ["h", "En Monocompte"],
-      ["p", "La partie Monocompte de saison a les mêmes quêtes, les mêmes boosters et l'album de cartes. La campagne y compte les **Éclats du Temps** à la place des Fragments, sans objectif commun au serveur pour l'instant, et le coffre du jour n'a pas l'expédition."],
+      ["p", "La partie Monocompte de saison a les mêmes quêtes, les mêmes boosters et l'album de cartes. La campagne y compte les **Éclats du Temps** à la place des Fragments, avec son propre objectif commun (les joueurs du Monocompte seulement), et le coffre du jour n'a pas l'expédition."],
     ] });
   add({ id: "s1duel", f: "Saison 1", n: "Duel de caisses", ic: "coffre", page: "foire", k: "duel caisse foire trool kamas",
     ou: "Économie › Foire du Trool", de: "partie de saison",
