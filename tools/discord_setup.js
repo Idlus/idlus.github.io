@@ -160,7 +160,7 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
   { cat: "🔐 Équipe", only: ["mod", "creator"], chans: [
-    { key: "MODS", name: "modération", topic: "Salon privé de l'équipe · journal des actions des modérateurs dans le jeu", text: MOD_TXT },
+    { key: "MODS", name: "modération", topic: "Salon privé de l'équipe · journal des actions des modérateurs dans le jeu", text: MOD_TXT, always: true },
     { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
 ];
 
@@ -250,7 +250,7 @@ async function main() {
       continue;
     }
     const last = recent.filter((m) => m.type === 0); // les avis « message épinglé » ne comptent pas
-    if (last.length) { console.log("  texte déjà présent (pas du robot) :", c.name); continue; }
+    if (last.length && !c.always) { console.log("  texte déjà présent (pas du robot) :", c.name); continue; } // 2.2.2 : always = publier même si l'équipe a déjà écrit (charte de #modération)
     const m = await api("POST", `/channels/${ids[c.key]}/messages`, { content: want, allowed_mentions: { parse: [] } });
     try { await api("PUT", `/channels/${ids[c.key]}/pins/${m.id}`); } catch (e) {}
     console.log("  texte publié :", c.name);
