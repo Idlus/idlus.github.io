@@ -260,7 +260,7 @@
       ]],
     ] });
 
-  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux verrouiller cadenas panoplie arme coup d'arme tenue exo legendaire",
+  add({ id: "equipement", f: "Héros", n: "Équipement, panoplies et armes", ic: "sac", page: "team", k: "equiper au mieux verrouiller cadenas panoplie arme coup d'arme tenue exo legendaire drop butin superbe beau jauge suivre fusion doublon",
     ou: "Héros › Équipe et héros › fiche du héros › Équipement", de: "dès le début",
     voir: ["inventaire", "forgemagie", "dofus"],
     b: () => [
@@ -277,6 +277,17 @@
       ]],
       ["h", "Panoplies"],
       ["p", `${N(() => Object.keys(D.SETS).length)} panoplies. Leur bonus dépend du nombre de pièces portées : c'est le palier le plus haut atteint qui compte (les paliers ne s'additionnent pas).`],
+      ["h", "Équipements lâchés (drops)"],
+      ["ul", [
+        "Chaque équipement fabricable tombe aussi sur les monstres de la zone de ses ingrédients (les pièces de donjon sur le boss). Une chance par héros de l'équipe.",
+        "Jusqu'au niveau 60, un objet précis demande en drop environ 15 fois le temps de farmer ses ingrédients ; l'écart descend ensuite jusqu'à 5 fois au niveau 200 (chances ×1 à ×3).",
+        "**Paliers** : 12 % des drops sont « Beau » (chaque ligne au moins à 50 % de sa fourchette) et 3 % « Superbe » (au moins 80 %, jusqu'à 8 % des drops en stasis 15). Un Superbe n'est jamais brisé par les règles automatiques.",
+        "**Jauge du boss** : chaque victoire en donjon la remplit (+1 par niveau de stasis jusqu'à +10, puis +12 à +20 de la stasis 11 à la 15). À 200, une pièce du boss jamais obtenue, garantie.",
+        "**Objet suivi** (bouton « Suivre » de sa fiche) : chances normales, mais garanti au plus tard au double du temps moyen. Un seul à la fois.",
+        "**Fusion des doublons** (fiche du sac) : un doublon sacrifié donne à une ligne la meilleure des deux valeurs, jusqu'à 1 sous le maximum, pour 100 kamas par niveau de l'objet.",
+        "Dans le butin du combat, « ▲ Mieux pour … » et le bouton Équiper montrent un drop utile ; un petit bandeau annonce chaque équipement (désactivable dans les Options).",
+        "Les Dofus ne changent pas : quête, boss et codes, aucune chance modifiée.",
+      ]],
       ["h", "Armes et coup d'arme"],
       ["p", `L'arme ajoute un sort « coup d'arme » qui frappe avec les vrais dégâts de l'arme ×${N(() => E.WEAPON.mult)}. Chaque classe a 2 types d'armes favoris (+${N(() => E.WEAPON.fav * 100)} %). Chaque type a son effet :`],
       ["ul", V(() => Object.keys(E.WTYPES).map((k) => { const W = E.WTYPES[k]; return `**${W.name}**${W.desc ? " : " + W.desc : W.fxName ? " : " + W.fxName : ""}`; }), [])],

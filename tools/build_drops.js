@@ -14,7 +14,7 @@ global.DROPS = {}; // les tables actuelles n'influencent pas la mesure
 const E = require(ROOT + "/js/engine.js"); require(ROOT + "/js/systems.js");
 require(ROOT + "/js/pets.js"); require(ROOT + "/js/mounts.js"); require(ROOT + "/js/idols.js"); require(ROOT + "/js/renaissance.js");
 const D = require(ROOT + "/js/data.js");
-const DROP_K = 15, HEROES = 4;
+const DROP_K = 15, HEROES = 4, LVL_GAP = 20;
 let seed = 7; E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });
 E.EVENT = null; E.weekly = () => null; E.flash = () => []; E.subUnlocked = () => true; E.dungeonUnlocked = () => true;
 const I = D.ITEMS, M = D.MONSTERS, SC = D.SPECIAL_CRAFTS;
@@ -42,11 +42,11 @@ for (const sid of Object.keys(E.SUBS)) { const sub = E.SUBS[sid]; if (!sub.lvl |
   Z[sid] = { kills, res, L: sub.lvl[1], mult: base ? got / base : 1 }; } // mult : bonus de butin réels de l'équipe (Prospection, rythme…), déjà comptés dans le temps des ingrédients
 // 2. un passage de chaque donjon en stasis 1 (le cycle compte aussi la chasse de la clé)
 const keyH = {}; for (const sid in Z) for (const r in Z[sid].res) keyH[r] = Math.max(keyH[r] || 0, Z[sid].res[r]);
-const SRC = {}; for (const sid in Z) SRC["z:" + sid] = { rate: Z[sid].res, kills: Z[sid].kills, mult: Z[sid].mult };
+const SRC = {}; for (const sid in Z) SRC["z:" + sid] = { rate: Z[sid].res, kills: Z[sid].kills, mult: Z[sid].mult, L: Z[sid].L };
 for (const did of Object.keys(D.DUNGEONS)) { const dg = D.DUNGEONS[did]; const S = team(Math.max(10, Math.min(200, dg.lvl))); S.res[dg.key] = 1; const r0 = Object.assign({}, S.res); delete r0[dg.key];
   const near = Object.values(Z).filter((z) => Math.abs(z.L - dg.lvl) <= 15).map((z) => z.mult).sort((a, b) => a - b);
   if (E.enterDungeon(S, did, 1)) continue; let t = 0; for (; S.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S, 1000);
-  const cyc = 1 / (keyH[dg.key] || 0.5) + t / 3600000; const res = gained(S, r0); const rate = {}; for (const r in res) rate[r] = res[r] / cyc; SRC["d:" + did] = { rate, cyc, boss: dg.boss, mult: near.length ? near[near.length >> 1] : 1.5 }; }
+  const cyc = 1 / (keyH[dg.key] || 0.5) + t / 3600000; const res = gained(S, r0); const rate = {}; for (const r in res) rate[r] = res[r] / cyc; SRC["d:" + did] = { rate, cyc, boss: dg.boss, L: dg.lvl, mult: near.length ? near[near.length >> 1] : 1.5 }; }
 // 3. coût de chaque objet en heures de chasse, puis chance par héros
 const best = {}; for (const s in SRC) for (const r in SRC[s].rate) if (!best[r] || SRC[s].rate[r] > best[r].h) best[r] = { s, h: SRC[s].rate[r] };
 const flat = (ing, mul = 1, acc = {}) => { ing.forEach(([r, q]) => { if (best[r]) acc[r] = (acc[r] || 0) + q * mul; else if (SC[r]) flat(SC[r].ing, q * mul, acc); }); return acc; };
@@ -66,18 +66,30 @@ const OUT = {};
 for (const id of Object.keys(I).sort()) { const T = I[id]; if (!T.craft || T.slot === "dofus" || T.leg || T.trophy) continue;
   const f = flat(T.craft.ing); const by = {}; for (const r in f) { const b = best[r]; by[b.s] = Math.max(by[b.s] || 0, f[r] / b.h); }
   const hours = Object.values(by).reduce((a, b) => a + b, 0); if (!hours) continue;
-  let main = Object.entries(by).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+  // 2.2.6 (Mathis : « pourquoi y'a des item HL dans des zones bl ») : l'objet tombe dans la source de ses ingrédients la plus longue
+  // parmi celles d'un niveau proche du sien (≥ niveau de l'objet − LVL_GAP) ; sinon dans la source de plus haut niveau
+  const monsAt = (s) => { const src = SRC[s]; if (s.startsWith("d:")) return { mons: [src.boss], kh: 1 / src.cyc };
+    const mons = [...new Set(Object.keys(f).flatMap((r) => dropsOf[r] || []))].filter((k) => src.kills[k] && !M[k].archiOf); return { mons, kh: mons.reduce((a, k) => a + src.kills[k], 0) }; };
+  const ok = Object.entries(by).filter(([s]) => monsAt(s).kh);
+  if (!ok.length) continue;
+  const near = ok.filter(([s]) => SRC[s].L >= T.lvl - LVL_GAP);
+  let main = (near.length ? near.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])) : ok.sort((a, b) => SRC[b[0]].L - SRC[a[0]].L || b[1] - a[1]))[0][0];
   if (T.set && SET_DG[T.set] && SRC[SET_DG[T.set]]) main = SET_DG[T.set]; // 1.0.25.1 : une panoplie au nom d'un boss de donjon tombe sur ce boss (Minotot, et non Minotoror)
-  const src = SRC[main];
-  let mons, kh;
-  if (main.startsWith("d:")) { mons = [src.boss]; kh = 1 / src.cyc; }
-  else { mons = [...new Set(Object.keys(f).flatMap((r) => dropsOf[r] || []))].filter((k) => src.kills[k] && !M[k].archiOf); kh = mons.reduce((a, k) => a + src.kills[k], 0); }
+  const src = SRC[main]; const { mons, kh } = monsAt(main);
   if (!mons.length || !kh) continue;
   const p = Math.min(100, 100 / (DROP_K * hours * kh) / HEROES / Math.max(1, src.mult));
   mons.forEach((k) => (OUT[k] = OUT[k] || []).push([id, +p.toPrecision(3)]));
 }
 // objets sans recette (drops DofusDB, futurs objets de boss) : on garde leur source, taux DofusDB × 0,04 partagé entre les 4 héros de référence
 for (const k in M) (M[k].items || []).forEach(([t, rate]) => { const T = I[t]; if (!T || T.craft || T.slot === "dofus" || T.leg || T.trophy) return; (OUT[k] = OUT[k] || []).push([t, +(rate * 0.04 / HEROES).toPrecision(3)]); });
+// 2.2.6 : un objet que le calcul ne sait pas placer garde ses lignes actuelles (lignes ajoutées à la main en 1.0.18, 1.0.29.3…)
+{ const prev = {}; try { const t = fs.readFileSync(path.join(ROOT, "js", "drops.js"), "utf8"); new Function("window", t)(prev); } catch (e) {}
+  // 1.0.18 : les Bottes de Stroud (sans recette) tombent sur les monstres de la Ceinture de Stroud, à la même chance
+  const byName = (n) => Object.keys(I).find((t) => I[t].name === n); const bs = byName("Bottes de Stroud"), cs = byName("Ceinture de Stroud");
+  if (bs && cs) { for (const k in OUT) OUT[k] = OUT[k].filter((x) => x[0] !== bs); for (const k in OUT) OUT[k].filter((x) => x[0] === cs).forEach(([, p]) => OUT[k].push([bs, p])); }
+  const placed = new Set(Object.values(OUT).flatMap((l) => l.map((x) => x[0]))); let kept = 0;
+  for (const k in prev.DROPS || {}) prev.DROPS[k].forEach(([t, p]) => { if (placed.has(t) || !I[t]) return; (OUT[k] = OUT[k] || []).push([t, p]); kept++; });
+  console.log(`lignes gardées pour des objets non placés : ${kept}`); }
 console.log(`panoplies rattachées à un boss : ${Object.keys(SET_DG).length}`);
 const keys = Object.keys(OUT).sort((a, b) => +a.slice(1) - +b.slice(1));
 const body = keys.map((k) => JSON.stringify(k) + ":" + JSON.stringify(OUT[k])).join(",\n");

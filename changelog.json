@@ -1,6 +1,20 @@
 {
-  "version": "2.2.6",
+  "version": "2.2.7",
   "versions": [
+    {
+      "v": "2.2.7",
+      "name": "Refonte des drops",
+      "items": [
+        "Plus de drops à haut niveau : rien ne change jusqu'au niveau 60, puis les chances montent jusqu'à ×3 au niveau 200",
+        "Paliers de jet : 12 % des équipements dropés sont « Beau » (lignes ≥ 50 %) et 3 % « Superbe » (lignes ≥ 80 %, jusqu'à 8 % en stasis 15). Un Superbe n'est jamais brisé automatiquement",
+        "Jauge du boss : chaque victoire en donjon la remplit (+1 par stasis jusqu'à +10, +12 à +20 de la stasis 11 à 15). À 200, une pièce du boss que tu n'as jamais eue",
+        "Objet suivi : bouton « Suivre » sur la fiche d'un objet, il tombe au plus tard au double du temps moyen",
+        "Fusion des doublons (fiche du sac) : un doublon donne à une ligne la meilleure des deux valeurs, jusqu'à 1 sous le maximum",
+        "Butin du combat : « ▲ Mieux pour … » et un bouton Équiper ; un petit bandeau annonce chaque équipement (désactivable dans les Options)",
+        "Un équipement ne tombe plus dans une zone beaucoup plus basse que son niveau : il tombe là où on trouve ses ingrédients, au plus près de son niveau",
+        "Les Dofus ne changent pas"
+      ]
+    },
     {
       "v": "2.2.6",
       "name": "Nouvel album de cartes",

@@ -10,6 +10,16 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.7 « Refonte des drops »
+
+- Plus de drops à haut niveau : rien ne change jusqu'au niveau 60, puis les chances montent jusqu'à ×3 au niveau 200.
+- Paliers de jet : 12 % des équipements dropés sont « Beau » (lignes ≥ 50 %) et 3 % « Superbe » (lignes ≥ 80 %, jusqu'à 8 % en stasis 15). Un Superbe n'est jamais brisé automatiquement.
+- Jauge du boss : chaque victoire en donjon la remplit (+1 par stasis jusqu'à +10, +12 à +20 de la stasis 11 à 15). À 200, une pièce du boss que tu n'as jamais eue.
+- Objet suivi : bouton « Suivre » sur la fiche d'un objet, il tombe au plus tard au double du temps moyen.
+- Fusion des doublons (fiche du sac) : un doublon donne à une ligne la meilleure des deux valeurs, jusqu'à 1 sous le maximum.
+- Butin du combat : « ▲ Mieux pour … » et un bouton Équiper ; un petit bandeau annonce chaque équipement (désactivable dans les Options).
+- Placement : un équipement tombe dans la source de ses ingrédients la plus proche de son niveau (au plus 20 niveaux sous lui quand c'est possible, `LVL_GAP` dans tools/build_drops.js). Objets qui tombent plus de 20 niveaux sous eux : 128 → 33 (surtout des pièces ajoutées à la main sans autre source ; Koloss niveau 116 quitte les Prairies d'Astrub). Un objet que le calcul ne sait pas placer garde ses lignes actuelles.
+- Les Dofus ne changent pas.
 ## 2.2.6 « Nouvel album de cartes »
 
 - Refonte de la page Héros › Album de cartes, choix de Mathis sur maquette (04/11) « 1A 2A 3A 4A 5A 6A » : bandeau compact (compteur, barre des paliers et prochain titre, Poussière, booster, prochain booster offert et donjons vers le suivant, règles derrière « ? »), sections par rareté avec une ligne de filtres (Toutes, Manquantes, Nouvelles, Doubles, Brillantes), cartes manquantes en gris et ⚒ si la Poussière suffit, fiche complète (doubles → Poussière, « Voir le donjon », Précédente / Suivante), 4 cartes par ligne au téléphone (page 8 500 → environ 5 300 px), étiquette « Nouvelle » jusqu'à la visite.

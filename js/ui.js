@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.6";
+const GAME_VERSION = "2.2.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.7", name: "Refonte des drops", items: [
+    "Plus de drops à haut niveau : rien ne change jusqu'au niveau 60, puis les chances montent jusqu'à ×3 au niveau 200",
+    "Paliers de jet : 12 % des équipements dropés sont « Beau » (lignes ≥ 50 %) et 3 % « Superbe » (lignes ≥ 80 %, jusqu'à 8 % en stasis 15). Un Superbe n'est jamais brisé automatiquement",
+    "Jauge du boss : chaque victoire en donjon la remplit (+1 par stasis jusqu'à +10, +12 à +20 de la stasis 11 à 15). À 200, une pièce du boss que tu n'as jamais eue",
+    "Objet suivi : bouton « Suivre » sur la fiche d'un objet, il tombe au plus tard au double du temps moyen",
+    "Fusion des doublons (fiche du sac) : un doublon donne à une ligne la meilleure des deux valeurs, jusqu'à 1 sous le maximum",
+    "Butin du combat : « ▲ Mieux pour … » et un bouton Équiper ; un petit bandeau annonce chaque équipement (désactivable dans les Options)",
+    "Un équipement ne tombe plus dans une zone beaucoup plus basse que son niveau : il tombe là où on trouve ses ingrédients, au plus près de son niveau",
+    "Les Dofus ne changent pas" ] },
   { v: "2.2.6", name: "Nouvel album de cartes", items: [
     "Album de cartes refait : en haut, ta progression avec les 4 paliers et le prochain titre, ta Poussière, le prochain booster offert et tes donjons vers le suivant. Les règles passent derrière le bouton « ? »",
     "Les cartes sont rangées par rareté, plus petites (4 par ligne au téléphone), avec une seule ligne de filtres : Toutes, Manquantes, Nouvelles, Doubles, Brillantes",
@@ -4363,7 +4372,7 @@ function zoneViewHtml(sid) {
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${E.resRate(r.p).toFixed(1).replace(".", ",")} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
       ${mountZoneBox(sid)}
       ${its.length ? (() => { const own0 = E.ownedTpls(S); const show = ui.zoneAll === sid ? its : its.slice(0, 12); const nT = Math.max(1, E.team(S).length); /* 1.0.15 : chance par héros, 12 premiers puis « Tout voir » */
-        return `<h3 class="sec">Équipements à looter <span class="tag soft">${its.length}</span></h3><div class="xs muted" style="margin:-4px 0 6px">Une chance par héros et par monstre : avec ${nT} héros, ${nT} chances. Chaque équipement tombe dans la zone qui donne ses ingrédients.</div><div class="loot">${show.map((e) => { const p = e.p * E.ITEM_DROP_SCALE; return `<div class="lcard" data-act="encitem" data-v="${e.t}" style="cursor:pointer"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}${own0[e.t] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${dropPct(p)} %</span> <span class="muted">par héros (1 sur ${fmt(Math.max(1, Math.round(100 / p)))})</span></div></div></div>`; }).join("")}</div>${its.length > 12 ? `<div class="row"><button class="btn sm" data-act="zoneall" data-id="${sid}">${ui.zoneAll === sid ? "Réduire" : `Tout voir (${its.length})`}</button></div>` : ""}`; })() : ""}
+        return `<h3 class="sec">Équipements à looter <span class="tag soft">${its.length}</span></h3><div class="xs muted" style="margin:-4px 0 6px">Une chance par héros et par monstre : avec ${nT} héros, ${nT} chances. Chaque équipement tombe dans la zone qui donne ses ingrédients.</div><div class="loot">${show.map((e) => { const p = e.p * E.ITEM_DROP_SCALE; return `<div class="lcard" data-act="encitem" data-v="${e.t}" style="cursor:pointer"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}${own0[e.t] ? ` <span class="tag good">✓</span>` : ""}${S.track && S.track.tpl === e.t ? ` <span class="tag soft" title="Objet suivi : jauge ${E.trackPct(S)} %">◎ ${E.trackPct(S)} %</span>` : ""}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${dropPct(p)} %</span> <span class="muted">par héros (1 sur ${fmt(Math.max(1, Math.round(100 / p)))})</span></div></div></div>`; }).join("")}</div>${its.length > 12 ? `<div class="row"><button class="btn sm" data-act="zoneall" data-id="${sid}">${ui.zoneAll === sid ? "Réduire" : `Tout voir (${its.length})`}</button></div>` : ""}`; })() : ""}
       ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
     </div>
   </section>`;
@@ -4597,7 +4606,7 @@ function dungeonSheet(did) {
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme${k >= 11 ? `, ${k >= 15 ? "2 Pierres d'âme dorées" : "1 Pierre d'âme dorée"}` : ""}`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (k >= 11 ? 2 : 1) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
-        ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 dès la 10) · ✓ déjà obtenu</div><div class="loot">${loot}</div>` : ""}</div>
+        ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 dès la 10) · ✓ déjà obtenu</div>${bossGaugeHtml(did, k)}<div class="loot">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
@@ -6390,6 +6399,14 @@ function lossHtml(R) {
  <div class="row">${R.place ? `<button class="btn sm primary" data-act="lossplace">Ouvrir le placement</button>` : ""}${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche ${h(deNom(c.name))}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
 }
 function lossSheet(t) { const R = (S.losses || []).find((x) => x.t === +t); if (!R) return; openSheet(`<h2>${h(R.label)}</h2><div class="small">${lossHtml(R)}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
+/* 2.2.5 (8C) : un équipement du butin meilleur pour un héros de l'équipe (même calcul que la pastille ▲ du sac) */
+const dropUpMemo = new Map();
+function dropUp(it) {
+  if (!it || !S.items[it.uid] || E.equippedBy(S, it.uid)) return null; const T = ITEMS[it.tpl]; if (!T || T.slot === "dofus" || T.trophy) return null;
+  const key = it.uid + ":" + E.team(S).map((c) => Object.values(c.equip).join(",")).join("|"); if (dropUpMemo.has(key)) return dropUpMemo.get(key);
+  let best = null; const sls = T.slot === "anneau" ? ["anneau1", "anneau2"] : [T.slot];
+  E.team(S).forEach((c) => { if (c.lvl < T.lvl || c.merc || c.snap) return; const base = gearScore(c, c.equip); sls.forEach((sl) => { const g = gainFor(c, sl, it.uid, base) / Math.max(1, base) * 100; if (g >= 1 && (!best || g > best.g)) best = { c, sl, g: Math.round(g) }; }); });
+  if (dropUpMemo.size > 200) dropUpMemo.clear(); dropUpMemo.set(key, best); return best; }
 function lootHtml(F) {
   const el = $("#floot"); if (!el) return;
   if (F.result !== "win" || !F.rewards) { el.innerHTML = F.loss ? lossHtml(F.loss) : `<p class="note">Défaite. L'équipe se relève et repart.</p>`; $("#fres").textContent = "Défaite"; return; }
@@ -6407,7 +6424,7 @@ function lootHtml(F) {
     ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
     ${r.auto ? `<p class="note">${r.auto} objet${r.auto > 1 ? "s" : ""} traité${r.auto > 1 ? "s" : ""} par les règles automatiques.</p>` : ""}
     ${r.cons ? `<p class="small" style="color:var(--archi);font-weight:800">${IC("bonbon")} Bonbon Sagesse obtenu !</p>` : ""}
-    ${r.items.length ? `<div class="list">${r.items.filter((u) => S.items[u]).map((u) => `<div class="li ${S.items[u].radiant ? "radiant" : ""}">${itemIcon(S.items[u])}<span class="grow">${itemName(S.items[u])}</span></div>`).join("")}</div>` : ""}</div>`;
+    ${r.items.length ? `<div class="list">${r.items.filter((u) => S.items[u]).map((u) => { const up = dropUp(S.items[u]); return `<div class="li ${S.items[u].radiant ? "radiant" : ""}">${itemIcon(S.items[u])}<span class="grow">${itemName(S.items[u])}${up ? `<br><span class="xs plus lootup2">▲ Mieux pour ${h(up.c.name)} · +${up.g} % de puissance</span>` : ""}</span>${up ? `<button class="btn sm primary" data-act="lootequip" data-uid="${u}" data-cid="${up.c.id}" data-sl="${up.sl}">Équiper</button>` : ""}</div>`; }).join("")}</div>` : ""}</div>`;
 }
 
 /* ---------- objets ---------- */
@@ -6431,7 +6448,10 @@ function grpItems(L, byTpl, solo) {
   return out;
 }
 const grpN = (n) => (n > 1 ? ` <span class="tag soft gcount">×${n}</span>` : "");
-function itemName(it) { return `<span class="iname ${rarName(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${ITEMS[it.tpl].leg ? " " + legEvHtml(it) : ""}${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+const tierTag = (it) => (it && it.tier ? ` <span class="tag tier${it.tier}" title="${it.tier === 2 ? "Superbe : chaque ligne au moins à 80 % de sa fourchette (3 % des drops)" : "Beau : chaque ligne au moins à 50 % de sa fourchette (12 % des drops)"}">${it.tier === 2 ? "★★★ Superbe" : "★★ Beau"}</span>` : ""); // 2.2.5 (3C)
+function bossGaugeHtml(did, k) { const L = E.bossGaugeItems(did); if (!L.length) return ""; const g = (S.bossG || {})[did] || 0; const dex = E.itemDex ? E.itemDex(S) : S.itemDex || {}; const miss = L.filter((t) => !dex[t]).length; // 2.2.5 (5B)
+  return `<div class="bgauge"><div class="row between small"><b>${G("crown")} Jauge du boss · ${h(MONSTERS[DUNGEONS[did].boss].name)}</b><span class="num">${fmt(g)} / ${E.BOSS_GAUGE}</span></div><div class="bar"><i style="width:${pct(g, E.BOSS_GAUGE)}%"></i></div><div class="xs muted">+${E.bossGaugeGain(k)} par victoire en stasis ${k} (+1 par stasis jusqu'à +10, puis +12 à +20 de la 11 à la 15). Pleine : ${miss ? `une pièce que tu n'as jamais eue, garantie (il en manque ${miss} sur ${L.length})` : "une pièce au hasard (tu les as toutes eues)"}.</div></div>`; }
+function itemName(it) { return `<span class="iname ${rarName(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${tierTag(it)}${ITEMS[it.tpl].leg ? " " + legEvHtml(it) : ""}${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 const legEvHtml = (it) => { const ev = E.legEv(it); return `<span class="lgev" title="Éveil ${["I", "II", "III", "IV", "V"][ev - 1]}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= ev ? "on" : ""}"></i>`).join("")}</span>`; };
 /* ---------- 1.0.16 « Passifs des Dofus » : encadré du passif, panneau sous le héros, choix du Dofus (js/dofusp.js) ---------- */
 const DOFP_FC = { Attaque: ["att", "c/do.png"], Défense: ["def", "c/rn.png"], Soin: ["soin", "c/so.png"], Contrôle: ["ctrl", "c/rpm.png"], Gains: ["gain", "ui/kamas.webp"] };
@@ -7876,6 +7896,8 @@ function invGroups() {
 }
 /* 1.0.25.11 : cadenas posé par une tenue enregistrée */
 function lockTip(it) { const gg = E.gearOf(S, it.uid); return gg ? `Verrouillé par la tenue « ${gg.g.name} » de ${gg.c.name}` : it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"; }
+function fuseHtml(it) { const L = E.fuseLines(S, it.uid); if (!L.length) return ""; const c = E.fuseCost(it.tpl); // 2.2.5 (4B) : fusion des doublons
+  return `<div class="fusebox"><div class="small"><b>Fusion des doublons</b> <span class="xs muted">· ${fmt(c)} kamas par ligne</span></div><div class="xs muted">Sacrifie un doublon : la ligne choisie prend la meilleure des deux valeurs (jusqu'à 1 sous le maximum, le Parfait reste à la Forgemagie).</div><div class="row" style="gap:6px;flex-wrap:wrap">${L.map((l) => `<button class="btn sm" data-act="fuse" data-uid="${it.uid}" data-dup="${l.dup}" data-k="${l.k}" ${S.kamas < c ? "disabled" : ""}>${h(STATS[l.k] ? STATS[l.k].name : l.k)} ${fmt(l.cur)} → <b class="plus">${fmt(l.v)}</b></button>`).join("")}</div></div>`; }
 function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
   const worn = invShowEq() ? null : wornMap();
@@ -7888,10 +7910,10 @@ function invDetail(tpl) {
   const gr = grpItems(copies, false, (x) => E.equippedBy(S, x.uid));
   const rows = gr.length > 1 ? `<div class="invcopies"><div class="xs muted" style="margin:2px 0 4px">${copies.length} exemplaire${copies.length > 1 ? "s" : ""} · touche un jet pour le voir</div>${gr.map((g) => { const it = g.rep; const j = Math.round(E.itemQuality(it) * 100); const b = E.equippedBy(S, it.uid);
       return `<button class="invcopy ${it === pk ? "on" : ""}" data-fx="pick" data-uid="${it.uid}"><span class="ijet" style="--w:${j}%;--hj:${jetHue(E.itemQuality(it))}"></span><b class="num">Jet ${j} %</b>${g.items.length > 1 ? `<span class="xs muted">×${g.items.length}</span>` : ""}${it.radiant ? `<span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.exo ? `<span class="tag exo">Exo ${STATS[it.exo].short}</span>` : ""}${it.locked ? G("lock") : ""}${b ? `<span class="xs muted">porté par ${h(b.name)}</span>` : ""}</button>`; }).join("")}</div>` : "";
-  return `<div class="panel invdetail invdA"><div class="phead"><div class="row">${itemIcon(pk)}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${slotN}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
+  return `<div class="panel invdetail invdA"><div class="phead"><div class="row">${itemIcon(pk)}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${slotN}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}${tierTag(pk)}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
     ${up ? `<div class="invupl"><b>▲ Mieux pour ${h(up.name)}</b>${(() => { const base = gearScore(up, up.equip); const sl = T.slot === "anneau" ? ["anneau1", "anneau2"] : [T.slot]; const it = copies.find((x) => ups.get(x.uid) === up) || pk; const g = Math.max(...sl.map((x) => gainFor(up, x, it.uid, base))) / Math.max(1, base) * 100; return ` <span class="tag good">+${Math.max(1, Math.round(g))} % de puissance</span>`; })()} <span class="xs muted">« Équiper au mieux » le mettrait sur ce héros</span></div>` : ""}
     ${E.team(S).length > 1 ? `<div class="invcmpl"><span class="xs muted">Comparer avec</span>${E.team(S).map((c) => `<button class="invcmp ${ui.cid === c.id ? "on" : ""}" data-act="invcmp" data-cid="${c.id}" title="${h(c.name)}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}${copies.some((x) => ups.get(x.uid) === c) ? "<i>▲</i>" : ""}</button>`).join("")}</div>` : ""}
-    ${acts}${rows}
+    ${acts}${fuseHtml(pk)}${rows}
     <div class="pad xs">${window.FORGEUI ? tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)) : tplStatsHtml(T)}
       ${T.set ? `<details class="invsetd" ${ui.invSetOpen ? "open" : ""}><summary>${h(SETS[T.set].name)} : pièces et bonus</summary>${setDetailHtml(T.set, ui.cid && char(ui.cid) ? char(ui.cid) : null)}</details>` : ""}</div></div>`;
 }
@@ -9457,7 +9479,7 @@ function celeHtml(ev) {
   if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
   if (ev.t === "dropit") { const T = ITEMS[ev.tpl]; if (!T) return ""; /* 1.0.15 : équipement jamais obtenu */
-    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Nouvel équipement</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">niveau ${T.lvl} · nouveau dans l'Encyclopédie${MONSTERS[ev.mon] ? ` · ${h(MONSTERS[ev.mon].name)}` : ""}</div>`; }
+    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} ${ev.tier === 2 ? "Équipement Superbe" : "Nouvel équipement"}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">niveau ${T.lvl}${ev.tier === 2 ? " · chaque ligne au moins à 80 %" : ""}${ev.neu !== false ? " · nouveau dans l'Encyclopédie" : ""}${MONSTERS[ev.mon] ? ` · ${h(MONSTERS[ev.mon].name)}` : ""}</div>`; }
   if (ev.t === "exo") { const T = ITEMS[ev.tpl]; if (!T) return "";
     return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Forgemagie exotique</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+1 ${h(STATS[ev.stat].name)} · niveau ${T.lvl}</div>`; }
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
@@ -9535,6 +9557,15 @@ let lvlToast = null;
 /* 0.1.47.6 : pendant qu'on écrit dans le chat, les notifications attendent (3 au plus) et arrivent dès que le champ est vide ou quitté */
 const toastQ = []; let toastT = null;
 const toastTyping = () => { const a = document.activeElement; return !!(a && a.id === "chIn" && a.value.trim()); };
+/* 2.2.5 (7B) : petit bandeau à chaque équipement lâché (nom, palier, jet, ▲ si mieux pour un héros), 4 s, un à la fois */
+const dropBnQ = []; let dropBnT = null;
+E.onDrop = (S0, it, mon) => { if (S0 !== S || S.settings.dropBn === false || E.catchingUp || document.hidden) return; dropBnQ.push([it.uid, mon]); if (dropBnQ.length > 3) dropBnQ.shift(); if (!dropBnT) dropBnNext(); };
+function dropBnNext() {
+  const old = document.getElementById("dropbn"); if (old) old.remove(); const x = dropBnQ.shift(); if (!x) { dropBnT = null; return; }
+  const it = S.items[x[0]]; if (!it) { dropBnNext(); return; } const T = ITEMS[it.tpl]; const up = dropUp(it);
+  const el = document.createElement("div"); el.id = "dropbn"; el.className = "dropbn"; el.setAttribute("role", "status");
+  el.innerHTML = `${itemIcon(it)}<div><b>${h(T.name)}</b>${tierTag(it)} <span class="tag soft">Jet ${Math.round(E.itemQuality(it) * 100)} %</span><br><span class="xs muted">niv. ${T.lvl}${MONSTERS[x[1]] ? ` · ${h(MONSTERS[x[1]].name)}` : ""}${up ? ` · <span class="plus">▲ mieux pour ${h(up.c.name)}</span>` : ""}</span></div>`;
+  el.addEventListener("click", () => { el.remove(); clearTimeout(dropBnT); dropBnNext(); }); document.body.appendChild(el); dropBnT = setTimeout(dropBnNext, 4000); }
 function toast(txt, kind, ms) { // ms : durée d'affichage (1.0.29.6, messages longs)
   if (kind === "warn") sndPlay("err"); else sndText(txt, kind); // 1.0.22 ; 1.3 : les bulles des autres modules (vente, code, Kolizéum…) sonnent aussi
   if (toastTyping()) {
@@ -9658,6 +9689,7 @@ function displayOptionsHtml() {
     + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
     + optLine("Écrans de récompense", "objet Rayonnant, palier de 10 niveaux, stasis", `<span class="seg">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span>`)
     + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent")
+    + optChk(`data-act="setdropbn"`, S.settings.dropBn !== false, "Bandeau des équipements lâchés", "un petit bandeau de 4 secondes à chaque équipement dropé (le grand pop-up reste pour un nouvel objet ou un Superbe)")
     + optChk(`data-act="setlivecol"`, S.settings.liveCol !== false, "Colonne « Combat en direct »", "écran de 1600 px de large ou plus : le combat, le butin récent et le chat dans une colonne à droite")
     + optChk(`data-act="setinvhero"`, S.settings.invHero !== false, "Héros à côté du sac", "PC : l'équipement d'un héros à droite de l'Inventaire, on y glisse les objets")
     + optChk(`data-act="fm-mini"`, S.settings.miniFight !== false, "Petit module de combat", "hors de l'onglet Combat : sous « Combat en cours » sur PC, bande au-dessus de la barre du bas sur téléphone")); // 1.0.30 (js/formation.js)
@@ -9812,6 +9844,8 @@ function searchGo(r) {
   }
 }
 /* fiche d'un objet, possédé ou non : ce qu'il donne et où le trouver */
+function trackBox(tpl, src) { const T = ITEMS[tpl]; if (!T || T.dofus || T.leg || T.trophy || !src.some((x) => x.k !== "craft")) return ""; const on = S.track && S.track.tpl === tpl; // 2.2.5 (6C)
+  return `<div class="trackbox">${on ? `<div class="row between small"><b>◎ Objet suivi</b><span class="num">jauge ${E.trackPct(S)} %</span></div><div class="bar"><i style="width:${E.trackPct(S)}%"></i></div><div class="xs muted">Chances normales, mais garanti quand la jauge est pleine : au plus le double du temps moyen. La jauge avance à chaque monstre qui peut le lâcher et repart à zéro quand il tombe.</div><div class="row"><button class="btn sm" data-act="trackitem" data-tpl="" data-v="${tpl}">Ne plus suivre</button></div>` : `<div class="row between small" style="gap:8px;flex-wrap:wrap"><span><b>◎ Suivre cet objet</b><br><span class="xs muted">Garanti au plus tard au double du temps moyen de drop. Un seul objet suivi à la fois${S.track && ITEMS[S.track.tpl] ? ` (aujourd'hui : ${h(ITEMS[S.track.tpl].name)})` : ""}.</span></span><button class="btn sm primary" data-act="trackitem" data-tpl="${tpl}" data-v="${tpl}">Suivre</button></div>`}</div>`; }
 function itemSheet(tpl) {
   const T = ITEMS[tpl]; if (!T) return; if (T.leg && window.SGUI) { window.SGUI.legSheet(S, T.leg); return; } /* 0.1.48 : fiche légendaire */ const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
   const lines = src.map((x) => {
@@ -9823,6 +9857,7 @@ function itemSheet(tpl) {
   openSheet(`<div class="row"><span class="icobox lg">${im(itemImg(tpl), "", T.name)}</span><div><h2 style="margin:0">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div>
     ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
     <div class="xs">${window.FORGEUI && !T.dofus ? (() => { const best = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => E.itemQuality(b) - E.itemQuality(a))[0] || null; return tplStatsHtml(Object.assign({}, T, { stats: {} })) + (best ? `<div class="xs muted">Ton meilleur exemplaire · jet ${Math.round(E.itemQuality(best) * 100)} %</div>` : "") + window.FORGEUI.statGrid(T, best, window.FORGEUI.wornRef(tpl, best)); })() : tplStatsHtml(T)}</div>
+    ${trackBox(tpl, src)}
     <h3 class="sec">${T.dofus ? "Comment l'obtenir" : "Où le trouver"}</h3>
     <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Aventure › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
@@ -11479,6 +11514,9 @@ document.addEventListener("click", (ev) => {
     case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; nc.head = startHeadOf(ui.startCls, nc.sex); ui.startHead = 0; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;
+    case "lootequip": { const r = E.equip(S, +d.cid, +d.uid, d.sl); if (r) { toast(r, "warn"); return; } toast("Objet équipé."); dirty = true; if (S.fight && S.fight.over) lootHtml(S.fight); break; } // 2.2.5 (8C)
+    case "fuse": { const r = E.fuseItem(S, +d.uid, +d.dup, d.k); if (r) { toast(r, "warn"); return; } toast("Fusion réussie : le doublon est sacrifié."); dirty = true; break; } // 2.2.5 (4B)
+    case "trackitem": { const r = E.trackSet(S, d.tpl || null); if (r) { toast(r, "warn"); return; } toast(d.tpl ? "Objet suivi : garanti au plus tard au double du temps moyen." : "Objet plus suivi."); dirty = true; itemSheet(d.v); return; } // 2.2.5 (6C)
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
     case "hdvitem": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "hdvbeast": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellBeast(d.c, +d.uid); navGo("hdv"); window.scrollTo(0, 0); break; } // 2.1.30 : vendre une monture ou un familier
@@ -11596,6 +11634,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setnavfull") { S.settings.navAll = t.checked; dirty = true; renderNav(); return; }
   else if (a === "setdetail") { S.settings.detail = t.checked; ui.tbOpen = null; dirty = true; optionsSheet(); renderStatus(); render(); return; }
   else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
+  else if (a === "setdropbn") { S.settings.dropBn = t.checked; dirty = true; return; } // 2.2.5 (7B)
   else if (a === "setlivecol") { S.settings.liveCol = t.checked; dirty = true; liveColTick(true); return; }
   else if (a === "setinvhero") { S.settings.invHero = t.checked; dirty = true; return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }

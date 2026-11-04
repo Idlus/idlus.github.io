@@ -32,7 +32,7 @@ console.log("ok - un tirage par héros");
 // 4. Annonce seulement pour un équipement jamais obtenu.
 { const S = mk(4); E.events.length = 0; E.ITEM_DROP_SCALE = 5000;
   E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], {}); const first = E.events.filter((e) => e.t === "dropit").length;
-  E.events.length = 0; E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], {}); const again = E.events.filter((e) => e.t === "dropit").length;
+  E.events.length = 0; E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], {}); const again = E.events.filter((e) => e.t === "dropit" && e.tier !== 2).length; // 2.2.5 : un Superbe est annoncé même déjà obtenu
   E.ITEM_DROP_SCALE = 1; E.events.length = 0;
   assert.ok(first >= 1, "nouvel équipement annoncé"); assert.strictEqual(again, 0, "pas d'annonce pour un équipement déjà obtenu"); }
 console.log("ok - annonce des nouveaux équipements");

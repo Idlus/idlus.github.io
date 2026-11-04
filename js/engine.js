@@ -2878,18 +2878,13 @@
       /* 1.0.15 (Mathis 4A, 5A, 7C) : une chance par héros ; le boss d'un donjon a plus de chances avec la stasis (×1 à la 1, ×3,25 à la 10) ;
          un équipement jamais obtenu est annoncé en grand */
       const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
+      const trk = S.track && S.track.tpl ? S.track : null; // 2.2.5 (6C) : objet suivi
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1) * (S.mono && E.monoItem ? E.monoItem(S, ITEMS[tpl]) : 1)); let n = 0; // Monocompte : butin d'équipement du héros seul
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * E.dropLvlMult(ITEMS[tpl].lvl) * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1) * (S.mono && E.monoItem ? E.monoItem(S, ITEMS[tpl]) : 1)); let n = 0; // Monocompte : butin d'équipement du héros seul ; 2.2.5 (1B) : rythme selon le niveau de l'objet
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
-        for (let ii = 0; ii < n; ii++) {
-          seen(m.key, tpl);
-          const neu = !(E.itemDex ? E.itemDex(S) : S.itemDex || {})[tpl];
-          const it = E.rollItem(S, tpl, { archi: m.archi, champ: m.champ });
-          if (neu && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon: m.base || m.key });
-          const auto = E.applyAuto(S, it);
-          if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
-        }
+        if (trk && trk.tpl === tpl) { if (n) trk.g = 0; else { trk.g = (trk.g || 0) + Math.min(1, p / 100 * rolls); if (trk.g >= E.TRACK_CAP) { n = 1; trk.g = 0; trk.n = (trk.n || 0) + 1; note(S, `Objet suivi garanti : ${ITEMS[tpl].name} !`, "rare"); } } }
+        for (let ii = 0; ii < n; ii++) E.dropGive(S, tpl, m, opts, out);
       });
       // clés de donjon
       if (!opts.dungeon && sub && sub.dungeon && sub.monsters.includes(m.base || m.key)) (sub.dungeons || [sub.dungeon]).forEach((did) => {
@@ -2944,7 +2939,7 @@
   E.autoNConds = (A) => (A && A.action !== "none" ? 1 : 0) + (A && A.low > 0 ? 1 : 0) + (A && A.lowLvl > 1 ? 1 : 0);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
-    const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
+    const A = S.settings.auto; if (!A || it.radiant || it.tier === 2 || it.locked || E.inGear(S, it.uid)) return null; // 2.2.5 : un Superbe n'est jamais brisé automatiquement
     if (A.recycle) {
       const q = E.itemQuality(it);
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
@@ -2960,6 +2955,65 @@
     if (A.lowLvl > 1) conds.push(E.lowItem(S, it, A.lowLvl, true));
     if (!conds.length || !(A.mode === "ou" ? conds.some(Boolean) : conds.every(Boolean))) return null;
     E.breakItem(S, it.uid, null); return A.action === "break" || A.action === "sell" ? "break" : "low";
+  };
+  /* 2.2.5 « Refonte des drops » (Mathis 04/11 : 1B 2A 3C 4B 5B 6C 7B 8C 9A 10A)
+     1B : un équipement précis se drope en ~15 fois le temps de ses ingrédients jusqu'au niveau 60, puis l'écart descend
+          jusqu'à 5 fois au niveau 200 (chances ×1 → ×3). 2A : une chance par héros, inchangé. */
+  E.dropLvlMult = (lvl) => 15 / (15 - 10 * Math.max(0, Math.min(1, ((lvl || 1) - 60) / 140)));
+  /* 3C : paliers de jet au drop (pas en fabrication) : Superbe 3 % (lignes ≥ 80 %), Beau 12 % (lignes ≥ 50 %) */
+  E.DROP_TIERS = [{ id: 2, name: "Superbe", p: 0.03, floor: 0.8 }, { id: 1, name: "Beau", p: 0.12, floor: 0.5 }];
+  E.TIER_NAME = { 1: "Beau", 2: "Superbe" };
+  /* late game (Mathis 04/11, idée 1) : en stasis 11 à 15, le Superbe passe de 3 % à 8 % (+1 point par palier) sur le butin du donjon */
+  E.superbeP = (k) => 0.03 + Math.max(0, Math.min(5, (k || 0) - 10)) * 0.01;
+  E.dropTier = (k) => { const x = rnd(); let a = 0; for (const t of E.DROP_TIERS) { a += t.id === 2 ? E.superbeP(k) : t.p; if (x < a) return t; } return null; };
+  /* un équipement lâché par un monstre (jet, palier, Encyclopédie, annonce, règles automatiques) */
+  E.dropGive = (S, tpl, m, opts, out) => {
+    if (m) (S.seenDrops[m.key] = S.seenDrops[m.key] || {})[tpl] = 1;
+    const neu = !(E.itemDex ? E.itemDex(S) : S.itemDex || {})[tpl];
+    const tr = E.dropTier(opts.dungeon ? opts.stasis : 0);
+    const it = E.rollItem(S, tpl, { archi: m && m.archi, champ: m && m.champ, floor: tr ? tr.floor : 0 }); if (tr) it.tier = tr.id;
+    const mon = m ? m.base || m.key : null;
+    if ((neu || it.tier === 2) && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon, tier: it.tier || 0, neu }); // 7B : grand pop-up pour un nouvel objet ou un Superbe
+    const auto = E.applyAuto(S, it);
+    if (auto) out.auto = (out.auto || 0) + 1; else { out.items.push(it.uid); if (!opts.offline && E.onDrop) E.onDrop(S, it, mon); } // 7B : petit bandeau
+    return it;
+  };
+  /* 6C : objet suivi. Chances normales ; la jauge ajoute à chaque monstre qui peut le lâcher le nombre de drops attendus,
+     et le donne quand elle atteint 2 (au plus le double du temps moyen). Elle repart à zéro quand il tombe. */
+  E.TRACK_CAP = 2;
+  E.trackSet = (S, tpl) => { if (!tpl) { delete S.track; return null; } const T = ITEMS[tpl]; if (!T || T.slot === "dofus" || T.leg || T.trophy) return "Cet objet ne peut pas être suivi.";
+    if (S.track && S.track.tpl === tpl) return null; S.track = { tpl, g: 0 }; return null; };
+  E.trackPct = (S) => (S.track ? Math.min(100, Math.round((S.track.g || 0) / E.TRACK_CAP * 100)) : 0);
+  /* 4B : fusion des doublons. Un doublon sacrifié donne à une ligne du meilleur exemplaire la meilleure des deux valeurs,
+     jamais au-delà d'1 point sous le maximum (le Parfait reste à la Forgemagie). Coût : 100 kamas par niveau de l'objet. */
+  E.fuseCost = (tpl) => Math.max(1000, ((ITEMS[tpl] || {}).lvl || 1) * 100);
+  const fuseOk = (S, it) => it && !it.radiant && !it.locked && !E.equippedBy(S, it.uid) && !E.inGear(S, it.uid);
+  E.fuseLines = (S, uid) => {
+    const it = S.items[uid]; const T = it && ITEMS[it.tpl]; if (!T || T.slot === "dofus" || T.leg || T.trophy || it.radiant) return [];
+    const dups = Object.values(S.items).filter((x) => x.tpl === it.tpl && x.uid !== uid && fuseOk(S, x)); const L = [];
+    for (const k in T.stats) { const [a, b] = T.stats[k]; if (!(b > a) || b <= 0) continue; const cap = b - 1; const cur = it.stats[k] || 0;
+      let best = null; dups.forEach((d) => { const v = Math.min(cap, d.stats[k] || 0); if (v > cur && (!best || v > best.v)) best = { v, uid: d.uid }; });
+      if (best) L.push({ k, cur, v: best.v, dup: best.uid }); }
+    return L;
+  };
+  E.fuseItem = (S, uid, dup, k) => {
+    const it = S.items[uid], d = S.items[dup]; const T = it && ITEMS[it.tpl]; if (!T || !d || d.tpl !== it.tpl || uid === dup) return "Doublon introuvable.";
+    if (!fuseOk(S, d)) return "Ce doublon est porté, protégé, rangé dans une tenue ou Rayonnant.";
+    const l = E.fuseLines(S, uid).find((x) => x.k === k && x.dup === dup); if (!l) return "Rien à gagner sur cette ligne.";
+    const c = E.fuseCost(it.tpl); if (S.kamas < c) return `Il faut ${c} kamas.`;
+    S.kamas -= c; it.stats[k] = l.v; if (it.roll) delete it.roll; delete S.items[dup]; S.fused = (S.fused || 0) + 1; return null;
+  };
+  /* 5B : jauge du boss. Chaque victoire en donjon remplit la jauge de son boss (+1 par niveau de stasis, +10 au plus) ;
+     à 200, une pièce de sa panoplie jamais obtenue (ou une au hasard s'il n'en manque plus), garantie. */
+  E.BOSS_GAUGE = 200;
+  E.bossGaugeItems = (did) => { const dg = DUNGEONS[did]; const b = dg && MONSTERS[dg.boss]; if (!b) return []; const L = (b.items || []).map(([t]) => t).filter((t) => ITEMS[t] && ITEMS[t].set); return L.length ? L : (b.items || []).map(([t]) => t).filter((t) => ITEMS[t] && ITEMS[t].slot !== "dofus"); };
+  E.bossGaugeGain = (k) => (k > 10 ? 10 + 2 * (Math.min(15, k) - 10) : Math.max(1, k || 1)); // stasis 11 à 15 : +12, +14, +16, +18, +20 (late game, idée 1)
+  E.bossGauge = (S, did, k, out) => {
+    const L = E.bossGaugeItems(did); if (!L.length) return null; S.bossG = S.bossG || {};
+    const g = (S.bossG[did] || 0) + E.bossGaugeGain(k); if (g < E.BOSS_GAUGE) { S.bossG[did] = g; return null; }
+    S.bossG[did] = g - E.BOSS_GAUGE; const dex = E.itemDex ? E.itemDex(S) : S.itemDex || {}; const miss = L.filter((t) => !dex[t]);
+    const tpl = pick(miss.length ? miss : L); const o = { items: [] }; const it = E.dropGive(S, tpl, { key: DUNGEONS[did].boss }, { dungeon: true, stasis: k }, o);
+    note(S, `Jauge du boss pleine : ${ITEMS[tpl].name} !`, "rare"); if (out) out.push(`jauge du boss : ${ITEMS[tpl].name}`); return it;
   };
   E.ITEM_DROP_SCALE = 1; // 1.0.15 : les taux de js/drops.js sont déjà les vraies chances par héros (avant : taux DofusDB × 0,04)
   E.bossDropMult = (k) => 1 + 0.25 * (Math.min(10, Math.max(1, k)) - 1); // 1.1 : plafonné à la stasis 10
@@ -3445,6 +3499,7 @@
     E.petBoss(S, did, k, out); // familiers rares et montiliers
     E.exoDrop(S, DUNGEONS[did].lvl, k, out); // 0.1.9.1 : runes exotiques
     if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
+    if (E.bossGauge) E.bossGauge(S, did, k, out); // 2.2.5 (5B) : jauge du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     if (E.MT_GATES) E.MT_GATES.forEach((G) => { if (G.did === did && k >= G.s && !(S.mtGates || []).includes(G.b)) { (S.mtGates = S.mtGates || []).push(G.b); E.mtGateSync(S); note(S, `Porte des étoiles ouverte : ${G.b} ! Deux branches lointaines s'ouvrent dans la Maîtrise de tous tes héros.`, "rare"); } }); // 2.1
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
