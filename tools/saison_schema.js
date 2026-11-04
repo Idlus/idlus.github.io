@@ -14,7 +14,7 @@ const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "..");
 const SCHEMA = "s1";
 // fichiers dont tout reste partagé entre l'Éternel et la saison
-const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql", "supabase/vote.sql"]; // vote : récompense versée à la partie Éternel (à revoir pour la saison)
+const SHARED_FILES = ["supabase/chat.sql", "supabase/bugs.sql", "supabase/idees.sql", "supabase/codes.sql", "supabase/annonces_boucle.sql", "supabase/vote.sql"]; // vote : public, la récompense va dans la partie ouverte (vote_verse : hdv_ops, s1.hdv_ops ou mono.ops, 04/11)
 // objets de supabase/schema.sql qui restent partagés : le compte, le pseudo, la suspension, le journal des admins
 // fichiers propres à la saison (pas dans la liste « tous ») : registre des Fragments et vitrine (lot 4)
 const EXTRA = ["supabase/saison1_vitrine.sql", "supabase/tournoi.sql", "supabase/wboss_s1.sql", "supabase/histoire_s1.sql", "supabase/classements_s1.sql"]; // lot 8 : Tournoi des guildes (aussi dans public, pour l'Éternel) ; wboss_s1 : règles du boss des mondes de saison (remplace wb_info/wb_start/wb_done de s1)

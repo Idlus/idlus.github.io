@@ -96,14 +96,14 @@
      tests/mono_separation.test.js échoue si un nouvel appel au serveur n'est rangé ni ici ni dans M.CLASSIC_RPC. */
   M.PAGES = new Set(["home", "havre", "combat", "world", "dungeons", "defi", "enc", "team", "heroes", "maitrise", "ren", "grav", "inv", "dofus", "pets",
     "chasse", "metiers", "forge", "hdv", "koli", "align", "quests", "succes", "carnet", "guide", "amis", "ladder", "sugg", "bug", "archis", "admin",
-    "fragments", "boutique", "pass", "manche", "guerre", "album", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau"]);
+    "fragments", "boutique", "pass", "manche", "guerre", "album", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau", "vote"]); // 04/11 : vote sur Dofus Fan Games, récompense versée au Monocompte
   E.monoPageOk = (k) => M.PAGES.has(k);
   /* fonctions du serveur permises dans une partie Monocompte ; hdv_* et trade_* passent renommées en mono_* (HdV de saison) */
   M.RPC = /^(mono_|amis_|couronne_temps$|chat_(send|report|me|mono_profil)$|cosm_mine$|bug_(send|mine)$|idea_send$|my_role$|staff_list$|ann_tick$|carnet_(send|admin)$|pseudo_(info|change)$|delete_my_account$|adm_(?!rain|hdv))/;
-  M.FN = new Set(["mono"]); // fonctions du serveur (functions.invoke) : « record » est celle du Classique
+  M.FN = new Set(["mono", "vote"]); // fonctions du serveur (functions.invoke) : « record » est celle du Classique ; « vote » verse à la partie ouverte (04/11)
   E.monoRpcOk = (name) => M.RPC.test(String(name || ""));
   /* modules du Classique éteints dans une partie Monocompte (window.X = null : leurs encarts, minuteurs et appels ne partent pas) */
-  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "VOTE", "WBUI", "SGUI", "ASCUI", "FOIREUI", "VENTEUI", "BUILDS", "GIGA", "CPTUI", "ELEVUI", "DGRANK"];
+  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "WBUI", "SGUI", "ASCUI", "FOIREUI", "VENTEUI", "BUILDS", "GIGA", "CPTUI", "ELEVUI", "DGRANK"];
 
   /* dans le jeu (une partie par page) : la partie Monocompte limite l'équipe à 1 héros et les emplacements de Dofus à 3 */
   E.monoBoot = (S) => { if (!E.isMono(S)) return; E.HERO_MAX = 1; E.TEAM_MAX = 1; if (E.KOLI) E.KOLI.size = 1; /* Kolizéum en 1 contre 1 */ if (DOFUS_SLOTS.length > M.dofus) DOFUS_SLOTS.splice(M.dofus); };

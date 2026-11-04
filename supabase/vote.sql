@@ -8,6 +8,9 @@
 -- (le site laisse revoter toutes les heures), comptes connectés seulement, partie Classique (hdv_ops), compte en vérification refusé.
 -- Aucune adresse IP n'est gardée : seulement une empreinte SHA-256 salée (le sel est dans vote_cfg), effacée après 30 jours.
 -- 03/11 (Mathis 2A + Sablier, 3A+B) : bonus de série (kamas et Sablier) et objectif du mois (paliers pour tout le serveur, +1 h aux votants).
+-- 04/11 (Mathis : « pouvoir voter sur classique et monocompte saison 1 ») : la récompense va dans la partie où le joueur clique
+-- « Récupérer » : Éternel (hdv_ops), Classique · Saison 1 (s1.hdv_ops, supabase/saison1.sql) ou Monocompte de la saison ouverte
+-- (mono.ops, supabase/monocompte.sql). Un vote reste une seule récompense, et une par compte toutes les 55 minutes, toutes parties confondues.
 -- S'appuie sur hdv.sql (hdv_op) et classements.sql (ladder). Relançable sans danger.
 -- ============================================================================
 
@@ -30,6 +33,7 @@ create table if not exists public.vote_claims (
   sab real not null default 0,
   at timestamptz not null default now()
 );
+alter table public.vote_claims add column if not exists cible text not null default 'eternel'; -- 04/11 : partie qui a reçu la récompense
 create unique index if not exists vote_claims_vote on public.vote_claims (ip, voted_at);
 create index if not exists vote_claims_user on public.vote_claims (user_id, at desc);
 alter table public.vote_claims enable row level security;
@@ -75,20 +79,53 @@ alter table public.vote_paliers_pris enable row level security;
 create or replace function public.vote_paliers() returns jsonb language sql immutable
 as $$ select '[{"n": 250, "h": 1}, {"n": 500, "h": 2}, {"n": 1000, "h": 3}]'::jsonb $$;
 
+-- 04/11 : la partie qui reçoit (« eternel », « s1 » ou « mono ») : connue du serveur ? niveau du héros principal, compte en vérification
+create or replace function public.vote_cible(p_cible text) returns text language sql immutable
+as $$ select case when p_cible in ('s1', 'mono') then p_cible else 'eternel' end $$;
+create or replace function public.vote_partie(p_user uuid, p_cible text) returns jsonb language plpgsql stable security definer set search_path = public
+as $$ declare lv int; fl boolean; s int; begin
+  if p_cible = 's1' then
+    if to_regclass('s1.ladder') is null then return jsonb_build_object('err', 'La Saison 1 n''est pas encore ouverte sur le serveur.'); end if;
+    select main_lvl, flagged into lv, fl from s1.ladder where user_id = p_user;
+    if not found then return jsonb_build_object('err', 'Ta partie Saison 1 n''est pas encore sur le serveur : joue quelques minutes en ligne, puis réessaie.'); end if;
+  elsif p_cible = 'mono' then
+    if to_regclass('mono.parties') is null then return jsonb_build_object('err', 'Le Monocompte n''est pas ouvert sur le serveur.'); end if;
+    s := mono.saison_ouverte();
+    if s is null then return jsonb_build_object('err', 'Aucune saison Monocompte ouverte en ce moment.'); end if;
+    if not exists (select 1 from mono.parties where user_id = p_user and saison = s) then
+      return jsonb_build_object('err', 'Ta partie Monocompte n''est pas encore sur le serveur : joue quelques minutes en ligne, puis réessaie.'); end if;
+    select niveau into lv from mono.lb_saison where user_id = p_user and saison = s;
+  else
+    select main_lvl, flagged into lv, fl from ladder where user_id = p_user;
+  end if;
+  if coalesce(fl, false) then return jsonb_build_object('err', 'Ton compte est en vérification : la récompense de vote attendra.', 'flag', true); end if;
+  return jsonb_build_object('ok', true, 'lvl', greatest(1, coalesce(lv, 1)), 's', s);
+end $$;
+-- verse dans la partie choisie, par son registre (le Bouclier de chaque espace compte déjà ces gains comme un don du serveur)
+create or replace function public.vote_verse(p_user uuid, p_cible text, p jsonb, t text) returns void language plpgsql security definer set search_path = public
+as $$ begin
+  if p_cible = 's1' then perform s1.hdv_op(p_user, p, t);
+  elsif p_cible = 'mono' then perform mono.op(p_user, mono.saison_ouverte(), p, t);
+  else perform hdv_op(p_user, p, t); end if;
+end $$;
+revoke all on function public.vote_partie(uuid, text) from public, anon, authenticated;
+revoke all on function public.vote_verse(uuid, text, jsonb, text) from public, anon, authenticated;
+
 -- ---------- côté serveur (fonction « vote », rôle service_role) ----------
 create or replace function public.vote_srv_cfg() returns jsonb language sql stable security definer set search_path = public
 as $$ select jsonb_build_object('cle', cle, 'sel', sel, 'actif', actif) from vote_cfg where id = 1 $$;
 
-create or replace function public.vote_srv_claim(p_user uuid, p_ip text, p_voted_at bigint) returns jsonb
+drop function if exists public.vote_srv_claim(uuid, text, bigint);
+create or replace function public.vote_srv_claim(p_user uuid, p_ip text, p_voted_at bigint, p_cible text default 'eternel') returns jsonb
 language plpgsql security definer set search_path = public
 as $$ declare
-  l ladder%rowtype; last timestamptz; k bigint; s real; b int; n int;
+  c text := vote_cible(p_cible); pt jsonb; last timestamptz; k bigint; s real; b int; n int;
 begin
   if p_user is null or coalesce(p_ip, '') = '' or coalesce(p_voted_at, 0) <= 0 then return jsonb_build_object('err', 'Demande invalide.'); end if;
   -- l'empreinte de l'adresse n'est gardée que 30 jours (les votes restent comptés : total, mois, série)
   update vote_claims set ip = 'efface:' || id where at < now() - interval '30 days' and ip not like 'efface:%';
-  select * into l from ladder where user_id = p_user;
-  if found and l.flagged then return jsonb_build_object('err', 'Ton compte est en vérification : la récompense de vote attendra.'); end if;
+  pt := vote_partie(p_user, c);
+  if pt ? 'err' then return jsonb_build_object('err', pt ->> 'err'); end if;
   if exists (select 1 from vote_claims where ip = p_ip and voted_at = p_voted_at) then
     return jsonb_build_object('deja', true);
   end if;
@@ -97,28 +134,30 @@ begin
     return jsonb_build_object('attente', ceil(extract(epoch from (last + interval '55 minutes' - now())))::int);
   end if;
   b := vote_bonus(p_user);
-  k := round(vote_kamas(coalesce(l.main_lvl, 1)) * (100 + b) / 100.0);
+  k := round(vote_kamas((pt ->> 'lvl')::int) * (100 + b) / 100.0);
   s := 0.5 * (100 + b) / 100.0;
-  insert into vote_claims (user_id, ip, voted_at, k, sab) values (p_user, p_ip, p_voted_at, k, s) on conflict do nothing;
+  insert into vote_claims (user_id, ip, voted_at, k, sab, cible) values (p_user, p_ip, p_voted_at, k, s, c) on conflict do nothing;
   get diagnostics n = row_count;
   if n = 0 then return jsonb_build_object('deja', true); end if; -- deux clics en même temps : un seul passe
-  perform hdv_op(p_user, jsonb_build_object('k', k, 'sab', s, 'vote', 1),
+  perform vote_verse(p_user, c, jsonb_build_object('k', k, 'sab', s, 'vote', 1),
     'Merci pour ton vote sur Dofus Fan Games : ' || replace(to_char(k, 'FM999G999G999'), ',', ' ') || ' kamas et ' || round(s * 60) || ' min de Sablier'
     || case when b > 0 then ' (série +' || b || ' %).' else '.' end);
-  return jsonb_build_object('ok', true, 'k', k, 'sab', s, 'bonus', b);
+  return jsonb_build_object('ok', true, 'k', k, 'sab', s, 'bonus', b, 'cible', c);
 end $$;
 
 revoke all on function public.vote_srv_cfg() from public, anon, authenticated;
-revoke all on function public.vote_srv_claim(uuid, text, bigint) from public, anon, authenticated;
+revoke all on function public.vote_srv_claim(uuid, text, bigint, text) from public, anon, authenticated;
 revoke all on function public.vote_serie(uuid) from public, anon, authenticated;
 revoke all on function public.vote_bonus(uuid) from public, anon, authenticated;
 grant execute on function public.vote_srv_cfg() to service_role;
-grant execute on function public.vote_srv_claim(uuid, text, bigint) to service_role;
+grant execute on function public.vote_srv_claim(uuid, text, bigint, text) to service_role;
 
 -- ---------- côté joueur : où j'en suis, objectif du mois, votants du mois ; verse les paliers atteints ----------
-create or replace function public.vote_moi() returns jsonb language plpgsql security definer set search_path = public
+-- 04/11 : p_cible = partie ouverte dans le jeu ; les paliers et le titre y sont versés (une fois par compte, dans la première partie qui les voit)
+drop function if exists public.vote_moi();
+create or replace function public.vote_moi(p_cible text default 'eternel') returns jsonb language plpgsql security definer set search_path = public
 as $$ declare
-  me uuid := auth.uid(); m text := vote_mois(now()); d0 date := vote_jour(now());
+  me uuid := auth.uid(); c text := vote_cible(p_cible); pt jsonb; m text := vote_mois(now()); d0 date := vote_jour(now());
   debut timestamptz := (date_trunc('month', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris';
   tot int; nm int; P jsonb := vote_paliers(); x jsonb; h real; paye jsonb := '[]'::jsonb; flag boolean;
   avant timestamptz := (date_trunc('month', now() at time zone 'Europe/Paris') - interval '1 month') at time zone 'Europe/Paris'; mp text; rg int; titre jsonb := null;
@@ -126,14 +165,14 @@ begin
   if me is null then return jsonb_build_object('actif', false); end if;
   select count(*) into tot from vote_claims where at >= debut;
   select count(*) into nm from vote_claims where user_id = me and at >= debut;
-  select coalesce(l.flagged, false) into flag from ladder l where l.user_id = me;
-  if not coalesce(flag, false) then
+  pt := vote_partie(me, c); flag := pt ? 'err'; -- partie inconnue du serveur ou compte en vérification : rien n'est versé ni compté pris
+  if not flag then
     for x in select * from jsonb_array_elements(P) loop
       if tot >= (x->>'n')::int and not exists (select 1 from vote_paliers_pris where user_id = me and mois = m and palier = (x->>'n')::int) then
         h := (x->>'h')::real + case when nm > 0 then 1 else 0 end;
         insert into vote_paliers_pris (user_id, mois, palier, h) values (me, m, (x->>'n')::int, h) on conflict do nothing;
         if found then
-          perform hdv_op(me, jsonb_build_object('sab', h, 'vote', 1), 'Objectif des votes du mois : ' || (x->>'n') || ' votes atteints, ' || h || ' h de Sablier pour toi' || case when nm > 0 then ' (dont 1 h pour ton vote).' else '.' end);
+          perform vote_verse(me, c, jsonb_build_object('sab', h, 'vote', 1), 'Objectif des votes du mois : ' || (x->>'n') || ' votes atteints, ' || h || ' h de Sablier pour toi' || case when nm > 0 then ' (dont 1 h pour ton vote).' else '.' end);
           paye := paye || jsonb_build_object('n', (x->>'n')::int, 'h', h);
         end if;
       end if;
@@ -146,14 +185,14 @@ begin
       if rg is not null and rg <= 10 then
         insert into vote_paliers_pris (user_id, mois, palier, h) values (me, mp, 0, 0) on conflict do nothing;
         if found then
-          perform hdv_op(me, jsonb_build_object('title', 'Voix d''Idlus', 'vote', 1), 'Top 10 des votants du mois dernier (n° ' || rg || ') : titre « Voix d''Idlus » !');
+          perform vote_verse(me, c, jsonb_build_object('title', 'Voix d''Idlus', 'vote', 1), 'Top 10 des votants du mois dernier (n° ' || rg || ') : titre « Voix d''Idlus » !');
           titre := jsonb_build_object('rang', rg, 't', 'Voix d''Idlus');
         end if;
       end if;
     end if;
   end if;
   return jsonb_build_object(
-    'titre', titre,
+    'titre', titre, 'cible', c, 'partie', pt ->> 'err',
     'actif', coalesce((select actif and cle is not null from vote_cfg where id = 1), false),
     'last', (select max(at) from vote_claims where user_id = me),
     'n', (select count(*) from vote_claims where user_id = me),
@@ -171,8 +210,13 @@ begin
       where c.at >= debut and not coalesce(l.flagged, false) group by c.user_id, p.pseudo order by count(*) desc, p.pseudo limit 10) t),
     'now', now());
 end $$;
-revoke all on function public.vote_moi() from public;
-grant execute on function public.vote_moi() to authenticated;
+revoke all on function public.vote_moi(text) from public;
+grant execute on function public.vote_moi(text) to authenticated;
+-- partie Monocompte : seules les fonctions mono_* partent du jeu (liste blanche E.MONO.RPC, js/mono.js) ; versé par mono.ops
+create or replace function public.mono_vote_moi() returns jsonb language sql security invoker set search_path = public
+as $$ select public.vote_moi('mono') $$;
+revoke all on function public.mono_vote_moi() from public;
+grant execute on function public.mono_vote_moi() to authenticated;
 
 -- Panel de Mathis : combien de votes récompensés (aujourd'hui, 7 jours, 30 jours)
 create or replace function public.adm_votes() returns jsonb language plpgsql stable security definer set search_path = public
@@ -183,7 +227,8 @@ as $$ begin
     'sept', (select count(*) from vote_claims where at > now() - interval '7 days'),
     'trente', (select count(*) from vote_claims where at > now() - interval '30 days'),
     'mois', (select count(*) from vote_claims where at >= (date_trunc('month', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris'),
-    'joueurs', (select count(distinct user_id) from vote_claims where at > now() - interval '7 days'));
+    'joueurs', (select count(distinct user_id) from vote_claims where at > now() - interval '7 days'),
+    'parties', (select coalesce(jsonb_object_agg(cible, n), '{}'::jsonb) from (select cible, count(*) as n from vote_claims where at > now() - interval '7 days' group by cible) x));
 end $$;
 revoke all on function public.adm_votes() from public;
 grant execute on function public.adm_votes() to authenticated;

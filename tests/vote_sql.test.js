@@ -37,7 +37,8 @@ const ROOT = path.join(__dirname, "..");
   assert(/p\.sab && E\.sabGift\) E\.sabGift\(s, Math\.min\(4,/.test(m), "market.js applique le Sablier (4 h au plus par opération : palier 3 h + 1 h de votant)");
   assert(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").includes('src="js/vote.js?v='), "index.html charge js/vote.js");
   assert(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8").includes('"js/vote.js"'), "sw.js met js/vote.js en cache");
-  assert(fs.readFileSync(path.join(ROOT, "js/mono.js"), "utf8").includes('"VOTE"'), "rien du vote dans une partie Monocompte");
+  { const mo = fs.readFileSync(path.join(ROOT, "js/mono.js"), "utf8"); assert(!/CLASSIC_MODS = \[[^\]]*"VOTE"/.test(mo) && /M\.FN = new Set\(\[[^\]]*"vote"/.test(mo), "04/11 : le vote marche aussi dans une partie Monocompte"); }
+  assert(/c === "mono" \? await ON\.rpc\("mono_vote_moi"\)/.test(fs.readFileSync(path.join(ROOT, "js/vote.js"), "utf8")), "Monocompte : mono_vote_moi (liste blanche)");
   const v = fs.readFileSync(path.join(ROOT, "js/vote.js"), "utf8");
   assert(!/cle|DFG_VOTE_KEY|api\/v1/i.test(v.replace(/\/\*[\s\S]*?\*\//g, "")), "le jeu ne connaît ni la clé ni l'API");
 }
@@ -143,6 +144,52 @@ try {
   assert.deepStrictEqual(tt(11), { rang: 1, t: "Voix d'Idlus" }); assert.strictEqual(tt(11), null, "une seule fois");
   assert.deepStrictEqual(tt(20), { rang: 10, t: "Voix d'Idlus" }); assert.strictEqual(tt(21), null, "11e : rien");
   assert.strictEqual(q(`select payload->>'title' from hdv_ops where user_id = '${U(20)}' and payload ? 'title'`), "Voix d'Idlus");
+  // 04/11 (« pouvoir voter sur classique et monocompte saison 1 ») : la récompense va dans la partie ouverte (s1.hdv_ops, mono.ops)
+  for (const i of [30, 31, 32]) q(`insert into auth.users values ('${U(i)}'); insert into profiles values ('${U(i)}', 'Saison${i}')`);
+  assert(/pas encore ouverte/.test(srv(`vote_srv_claim('${U(30)}', 'ipS1a', 1, 's1')`).err), "espace s1 absent : message, rien de versé");
+  q(`create schema s1; create table s1.ladder (user_id uuid primary key, main_lvl int not null default 1, flagged boolean not null default false);
+     create table s1.hdv_ops (id bigint generated always as identity primary key, user_id uuid, payload jsonb, txt text);
+     create function s1.hdv_op(p_user uuid, p jsonb, t text) returns void language sql as $f$ insert into s1.hdv_ops (user_id, payload, txt) values (p_user, p, t) $f$;
+     create schema mono; create table mono.saisons (id int primary key, etat text);
+     create function mono.saison_ouverte() returns int language sql stable as $f$ select id from mono.saisons where etat = 'ouverte' $f$;
+     create table mono.parties (user_id uuid, saison int, primary key (user_id, saison));
+     create table mono.lb_saison (user_id uuid, saison int, niveau int, primary key (user_id, saison));
+     create table mono.ops (id bigint generated always as identity primary key, user_id uuid, saison int, payload jsonb, txt text);
+     create function mono.op(u uuid, p_s int, p jsonb, t text) returns bigint language sql as $f$ insert into mono.ops (user_id, saison, payload, txt) values (u, p_s, p, t) returning id $f$;`);
+  assert(/Saison 1 n'est pas encore sur le serveur/.test(srv(`vote_srv_claim('${U(30)}', 'ipS1a', 1, 's1')`).err), "partie Saison 1 inconnue du serveur");
+  q(`insert into s1.ladder (user_id, main_lvl) values ('${U(30)}', 20), ('${U(31)}', 200)`);
+  q(`insert into ladder (user_id, main_lvl, flagged) values ('${U(31)}', 200, true)`); // en vérification sur l'Éternel seulement
+  const s1a = srv(`vote_srv_claim('${U(30)}', 'ipS1a', 1, 's1')`);
+  assert(s1a.ok && s1a.cible === "s1" && s1a.k === Math.round(75000 / 4), "niveau du héros de la Saison 1 : " + JSON.stringify(s1a));
+  assert.deepStrictEqual(JSON.parse(q(`select payload from s1.hdv_ops where user_id = '${U(30)}'`)), { k: 18750, sab: 0.5, vote: 1 });
+  assert.strictEqual(q(`select count(*) from hdv_ops where user_id = '${U(30)}'`), "0", "rien dans la partie Éternel");
+  assert.strictEqual(q(`select cible from vote_claims where ip = 'ipS1a'`), "s1");
+  assert(srv(`vote_srv_claim('${U(30)}', 'ipS1b', 2, 'eternel')`).attente > 0, "une récompense par heure, toutes parties confondues");
+  assert(srv(`vote_srv_claim('${U(31)}', 'ipS1a', 1, 's1')`).deja, "un vote ne paie qu'une partie");
+  assert(srv(`vote_srv_claim('${U(31)}', 'ipS1c', 3, 's1')`).ok, "vérification de l'Éternel : la Saison 1 reçoit quand même");
+  q(`update s1.ladder set flagged = true where user_id = '${U(31)}'`); q(`update vote_claims set at = now() - interval '2 hours' where user_id = '${U(31)}'`);
+  assert(/vérification/.test(srv(`vote_srv_claim('${U(31)}', 'ipS1d', 4, 's1')`).err), "compte en vérification en Saison 1");
+  assert(/Aucune saison Monocompte/.test(srv(`vote_srv_claim('${U(32)}', 'ipM1', 1, 'mono')`).err));
+  q(`insert into mono.saisons values (1, 'close'), (2, 'ouverte')`);
+  assert(/Monocompte n'est pas encore sur le serveur/.test(srv(`vote_srv_claim('${U(32)}', 'ipM1', 1, 'mono')`).err));
+  q(`insert into mono.parties values ('${U(32)}', 1), ('${U(32)}', 2); insert into mono.lb_saison values ('${U(32)}', 2, 60)`);
+  const mo = srv(`vote_srv_claim('${U(32)}', 'ipM1', 1, 'mono')`);
+  assert(mo.ok && mo.cible === "mono" && mo.k === Math.round(385000 / 4), JSON.stringify(mo));
+  assert.deepStrictEqual(JSON.parse(q(`select json_build_object('s', saison, 'p', payload) from mono.ops where user_id = '${U(32)}'`)), { s: 2, p: { k: 96250, sab: 0.5, vote: 1 } }, "saison ouverte");
+  assert(srv(`vote_srv_claim('${U(32)}', 'ipM2', 2, 'n importe quoi')`).attente > 0, "cible inconnue : Éternel");
+  // paliers du mois et état : versés dans la partie ouverte ; Monocompte par mono_vote_moi (liste blanche du jeu)
+  const mm = JSON.parse(as(32, `select mono_vote_moi()`));
+  assert(mm.cible === "mono" && mm.partie === null && mm.paye.length === 2 && mm.n === 1, JSON.stringify(mm));
+  assert.strictEqual(q(`select string_agg(payload->>'sab', ',' order by id) from mono.ops where user_id = '${U(32)}' and not payload ? 'k'`), "2,3");
+  assert.deepStrictEqual(JSON.parse(as(32, `select vote_moi('s1')`)).paye, [], "paliers une fois par compte, toutes parties confondues");
+  const s1n = JSON.parse(as(30, `select vote_moi('s1')`)); assert(s1n.cible === "s1" && s1n.paye.length === 2, JSON.stringify(s1n));
+  assert.strictEqual(q(`select count(*) from s1.hdv_ops where user_id = '${U(30)}' and payload ? 'sab' and not payload ? 'k'`), "2");
+  q(`insert into auth.users values ('${U(33)}')`);
+  const s1x = JSON.parse(as(33, `select vote_moi('s1')`)); assert(/pas encore sur le serveur/.test(s1x.partie) && s1x.paye.length === 0, "partie inconnue : rien de versé, rien de pris");
+  assert.strictEqual(JSON.parse(as(33, `select vote_moi()`)).paye.length, 2, "puis versés dans l'Éternel");
+  fails(() => as(1, `select vote_verse('${U(1)}', 'eternel', '{"k": 1}', 'x')`), /permission denied/, "un joueur se verse des kamas");
+  fails(() => as(1, `select vote_partie('${U(1)}', 's1')`), /permission denied/, "vote_partie réservée au serveur");
+  assert.deepStrictEqual(Object.keys(JSON.parse(as(1, `select adm_votes()`)).parties).sort(), ["eternel", "mono", "s1"], "panel : votes par partie");
   q(`update vote_cfg set actif = false`); assert.strictEqual(JSON.parse(as(1, `select vote_moi()`)).actif, false, "coupé depuis la base");
   // empreinte de l'adresse effacée au bout de 30 jours, le vote reste compté
   q(`update vote_claims set at = now() - interval '31 days' where user_id = '${U(2)}'`); srv(`vote_srv_claim('${U(3)}', 'ipG', 9999)`);

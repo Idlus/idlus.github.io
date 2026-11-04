@@ -4,7 +4,9 @@
    « Récupérer » demande à la fonction serveur « vote » (supabase/functions/vote) de vérifier le vote avec l'adresse IP.
    La récompense (30 min de Sablier + un quart d'heure de kamas au niveau du héros principal) arrive par l'hôtel de vente
    (hdv_ops, js/market.js). Un vote par heure sur le site, une récompense par heure et par compte. Rien d'obligatoire :
-   le site interdit de réserver un contenu aux votants. Partie Classique et compte connecté seulement.
+   le site interdit de réserver un contenu aux votants. Compte connecté seulement.
+   04/11 (Mathis : « pouvoir voter sur classique et monocompte saison 1 ») : la récompense va dans la partie ouverte :
+   Éternel (partie 1), Classique · Saison 1 (partie 5, s1.hdv_ops) ou Monocompte de la saison ouverte (partie 4, mono.ops).
    ========================================================================== */
 (function () {
   "use strict";
@@ -16,14 +18,17 @@
   const V = { st: null, off: 0, last: 0, busy: false, voted: false, msg: "" };
 
   const monoP = () => !!(ON.monoPart && ON.monoPart());
-  const ready = () => !!(ON.user && ON.state === "ok" && !monoP() && !(ON.solo && ON.solo()) && V.st && V.st.actif);
+  /* partie qui reçoit : null pour une partie solo ou un Monocompte hors saison ouverte (Éternel du Monocompte) */
+  const cible = () => monoP() ? (ON.monoMarket && ON.monoMarket() ? "mono" : null) : ON.s1Game && ON.s1Game() ? "s1" : ON.solo && ON.solo() ? null : "eternel";
+  const NOM = { eternel: "Éternel", s1: "Classique · Saison 1", mono: "Monocompte" };
+  const ready = () => !!(ON.user && ON.state === "ok" && cible() && V.st && V.st.actif && V.c === cible());
   const leftMs = () => (V.st && V.st.last ? Math.max(0, Date.parse(V.st.last) + WAIT - (Date.now() + V.off)) : 0);
 
   async function poll() {
     V.last = Date.now();
-    if (!ON.user || monoP() || !ON.rpc) return;
-    const r = await ON.rpc("vote_moi"); if (r.err || !r.data) return;
-    V.st = r.data; if (V.st.now) V.off = Date.parse(V.st.now) - Date.now();
+    const c = cible(); if (!ON.user || !c || !ON.rpc) return;
+    const r = c === "mono" ? await ON.rpc("mono_vote_moi") : await ON.rpc("vote_moi", { p_cible: c }); if (r.err || !r.data) return;
+    V.st = r.data; V.c = c; if (V.st.now) V.off = Date.parse(V.st.now) - Date.now();
     /* 3A+B : paliers de l'objectif du mois versés par vote_moi (Sablier par l'hôtel de vente) */
     const P = Array.isArray(V.st.paye) ? V.st.paye : [];
     if (V.st.titre) { X().toast(`Top 10 des votants du mois dernier : titre « ${V.st.titre.t} » !`, "rare"); if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); }
@@ -46,12 +51,12 @@
   async function claim() {
     if (V.busy) return;
     if (!ON.user) { X().toast("Connecte-toi à ton compte pour récupérer la récompense de vote."); return; }
-    if (monoP()) { X().toast(ON.CLASSIC_ERR); return; }
+    const c = cible(); if (!c) { X().toast("Ouvre ta partie Éternel, Classique · Saison 1 ou Monocompte pour recevoir la récompense."); return; }
     V.busy = true; repaint();
-    const r = await ON.vote();
+    const r = await ON.vote(c);
     V.busy = false;
     if (r && r.ok) {
-      X().toast(`Merci pour ton vote ! +${X().fmt(r.k || 0)} kamas et ${Math.round((r.sab || 0.5) * 60)} min de Sablier${r.bonus ? ` (série +${r.bonus} %)` : ""}.`, "rare");
+      X().toast(`Merci pour ton vote ! +${X().fmt(r.k || 0)} kamas et ${Math.round((r.sab || 0.5) * 60)} min de Sablier${r.bonus ? ` (série +${r.bonus} %)` : ""} dans ta partie ${NOM[r.cible || c] || ""}.`, "rare");
       V.st = Object.assign({}, V.st, { last: new Date(Date.now() + V.off).toISOString() });
       if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); // les gains arrivent par l'hôtel de vente
     } else {
@@ -88,6 +93,7 @@
       <div class="row between wrap"><div class="stack" style="gap:2px"><h1>⏳ Voter pour Idlus</h1><span class="small muted">Chaque vote fait monter Idlus dans le classement des fan games Dofus et amène de nouveaux joueurs.</span></div>${st.rang ? `<span class="tag good">n° ${h(st.rang)} ce mois-ci</span>` : ""}</div>
       <div class="vt-rew"><div><span class="xs muted">À chaque vote (une fois par heure)</span><div class="vt-rew-l"><span>⏳ <b>${Math.round(30 * (1 + bonus / 100))} min</b> de Sablier</span><span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span>${bonus ? `<span class="tag good">+${bonus} % série</span>` : ""}</div></div></div>
       <div class="row wrap vt-btns">${btns}</div>
+      ${V.c ? `<span class="small">La récompense arrive dans la partie ouverte : <b>${h(NOM[V.c])}</b>.</span>` : ""}${st.partie ? `<span class="small" style="color:var(--danger)">${h(st.partie)}</span>` : ""}
       <span class="xs muted">Vote depuis le même appareil et le même réseau (Wi-Fi ou 4G) que le jeu : le site reconnaît ton vote à ta connexion.</span>
     </div></section>
     <section class="grid2" style="margin-top:14px">
@@ -106,7 +112,7 @@
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>Bon à savoir</h2></div><div class="pad stack small">
       <span>• Voter est libre : rien dans le jeu n'est réservé aux votants.</span>
       <span>• Le site compte un vote par heure et par connexion. VPN et votes automatiques sont interdits par le site et annulés.</span>
-      <span>• La récompense arrive dans ta partie Classique, comme une vente à l'hôtel de vente.</span>
+      <span>• La récompense arrive dans la partie ouverte (Éternel, Classique · Saison 1 ou Monocompte), comme une vente à l'hôtel de vente. Un vote ne paie qu'une partie.</span>
     </div></section>`;
   }
 

@@ -7,6 +7,8 @@
 //    La clé reste sur le serveur (table vote_cfg, supabase/vote.sql) : jamais envoyée au jeu.
 // 4. vote_srv_claim (supabase/vote.sql) décide : un vote = une récompense, une par compte toutes les 55 minutes,
 //    puis envoie kamas et Sablier par l'hôtel de vente (hdv_ops). On ne garde qu'une empreinte salée de l'adresse.
+// 04/11 : { claim: 1, cible } : partie qui reçoit, celle ouverte dans le jeu (« eternel », « s1 » Classique · Saison 1, « mono »
+//    Monocompte de la saison ouverte) ; vote_srv_claim vérifie que le serveur la connaît.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
 const CORS = {
@@ -48,6 +50,10 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "Connecte-toi à ton compte pour récupérer la récompense de vote." }, 401);
 
+  let demande: { cible?: unknown } = {};
+  try { demande = await req.json(); } catch (_) { /* corps vide : partie Éternel */ }
+  const cible = ["s1", "mono"].includes(String(demande && demande.cible)) ? String(demande.cible) : "eternel";
+
   const now = Date.now();
   if (now - (lastTry.get(user.id) || 0) < WAIT_S * 1000) return json({ ok: false, err: "Doucement : réessaie dans quelques secondes." });
   lastTry.set(user.id, now);
@@ -66,11 +72,11 @@ Deno.serve(async (req) => {
   if (st === 429) return json({ ok: false, err: "Beaucoup de joueurs votent en même temps : réessaie dans une minute." });
   if (st !== 200 || !body.success || !body.data || !(Number(body.data.voted_at) > 0)) return json({ ok: false, err: "Vérification du vote impossible pour le moment." });
 
-  const { data: v, error: e1 } = await db.rpc("vote_srv_claim", { p_user: user.id, p_ip: await empreinte(String(cfg.sel), ip), p_voted_at: Math.floor(Number(body.data.voted_at)) });
+  const { data: v, error: e1 } = await db.rpc("vote_srv_claim", { p_user: user.id, p_ip: await empreinte(String(cfg.sel), ip), p_voted_at: Math.floor(Number(body.data.voted_at)), p_cible: cible });
   if (e1 || !v) return json({ ok: false, err: "Écriture impossible : réessaie dans un moment." });
   const next = Math.max(0, Math.floor(Number(body.data.next_vote_seconds) || 0));
   if (v.err) return json({ ok: false, err: v.err });
   if (v.deja) return json({ ok: false, deja: true, next, err: "Ce vote a déjà été récompensé. Tu pourras revoter dans " + Math.max(1, Math.ceil(next / 60)) + " min." });
   if (v.attente) return json({ ok: false, attente: v.attente, err: "Une récompense par heure : la prochaine dans " + Math.max(1, Math.ceil(Number(v.attente) / 60)) + " min." });
-  return json({ ok: true, k: v.k, sab: v.sab, next });
+  return json({ ok: true, k: v.k, sab: v.sab, bonus: v.bonus, cible: v.cible, next });
 });
