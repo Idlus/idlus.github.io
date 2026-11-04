@@ -291,8 +291,8 @@ jobs:
         run: |
           f="$RUNNER_TEMP/francois.sql"; cp tools/serveur/francois_0411.sql "$f"
           if [ "${{ inputs.etape }}" = francois-0411 ]; then
-            sed -i "s|^\\set CONFIRMATION 'non'$|\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'|" "$f"
-            grep -qx "\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+            sed -i "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'|" "$f"
+            grep -qx "\\\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
             echo "Sauvegarde complète de la base avant l'envoi :"
             bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
           fi
