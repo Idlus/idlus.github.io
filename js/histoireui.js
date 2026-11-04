@@ -80,7 +80,7 @@
   const cst = { cnt: null, at: 0, busy: false };
   async function campSync(force) {
     const s = window.DX && window.DX.S; const ON = window.ONLINE;
-    if (!s || !E.histOn(s) || !ON || !ON.campCount || cst.busy || (!force && Date.now() - cst.at < 300000)) return;
+    if (!s || !E.histOn(s) || E.histMono(s) || !ON || !ON.campCount || cst.busy || (!force && Date.now() - cst.at < 300000)) return;
     cst.busy = true; cst.at = Date.now();
     try {
       const T = E.camp(s);
@@ -96,17 +96,17 @@
     const who = { npc: "xelorium" };
     const rows = E.CAMP.map((C, i) => {
       const done = i < T.c, open = E.campOpen(s, i), isCur = i === cur; const n = cst.cnt ? +cst.cnt[i + 1] || 0 : null;
-      const srv = `<span class="hs-srv ${n != null && n >= E.CAMP_GOAL ? "ok" : ""}">${IC("monde")} Objectif du serveur : ${n == null ? `<b class="num">${E.CAMP_GOAL}</b> aventuriers finissent ce chapitre pendant sa semaine` : `<b class="num">${fmt(Math.min(n, 9999))}/${E.CAMP_GOAL}</b> aventuriers ont fini ce chapitre pendant sa semaine`}${T.bon.includes(i) ? " · Coffre en or reçu ✓" : ""}</span>`;
+      const srv = E.histMono(s) ? "" : `<span class="hs-srv ${n != null && n >= E.CAMP_GOAL ? "ok" : ""}">${IC("monde")} Objectif du serveur : ${n == null ? `<b class="num">${E.CAMP_GOAL}</b> aventuriers finissent ce chapitre pendant sa semaine` : `<b class="num">${fmt(Math.min(n, 9999))}/${E.CAMP_GOAL}</b> aventuriers ont fini ce chapitre pendant sa semaine`}${T.bon.includes(i) ? " · Coffre en or reçu ✓" : ""}</span>`;
       if (!open && !done) return `<div class="hs-next lock"><span class="hs-por ini sm"><b>${i + 1}</b></span><b class="grow">Chapitre ${i + 1} · ${i === wk ? h(C.t) : "???"}</b><span class="xs muted">semaine ${i + 1}${E.S1C ? ` · ${h(manche(i))}` : ""}</span></div>`;
       if (done) return `<details class="hs-past"><summary>${portrait(who, "sm")}<b class="grow">Chapitre ${i + 1} · ${h(C.t)}</b><span class="xs muted">✓ fini</span></summary><div class="hs-talk">${C.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}<p class="hs-bub end">${h(C.out)}</p></div>${srv}</details>`;
       const goals = Object.keys(C.g).map((k) => { const [a, b] = E.campProg(s, i, k); const ok = a >= b;
-        return `<li class="${ok ? "ok" : ""}"><span class="hs-ck">${ok ? "✓" : ""}</span><div class="grow stack" style="gap:3px"><b>${h(E.CAMP_K[k])}</b>${!ok ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div></li>`; }).join("");
+        return `<li class="${ok ? "ok" : ""}"><span class="hs-ck">${ok ? "✓" : ""}</span><div class="grow stack" style="gap:3px"><b>${h(E.campKey(s, k))}</b>${!ok ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div></li>`; }).join("");
       return `<section class="panel hs-card"><div class="pad stack" style="gap:12px">
         <div class="hs-top">${portrait(who, "big")}<div class="grow stack" style="gap:2px"><span class="qj-eb">Campagne de saison · chapitre ${i + 1} sur ${E.CAMP.length}${E.S1C ? ` · ${h(manche(i))}` : ""}</span><h3>${h(C.t)}</h3><span class="xs muted">${h(E.HIST_NPC.xelorium.n)} · ${h(E.HIST_NPC.xelorium.r)}</span></div></div>
         <div class="hs-talk">${C.in.map((l) => `<p class="hs-bub">${h(l)}</p>`).join("")}</div>
         <ol class="hs-goals">${goals}</ol>
         <span class="qj-rew">${IC("coffre")} Récompenses : <b>${E.CAMP_BOOST} boosters de cartes, Coffre en argent${i === E.CAMP.length - 1 ? ", titre « Gardien du Temps »" : ""}</b></span>
-        ${srv}${isCur && i + 1 < wk ? `<span class="xs muted">Tu as du retard : les chapitres se rattrapent dans l'ordre, mais l'objectif du serveur ne compte que pendant la semaine du chapitre.</span>` : ""}</div></section>`; });
+        ${srv}${isCur && i + 1 < wk && !E.histMono(s) ? `<span class="xs muted">Tu as du retard : les chapitres se rattrapent dans l'ordre, mais l'objectif du serveur ne compte que pendant la semaine du chapitre.</span>` : ""}</div></section>`; });
     const head2 = head;
     return `${head2}<div class="stack" style="gap:10px"><span class="qj-lab">Semaine ${Math.min(wk, 8)} de la saison · ${fmt(Math.min(T.c, E.CAMP.length))}/${E.CAMP.length} chapitres finis</span>${rows.join("")}</div>`;
   }
@@ -114,13 +114,13 @@
   function dchHtml(s) {
     const C = E.dch(s); const n = E.dchDone(s), N = E.DCH_NEED; const CH = D.CONSUMABLES[E.DCH_CHEST];
     const go = (g) => (g === "donjons" ? `data-tab="dungeons"` : g === "defi" || g === "metiers" ? `data-tab="${g}"` : g === "expeditions" ? `data-act="ex-go"` : `data-act="qtab" data-v="${g}"`);
-    const rows = E.DCH_TASKS.map((T) => { const [a, b] = E.dchProg(s, T); const ok = a >= b;
+    const rows = E.dchTasks(s).map((T) => { const [a, b] = E.dchProg(s, T); const ok = a >= b;
       return `<li class="${ok ? "ok" : ""}"><span class="hs-ck">${ok ? "✓" : ""}</span><div class="grow stack" style="gap:3px"><b>${h(T.n)}</b>${!ok && b > 1 ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(a)}/${fmt(b)}</span></div>` : ""}</div>${ok || C.ok ? "" : `<button class="btn xs" ${go(T.go)}>Y aller</button>`}</li>`; }).join("");
     return `<section class="panel hs-card hs-dch ${C.ok ? "done" : n >= N ? "hot" : ""}"><div class="pad stack" style="gap:10px">
       <div class="row" style="gap:10px;align-items:center"><span class="hs-dchest">${X().chestImg(CH.img)}</span><div class="grow stack" style="gap:2px"><span class="qj-eb">Coffre du jour</span><h3>${C.ok ? "Ouvert ✓, le prochain à minuit" : `${Math.min(n, N)} tâche${n > 1 ? "s" : ""} sur ${N}`}</h3><span class="xs muted">Fais ${N} tâches au choix dans la liste pour gagner un ${h(CH.name)}. Chaque tâche garde aussi sa récompense habituelle.</span></div>
         ${C.ok ? "" : `<button class="btn sm ${n >= N ? "primary" : ""}" ${n >= N ? 'data-act="qj-dch"' : "disabled"}>Ouvrir</button>`}</div>
       <div class="bar"><i style="width:${X().pct(Math.min(n, N), N)}%"></i></div>
-      <details class="hs-dlist" ${C.ok ? "" : "open"}><summary class="small"><b>Les ${E.DCH_TASKS.length} tâches du jour</b> <span class="muted">(${n} faite${n > 1 ? "s" : ""})</span></summary><ol class="hs-goals">${rows}</ol></details></div></section>`;
+      <details class="hs-dlist" ${C.ok ? "" : "open"}><summary class="small"><b>Les ${E.dchTasks(s).length} tâches du jour</b> <span class="muted">(${n} faite${n > 1 ? "s" : ""})</span></summary><ol class="hs-goals">${rows}</ol></details></div></section>`;
   }
   /* ---------- cadre de quête suivie (6A) : visible sur tous les écrans, avec « Y aller » ; ✕ le replie en pastille ---------- */
   let trkK = "";

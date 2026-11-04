@@ -9,6 +9,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.3 « L'histoire du Monocompte »
+
+- Monocompte · Saison 1 (Mathis 03/11 : « pour les booster ect je veux les même quetes que classique ») : `E.histMono` (js/histoire.js) ouvre l'histoire en scènes, la campagne, les quêtes de région et le coffre du jour à la partie Monocompte de saison (pas l'Éternel). Album et boosters (js/cartes.js, `E.cardOn`) rangés dans `S.mono.cards` ; page `album` dans la liste blanche du Monocompte.
+- Partie déjà avancée dans l'ancienne quête : étapes < `S.quest.step` marquées `S.hist.pre` (faites, jamais repayées), scènes couvertes passées au chargement avec leurs boosters.
+- Campagne en Monocompte : semaine `E.monoWeek`, objectif « frag » compté en Éclats du Temps (`E.tfActTotal`), pas encore d'objectif commun au serveur (`camp_count` est dans le schéma du Classique). Coffre du jour sans l'expédition (`E.dchTasks`). Cadre `#hs-trk` caché quand le chat est ouvert. Test : tests/histoire_mono.test.js.
+
 ## 2.2.2.2 « Coups de récolte plus courts »
 Un coup de récolte dure 15 s au niveau 1 du métier et 10 s au niveau 200 (avant : 30 s). Ressources et XP de métier par heure inchangées (`E.HIT_S` dans js/engine.js).
 

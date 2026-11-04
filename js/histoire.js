@@ -247,19 +247,24 @@
   E.HIST_BOOST_CH = 3; // boosters en plus à la fin d'un chapitre
 
   /* ---------------- état ---------------- */
-  E.histOn = (S) => !!(E.isS1c && E.isS1c(S));
-  const H = (S) => { if (!S.hist) S.hist = { sc: 0, d: [], p: {}, vu: -1 }; return S.hist; };
+  /* 2.2.1.1 (Mathis 03/11 « pour les booster ect je veux les même quetes que classique ») : la partie Monocompte de saison
+     (pas l'Éternel) a la même histoire : scènes, quêtes de région, campagne, coffre du jour et boosters. */
+  E.histMono = (S) => !!(S && S.mono && E.isMono && E.isMono(S) && !(E.monoEternal && E.monoEternal(S)) && (S.mono.s || 0) >= 1);
+  E.histOn = (S) => !!((E.isS1c && E.isS1c(S)) || E.histMono(S));
+  /* 2.2.1.1 : une partie Monocompte qui avait avancé dans l'ancienne quête (étapes 0 à step - 1 payées) garde ses étapes :
+     elles sont marquées faites (pre) et ne repaient rien ; les scènes déjà couvertes donnent leurs boosters en rattrapage. */
+  const H = (S) => { if (!S.hist) { S.hist = { sc: 0, d: [], p: {}, vu: -1 }; const n = (S.quest && S.quest.step) || 0; if (n > 0 && E.histMono(S)) S.hist.pre = Q.map((_, i) => i).filter((i) => i < n); } return S.hist; };
   E.hist = H;
   E.histScene = (S) => SC[H(S).sc] || null;
   E.histDone = (S) => H(S).sc >= SC.length;
   const topLvl = (S) => Math.max(1, ...S.chars.filter((c) => !c.merc).map((c) => c.lvl || 1));
   const stepsBefore = (n) => SC.slice(0, n).reduce((a, x) => a + x.g.length, 0);
-  const syncStep = (S) => { const T = H(S); S.quest = S.quest || { step: 0, prog: 0 }; S.quest.step = Math.min(Q.length, stepsBefore(T.sc) + T.d.length); };
+  const syncStep = (S) => { const T = H(S); S.quest = S.quest || { step: 0, prog: 0 }; S.quest.step = Math.min(Q.length, stepsBefore(T.sc) + T.d.length + (T.pre ? T.pre.filter((i) => SCN[i] >= T.sc && !T.d.includes(i)).length : 0)); };
 
   /* progression d'un objectif : [a, b] */
   E.histGoalProg = (S, i) => {
     const q = Q[i]; const T = H(S); const n0 = q.n || 1;
-    if (SCN[i] < T.sc || (SCN[i] === T.sc && T.d.includes(i))) return [n0, n0]; // scène passée ou objectif fini
+    if (SCN[i] < T.sc || (SCN[i] === T.sc && T.d.includes(i)) || (T.pre && T.pre.includes(i))) return [n0, n0]; // scène passée, objectif fini ou déjà fait avant 2.2.1.1
     const p = SCN[i] === T.sc ? T.p[i] || 0 : 0; // une scène à venir ne compte pas encore
     switch (q.t) {
       case "kill": case "harvest": case "craft": case "fm": case "brk": case "bounty": return [Math.min(p, q.n), q.n];
@@ -282,12 +287,13 @@
     if (!E.histOn(S) || busy) return; busy = true;
     try {
       const T = H(S); let guard = 0;
-      while (guard++ < 12) {
+      while (guard++ < 60) {
         const sc = E.histScene(S); if (!sc) break;
         let moved = false;
         for (const i of sc.g) {
           if (T.d.includes(i) || !E.histGoalDone(S, i)) continue;
           T.d.push(i); delete T.p[i]; syncStep(S); // l'objectif est compté avant de payer (une montée de niveau relance la vérification)
+          if (T.pre && T.pre.includes(i)) { T.pre = T.pre.filter((x) => x !== i); if (!T.pre.length) delete T.pre; moved = true; continue; } // déjà payé par l'ancienne quête
           const r = E.questGive ? E.questGive(S, i) : { kamas: 0, ex: "" };
           E.note(S, `Objectif atteint · ${Q[i].title} (+${r.kamas.toLocaleString("fr-FR")} kamas${r.ex ? ", " + r.ex : ""})`, "rare");
           moved = true;
@@ -326,7 +332,7 @@
   const emit0 = E.emit;
   E.emit = function (S, t, d) {
     const r = emit0.apply(this, arguments);
-    if (S && S.s1c && !S.mono && E.histOn(S) && t !== "hscene") try { count(S, t, d || {}); E.histCheck(S); } catch (e) {}
+    if (S && E.histOn(S) && t !== "hscene") try { count(S, t, d || {}); E.histCheck(S); } catch (e) {}
     return r;
   };
 
@@ -342,7 +348,7 @@
     const i = E.histFocus(S); return i == null ? null : E.histGoalProg(S, i);
   };
   const des0 = E.deserialize;
-  E.deserialize = function () { const S = des0.apply(this, arguments); try { if (S && E.histOn(S)) { H(S); syncStep(S); } } catch (e) {} return S; };
+  E.deserialize = function () { const S = des0.apply(this, arguments); try { if (S && E.histOn(S)) { H(S); syncStep(S); if (S.hist.pre) E.histCheck(S); } } catch (e) {} return S; };
 
 
   /* ======================= QUÊTES DE RÉGION (Saison 1, 5A : dialogues et un choix) =======================
@@ -477,10 +483,12 @@
   E.CAMP.forEach((c) => { c.in = c.in.map(nb2); c.out = nb2(c.out); });
   const CS = (S) => { if (!S.camp) S.camp = { c: 0, p: {}, f0: null, fin: [], bon: [] }; return S.camp; };
   E.camp = CS;
-  E.campWeek = (S) => (E.s1cWeek ? E.s1cWeek(S) : 1);
-  E.campOpen = (S, i) => E.histOn(S) && i < E.CAMP.length && i < E.campWeek(S) && !(E.s1cOver && E.s1cOver(S));
+  E.campWeek = (S) => (E.histMono(S) ? (E.monoWeek ? E.monoWeek(S) : 1) : E.s1cWeek ? E.s1cWeek(S) : 1);
+  const over = (S) => (E.histMono(S) ? !!(E.monoOver && E.monoOver(S)) : !!(E.s1cOver && E.s1cOver(S)));
+  E.campOpen = (S, i) => E.histOn(S) && i < E.CAMP.length && i < E.campWeek(S) && !over(S);
   E.campCur = (S) => { const T = CS(S); return E.campOpen(S, T.c) ? T.c : -1; };
-  const fragAct = (S) => (E.s1cFragAct ? E.s1cFragAct(S) : 0);
+  const fragAct = (S) => (E.histMono(S) ? (E.tfActTotal ? E.tfActTotal(S) : 0) : E.s1cFragAct ? E.s1cFragAct(S) : 0); // Monocompte : Éclats du Temps
+  E.campKey = (S, k) => (k === "frag" && E.histMono(S) ? "Éclats du Temps gagnés" : E.CAMP_K[k]);
   E.campProg = (S, i, k) => {
     const T = CS(S); const n = E.CAMP[i].g[k];
     if (i < T.c) return [n, n];
@@ -518,7 +526,7 @@
   const emit1 = E.emit;
   E.emit = function (S, t, d) {
     const r = emit1.apply(this, arguments);
-    if (S && S.s1c && !S.mono && E.histOn(S) && t !== "campfin") try { campCount(S, t, d || {}); E.campCheck(S); } catch (e) {}
+    if (S && E.histOn(S) && t !== "campfin") try { campCount(S, t, d || {}); E.campCheck(S); } catch (e) {}
     return r;
   };
 
@@ -538,8 +546,9 @@
     { id: "rec", n: "Récolter 300 ressources", go: "metiers", v: (S) => DCH(S).c.harvest || 0, max: 300 },
     { id: "exp", n: "Réussir une expédition", go: "expeditions", v: (S) => DCH(S).c.mission || 0, max: 1 },
   ];
+  E.dchTasks = (S) => (E.histMono(S) && E.monoPageOk ? E.DCH_TASKS.filter((T) => T.id !== "exp") : E.DCH_TASKS); // pas d'expéditions en Monocompte
   E.dchProg = (S, T) => { let v = 0; try { v = T.v(S) || 0; } catch (e) {} return [Math.min(v, T.max), T.max]; };
-  E.dchDone = (S) => E.DCH_TASKS.filter((T) => { const [a, b] = E.dchProg(S, T); return a >= b; }).length;
+  E.dchDone = (S) => E.dchTasks(S).filter((T) => { const [a, b] = E.dchProg(S, T); return a >= b; }).length;
   E.dchClaim = (S) => {
     if (!E.histOn(S)) return "Le coffre du jour est réservé à la Saison 1.";
     const C = DCH(S); if (C.ok) return "Coffre du jour déjà ouvert : le prochain arrive à minuit.";
@@ -550,7 +559,7 @@
   const emit2 = E.emit;
   E.emit = function (S, t, d) {
     const r = emit2.apply(this, arguments);
-    if (S && S.s1c && !S.mono && E.histOn(S) && (t === "bounty" || t === "dungeon" || t === "harvest" || t === "mission")) try {
+    if (S && E.histOn(S) && (t === "bounty" || t === "dungeon" || t === "harvest" || t === "mission")) try {
       const C = DCH(S).c; d = d || {};
       if (t === "bounty") C.bounty = (C.bounty || 0) + 1;
       if (t === "dungeon") C.dj = (C.dj || 0) + 1;

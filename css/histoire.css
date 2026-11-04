@@ -57,6 +57,7 @@
 .hs-dch .xs.muted,.hs-dch h3{white-space:normal!important;overflow:visible;text-overflow:clip}
 /* cadre de quête suivie (6A) */
 #hs-trk{position:fixed;z-index:60;right:16px;bottom:16px;width:min(380px,calc(100vw - 32px));background:var(--panel);border:2px solid var(--gold);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:8px 10px}
+body.chat-open #hs-trk{display:none} /* 2.2.1.1 : le chat ouvert prend le même coin, la quête suivie revient quand il se ferme */
 #hs-trk.mini{width:auto;padding:0;border:0;background:none;box-shadow:none}
 .hs-trk-in{display:flex;gap:8px;align-items:center;position:relative}
 .hs-trk-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}

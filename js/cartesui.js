@@ -24,7 +24,7 @@
 
   /* ---------- la page ---------- */
   function pageHtml() {
-    const s = S(), e = E(), R = e.CARTE_RAR, M = e.cardMine(s), S1 = e.isS1c && e.isS1c(s);
+    const s = S(), e = E(), R = e.CARTE_RAR, M = e.cardMine(s), S1 = e.cardOn && e.cardOn(s);
     const L = e.CARTES.filter((c) => (!G.r || c.rar === G.r) && (!G.miss || !M.o[c.id]));
     const cnt = (r) => e.CARTES.filter((c) => c.rar === r && M.o[c.id]).length + " / " + e.CARTES.filter((c) => c.rar === r).length;
     const tabs = [["", "Toutes"]].concat(Object.entries(R).filter(([k]) => k !== "h" || e.CARTE_HEROS.length)).map(([k, n]) => `<button class="${G.r === k ? "on" : ""}" data-act="ca-r" data-v="${k}">${n}${k ? ` <small>${cnt(k)}</small>` : ""}</button>`).join("");
@@ -42,7 +42,7 @@
   window.DX.pages.album = page;
   const repaint = () => { const m = document.querySelector("#main"); if (UI().tab === "album" && m) page(m); else X().render(); };
 
-  function see(id) { const s = S(), e = E(), c = e.carte(id), M = e.cardMine(s); if (!c) return; const own = !!M.o[id], S1 = e.isS1c && e.isS1c(s);
+  function see(id) { const s = S(), e = E(), c = e.carte(id), M = e.cardMine(s); if (!c) return; const own = !!M.o[id], S1 = e.cardOn && e.cardOn(s);
     const p = e.CARTE_CRAFT[c.rar], ok = S1 && !own && e.cardDust(s) >= p;
     X().openSheet(`<div class="ca-see">${card(c, { own, sh: !!M.b[id], big: 1 })}
       <div class="stack"><h2>${h(c.n)}</h2><span class="small">${h(c.d)} · niveau ${c.lvl} · ${e.CARTE_RAR[c.rar]}</span>

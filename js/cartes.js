@@ -14,7 +14,11 @@
   "use strict";
   const E = root.ENGINE || require("./engine.js");
   const D = root.DATA || require("./data.js");
-  const s1 = (S) => !!(E.isS1c && E.isS1c(S));
+  /* 2.2.1.1 : aussi dans la partie Monocompte de saison (Mathis 03/11 « pour les booster ect je veux les même quetes que classique ») ;
+     l'album y est rangé dans S.mono.cards */
+  const s1 = (S) => !!((E.isS1c && E.isS1c(S)) || (E.histMono && E.histMono(S)));
+  E.cardOn = s1;
+  const over = (S) => (S && S.mono ? !!(E.monoOver && E.monoOver(S)) : E.s1cOver(S));
   const DAY = 86400000;
 
   const RAR = (E.CARTE_RAR = { c: "Commune", r: "Rare", e: "Épique", l: "Légendaire", h: "Héros d'Idlus" });
@@ -54,9 +58,9 @@
   E.carte = (id) => BY[id] || null;
 
   /* ---------------- l'album du compte ---------------- */
-  const A = (S) => { const c = S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0 }; return c.cards; };
+  const A = (S) => { const c = S.mono ? S.mono : S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0 }; return c.cards; };
   const me = () => { const O = root.ONLINE || root.ON, p = O && O.profile && O.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
-  const mine = (S) => { const a = (S.s1c && S.s1c.cards) || {}, x = S.xcards || {};
+  const mine = (S) => { const a = ((S.mono ? S.mono : S.s1c) || {}).cards || {}, x = S.xcards || {};
     const o = Object.assign({}, x.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, a.b || {}), m = me();
     if (m) HEROS.forEach((h) => { if (h.qui && h.qui.toLowerCase() === m) o[h.id] = o[h.id] || 1; }); // son propre héros, d'office
     return { o, b }; };
@@ -71,7 +75,7 @@
 
   /* ---------------- les boosters ---------------- */
   const dayOf = (t) => Math.floor(t / DAY);
-  E.boosterFree = (S) => (s1(S) && !E.s1cOver(S) && dayOf(A(S).free || 0) !== dayOf(E.now()) ? 1 : 0);
+  E.boosterFree = (S) => (s1(S) && !over(S) && dayOf(A(S).free || 0) !== dayOf(E.now()) ? 1 : 0);
   E.boosterLeft = (S) => (s1(S) ? A(S).bst + E.boosterFree(S) : 0);
   E.boosterNext = () => (dayOf(E.now()) + 1) * DAY - E.now();
   E.boosterDjLeft = (S) => { if (!s1(S)) return 0; const a = A(S); return a.djd === dayOf(E.now()) ? Math.max(0, E.BOOSTER_DJ_JOUR - a.djn) : E.BOOSTER_DJ_JOUR; };
@@ -82,7 +86,7 @@
   // renvoie les 5 cartes tirées [{ id, sh, nw, pd }] ou un message d'erreur
   E.boosterOpen = (S) => {
     if (!s1(S)) return "Les boosters sont dans la partie de saison.";
-    if (E.s1cOver(S)) return "La saison est finie : l'album reste, les boosters s'arrêtent.";
+    if (over(S)) return "La saison est finie : l'album reste, les boosters s'arrêtent.";
     const a = A(S); let from = "";
     if (E.boosterFree(S)) { a.free = E.now(); from = "jour"; } else if (a.bst > 0) { a.bst--; from = "reserve"; } else return "Plus de booster : un nouveau demain, ou en finissant des donjons de saison.";
     const out = [], hero = HEROS.length && E.rnd() < E.CARTE_HEROS_P;
@@ -107,7 +111,7 @@
 
   /* ---------------- les donjons de saison donnent des boosters ---------------- */
   { const emit0 = E.emit; E.emit = function (S, t, d) { const r = emit0.apply(this, arguments);
-      if (t === "dungeon" && S && s1(S) && !S.mono && !E.s1cOver(S)) try { const a = A(S), day = dayOf(E.now());
+      if (t === "dungeon" && S && s1(S) && !over(S)) try { const a = A(S), day = dayOf(E.now());
         if (a.djd !== day) { a.djd = day; a.djn = 0; }
         a.dj = (a.dj || 0) + 1;
         if (a.dj >= E.BOOSTER_DJ) { a.dj = 0; if (a.djn < E.BOOSTER_DJ_JOUR && E.boosterGive(S, 1)) a.djn++; }
