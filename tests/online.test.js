@@ -937,7 +937,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     const myCls = await page.evaluate(() => { const D = window.DATA, E = window.ENGINE, S = window.DX.S;
       const pick = (sl, L) => Object.keys(D.ITEMS).filter((k) => D.ITEMS[k].slot === sl && D.ITEMS[k].lvl <= L && D.ITEMS[k].craft).sort((a, b) => D.ITEMS[b].lvl - D.ITEMS[a].lvl)[0];
       const code = (cls, lvl, st) => { const eq = {}; ["coiffe", "cape", "amulette", "ceinture", "bottes"].forEach((sl) => (eq[sl] = pick(sl, lvl))); eq.dofus1 = "dofus_cacao";
-        const rx = lvl === 200 ? Object.fromEntries(Object.entries(eq).map(([sl, t]) => [sl, [Object.fromEntries(Object.entries(D.ITEMS[t].stats || {}).map(([k, r]) => [k, r[1]])), sl === "coiffe" ? "pa" : undefined].filter((x) => x !== undefined)])) : undefined; // 2.2.3.3 : vrais jets (au maximum) et un exo PA
+        const rx = lvl === 200 ? Object.fromEntries(Object.entries(eq).map(([sl, t]) => [sl, [Object.fromEntries(Object.entries(D.ITEMS[t].stats || {}).map(([k, r]) => [k, r[1]])), sl === "coiffe" ? "pa" : undefined].filter((x) => x !== undefined)])) : undefined; // 2.2.3.4 : vrais jets (au maximum) et un exo PA
         return E.BUILD_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, cls, lvl, n: "Héros", st, as: "", ac: 200, at: "vit", sp: [], eq, rx, gv: rx ? { bottes: 5 } : undefined })))); };
       const mk = (id, uid, pseudo, cls, lvl, el, bud, title, likers, views) => { const c = code(cls, lvl, { vit: 300, [el]: 200 }); const j = JSON.parse(decodeURIComponent(escape(atob(c.slice(7)))));
         return { id, user_id: uid, pseudo, hid: 1, cls, lvl, el, bud, tags: ["Donjon"], title, note: "Passer en Colère dès le 3e tour.", code: c, items: Object.values(j.eq), sex: "m", head: 0, likers, views, reports: [], hidden: false, removed: false, at: new Date().toISOString(), new: new Date().toISOString() }; };
@@ -966,7 +966,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await page.$$("#bdPage .bd-st")).length < 3) fail("builds : fiche, caractéristiques absentes");
     if (!(await page.$("#bdPage .bd-cmpt"))) fail("builds : fiche, comparaison avec mon héros absente");
     if (!(await page.$("#bdPage .bd-dofp .dofp"))) fail("builds : fiche, passif du Dofus absent");
-    // 2.2.3.3 : vrais jets, exo, Parfait et gravure (Mathis : « l'onglet build ne met pas les vrais stats et exo des items »)
+    // 2.2.3.4 : vrais jets, exo, Parfait et gravure (Mathis : « l'onglet build ne met pas les vrais stats et exo des items »)
     if ((await page.$$("#bdPage .bd-roll")).length !== 6) fail("builds : fiche, il faut les jets des 6 objets");
     if (!/Exo PA/.test(await page.textContent("#bdPage .bd-dgrid")) || !(await page.$("#bdPage .bd-doll .exo-badge"))) fail("builds : fiche, exo PA absent");
     if (!/Parfait/.test(await page.textContent("#bdPage .bd-dgrid")) || !/Gravure 5/.test(await page.textContent("#bdPage .bd-dgrid"))) fail("builds : fiche, Parfait ou gravure absent");

@@ -44,8 +44,12 @@
   E.getRng = () => rnd; // 0.1.19 : le défi du jour rend le hasard tel qu'il l'a trouvé
   /* Horloge du jeu : toute la logique lit l'heure ici (jamais Date.now() directement).
      Aujourd'hui c'est l'heure de l'appareil ; demain le serveur pourra imposer la sienne (anti-triche). */
-  let clock = () => Date.now();
-  E.setClock = (f) => { clock = f || (() => Date.now()); };
+  /* 04/11/2026 : heure de base réglable (E.setBaseClock) : en ligne, le jeu suit l'heure du serveur (js/ui.js, horlogeRegle).
+     E.setClock(null) revient à cette base, pas à l'heure brute de l'appareil. */
+  let base = () => Date.now();
+  let clock = base;
+  E.setClock = (f) => { clock = f || base; };
+  E.setBaseClock = (f) => { const was = clock === base; base = f || (() => Date.now()); if (was) clock = base; };
   E.now = () => clock();
   E.getClock = () => clock;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
@@ -886,7 +890,7 @@
     const eq = {}; for (const sl in c.equip) { const it = S.items[c.equip[sl]]; if (it) eq[sl] = it.tpl; }
     const o = { v: 1, cls: c.cls, lvl: c.lvl, n: c.name, st: Object.assign({}, c.alloc), as: c.autoStat || "", ac: c.autoCap || 200, at: c.autoThen || "vit", ap: c.autoStat ? E.planOf(c) : undefined, ar: c.autoStat ? E.planRest(c) : undefined,
       sp: c.spells.map((x) => [x.id, x.cond || "", x.tgt || "low"]), eq };
-    /* 2.2.3.3 : les vrais jets de chaque objet porté (forgemagie et transcendance comprises), son exo et la gravure de l'emplacement */
+    /* 2.2.3.4 : les vrais jets de chaque objet porté (forgemagie et transcendance comprises), son exo et la gravure de l'emplacement */
     const rx = {}, gv = {}; for (const sl in eq) { const it = S.items[c.equip[sl]]; const st = {}; for (const k in it.stats || {}) if (it.stats[k]) st[k] = it.stats[k]; rx[sl] = it.exo ? [st, it.exo] : [st]; const g = c.grav && c.grav[sl]; if (g > 0) gv[sl] = g; }
     o.rx = rx; if (Object.keys(gv).length) o.gv = gv;
     return E.BUILD_PREFIX + b64e(JSON.stringify(o));
@@ -902,7 +906,7 @@
     const sp = (Array.isArray(o.sp) ? o.sp : []).filter((x) => Array.isArray(x) && E.spellDef(o.cls, x[0])).slice(0, 8)
       .map(([id, cond, tgt]) => ({ id, cond: D.CONDITIONS[cond] ? cond : undefined, tgt: D.TARGETS[tgt] ? tgt : "low" }));
     const eq = {}; for (const [sl, tpl] of Object.entries(o.eq || {})) if (D.SLOTS[sl] && ITEMS[tpl]) eq[sl] = tpl;
-    /* 2.2.3.3 : jets réels et exo (un vieux code n'en a pas : la fiche montre alors les jets moyens) */
+    /* 2.2.3.4 : jets réels et exo (un vieux code n'en a pas : la fiche montre alors les jets moyens) */
     let rx = null; const gv = {};
     if (o.rx && typeof o.rx === "object") { rx = {}; for (const sl in eq) { const r = o.rx[sl]; if (!Array.isArray(r) || !r[0] || typeof r[0] !== "object") continue; const st = {};
       for (const k in r[0]) if (STATS[k]) { const v = Math.round(+r[0][k]); if (Number.isFinite(v) && v) st[k] = clamp(v, -5000, 5000); }

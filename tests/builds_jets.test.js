@@ -1,4 +1,4 @@
-/* 2.2.3.3 : le code d'un build garde les vrais jets des objets portés, leur exo et la gravure ; la fiche du build
+/* 2.2.3.4 : le code d'un build garde les vrais jets des objets portés, leur exo et la gravure ; la fiche du build
    retrouve les mêmes caractéristiques que le héros. Lancer : node tests/builds_jets.test.js */
 "use strict";
 const assert = require("assert");

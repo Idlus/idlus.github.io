@@ -69,7 +69,9 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
     await db.rpc("mono_srv_refus", { p_user: uid, p_why: r.why });
     // 04/11 (Mathis) : le Bouclier signale seulement, il ne bloque plus l'affichage : les classements de saison montrent quand même
     // la partie envoyée (mono_srv_afficher). Les gains (bons de butin, défis payés) et la partie validée attendent le « C'est bon » de Mathis.
-    if (r.resume) { try { await db.rpc("mono_srv_afficher", { p_user: uid, p_src_at: st.partie.at, p_resume: r.resume }); } catch (_) { /* fonction pas encore installée */ } }
+    // 04/11/2026 (choix de Mathis « Oui, exception horloge ») : sauf pour du temps de jeu inventé (horloge de l'appareil avancée) :
+    // la partie ne s'affiche pas, le classement garde la dernière partie validée jusqu'au « C'est bon ».
+    if (r.resume && !(V.horlogeFaussee && V.horlogeFaussee(r.why))) { try { await db.rpc("mono_srv_afficher", { p_user: uid, p_src_at: st.partie.at, p_resume: r.resume }); } catch (_) { /* fonction pas encore installée */ } }
     return { ok: false, held: true, signale: true };
   }
   if (r.note) await db.rpc("mono_srv_refus", { p_user: uid, p_why: "[observation] " + r.note }); // 22/10 : nouveaux plafonds, 48 h sans refuser

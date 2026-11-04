@@ -6621,7 +6621,7 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .qx-pos>.row .num{flex:none}
 .qx-pos .bar{min-width:0}
 .qx-prime{text-wrap:balance;max-width:100%}
-/* 2.2.3.3 : jets réels des objets d'un build (js/builds.js) */
+/* 2.2.3.4 : jets réels des objets d'un build (js/builds.js) */
 .bd-roll{border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .bd-roll>summary{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;list-style:none;flex-wrap:wrap}
 .bd-roll>summary::-webkit-details-marker{display:none}

@@ -4,7 +4,7 @@
    - Liste en cartes (héros en pied, objets, Dofus, ❤, vues), bandeau « Build de la semaine »,
      filtres en haut : classe, tranche de niveau, élément, budget, recherche (titre, objet, Dofus), tri.
    - Fiche : équipement en « poupée » comme l'onglet Équipement, panoplies, caractéristiques aux vrais jets du héros
-     (2.2.3.3 : jets, exos et gravure dans le code ; jets moyens pour un build publié avant),
+     (2.2.3.4 : jets, exos et gravure dans le code ; jets moyens pour un build publié avant),
      « Comparer avec mon héros », sorts, conseil de l'auteur ; Appliquer (sorts + caractéristiques),
      Liste de courses, Copier le code, ☆ Favori, ⚑ Signaler.
    - Publication depuis la fenêtre « Partager le build » du héros (compte Discord, 30 builds au plus),
@@ -87,9 +87,9 @@
     return sc < 0.75 ? "abo" : sc < 1.3 ? "moy" : "pre";
   }
 
-  /* ---------- caractéristiques : vrais jets (2.2.3.3), jets moyens pour un vieux build, avec les bonus de panoplie ---------- */
+  /* ---------- caractéristiques : vrais jets (2.2.3.4), jets moyens pour un vieux build, avec les bonus de panoplie ---------- */
   const mid = (r) => Math.round((r[0] + r[1]) / 2);
-  /* 2.2.3.3 : un build publié depuis la 2.2.3.3 garde les vrais jets de ses objets et leur exo (b.rx) ; un plus ancien : jets moyens */
+  /* 2.2.3.4 : un build publié depuis la 2.2.3.4 garde les vrais jets de ses objets et leur exo (b.rx) ; un plus ancien : jets moyens */
   const real = (b) => !!(b && b.rx);
   function itemOf(b, sl) {
     const t = b.eq[sl], T = ITEMS[t] || {}; const r = b.rx && b.rx[sl];
@@ -158,7 +158,7 @@
         <div class="bd-gear">${gear}</div>${df ? `<div class="bd-gear dof">${df}</div>` : ""}${exoTags(x.b)}
         <div class="row bd-foot">${budTag(x.bud)}${(x.tags || []).map((t) => `<span class="tag soft">${h(t)}</span>`).join("")}<span class="grow"></span>${viewTag(x)}${votes(x)}</div>${tab() === "mine" && x.mine ? ownActs(x) : ""}</div></div>`;
   }
-  /* 2.2.3.3 : les exos du build sur sa carte */
+  /* 2.2.3.4 : les exos du build sur sa carte */
   function exoTags(b) {
     if (!b.rx) return ""; const n = {}; for (const sl in b.rx) { const k = b.rx[sl].exo; if (k) n[k] = (n[k] || 0) + 1; }
     const t = Object.entries(n).map(([k, c]) => `<span class="tag exo xs">Exo ${h((STATS[k] || {}).short || k)}${c > 1 ? " ×" + c : ""}</span>`).join("");
@@ -251,10 +251,10 @@
         <div class="drow">${ds("arme")}<span class="dsep"></span>${DOF.map(ds).join("")}</div></div>
       <p class="xs muted" style="margin:0;text-align:center">Touche un objet pour voir sa fiche : recette et où le trouver. Ses vrais jets sont juste en dessous.</p></section>`;
   }
-  /* 2.2.3.3 : les jets de chaque objet du build, son exo, Parfait et la gravure de l'emplacement */
+  /* 2.2.3.4 : les jets de chaque objet du build, son exo, Parfait et la gravure de l'emplacement */
   const quality = (it) => { try { return Math.round(E().itemQuality(it) * 100); } catch (e) { return null; } };
   function tipReal(b, sl) {
-    const t = b.eq[sl], T = ITEMS[t]; if (!real(b)) return tipOf(t) + " · build publié avant la 2.2.3.3 : jets du modèle";
+    const t = b.eq[sl], T = ITEMS[t]; if (!real(b)) return tipOf(t) + " · build publié avant la 2.2.3.4 : jets du modèle";
     const it = itemOf(b, sl); const q = quality(it); const pf = E().isPerfect(it); const g = (b.gv || {})[sl];
     const lines = Object.entries(it.stats).filter(([, v]) => v).map(([k, v]) => `${v > 0 ? "+" : ""}${v} ${(STATS[k] || {}).name || k}`);
     return `${T.name} · niv. ${T.lvl}${q !== null && Object.keys(T.stats || {}).length ? ` · jet ${q} %` : ""}${pf ? " · Parfait" : ""}${it.exo ? ` · exo +1 ${(STATS[it.exo] || {}).name || it.exo}` : ""}${g ? ` · gravure rang ${g}` : ""}${lines.length ? " · " + lines.join(", ") : ""}`;
@@ -262,7 +262,7 @@
   function rollsHtml(x) {
     const b = x.b; const sls = ORDER.concat(DOF).filter((sl) => b.eq[sl] && ITEMS[b.eq[sl]]);
     if (!sls.length) return "";
-    if (!real(b)) return `<section class="panel pad stack" style="gap:6px"><h3>Jets des objets</h3><p class="small muted" style="margin:0">Ce build a été publié avant la 2.2.3.3 : il ne garde que le nom des objets, la fiche compte donc des jets moyens. ${x.mine ? "Mets-le à jour depuis ton héros pour montrer ses vrais jets et ses exos." : "Son auteur peut le mettre à jour pour montrer ses vrais jets et ses exos."}</p></section>`;
+    if (!real(b)) return `<section class="panel pad stack" style="gap:6px"><h3>Jets des objets</h3><p class="small muted" style="margin:0">Ce build a été publié avant la 2.2.3.4 : il ne garde que le nom des objets, la fiche compte donc des jets moyens. ${x.mine ? "Mets-le à jour depuis ton héros pour montrer ses vrais jets et ses exos." : "Son auteur peut le mettre à jour pour montrer ses vrais jets et ses exos."}</p></section>`;
     const rows = sls.map((sl) => {
       const t = b.eq[sl], T = ITEMS[t]; const it = itemOf(b, sl); const q = quality(it); const pf = E().isPerfect(it); const g = (b.gv || {})[sl];
       const tags = [it.exo ? `<span class="tag exo">Exo ${h((STATS[it.exo] || {}).short || it.exo)}</span>` : "", pf ? `<span class="tag" style="background:var(--gold);color:#1a1200">Parfait</span>` : "", g ? `<span class="tag soft" data-tip="Gravure runique de l'emplacement : +${g} % aux caractéristiques positives">Gravure ${g}</span>` : ""].join("");

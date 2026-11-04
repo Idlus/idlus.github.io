@@ -9,10 +9,14 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
-## 2.2.3.3 « Builds aux vrais jets »
+## 2.2.3.4 « Builds aux vrais jets »
 
 - js/engine.js `E.buildCode` / `E.parseBuild` (Mathis 04/11 : « l'onglet build ne met pas les vrais stats et exo des items ») : le code `IDLUS1-` ne gardait que le modèle de chaque objet, la fiche du build comptait donc des jets moyens, sans exo ni gravure. Il garde maintenant `rx` (jets réels, forgemagie et transcendance comprises, et l'exo de chaque objet porté) et `gv` (gravure de l'emplacement), vérifiés à la lecture. Un ancien code reste lisible (jets moyens, signalé sur la fiche). Le serveur ne change pas : `build_publish` ignore ces champs et le code tient sous 4 000 caractères (2 443 au pire mesuré).
 - js/builds.js : caractéristiques aux vrais jets, partie « Jets des objets » (lignes, jet %, Exo, Parfait, Gravure), pastilles exo et Parfait sur la poupée, exos sur les cartes. js/ui.js : Builds sort de Classements (page du menu Joueurs, étiquette « nouveau »), bouton « Build » sur la fiche du héros. Test : tests/builds_jets.test.js.
+
+## 2.2.3.3 « À l'heure du serveur »
+
+- js/engine.js `E.setBaseClock`, js/online.js `ON.horloge`, js/ui.js `horlogeSync` (Mathis 04/11) : connecté, le jeu relève l'heure du serveur au lancement, au retour sur l'onglet et toutes les 10 minutes, et compte le temps (absence, Sablier, journées) avec elle quand l'appareil a plus de 2 minutes d'écart. Bouclier (fonctions « record » et « mono », `V.horlogeFaussee`) : une partie avec du temps de jeu impossible n'est plus affichée tant que Mathis n'a pas dit « C'est bon » (choix de Mathis). Test : tests/horloge.test.js.
 
 ## 2.2.3.2 « Où ? toujours là »
 
