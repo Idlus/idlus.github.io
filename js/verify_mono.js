@@ -286,7 +286,7 @@
   /* Vérification complète d'un envoi (appelée par la fonction serveur « mono » et par les tests).
      o : { prev: { bilan, res, at } (dernière partie validée) | null, at (date de l'envoi), ctx: { debut, date, objets, sortis, opMax (dernière opération du registre Monocompte), opsK (kamas versés par l'HdV de saison) },
            gift (ce que le serveur a donné entre-temps) ou ops (opérations du serveur depuis la partie validée), reg (registre des Éclats), admin, accept (« C'est bon » de Mathis), sure }
-     Renvoie { ok: false, why } ou { ok: true, bilan, res, resume, acts }. */
+     Renvoie { ok: false, why, resume? } ou { ok: true, bilan, res, resume, acts }. */
   VM.verifier = (E, txt, o) => {
     let S; try { S = VM.load(E, txt); } catch (e) { return { ok: false, why: "partie illisible" }; }
     if (!S || !S.mono) return { ok: false, why: "partie du serveur Classique" };
@@ -295,7 +295,7 @@
     let bil, why = null, res = prev ? prev.res : null;
     try { bil = VM.bilan(E, S); bil.jour = VM.withClock(E, S, ctx, () => (E.monoDay ? E.monoDay(S) : 0)); } catch (e) { return { ok: false, why: "partie illisible" }; }
     const nu0 = prev && prev.bilan ? +prev.bilan.nu0 || 0 : +S.nextUid || 0;
-    let note = null;
+    let note = null, iron = false;
     if (!o.admin) {
       // 22/10 (Mathis, « C'est bon » passe aussi le niveau) : l'avance de niveau acceptée reste acquise (bilan.lvx)
       // le héros continue de monter après la validation : au-delà, le plafond suit le dernier niveau validé (bilan.lvt) au rythme VM.LVL_H
@@ -311,8 +311,8 @@
       if (abs && !o.accept) { if (obs) note = abs; else why = abs; }
       const cur = why || abs ? null : VM.curseur(S, ctx);
       if (cur && !o.accept) { if (obs || !VM.CURSEUR_REFUS) note = cur; else why = cur; }
-      if (!why && prev && prev.bilan && !o.accept) why = VM.iron(S, ctx, prev.bilan, bil, o.ops);
-      else if (!why && !(prev && prev.bilan) && !o.accept && VM.ironSt(S) === 1) why = VM.ironStart(S, ctx, null);
+      if (!why && prev && prev.bilan && !o.accept) { why = VM.iron(S, ctx, prev.bilan, bil, o.ops); iron = !!why; }
+      else if (!why && !(prev && prev.bilan) && !o.accept && VM.ironSt(S) === 1) { why = VM.ironStart(S, ctx, null); iron = !!why; }
       if (!why && prev && prev.bilan && !o.accept) {
         const hours = Math.max(0, ((o.at || 0) - (prev.at || 0)) / 3600000);
         const top = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
@@ -323,7 +323,10 @@
         if (!c.ok) why = c.why; else res = c.res;
       }
     }
-    if (why) return { ok: false, why };
+    /* 04/11 (Mathis : le Bouclier ne bloque jamais l'affichage, il décide) : une partie refusée garde son résumé (resume) pour les
+       classements de saison (mono_srv_afficher : affichage seulement, ni bons de butin, ni défis payés, ni partie validée qui bouge).
+       Exception : une règle Ironman enfreinte ne s'affiche pas (le badge et le classement de fer resteraient faux). */
+    if (why) { let resume = null; if (!iron) try { resume = VM.resume(E, S, ctx); } catch (e) { resume = null; } return resume ? { ok: false, why, resume } : { ok: false, why }; }
     bil.nu0 = nu0;
     return Object.assign({ ok: true, bilan: bil, res: res == null ? VM.RES_MAX : res, resume: VM.resume(E, S, ctx), acts: VM.acts(E, S) }, note ? { note } : {});
   };

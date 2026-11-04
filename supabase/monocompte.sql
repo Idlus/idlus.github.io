@@ -1424,6 +1424,20 @@ as $$ declare s int := mono.saison_ouverte(); begin
     update mono.bouclier set at = now() where id = (select max(id) from mono.bouclier where user_id = p_user and saison = s and why = left(p_why, 300)); return; end if;
   insert into mono.bouclier (user_id, saison, why) values (p_user, s, left(p_why, 300));
 end $$;
+-- 04/11 (Mathis : « il ne bloque jamais l'affichage, c'est moi qui ai la décision finale ») : partie refusée par le Bouclier,
+-- affichée quand même dans les classements de saison (mono.apres_validation sur le résumé calculé par le serveur). Rien d'autre :
+-- la partie validée (mono.parties_ok), les bons de butin et les défis payés attendent le « C'est bon » de Mathis. La copie de
+-- renfort prêtée aux amis reste celle de la dernière partie validée.
+create or replace function public.mono_srv_afficher(p_user uuid, p_src_at text, p_resume jsonb) returns boolean language plpgsql security definer set search_path = mono, public
+as $$ declare s int := mono.saison_ouverte(); p mono.parties; rf jsonb; begin
+  if s is null or p_resume is null or jsonb_typeof(p_resume) <> 'object' then return false; end if;
+  perform mono.verrou(p_user);
+  select * into p from mono.parties where user_id = p_user and saison = s;
+  if p.user_id is null or p.updated_at <> p_src_at::timestamptz then return false; end if;
+  if to_regclass('mono.renforts') is not null then execute 'select snap from mono.renforts where user_id = $1 and saison = $2' into rf using p_user, s; end if; -- supabase/mono_social.sql
+  perform mono.apres_validation(p_user, s, case when rf is null then p_resume - 'renfort' else p_resume || jsonb_build_object('renfort', rf) end);
+  return true;
+end $$;
 -- Panel : journal du Bouclier (300 dernières vérifications, filtre par compte ou par état)
 create or replace function public.mono_adm_journal(p_user uuid default null, p_etat text default null) returns jsonb language plpgsql stable security definer set search_path = mono, public
 as $$ begin

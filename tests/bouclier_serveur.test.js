@@ -1,6 +1,6 @@
 /* 2.1.4 « Bouclier du serveur » : la fonction serveur « record » ({ verif: 1 }) rejouée sans Deno, avec une base en mémoire.
    Vérifie : une partie honnête devient la partie validée (résumé calculé par le serveur, pas celui du jeu), une partie
-   retouchée est retenue (compte suspect, raison notée, partie validée inchangée), « C'est bon » de Mathis l'accepte,
+   retouchée est signalée sans être bloquée (04/11 : compte suspect, raison notée, partie affichée quand même), « C'est bon » de Mathis l'accepte,
    une copie par jour est gardée. Lancer : node tests/bouclier_serveur.test.js (Node 22.6 et plus) */
 "use strict";
 const fs = require("fs");
@@ -59,42 +59,50 @@ console.log("ok - partie validée, résumé calculé par le serveur, copie du jo
 S.kamas += 200000; Object.assign(T.saves[0], { data: E.serialize(S), updated_at: iso(t0 + 3600e3) });
 T.saves_ok[0].at = iso(Date.now() - 60e3); // passé le délai entre deux vérifications
 r = await call("u1", { verif: 1 }); if (!r.ok || r.later || r.same) fail("gain normal refusé : " + JSON.stringify(r));
-// 3. une minute après, un milliard de kamas : retenu
+// 3. une minute après, un milliard de kamas : 04/11 (Mathis) le Bouclier signale seulement, la partie s'affiche quand même
 const good = T.saves_ok[0].data;
+const nJour = T.saves_jour.length;
 S.kamas += 1e9; Object.assign(T.saves[0], { data: E.serialize(S), updated_at: iso(t0 + 3660e3) });
 T.saves_ok[0].at = iso(Date.now() - 60e3); // passé le délai entre deux vérifications
-r = await call("u1", { verif: 1 }); if (r.ok || !r.held) fail("milliard de kamas accepté : " + JSON.stringify(r));
-if (T.saves_ok[0].data !== good) fail("la partie validée a changé");
+r = await call("u1", { verif: 1 }); if (!r.ok || !r.signale) fail("milliard de kamas : pas signalé ou pas affiché : " + JSON.stringify(r));
+if (T.saves_ok[0].data === good) fail("la partie signalée ne s'affiche pas (partie validée inchangée)");
+if (T.saves_jour.length !== nJour) fail("copie du jour faite d'une partie signalée");
 const L = T.ladder.find((x) => x.user_id === "u1"); if (!L || !L.suspect || !/kamas/.test(L.flag_reason)) fail("compte non signalé");
 if (!T.bouclier_log.length) fail("raison non notée pour le panel");
-console.log("ok - " + T.bouclier_log[0].why);
-// 4. un objet retouché : retenu aussi
+console.log("ok - signalé sans bloquer : " + T.bouclier_log[0].why);
+// 4. un objet retouché : signalé aussi, affiché quand même
 const S2 = E.deserialize(good); const tpl = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].stats.vit && D.ITEMS[k].stats.vit[1] > 0);
 const it = E.rollItem(S2, tpl, { radiant: false }); it.stats.vit = 99999;
-Object.assign(T.saves[0], { data: E.serialize(S2), updated_at: iso(t0 + 3700e3) });
-r = await call("u1", { verif: 1 }); if (r.ok) fail("objet à 99 999 Vitalité accepté");
-// 5. « C'est bon » de Mathis : la partie retenue pour ses gains est acceptée telle quelle ; 2.1.25 : jamais une partie impossible
+Object.assign(T.saves[0], { data: E.serialize(S2), updated_at: iso(t0 + 3700e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
+r = await call("u1", { verif: 1 }); if (!r.ok || !r.signale) fail("objet à 99 999 Vitalité non signalé : " + JSON.stringify(r));
+if (!/Vitalit|vit/i.test(T.bouclier_log[T.bouclier_log.length - 1].why)) fail("raison de l'objet non notée : " + T.bouclier_log[T.bouclier_log.length - 1].why);
+if (T.saves_ok[0].src_at !== T.saves[0].updated_at) fail("la partie signalée n'est pas la partie affichée");
+// 5. « C'est bon » de Mathis : les gains passent sans signalement ; une partie impossible reste signalée
 T.saves_ok[0].accept = true;
-r = await call("u1", { verif: 1 }); if (r.ok) fail("« C'est bon » accepte un objet impossible");
-const S1 = E.deserialize(good); S1.kamas += 1e9; Object.assign(T.saves[0], { data: E.serialize(S1), updated_at: iso(t0 + 3750e3) });
-r = await call("u1", { verif: 1 }); if (!r.ok) fail("« C'est bon » n'accepte pas la partie : " + JSON.stringify(r));
+r = await call("u1", { verif: 1 }); if (!r.same) fail("même envoi revérifié : " + JSON.stringify(r));
+const S1 = E.deserialize(good); S1.kamas += 3e9; Object.assign(T.saves[0], { data: E.serialize(S1), updated_at: iso(t0 + 3750e3) });
+const nLog = T.bouclier_log.length;
+r = await call("u1", { verif: 1 }); if (!r.ok || r.signale) fail("« C'est bon » n'accepte pas les gains : " + JSON.stringify(r));
+if (T.bouclier_log.length !== nLog) fail("gains acceptés par « C'est bon » quand même notés");
 if (T.saves_ok[0].accept) fail("l'accord de Mathis n'est valable qu'une fois");
-console.log("ok - objet impossible retenu même après « C'est bon », gains acceptés par « C'est bon »");
-// 5 bis. 2.1.18 : compte vérifié par Mathis : marge plus large sur les gains (15 h de kamas pour 10 h de réserve), le signalement du Bouclier s'efface ; l'impossible reste refusé
+console.log("ok - objet impossible signalé, gains acceptés par « C'est bon »");
+// 5 bis. 2.1.18 : compte vérifié par Mathis : une partie qui passe efface le signalement du Bouclier ; une partie impossible le garde
 Object.assign(L, { verified: true, flagged: false });
-T.saves_ok[0].res = 10; const S3 = E.deserialize(good); S3.kamas += Math.floor(V.rates(30).k * 15);
+const S3 = E.deserialize(T.saves_ok[0].data); S3.kamas += 1000;
 Object.assign(T.saves[0], { data: E.serialize(S3), updated_at: iso(t0 + 3800e3) });
 T.saves_ok[0].at = iso(Date.now() - 60e3);
-r = await call("u1", { verif: 1 }); if (!r.ok || r.same || r.later) fail("compte vérifié retenu pour ses gains : " + JSON.stringify(r));
+r = await call("u1", { verif: 1 }); if (!r.ok || r.signale || r.same || r.later) fail("compte vérifié signalé pour un petit gain : " + JSON.stringify(r));
 if (L.suspect) fail("le signalement du Bouclier reste sur un compte vérifié");
-const S4 = E.deserialize(good); const it4 = E.rollItem(S4, tpl, { radiant: false }); it4.stats.vit = 99999;
+const S4 = E.deserialize(T.saves_ok[0].data); const it4 = E.rollItem(S4, tpl, { radiant: false }); it4.stats.vit = 99999;
 Object.assign(T.saves[0], { data: E.serialize(S4), updated_at: iso(t0 + 3900e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
-r = await call("u1", { verif: 1 }); if (r.ok) fail("objet impossible accepté sur un compte vérifié");
+r = await call("u1", { verif: 1 }); if (!r.signale) fail("objet impossible non signalé sur un compte vérifié");
+if (!L.suspect) fail("le signalement d'une partie impossible s'efface tout seul sur un compte vérifié");
 // 2.1.25 : le temps de jeu reste contrôlé même pour un compte vérifié
-const S5 = E.deserialize(good); S5.stats.playtime += 160 * 3600;
+L.suspect = false;
+const S5 = E.deserialize(T.saves_ok[0].data); S5.stats.playtime += 160 * 3600; delete S5.items[it4.uid];
 Object.assign(T.saves[0], { data: E.serialize(S5), updated_at: iso(t0 + 4000e3) }); T.saves_ok[0].at = iso(Date.now() - 60e3);
-r = await call("u1", { verif: 1 }); if (r.ok) fail("+160 h de temps de jeu accepté sur un compte vérifié");
-console.log("ok - compte vérifié : marge plus large, temps de jeu et impossible toujours refusés");
+r = await call("u1", { verif: 1 }); if (!r.signale || !L.suspect) fail("+160 h de temps de jeu non signalé sur un compte vérifié");
+console.log("ok - compte vérifié : temps de jeu et impossible toujours signalés, jamais bloqués");
 // 6. combats rejoués : ils partent de la partie validée (un record de donjon sur une partie retenue ne voit pas les retouches)
 if (!/okSave\\(db, uid\\)/.test(${JSON.stringify(src)})) fail("les combats ne lisent pas la partie validée");
 console.log("ok - les combats rejoués lisent la partie validée");
@@ -102,14 +110,14 @@ console.log("ok - les combats rejoués lisent la partie validée");
 { const P = E.newState("Milicien", "iop"); P.chars[0].lvl = 200; E.chooseAlign(P, "bonta", "coeur");
   const o13 = JSON.parse(E.serialize(P)); o13.v = 13; o13.align = { side: "bonta", order: "coeur", lvl: 100, xp: 0, q: o13.align.q, war: o13.align.war }; // partie d'avant la refonte
   T.saves.push({ user_id: "u2", data: JSON.stringify(o13), meta: {}, updated_at: iso(t0) });
-  r = await call("u2", { verif: 1 }); if (!r.ok) fail("partie v13 refusée : " + JSON.stringify(r));
+  r = await call("u2", { verif: 1 }); if (!r.ok || r.signale) fail("partie v13 refusée : " + JSON.stringify(r));
   const k2 = T.saves_ok.find((x) => x.user_id === "u2"); const a2 = k2.meta.align || {};
   if (a2.h !== E.honCum(10) || a2.r !== 10) fail("résumé du serveur sans l'honneur converti : " + JSON.stringify(a2));
   if (k2.data !== JSON.stringify(o13)) fail("la partie validée n'est pas celle envoyée");
   const P2 = E.deserialize(JSON.stringify(o13)); P2.align.pur = 20000; E.HON_GEAR_SLOTS.forEach((sl) => E.honBuy(P2, sl));
   Object.values(P2.items).filter((x) => /^hon_/.test(x.tpl)).forEach((x) => E.equip(P2, P2.chars[0].id, x.uid, D.ITEMS[x.tpl].slot === "anneau" ? "anneau1" : D.ITEMS[x.tpl].slot));
   Object.assign(T.saves.find((x) => x.user_id === "u2"), { data: E.serialize(P2), updated_at: iso(t0 + 3600e3) }); k2.at = iso(Date.now() - 60e3);
-  r = await call("u2", { verif: 1 }); if (!r.ok) fail("partie avec les pièces de rang refusée : " + JSON.stringify(r));
+  r = await call("u2", { verif: 1 }); if (!r.ok || r.signale) fail("partie avec les pièces de rang refusée : " + JSON.stringify(r));
   const back = E.deserialize(T.saves_ok.find((x) => x.user_id === "u2").data); if (Object.values(back.items).filter((x) => /^hon_/.test(x.tpl)).length !== 5) fail("pièces de rang perdues");
   if (T.saves_ok.find((x) => x.user_id === "u2").meta.align.r !== 10) fail("rang perdu"); }
 console.log("ok - alignements : honneur et rang calculés par le serveur, partie v13 convertie, pièces de rang acceptées");

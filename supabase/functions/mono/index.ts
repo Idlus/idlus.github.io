@@ -6,7 +6,8 @@
 // Vérification (js/verify_mono.js, V.mono.verifier) : impossible (un héros, Dofus, spécialités, plafonds de la date de saison,
 // objets numérotés, copie du registre des Éclats, renfort d'un ami = copie rendue par le serveur), puis gains depuis la dernière partie validée (rythmes du Classique, partie
 // reculée, défis). Acceptée : mono.parties_ok (résumé calculé ici), bons de butin, défis payés, mono.apres_validation.
-// Refusée : notée pour le panel de Mathis (mono_adm_bouclier), la partie validée ne change pas.
+// Refusée : notée pour le panel de Mathis (mono_adm_bouclier), la partie validée ne change pas, mais les classements de saison
+// la montrent quand même (04/11, mono_srv_afficher : affichage seulement, sauf règle Ironman enfreinte).
 // - { bureau: { combat: id } } : Bureau des Aventuriers, combat de groupe en direct (supabase/mono_bureau.sql, js/bureau_combat.js) :
 //   photos des héros tirées de leurs parties validées (jamais envoyées par le jeu), graine de la base, combat joué ici,
 //   résultat enregistré par la base (butin, clés, bons, défis). Un seul calcul par combat (verrou dans la base).
@@ -66,7 +67,10 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
   E.setClock(null); // la vérification a réglé l'horloge du moteur sur la date de saison
   if (!r.ok) {
     await db.rpc("mono_srv_refus", { p_user: uid, p_why: r.why });
-    return { ok: false, held: true };
+    // 04/11 (Mathis) : le Bouclier signale seulement, il ne bloque plus l'affichage : les classements de saison montrent quand même
+    // la partie envoyée (mono_srv_afficher). Les gains (bons de butin, défis payés) et la partie validée attendent le « C'est bon » de Mathis.
+    if (r.resume) { try { await db.rpc("mono_srv_afficher", { p_user: uid, p_src_at: st.partie.at, p_resume: r.resume }); } catch (_) { /* fonction pas encore installée */ } }
+    return { ok: false, held: true, signale: true };
   }
   if (r.note) await db.rpc("mono_srv_refus", { p_user: uid, p_why: "[observation] " + r.note }); // 22/10 : nouveaux plafonds, 48 h sans refuser
   const { data: v, error: e2 } = await db.rpc("mono_srv_valider", { p_user: uid, p_src_at: st.partie.at, p_resume: r.resume, p_bilan: r.bilan, p_res: r.res, p_acts: r.acts });

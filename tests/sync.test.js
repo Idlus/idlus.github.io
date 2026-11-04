@@ -37,9 +37,9 @@ function makeClient(srv, uid) {
     },
   };
   const root = { localStorage, location: { pathname: '/', origin: 'http://x', hash: '', search: '' }, navigator: { userAgent: 'test' },
-    __IDLUS_SB: { createClient: () => sb }, setTimeout, Promise, Date, Math, JSON, Object, String, Error };
+    __IDLUS_SB: { createClient: () => sb }, setTimeout, setInterval, clearInterval, Promise, Date, Math, JSON, Object, String, Error };
   root.window = root;
-  vm.runInNewContext(SRC, { window: root, globalThis: root, setTimeout, console });
+  vm.runInNewContext(SRC, { window: root, globalThis: root, setTimeout, setInterval, clearInterval, console });
   const ON = root.ONLINE;
   ON.init({ key: 'dofousxen-save', version: 'test' });
   ON.user = { id: uid };

@@ -177,7 +177,7 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     };
     await cheat("kamas gonflés", (T) => { T.kamas += 1e9; });
     await cheat("héros en double", (T) => { const c = JSON.parse(JSON.stringify(hero(T))); c.id = 99; c.name = "Clone"; T.chars.push(c); });
-    await cheat("Maîtrise", (T) => { hero(T).mt = { lvl: 900, bn: 0 }; });
+    await cheat("Maîtrise", (T) => { hero(T).mt = { lvl: 90000, bn: 0 }; });
     await cheat("objet impossible", (T) => { const it = E.rollItem(T, tplOf((x) => x.stats.vit && x.lvl <= 20), { radiant: false }); it.stats.vit = 99999; });
     await cheat("4ᵉ Dofus porté", (T) => { const c = hero(T); dofusTpls.forEach((tpl, n) => { const it = E.rollItem(T, tpl, { radiant: false }); c.equip["dofus" + (n + 1)] = it.uid; }); });
     await cheat("4 spécialités", (T) => { T.mono.spec = ["paysan", "bucheron", "mineur", "pecheur"]; });
@@ -188,7 +188,11 @@ globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { met
     // pendant la vérification en échec, les échanges sont bloqués
     assert.match(JSON.stringify(J(1, `mono_hdv_list(0, 'res', 'Blé', null, 10, 1, 100, 'Blé', 1, null)`)), /en vérification/, "HdV bloqué tant que la dernière partie est refusée");
     r = await send(1, S1, { force: true }); assert(r.verif.ok, "partie honnête renvoyée : acceptée " + JSON.stringify(r.verif));
-    assert.strictEqual(+q(`select count(*) from mono.t_apres where user_id = '${U(1)}'`), 4, "mono.apres_validation : jamais après un refus (4 parties acceptées, 10 refusées)");
+    // 04/11 (Mathis : le Bouclier ne bloque jamais l'affichage) : chaque partie refusée s'affiche quand même dans les classements de saison
+    // (mono_srv_afficher → mono.apres_validation avec le résumé du serveur), sans bons de butin ni partie validée qui bouge
+    assert.strictEqual(+q(`select count(*) from mono.t_apres where user_id = '${U(1)}'`), 14, "mono.apres_validation : 4 parties acceptées + 10 refusées affichées");
+    assert.strictEqual(+q(`select sum(n) from mono.eclats where user_id = '${U(1)}'`), 12, "parties refusées : aucun Éclat de plus");
+    assert.match(q(`select resume::text from mono.t_apres where user_id = '${U(1)}' order by id desc offset 1 limit 1`), /"niveau"/, "partie refusée : affichée avec le résumé du serveur");
     // « C'est bon » de Mathis : la partie suivante passe le contrôle des gains, jamais celui de l'impossible
     fails(() => as(1, `select mono_adm_accepter('${U(1)}')`), /réservé à Mathis/, "« C'est bon » donné par un joueur");
     assert(J(9, `mono_adm_bouclier()`).some((b) => b.user === U(1) && /kamas/.test(b.why)), "panel : refus listés");

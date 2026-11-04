@@ -497,8 +497,8 @@ async function songe(db: any, uid: string) {
 // Le jeu envoie sa partie toutes les 30 s (saves). Ici, le serveur la relit, calcule lui-même le résumé des classements
 // (VERIFY.fullSummary) et la vérifie (VERIFY.impossible : objets, points, étoiles ; VERIFY.check : gains depuis la dernière
 // partie validée, comparés au temps réel). Si tout va bien, elle devient la « dernière partie validée » (saves_ok) : les
-// classements, l'hôtel de vente et les combats rejoués partent d'elle. Sinon, le compte est signalé à Mathis (suspect) et
-// la partie validée ne bouge pas. Mathis décide toujours (panel Xener › En vérification : « C'est bon » l'accepte).
+// classements, l'hôtel de vente et les combats rejoués partent d'elle. Sinon, le compte est signalé à Mathis (suspect) ;
+// depuis le 04/11, la partie passe quand même (le Bouclier ne bloque plus l'affichage). Mathis décide toujours (panel Xener › En vérification : « C'est bon » l'accepte).
 const VERIF_MIN_S = 20; // au plus une vérification toutes les 20 s par compte (le jeu envoie sa partie toutes les 30 s), sauf avant un combat rejoué
 const parisDay = (t: number) => new Date(t + 2 * 3600 * 1000).toISOString().slice(0, 10);
 // deno-lint-ignore no-explicit-any
@@ -566,23 +566,27 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
       if (!c.ok) why = c.why; else res = c.res;
     }
   }
+  // 04/11 (Mathis : « il ne bloque jamais l'affichage, c'est moi qui ai la décision finale ») : le Bouclier signale seulement.
+  // La partie devient quand même la partie validée (classements, profil, Songe, records à jour) ; le compte passe « À vérifier »
+  // dans le panel (suspect + raison notée) et Mathis décide (« C'est bon » ou « Retirer »). Garde-fous qui restent : échanges de
+  // l'hôtel de vente en pause et pas de « Premier » tant que le compte est signalé (supabase/hdv.sql, classements.sql).
   if (why) {
     const { data: last } = await db.from("bouclier_log").select("why,at").eq("user_id", uid).order("at", { ascending: false }).limit(1).maybeSingle();
     if (!last || last.why !== why || Date.now() - new Date(last.at).getTime() > 3600000) await db.from("bouclier_log").insert({ user_id: uid, why });
     await db.rpc("bouclier_signal", { p_user: uid, p_why: why });
-    return { ok: false, held: true };
   }
   bil.op = Number((S.hdv && S.hdv.op) || 0); bil.nu0 = nu0;
   const now = new Date().toISOString();
   const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: bil, res: res == null ? V.RES_MAX : res, src_at: cur.updated_at, at: now, accept: false });
   if (error) return { ok: false, err: "écriture impossible" };
   // 2.1.18 : compte vérifié par Mathis signalé seulement par le Bouclier : la partie passe, le signalement s'efface
-  if (lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);
+  if (!why && lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);
   // 4A : une copie de la partie validée par jour (heure de Paris), gardée 7 jours, pour que Mathis puisse remettre un joueur en arrière
+  // (04/11 : pas de copie pour une partie signalée par le Bouclier : les copies restent des parties qui ont passé la vérification)
   const day = parisDay(Date.now());
-  await db.from("saves_jour").upsert({ user_id: uid, day, data: cur.data, lvl: bil.lv, kamas: bil.k, at: now }, { onConflict: "user_id,day", ignoreDuplicates: true });
+  if (!why) await db.from("saves_jour").upsert({ user_id: uid, day, data: cur.data, lvl: bil.lv, kamas: bil.k, at: now }, { onConflict: "user_id,day", ignoreDuplicates: true });
   await db.from("saves_jour").delete().eq("user_id", uid).lt("day", parisDay(Date.now() - 7 * 86400000));
-  return { ok: true };
+  return why ? { ok: true, signale: true } : { ok: true };
 }
 // La dernière partie validée, vérifiée juste avant si la partie envoyée a changé (combats rejoués).
 // deno-lint-ignore no-explicit-any
