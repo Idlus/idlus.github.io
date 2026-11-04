@@ -27,7 +27,7 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 const TRIES = 3, WAIT_S = 10;
 const SHARED_T = new Set(["profiles", "chat_msgs", "admins", "gift_uses"]);
 // deno-lint-ignore no-explicit-any
-const seasonDb = (db: any) => new Proxy(db, { get: (t, k) => (k === "from" ? (x: string) => (SHARED_T.has(x) ? t.from(x) : t.schema("s1").from(x)) : k === "rpc" ? (n: string, a?: unknown) => t.schema("s1").rpc(n, a) : t[k]) });
+const seasonDb = (db: any) => new Proxy(db, { get: (t, k) => (k === "isS1" ? true : k === "from" ? (x: string) => (SHARED_T.has(x) ? t.from(x) : t.schema("s1").from(x)) : k === "rpc" ? (n: string, a?: unknown) => t.schema("s1").rpc(n, a) : t[k]) });
 const lastTry = new Map<string, number>(); // anti-rafale (par instance)
 
 Deno.serve(async (req) => {
@@ -536,6 +536,8 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // de Maîtrise et 1,6 milliard de kamas était acceptée telle quelle juste après un « C'est bon »
   if (!adm) {
     why = V.impossible(E, S, nu0);
+    // 04/11 (Kenan) : partie de saison née hors de la saison (sauvegarde importée) ou temps de jeu plus long que la saison
+    if (!why && db.isS1) why = V.s1Bad(E, S);
     // 2.1.18 : un compte que Mathis a vérifié (« C'est bon ») a une marge plus large sur les kamas, ressources et Dofus (V.check, sure) ;
     // 2.1.25 : la Maîtrise, les niveaux et le temps de jeu restent contrôlés comme pour tout le monde
     if (!why && ok && prev && !ok.accept) {

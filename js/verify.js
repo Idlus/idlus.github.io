@@ -178,6 +178,16 @@
   V.horlogeFaussee = (why) => /Maîtrise du temps|h de temps de jeu en .* h réelles/.test(String(why || ""));
   V.MT_T0 = Date.UTC(2026, 9, 16, 16, 0); V.MT_HERO0 = 50; V.MT_HERO_H = 30; V.MT_TEAM0 = 300; V.MT_TEAM_H = 180; V.MT_XP_H = 2000; V.MT_XP_H_MONO = 225; V.MT_PAD = 20;
   V.SAB_T0 = Date.UTC(2026, 9, 18, 18, 15); V.SAB_H0 = 73; V.SAB_H_DAY = 30;
+  /* 04/11 (Kenan, Classique · Saison 1) : une sauvegarde de l'Éternel importée dans la partie de saison (Options › Importer) passait :
+     au premier envoi d'un compte, seul V.impossible tourne, et ses plafonds datent d'octobre. Pour la saison : la partie doit être née
+     dans la saison (S.s1c, js/saisonc.js) et son temps de jeu tenir dans le temps écoulé depuis l'ouverture (×2,25 du Sablier, + 2 h). */
+  V.S1_T0 = Date.UTC(2026, 10, 3, 22, 10);
+  V.s1Bad = (E, S, now) => {
+    if (E.isS1c && !E.isS1c(S)) return "partie qui ne vient pas de la saison (sauvegarde de l'Éternel ?)";
+    const pt = Math.max(0, +(S.stats && S.stats.playtime) || 0) / 3600, h = Math.max(0, ((now || (V.now ? V.now() : Date.now())) - V.S1_T0) / 3600000), cap = h * V.RES_RATE2 + 2;
+    const h1 = (n) => (Math.round(n * 10) / 10).toLocaleString("fr-FR");
+    return pt > cap ? `${h1(pt)} h de temps de jeu (au plus ${h1(cap)} depuis l'ouverture de la saison)` : null;
+  };
 
   /* Gains depuis la dernière partie validée, comparés à une réserve d'heures de jeu (comme un sablier) :
      la réserve se remplit de 1,25 h par heure réelle (Sablier compris) jusqu'à 72 h (2.1.27 : 48 h avant le ×4 et la réserve plus grande de la

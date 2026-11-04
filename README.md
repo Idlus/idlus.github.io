@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.3.5 « Saison bien gardée »
+
+- js/ui.js (import) : la partie Classique · Saison 1 refuse une sauvegarde sans `S.s1c` (née hors de la saison). js/verify.js `V.S1_T0`, `V.s1Bad` : partie de saison sans `S.s1c` ou temps de jeu supérieur au temps écoulé depuis l'ouverture ×2,25 + 2 h ; appelé par la fonction « record » (validate) pour l'espace s1 (`db.isS1`). Le Bouclier signale seulement (Mathis décide).
+
 ## 2.2.3.4 « Builds aux vrais jets »
 
 - js/engine.js `E.buildCode` / `E.parseBuild` (Mathis 04/11 : « l'onglet build ne met pas les vrais stats et exo des items ») : le code `IDLUS1-` ne gardait que le modèle de chaque objet, la fiche du build comptait donc des jets moyens, sans exo ni gravure. Il garde maintenant `rx` (jets réels, forgemagie et transcendance comprises, et l'exo de chaque objet porté) et `gv` (gravure de l'emplacement), vérifiés à la lecture. Un ancien code reste lisible (jets moyens, signalé sur la fiche). Le serveur ne change pas : `build_publish` ignore ces champs et le code tient sous 4 000 caractères (2 443 au pire mesuré).

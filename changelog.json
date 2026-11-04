@@ -1,6 +1,13 @@
 {
-  "version": "2.2.3.4",
+  "version": "2.2.3.5",
   "versions": [
+    {
+      "v": "2.2.3.5",
+      "name": "Saison bien gardée",
+      "items": [
+        "Classique · Saison 1 : la partie de saison ne reprend plus une sauvegarde de l'Éternel (Options › Importer). Tout le monde repart de zéro, et le serveur vérifie davantage les parties de saison"
+      ]
+    },
     {
       "v": "2.2.3.4",
       "name": "Builds aux vrais jets",
