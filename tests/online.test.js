@@ -698,12 +698,12 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (await page.evaluate(() => { const C = window.CHAT.state; C.unread = 120; C.unreadP = 15; C.unreadH = 99; window.CHAT.repaint(); const c = document.querySelector("#chat").getBoundingClientRect(), x = document.querySelector("#chat .ch-x").getBoundingClientRect(); C.unread = C.unreadP = C.unreadH = 0; window.CHAT.repaint(); return x.right > c.right || x.left < c.left; })) fail("chat : bouton de fermeture hors du cadre (PC)");
     // 0.1.48.2 : salons Commerce et PvP
     await page.click('#chat [data-act="ch-tab"][data-v="c"]'); await page.waitForSelector("#chIn");
-    if (!/Commerce : achat/.test(await page.textContent("#chat .ch-list"))) fail("chat : salon Commerce absent");
+    if (!/Commerce de l.Éternel : achat/.test(await page.textContent("#chat .ch-list"))) fail("chat : salon Commerce absent");
     await page.fill("#chIn", "Je vends une Coiffe Bouftou"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
     if (!(await mock()).views.chat_msgs.some((x) => x.ch === "c" && /Coiffe Bouftou/.test(x.body))) fail("chat : message de commerce non envoyé dans le bon salon");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-commerce.png" });
     await page.click('#chat [data-act="ch-tab"][data-v="v"]'); await page.waitForTimeout(100);
-    if (!/PvP : Kolizéum/.test(await page.textContent("#chat .ch-list"))) fail("chat : salon PvP absent");
+    if (!/PvP de l.Éternel : Kolizéum/.test(await page.textContent("#chat .ch-list"))) fail("chat : salon PvP absent");
     await page.evaluate(() => window.__chatEmit({ id: 777, ch: "v", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, kind: "ann", data: { t: "koli", g: 3, cote: 1520 }, created_at: new Date().toISOString() })); await page.waitForTimeout(100);
     if (!/grade/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce du Kolizéum absente du salon PvP");
     // 1.0.30 : GIGA annonce d'un Dofus : plein écran chez tous (le Dofus en grand, qui, où, sa chance), puis une ligne dans le Général
