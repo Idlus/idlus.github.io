@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.4 « Parties des joueurs »
+
+- supabase/panel_parties.sql `adm_parties(p_srv, p_ids)` (lecture seule, étape « panel-parties » de Serveur OVH, sauvegarde d'abord) : parties de chaque compte sur l'Éternel (public), la Saison 1 (s1) et le Monocompte (mono.parties) ; test tests/panel_parties_sql.test.js.
+- js/admin.js : page « Parties des joueurs » (Éternel, Saison 1, Monocompte) ; js/chat.js : étiquettes des parties dans « Comptes » et la fiche du compte ; css/communaute.css : menu du panel sur plusieurs lignes au téléphone (Mathis 04/11 : « plein de parties que je ne vois pas dans les panels », réponse « les deux »).
+
 ## 2.2.4.3 « Panel complet sur chaque serveur »
 
 - js/panel.js (Mathis 04/11 : « y'a plein de parties que je ne vois pas dans les panels ») : groupe « Commun aux 3 serveurs » (Comptes, Signalements, Annoncer, Codes cadeaux, Bugs, Suggestions, Inscriptions et journal, Réglages du chat, Modérateurs) au bas du menu d'Éternel, Saison 1 et Monocompte ; on reste dans le serveur choisi. tools/saison_schema.js : annonces_srv.sql partagé (pas de copie dans s1).

@@ -521,10 +521,19 @@
   const s1Sp = () => !!(window.PANEL && window.PANEL.space && window.PANEL.space() === "s");
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel Xener" : "Modération"}" aria-label="${C.role === "admin" ? "Panel Xener" : "Modération"}">${X().G("shield")}</button>` : ""; } // 1.0.30 : Panel Xener (js/panel.js)
   const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUGS ? [["bugs", "Bugs"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]).concat([["mchat", "Chat Monocompte"], ["chat", "Réglages du chat"], ["salon", "Salon"]].concat(window.BUILDS && ON && ON.mbSrv ? [["mbuilds", "Builds Monocompte"]] : [])) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 2.1.36 : mchat, mann : côté Monocompte du Panel Xener // 1.0.30 : les modérateurs gardent seulement les outils du chat
+  /* 2.2.4.4 (Mathis 04/11 : « plein de parties que je ne vois pas ») : parties de chaque compte sur les trois serveurs (adm_parties,
+     supabase/panel_parties.sql), en étiquettes dans « Comptes » ; sans la fonction sur le serveur, rien ne change */
+  async function partsOf(L) {
+    if (!isAdmin() || !Array.isArray(L) || !L.length) return;
+    const p = await ON.rpc("adm_parties", { p_srv: null, p_ids: L.map((x) => x.id) }); if (p.err || !Array.isArray(p.data)) return;
+    const m = new Map(p.data.map((x) => [x.id, x])); L.forEach((x) => { x.pt = m.get(x.id) || null; });
+  }
+  const PT_N = { e: "Éternel", s: "Saison 1", m: "Monocompte" };
+  const ptTags = (x) => (x.pt ? ["e", "s", "m"].filter((k) => x.pt[k + "_at"]).map((k) => `<span class="px-tag px-${k}" title="dernier envoi ${when(x.pt[k + "_at"])}">${PT_N[k]}${x.pt[k + "_lvl"] ? ` ${x.pt[k + "_lvl"]}` : ""}</span>`).join("") || `<span class="xs muted">aucune partie en ligne</span>` : "");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
-    if (A.tab === "joueurs") { A.list = await r("adm_players", { p_q: A.q }); if (A.sel) { A.sel = (A.list || []).find((x) => x.id === A.sel.id) || A.sel; A.msgs = await r("adm_msgs", { p_user: A.sel.id }); } }
+    if (A.tab === "joueurs") { A.list = await r("adm_players", { p_q: A.q }); await partsOf(A.list); if (A.sel) { A.sel = (A.list || []).find((x) => x.id === A.sel.id) || A.sel; A.msgs = await r("adm_msgs", { p_user: A.sel.id }); } }
     if (A.tab === "sig") A.reps = await r("adm_reports");
     if (A.tab === "verif") A.flag = s1Sp() ? ((await r("admin_flagged")) || []).map((x) => ({ id: x.user_id, pseudo: x.pseudo, reason: x.reason, level: x.level, updated_at: x.updated_at, flagged: !/^Bouclier : /.test(x.reason || "") })) : await r("adm_flagged");
     if (A.tab === "equipe") A.mods = await r("adm_mods");
@@ -592,7 +601,7 @@
       const L = A.list || [];
       return `<div class="srch"><input id="admQ" value="${h(A.q)}" placeholder="Chercher un pseudo" autocomplete="off"><button class="btn" data-act="adm-search">Chercher</button></div>
         ${A.sel ? ficheHtml(A.sel) : ""}
-        <div class="box"><h2>${A.q ? "Résultats" : "Derniers comptes"}</h2>${L.map((x) => `<button class="ln lnb${A.sel && A.sel.id === x.id ? " on" : ""}" data-act="adm-sel" data-id="${x.id}">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b>${stTags(x)}<span class="t">${x.level ? `${x.level} niveaux · ` : ""}${when(x.last_save)}</span></button>`).join("") || `<div class="ln muted">Aucun joueur trouvé.</div>`}</div>`;
+        <div class="box"><h2>${A.q ? "Résultats" : "Derniers comptes"}</h2>${L.map((x) => `<button class="ln lnb${A.sel && A.sel.id === x.id ? " on" : ""}" data-act="adm-sel" data-id="${x.id}">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b>${stTags(x)}${ptTags(x)}<span class="t">${x.pt ? `inscrit ${when(x.created_at)}` : `${x.level ? `${x.level} niveaux · ` : ""}${when(x.last_save)}`}</span></button>`).join("") || `<div class="ln muted">Aucun joueur trouvé.</div>`}</div>`;
     }
     if (A.tab === "sig") {
       const R = A.reps || [];
@@ -724,7 +733,7 @@
     const mute = x.mute_until && new Date(x.mute_until) > Date.now(); const H = x.heroes || [];
     const self = x.id === myId();
     return `<div class="box"><div class="row between"><div class="row">${X().cmed(x.cls)}<h2>${h(x.pseudo)}</h2>${stTags(x)}</div><span class="xs muted">compte créé le ${new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</span></div>
-      <div class="fiche"><div><small>Niveau d'équipe</small>${x.level || 0}</div><div><small>Temps de jeu</small>${dur(x.playtime || 0)}</div><div><small>Dernier envoi de la partie</small>${when(x.last_save)}</div>
+      <div class="fiche">${x.pt ? `<div><small>Parties en ligne</small>${ptTags(x)}</div>` : ""}<div><small>Niveau d'équipe${x.pt ? " (Éternel)" : ""}</small>${x.level || 0}</div><div><small>Temps de jeu</small>${dur(x.playtime || 0)}</div><div><small>Dernier envoi de la partie</small>${when(x.last_save)}</div>
         <div><small>Héros</small>${H.slice(0, 4).map((c) => `${h(clsName(c.cls))} ${c.lvl}${c.ren ? ` (R${c.ren})` : ""}`).join(", ") || "—"}</div><div><small>Signalements reçus</small>${x.reports || 0}</div><div><small>Classements</small>${x.flagged ? `en vérification${x.flag_reason ? ` (${h(x.flag_reason)})` : ""}` : "visible"}</div></div>
       ${self ? `<p class="small muted">C'est ton compte.</p>` : `<div class="acts"><button class="btn sm" data-act="ch-prof" data-u="${x.id}">Voir son profil</button>${isAdmin() && window.FICHES ? `<button class="btn sm" data-act="adm-fiche" data-u="${x.id}">Fiche détaillée</button>` : ""}
         ${isAdmin() || !(x.is_mod || x.is_admin) ? `<button class="btn sm" data-act="adm-warn" data-u="${x.id}" data-p="${h(x.pseudo)}">Avertir</button>${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>${isAdmin() ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="10080">Muet 7 jours</button><button class="btn sm danger" data-act="adm-purge" data-u="${x.id}" data-p="${h(x.pseudo)}">Effacer ses messages</button>` : ""}` : `<span class="xs muted">Modérateur : seul Mathis peut le sanctionner.</span>`}

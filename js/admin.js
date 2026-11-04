@@ -786,3 +786,40 @@ P.register({ id: "srvvue", name: "Vue d'ensemble", group: "", html: vueHtml, loa
 document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act='adm-reload']"); if (t && DX.ui.tab === "admin") { H.d = null; V.k = null; } });
 setTimeout(repaint, 0);
 })();
+
+/* ============================================================================
+   2.2.4.4 (Mathis 04/11 : « y'a plein de parties que je ne vois pas dans les panels », réponse « les deux ») : page « Parties des
+   joueurs » dans Éternel, Saison 1 et Monocompte (groupe Joueurs) : tous les comptes qui ont une partie sur ce serveur, du dernier
+   envoi au plus ancien (150 au plus), avec le niveau et les autres serveurs du compte. Lu par adm_parties (supabase/panel_parties.sql).
+   ========================================================================== */
+(function () {
+"use strict";
+const P = window.PANEL, ON = window.ONLINE, DX = window.DX;
+if (!P || !P.register || !ON || !DX || !DX.social) return;
+const X = () => DX.social;
+const h = (s) => X().h(String(s == null ? "" : s));
+const SP = { e: "Éternel", s: "Saison 1", m: "Monocompte" };
+const when = (t) => { if (!t) return "—"; const s = (Date.now() - new Date(t)) / 1000; return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
+const T = { k: null, L: null, err: null, q: "" };
+const key = () => { const sp = P.space ? P.space() : null; return sp === "s" || sp === "m" ? sp : "e"; };
+async function load() {
+  const k = key(); const r = await ON.rpc("adm_parties", { p_srv: k, p_ids: null });
+  Object.assign(T, { k, L: r.err ? null : r.data || [], err: r.err ? (/adm_parties|function|schema cache/i.test(r.err) ? "La lecture des parties n'est pas encore installée sur le serveur." : r.err) : null });
+}
+/* les autres serveurs d'un compte, en petites étiquettes */
+const tags = (x, k) => ["e", "s", "m"].filter((s) => s !== k && x[s + "_at"]).map((s) => `<span class="px-tag px-${s}" title="dernier envoi ${when(x[s + "_at"])}">${SP[s]}${x[s + "_lvl"] ? ` ${x[s + "_lvl"]}` : ""}</span>`).join("");
+function html() {
+  const k = key();
+  if (T.k !== k) return `<div class="box"><div class="empty">Chargement…</div></div>`;
+  if (T.err) return `<div class="box"><div class="empty">${h(T.err)}</div></div>`;
+  const q = T.q.toLowerCase(), L = (T.L || []).filter((x) => !q || String(x.pseudo || "").toLowerCase().includes(q));
+  return `<div class="box"><div class="row between"><h2>Parties ${k === "m" ? "du Monocompte" : k === "s" ? "de la Saison 1" : "de l'Éternel"} (${(T.L || []).length}${(T.L || []).length >= 150 ? " les plus récentes" : ""})</h2><input id="ptQ" value="${h(T.q)}" placeholder="Filtrer un pseudo" autocomplete="off" style="max-width:180px"></div>
+    <span class="xs muted">Chaque compte qui a une partie sur ce serveur, du dernier envoi au plus ancien. Les étiquettes montrent ses parties sur les autres serveurs.</span>
+    ${L.map((x) => `<div class="ln">${x.cls ? X().cmed(x.cls) : ""}<b>${h(x.pseudo)}</b>${tags(x, k)}<span class="t">${x[k + "_lvl"] ? `${x[k + "_lvl"]} niv. · ` : ""}${when(x[k + "_at"])}</span>${k === "m" ? "" : `<button class="btn sm" data-act="adm-fiche" data-u="${x.id}">Fiche</button>`}<button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Compte</button></div>`).join("") || `<div class="empty">${q ? "Aucun pseudo trouvé." : "Aucune partie sur ce serveur."}</div>`}</div>`;
+}
+document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "ptQ") { T.q = ev.target.value; const pos = ev.target.selectionStart; P.repaint(); const b = document.getElementById("ptQ"); if (b) { b.focus(); try { b.setSelectionRange(pos, pos); } catch (e) {} } } });
+document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest("[data-act='adm-reload']"); if (t) T.k = null; });
+P.register({ id: "parties", name: "Parties des joueurs", group: "Joueurs", html, load });
+P.register({ id: "monoparties", srv: "m", name: "Parties des joueurs", group: "Joueurs", html, load });
+window.PARTIES = { load, html, T };
+})();

@@ -58,6 +58,9 @@ function fake() {
       case "adm_announce": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: null }); return null;
       case "adm_announce_mono": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: "m" }); return null;
       case "adm_announce_srv": F.anns.unshift({ id: ++F.n, body: a.p_body, banner: true, until: null, srv: a.p_srv }); return null;
+      case "adm_parties": { const R = [{ id: "u2", pseudo: "Zoé", cls: "cra", e_lvl: 120, e_at: "2026-11-04T10:00:00Z", s_lvl: 40, s_at: "2026-11-04T11:00:00Z", m_lvl: null, m_at: null },
+        { id: "u9", pseudo: "Kralamour", cls: "iop", e_lvl: null, e_at: null, s_lvl: null, s_at: null, m_lvl: 33, m_at: "2026-11-03T11:00:00Z" }];
+        return a.p_ids ? R.filter((x) => a.p_ids.includes(x.id)) : R.filter((x) => x[a.p_srv + "_at"]); }
       case "adm_bugs": return [{ id: 1, status: "nouveau", body: "Bouton cassé" }, { id: 2, status: "corrige", body: "Vieux bug" }];
       case "adm_announce_end": F.anns = F.anns.filter((x) => x.id !== a.p_id); return null;
       case "mono_adm_vue": return { saison: { id: 0, nom: "Saison de test", etat: "ouverte", test: true, jour: 10, duree: 56, date: "2026-10-30T12:00:00Z", vitesse: 24, pause: true, horloge: true },
@@ -134,8 +137,8 @@ function fake() {
   const annbar = (page) => page.evaluate(() => (document.querySelector("#annbar") || {}).textContent || "");
 
   const COMMUN = ["joueurs", "sig", "ann", "codes", "bugs", "idees", "vue", "chat", "equipe"]; // 04/11 : pages communes aussi au bas du menu de chaque serveur
-  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mbuilds", "mchat"].concat(COMMUN); // 2.2.4.2 : Builds du Monocompte
-  const CLASSIC = ["srvvue", "enligne", "verif", "fiches", "hdv", "guildes", "builds", "salon"].concat(COMMUN);
+  const MONO = ["monovue", "monoenligne", "monoparties", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mbuilds", "mchat"].concat(COMMUN); // 2.2.4.2 : Builds du Monocompte
+  const CLASSIC = ["srvvue", "enligne", "parties", "verif", "fiches", "hdv", "guildes", "builds", "salon"].concat(COMMUN);
   const TOUS = ["joueurs", "sig", "vue", "ann", "codes", "chat", "bugs", "idees", "equipe", "test"];
   const badges = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".px-sp button")].map((b) => [b.dataset.v, (b.querySelector("em") || {}).textContent || ""])));
   const same = (a, b) => a.join(",") === b.join(",");
@@ -247,6 +250,18 @@ function fake() {
     /* fiche d'un joueur depuis le Monocompte : Comptes (commun) s'ouvre sans quitter le Monocompte (04/11) */
     await page.evaluate(() => window.CHAT.openAdmin("joueurs", "Zoé")); await page.waitForTimeout(500);
     if ((await srvOn(page)) !== "m" || !(await page.$('.px-nav button.on[data-v="joueurs"]'))) fail(`${W} : fiche d'un joueur : « Monocompte › Comptes » attendu`);
+    await page.click('.px-sp [data-v="t"]'); await page.waitForTimeout(400);
+    /* 2.2.4.4 : « Parties des joueurs » de chaque serveur (adm_parties) et parties de chaque compte dans « Comptes » */
+    for (const [sp, v, who, not] of [["e", "parties", "Zoé", "Kralamour"], ["s", "parties", "Zoé", "Kralamour"], ["m", "monoparties", "Kralamour", "Zoé"]]) {
+      await page.click(`.px-sp [data-v="${sp}"]`); await page.waitForTimeout(300); await go(page, v);
+      await page.waitForFunction((x) => new RegExp(x).test(document.querySelector(".px-body").innerText), who, { timeout: 5000 }).catch(() => {});
+      t = await body(page); if (!t.includes(who) || t.includes(not) || !/Parties d/.test(t)) fail(`${W}, ${sp} › Parties des joueurs : ${t.slice(0, 160)}`);
+      if ((await calls(page, "adm_parties")).slice(-1)[0].p_srv !== sp) fail(`${W}, ${sp} › Parties : mauvais serveur demandé`);
+      await noScroll(page, `${W}, ${sp} › Parties des joueurs`);
+    }
+    await shot(page, `panel-parties-${w}.png`);
+    await go(page, "joueurs"); await page.waitForFunction(() => /Saison 1 40/.test(document.querySelector(".px-body").innerText), null, { timeout: 5000 }).catch(() => {});
+    t = await body(page); if (!/Éternel 120/.test(t) || !/Saison 1 40/.test(t)) fail(`${W}, Comptes : parties de Zoé absentes : ${t.slice(0, 200)}`);
     await page.click('.px-sp [data-v="t"]'); await page.waitForTimeout(400);
     /* ---------- Tous les serveurs ---------- */
     N = await nav(page); if (!same(N, TOUS)) fail(`${W}, Tous les serveurs : menu ${N.join(",")}`);

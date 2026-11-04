@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -534,6 +534,21 @@ jobs:
             exit 1
           done
           bash tools/serveur/vps_sql.sh lecture "select count(*) as fonctions_installees from pg_proc where proname in ('mono_builds_list','mono_builds_me','mono_build_publish','mono_build_delete','mono_build_like','mono_build_view','mono_build_report','adm_builds_mono','adm_build_set_mono')"
+      - name: Panel Xener, parties des joueurs sur les trois serveurs (sauvegarde de la base, panel_parties.sql)
+        # 2.2.4.4 (Mathis 04/11 : « plein de parties que je ne vois pas dans les panels », réponse « les deux ») : une fonction de
+        # lecture (adm_parties), aucune table ni donnée changée. Installation des fonctions autorisée d'avance (tests passés, sauvegarde d'abord).
+        if: inputs.etape == 'panel-parties'
+        run: |
+          echo '== Sauvegarde complète de la base avant installation'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-panel-parties-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
+          { echo "set lock_timeout = '3s';"; cat supabase/panel_parties.sql; } > /tmp/q.sql
+          for essai in 1 2 3 4 5 6; do
+            if bash tools/serveur/vps_sql.sh fichier /tmp/q.sql > /tmp/r.txt 2>&1; then echo "OK (essai $essai)"; break; fi
+            tail -c 800 /tmp/r.txt; echo
+            if grep -qiE 'lock timeout|deadlock' /tmp/r.txt && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+            exit 1
+          done
+          bash tools/serveur/vps_sql.sh lecture "select count(*) as fonction_installee, (select count(*) from public.saves) as parties_eternel, (select count(*) from s1.saves) as parties_saison1, (select count(distinct user_id) from mono.parties) as comptes_monocompte from pg_proc where proname = 'adm_parties'"
       - name: Monocompte, objectif commun de la campagne de saison (sauvegarde de la base, mono_campagne.sql)
         # 04/11/2026, ordre écrit de Mathis : « installe l'objectif de campagne sur le serveur Monocompte ». Ne touche ni aux parties ni au Classique.
         if: inputs.etape == 'monocompte-campagne'

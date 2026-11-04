@@ -142,5 +142,5 @@
 .px-tog.off i{background:var(--panel3)}.px-tog.off i:after{right:auto;left:3px}
 .px-tools .li{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 2px;border-top:1px solid var(--line)}
 .px-tools .li:first-child{border-top:0}
-@media (max-width:900px){.px-wrap{grid-template-columns:minmax(0,1fr)}.px-nav{flex-direction:row;overflow-x:auto;position:static;padding:6px}.px-nav h4{display:none}.px-nav button{white-space:nowrap;flex:none}.px-pre{grid-template-columns:repeat(2,minmax(0,1fr))}.px-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){.px-wrap{grid-template-columns:minmax(0,1fr)}.px-nav{flex-direction:row;flex-wrap:wrap;overflow:visible;position:static;padding:6px;gap:4px}.px-nav h4{display:block;flex-basis:100%;margin:6px 4px 0}.px-nav h4:first-child{display:none}.px-nav button{white-space:nowrap;flex:none;padding:5px 9px;font-size:13px;background:var(--panel2)}.px-pre{grid-template-columns:repeat(2,minmax(0,1fr))}.px-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:640px){.px-cmd kbd{display:none}}

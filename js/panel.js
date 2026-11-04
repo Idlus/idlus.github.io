@@ -72,11 +72,11 @@
   const COMMUN = ["Commun aux 3 serveurs", [["joueurs", "Comptes", "couronne"], ["sig", "Signalements du chat", "combat"], ["ann", "Annoncer", "parchemin_or"], ["codes", "Codes cadeaux", "coffre"], ["bugs", "Bugs", "bug"], ["idees", "Suggestions", "idee"], ["vue", "Inscriptions et journal", "trophee"], ["chat", "Réglages du chat", "parchemin_or"], ["equipe", "Modérateurs", "couronne"]]];
   const MENU = {
     c: [["", [["srvvue", "Vue d'ensemble", "trophee"], ["enligne", "En ligne", "couronne"]]],
-      ["Joueurs", [["verif", "À vérifier (Bouclier)", "cristal"], ["fiches", "Fiches joueurs", "parchemin_or"]]],
+      ["Joueurs", [["parties", "Parties des joueurs", "parchemin_or"], ["verif", "À vérifier (Bouclier)", "cristal"], ["fiches", "Fiches joueurs", "parchemin_or"]]],
       ["Jeu", [["hdv", "Hôtel de vente", "bourse"], ["guildes", "Guildes", "couronne"], ["builds", "Builds", "parchemin_or"]]],
       ["Salon", [["salon", "", "parchemin_or"]]], COMMUN],
     m: [["", [["monovue", "Vue d'ensemble", "trophee"], ["monoenligne", "En ligne", "couronne"]]],
-      ["Joueurs", [["monobouclier", "À vérifier (Bouclier)", "cristal"], ["monojournal", "Journal du Bouclier", "parchemin_or"], ["monoremise", "Copies des parties", "phenix"], ["monotesteurs", "Testeurs", "couronne"], ["clesbeta", "Clés bêta", "cle"]]],
+      ["Joueurs", [["monoparties", "Parties des joueurs", "parchemin_or"], ["monobouclier", "À vérifier (Bouclier)", "cristal"], ["monojournal", "Journal du Bouclier", "parchemin_or"], ["monoremise", "Copies des parties", "phenix"], ["monotesteurs", "Testeurs", "couronne"], ["clesbeta", "Clés bêta", "cle"]]],
       ["Jeu", [["monobureau", "Bureau des Aventuriers", "combat"], ["mbuilds", "Builds", "parchemin_or"]]],
       ["Salon", [["mchat", "Salon Monocompte", "parchemin_or"]]], COMMUN],
     t: [["", [["joueurs", "Comptes", "couronne"], ["sig", "Signalements du chat", "combat"], ["vue", "Inscriptions et journal", "trophee"]]],
