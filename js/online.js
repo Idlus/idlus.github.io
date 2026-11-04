@@ -423,7 +423,7 @@
      solo), "s" Classique · Saison 1, "m" Monocompte ; renvoyé quand il change de partie (vérifié toutes les 20 s) */
   let meSp = null;
   const spOf = () => (ON.monoPart() ? "m" : SLOT === S1_N ? "s" : "e");
-  { const t = setInterval(() => { try { if (chan && !lost && ON.user && ON.profile && meSp !== spOf()) { meSp = spOf(); chan.track({ p: ON.profile.pseudo, s: meSp }); } } catch (e) {} }, 20000); if (t && t.unref) t.unref(); } // unref : ne retient pas Node (tests)
+  { const t = typeof setInterval === "function" && setInterval(() => { try { if (chan && !lost && ON.user && ON.profile && meSp !== spOf()) { meSp = spOf(); chan.track({ p: ON.profile.pseudo, s: meSp }); } } catch (e) {} }, 20000); if (t && t.unref) t.unref(); } // unref : ne retient pas Node ; sans setInterval (bac à sable des tests) : rien
   /* [{ id, p, s }] : un par compte connecté (s null = ancienne version du jeu) */
   ON.onlineList = () => { try { if (!chan) return []; const st = chan.presenceState(); return Object.keys(st).filter((k) => !/^anon-/.test(k)).map((k) => { const x = (st[k] || []).slice(-1)[0] || {}; return { id: k, p: x.p || null, s: x.s || null }; }).filter((x) => x.p); } catch (e) { return []; } };
   ON.chatLost = () => !!chan && lost; // 1.0.10.1 : temps réel coupé (incident Supabase Realtime) : le chat se met à jour sans lui
