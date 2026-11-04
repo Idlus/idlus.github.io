@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.7.1";
+const GAME_VERSION = "2.2.7.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.7.2", name: "Vote bloqué ?", items: [
+    "Voter pour Idlus : si ta box, ton antivirus ou ton réseau bloque le site (« New Domains »), la page Voter explique quoi faire : passe en 4G pour voter, puis récupère ta récompense en 4G sur le même appareil" ] },
   { v: "2.2.7.1", name: "Renfort d'un ami payant", items: [
     "Monocompte : le renfort d'un ami coûte maintenant 25 000 kamas par donjon, comme le mercenaire (payé à chaque course enchaînée). Les kamas sont détruits : ton ami ne gagne toujours rien, seulement son compteur d'aides" ] },
   { v: "2.2.7", name: "Refonte des drops", items: [

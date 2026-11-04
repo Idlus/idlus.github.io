@@ -113,6 +113,7 @@
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>Bon à savoir</h2></div><div class="pad stack small">
       <span>• Voter est libre : rien dans le jeu n'est réservé aux votants.</span>
       <span>• Le site compte un vote par heure et par connexion. VPN et votes automatiques sont interdits par le site et annulés.</span>
+      <span>• Page « bloquée » (par exemple « New Domains ») : c'est un filtre de ta box, de ton antivirus ou du réseau (école, travail), pas Idlus. Passe en 4G le temps de voter, puis clique « Récupérer » toujours en 4G, sur le même appareil.</span>
       <span>• La récompense arrive dans la partie ouverte (Éternel, Classique · Saison 1 ou Monocompte), comme une vente à l'hôtel de vente. Un vote ne paie qu'une partie.</span>
     </div></section>`;
   }

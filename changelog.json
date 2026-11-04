@@ -1,6 +1,13 @@
 {
-  "version": "2.2.7.1",
+  "version": "2.2.7.2",
   "versions": [
+    {
+      "v": "2.2.7.2",
+      "name": "Vote bloqué ?",
+      "items": [
+        "Voter pour Idlus : si ta box, ton antivirus ou ton réseau bloque le site (« New Domains »), la page Voter explique quoi faire : passe en 4G pour voter, puis récupère ta récompense en 4G sur le même appareil"
+      ]
+    },
     {
       "v": "2.2.7.1",
       "name": "Renfort d'un ami payant",
