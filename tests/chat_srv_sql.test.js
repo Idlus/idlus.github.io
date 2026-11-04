@@ -55,6 +55,24 @@ try {
   assert.strictEqual(send(7, "c", "vends Gelano"), "OK"); assert.strictEqual(send(7, "sc", "vends Coiffe"), "OK", "un autre Commerce compte à part"); assert.strictEqual(send(7, "v", "koli"), "OK", "PvP : pas de délai de 30 s");
   console.log("ok - un message toutes les 30 s dans chaque Commerce, à part");
 
+  // 2.2.8.1 (Mathis, 04/11 : « le chat saison 1 classique n'est pas bien synchronisé au perso ») : salons de la Saison 1 = héros de la saison
+  q(`insert into ladder (user_id, main, main_lvl, title, heroes) values ('${U(8)}', 'iop', 187, 'Titre Éternel', '[{"cls":"iop","lvl":187}]')
+     on conflict (user_id) do update set main = 'iop', main_lvl = 187, title = 'Titre Éternel'`);
+  assert.strictEqual(send(8, "s", "sans saison"), "OK");
+  assert.strictEqual(q(`select coalesce(cls, '-') || ':' || lvl || ':' || coalesce(title, '-') from chat_msgs where body = 'sans saison'`), "-:1:-", "salon Saison 1 sans s1 : jamais le héros de l'Éternel");
+  q(`create schema if not exists s1; create table s1.ladder (like ladder including defaults); insert into s1.ladder (user_id, main, main_lvl, title, heroes) values ('${U(8)}', 'cra', 12, 'Titre S1', '[{"cls":"cra","lvl":12}]')`);
+  for (const ch of ["s", "sv", "sc"]) assert.strictEqual(send(8, ch, "perso " + ch), "OK");
+  assert.strictEqual(q(`select string_agg(ch || ':' || cls || ':' || lvl || ':' || title, ',' order by id) from chat_msgs where body like 'perso %'`), "s:cra:12:Titre S1,sv:cra:12:Titre S1,sc:cra:12:Titre S1", "salons Saison 1 : héros, niveau et titre de la saison");
+  assert.strictEqual(send(8, "v", "perso eternel"), "OK"); assert.strictEqual(send(8, "g", "perso eternel g"), "OK");
+  assert.strictEqual(q(`select string_agg(ch || ':' || cls || ':' || lvl, ',' order by id) from chat_msgs where body like 'perso eternel%'`), "v:iop:187,g:iop:187", "salons de l'Éternel : héros de l'Éternel");
+  assert.strictEqual(as(8, `select coalesce(chat_send('mp saison', '${U(9)}', null, 's'), 'OK')`), "OK"); assert.strictEqual(as(8, `select coalesce(chat_send('mp eternel', '${U(9)}', null, 'g'), 'OK')`), "OK");
+  assert.strictEqual(q(`select string_agg(ch || ':' || cls || ':' || lvl, ',' order by id) from chat_msgs where body like 'mp %'`), "p:cra:12,p:iop:187", "message privé : héros du serveur d'où il part");
+  q(`update chat_settings set min_level = 20 where id = 1`);
+  assert.match(send(8, "s", "niveau"), /niveau 20/, "niveau minimum : compté sur les héros de la saison");
+  assert.strictEqual(send(8, "g", "niveau ok"), "OK", "niveau minimum : Éternel compté sur l'Éternel");
+  q(`update chat_settings set min_level = 0 where id = 1; drop schema s1 cascade;`);
+  console.log("ok - salons de la Saison 1 : héros, niveau et titre de la saison, jamais ceux de l'Éternel");
+
   const id = q(`select id from chat_msgs where ch = 'sv' limit 1`);
   as(10, `select adm_msg_del(${id})`); assert.strictEqual(q(`select count(*) from chat_msgs where id = ${id}`), "0", "modo : message du PvP Saison 1 supprimé");
   as(99, `select adm_chat_clear('sc')`); assert.strictEqual(q(`select count(*) from chat_msgs where ch = 'sc'`), "0", "Mathis vide le Commerce Saison 1");

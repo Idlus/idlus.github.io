@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8";
+const GAME_VERSION = "2.2.8.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.1", name: "Chat de la Saison 1 à ton héros", items: [
+    "Chat de la Saison 1 (salon Saison 1, Commerce et PvP) : ton message montre maintenant la classe, le niveau et le titre de ton héros de la saison, et plus ceux de ta partie Éternel",
+    "Messages privés écrits depuis une partie de la Saison 1 : même chose, ton héros de la saison",
+  ] },
   { v: "2.2.8", name: "Late game : Sceaux et boss de la semaine", items: [
     "Sceaux ultimes : des paliers avant le légendaire. 100 Sceaux pour 3 Bons de fusion (fusion de doublons sans kamas) ou 3 Galets brasillants, 300 pour 3 Pierres d'âme dorées, 600 pour le nouveau Cadre ultime",
     "Boss ultime de la semaine : chaque lundi, le donjon de la semaine des niveaux 161 à 200 double les Sceaux ultimes en stasis 11 à 15",

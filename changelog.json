@@ -1,6 +1,14 @@
 {
-  "version": "2.2.8",
+  "version": "2.2.8.1",
   "versions": [
+    {
+      "v": "2.2.8.1",
+      "name": "Chat de la Saison 1 à ton héros",
+      "items": [
+        "Chat de la Saison 1 (salon Saison 1, Commerce et PvP) : ton message montre maintenant la classe, le niveau et le titre de ton héros de la saison, et plus ceux de ta partie Éternel",
+        "Messages privés écrits depuis une partie de la Saison 1 : même chose, ton héros de la saison"
+      ]
+    },
     {
       "v": "2.2.8",
       "name": "Late game : Sceaux et boss de la semaine",

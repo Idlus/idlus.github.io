@@ -430,7 +430,7 @@
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
     if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
-    const to = C.tab === "p" ? C.peer : null; const tk = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null, ch = tk ? chOf(tk) : null; // 04/11 : Commerce et PvP du serveur de la partie
+    const to = C.tab === "p" ? C.peer : null; const tk = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null, ch = tk ? chOf(tk) : to && s1Game() ? "s" : null; // 2.2.8.1 : message privé depuis la Saison 1 : héros de la saison ; 04/11 : Commerce et PvP du serveur de la partie
     const err = C.tab === "a" && window.ALLY ? await window.ALLY.say(body) : C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (tk === "c") C.nextC = Date.now() + 30000;

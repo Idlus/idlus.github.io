@@ -212,7 +212,14 @@ begin
   if b ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans le chat.'; end if;
   select * into st from chat_settings where id = 1;
   if coalesce(st.closed, false) and p_to is null and not public.is_staff() then return 'Le chat est fermé pour le moment.'; end if; -- 1.2.10.1 : chat fermé par Mathis (les messages privés restent ouverts)
-  select * into lad from ladder where user_id = me;
+  -- 2.2.8.1 (Mathis, 04/11 : « le chat saison 1 classique n'est pas bien synchronisé au perso ») : salons de la Saison 1 ('s', 'sc', 'sv') :
+  -- héros, niveau et titre du classement de la SAISON (s1.ladder), jamais ceux de l'Éternel ; pas encore de partie de saison : rien
+  -- un message privé écrit depuis une partie de la Saison 1 (p_ch 's') montre aussi le héros de la saison
+  if c in ('s', 'sc', 'sv') or (c = 'p' and p_ch = 's') then
+    if to_regclass('s1.ladder') is not null then execute 'select * from s1.ladder where user_id = $1' into lad using me; else select * into lad from ladder where false; end if;
+  else
+    select * into lad from ladder where user_id = me;
+  end if;
   if c in ('m', 'mc', 'mv') then mh := public.chat_mono_hero(me); end if; -- 2.1.35.3 : salon Monocompte : héros Monocompte, jamais le profil Classique
   if coalesce(st.min_level, 0) > 0 and c in ('m', 'mc', 'mv') then
     if coalesce((mh ->> 'lvl')::int, 1) < st.min_level then return format('Il faut un héros au niveau %s pour écrire.', st.min_level); end if;

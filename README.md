@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.1 « Chat de la Saison 1 à ton héros »
+
+- Mathis 04/11 : « le chat saison 1 classique n'est pas bien synchronisé au perso ». `public.chat_send` (supabase/chat.sql) lisait toujours `public.ladder` (Éternel) : dans les salons `s`, `sc`, `sv` (et un message privé envoyé avec `p_ch` `s` depuis une partie S1, js/chat.js), classe, niveau, titre et niveau minimum viennent maintenant de `s1.ladder`. Test `tests/chat_srv_sql.test.js`.
 ## 2.2.8 « Late game : Sceaux et boss de la semaine »
 
 - Idées late game 2 et 3 (Mathis 04/11 : « ok pour les 3 »). `E.ULT_SHOP` / `E.ultShop` (js/engine.js, action `ultShop`) : 100 Sceaux ultimes = 3 Bons de fusion (`S.fuseFree`, utilisés par `E.fuseItem` à la place des kamas) ou 3 Galets brasillants, 300 = 3 Pierres d'âme dorées, 600 = Cadre ultime (`S.unlocks.frUlt`, cadre spécial `ultime` de js/systems.js). Fiche du donjon dès la stasis 11 (`ultBox` de js/ui.js).

@@ -130,6 +130,12 @@ function fake() {
     if (!l.includes(R.vm) || others(k, "vm").some((x) => l.includes(x))) fail(`${w} px, ${R.n} : PvP de ce serveur seulement : ` + l.slice(0, 300));
     a = await sendTxt(page, "koli " + k);
     if (a.p_ch !== R.v) fail(`${w} px, ${R.n} : envoi dans le PvP '${R.v}', trouvé ` + JSON.stringify(a));
+    // 2.2.8.1 : message privé depuis une partie de la Saison 1 : p_ch 's' (le serveur prend le héros de la saison) ; ailleurs : rien
+    await page.evaluate(() => { const C = window.CHAT.state; C.tab = "p"; C.peer = "00000000-0000-0000-0000-000000000003"; C.names[C.peer] = "Bob"; window.CHAT.repaint(); });
+    if (await page.$("#chIn")) {
+      a = await sendTxt(page, "mp " + k);
+      if (a.p_to !== "00000000-0000-0000-0000-000000000003" || (k === "s" ? a.p_ch !== "s" : a.p_ch)) fail(`${w} px, ${R.n} : message privé, salon envoyé ` + JSON.stringify(a));
+    } else fail(`${w} px, ${R.n} : pas de zone de texte dans les messages privés`);
     await noScroll(page, `${w} px, ${R.n}`);
   };
   try {
