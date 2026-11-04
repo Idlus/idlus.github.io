@@ -64,3 +64,12 @@ console.log("ok - brillantes ≈ 1 sur 100, doubles en poussière, fabrication d
   assert(!E.cardHas(E.newState("X", "iop"), "test_heros"));
   assert.strictEqual(E.CARTE_CRAFT.h, 400); }
 console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de donjon, son héros d'office");
+
+// 2.2.6 (refonte de l'album, 6A) : les nouvelles cartes restent marquées jusqu'à la visite de l'album ; donjons vers le booster suivant
+{ const S = s1(); const o = E.boosterOpen(S); const nw = o.filter((x) => x.nw).map((x) => x.id);
+  const t = E.cardNewTake(S); assert.deepStrictEqual([...new Set(t)].sort(), [...new Set(nw)].sort(), "les nouvelles du booster");
+  assert.deepStrictEqual(E.cardNewTake(S), [], "lues une seule fois");
+  const S2 = E.deserialize(E.serialize(s1())); E.boosterOpen(S2); assert(E.cardNewTake(E.deserialize(E.serialize(S2))).length > 0, "gardées dans la sauvegarde");
+  assert.deepStrictEqual(E.cardNewTake(E.newState("X", "iop")), [], "rien hors saison");
+  assert.strictEqual(E.cardDjDone(S), 0); E.emit(S, "dungeon", {}); assert.strictEqual(E.cardDjDone(S), 1); assert.strictEqual(E.cardDjDone(E.newState("X", "iop")), null); }
+console.log("ok - nouvelles cartes jusqu'à la visite de l'album, donjons vers le booster suivant");

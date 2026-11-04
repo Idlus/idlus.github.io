@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.5.1";
+const GAME_VERSION = "2.2.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.6", name: "Nouvel album de cartes", items: [
+    "Album de cartes refait : en haut, ta progression avec les 4 paliers et le prochain titre, ta Poussière, le prochain booster offert et tes donjons vers le suivant. Les règles passent derrière le bouton « ? »",
+    "Les cartes sont rangées par rareté, plus petites (4 par ligne au téléphone), avec une seule ligne de filtres : Toutes, Manquantes, Nouvelles, Doubles, Brillantes",
+    "Les cartes manquantes montrent leur illustration en gris, et un marteau doré ⚒ marque celles que ta Poussière peut déjà fabriquer",
+    "Fiche de carte complète : doubles et Poussière gagnée, bouton « Voir le donjon », Précédente / Suivante pour feuilleter. Les cartes d'un booster restent « Nouvelle » jusqu'à ta visite de l'album" ] },
   { v: "2.2.5.1", name: "Sablier du Serment de fer", items: [
     "Monocompte, Serment de fer : le Sablier que tu gagnes (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas. 1 h de Sablier = un quart d'heure de gains à ton niveau (un vote rapporte 50 % de kamas en plus)",
     "La fiche du Sablier affiche le taux et les kamas déjà reçus. Sous serment, l'Horloger et les boutiques ne vendent plus de temps" ] },

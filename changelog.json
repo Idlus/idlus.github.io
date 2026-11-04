@@ -1,6 +1,16 @@
 {
-  "version": "2.2.5.1",
+  "version": "2.2.6",
   "versions": [
+    {
+      "v": "2.2.6",
+      "name": "Nouvel album de cartes",
+      "items": [
+        "Album de cartes refait : en haut, ta progression avec les 4 paliers et le prochain titre, ta Poussière, le prochain booster offert et tes donjons vers le suivant. Les règles passent derrière le bouton « ? »",
+        "Les cartes sont rangées par rareté, plus petites (4 par ligne au téléphone), avec une seule ligne de filtres : Toutes, Manquantes, Nouvelles, Doubles, Brillantes",
+        "Les cartes manquantes montrent leur illustration en gris, et un marteau doré ⚒ marque celles que ta Poussière peut déjà fabriquer",
+        "Fiche de carte complète : doubles et Poussière gagnée, bouton « Voir le donjon », Précédente / Suivante pour feuilleter. Les cartes d'un booster restent « Nouvelle » jusqu'à ta visite de l'album"
+      ]
+    },
     {
       "v": "2.2.5.1",
       "name": "Sablier du Serment de fer",

@@ -71,6 +71,9 @@
   E.cardShinyCount = (S) => Object.keys(mine(S).b).filter((id) => BY[id]).length;
   E.cardDust = (S) => (s1(S) ? A(S).pd : 0);
   E.cardOf = (St) => (St && St.s1c && St.s1c.cards ? { o: Object.assign({}, St.s1c.cards.o), b: Object.assign({}, St.s1c.cards.b) } : null);
+  // 2.2.6 (6A) : les cartes arrivées depuis la dernière visite de l'album ; les lire les retire de la sauvegarde
+  E.cardDjDone = (S) => (s1(S) ? A(S).dj || 0 : null); // donjons de saison faits vers le prochain booster
+  E.cardNewTake = (S) => { if (!s1(S)) return []; const a = A(S), L = (a.nw || []).filter((id) => BY[id]); a.nw = []; return L; };
   E.cardImport = (S, St) => { if (s1(S) || S.mono) return; const o = E.cardOf(St); if (o) S.xcards = o; };
 
   /* ---------------- les boosters ---------------- */
@@ -97,6 +100,7 @@
       if (sh) { if (had) pd = DUST[c.rar] * 5; a.b[c.id] = (a.b[c.id] || 0) + 1; a.o[c.id] = a.o[c.id] || 1; }
       else { if (had) pd = DUST[c.rar]; a.o[c.id] = (a.o[c.id] || 0) + 1; }
       a.pd += pd; out.push({ id: c.id, sh, nw: !had, pd });
+      if (!had) { a.nw = (a.nw || []).filter((x) => x !== c.id); a.nw.push(c.id); if (a.nw.length > 60) a.nw.shift(); } // 2.2.6 (6A) : « Nouvelle » dans l'album jusqu'à la visite
     }
     a.nb = (a.nb || 0) + 1;
     E.emit(S, "booster", { from, n: out.length });

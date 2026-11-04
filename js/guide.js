@@ -822,6 +822,7 @@
     b: () => [
       ["p", `Une carte par boss de donjon (${N(() => E.CARTES.filter((c) => c.rar !== "h").length)}), en 4 raretés, et la page **Héros d'Idlus** : les héros des joueurs, à commencer par les 10 Légendes de la 1.1. Chaque carte existe aussi en **brillante** (1 chance sur ${N(() => Math.round(1 / E.CARTE_SHINY))}).`],
       ["ul", ["Un booster offert par jour.", `Un de plus tous les ${N(() => E.BOOSTER_DJ)} donjons de saison, ${N(() => E.BOOSTER_DJ_JOUR)} par jour au plus ; d'autres en Chevauchée et en Expéditions.`, `${N(() => E.BOOSTER_N)} cartes par booster, la dernière rare ou mieux ; 1 booster sur ${N(() => Math.round(1 / E.CARTE_HEROS_P))} contient un héros d'Idlus.`, "Les doubles donnent de la **Poussière d'étoile**, qui fabrique la carte qui te manque (jamais une brillante)."]],
+      ["p", "L'album est rangé par rareté, avec la barre des paliers en haut. Le marteau doré ⚒ montre une carte que ta Poussière peut déjà fabriquer, l'étiquette **Nouvelle** les cartes arrivées depuis ta dernière visite. Touche une carte pour sa fiche : ses doubles, son donjon, et Précédente / Suivante pour feuilleter."],
       ["tip", "Tu veux la carte de ton héros ? Demande-la à Xener avec une capture de ton héros : elle arrive dans les boosters de tout le monde, et dans ton album d'office."],
     ] });
   add({ id: "s1garde", f: "Saison 1", n: "Garde-robe et bannière de profil", ic: "ailes", page: "garde", k: "cosmetique aura decor compagnon victoire pseudo bouclier banniere profil vitrine autocollant",

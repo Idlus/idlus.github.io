@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.6 « Nouvel album de cartes »
+
+- Refonte de la page Héros › Album de cartes, choix de Mathis sur maquette (04/11) « 1A 2A 3A 4A 5A 6A » : bandeau compact (compteur, barre des paliers et prochain titre, Poussière, booster, prochain booster offert et donjons vers le suivant, règles derrière « ? »), sections par rareté avec une ligne de filtres (Toutes, Manquantes, Nouvelles, Doubles, Brillantes), cartes manquantes en gris et ⚒ si la Poussière suffit, fiche complète (doubles → Poussière, « Voir le donjon », Précédente / Suivante), 4 cartes par ligne au téléphone (page 8 500 → environ 5 300 px), étiquette « Nouvelle » jusqu'à la visite.
+- js/cartes.js : `a.nw` (cartes nouvelles d'un booster, 60 au plus), `E.cardNewTake`, `E.cardDjDone`. js/cartesui.js (page, règles, fiche), css/garderobe.css. Test tests/cartes.test.js.
+
 ## 2.2.5.1 « Sablier du Serment de fer »
 
 - Idée de joueur (Fulfutor), choix de Mathis (option 1) : sous Serment de fer, le Sablier gagné (vote, Défi du jour, Almanax, codes, Fioles) est changé en kamas au moment du gain, au barème du vote : 1 h = un quart d'heure de gains ordinaires au niveau du héros (`E.sabFerKh`, js/monoplus.js), compteur `S.mono.ferK`. La recharge gratuite n'est pas changée ; Horloger et boutiques refusent le temps acheté sous serment. Calcul : hors votes au plus 1,5 h par jour en Monocompte (≈ +1,5 % de gains) ; 24 votes par jour restent très loin du plafond de kamas du Bouclier. Test monoplus.

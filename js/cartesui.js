@@ -7,7 +7,7 @@
   "use strict";
   const X = () => window.DX.social, E = () => window.DX.E, S = () => window.DX.S, UI = () => window.DX.ui;
   const h = (s) => X().h(s);
-  const G = { r: "", miss: false, open: null };
+  const G = { f: "", nw: null, open: null };
   const art = (c, sh) => (c.art ? `<img class="ca-ill" src="${sh && c.artB ? c.artB : c.art}" alt="" loading="lazy">` : `<img class="ca-mon" src="${c.img}" alt="" loading="lazy">`);
   // une carte (own : à toi, sh : brillante, n : exemplaires)
   function card(c, o) { o = o || {}; const R = E().CARTE_RAR;
@@ -22,33 +22,68 @@
       <span class="ca-tbtn">${n && !over ? `<button class="btn sm primary" data-act="ca-open">Ouvrir</button>` : ""}<button class="btn sm" data-act="ca-album">Album</button></span></div>`; }
   const dur = (ms) => { const m = Math.max(1, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
 
-  /* ---------- la page ---------- */
+  /* ---------- la page (2.2.6, refonte validée par Mathis le 04/11 : 1A 2A 3A 4A 5A 6A) ----------
+     1A bandeau compact (compteur, barre des paliers, Poussière, booster et le suivant, règles derrière « ? »),
+     2A une section par rareté + une ligne de filtres, 3A cartes manquantes en gris et ⚒ si la Poussière suffit,
+     4A fiche complète qu'on feuillette, 5A cartes plus petites (4 par ligne au téléphone), 6A « Nouvelle » jusqu'à la sortie de la page. */
+  const RC = { c: "#9aa3ad", r: "#3f8fd8", e: "#a463e0", l: "#f0b43c", h: "#ff6fa8" };
+  const FIL = [["", "Toutes"], ["miss", "Manquantes"], ["new", "Nouvelles"], ["dbl", "Doubles"], ["sh", "Brillantes"]];
+  const fresh = () => G.nw || [];
+  function cell(c, M, dust) { const e = E(), own = !!M.o[c.id];
+    let x = card(c, { own, sh: !!M.b[c.id], n: M.o[c.id], nw: own && fresh().includes(c.id) });
+    if (!own && dust !== null && dust >= e.CARTE_CRAFT[c.rar]) x = x.replace('<div class="ca-foot">', `<span class="ca-fab" title="Fabricable avec ta Poussière d'étoile">⚒</span><div class="ca-foot">`);
+    return `<button class="ca-cell" data-act="ca-see" data-v="${c.id}" aria-label="${h(c.n)}${own ? "" : " (manquante)"}">${x}</button>`; }
   function pageHtml() {
     const s = S(), e = E(), R = e.CARTE_RAR, M = e.cardMine(s), S1 = e.cardOn && e.cardOn(s);
-    const L = e.CARTES.filter((c) => (!G.r || c.rar === G.r) && (!G.miss || !M.o[c.id]));
-    const cnt = (r) => e.CARTES.filter((c) => c.rar === r && M.o[c.id]).length + " / " + e.CARTES.filter((c) => c.rar === r).length;
-    const tabs = [["", "Toutes"]].concat(Object.entries(R).filter(([k]) => k !== "h" || e.CARTE_HEROS.length)).map(([k, n]) => `<button class="${G.r === k ? "on" : ""}" data-act="ca-r" data-v="${k}">${n}${k ? ` <small>${cnt(k)}</small>` : ""}</button>`).join("");
-    const pal = e.CARTE_PAL.map(([k, nm]) => `<span class="ca-pal${e.cardCount(s) >= k ? " ok" : ""}">${k} · ${h(nm)}</span>`).join("");
-    const head = S1 ? `<div class="ca-top"><span><img src="assets/ui/poussiere.webp" alt=""> <b>${e.cardDust(s)}</b> Poussière d'étoile</span>
-        ${e.boosterLeft(s) && !e.s1cOver(s) ? `<button class="btn primary" data-act="ca-open">Ouvrir un booster (${e.boosterLeft(s)})</button>` : `<span class="xs muted">Prochain booster offert dans ${dur(e.boosterNext())}</span>`}</div>`
-      : `<p class="small muted">L'album est lié à ton compte : il montre les cartes de ta partie Saison 1. Les boosters s'ouvrent dans la partie de saison.</p>`;
-    return `<div class="ca-page"><div class="pagehead"><h1>Album de cartes</h1><span class="small muted">${e.cardCount(s)} / ${e.CARTES.length} cartes · ${e.cardShinyCount(s)} brillante${e.cardShinyCount(s) > 1 ? "s" : ""}</span></div>
-      <section class="panel">${head}<div class="ca-pals">${pal}</div>
-        <span class="xs muted">Une carte par boss de donjon${e.CARTE_HEROS.length ? ", et la page Héros d'Idlus : les héros des joueurs (1 booster sur 50 en contient un)" : ""}. Un booster offert par jour et un de plus tous les ${e.BOOSTER_DJ} donjons de saison (${e.BOOSTER_DJ_JOUR} par jour au plus). Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante. Les cartes ne changent pas la puissance.</span>
-        <nav class="subtabs ca-tabs">${tabs}<button class="${G.miss ? "on" : ""}" data-act="ca-miss">Manquantes</button></nav>
-        <div class="ca-grid">${L.map((c) => `<button class="ca-cell" data-act="ca-see" data-v="${c.id}">${card(c, { own: !!M.o[c.id], sh: !!M.b[c.id], n: M.o[c.id] })}</button>`).join("") || `<p class="muted">Rien ici.</p>`}</div></section></div>`;
+    if (S1) { const t = e.cardNewTake(s); if (t.length) { G.nw = fresh().filter((id) => !t.includes(id)).concat(t); X().markDirty(); } }
+    const n = e.cardCount(s), T = e.CARTES.length, P = e.CARTE_PAL, nx = P.find(([k]) => n < k), dust = S1 ? e.cardDust(s) : null;
+    const ok = (c) => G.f === "miss" ? !M.o[c.id] : G.f === "new" ? fresh().includes(c.id) : G.f === "dbl" ? M.o[c.id] > 1 : G.f === "sh" ? !!M.b[c.id] : true;
+    const cnt = { miss: T - n, new: fresh().length, dbl: e.CARTES.filter((c) => M.o[c.id] > 1).length, sh: e.cardShinyCount(s) };
+    const bst = S1 ? (() => { const bl = e.boosterLeft(s), over = e.s1cOver(s), dj = e.cardDjDone ? e.cardDjDone(s) : null;
+      return `<div class="ca-bst"><span class="ca-dust"><img src="assets/ui/poussiere.webp" alt=""><b>${dust}</b> Poussière d'étoile <button class="ca-q" data-act="ca-rules" aria-label="Règles de l'album" title="Règles de l'album">?</button></span>
+        ${bl && !over ? `<button class="btn primary" data-act="ca-open">Ouvrir un booster (${bl})</button>` : ""}
+        <span class="xs muted">${over ? "La saison est finie : l'album reste, les boosters s'arrêtent." : `${e.boosterFree(s) ? "Booster du jour disponible" : `Prochain offert dans ${dur(e.boosterNext())}`}${dj === null ? "" : e.boosterDjLeft(s) ? ` · donjons ${dj} / ${e.BOOSTER_DJ} pour le suivant` : " · boosters de donjon du jour déjà gagnés"}`}</span></div>`; })()
+      : `<div class="ca-bst"><span class="xs muted">L'album est lié à ton compte : il montre les cartes de ta partie de saison, où s'ouvrent les boosters. <button class="ca-q" data-act="ca-rules" aria-label="Règles de l'album">?</button></span></div>`;
+    const head = `<div class="ca-hd"><div><div class="ca-cnt"><b>${n} / ${T}</b><span class="small muted">cartes · ${e.cardShinyCount(s)} brillante${e.cardShinyCount(s) > 1 ? "s" : ""}</span></div>
+        <div class="ca-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${T}" aria-valuenow="${n}"><i style="width:${(n / T) * 100}%"></i>${P.map(([k, nm]) => `<span class="ca-mk${n >= k ? " ok" : ""}" style="left:${(k / T) * 100}%" title="${k} cartes : titre « ${h(nm)} »"><small>${k}</small></span>`).join("")}</div>
+        <span class="xs muted">${nx ? `Encore <b>${nx[0] - n}</b> carte${nx[0] - n > 1 ? "s" : ""} pour le titre « ${h(nx[1])} »` : "Album complet : titre « Maître de l'Album » !"}</span></div>${bst}</div>`;
+    const chips = FIL.filter(([k]) => k !== "new" || cnt.new || G.f === "new").map(([k, nm]) => `<button aria-pressed="${G.f === k}" data-act="ca-f" data-v="${k}">${nm}${k && cnt[k] ? ` <small>${cnt[k]}</small>` : ""}</button>`).join("");
+    const secs = Object.keys(R).map((r) => { const C = e.CARTES.filter((c) => c.rar === r); if (!C.length) return ""; const L = C.filter(ok); if (!L.length) return "";
+      const k = C.filter((c) => M.o[c.id]).length;
+      return `<section class="ca-sec" style="--rc:${RC[r]}"><div class="ca-sh"><b>${R[r]}</b><span class="ca-sbar"><i style="width:${(k / C.length) * 100}%"></i></span><span class="xs muted">${k} / ${C.length}</span></div>
+        <div class="ca-grid">${L.map((c) => cell(c, M, dust)).join("")}</div></section>`; }).join("");
+    return `<div class="ca-page"><div class="pagehead"><h1>Album de cartes</h1></div>
+      <section class="panel">${head}<nav class="subtabs ca-chips">${chips}</nav>${secs || `<p class="muted">Aucune carte ici.</p>`}</section></div>`;
   }
   const page = (main) => { main.innerHTML = pageHtml(); };
   window.DX.pages.album = page;
   const repaint = () => { const m = document.querySelector("#main"); if (UI().tab === "album" && m) page(m); else X().render(); };
+  // 6A : les « Nouvelle » s'effacent quand on quitte la page
+  document.addEventListener("click", () => setTimeout(() => { if (G.nw && UI() && UI().tab !== "album") G.nw = null; }, 0));
 
+  function rules() { const e = E();
+    X().openSheet(`<div class="stack"><h2>L'album de cartes</h2>
+      <p class="small">Une carte par boss de donjon${e.CARTE_HEROS.length ? ", et la page Héros d'Idlus : les héros des joueurs (1 booster sur 50 en contient un)" : ""}.</p>
+      <p class="small">Un booster offert par jour, et un de plus tous les ${e.BOOSTER_DJ} donjons de la partie de saison (${e.BOOSTER_DJ_JOUR} par jour au plus). 5 cartes par booster, la 5e rare ou mieux ; chaque carte a 1 chance sur 100 d'être brillante.</p>
+      <p class="small">Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante (le ⚒ doré montre celles que tu peux déjà fabriquer). Les cartes ne changent pas la puissance.</p>
+      <p class="small">Paliers : ${e.CARTE_PAL.map(([k, nm]) => `${k} cartes « ${h(nm)} »`).join(", ")}.</p>
+      <button class="btn" data-act="closesheet">Fermer</button></div>`); }
   function see(id) { const s = S(), e = E(), c = e.carte(id), M = e.cardMine(s); if (!c) return; const own = !!M.o[id], S1 = e.cardOn && e.cardOn(s);
-    const p = e.CARTE_CRAFT[c.rar], ok = S1 && !own && e.cardDust(s) >= p;
+    const L = e.CARTES, i = L.indexOf(c), p = e.CARTE_CRAFT[c.rar], ok = S1 && !own && e.cardDust(s) >= p, dbl = own ? M.o[id] - 1 : 0;
+    const dg = (window.DATA && window.DATA.DUNGEONS || {})[id], R = e.CARTE_RAR[c.rar];
+    const rows = [[c.rar === "h" ? "Héros" : "Boss", c.rar === "h" ? h(c.d) : `${h(c.n)}, niveau ${c.lvl}`]];
+    if (dg) rows.push(["Donjon", h(c.d)]);
+    rows.push(["Dans ton album", own ? `${M.o[id]} exemplaire${M.o[id] > 1 ? "s" : ""}${M.b[id] ? " · brillante ✦" : ""}` : "pas encore"]);
+    if (own) rows.push(["Doubles", dbl ? `${dbl} → +${dbl * e.CARTE_DUST[c.rar]} Poussières d'étoile gagnées` : "aucun"]);
+    else rows.push(["Fabriquer", c.rar === "h" ? "dans les boosters seulement" : `${p} Poussières d'étoile${S1 ? ` (tu en as ${e.cardDust(s)})` : ""}`]);
+    rows.push(["Brillante", M.b[id] ? "obtenue ✦" : "1 chance sur 100 par carte de booster"]);
     X().openSheet(`<div class="ca-see">${card(c, { own, sh: !!M.b[id], big: 1 })}
-      <div class="stack"><h2>${h(c.n)}</h2><span class="small">${h(c.d)} · niveau ${c.lvl} · ${e.CARTE_RAR[c.rar]}</span>
-      <span class="small muted">${own ? `Tu l'as en ${M.o[id]} exemplaire${M.o[id] > 1 ? "s" : ""}${M.b[id] ? `, dont ${M.b[id]} brillante${M.b[id] > 1 ? "s" : ""}` : ""}.` : "Pas encore dans ton album : elle sort des boosters."}</span>
-      ${S1 && !own ? `<button class="btn${ok ? " primary" : ""}" data-act="ca-craft" data-v="${id}"${ok ? "" : " disabled"}>Fabriquer · ${p} Poussières d'étoile</button>` : ""}
+      <div class="stack"><h2>${h(c.n)}</h2><span><span class="ca-tag" style="--rc:${RC[c.rar]}">${R}</span> <span class="xs muted">carte ${i + 1} / ${L.length}</span></span>
+      <div class="ca-kv">${rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join("")}</div>
+      ${S1 && !own && c.rar !== "h" ? `<button class="btn${ok ? " primary" : ""}" data-act="ca-craft" data-v="${id}"${ok ? "" : " disabled"}>Fabriquer · ${p} Poussières d'étoile</button>` : ""}
+      ${dg ? `<button class="btn" data-act="dgopen" data-id="${id}">Voir le donjon</button>` : ""}
       ${c.art ? "" : `<span class="xs muted">Illustration de saison à venir : la carte montre le boss en attendant.</span>`}
+      <div class="ca-nav"><button class="btn" data-act="ca-see" data-v="${L[(i - 1 + L.length) % L.length].id}">‹ Précédente</button><button class="btn" data-act="ca-see" data-v="${L[(i + 1) % L.length].id}">Suivante ›</button></div>
       <button class="btn" data-act="closesheet">Fermer</button></div></div>`); }
 
   /* ---------- la cérémonie du booster ---------- */
@@ -82,8 +117,8 @@
     if (a === "ca-all") { document.querySelectorAll(".ca-flip:not(.up)").forEach((b, i) => setTimeout(() => flip(b), i * 120)); return; }
     if (a === "ca-close") { const el = document.querySelector(".ca-cer"); if (el) el.remove(); G.open = null; repaint(); return; }
     if (a === "ca-album") { window.DX.go("album"); return; }
-    if (a === "ca-r") { G.r = t.dataset.v; repaint(); return; }
-    if (a === "ca-miss") { G.miss = !G.miss; repaint(); return; }
+    if (a === "ca-f") { G.f = G.f === t.dataset.v ? "" : t.dataset.v; repaint(); return; }
+    if (a === "ca-rules") { rules(); return; }
     if (a === "ca-see") { see(t.dataset.v); return; }
     if (a === "ca-craft") { const err = E().cardCraft(S(), t.dataset.v); if (err) { X().toast(err); return; } X().markDirty(); X().toast("Carte fabriquée : elle rejoint l'album."); X().closeSheet(); repaint(); }
   });
