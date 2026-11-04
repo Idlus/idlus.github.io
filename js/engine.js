@@ -1675,6 +1675,7 @@
     else if (tgt.side === "m" && src && src.side === "c") { F.dealt = F.dealt || {}; F.dealt[ti] = (F.dealt[ti] || 0) + v; const o = src.summon ? F.ents[src.owner] : src; if (o) { o.dealt = (o.dealt || 0) + v; (F.lastBy = F.lastBy || {})[ti] = F.ents.indexOf(o); } }
   };
   const dealDamage = (F, src, tgt, raw, el) => {
+    if (tgt) tgt.lastAbs = 0; // 2.2.8.1 : part du coup prise par le bouclier (affichée dans le journal)
     let v = raw;
     if (tgt.srInvis > 0 && src && src.side !== tgt.side && E.SR2) v *= 1 - E.SR_HIDE; // Sram : dans l'ombre, les coups ennemis le touchent mal (sram.js)
     let res = 0;
@@ -1716,7 +1717,7 @@
     }
     if (F && E.idDef && (tgt.idHalf || tgt.idGuard || (src && src.idn && src.idn.trap))) v = Math.max(1, Math.round(E.idDef(F, src, tgt, v))); // identité : esquive, garde, piège
     if (!Number.isFinite(v)) v = 1; // 1.2.6.3 : filet de sécurité, un coup invalide ne rend plus un monstre immortel (PV NaN)
-    if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
+    if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; tgt.lastAbs = a; }
     tgt.hp -= v;
     if (!Number.isFinite(tgt.hp)) tgt.hp = Number.isFinite(tgt.hpMax) ? Math.max(0, tgt.hpMax - v) : 0;
     if (F) trackHit(F, src, tgt, v, el);
@@ -1956,7 +1957,7 @@
           if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && (f.n === 1 || s1r(S, F)) && t.alive && t.pelle !== F.round && rnd() < (s1r(S, F) ? E.RET_S1.enuPelle : psv(e).enuPelle) + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") { doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); eniSh += eniSurplus(F, e, e); } if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
+            if (e.cls === "enu" && (f.n === 1 || s1r(S, F)) && t.alive && t.pelle !== F.round && rnd() < (s1r(S, F) ? E.RET_S1.enuPelle : psv(e).enuPelle) + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}${t.lastAbs > 0 ? ` (bouclier −${t.lastAbs})` : ""}`); if (f.k === "drain") { doHeal(e, d * (e.cls === "sacri" ? psv(e).sacriDrain : 0.5), F); eniSh += eniSurplus(F, e, e); } if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
@@ -2269,7 +2270,7 @@
     const t = (own && own.alive && oc && E.chalRespect(S, oc) && F.chals && F.chals.some((c) => c.ok) ? pickFoes(S, F, own, null, 1)[0] : null) || alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return; // les invocations suivent les challenges de leur maître
     F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
     const d = dealDamage(F, e, t, e.dmg * rf(0.85, 1.15) * (E.dofpSummon && own ? E.dofpSummon(F, own) : 1), e.el); // 1.0.16 : Domakuro
-    flog(F, `${e.name} (invocation) → ${t.name} : −${d}`, "c");
+    flog(F, `${e.name} (invocation) → ${t.name} : −${d}${t.lastAbs > 0 ? ` (bouclier −${t.lastAbs})` : ""}`, "c");
     if (!t.alive) flog(F, `${t.name} est vaincu.`, "ko");
   };
 
@@ -2464,7 +2465,7 @@
     if (has("brise") && t % 3 === 0 && alive(F, "c").some((h) => h.shield > 0)) { alive(F, "c").forEach((h) => (h.shield = 0)); say(`${e.name} brise les boucliers de l'équipe !`, "Brise-garde"); }
     if (has("aspiration") && t % 3 === 0) { const sum = alive(F, "c").reduce((a, h) => a + (h.shield || 0), 0); if (sum > 0) { alive(F, "c").forEach((h) => (h.shield = 0)); const h = doHeal(e, sum, F); say(`${e.name} aspire les boucliers de l'équipe (+${h} PV) !`, "Aspiration"); } }
     if (has("larcin") && t % 3 === 0) { const v = heroesOf(F).filter((h) => h.shield > 0 || h.buffs.length).sort((a, b) => (b.shield || 0) - (a.shield || 0))[0];
-      if (v) { e.shield = (e.shield || 0) + (v.shield || 0); v.shield = 0; v.buffs = []; say(`${e.name} détrousse ${v.name} : bouclier et bonus volés !`, "Larcin"); } }
+      if (v) { e.shield = Math.max(e.shield || 0, Math.min(Math.round(e.hpMax * 0.2), (e.shield || 0) + (v.shield || 0))); v.shield = 0; v.buffs = []; say(`${e.name} détrousse ${v.name} : bouclier et bonus volés !`, "Larcin"); } }
     if (has("putrefaction") && t % 4 === 0) { F.rot = F.round + 2; say(`${e.name} répand la putréfaction : soins de l'équipe −50 % pendant 2 tours.`, "Putréfaction"); }
     if ((has("peau") || has("humeurs")) && t % 3 === 1) { e.skinEl = pick(ELS4.filter((x) => x !== e.skinEl)); say(`${e.name} change de peau : il résiste à l'élément ${ELEMENTS[e.skinEl].name}.`, ELEMENTS[e.skinEl].name); }
     if (has("fournaise") && t % 2 === 1) { e.openEl = pick(ELS4.filter((x) => x !== e.openEl)); say(`${e.name} ne craint plus que l'élément ${ELEMENTS[e.openEl].name}.`, ELEMENTS[e.openEl].name); }

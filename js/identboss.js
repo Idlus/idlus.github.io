@@ -58,6 +58,8 @@
       low: (l) => l.slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0],
       frail: (l) => l.slice().sort((a, b) => a.hpMax - b.hpMax)[0],
       tough: (l) => l.slice().sort((a, b) => b.hpMax - a.hpMax)[0],
+      /* 2.2.8.1 : bouclier cumulable avec un plafond (part des PV max) ; ne réduit jamais un bouclier déjà plus grand */
+      gain: (x, v, cap) => { const c = Math.round(x.hpMax * cap); x.shield = Math.max(x.shield || 0, Math.min(c, (x.shield || 0) + Math.round(v))); say(x, "m_armure"); },
       later: (n, fn) => { (e.midLater = e.midLater || []).push({ r: F.round + n, fn }); },
     };
     return h;
@@ -71,12 +73,12 @@
   /* ——— niveaux 10 à 70 ——— */
   add("m4051", "Casse-crâne", "Crâne fêlé", "Une chance sur quatre d'assommer chaque héros touché : il passe son tour.", { hit: (h, t) => { if (h.ch(0.25)) h.stun(t); } });
   add("m799", "Goinfrage", "Ventre plein", "Dévore les PV volés : chaque Goinfrage le soigne et lui donne 5 % de dégâts en plus (5 fois au plus).", { hit: (h, t, d) => h.drain(d, 0.5), post: (h) => h.buff(5, 5, "mgoinf") });
-  add("m928", "Dégraissage", "Essorage", "Retire le bouclier de chaque héros touché et s'en couvre à son tour.", { hit: (h, t) => { const s = t.shield || 0; if (s > 0) { t.shield = 0; h.e.shield = (h.e.shield || 0) + Math.round(s * 0.6 * h.p); h.say(h.e, "m_armure"); } } });
+  add("m928", "Dégraissage", "Essorage", "Retire le bouclier de chaque héros touché et en garde un tiers (au plus 8 % de ses PV).", { hit: (h, t) => { const s = t.shield || 0; if (s > 0 && !t.summon) { t.shield = 0; h.gain(h.e, s * 0.33 * h.p, 0.08); } else if (s > 0) t.shield = 0; } }); // 2.2.8.1 : avant, 60 % sans plafond, et la Botte du Roublard le nourrissait chaque tour : coups à −0
   add("m147", "Morsure du Bouftou Royal", "Laine royale", "Chaque morsure fait pousser sa laine : un bouclier de 4 % de ses PV, qui se cumule jusqu'à 20 %.", { post: (h) => { h.e.shield = Math.min(Math.round(h.e.hpMax * 0.2), (h.e.shield || 0) + Math.round(h.e.hpMax * 0.04 * h.p)); h.say(h.e, "m_armure"); } });
   add("m3945", "Blathération", "Pinces d'acier", "Pince le héros le plus fragile une deuxième fois.", { post: (h, ts, b) => { const t = h.frail(h.heroes()); if (t && b) { h.hit(t, b * 0.6); h.say(t, "m_saigne"); } } });
   add("m800", "Lancer de Tofu Fugace", "Nuée de Tofus", "Lâche trois petits Tofus qui frappent des héros au hasard.", { post: (h, ts, b) => { if (!b) return; for (let i = 0; i < 3; i++) { const t = h.rand(h.heroes()); if (t) { h.hit(t, b * 0.25); h.say(t, "m_marque"); } } } });
   add("m3238", "Bushido", "Voie du sabre", "Défie le héros le plus en forme : vise celui qui a le plus de PV, +25 % de dégâts s'il est indemne.", { tgt: (h, ts, all, n) => (n <= 1 ? [all.slice().sort((a, b) => b.hp - a.hp)[0]] : ts), mul: (h, t) => (t.hp >= t.hpMax ? 1 + 0.25 * h.p : 1) });
-  add("m797", "Picoti", "Picots dorés", "Change l'or volé en carapace : un bouclier égal à la moitié des PV drainés.", { hit: (h, t, d) => { h.e.shield = (h.e.shield || 0) + Math.round(d * 0.5 * h.p); h.say(h.e, "m_armure"); } });
+  add("m797", "Picoti", "Picots dorés", "Change l'or volé en carapace : un bouclier égal à la moitié des PV drainés (au plus 20 % de ses PV).", { hit: (h, t, d) => h.gain(h.e, d * 0.5 * h.p, 0.2) }); // 2.2.8.1 : plafond 20 %
   add("m2975", "Le Dentiste", "Arrache-dent", "Arrache une dent : la cible frappe 15 % moins fort et saigne pendant 3 tours.", { hit: (h, t, d) => { h.weak(t, 15, 2); h.bleed(t, d, 0.08, 3); } });
   add("m792", "Abolissement", "Colère de Bwork", "Frappe d'autant plus fort qu'elle est blessée : jusqu'à +50 % sous 20 % de PV.", { mul: (h) => 1 + 0.5 * h.p * Math.min(1, (1 - h.e.hp / h.e.hpMax) / 0.8) });
   add("m2995", "Kwakoukas Kwayal", "Kwabolition", "Retire les bonus et le bouclier de chaque héros touché.", { hit: (h, t) => h.strip(t) });
@@ -169,7 +171,7 @@
   add("m3416", "Multicomte", "Horloge du Comte", "Chaque coup avance l'horloge : la quatrième Multicomte frappe deux fois plus fort.", { mul: (h) => (((h.e.midClock || 0) % 4) === 3 ? 1 + 1 * h.p : 1), post: (h) => { h.e.midClock = (h.e.midClock || 0) + 1; h.say(h.e, "m_rage"); } });
   add("m4967", "Hantâme", "Âme hantée", "Hante la cible : elle prend 20 % de dégâts en plus et frappe 10 % moins fort pendant 2 tours.", { hit: (h, t) => { h.vuln(t, 20, 2); h.weak(t, 10, 2); } });
   add("m3534", "Sondage de Bronze", "Ancre de bronze", "Jette l'ancre : les héros touchés de l'arrière sont tirés en première ligne.", { hit: (h, t) => { if (h.row(t) === "b" && h.ch(0.5)) h.toFront(t); } });
-  add("m3648", "Liquidation", "Or du roi", "Paie ses mercenaires : chaque héros touché lui rapporte un bouclier de 2 % de ses PV.", { post: (h, ts) => { h.e.shield = (h.e.shield || 0) + Math.round(h.e.hpMax * 0.02 * ts.length * h.p); h.say(h.e, "m_armure"); } });
+  add("m3648", "Liquidation", "Or du roi", "Paie ses mercenaires : chaque héros touché lui rapporte un bouclier de 2 % de ses PV (au plus 20 %).", { post: (h, ts) => h.gain(h.e, h.e.hpMax * 0.02 * ts.length * h.p, 0.2) }); // 2.2.8.1 : plafond 20 %
   add("m3835", "Heuristique", "Tourbillon du Vortex", "Aspire un bonus de chaque héros touché et change de place deux héros au hasard.", { hit: (h, t) => { const b = t.buffs.findIndex((x) => x.turns < 50); if (b >= 0) t.buffs.splice(b, 1); }, post: (h) => { const l = h.heroes(); const a = h.rand(l); if (a) { if (h.row(a) === "f") h.toBack(a); else h.toFront(a); } } });
   add("m4263", "Toilette Ecaflip", "Pile ou face", "Joue à pile ou face : soit il frappe deux fois plus fort, soit il soigne la cible de 5 %.", { mul: (h) => { h.e.midCoin = rnd() < 0.55; return h.e.midCoin ? 1 + 1 * h.p : 0.2; }, hit: (h, t) => { if (!h.e.midCoin && t.alive) API().doHeal(t, t.hpMax * 0.05, h.F); } });
   add("m4744", "Transe-Perse", "Transe", "Perce les défenses : ignore le bouclier de la cible et la laisse saigner.", { mul: (h, t) => { if ((t.shield || 0) > 0) { t.midShieldKeep = t.shield; t.shield = 0; } return 1; }, hit: (h, t, d) => { if (t.midShieldKeep) { t.shield = t.midShieldKeep; t.midShieldKeep = 0; } h.bleed(t, d, 0.07, 2); } });

@@ -1,6 +1,15 @@
 {
-  "version": "2.2.8.1",
+  "version": "2.2.8.2",
   "versions": [
+    {
+      "v": "2.2.8.2",
+      "name": "Mob l'Éponge ne boit plus tout",
+      "items": [
+        "Mob l'Éponge : Essorage gardait 60 % des boucliers volés, sans limite. Avec la Botte du Roublard (ou tout bouclier refait chaque tour), ses PV ne bougeaient plus : tous les coups faisaient −0. Il garde maintenant un tiers des boucliers des héros (pas des invocations), au plus 8 % de ses PV",
+        "Même plafond pour les autres boss qui cumulent des boucliers volés : Picots dorés (Scarabosse Doré), Or du roi (Roi Nidas) et Larcin (Trône de la Cour Sombre), au plus 20 % de leurs PV",
+        "Journal de combat : un coup avalé par un bouclier l'indique, par exemple « −0 (bouclier −25) »"
+      ]
+    },
     {
       "v": "2.2.8.1",
       "name": "Chat de la Saison 1 à ton héros",

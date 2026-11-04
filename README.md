@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.2 « Mob l'Éponge ne boit plus tout »
+
+- Bug signalé par Mathis (04/11, Roublard « −0 quoi qu'il arrive ») : `m928` Essorage (js/identboss.js) ajoutait 60 % du bouclier volé au boss sans plafond ; la Botte (Roublard) refait 66 de bouclier sur le héros et l'Explobombe chaque tour, le boss en gardait ~55 par tour. Maintenant 33 % des boucliers des héros (invocations : bouclier retiré sans gain), plafond 8 % des PV max, via le geste `h.gain(x, v, cap)`. Même plafond 20 % pour m797, m3648 et la mécanique `larcin` (js/engine.js).
+- `dealDamage` note `tgt.lastAbs` (part prise par le bouclier), affichée dans le journal des sorts des héros et des invocations.
+- Simulation (tools/simulate.js, Château Ensablé et Trône de la Cour Sombre, 3 graines) : paliers inchangés (écart dans le bruit). Roublard seul niveau 30 sans équipement : 0/6 → 6/6 victoires.
+
 ## 2.2.8.1 « Chat de la Saison 1 à ton héros »
 
 - Mathis 04/11 : « le chat saison 1 classique n'est pas bien synchronisé au perso ». `public.chat_send` (supabase/chat.sql) lisait toujours `public.ladder` (Éternel) : dans les salons `s`, `sc`, `sv` (et un message privé envoyé avec `p_ch` `s` depuis une partie S1, js/chat.js), classe, niveau, titre et niveau minimum viennent maintenant de `s1.ladder`. Test `tests/chat_srv_sql.test.js`.
