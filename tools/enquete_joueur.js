@@ -43,6 +43,9 @@ const sum = (label, txt, at) => {
     const M = c.mt || {}; const ids = (M.t && M.t[M.lo || 0]) || [];
     console.log(`  - ${String(c.name).slice(0, 20)} (${c.cls}) niv ${c.lvl} · Maîtrise ${M.lvl || 0} + ${M.bn || 0} · ${ids.length} étoiles · conversion ${JSON.stringify(c.renMt || null)} · ren ${c.ren || 0} · points ${JSON.stringify(c.alloc || {})} (+${c.pts || 0} libres) · parchemins ${JSON.stringify(c.scrolls || {})}`);
   });
+  // 04/11 (#172) : quête principale (scène, objectifs faits) et boosters de cartes
+  { const T = raw.hist; const cc = (raw.mono || raw.s1c || {}).cards; const q = raw.quest;
+    console.log(`  quête : hist ${T ? JSON.stringify({ sc: T.sc, d: T.d, p: T.p, pre: T.pre }) : "aucune"} · quest ${JSON.stringify(q || null)} · boosters ${cc ? JSON.stringify({ bst: cc.bst, nb: cc.nb, free: cc.free, djn: cc.djn }) : "aucun"}`); }
   // 28/10 : carnet de bord (d'où viennent les kamas, jour par jour) et derniers grands moments, pour distinguer un bug d'une partie modifiée
   const C = raw.carnet;
   if (C) {
