@@ -166,7 +166,7 @@
     const u = UI().mercCls.slice(4); const R = (AM() && AM().renforts().find((x) => x.u === u)) || null; const err = R ? R.err || E.monoRenfortErr(S(), { u: R.u, p: R.p, snap: R.snap }) : "Ce renfort n'est plus disponible.";
     return `${mutLine()}<div class="mercbox"><div class="row between" style="gap:8px;flex-wrap:wrap"><b>Renfort d'un ami</b><span class="xs muted">à la place du mercenaire · sans gain pour ton ami</span></div>
       ${R ? `<div class="mp-lr sm">${X().cmed(R.cls, R.lvl)}<div class="mp-fi"><b>${h(R.p)}</b><span class="xs muted">${h((D.CLASSES[R.cls] || {}).name || "")} niveau ${R.lvl}, copie de sa partie validée</span></div></div>` : ""}
-      ${err ? `<span class="xs" style="color:var(--danger)">${h(err)}</span>` : `<span class="xs muted">Il prend ta part de demi-joueur, ne prend ni XP ni butin, et repart à la fin du donjon. Ton ami ne gagne rien, seulement un compteur.</span>`}
+      ${err ? `<span class="xs" style="color:var(--danger)">${h(err)}</span>` : `<span class="xs muted">Il prend ta part de demi-joueur, ne prend ni XP ni butin, et repart à la fin du donjon ou de l'enchaînement. Ton ami ne gagne rien, seulement un compteur.</span>`}
       <div><button class="btn sm ghost" data-act="mercpick" data-v="">Revenir au mercenaire</button></div></div>`;
   }
   function renfortPick() {

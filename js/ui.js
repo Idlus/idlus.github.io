@@ -4569,12 +4569,12 @@ function monoDgBox() {
 /* Monocompte : entrer en donjon solo avec le renfort d'un ami. Le serveur vérifie et rend sa copie du héros de l'ami
    (mono_renfort_prendre, js/amis.js) ; c'est elle qui combat (le Bouclier refuse une partie avec une autre copie). */
 let renfBusy = false;
-async function enterRenfort(did, stasis, u) {
+async function enterRenfort(did, stasis, u, chain, climb) {
   if (renfBusy) return; if (!window.AMIS || !window.AMIS.prendre) { toast("Le renfort d'un ami passe par le serveur Monocompte."); return; }
   renfBusy = true; let R;
   try { R = await window.AMIS.prendre(u, did, stasis || 1); } finally { renfBusy = false; }
   if (!R || R.err) { toast((R && R.err) || "Ce renfort n'est pas disponible."); return; }
-  const r = E.monoEnter(S, did, stasis, { ami: R }); if (r) { toast(r); return; }
+  const r = E.monoEnter(S, did, stasis, { ami: R }, chain, climb); if (r) { toast(r); return; }
   closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); dirty = true; render();
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
@@ -11181,7 +11181,7 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": if (window.COLL) { ui.tab = "world"; ui.world = "enc"; ui.zoneView = null; (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "sets"; break; } ui.tab = "inv"; ui.inv = "sets"; break; // 1.0.30 : la Collection de panoplies est dans l'Encyclopédie
-    case "enterdg": { if (S.mono && typeof ui.mercCls === "string" && ui.mercCls.startsWith("ami:")) { enterRenfort(d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls.slice(4)); return; } // renfort d'un ami : copie rendue par le serveur
+    case "enterdg": { if (S.mono && typeof ui.mercCls === "string" && ui.mercCls.startsWith("ami:")) { { const cn = ui.dgSel === d.id ? chainCount(d.id) : 1; enterRenfort(d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls.slice(4), cn, cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); } return; } // renfort d'un ami : copie rendue par le serveur
       const merc = S.mono && ui.mercCls; const cn = ui.dgSel === d.id ? chainCount(d.id) : 1; const cl = ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0; const r = merc ? E.monoEnter(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.mercCls, cn, cl) : E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null;
       /* 1.0.32.3 : depuis une étape de quête « en stasis N », la fiche propose déjà la montée de la meilleure stasis jusqu'à N */

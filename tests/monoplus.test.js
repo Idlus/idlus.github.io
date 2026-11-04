@@ -97,6 +97,22 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   assert.match(enter(mono(60), did, 1, { ami: { u: "x", snap: { cls: "??" } } }), /pas disponible/);
   const T = mono(10); E.monoSwear(T, "fer"); assert.match(enter(T, dj(1), 1, { ami: Object.assign({}, R, { snap: Object.assign({}, snap, { lvl: 10 }) }) }), /pas de renfort/);
 }
+{ // 2.2.3 (Mathis : « pouvoir enchaîner les combats avec un ami dans un donjon ») : le renfort reste pour tout l'enchaînement
+  const F = mono(60); E.autoAllocate(F, F.chars[0]); E.refreshSpells(F.chars[0], E.charStats(F, F.chars[0]));
+  const R = { u: "00000000-0000-0000-0000-000000000003", p: "Zeph", snap: E.monoSnap(F, F.chars[0]) };
+  const S = mono(55); const did = dj(1); const key = D.DUNGEONS[did].key;
+  S.res[key] = 3; // 3 clés
+  const SI = E.stasisInfo(S, did); SI.max = Math.max(SI.max, 0);
+  assert.strictEqual(E.monoEnter(S, did, 1, { ami: R }, 3, 0), null, "entrée avec le renfort et 3 donjons enchaînés");
+  assert.strictEqual(S.dungeon.chain, 3, "l'enchaînement est gardé");
+  const id0 = S.chars.find((c) => c.merc).id; let runs = new Set();
+  for (let t = 0; S.dungeon && t < 6 * 3600 * 1000; t += 1000) { const rc = S.chars.find((c) => c.merc);
+    if (S.dungeon) { runs.add(S.dungeon.run || 1); assert(rc && rc.id === id0 && rc.renfort, `renfort présent à la course ${S.dungeon.run || 1}`); }
+    E.tick(S, 1000); }
+  assert.deepStrictEqual([...runs], [1, 2, 3], "trois courses avec le même renfort");
+  assert(!S.chars.some((c) => c.merc), "le renfort repart à la fin de l'enchaînement");
+  assert.strictEqual(E.monoAide(S).ren, 1, "un renfort pris (une seule demande au serveur)");
+}
 
 // 3. Mutation de la semaine : rotation, semaines suivantes, stasis 7 et plus seulement, jamais au Classique
 {

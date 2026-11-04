@@ -82,7 +82,7 @@
   E.monoEnter = function (S, did, stasis, mercCls) {
     if (!mono(S)) return enter0.apply(this, arguments);
     if (typeof mercCls === "string" && mercCls.startsWith("ami:")) return "Le renfort d'un ami se prend auprès du serveur : reconnecte-toi au Monocompte."; // le jeu passe par window.AMIS.prendre (copie rendue par le serveur), puis { ami }
-    if (mercCls && typeof mercCls === "object") return E.monoEnterRenfort(S, did, stasis, mercCls.ami);
+    if (mercCls && typeof mercCls === "object") return E.monoEnterRenfort(S, did, stasis, mercCls.ami, arguments[4], arguments[5]); // 2.2.2.x : avec l'enchaînement (et la montée) choisis
     if (mercCls && E.monoFer(S)) return "Serment de fer : pas de mercenaire pendant la saison.";
     const r = enter0.apply(this, arguments);
     if (!r && mercCls && season(S) && S.mono.merc) E.monoAide(S).merc++;
@@ -99,7 +99,7 @@
     if (R.snap.lvl > me.lvl + M.renfort.ecart) return `Le héros de ${R.p || "ton ami"} est trop fort pour t'accompagner (${M.renfort.ecart} niveaux au-dessus du tien au plus).`;
     return null;
   };
-  E.monoEnterRenfort = (S, did, stasis, R) => {
+  E.monoEnterRenfort = (S, did, stasis, R, chain, climb) => {
     const err = E.monoRenfortErr(S, R); if (err) return err;
     const h = JSON.parse(JSON.stringify(R.snap)); const me = hero(S);
     E.monoMercClear(S);
@@ -108,11 +108,11 @@
       spells: h.sp.map((x) => Object.assign({}, x)), atkMode: h.am ? "rot" : undefined, spellsManual: true });
     if (h.am) c.rot = Array.isArray(h.rot) && h.rot.length ? h.rot.slice(0, E.ROT_MAX).map((x) => Object.assign({}, x)) : E.rotFromOrder(c, (h.st || {}).pa, 0); // 22/10 : sa propre rotation (avant : « Mon ordre », refait sans son arme)
     E.TEAM_MAX = Math.max(E.TEAM_MAX, 2);
-    const e2 = E.enterDungeon(S, did, stasis);
+    const e2 = E.enterDungeon(S, did, stasis, chain, climb); // la copie reste pour tout l'enchaînement (elle repart à la fin, comme le mercenaire)
     if (e2) { E.monoMercClear(S); return e2; }
     S.mono.merc = c.id; E.monoAide(S).ren++;
     S.mono.renN = (S.mono.renN || 0) + 1;
-    if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ce donjon (renfort, sans gain pour lui).`, "info");
+    if (E.note) E.note(S, `${R.p || "Ton ami"} t'envoie la copie de son héros pour ${(chain || 1) > 1 ? "cet enchaînement de donjons" : "ce donjon"} (renfort, sans gain pour lui).`, "info");
     return null;
   };
 
