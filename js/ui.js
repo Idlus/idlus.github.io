@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.4.12";
+const GAME_VERSION = "2.2.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.5", name: "Changer de classe", items: [
+    "Nouvelle pastille « ⇄ Classe » à côté du nom d'un héros : il change de classe en gardant son niveau, son équipement, ses Dofus et toute sa Maîtrise (ses points sont rendus pour le nouveau ciel)",
+    "Premier changement gratuit pour chaque héros, puis niveau × 5 000 kamas, doublé à chaque nouveau changement. Un changement tous les 7 jours par héros",
+    "Monocompte : un changement de classe par saison, Ironman et serment de fer compris" ] },
   { v: "2.2.4.12", name: "Tenues des mercenaires", items: [
     "Monocompte : les tenues enregistrées sur un mercenaire ne disparaissent plus quand il repart. Elles reviennent avec ton prochain mercenaire de la même classe, avec tes objets (protégés par le cadenas en attendant). Idée de Nerisia, merci !" ] },
   { v: "2.2.4.11", name: "Annonce des Dofus par serveur", items: [
@@ -6721,7 +6725,7 @@ function teamListHtml() {
 /* portrait du haut de la fiche : bannière teintée de la couleur de classe, symbole officiel en filigrane */
 /* 0.1.50.1 : renommer le héros depuis sa fiche (crayon doré à côté du nom). Premier changement gratuit, ensuite E.RENAME_COST kamas. */
 function renameHtml(c) {
-  if (ui.renaming !== c.id) return `<h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><button class="hb-ren" data-act="renhero" data-id="${c.id}" data-tip="Changer le nom ${h(deNom(c.name))}" aria-label="Renommer ${h(c.name)}">${G("edit")}<span>Renommer</span></button>`;
+  if (ui.renaming !== c.id) return `<h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><button class="hb-ren" data-act="renhero" data-id="${c.id}" data-tip="Changer le nom ${h(deNom(c.name))}" aria-label="Renommer ${h(c.name)}">${G("edit")}<span>Renommer</span></button><button class="hb-ren" data-act="ccsheet" data-id="${c.id}" data-tip="Changer la classe ${h(deNom(c.name))} (sa Maîtrise est gardée)" aria-label="Changer la classe de ${h(c.name)}">⇄ <span>Classe</span></button>`;
   const cost = E.renameCost(c);
   const hint = cost ? `Changer de nom coûte ${fmt(cost)} kamas${S.kamas < cost ? ` (tu en as ${fmt(S.kamas)})` : ""}.` : "Premier changement gratuit pour ce héros, ensuite " + fmt(E.RENAME_COST) + " kamas.";
   return `<div class="hb-renf"><input type="text" id="renName" maxlength="${E.NAME_MAX}" value="${h(ui.renVal != null ? ui.renVal : c.name)}" aria-label="Nouveau nom" autocomplete="off" spellcheck="false"><button type="button" class="btn sm primary" data-act="rengo" data-id="${c.id}">✓ Valider${cost ? ` · ${fmt(cost)} kamas` : ""}</button><button type="button" class="btn sm" data-act="rencancel">Annuler</button>${ui.renErr ? `<span class="hb-renerr">${h(ui.renErr)}</span>` : ""}<span class="xs muted hb-renhint">${hint}</span></div>`;
@@ -9043,6 +9047,29 @@ function dismissSheet(c) {
       <div><b>Rendu</b> : ${refund ? `${fmt(refund)} kamas (la moitié du prix du dernier recrutement)` : "rien (le premier héros est gratuit)"}. Le prochain recrutement coûtera ${next ? `${fmt(next)} k` : "rien"}.</div></div>
     <label class="small stack" style="gap:4px"><span>Écrivez <b>${h(c.name)}</b> pour confirmer</span><input id="dismissName" autocomplete="off" maxlength="20"></label>
     <div class="row" style="margin-top:12px"><button class="btn danger" data-act="dismiss" data-id="${c.id}">Congédier ${h(c.name)}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
+}
+/* 2.2.5 « Changer de classe » (Mathis 04/11 : 1A 2A+2C 3A 4A 5A ; moteur : E.changeClass) */
+function classSheet() {
+  const c = char(ui.ccCid); if (!c) return;
+  if (!ui.ccCls || ui.ccCls === c.cls || !CLASSES[ui.ccCls]) ui.ccCls = CLASS_ORDER.find((x) => x !== c.cls);
+  const sex = ui.ccSex || CLASSES[ui.ccCls].sex || "m"; ui.startHead = ui.ccHead || 0;
+  const cost = E.ccCost(c); const n = (c.cc && c.cc.n) || 0; const once = E.ccMonoOnce(S);
+  const err = E.ccErr(S, c, ui.ccCls); const M = c.mt; const pts = M && E.mtPts ? E.mtPts(c) : 0;
+  const price = !cost ? `<div class="rprice ok"><span class="xs muted">${n ? "Changement de classe" : "Premier changement de classe de ce héros"}</span><b class="num big">Gratuit</b>${once ? "" : `<div class="xs muted">Les suivants : niveau × ${fmt(E.CC_K)} kamas, doublé à chaque fois (${fmt(c.lvl * E.CC_K)} kamas aujourd'hui pour ${h(c.name)}, puis ${fmt(2 * c.lvl * E.CC_K)}…).</div>`}</div>`
+    : `<div class="rprice ${S.kamas >= cost ? "ok" : ""}"><span class="xs muted">Changement n° ${n + 1} de ${h(c.name)} : niveau ${c.lvl} × ${fmt(E.CC_K)}${n > 1 ? ` × ${Math.pow(2, n - 1)}` : ""} (le prix double à chaque fois)</span><b class="num big"><span class="coin"></span> ${fmt(cost)} kamas</b><div class="rbar"><i style="width:${Math.min(100, Math.round(100 * S.kamas / cost))}%"></i></div><div class="row between xs"><span>Tu as <b class="num">${fmt(S.kamas)}</b></span><span>Ensuite : ${fmt(2 * cost)} kamas</span></div></div>`;
+  const mtTxt = M && (M.lvl || pts) ? `<b>toute sa Maîtrise</b> : niveau ${fmt(M.lvl || 0)} et ses ${fmt(pts)} points, rendus pour les placer dans le ciel de la nouvelle classe.${M.j && Object.keys(M.j).length ? " Les joyaux sertis reviennent au sac." : ""}` : "sa Maîtrise (elle commence au niveau 200).";
+  openSheet(`<style>.clsbtn[disabled]{opacity:.35;filter:grayscale(1)}</style><h2>Changer la classe de ${h(c.name)}</h2>
+    <p class="small muted">${h(c.name)} est ${h(CLASSES[c.cls].name)} niveau ${c.lvl}. Choisis sa nouvelle classe.</p>
+    ${price}
+    ${classPick(ui.ccCls, sex).replace(/data-act="startcls"/g, 'data-act="cccls"').replace(`data-cls="${c.cls}"`, `data-cls="${c.cls}" disabled`)}${classInfo(ui.ccCls, sex, startHeadOf(ui.ccCls, sex))}
+    <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, nm]) => `<button data-act="ccsex" data-v="${v}" aria-pressed="${sex === v}">${nm}</button>`).join("")}</span></div>
+    ${headPick(ui.ccCls, sex).replace(/data-act="starthead"/g, 'data-act="cchead"')}
+    <div class="panel pad small stack" style="gap:6px;margin:8px 0"><div><b>Maîtrise</b> : ${h(c.name)} garde ${mtTxt}</div>
+      <div><b>Garde aussi</b> : son niveau et son XP · tout son équipement, ses Dofus, son familier et sa monture · son nom, son titre, son ornement et son cadre · le Bestiaire, les métiers et les succès du compte.</div>
+      <div><b>Change</b> : ses sorts (ceux de la nouvelle classe, rangés automatiquement ; stratégies enregistrées effacées) · ses points de caractéristiques (rendus puis replacés pour la nouvelle classe) · son apparence · ses classements de classe.</div></div>
+    <p class="xs muted">${once ? "Monocompte : un seul changement de classe par saison. " : "Un changement par héros tous les 7 jours. "}Impossible pendant un donjon ou une expédition.</p>
+    ${err && !/^Il te manque/.test(err) ? `<p class="small" style="color:var(--danger)">${h(err)}</p>` : ""}
+    <div class="row"><button class="btn kgold" data-act="ccgo" data-id="${c.id}" ${err ? "disabled" : ""}>Devenir ${h(CLASSES[ui.ccCls].name)}${cost ? ` · ${fmtK(cost)} kamas` : " · gratuit"}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const sex = ui.startSex || CLASSES[ui.startCls].sex;
@@ -11413,6 +11440,12 @@ document.addEventListener("click", (ev) => {
     case "gdel": E.deleteGear(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
+    case "ccsheet": ui.ccCid = +d.id; ui.ccCls = null; ui.ccSex = null; ui.ccHead = 0; ui.heroMore = false; classSheet(); return;
+    case "cccls": ui.ccCls = d.cls; ui.ccSex = null; ui.ccHead = 0; classSheet(); return;
+    case "ccsex": ui.ccSex = d.v; ui.ccHead = 0; classSheet(); return;
+    case "cchead": ui.ccHead = +d.v; classSheet(); return;
+    case "ccgo": { const c = char(+d.id); if (!c) return; const sx = ui.ccSex || CLASSES[ui.ccCls].sex || "m"; const err = E.changeClass(S, c.id, ui.ccCls, { sex: sx, head: startHeadOf(ui.ccCls, sx) });
+      if (err) { toast(err, "bad"); return; } closeSheet(); dirty = true; toast(`${c.name} est maintenant ${CLASSES[c.cls].name} ! Sa Maîtrise est gardée : replace ses points.`, "rare"); break; }
     case "dismisssheet": { const c = char(+d.id); if (c) dismissSheet(c); return; }
     case "dismiss": { const c = char(+d.id); if (!c) return; const v = (($("#dismissName") || {}).value || "").trim();
       if (v.toLowerCase() !== c.name.trim().toLowerCase()) { toast(`Écrivez « ${c.name} » pour confirmer.`); return; }

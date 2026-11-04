@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.5 « Changer de classe »
+
+- Héros (Mathis 04/11 : 1A 2A+2C 3A 4A 5A) : `E.changeClass(S, cid, cls, look)` (js/engine.js), pastille « ⇄ Classe » à côté de « Renommer » et fiche `classSheet` (js/ui.js). Garde niveau, XP, équipement, Dofus, familier, monture, nom, titre et Maîtrise (niveau, XP, points ; étoiles `mt.t` rendues, joyaux `mt.j` au sac, objectif retiré). Sorts de la nouvelle classe en automatique (stratégies, rotation effacées), caractéristiques rendues puis replacées (`autoStat` = élément principal de la classe).
+- Prix `E.ccCost` : premier gratuit, puis niveau × `E.CC_K` (5 000) × 2^(n-1). Délai `E.CC_WAIT` 7 jours par héros. Monocompte (hors Éternel) : un seul changement par saison. `c.cc = { n, at, from, lv }` ; `E.ccFrom(c, l)` : un niveau déjà atteint avant le changement ne compte pas pour les succès « aguerri / accompli » ni pour le succès des classes au niveau 200 de la nouvelle classe (js/quetes.js).
+
 ## 2.2.4.12 « Tenues des mercenaires »
 
 - Monocompte (idée de Nerisia) : les tenues enregistrées sur un mercenaire sont gardées par classe dans `S.mono.mercGear[cls]` quand il repart (js/mono.js `mercKeep`, objets du joueur seulement), et rendues au prochain mercenaire de cette classe (`E.monoMercGearBack`). En attendant, leurs objets restent verrouillés et protégés (`E.inGear`, `E.gearOf`, `E.syncGearLocks` les comptent). Mettre la tenue laisse au mercenaire ses propres pièces dans les emplacements vides. Test dans tests/mono.test.js.

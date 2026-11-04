@@ -132,7 +132,7 @@
   /* 1.0.34 : collection « Les 19 classes ». Une classe compte pour toujours dès qu'un de ses héros a atteint le niveau 200
      (une Renaissance ou un Congédier ne la retire pas). +1 % d'XP et de kamas par classe pour tout le compte, hors plafond (choix 4A). */
   E.CLASS_BONUS = 1;
-  E.classesDone = (S) => { const d = S.cls200 || (S.cls200 = {}); S.chars.forEach((c) => { if ((c.lvl >= E.MAX_LVL || c.ren) && CLASSES[c.cls]) d[c.cls] = 1; }); return d; };
+  E.classesDone = (S) => { const d = S.cls200 || (S.cls200 = {}); S.chars.forEach((c) => { if ((c.lvl >= E.MAX_LVL || c.ren) && CLASSES[c.cls] && !E.ccFrom(c, E.MAX_LVL)) d[c.cls] = 1; }); return d; }; // 2.2.5 : un héros déjà 200 qui change de classe ne compte pas pour sa nouvelle classe
   E.classesN = (S) => Object.keys(E.classesDone(S)).filter((k) => CLASSES[k]).length;
   E.classesMult = (S) => 1 + (E.classesN(S) * E.CLASS_BONUS) / 100;
   E.activeCount = (S, but) => S.chars.filter((c) => c.inTeam && !c.job && c !== but).length;
@@ -3966,6 +3966,50 @@
     if (S.kamas < cost) return `Il te manque ${Math.ceil(cost - S.kamas).toLocaleString("fr-FR")} kamas.`;
     S.kamas -= cost; const old = c.name; c.name = t; c.renamed = (c.renamed || 0) + 1;
     note(S, `${old} s'appelle maintenant ${t}.`, "info");
+    return null;
+  };
+  /* 2.2.5 « Changer de classe » (Mathis 04/11 : 1A 2A+2C 3A 4A 5A). Un héros change de classe en gardant son niveau, son XP,
+     son équipement, ses Dofus, son familier, sa monture, son nom, son titre et TOUTE sa Maîtrise (niveau, XP et points : les étoiles
+     placées appartiennent au ciel de l'ancienne classe, elles sont rendues à placer ; les joyaux sertis reviennent au sac).
+     Ses sorts deviennent ceux de la nouvelle classe (rangés automatiquement, stratégies et rotation effacées), ses points de
+     caractéristiques sont rendus puis replacés dans l'élément de la nouvelle classe.
+     Prix (2A + 2C) : premier changement de chaque héros gratuit, puis niveau × 5 000 kamas, doublé à chaque nouveau changement.
+     Délai (4A) : 7 jours par héros. Monocompte (5A) : une seule fois par saison, mêmes règles (Ironman et serment de fer permis).
+     c.cc = { n: changements faits, at: date du dernier, from: classe d'avant, lv: plus haut niveau atteint avant un changement } */
+  E.CC_K = 5000; E.CC_WAIT = 7 * 86400000;
+  E.ccCost = (c) => { const n = (c && c.cc && c.cc.n) || 0; return n ? Math.round(c.lvl * E.CC_K * Math.pow(2, n - 1)) : 0; };
+  E.ccWait = (c) => (c && c.cc && c.cc.at ? Math.max(0, c.cc.at + E.CC_WAIT - E.now()) : 0);
+  E.ccFrom = (c, l) => !!(c && c.cc && (c.cc.lv || 0) >= l); // niveau l déjà atteint avant un changement de classe : ne compte pas pour les succès de la nouvelle classe
+  E.ccMonoOnce = (S) => !!(E.isMono && E.isMono(S) && !(E.monoEternal && E.monoEternal(S)));
+  E.ccErr = (S, c, cls) => {
+    if (!c) return "Héros introuvable.";
+    if (cls !== undefined && !CLASSES[cls]) return "Classe inconnue.";
+    if (cls !== undefined && cls === c.cls) return `${c.name} est déjà ${CLASSES[cls].name}.`;
+    if (E.ccMonoOnce(S) && c.cc && c.cc.n) return "Un seul changement de classe par saison au Monocompte.";
+    const w = E.ccWait(c); if (w) { const hh = Math.ceil(w / 3600000); return `Prochain changement de classe dans ${hh >= 24 ? `${Math.floor(hh / 24)} j${hh % 24 ? ` ${hh % 24} h` : ""}` : `${hh} h`}.`; }
+    const active = c.inTeam && !c.job;
+    if (active && S.dungeon) return "Impossible pendant un donjon.";
+    if (active && E.expActive && E.expActive(S)) return "Impossible pendant une expédition.";
+    const cost = E.ccCost(c); if (S.kamas < cost) return `Il te manque ${Math.ceil(cost - S.kamas).toLocaleString("fr-FR")} kamas.`;
+    return null;
+  };
+  E.changeClass = (S, cid, cls, look) => {
+    const c = S.chars.find((x) => x.id === cid); const err = E.ccErr(S, c, cls); if (err) return err;
+    const cost = E.ccCost(c); const from = c.cls; S.kamas -= cost;
+    E.classesDone(S); // l'ancienne classe reste comptée (succès des classes au niveau 200)
+    c.cls = cls; look = look || {};
+    c.sex = look.sex === "f" || look.sex === "m" ? look.sex : CLASSES[cls].sex || c.sex || "m";
+    c.head = Number.isInteger(look.head) && look.head >= 0 && look.head < 16 ? look.head : 0;
+    /* sorts : ceux de la nouvelle classe, rangés automatiquement */
+    c.spells = []; c.spellsManual = false; c.knownSeen = []; c.mem = []; c.presets = []; c.zonePreset = {}; c.activePreset = null; delete c.atkMode; delete c.rot;
+    /* caractéristiques : rendues puis replacées pour la nouvelle classe */
+    c.autoStat = CLASSES[cls].main; E.resetPoints(S, c.id);
+    /* Maîtrise : niveau, XP et points gardés ; étoiles rendues, joyaux au sac, objectif retiré */
+    if (c.mt) { c.mt.t = [[], [], []]; c.mt.lo = 0; c.mt.j = {}; c.mt.obj = null; }
+    c.cc = { n: ((c.cc && c.cc.n) || 0) + 1, at: E.now(), from, lv: Math.max(c.lvl, c.ren ? E.MAX_LVL : 0, (c.cc && c.cc.lv) || 0) };
+    E.refreshSpells(c, E.charStats(S, c));
+    note(S, `${c.name} devient ${CLASSES[cls].name} (avant : ${CLASSES[from].name})${cost ? ` pour ${cost.toLocaleString("fr-FR")} kamas` : ""}. Sa Maîtrise est gardée : ses points sont à replacer dans son nouveau ciel.`, "rare");
+    E.emit(S, "cls", { cid: c.id, from, to: cls });
     return null;
   };
   E.recruit = (S, cls, name) => {

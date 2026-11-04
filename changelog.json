@@ -1,6 +1,15 @@
 {
-  "version": "2.2.4.12",
+  "version": "2.2.5",
   "versions": [
+    {
+      "v": "2.2.5",
+      "name": "Changer de classe",
+      "items": [
+        "Nouvelle pastille « ⇄ Classe » à côté du nom d'un héros : il change de classe en gardant son niveau, son équipement, ses Dofus et toute sa Maîtrise (ses points sont rendus pour le nouveau ciel)",
+        "Premier changement gratuit pour chaque héros, puis niveau × 5 000 kamas, doublé à chaque nouveau changement. Un changement tous les 7 jours par héros",
+        "Monocompte : un changement de classe par saison, Ironman et serment de fer compris"
+      ]
+    },
     {
       "v": "2.2.4.12",
       "name": "Tenues des mercenaires",

@@ -323,7 +323,7 @@
   });
   // Classes : niveau 100 et 200 avec chaque classe
   (D.CLASS_ORDER || Object.keys(CLASSES)).forEach((k) => { const C = CLASSES[k]; if (!C) return;
-    [100, 200].forEach((l) => addA({ id: `cls${l}_${k}`, cat: "Classes", grp: `Niveau ${l}`, name: `${C.name} ${l === 200 ? "accompli" : "aguerri"}`, desc: `Un héros ${C.name} atteint le niveau ${l}.`, test: (S) => S.chars.some((c) => c.cls === k && (c.lvl >= l || (c.ren || 0) > 0)), prog: (S) => [Math.max(0, ...S.chars.filter((c) => c.cls === k).map((c) => (c.ren ? 200 : c.lvl))), l], kamas: l === 200 ? 25000 : 5000 }));
+    [100, 200].forEach((l) => addA({ id: `cls${l}_${k}`, cat: "Classes", grp: `Niveau ${l}`, name: `${C.name} ${l === 200 ? "accompli" : "aguerri"}`, desc: `Un héros ${C.name} atteint le niveau ${l}.`, test: (S) => S.chars.some((c) => c.cls === k && (c.lvl >= l || (c.ren || 0) > 0) && !(E.ccFrom && E.ccFrom(c, l))), prog: (S) => [Math.max(0, ...S.chars.filter((c) => c.cls === k).map((c) => (c.ren ? 200 : c.lvl))), l], kamas: l === 200 ? 25000 : 5000 }));
   });
   // Donjons : stasis 10 dans chaque donjon
   ACH.forEach((a) => { if (/^dg_/.test(a.id) && a.id !== "dg_all") a.grp = a.grp || "Boss vaincus"; if (/^sig_/.test(a.id)) a.grp = a.grp || "Mécaniques"; });
