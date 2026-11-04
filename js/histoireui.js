@@ -141,7 +141,7 @@
     if (html !== trkK) { trkK = html; el.innerHTML = html; }
     trkPlace(el, mini);
   }
-  /* __V__ : avec le chat ouvert, la quête suivie reste visible. PC : à gauche du chat ; téléphone (chat plein écran) : posée au-dessus du menu du bas,
+  /* 2.2.2.8 : avec le chat ouvert, la quête suivie reste visible. PC : à gauche du chat ; téléphone (chat plein écran) : posée au-dessus du menu du bas,
      le chat se raccourcit d'autant (--trkh). Si la place manque vraiment à côté du chat, elle se cache comme avant. */
   function trkPlace(el, mini) {
     const B = document.body, ch = B.classList.contains("chat-open") && document.querySelector("#chat.chat");

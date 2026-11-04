@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.8 « Quête suivie à côté du chat »
+
+- js/histoireui.js `trkPlace` (Mathis 04/11 : « réadapter le bouton du suivi de quete car il est caché derrière le tchat ») : chat ouvert, le cadre `#hs-trk` n'est plus masqué. PC : posé à gauche du chat (mesuré, suit la colonne « Combat en direct ») ; s'il manque de place à côté du chat, classe `hid`. Téléphone (≤ 640 px, chat plein écran) : classe `dock`, au-dessus du menu du bas, et le chat se raccourcit de `--trkh` (css/histoire.css). Test : tests/quete_suivie_chat_ui.test.js.
+
 ## 2.2.2.7 « Voter en Saison 1 »
 - La récompense de vote sur Dofus Fan Games va dans la partie ouverte : Éternel, Classique · Saison 1 (s1.hdv_ops) ou Monocompte de la saison ouverte (mono.ops). Kamas au niveau du héros de cette partie, un vote = une seule partie (supabase/vote.sql : vote_partie, vote_verse ; mono_vote_moi pour le Monocompte).
 

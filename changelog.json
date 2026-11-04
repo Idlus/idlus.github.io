@@ -1,6 +1,13 @@
 {
-  "version": "2.2.2.7",
+  "version": "2.2.2.8",
   "versions": [
+    {
+      "v": "2.2.2.8",
+      "name": "Quête suivie à côté du chat",
+      "items": [
+        "Le cadre « Quête suivie » (Y aller, La scène) ne se cache plus derrière le chat : sur PC il se place à gauche du chat ouvert, sur téléphone il reste au-dessus du menu du bas et le chat s'arrête juste au-dessus. Classique et Monocompte"
+      ]
+    },
     {
       "v": "2.2.2.7",
       "name": "Voter en Saison 1",

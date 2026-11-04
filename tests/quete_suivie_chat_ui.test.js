@@ -1,4 +1,4 @@
-/* Quête suivie et chat (__V__, Mathis 04/11 « réadapter le bouton du suivi de quete car il est caché derrière le tchat ») : chat ouvert,
+/* Quête suivie et chat (2.2.2.8, Mathis 04/11 « réadapter le bouton du suivi de quete car il est caché derrière le tchat ») : chat ouvert,
    le cadre « Quête suivie » reste visible et rien ne le recouvre. PC : à gauche du chat ; téléphone : au-dessus du menu du bas, le chat s'arrête au-dessus.
    Classique (Saison 1) et Monocompte, PC 1000 / 1280 / 1920 px et téléphone 390 px, cadre déplié et pastille repliée, sans erreur console.
    Lancer : node tests/quete_suivie_chat_ui.test.js (SHOTS=dossier pour garder des captures) */
