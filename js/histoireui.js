@@ -131,15 +131,38 @@
     const DX = window.DX; const s = DX && DX.S; let el = document.getElementById("hs-trk");
     const ui = DX && DX.ui; const on = s && E.histOn(s) && s.chars && s.chars.length && ui && !(ui.tab === "quests" && (ui.qt === "main" || ui.qt === "jour"));
     const sc = on ? E.histScene(s) : null; const q = on ? E.questStep(s) : null;
-    if (!sc || !q) { if (el) { el.remove(); trkK = ""; } return; }
+    if (!sc || !q) { if (el) { el.remove(); trkK = ""; document.body.style.removeProperty("--trkh"); } return; }
     const T = E.hist(s); const mini = !!T.trk0; const [a, b] = E.questProgress(s) || [0, 1];
     const html = mini ? `<button class="hs-trk-pill" data-act="qj-trk" data-v="1" title="Afficher la quête suivie">${IC("quetes")}<b>${h(q.title)}</b><span class="num">${fmt(Math.min(a, b))}/${fmt(b)}</span></button>`
       : `<div class="hs-trk-in">${portrait(sc, "sm")}<div class="grow stack" style="gap:2px;min-width:0"><span class="qj-eb">Quête suivie · ${h(sc.t)}</span><b class="hs-trk-t">${h(q.title)}</b>
         <div class="row" style="gap:6px"><div class="bar grow"><i style="width:${X().pct(a, b)}%"></i></div><span class="num xs">${fmt(Math.min(a, b))}/${fmt(b)}</span></div></div>
         <div class="stack" style="gap:4px">${X().questGoBtn(q, "primary")}<button class="btn xs" data-act="qj-hsgo">La scène</button></div><button class="hs-trk-x" data-act="qj-trk" data-v="0" aria-label="Replier la quête suivie">✕</button></div>`;
     if (!el) { el = document.createElement("aside"); el.id = "hs-trk"; el.setAttribute("aria-label", "Quête suivie"); document.body.appendChild(el); }
-    if (html !== trkK) { trkK = html; el.className = mini ? "mini" : ""; el.innerHTML = html; }
+    if (html !== trkK) { trkK = html; el.innerHTML = html; }
+    trkPlace(el, mini);
   }
+  /* __V__ : avec le chat ouvert, la quête suivie reste visible. PC : à gauche du chat ; téléphone (chat plein écran) : posée au-dessus du menu du bas,
+     le chat se raccourcit d'autant (--trkh). Si la place manque vraiment à côté du chat, elle se cache comme avant. */
+  function trkPlace(el, mini) {
+    const B = document.body, ch = B.classList.contains("chat-open") && document.querySelector("#chat.chat");
+    const vz = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--vz")) || 1;
+    const W = window.innerWidth / vz; let cls = mini ? "mini" : "", right = "", width = "", trkh = "";
+    if (ch) {
+      const r = ch.getBoundingClientRect(), left = r.left / vz;
+      if (W <= 640 || left < 40) { cls += " dock"; trkh = el.offsetHeight ? `${Math.ceil(el.offsetHeight) + 26}px` : ""; }
+      else {
+        const nav = document.querySelector("#nav.sidenav"), nr = nav && W >= 860 ? nav.getBoundingClientRect().right / vz : 0;
+        const room = left - 12 - nr - 16;
+        if (room < 260) cls += " hid";
+        else { right = `${Math.round(W - left + 12)}px`; if (!mini) width = `${Math.min(380, Math.floor(room))}px`; }
+      }
+    }
+    if (el.className !== cls.trim()) el.className = cls.trim();
+    if (el.style.right !== right) el.style.right = right;
+    if (el.style.width !== width) el.style.width = width;
+    if (B.style.getPropertyValue("--trkh") !== trkh) { if (trkh) B.style.setProperty("--trkh", trkh); else B.style.removeProperty("--trkh"); }
+  }
+  window.addEventListener("resize", () => setTimeout(trkSync, 60));
   setInterval(trkSync, 1500);
   document.addEventListener("click", () => setTimeout(trkSync, 30), true);
   function act(a, t) {
