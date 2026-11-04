@@ -9,6 +9,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.4 « Sceaux lisibles »
+Héros › Chasse : les cartes des Sceaux étaient réduites à 84 px par la règle des autocollants du chat (même classe `ch-st`). Les autocollants utilisent maintenant `ch-sti`.
+
 ## 2.2.2.3 « L'histoire du Monocompte »
 
 - Monocompte · Saison 1 (Mathis 03/11 : « pour les booster ect je veux les même quetes que classique ») : `E.histMono` (js/histoire.js) ouvre l'histoire en scènes, la campagne, les quêtes de région et le coffre du jour à la partie Monocompte de saison (pas l'Éternel). Album et boosters (js/cartes.js, `E.cardOn`) rangés dans `S.mono.cards` ; page `album` dans la liste blanche du Monocompte.

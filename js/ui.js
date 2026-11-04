@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.2.3";
+const GAME_VERSION = "2.2.2.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.2.4", name: "Sceaux lisibles", guide: "chasse", items: [
+    "Héros › Chasse : les cartes des Sceaux reprennent toute leur largeur. Les textes ne se chevauchent plus et ne passent plus sous les Fusions (un style des autocollants du chat les rétrécissait)" ] },
   { v: "2.2.2.3", name: "L'histoire du Monocompte", guide: "s1quetes", items: [
     "Monocompte · Saison 1 : les mêmes quêtes que la Saison 1 du Classique. La quête principale se joue en scènes, avec ses personnages, ses 2 boosters par scène et ses 3 boosters par chapitre",
     "Aussi en Monocompte : la campagne de saison (un chapitre par semaine, Coffre en argent et 3 boosters), les quêtes de région avec leur choix de fin, le coffre du jour et l'album de cartes (Héros › Album de cartes)",

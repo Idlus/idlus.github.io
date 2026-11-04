@@ -101,7 +101,7 @@
 .gc-b{display:grid;gap:6px;margin-top:6px}.gc-row{display:flex;flex-wrap:wrap;gap:4px}
 .gc-o{width:38px;height:38px;padding:3px;border-radius:9px;background:var(--panel2);border:2px solid transparent;cursor:pointer}
 .gc-o img{width:100%;height:100%;object-fit:contain}.gc-o.on{border-color:var(--gold)}
-.ch-st{width:84px;height:84px;object-fit:contain;display:block;margin:2px 0}
+.ch-sti{width:84px;height:84px;object-fit:contain;display:block;margin:2px 0}
 .ch-stb{min-width:34px;font-size:16px;padding-inline:6px}
 .ch-stp{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-radius:10px;background:var(--panel2);margin-top:6px}
 .ch-stp button{width:52px;height:52px;padding:2px;border-radius:8px;background:none;border:1px solid transparent;cursor:pointer}
