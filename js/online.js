@@ -17,7 +17,7 @@
   const SERVERS = {
     /* 14/10/2026 : déménagement sur le serveur OVH de Mathis (Supabase auto-hébergé, tools/serveur/). La clé « anon » est publique
        par nature (https://159-173-129-109.sslip.io/cle-publique). */
-    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: true, s1: true, gr: true, mb: false }, // mb : builds du Monocompte (supabase/mono_builds.sql), true une fois installés
+    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: true, s1: true, gr: true, mb: true }, // mb : builds du Monocompte (supabase/mono_builds.sql), installés le 04/11 (2.2.4.2)
     beta: { url: "", key: "", mail: false, slots: false, mono: false }
   };
   const ON = {};
