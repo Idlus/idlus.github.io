@@ -1,6 +1,14 @@
 {
-  "version": "2.2.2.5",
+  "version": "2.2.2.6",
   "versions": [
+    {
+      "v": "2.2.2.6",
+      "name": "Vérification qui ne bloque plus",
+      "items": [
+        "Vérification des parties : une partie que le serveur trouve étonnante n'est plus mise en attente. Classements, profil, Songe et records se mettent à jour tout de suite, et c'est Xener qui regarde et décide",
+        "Monocompte : les classements de saison montrent aussi ta dernière partie pendant une vérification"
+      ]
+    },
     {
       "v": "2.2.2.5",
       "name": "Objectif commun en Monocompte",

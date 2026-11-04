@@ -9,6 +9,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.2.6 « Vérification qui ne bloque plus »
+
+- Bouclier en « signaler seulement » (Mathis 04/11 : « il ne bloque jamais l'affichage, c'est moi qui ai la décision finale ») : la fonction `record` écrit quand même `saves_ok` pour une partie signalée (`bouclier_signal`, `bouclier_log`), sans copie du jour. Restent : échanges HdV en pause et pas de Premier tant que le compte est suspect, partie illisible refusée.
+- Monocompte : `V.mono.verifier` rend le résumé d'une partie refusée (sauf règle Ironman), affiché par `mono_srv_afficher` (supabase/monocompte.sql, `mono.apres_validation` seulement) ; partie validée, bons de butin et défis payés attendent « C'est bon ».
+
 ## 2.2.2.5 « Objectif commun en Monocompte »
 
 - supabase/mono_campagne.sql (Mathis 04/11 : « installe l'objectif de campagne sur le serveur Monocompte », installé le 04/11 00:52Z) : table `mono.camp_fin` (compte, saison, chapitre), `mono_camp_done(p_ch)` (compté pendant la semaine du chapitre seulement), `mono_camp_count()` (saison ouverte). Déploiement manuel : étape `monocompte-campagne` de « Serveur OVH », et `monocompte-installer` après mono_cles.sql. Test : tests/mono_campagne_sql.test.js.
