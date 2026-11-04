@@ -8,10 +8,13 @@ require("../js/systems.js");
 let seed = 3; E.setRng(() => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; });
 let now = 1.8e12; E.now = () => now; E.protSpawn = () => {}; E.almMult = () => 1;
 assert.ok(Math.abs(E.gatherYield(1) - 0.35) < 0.002 && Math.abs(E.gatherYield(150) - 0.1625) < 1e-9, "rendement 35 % au niveau 1, inchangé jusqu'au niveau 150");
-// la quantité par coup monte toujours avec le niveau du métier (avant : baisse de 150 à 200)
-{ let prev = 0; for (let L = 1; L <= 200; L++) { const S = E.newState("Q", "iop"); S.jobs.paysan.lvl = L; const c = S.chars[0]; c.job = { job: "paysan", res: "Blé", prog: 0 }; const q = E.hitQty(S, c); assert.ok(q >= prev - 1e-9, `quantité par coup croissante (niveau ${L})`); prev = q; }
-  assert.ok(prev > 5.8 && prev < 6.2, `≈ 6 par coup au niveau 200 sans outil (${prev.toFixed(2)})`); }
+// la quantité par seconde monte toujours avec le niveau du métier (2.2.0.4 : les coups raccourcissent, la quantité par coup plafonne vers 2) (avant : baisse de 150 à 200)
+{ let prev = 0; for (let L = 1; L <= 200; L++) { const S = E.newState("Q", "iop"); S.jobs.paysan.lvl = L; const c = S.chars[0]; c.job = { job: "paysan", res: "Blé", prog: 0 }; const q = E.hitQty(S, c) / E.gatherPeriod(S, c); assert.ok(q >= prev - 1e-9, `quantité par seconde croissante (niveau ${L})`); prev = q; }
+  prev *= E.HIT_S.hi;
+  const per30 = prev * 30 / E.HIT_S.hi; assert.ok(per30 > 5.8 && per30 < 6.2, `≈ 6 par 30 s au niveau 200 sans outil (${per30.toFixed(2)})`); }
 const make = (lvl, res) => { const S = E.newState("Rec", "iop"); S.jobs.paysan.lvl = lvl; const c = S.chars[0]; c.job = { job: "paysan", res, prog: 0 }; return { S, c }; };
+// 2.2.0.4 : coups de 10 à 15 s (Mathis)
+assert.ok(Math.max(E.HIT_S.lo, E.HIT_S.hi) <= 15 && Math.min(E.HIT_S.lo, E.HIT_S.hi) >= 10, "coups de 10 à 15 s");
 // la durée d'un coup suit E.HIT_S, quel que soit l'outil
 { const { S, c } = make(200, "Quisnoa"); const t0 = E.gatherPeriod(S, c); S.tools.paysan = 10; assert.strictEqual(E.gatherPeriod(S, c), t0, "l'outil ne raccourcit pas le coup");
   assert.ok(t0 >= Math.min(E.HIT_S.lo, E.HIT_S.hi) && t0 <= Math.max(E.HIT_S.lo, E.HIT_S.hi), "durée du coup dans E.HIT_S"); }
@@ -26,7 +29,7 @@ for (const lvl of [1, 100, 200]) {
 // rien avant la fin du coup, tout d'un bloc à la fin
 { const { S, c } = make(200, "Quisnoa"); const t = E.gatherPeriod(S, c);
   E.gatherTick(S, t * 0.9, { quiet: true }); assert.ok(!S.res.Quisnoa, "rien avant la fin du coup");
-  E.gatherTick(S, t * 0.11, { quiet: true }); assert.ok(S.res.Quisnoa > 3, `un bloc à la fin du coup (${S.res.Quisnoa})`); }
+  E.gatherTick(S, t * 0.11, { quiet: true }); assert.ok(S.res.Quisnoa >= 1, `un bloc à la fin du coup (${S.res.Quisnoa})`); }
 // 6A : héros rappelé à mi-coup : il rapporte environ la moitié d'un coup
 { let tot = 0, exp = 0; for (let i = 0; i < 200; i++) { const { S, c } = make(200, "Quisnoa"); E.gatherTick(S, E.gatherPeriod(S, c) / 2, { quiet: true }); exp += E.hitQty(S, c) / 2; assert.strictEqual(E.setJob(S, c.id, null), null); assert.strictEqual(c.job, null); tot += S.res.Quisnoa || 0; }
   assert.ok(tot > exp * 0.85 && tot < exp * 1.15, `part du coup gardée au rappel (${tot} pour ~${Math.round(exp)})`); }

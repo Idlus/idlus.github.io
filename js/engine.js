@@ -3586,7 +3586,8 @@
   /* 1.0.8.6 « Coups de récolte longs » (Mathis) : un coup dure E.HIT_S secondes (de lo au niveau 1 à hi au niveau 200).
      La production par heure ne change pas : le niveau, l'outil et les bonus donnent plus de ressources par coup.
      E.basePeriod = l'ancien rythme d'une récolte, qui sert de mesure (un coup vaut hitScale récoltes de l'ancien rythme). */
-  E.HIT_S = { lo: 30, hi: 30 };
+  /* 2.2.0.4 (Mathis « 10 15 sec max ») : 15 s au niveau 1, 10 s au niveau 200. Même production et même XP par heure. */
+  E.HIT_S = { lo: 15, hi: 10 };
   E.basePeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job, c) : 0; };
   E.gatherPeriod = (S, c) => { const j = c.job; if (!j) return 0; const L = Math.min(200, Math.max(1, S.jobs[j.job].lvl)); return E.HIT_S.lo + (E.HIT_S.hi - E.HIT_S.lo) * (L - 1) / 199; };
   E.hitScale = (S, c) => { const b = E.basePeriod(S, c); return b > 0 ? E.gatherPeriod(S, c) / b : 0; };
@@ -3603,7 +3604,7 @@
   E.YIELD = { lo: 0.35, hi: 0.1, from: 150, top: 1.53 };
   /* 1.0.12.x : au-delà du niveau 150 la baisse linéaire du rendement faisait baisser la quantité par coup (5,3 → 4,7 sans outil).
      Du niveau 150 au 200, la quantité par coup (∝ rythme × quantité × rendement) monte maintenant en ligne droite jusqu'à top
-     au niveau 200 (≈ 6 par coup de 30 s sans outil). En dessous de 150 : inchangé. */
+     au niveau 200 (≈ 6 par tranche de 30 s sans outil, ≈ 1,9 par coup de 10 s). En dessous de 150 : inchangé. */
   const yLin = (L) => E.YIELD.lo + (E.YIELD.hi - E.YIELD.lo) * L / 200;
   const yBase = (L) => (1 + L * 0.025) * (1 + L / 200); // rythme (E.gatherTime) × quantité moyenne par récolte
   E.gatherYield = (lvl) => {

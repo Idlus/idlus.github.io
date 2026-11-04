@@ -521,7 +521,7 @@
       ["ul", [
         "Un héros envoyé à la récolte ne combat plus : il récolte en continu, même hors-ligne.",
         "**Plusieurs héros d'un coup** : dans « Envoyer récolter », touche les héros voulus (ou « Les N libres » sur la carte du métier), choisis la ressource, puis « Envoyer ». Ils peuvent tous récolter la même ressource.",
-        `Un coup de récolte dure ${N(() => E.HIT_S.lo)} s.`,
+        `Un coup de récolte dure ${N(() => E.HIT_S.lo)} s au niveau 1 du métier, puis raccourcit jusqu'à ${N(() => E.HIT_S.hi)} s au niveau 200. Les ressources et l'XP par heure ne dépendent pas de la durée du coup.`,
         `Trouvailles : ${pc(V(() => E.FIND_CHANCE, 0))} de chance par coup.`,
         `**Filons** : environ toutes les ${N(() => E.FILON_EVERY_S / 3600)} h, un filon rend ×2 pendant ${N(() => E.FILON_DUR_S / 60)} min.`,
         `**Outils** : jusqu'au niveau ${N(() => E.TOOL_MAX)} (+${N(() => E.toolPct(E.TOOL_MAX))} % de ressources au maximum). L'outil change de nom et d'apparence par palier. Au-delà du niveau 10, il demande aussi des ressources de monstre et des Éclats de trouvaille.`,

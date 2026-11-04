@@ -130,7 +130,7 @@
   E.appSeen = (S) => { const A = E.appState(S); if (A && A.until && A.until <= E.now() && (A.w || 0) < 3) A.w = 3; }; // fin vue dans Métiers : la pastille s'en va
   // faux héros passé au moteur de récolte : pas de classe (pas de passif), pas de Maîtrise
   const pseudo = (A) => ({ id: -9, name: E.APP.name, cls: null, job: A });
-  /* appelé par le moteur à chaque tic de récolte (E.gatherTick) : l'apprenti fait des coups de 30 s qui comptent pour E.APP.rate */
+  /* appelé par le moteur à chaque tic de récolte (E.gatherTick) : l'apprenti fait des coups de E.HIT_S secondes qui comptent pour E.APP.rate */
   E.appTick = (S, dt, opts = {}) => {
     const A = E.appState(S); if (!A || !A.job || !S.jobs[A.job]) return 0;
     const c = pseudo(A); appWarn(S, A, opts);
