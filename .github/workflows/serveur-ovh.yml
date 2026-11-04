@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -286,6 +286,17 @@ jobs:
           echo; echo "################ Serveur Monocompte ################"
           node tools/enquete_joueur.js "$d/mono.json" || true
           rm -rf "$d"
+      - name: Francois suspendu 7 jours et partie Monocompte remise à zéro (essai ou pour de vrai, ordre écrit de Mathis du 04/11)
+        if: inputs.etape == 'francois-0411-essai' || inputs.etape == 'francois-0411'
+        run: |
+          f="$RUNNER_TEMP/francois.sql"; cp tools/serveur/francois_0411.sql "$f"
+          if [ "${{ inputs.etape }}" = francois-0411 ]; then
+            sed -i "s|^\\set CONFIRMATION 'non'$|\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'|" "$f"
+            grep -qx "\\set CONFIRMATION 'REMETS FRANCOIS A ZERO'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+            echo "Sauvegarde complète de la base avant l'envoi :"
+            bash tools/serveur/vps_sql.sh commande "/opt/idlus/sauvegarde.sh"
+          fi
+          bash tools/serveur/vps_sql.sh fichier "$f"
       - name: Premiers comptes à avoir tous les Dofus (lecture seule, carte Légende de Gagou, 03/11)
         if: inputs.etape == 'premiers-dofus'
         run: |
