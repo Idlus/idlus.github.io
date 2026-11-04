@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -572,6 +572,54 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select etat, count(*) lignes, sum(n) envois, count(distinct user_id) comptes from mono.verifs where at > now() - interval '2 hours' group by etat"
           bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(user_id) pseudo, etat, n, at, left(why, 140) why from (select distinct on (user_id) * from mono.verifs order by user_id, at desc) d order by at desc"
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 3h supabase-edge-functions 2>&1 | grep -iE "mono" | grep -iE "error|erreur|exception|refus" | tail -20; echo "== appels mono (3 h) : $(docker logs --since 3h supabase-edge-functions 2>&1 | grep -ic mono)"'
+      - name: Codes cadeaux dans les parties (lecture seule, liste chiffrée)
+        # 04/11/2026 (fil « Fermer la faille des codes cadeaux ») : codes cadeaux présents dans les parties des 3 serveurs,
+        # comparés à ce que le serveur a enregistré (gift_uses). Lecture seule. En clair : seulement des totaux par code ;
+        # la liste avec les pseudos est chiffrée avec une clé publique (la clé privée n'est pas dans le dépôt).
+        if: inputs.etape == 'codes-suspects'
+        run: |
+          d="$RUNNER_TEMP/codes"; mkdir -p "$d"
+          cat > "$d/cle.pub" <<'CLE'
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAlCCEQh0dY6wgZl+9F+UT
+          YgwebIlCUMP+VtemnbM7EUQgIi/sag5C9i8t7M8p7g1lKFNQPu0hdbfVcPgjJIP8
+          Y0kOOjFVLXLd598uAPIr079wiJemeQzXpL+egv+yUaRt27O51pyxp4jW1cfp6cuJ
+          zNmAObaYpZsakAbZSpq4VSaq8g9iyk6f+5bqTQ7Fj6sH3NkIkx61aC4NN30EHFX+
+          BoVCxudWh3gf+GDDBEPFYw4j2vxxOobs85Ofe1o7GUssqINRlh9A4j9s8rQFEHYr
+          CkvGm5SSwN9jZLxwAhPe2vScOmIsoI+P/rIl4kyHrfydyyeSNcAcLlhq5j9VHcm+
+          /bt+x11Z1nYdZ6uTwZ2/AdSNbozrACi27Sq9ysz0h9Jto1zYIHC4dQ9oJnQ05vDG
+          b/waRNLr+X4oyXn6N8v1EKOUGwMLXU+HL/IkBLGNu0wNpKRv+F5eHyl9V2x+zA3v
+          BQNls/BNobrxEG9U48uhiH9rzON5O+MWNJjB9eEBTa0nAgMBAAE=
+          -----END PUBLIC KEY-----
+          CLE
+          bash tools/serveur/vps_sql.sh lecture "with a as (
+              select 'eternel' srv, s.user_id, (s.data::jsonb)->'gifts' g, s.updated_at from public.saves s
+              union all select 's1', s.user_id, (s.data::jsonb)->'gifts', s.updated_at from s1.saves s
+              union all select 'mono', m.user_id, (m.data::jsonb)->'gifts', m.updated_at from mono.parties m),
+            k as (select a.srv, a.user_id, e.key, e.value, a.updated_at from a, jsonb_each(case when jsonb_typeof(a.g) = 'object' then a.g else '{}'::jsonb end) e)
+            select k.srv, public.pseudo_of(k.user_id) pseudo, k.key, k.value::text v, k.updated_at,
+              case when k.key like 'srv:%' then exists (select 1 from public.gift_uses u where u.user_id = k.user_id and u.code = substr(k.key, 5)) end as enregistre,
+              (select l.level from public.ladder l where l.user_id = k.user_id) niv_eternel,
+              (select l.level from s1.ladder l where l.user_id = k.user_id) niv_s1
+            from k order by k.key, k.srv" > "$d/codes.json"
+          node -e '
+            const L = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); const T = {};
+            const day = (v) => { const n = Number(String(v).replace(/"/g, "")); return n > 1e12 ? new Date(n).toISOString().slice(0, 16) : "?"; };
+            L.forEach((x) => { const t = T[x.key] = T[x.key] || { n: 0, eternel: 0, s1: 0, mono: 0, nonEnregistre: 0, premier: "9", dernier: "" };
+              t.n++; t[x.srv]++; if (x.enregistre === false) t.nonEnregistre++; const d = day(x.v); if (d < t.premier) t.premier = d; if (d > t.dernier) t.dernier = d; });
+            console.log("Lignes :", L.length, "· codes différents :", Object.keys(T).length);
+            Object.keys(T).sort((a, b) => T[b].n - T[a].n).forEach((k) => { const t = T[k]; console.log([/^srv:/.test(k) ? k : "ancien:" + k.slice(0, 3) + "…(" + k.length + ")", t.n, "E" + t.eternel, "S1-" + t.s1, "M" + t.mono, "non-enregistres " + t.nonEnregistre, t.premier, t.dernier].join(" | ")); });
+          ' "$d/codes.json"
+          openssl rand -hex 32 > "$d/k"
+          gzip -9c "$d/codes.json" | openssl enc -aes-256-cbc -pbkdf2 -salt -pass file:"$d/k" | base64 -w0 > "$d/c.b64"
+          echo "== CLE CHIFFREE"; openssl pkeyutl -encrypt -pubin -inkey "$d/cle.pub" -pkeyopt rsa_padding_mode:oaep -in "$d/k" | base64 -w0; echo
+          echo "== LISTE CHIFFREE ($(wc -c < "$d/c.b64") octets)"; fold -w 4000 "$d/c.b64"; echo
+          rm -rf "$d"
+      - name: Sauvegarde complète de la base (avant une installation SQL)
+        # 04/11/2026 : les installations de fonctions et de schéma SQL sont autorisées par Mathis « tests passés, sauvegarde de la base avant ».
+        if: inputs.etape == 'sauvegarde-base'
+        run: |
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-install-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > "$f"; ls -lh "$f"'
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
