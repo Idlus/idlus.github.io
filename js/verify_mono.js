@@ -89,6 +89,7 @@
     const from = Math.max(n0(cur.iro), n0(prev.op)), to = b === 2 ? Math.min(n0(cur.op), n0(S.mono.iron.qop)) : n0(cur.op); // sortie : jusqu'au curseur noté à la sortie
     for (const o of ops || []) { const id = n0(o && o.id), p = (o && o.p) || {};
       if (id <= from || id > to) continue;
+      if (p.vote) continue; // 04/11 (#172) : la récompense de vote (kamas et Sablier, supabase/vote.sql) est un don du serveur, pas une vente
       if (Object.prototype.hasOwnProperty.call(p, "k") || p.sold || p.got) return "vente, achat ou échange en mode Ironman"; }
     return null;
   };

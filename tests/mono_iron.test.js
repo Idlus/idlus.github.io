@@ -74,6 +74,10 @@ const keep = (r) => ({ bilan: r.bilan, res: r.res, at: now });
   assert(!r4.ok && /Ironman/.test(r4.why), "achat en Ironman accepté : " + JSON.stringify(r4));
   const r5 = ver(S, P, { ops: [{ id: 4, p: { tdj: { d: "x", did: "y" } } }, { id: 5, p: { res: { "Clé": -1 } } }] });
   assert(r5.ok, "opérations du Bureau refusées : " + r5.why); P = keep(r5);
+  // #172 : la récompense de vote (kamas + Sablier) arrive en opération du serveur, ce n'est pas une vente
+  S.hdv.op = 7; now += 60e3;
+  const r5b = ver(S, P, { ops: [{ id: 6, p: { k: 128219, sab: 1980, vote: 1 } }, { id: 7, p: { sab: 7200, vote: 1 } }] });
+  assert(r5b.ok, "récompense de vote refusée en Ironman : " + r5b.why); P = keep(r5b);
   // passage déplacé, effacé
   const T = VM.load(E, E.serialize(S)); T.mono.iron.op = 50; now += 60e3;
   const r6 = ver(T, P); assert(!r6.ok && /déplacé/.test(r6.why), "passage déplacé accepté : " + JSON.stringify(r6));
