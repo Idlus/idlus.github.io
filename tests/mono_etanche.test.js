@@ -6,7 +6,7 @@
         aucune fonction Classique n'est appelée (lots de l'Ascension, du Songe, d'alliance, boss de guilde, vente directe, Jackpot,
         pluie, guilde, Percepteurs, builds, fonction « record »), les opérations Classique ne s'appliquent pas, les kamas ne
         bougent que par l'HdV de saison, le curseur S.hdv.op reste celui du Monocompte ;
-      - pages Classique : « Réservé au serveur Classique » (guilde, Jackpot, vente directe, builds), pas de pluie de kamas ;
+      - pages Classique : « Réservé au serveur Classique » (guilde, Jackpot, vente directe ; Builds a ses propres builds depuis la 2.2.4.2), pas de pluie de kamas ;
       - puis la partie Classique : les mêmes opérations s'appliquent (rien n'a été acquitté depuis le Monocompte), ses boutons sont là ;
       - retour au Monocompte : kamas inchangés. Aucune erreur console.
    Lancer : node tests/mono_etanche.test.js (SHOTS=dossier pour garder des captures, jamais dans le dépôt) */
@@ -177,13 +177,15 @@ function fake() {
       if (C4.length) fail(`${w} px : fonctions Classique appelées depuis le Monocompte : ${[...new Set(C4.map((c) => c[1]))].join(", ")}`);
       if (await page.$(".pl-card")) fail(`${w} px : pluie de kamas du Classique sur l'accueil du Monocompte`);
       if (await page.evaluate(() => { const p = document.querySelector("#plpill"); return !!(p && p.offsetParent); })) fail(`${w} px : pastille de pluie dans le Monocompte`);
-      for (const [k, what] of [["guild", "guilde"], ["foire", "Jackpot"], ["cours", "vente directe"], ["builds", "builds"]]) {
+      for (const [k, what] of [["guild", "guilde"], ["foire", "Jackpot"], ["cours", "vente directe"]]) {
         const t = await go(k); const tab = await page.evaluate(() => window.DX.ui.tab); // 22/10 (1A) : la page n'ouvre plus, retour au Havre-Sac
         if (!/serveur Classique/.test(t) && tab !== "home") fail(`${w} px : page ${k} du Monocompte : « serveur Classique » ou retour au Havre-Sac attendu (onglet ${tab})`);
         await wide(k);
         if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `etanche-mono-${k}-${w}.png`) });
       }
-      if (await page.$('[data-act="bd-pub"]')) fail(`${w} px : bouton « Publier un build » dans le Monocompte`);
+      { await go("builds"); const tab = await page.evaluate(() => window.DX.ui.tab); // 2.2.4.2 : Builds du Monocompte, avec ses propres builds (mono_builds_*)
+        if (tab !== "builds" || !(await page.$("#bdPage"))) fail(`${w} px : page Builds du Monocompte attendue (onglet ${tab})`);
+        if (/serveur Classique/.test(await page.textContent("#main"))) fail(`${w} px : Builds du Monocompte encore « réservé au serveur Classique »`); }
       if (await page.$('[data-act="g-dep"], [data-act="g-create"]')) fail(`${w} px : dépôt ou fondation de guilde proposés dans le Monocompte`);
       // pas de lien mort : chaque page du menu s'ouvre
       const keys = await page.evaluate(() => window.DX.NAV.flatMap((F) => F.pages.map((p) => p[0])).filter((k) => k !== "bug" && k !== "admin"));

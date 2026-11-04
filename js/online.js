@@ -17,7 +17,7 @@
   const SERVERS = {
     /* 14/10/2026 : déménagement sur le serveur OVH de Mathis (Supabase auto-hébergé, tools/serveur/). La clé « anon » est publique
        par nature (https://159-173-129-109.sslip.io/cle-publique). */
-    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: true, s1: true, gr: true },
+    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false, mono: true, s1: true, gr: true, mb: false }, // mb : builds du Monocompte (supabase/mono_builds.sql), true une fois installés
     beta: { url: "", key: "", mail: false, slots: false, mono: false }
   };
   const ON = {};
@@ -31,7 +31,7 @@
   /* mono = espace Monocompte du serveur (supabase/monocompte.sql, amis.sql, mono_social.sql, mono_bureau.sql, mono_cles.sql et la
      fonction « mono », installés à la main) : actif depuis la bêta 2.1.35. L'accès à la partie 4 passe par le serveur (mono_acces :
      testeurs et clés bêta) ; mono: false remet la partie Monocompte sur l'appareil, sans aucun appel mono_. */
-  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO } : SERVERS[ON.world];
+  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO, mb: !root.__IDLUS_NOMONO } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
   ON.mail = SRV.mail;
@@ -60,6 +60,7 @@
      du compte (cosm_mine), au format des titres et apparences gardés d'une saison à l'autre ({ t, u }). Hors connexion, sans
      serveur Monocompte, ou pour un compte non autorisé : null, et tout reste sur l'appareil comme avant. */
   ON.monoSrv = !!SRV.mono;
+  ON.mbSrv = !!(SRV.mono && SRV.mb); // 2.2.4.1 : page Builds du Monocompte (fonctions mono_builds_*, mono_build_*)
   ON.mono = null; ON.monoCosm = null;
   ON.monoOn = () => !!(ON.monoSrv && sb && ON.user && ON.mono && ON.mono.ok && ON.mono.saison && (ON.mono.saison.etat || "ouverte") === "ouverte");
   /* 6a : HdV de saison et échanges du Monocompte (fonctions mono_hdv_* et mono_trade_* du serveur), partie Monocompte en ligne seulement */

@@ -34,7 +34,9 @@
 
   const online = () => !!(ON && ON.enabled && ON.db && ON.db());
   const logged = () => !!(ON && ON.user);
-  const monoP = () => !!(ON && ON.monoPart && ON.monoPart()); // 2.1.37.x : les builds sont ceux du serveur Classique : pas de publication depuis le héros Monocompte
+  const monoP = () => !!(ON && ON.monoPart && ON.monoPart()); // 2.2.4.1 : une partie Monocompte a ses propres builds (supabase/mono_builds.sql)
+  const monoNo = () => monoP() && !(ON && ON.mbSrv); // serveur sans les builds du Monocompte : rien à publier
+  const RN = (n) => (monoP() ? "mono_" + n : n); // builds_list → mono_builds_list…
   const F = { cls: "", br: "", el: "", bud: "", q: "", sort: "week" };
   /* 1.0.25.2 : onglet « Mes builds » (ses builds publiés, sans filtre) */
   const MINE = { cls: "", br: "", el: "", bud: "", q: "", sort: "mine" };
@@ -210,7 +212,7 @@
     const top = `<div class="panel pad row bd-mine"><span class="grow stack" style="gap:5px"><b>${n === null ? "Tes builds publiés" : `${n} build${n > 1 ? "s" : ""} publié${n > 1 ? "s" : ""} sur ${MAX}`}</b>
       <span class="bar"><i style="width:${n === null ? 0 : Math.min(100, Math.round((100 * n) / MAX))}%"></i></span>
       <span class="xs muted">${full ? `Tu as atteint ${MAX} builds : supprimes-en un pour en publier un autre.` : "Quand un héros change, mets son build à jour ici ou depuis son menu ⋯. Supprimer un build retire aussi ses ❤ et ses vues."}</span></span>
-      ${monoP() ? `<span class="xs muted">Réservé au serveur Classique</span>` : `<button class="btn primary sm" data-act="bd-pub" ${full ? "disabled" : ""}>＋ Publier un build</button>`}</div>`;
+      <button class="btn primary sm" data-act="bd-pub" ${full ? "disabled" : ""}>＋ Publier un build</button></div>`;
     return top + gridHtml("Tu n'as encore publié aucun build. Touche « Publier un build », ou ouvre un héros : menu ⋯ Plus, « Partager ou publier le build ».");
   }
   const key = () => { const q = Q(); return JSON.stringify([q.cls, q.br, q.el, q.bud, fold(q.q.trim()), q.sort, q.sort === "fav" ? favs().join(",") : ""]); };
@@ -229,7 +231,7 @@
     if ((G.sort === "mine" && !logged()) || (G.sort === "fav" && !favs().length)) { L.key = k; L.rows = []; L.n = 0; L.err = ""; return; }
     const seq = ++L.seq; if (!more) { L.key = k; L.rows = []; L.week = null; } L.busy = true; L.err = "";
     const q = G.q.trim();
-    const r = await ON.rpc("builds_list", { p_cls: G.cls || null, p_br: G.br || null, p_el: G.el || null, p_bud: G.bud || null, p_q: q.length >= 2 ? q : null, p_items: itemsFor(q),
+    const r = await ON.rpc(RN("builds_list"), { p_cls: G.cls || null, p_br: G.br || null, p_el: G.el || null, p_bud: G.bud || null, p_q: q.length >= 2 ? q : null, p_items: itemsFor(q),
       p_sort: G.sort, p_off: more ? L.rows.length : 0, p_ids: G.sort === "fav" ? favs() : null });
     if (seq !== L.seq) return;
     L.busy = false; L.at = Date.now();
@@ -336,7 +338,7 @@
   function html() {
     const u = U(); const x = u.bdOpen && CACHE[u.bdOpen];
     if (u.bdOpen && !x) u.bdOpen = null;
-    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">Les builds partagés par les joueurs d'Idlus${monoP() ? " · publier : réservé au serveur Classique" : ""}</span>${online() && !monoP() && !(tab() === "mine" && !u.bdOpen) ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`; // « Mes builds » a le sien
+    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">${monoP() ? "Les builds partagés par les joueurs du Monocompte" : "Les builds partagés par les joueurs d'Idlus"}</span>${online() && !monoNo() && !(tab() === "mine" && !u.bdOpen) ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`; // « Mes builds » a le sien
     if (!online()) return `<div id="bdPage">${head}<div class="empty">Les builds des joueurs sont sur le serveur d'Idlus, qui n'est pas joignable ici. Tu peux toujours partager un build avec son code (héros, menu ⋯ Plus).</div></div>`;
     const n = logged() ? myCount() : null;
     const tabs = `<div class="subtabs bd-tabs" role="tablist"><button data-act="bd-tab" data-v="all" aria-pressed="${tab() === "all"}">Tous les builds</button><button data-act="bd-tab" data-v="mine" aria-pressed="${tab() === "mine"}">Mes builds${n !== null ? ` <span class="num">${n}/${MAX}</span>` : ""}</button></div>`;
@@ -357,7 +359,7 @@
     if (!online() || !logged()) return null;
     if (!force && ME && Date.now() - meAt < 60000) return ME;
     if (meBusy) return meBusy;
-    meBusy = ON.rpc("builds_me").then((r) => { meBusy = null; if (r.err || !Array.isArray(r.data)) return ME; ME = r.data; meAt = Date.now(); titleCheck(); linkCheck(); return ME; });
+    meBusy = ON.rpc(RN("builds_me")).then((r) => { meBusy = null; if (r.err || !Array.isArray(r.data)) return ME; ME = r.data; meAt = Date.now(); titleCheck(); linkCheck(); return ME; });
     return meBusy;
   }
   function titleCheck() {
@@ -368,7 +370,7 @@
   }
   /* un build supprimé (par son auteur sur un autre appareil, ou par l'équipe) n'est plus relié au héros */
   function linkCheck() { const s = S(); if (!s || !ME) return; s.chars.forEach((c) => { if (c.bd && !ME.some((x) => x.id === c.bd)) { c.bd = null; c.bdH = null; X().markDirty(); } }); }
-  const changed = (c) => !monoP() && !!(c && c.bd && c.bdH && hash(E().buildCode(S(), c)) !== c.bdH);
+  const changed = (c) => !!(c && c.bd && c.bdH && hash(E().buildCode(S(), c)) !== c.bdH);
 
   /* ---------- publier (5A, depuis « Partager le build ») ---------- */
   const P = { cid: null, title: "", el: "", tags: [], note: "", err: "", busy: false, ok: "" };
@@ -381,7 +383,7 @@
   function readPub() { const t = $("#bdPT"), n = $("#bdPN"); if (t) P.title = t.value; if (n) P.note = n.value; }
   function pubHtml(c) {
     if (!online() || !c) return "";
-    if (monoP()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Joueurs › Builds</b><p class="small" style="margin:6px 0">Réservé au serveur Classique : les builds publiés sont ceux des héros du Classique. Tu peux toujours partager le build de ton héros Monocompte avec son code.</p></div>`;
+    if (monoNo()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Joueurs › Builds</b><p class="small" style="margin:6px 0">Réservé au serveur Classique : les builds publiés sont ceux des héros du Classique. Tu peux toujours partager le build de ton héros Monocompte avec son code.</p></div>`;
     const C = CLASSES[c.cls];
     if (!logged()) return `<div class="box bd-pubf" id="bdPub"><b>Publier dans Joueurs › Builds</b>
       <p class="small" style="margin:6px 0">Pour publier, il faut être connecté avec Discord (une seule fois). Sans compte, tu peux tout de même regarder et copier les builds des autres.</p>
@@ -416,13 +418,13 @@
   function pubOpen(c) { if (!online() || !logged()) return; if (P.cid !== c.id) P.cid = null; mine().then(() => { if (P.cid === c.id && ME) { const pub = c.bd && ME.find((x) => x.id === c.bd); if (pub) { P.cid = null; pubInit(c); } } pubRefresh(); }); }
   async function send(cid, quick) {
     const c = hero(cid); if (!c || P.busy) return;
-    if (monoP()) { X().toast(ON.CLASSIC_ERR || "Réservé au serveur Classique."); return; }
+    if (monoNo()) { X().toast(ON.CLASSIC_ERR || "Réservé au serveur Classique."); return; }
     if (!logged()) { X().toast("Connecte-toi avec Discord pour publier un build."); return; }
     if (!quick) { readPub(); const t = P.title.trim(); if (t.length < 4) { P.err = "Donne un titre à ton build (4 caractères au moins)."; return pubRefresh(); } }
     const code = E().buildCode(S(), c); const b = E().parseBuild(code);
     if (Object.keys(b.eq).length < 3) { P.err = `Équipe au moins 3 objets sur ${c.name} pour publier son build.`; return pubRefresh(); }
     P.busy = true; P.err = ""; P.ok = ""; if (!quick) pubRefresh();
-    const r = await ON.rpc("build_publish", { p_id: c.bd || null, p_hid: c.id, p_el: quick ? null : P.el, p_bud: budgetOf(b), p_tags: quick ? null : P.tags, p_title: quick ? null : P.title.trim(), p_note: quick ? null : P.note.trim(), p_code: code, p_sex: c.sex === "f" ? "f" : "m", p_head: c.head || 0 });
+    const r = await ON.rpc(RN("build_publish"), { p_id: c.bd || null, p_hid: c.id, p_el: quick ? null : P.el, p_bud: budgetOf(b), p_tags: quick ? null : P.tags, p_title: quick ? null : P.title.trim(), p_note: quick ? null : P.note.trim(), p_code: code, p_sex: c.sex === "f" ? "f" : "m", p_head: c.head || 0 });
     P.busy = false;
     if (r.err || !r.data) P.err = netErr(r.err);
     else if (r.data.err) { P.err = r.data.err; if (r.data.gone) { c.bd = null; c.bdH = null; X().markDirty(); } }
@@ -440,7 +442,7 @@
   function patch(id, o) { [CACHE[id], L.week && L.week.id === id ? L.week : null].concat(L.rows.filter((x) => x.id === id)).forEach((x) => { if (x) Object.assign(x, o); }); }
   async function like(id) {
     if (!logged()) { X().toast("Connecte-toi avec Discord (Options › Sauvegarde) pour aimer un build."); return; }
-    const r = await ON.rpc("build_like", { p_id: id });
+    const r = await ON.rpc(RN("build_like"), { p_id: id });
     if (r.err || !r.data) { X().toast(netErr(r.err)); return; }
     if (r.data.err) { X().toast(r.data.err); return; }
     patch(id, { liked: r.data.liked, likes: r.data.likes }); repaint();
@@ -457,7 +459,7 @@
     const x = CACHE[id]; if (!x) return;
     U().bdOpen = id; U().bdCmp = null; repaint(); window.scrollTo(0, 0);
     if (seen.has(id)) return; seen.add(id);
-    const r = await ON.rpc("build_view", { p_id: id, p_guest: logged() ? null : guest() });
+    const r = await ON.rpc(RN("build_view"), { p_id: id, p_guest: logged() ? null : guest() });
     if (r.data === true) { patch(id, { views: (x.views || 0) + 1 }); repaint(); }
   }
   function confirmSheet(title, txt, btn, act, d) {
@@ -487,12 +489,12 @@
   }
   async function report(id) {
     const r0 = document.querySelector('input[name="bdRsn"]:checked');
-    const r = await ON.rpc("build_report", { p_id: id, p_reason: r0 ? r0.value : null });
+    const r = await ON.rpc(RN("build_report"), { p_id: id, p_reason: r0 ? r0.value : null });
     X().closeSheet();
     X().toast(r.err ? netErr(r.err) : r.data || "Merci, l'équipe va regarder ce build.");
   }
   async function del(id) {
-    const r = await ON.rpc("build_delete", { p_id: id }); X().closeSheet();
+    const r = await ON.rpc(RN("build_delete"), { p_id: id }); X().closeSheet();
     if (r.err || r.data) { X().toast(r.err ? netErr(r.err) : r.data); return; }
     S().chars.forEach((c) => { if (c.bd === id) { c.bd = null; c.bdH = null; } }); X().markDirty();
     delete CACHE[id]; L.rows = L.rows.filter((x) => x.id !== id); L.n = Math.max(0, L.n - 1); if (L.week && L.week.id === id) L.week = null;
@@ -526,7 +528,7 @@
     if (a === "bd-ptag") { readPub(); const i = P.tags.indexOf(d.v); if (i >= 0) P.tags.splice(i, 1); else if (P.tags.length < 3) P.tags.push(d.v); else P.err = "Trois usages au plus."; return pubRefresh(); }
     if (a === "bd-send") return send(+d.c);
     if (a === "bd-see") { X().closeSheet(); U().tab = "builds"; U().bdOpen = null; U().bdTab = "mine"; L.at = 0; window.DX.render(); return; }
-    if (a === "bd-adm") return admAct(id, d.v);
+    if (a === "bd-adm") return admAct(id, d.v, d.m === "1");
   });
   let qT = null;
   const readQ = () => { const n = $("#bdQ"); if (n) F.q = n.value; };
@@ -544,18 +546,18 @@
   });
 
   /* ---------- panel admin (onglet « Builds ») ---------- */
-  function adminHtml(list) {
+  function adminHtml(list, mono) {
     const rows = !list ? `<div class="empty">Chargement…</div>` : !list.length ? `<div class="empty">Aucun build publié pour l'instant.</div>` : list.map((x) => {
       const st = x.removed ? `<span class="st m">Supprimé</span>` : x.hidden ? `<span class="st m">Caché</span>` : x.reports ? `<span class="st v">Signalé</span>` : `<span class="st mod">En ligne</span>`;
-      const b = (v, n, cls = "") => `<button class="btn sm ${cls}" data-act="bd-adm" data-id="${x.id}" data-v="${v}">${n}</button>`;
+      const b = (v, n, cls = "") => `<button class="btn sm ${cls}" data-act="bd-adm" data-id="${x.id}" data-v="${v}" ${mono ? 'data-m="1"' : ""}>${n}</button>`;
       return `<div class="ln"><span class="grow"><b>${h(x.title)}</b> ${st} <span class="xs muted">${h((CLASSES[x.cls] || {}).name || x.cls)} niv. ${x.lvl} · ${x.likes} ❤ · ${x.views} vues${x.reports ? ` · ${x.reports} signalement${x.reports > 1 ? "s" : ""}` : ""}</span><br>
         ${x.note ? `<span class="small">${h(x.note)}</span><br>` : ""}<span class="xs muted">${h(x.pseudo)} · ${new Date(x.at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${x.reasons ? ` · motifs : ${h(x.reasons)}` : ""}</span></span>
         <span class="acts">${x.removed ? b("restore", "Rétablir") : `${x.hidden || x.reports ? b("ok", "Remettre en ligne") : ""}${x.hidden ? "" : b("hide", "Cacher")}${b("del", "Supprimer", "danger")}`}</span></div>`;
     }).join("");
-    return `<div class="box"><h2>Builds des joueurs</h2><p class="small muted">Les builds signalés, cachés ou supprimés sont en haut. Un build est caché tout seul à 3 signalements, jusqu'à ta décision : « Remettre en ligne » efface ses signalements. « Supprimer » le retire de la page (et du compte de son auteur), « Rétablir » le remet.</p>${rows}</div>`;
+    return `<div class="box"><h2>Builds des joueurs${mono ? " · Monocompte" : ""}</h2><p class="small muted">Les builds signalés, cachés ou supprimés sont en haut. Un build est caché tout seul à 3 signalements, jusqu'à ta décision : « Remettre en ligne » efface ses signalements. « Supprimer » le retire de la page (et du compte de son auteur), « Rétablir » le remet.</p>${rows}</div>`;
   }
-  async function admAct(id, v) {
-    const r = await ON.rpc("adm_build_set", { p_id: id, p_act: v });
+  async function admAct(id, v, mono) {
+    const r = await ON.rpc(mono ? "adm_build_set_mono" : "adm_build_set", { p_id: id, p_act: v });
     X().toast(r.err || { ok: "Build remis en ligne.", hide: "Build caché.", del: "Build supprimé.", restore: "Build rétabli." }[v]);
     L.at = 0; const b = $('[data-act="adm-reload"]'); if (b) b.click();
   }

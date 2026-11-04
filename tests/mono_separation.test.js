@@ -68,7 +68,8 @@ console.log(`ok - aucune des ${credit.size} fonctions du Classique qui versent d
 /* modules éteints : chacun existe bien dans le jeu (un nom mal écrit ne couperait rien) */
 { const all = files.map((f) => fs.readFileSync(f, "utf8")).join("\n");
   for (const k of E.MONO.CLASSIC_MODS) assert(new RegExp(`window\\.${k} = `).test(all), `module ${k} : introuvable dans js/`); }
-for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+assert(E.monoPageOk("builds") && !E.MONO.CLASSIC_MODS.includes("BUILDS"), "2.2.4.1 : Builds ouverte en Monocompte, avec ses propres builds (mono_builds_*)");
 console.log("ok - liste blanche des pages et modules du Classique éteints : noms vérifiés");
 
 /* ---------- 3. dans le navigateur ---------- */
@@ -142,13 +143,13 @@ function fake() {
       const keys = await navKeys(p);
       const hors = keys.filter((k) => !E.monoPageOk(k));
       if (hors.length) fail(`${w} px : pages hors de la liste blanche dans le menu Monocompte : ` + hors.join(", "));
-      for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "builds", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
+      for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
       for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder", "garde"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
       const pins = await p.evaluate(() => window.DX.S.settings.pins);
       if (pins.some((k) => !E.monoPageOk(k))) fail(`${w} px : épingles du Classique gardées : ` + JSON.stringify(pins));
       const mods = await p.evaluate((L) => L.filter((k) => window[k]), E.MONO.CLASSIC_MODS);
       if (mods.length) fail(`${w} px : modules du Classique encore actifs : ` + mods.join(", "));
-      for (const k of ["exp", "asc", "wb", "guild", "foire", "comptoirs", "elev", "builds"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      for (const k of ["exp", "asc", "wb", "guild", "foire", "comptoirs", "elev"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
       { const t = await go(p, "defi"); const tx = await p.evaluate(() => document.querySelector("#main").textContent);
         if (t !== "defi" || /Classement ·|vote/i.test(tx)) fail(`${w} px : Défi du jour du Monocompte (onglet ${t}) : jouable, sans classement ni vote du Classique`); }
       await go(p, "home");
@@ -166,6 +167,14 @@ function fake() {
         out.chat = (await ON.rpc("chat_me")).err || null; out.sent = window.__SEP.calls.map((c) => c[0]); return out; });
       for (const n of ["songe_claim", "asc_claim", "rain_join", "vente_sell", "gift_mine", "guild_me", "builds_list", "wb_info"]) if (!/Pas en Monocompte|Réservé au serveur Classique/.test(r[n] || "")) fail(`${w} px : ${n} attendue refusée en Monocompte : ` + r[n]);
       if (r.chat || JSON.stringify(r.sent) !== JSON.stringify(["chat_me"])) fail(`${w} px : seul chat_me part au serveur : ` + JSON.stringify(r));
+      // 2.2.4.1 : page Builds du Monocompte, avec ses propres builds (mono_builds_list, jamais builds_list du Classique)
+      { await p.evaluate(() => { window.ONLINE.mbSrv = true; window.__SEP.calls.length = 0; }); const t = await go(p, "builds"); await p.waitForTimeout(600);
+        const bd = await p.evaluate(() => ({ page: !!document.querySelector("#bdPage"), txt: (document.querySelector("#bdPage") || {}).textContent || "", sent: window.__SEP.calls.map((c) => c[0]) }));
+        if (t !== "builds" || !bd.page) fail(`${w} px : page Builds du Monocompte absente`);
+        if (!bd.sent.includes("mono_builds_list") || bd.sent.some((n) => /^builds?_/.test(n))) fail(`${w} px : Builds du Monocompte, appels : ` + JSON.stringify(bd.sent));
+        if (/réservé au serveur Classique/i.test(bd.txt)) fail(`${w} px : Builds du Monocompte, encore « réservé au Classique »`);
+        await shot(p, `mono-builds-${w}.png`); await noScroll(p, `${w} px, Builds Monocompte`);
+        await p.evaluate(() => { window.ONLINE.mbSrv = false; }); await go(p, "home"); }
       if (!errors.length) console.log(`ok - ${w} px, partie Monocompte : menu de la liste blanche (${keys.length} pages), modules du Classique éteints, pages du Classique fermées, Classements sans le Classique, appels du Classique refusés`);
       /* ---------- partie Classique : rien ne change ---------- */
       const c = await open(w, h, false);

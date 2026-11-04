@@ -133,7 +133,7 @@ function fake() {
   const body = (page) => page.evaluate(() => document.querySelector(".px-body").innerText);
   const annbar = (page) => page.evaluate(() => (document.querySelector("#annbar") || {}).textContent || "");
 
-  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mchat"];
+  const MONO = ["monovue", "monoenligne", "monobouclier", "monojournal", "monoremise", "monotesteurs", "clesbeta", "monobureau", "mbuilds", "mchat"]; // 2.2.4.2 : Builds du Monocompte;
   const CLASSIC = ["srvvue", "enligne", "verif", "fiches", "hdv", "guildes", "builds", "salon"];
   const TOUS = ["joueurs", "sig", "vue", "ann", "codes", "chat", "bugs", "idees", "equipe", "test"];
   const badges = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".px-sp button")].map((b) => [b.dataset.v, (b.querySelector("em") || {}).textContent || ""])));

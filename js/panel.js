@@ -58,7 +58,7 @@
   const ICON_OF = { vue: "trophee", joueurs: "couronne", fiches: "parchemin_or", sig: "combat", verif: "cristal", equipe: "couronne", hdv: "bourse", guildes: "couronne", ann: "parchemin_or", codes: "coffre", idees: "idee", builds: "parchemin_or", test: "metiers",
     monovue: "trophee", monotesteurs: "couronne", clesbeta: "cle", monobouclier: "cristal", monoremise: "phenix", monobureau: "combat", mchat: "parchemin_or", mann: "parchemin_or", enligne: "couronne", monoenligne: "couronne", srvvue: "trophee", salon: "parchemin_or", chat: "parchemin_or", bugs: "bug", accueil: "trophee" };
   /* 2.1.36 : serveur de chaque page (pages du chat : mchat, mann ; pages ajoutées : leur srv) */
-  const MONO_TABS = { mchat: 1, mann: 1 };
+  const MONO_TABS = { mchat: 1, mann: 1, mbuilds: 1 };
   /* 04/11 (refonte du panel, choix 1A) : quatre espaces, chacun son menu ; les trois serveurs ont le même menu (Vue d'ensemble,
      En ligne, Joueurs, Jeu, Salon), les pages valables partout (comptes, signalements, annonces, codes, chat, retours, équipe, test)
      sont dans « Tous les serveurs ». "a" = l'accueil (choix 2A), sans menu. */
@@ -74,7 +74,7 @@
       ["Salon", [["salon", "", "parchemin_or"]]]],
     m: [["", [["monovue", "Vue d'ensemble", "trophee"], ["monoenligne", "En ligne", "couronne"]]],
       ["Joueurs", [["monobouclier", "À vérifier (Bouclier)", "cristal"], ["monojournal", "Journal du Bouclier", "parchemin_or"], ["monoremise", "Copies des parties", "phenix"], ["monotesteurs", "Testeurs", "couronne"], ["clesbeta", "Clés bêta", "cle"]]],
-      ["Jeu", [["monobureau", "Bureau des Aventuriers", "combat"]]],
+      ["Jeu", [["monobureau", "Bureau des Aventuriers", "combat"], ["mbuilds", "Builds", "parchemin_or"]]],
       ["Salon", [["mchat", "Salon Monocompte", "parchemin_or"]]]],
     t: [["", [["joueurs", "Comptes", "couronne"], ["sig", "Signalements du chat", "combat"], ["vue", "Inscriptions et journal", "trophee"]]],
       ["Communiquer", [["ann", "Annoncer", "parchemin_or"], ["codes", "Codes cadeaux", "coffre"], ["chat", "Réglages du chat", "parchemin_or"]]],
