@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
   // nouveau numéro 1 du donjon : annoncé dans le chat
   if (out.improved && out.rank === 1) {
     const { data: l } = await db.from("ladder").select("main,main_lvl,flagged").eq("user_id", user.id).maybeSingle();
-    if (l && !l.flagged) await db.from("chat_msgs").insert({ ch: "g", user_id: user.id, pseudo: prof.pseudo, cls: l.main, lvl: l.main_lvl, kind: "ann", data: { t: "top1", did, dname: dg.name, k, sec: best } });
+    if (l && !l.flagged) await db.from("chat_msgs").insert({ ch: "g", user_id: user.id, pseudo: prof.pseudo, cls: l.main, lvl: l.main_lvl, kind: "ann", data: { t: "top1", did, dname: dg.name, k, sec: best, srv: db.isS1 ? "s" : "e" } });
   }
 
   // donjon de la semaine
@@ -447,7 +447,7 @@ async function dofusAnn(db: any, uid: string, b: any) {
   const { error } = await db.from("dofus_ann").insert({ user_id: uid, uid: iu, dofus: id, did, k, at: new Date(now).toISOString() });
   if (error) return json({ ok: true, already: true }); // déjà annoncé (deux envois en même temps)
   const boss = D.MONSTERS[dg.boss] ? D.MONSTERS[dg.boss].name : dg.name;
-  await db.from("chat_msgs").insert({ ch: "g", user_id: uid, pseudo: prof.pseudo, cls: lad.main, lvl: lad.main_lvl, kind: "ann", data: { t: "giga", id, did, dname: dg.name, boss, k, odds } });
+  await db.from("chat_msgs").insert({ ch: "g", user_id: uid, pseudo: prof.pseudo, cls: lad.main, lvl: lad.main_lvl, kind: "ann", data: { t: "giga", id, did, dname: dg.name, boss, k, odds, srv: db.isS1 ? "s" : "e" } });
   return json({ ok: true, giga: true, id, did, k, odds });
 }
 

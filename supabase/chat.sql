@@ -274,7 +274,8 @@ as $$ declare pr record; lad record; begin
   select pseudo into pr from profiles where id = p_user;
   select main, main_lvl, flagged into lad from ladder where user_id = p_user;
   if lad.flagged then return; end if;
-  insert into chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data) values ('g', p_user, pr.pseudo, lad.main, lad.main_lvl, 'ann', p_data);
+  -- 2.2.4.9 : serveur du haut fait (les hauts faits sont communs) ; la Saison 1 a sa propre s1.chat_ann (supabase/chat_s1.sql)
+  insert into chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data) values ('g', p_user, pr.pseudo, lad.main, lad.main_lvl, 'ann', jsonb_build_object('srv', 'e') || p_data);
 end $$;
 revoke all on function public.chat_ann(uuid, jsonb) from public, anon, authenticated;
 

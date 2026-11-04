@@ -42,6 +42,9 @@
   const CHC = { e: "c", s: "sc", m: "mc" }, CHV = { e: "v", s: "sv", m: "mv" };
   const CV_ALL = ["c", "v", "sc", "sv", "mc", "mv"];
   const SRV_DE = { e: "de l'Éternel", s: "de la Saison 1", m: "du Monocompte" };
+  // 2.2.4.9 (Mathis, 04/11) : les hauts faits sont communs aux serveurs ; chacun montre maintenant le sien (data.srv, posé par le serveur)
+  const SRV_TAG = { e: "Éternel", s: "Saison 1", m: "Monocompte" };
+  const srvTag = (m) => { const k = m && m.data && m.data.srv; return SRV_TAG[k] ? `<i class="ann-srv ann-srv-${k}">${SRV_TAG[k]}</i>` : ""; };
   const chOf = (k) => (k === "c" ? CHC[srvK()] : k === "v" ? CHV[srvK()] : k); // onglet → salon de la base
   const tabOf = (ch) => { ch = ch || "g"; if (!CV_ALL.includes(ch)) return ch; return ch === CHC[srvK()] ? "c" : ch === CHV[srvK()] ? "v" : null; }; // salon → onglet (null : Commerce ou PvP d'un autre serveur)
 
@@ -289,7 +292,7 @@
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
     if (m.kind === "ann" && m.data && m.data.t === "defi") return defiCard(m); // 1.1 : score du Défi du jour montré par le joueur
     if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind)) return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
-    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}${m.data && m.data.t === "chroma" ? " ann-chroma" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "mrare" ? "ailes" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
+    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}${m.data && m.data.t === "chroma" ? " ann-chroma" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "mrare" ? "ailes" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${srvTag(m)}${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";

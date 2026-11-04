@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.8",
+  "version": "2.2.4.9",
   "versions": [
+    {
+      "v": "2.2.4.9",
+      "name": "Hauts faits par serveur",
+      "items": [
+        "Chat : chaque haut fait affiche maintenant son serveur (Éternel ou Saison 1). Les hauts faits restent communs à tous, mais on sait d'où ils viennent"
+      ]
+    },
     {
       "v": "2.2.4.8",
       "name": "Bouton Bug / idée",
