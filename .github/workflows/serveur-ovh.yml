@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, code-hicham]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -620,6 +620,31 @@ jobs:
         if: inputs.etape == 'sauvegarde-base'
         run: |
           bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-install-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > "$f"; ls -lh "$f"'
+      - name: Code « Gardien du serveur » pour Hicham (demande écrite de Mathis du 04/11, code chiffré dans le journal)
+        # 04/11/2026 (Mathis : « Créer un code et donne moi le message ») : remerciement du signalement des codes cadeaux.
+        # Un usage, comptes seulement ; le code est tiré au hasard par la base et n'apparaît qu'en chiffré. Refusé s'il existe déjà.
+        if: inputs.etape == 'code-hicham'
+        run: |
+          d="$RUNNER_TEMP/gc"; mkdir -p "$d"
+          cat > "$d/cle.pub" <<'CLE'
+          -----BEGIN PUBLIC KEY-----
+          MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAlCCEQh0dY6wgZl+9F+UT
+          YgwebIlCUMP+VtemnbM7EUQgIi/sag5C9i8t7M8p7g1lKFNQPu0hdbfVcPgjJIP8
+          Y0kOOjFVLXLd598uAPIr079wiJemeQzXpL+egv+yUaRt27O51pyxp4jW1cfp6cuJ
+          zNmAObaYpZsakAbZSpq4VSaq8g9iyk6f+5bqTQ7Fj6sH3NkIkx61aC4NN30EHFX+
+          BoVCxudWh3gf+GDDBEPFYw4j2vxxOobs85Ofe1o7GUssqINRlh9A4j9s8rQFEHYr
+          CkvGm5SSwN9jZLxwAhPe2vScOmIsoI+P/rIl4kyHrfydyyeSNcAcLlhq5j9VHcm+
+          /bt+x11Z1nYdZ6uTwZ2/AdSNbozrACi27Sq9ysz0h9Jto1zYIHC4dQ9oJnQ05vDG
+          b/waRNLr+X4oyXn6N8v1EKOUGwMLXU+HL/IkBLGNu0wNpKRv+F5eHyl9V2x+zA3v
+          BQNls/BNobrxEG9U48uhiH9rzON5O+MWNJjB9eEBTa0nAgMBAAE=
+          -----END PUBLIC KEY-----
+          CLE
+          n=$(bash tools/serveur/vps_sql.sh lecture "select count(*) n from public.gift_codes where msg = 'Merci Hicham pour ton signalement !'" | tr -cd '0-9')
+          if [ "$n" != "0" ]; then echo "Le code de Hicham existe déjà : rien n'est créé."; exit 0; fi
+          bash tools/serveur/vps_sql.sh json "insert into public.gift_codes (code, reward, msg, max_uses, accounts_only) values ('GARDIEN' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8)), '{\"t\": \"Gardien du serveur\"}'::jsonb, 'Merci Hicham pour ton signalement !', 1, true) returning code" > "$d/c.json"
+          echo "Code créé : $(tr -cd '{' < "$d/c.json" | wc -c) ligne"
+          echo "== CODE CHIFFRE"; openssl pkeyutl -encrypt -pubin -inkey "$d/cle.pub" -pkeyopt rsa_padding_mode:oaep -in "$d/c.json" | base64 -w0; echo
+          rm -rf "$d"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
