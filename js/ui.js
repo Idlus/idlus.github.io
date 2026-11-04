@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.3";
+const GAME_VERSION = "2.2.3.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.3.1", name: "Enchaîner avec un ami", items: [
+    "Monocompte : le renfort d'un ami suit maintenant les donjons enchaînés (et la montée de stasis). Choisis le nombre de clés, prends le héros de ton ami : il reste jusqu'à la fin de l'enchaînement, toujours gratuit et sans gain pour lui" ] },
   { v: "2.2.3", name: "Menu réorganisé", guide: "menus", items: [
     "Sur PC, le menu redevient une colonne d'icônes : passe la souris sur une famille et ses pages s'ouvrent à côté, un clic suffit. Plus de longue liste qui dépasse de l'écran (le bouton « Tout » la remet si tu la préfères)",
     "Grand écran : la page prend toute la place entre le menu et la colonne de droite. Sur PC portable, le chat ouvert pousse la page au lieu de la recouvrir",

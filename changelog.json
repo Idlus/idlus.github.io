@@ -1,6 +1,13 @@
 {
-  "version": "2.2.3",
+  "version": "2.2.3.1",
   "versions": [
+    {
+      "v": "2.2.3.1",
+      "name": "Enchaîner avec un ami",
+      "items": [
+        "Monocompte : le renfort d'un ami suit maintenant les donjons enchaînés (et la montée de stasis). Choisis le nombre de clés, prends le héros de ton ami : il reste jusqu'à la fin de l'enchaînement, toujours gratuit et sans gain pour lui"
+      ]
+    },
     {
       "v": "2.2.3",
       "name": "Menu réorganisé",
