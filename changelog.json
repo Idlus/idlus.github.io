@@ -1,6 +1,13 @@
 {
-  "version": "2.2.4.10",
+  "version": "2.2.4.11",
   "versions": [
+    {
+      "v": "2.2.4.11",
+      "name": "Annonce des Dofus par serveur",
+      "items": [
+        "La grande annonce en plein écran d'un Dofus (et du Jackpot du Trool) ne s'affiche plus que sur le serveur où il est tombé : Éternel, Saison 1 ou Monocompte"
+      ]
+    },
     {
       "v": "2.2.4.10",
       "name": "Vote et Ironman",

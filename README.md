@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.4.11 « Annonce des Dofus par serveur »
+
+- Ticket #173 (Gagou) : la GIGA annonce plein écran d'un Dofus (et du Jackpot du Trool) s'affichait chez les joueurs des 3 serveurs, car le chat est commun. js/chat.js `onMsg` n'appelle plus `GIGA.onAnn` que si `data.srv` (sans : Éternel) est le serveur de la partie ouverte ; la ligne dorée du chat reste. supabase/foire.sql : le tirage du Jackpot pose `srv` ('s' dans le schéma s1, sinon 'e'), saison1.sql régénéré. Étape Serveur OVH jackpot-serveur (sauvegarde avant, s1.foire_resolve). Test tests/giga_srv_ui.test.js.
+
 ## 2.2.4.10 « Vote et Ironman »
 
 - Bouclier Monocompte (ticket #172, Nerisia) : `VM.iron` (js/verify_mono.js) ignorait le drapeau `vote` des opérations du serveur ; la récompense de vote (`{ k, sab, vote }`, supabase/vote.sql) était prise pour une vente, chaque envoi d'un joueur Ironman qui vote était refusé et son niveau restait figé dans `mono.lb_saison` (une règle Ironman enfreinte ne s'affiche pas). Les opérations `vote` sont maintenant ignorées par la règle. Test mono_iron. Fonction « mono » redéployée. Outil d'enquête : quête principale, boosters et opérations Monocompte depuis la partie validée.

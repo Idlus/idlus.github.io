@@ -184,7 +184,7 @@
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
-    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) window.GIGA.onAnn(m); // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
+    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA && (m.data.srv || "e") === srvK()) window.GIGA.onAnn(m); // 2.2.4.11 (ticket #173) : plein écran seulement sur le serveur du drop (data.srv ; sans srv : Éternel) // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
     if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind) && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
     if (PING.includes(t) && pingsMe(m) && !(C.open && C.tab === t)) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[t] || "Général"}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);

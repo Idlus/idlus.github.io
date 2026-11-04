@@ -61,7 +61,8 @@ begin
       -- reste dans le chat Général. Seulement pour un tirage récent (pas pour une vieille heure tirée en retard).
       if H >= date_trunc('hour', clock_timestamp()) - interval '2 hours' then
         insert into chat_msgs (ch, user_id, pseudo, kind, data) values ('g', w, ps, 'ann',
-          jsonb_build_object('t', 'jack', 'k', tot * 9000, 'n', tot, 'pl', pl, 'h', floor(extract(epoch from H) * 1000)));
+          jsonb_build_object('t', 'jack', 'k', tot * 9000, 'n', tot, 'pl', pl, 'h', floor(extract(epoch from H) * 1000),
+          'srv', case current_schema() when 's1' then 's' else 'e' end)); -- 2.2.4.11 (ticket #173) : plein écran seulement sur le serveur du tirage
       end if;
     end if;
   end loop;
