@@ -10,6 +10,7 @@
 #               lecture ni écriture des joueurs), puis fait la copie finale. Accord écrit de Mathis (14/10/2026).
 #   rouvrir   : rend l'accès du jeu à l'ancien serveur (retour en arrière).
 #   diagnostic: lecture seule : état des services, journaux récents du direct (Realtime), joueurs connectés récemment.
+#   envois-discord : lecture seule : les derniers bugs et idées envoyés depuis le jeu et s'ils sont arrivés sur Discord (chiffres seulement).
 #   boucle-enquete : lecture seule : quelle session se renouvelle en boucle, à quel rythme, avec quel navigateur.
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
 #               200 renouvellements en 10 minutes). Accord écrit de Mathis (14/10/2026).
@@ -239,6 +240,16 @@ jobs:
       - name: Enquête sur la session qui se renouvelle en boucle (lecture seule, 04/11)
         if: inputs.etape == 'boucle-enquete'
         run: bash tools/serveur/boucle_enquete.sh
+      - name: Bugs et idées envoyés vers Discord (lecture seule)
+        if: inputs.etape == 'envois-discord'
+        run: |
+          # 04/11/2026 : « Vérifie si les bug et suggestions s'envoie bien sûr le discord » (Mathis). Aucun texte de joueur ni pseudo dans le journal.
+          q() { echo "== $1"; bash tools/serveur/vps_sql.sh lecture "$2"; echo; }
+          q "Bugs par jour (7 jours) : reçus / ticket GitHub / fil Discord" "select to_char(created_at at time zone 'Europe/Paris','DD/MM') as jour, count(*) as recus, count(issue) as ticket, count(discord) as fil_discord from public.bugs where created_at > now() - interval '7 days' group by 1 order by 1"
+          q "15 derniers bugs" "select id, to_char(created_at at time zone 'Europe/Paris','DD/MM HH24:MI') as recu, version, status, issue, discord is not null as fil_discord, user_id is null as invite from public.bugs order by id desc limit 15"
+          q "Idées par jour (7 jours) : reçues / cachées / publiées sur Discord" "select to_char(created_at at time zone 'Europe/Paris','DD/MM') as jour, count(*) as recues, count(*) filter (where hidden) as cachees, count(relayed_at) as publiees from public.ideas where created_at > now() - interval '7 days' group by 1 order by 1"
+          q "15 dernières idées" "select id, to_char(created_at at time zone 'Europe/Paris','DD/MM HH24:MI') as recue, tag, hidden, to_char(relayed_at at time zone 'Europe/Paris','DD/MM HH24:MI') as publiee, url is not null as lien from public.ideas order by id desc limit 15"
+          q "En attente" "select (select count(*) from public.bugs where issue is null and status = 'nouveau') as bugs_sans_ticket, (select count(*) from public.bugs where issue is not null and discord is null) as bugs_sans_fil, (select count(*) from public.ideas where relayed_at is null and not hidden) as idees_non_publiees"
       - name: Enquête sur un joueur (lecture seule, demande de Mathis)
         if: inputs.etape == 'enquete-joueur'
         env:
