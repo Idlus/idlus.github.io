@@ -36,6 +36,14 @@
   const PUB = ["g", "c", "v", "m", "s"];
   const PUB_C = ["s", "g", "c", "v"]; // 03/11 : 's' = salon Saison 1 (message épinglé) // 2.1.36 : salons du Classique (le message épinglé et le panel du Monocompte sont à part)
   const monoGame = () => { const E = window.ENGINE; return !!(E && E.isMono && E.isMono(S())); }; // partie Monocompte affichée
+  /* 04/11 (Mathis : « les canaux commerce ect associés à chaque serveur ») : les onglets Commerce (c) et PvP (v) lisent le salon
+     du serveur de la partie ouverte : 'c'/'v' Éternel, 'sc'/'sv' Saison 1, 'mc'/'mv' Monocompte (supabase/chat.sql). */
+  const srvK = () => (monoGame() ? "m" : s1Game() ? "s" : "e");
+  const CHC = { e: "c", s: "sc", m: "mc" }, CHV = { e: "v", s: "sv", m: "mv" };
+  const CV_ALL = ["c", "v", "sc", "sv", "mc", "mv"];
+  const SRV_DE = { e: "de l'Éternel", s: "de la Saison 1", m: "du Monocompte" };
+  const chOf = (k) => (k === "c" ? CHC[srvK()] : k === "v" ? CHV[srvK()] : k); // onglet → salon de la base
+  const tabOf = (ch) => { ch = ch || "g"; if (!CV_ALL.includes(ch)) return ch; return ch === CHC[srvK()] ? "c" : ch === CHV[srvK()] ? "v" : null; }; // salon → onglet (null : Commerce ou PvP d'un autre serveur)
 
   /* ---------- démarrage (appelé par ui.js quand la partie est lancée) ---------- */
   async function start() {
@@ -51,7 +59,13 @@
     setInterval(banner, 120000);
     setInterval(loadPin, 120000); // 0.1.50.2 : un message épinglé changé dans le panel arrive aussi aux joueurs déjà en jeu // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
-    let wasMono = monoGame(); setInterval(() => { const m = monoGame(); if (m !== wasMono) { wasMono = m; banner(); } }, 2000); // 2.1.36 : passage Classique ↔ Monocompte : bandeaux de l'autre serveur
+    let wasMono = monoGame(), wasSrv = srvK(); setInterval(() => { const m = monoGame(); if (m !== wasMono) { wasMono = m; banner(); } const sv = srvK(); if (sv !== wasSrv) { wasSrv = sv; srvCv(); } }, 2000); // 2.1.36 : passage Classique ↔ Monocompte : bandeaux de l'autre serveur
+  }
+  /* 04/11 : changement de serveur sans rechargement de la page : Commerce et PvP du nouveau serveur */
+  async function srvCv() {
+    C.c = []; C.v = []; C.unreadC = 0; C.unreadV = 0; paint(true);
+    const [c, v] = await Promise.all([ON.chatLoad(chOf("c")), ON.chatLoad(chOf("v"))]);
+    if (c) C.c = keepLive(C.c, c); if (v) C.v = keepLive(C.v, v); paint(true);
   }
   /* Rechargé à la connexion ou au changement de compte. */
   /* 1.0.9.1 : si le serveur est lent au moment du chargement (délai dépassé), le chat ne restait plus jamais sur
@@ -74,7 +88,7 @@
     const k = C.tab === "p" ? (canWrite() ? "p" : null) : C.tab === "c" || C.tab === "v" || C.tab === "s" ? C.tab : C.tab === "m" ? (monoOk() ? "m" : null) : C.tab === "u" || C.tab === "a" ? null : "g"; // la guilde (et l'alliance) a sa propre mise à jour
     if (!k) return;
     cuBusy = true; cuAt = Date.now();
-    const l = await ON.chatLoad(k);
+    const l = await ON.chatLoad(chOf(k));
     cuBusy = false;
     if (!l) { cuWait = Math.min(300000, cuWait * 2); return; }
     cuWait = 60000; missed = false; C[k] = keepLive(C[k], l);
@@ -88,7 +102,7 @@
     const add = old.filter((m) => (+m.id || 0) > top && !ids.has(m.id)); return add.length ? fresh.concat(add).slice(-200) : fresh;
   }
   async function load() {
-    const [g, p, ign, role, me, c, v, pin, mo, s1] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin(), monoOk() ? ON.chatLoad("m") : [], ON.chatLoad("s")]);
+    const [g, p, ign, role, me, c, v, pin, mo, s1] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad(chOf("c")), ON.chatLoad(chOf("v")), ON.chatPin(), monoOk() ? ON.chatLoad("m") : [], ON.chatLoad("s")]);
     if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
     C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.m = mo ? keepLive(C.m, mo) : C.m; C.s = s1 ? keepLive(C.s, s1) : C.s; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     if (!C.picked && (C.tab === "g" || C.tab === "m" || C.tab === "s")) C.tab = defTab(); // accès au Monocompte connu après le lancement : salon par défaut revu, tant que le joueur n'a pas choisi
@@ -115,12 +129,12 @@
   const fmtBody = (b) => { const st = /^:st:(\d{1,2}):$/.exec(b || ""); if (st && +st[1] >= 1 && +st[1] <= 36) return `<img class="ch-sti" src="assets/s1/st/${+st[1]}.webp" alt="autocollant" loading="lazy">`; // Saison 1, lot 5 : autocollant
     const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
   const PING = PUB;
-  const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;
+  const seenMax = (k) => (pref.ms && pref.ms[chOf(k)]) || 0; // 04/11 : mentions lues gardées par salon de la base (Commerce de chaque serveur à part)
   const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
   const pingsAll = () => (monoGame() ? ["m", "c", "v"] : PING.filter((k) => k !== "m" && k !== (s1Game() ? "g" : "s"))).reduce((n, k) => n + pings(k), 0); // Monocompte : mentions de son salon, du Commerce et du PvP (2.2.0)
   function markSeen(k) {
     if (!PING.includes(k) || !C[k].length) return;
-    const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [k]: top }); savePref(); }
+    const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [chOf(k)]: top }); savePref(); }
   }
   const atNb = (n) => (n ? `<span class="n at" title="On t'a mentionné">@${n > 1 ? n : ""}</span>` : "");
   const CH_NAME = { g: "Général", c: "Commerce", v: "PvP", m: "Monocompte" };
@@ -156,19 +170,20 @@
   }
   function onMsg(m) {
     if (!m || !m.id) return;
-    const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : m.ch === "m" ? C.m : m.ch === "s" ? C.s : C.g;
+    const t = tabOf(m.ch); if (!t) return; // 04/11 : Commerce ou PvP d'un autre serveur : pas pour cette partie
+    const list = t === "p" ? C.p : t === "c" ? C.c : t === "v" ? C.v : t === "m" ? C.m : t === "s" ? C.s : C.g;
     if (list.some((x) => x.id === m.id)) return;
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
-    if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) { C.unreadP++; if (C.loaded && window.DX.sndPlay) window.DX.sndPlay("msg"); } }
-    else if (m.ch === "c" || m.ch === "v" || m.ch === "m" || m.ch === "s") { const k = m.ch === "c" ? "unreadC" : m.ch === "v" ? "unreadV" : m.ch === "s" ? "unreadS" : "unreadM"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === m.ch)) C[k]++; }
+    if (t === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) { C.unreadP++; if (C.loaded && window.DX.sndPlay) window.DX.sndPlay("msg"); } }
+    else if (t === "c" || t === "v" || t === "m" || t === "s") { const k = t === "c" ? "unreadC" : t === "v" ? "unreadV" : t === "s" ? "unreadS" : "unreadM"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === t)) C[k]++; }
     else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) window.GIGA.onAnn(m); // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
     if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind) && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
-    if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
+    if (PING.includes(t) && pingsMe(m) && !(C.open && C.tab === t)) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[t] || "Général"}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);
   }
 
@@ -281,7 +296,7 @@
     /* 2.1.35.3 : salon Monocompte : héros Monocompte du message (data.mono, posé par chat_send), jamais le profil Classique :
        ni ailes ni camp d'alignement, ni titre Classique ; un ancien message sans data.mono ne montre ni classe, ni niveau, ni titre.
        Les badges de l'équipe (Créateur, Modérateur) restent. */
-    const mono = m.ch === "m", mh = mono ? monoHero(m) : null;
+    const mono = m.ch === "m" || m.ch === "mc" || m.ch === "mv", mh = mono ? monoHero(m) : null; // 04/11 : Commerce et PvP du Monocompte aussi
     const cls = mono ? mh.cls : m.cls, lvl = mono ? mh.lvl : m.lvl, title = mono ? mh.title : m.title;
     const med = X().cmed(cls, lvl);
     const warn = m.ch === "p" && m.data && m.data.warn; // 2.2.2 : avertissement de la modération (adm_warn)
@@ -369,7 +384,7 @@
     }
     if (C.tab === "c" || C.tab === "v") {
       const rows = C[C.tab].filter((m) => !C.ign.has(m.user_id));
-      const intro = C.tab === "c" ? "Commerce : achat, vente et échange. Un message toutes les 30 secondes ; montrez vos objets avec « Montrer dans le chat »." : "PvP : Kolizéum, défis et adversaires. Les grades Or, Cristal et Diamant y sont annoncés.";
+      const intro = C.tab === "c" ? `Commerce ${SRV_DE[srvK()]} : achat, vente et échange entre joueurs de ce serveur. Un message toutes les 30 secondes ; montrez vos objets avec « Montrer dans le chat ».` : `PvP ${SRV_DE[srvK()]} : Kolizéum, défis et adversaires. Les grades Or, Cristal et Diamant y sont annoncés.`;
       return `<div class="sys">${intro}</div>` + rows.map(msgHtml).join("");
     }
     if (C.tab === "h") {
@@ -412,12 +427,12 @@
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
     if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
-    const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null;
+    const to = C.tab === "p" ? C.peer : null; const tk = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null, ch = tk ? chOf(tk) : null; // 04/11 : Commerce et PvP du serveur de la partie
     const err = C.tab === "a" && window.ALLY ? await window.ALLY.say(body) : C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
-    C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
+    C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (tk === "c") C.nextC = Date.now() + 30000;
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
-    setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = keepLive(C[k], l); paint(true); } }, 1500);
+    setTimeout(async () => { const k = to ? "p" : tk || "g"; const l = await ON.chatLoad(chOf(k)); if (l && l.length) { C[k] = keepLive(C[k], l); paint(true); } }, 1500);
     paint();
   }
   function menu(t) {
@@ -459,7 +474,7 @@
      il supprime seulement un message de joueur d'un salon public */
   const isStaffU = (u) => !!u && / is-(crea|mod)/.test(X().staffCls(u));
   const canAct = (u) => isAdmin() || (C.role && !isStaffU(u));
-  const canDel = (m) => !!m && (isAdmin() || (C.role && m.kind === "msg" && ["g", "c", "v", "m", "s"].includes(m.ch) && !isStaffU(m.user_id)));
+  const canDel = (m) => !!m && (isAdmin() || (C.role && m.kind === "msg" && ["g", "c", "v", "m", "s", "sc", "sv", "mc", "mv"].includes(m.ch) && !isStaffU(m.user_id)));
   const msgById = (id) => C.g.concat(C.p, C.c, C.v, C.m, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
   function reportSheet(u, p, id) {
@@ -629,7 +644,7 @@
   }
   /* ---------- 04/11 (refonte du Panel Xener, choix 1A 3A ; idée 1 : chaque bouton dit le serveur visé) ---------- */
   const SRVS = [["e", "Éternel", "g"], ["s", "Saison 1", "s"], ["m", "Monocompte", "m"]]; // serveur, nom, salon du chat
-  const CHN = { g: "Éternel", s: "Saison 1", m: "Monocompte", c: "Commerce", v: "PvP" };
+  const CHN = { g: "Éternel", s: "Saison 1", m: "Monocompte", c: "Commerce Éternel", v: "PvP Éternel", sc: "Commerce Saison 1", sv: "PvP Saison 1", mc: "Commerce Monocompte", mv: "PvP Monocompte" };
   const srvTags = (srv) => (srv ? String(srv).split(",") : ["e", "s", "m"]).filter((k) => SRVS.some((x) => x[0] === k)).map((k) => `<span class="px-tag px-${k}">${SRVS.find((x) => x[0] === k)[1]}</span>`).join("");
   const untilTxt = (x) => (x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin");
   /* message épinglé : celui du Classique (salons Éternel 'g', Saison 1 's', Commerce 'c', PvP 'v') et celui du Monocompte (à part) */
@@ -682,8 +697,8 @@
         <div class="row small"><label class="row">Niveau minimum pour écrire <select id="admMin">${[0, 10, 20, 30, 50].map((v) => `<option value="${v}" ${+st.min_level === v ? "selected" : ""}>${v ? `héros niveau ${v}` : "aucun"}</option>`).join("")}</select></label>
           <label class="row">Entre deux messages <select id="admSlow">${[0, 4, 10, 30].map((v) => `<option value="${v}" ${+st.slow_s === v ? "selected" : ""}>${v ? `${v} s` : "aucun délai"}</option>`).join("")}</select></label><button class="btn sm primary" data-act="adm-settings">Enregistrer</button></div>
         <div class="row small" style="margin-top:8px"><button class="btn sm${st.closed ? " primary" : " danger"}" data-act="adm-chclose" data-v="${st.closed ? 0 : 1}">${st.closed ? "Rouvrir le chat des trois serveurs" : "Fermer le chat des trois serveurs"}</button>${st.closed ? `<span class="st m">Chat fermé : seuls toi et les modérateurs écrivez</span>` : ""}</div></div>
-      <div class="box"><h2>Salons Commerce et PvP</h2><p class="small muted">Les salons Éternel, Saison 1 et Monocompte se vident depuis la page Salon de chaque serveur.</p>
-        <div class="row small">${clrHtml("c")}</div><div class="row small" style="margin-top:6px">${clrHtml("v")}</div></div>`;
+      <div class="box"><h2>Salons Commerce et PvP</h2><p class="small muted">Chaque serveur a son Commerce et son PvP. Les salons Éternel, Saison 1 et Monocompte se vident depuis la page Salon de chaque serveur.</p>
+        ${[["c", "v"], ["sc", "sv"], ["mc", "mv"]].map(([a, b], i) => `<div class="row small"${i ? ` style="margin-top:6px"` : ""}>${clrHtml(a)}${clrHtml(b)}</div>`).join("")}</div>`;
   }
   /* 2.1.36 : côté Monocompte du Panel Xener. Chat Monocompte : message épinglé du salon 'm' (adm_pin_mono, à part de celui du
      Classique) et « vider le salon » (adm_chat_clear('m'), avec confirmation dans la page). Annonces Monocompte (adm_announce_mono) :
@@ -878,7 +893,7 @@
       case "adm-clr": // 04/11 : vider un salon, confirmation dans la page
         if (!d.ok) { A.clr = d.v; repaintAdm(); return; }
         A.clr = null; if (d.ok !== "1") { repaintAdm(); return; }
-        if (await admDo("adm_chat_clear", { p_ch: d.v }, `Salon ${CHN[d.v]} vidé.`)) { if (C[d.v]) C[d.v] = C[d.v].filter((m) => m.kind !== "msg"); paint(true); } else repaintAdm();
+        if (await admDo("adm_chat_clear", { p_ch: d.v }, `Salon ${CHN[d.v]} vidé.`)) { const tk = tabOf(d.v); if (tk && C[tk]) C[tk] = C[tk].filter((m) => m.kind !== "msg"); paint(true); } // 04/11 : Commerce ou PvP d'un autre serveur : rien à retirer de l'écran else repaintAdm();
         return;
       case "adm-mpin": case "adm-mpinoff": { // 2.1.36 : message épinglé du salon Monocompte
         const b = a === "adm-mpinoff" ? "" : ($("#admMPin").value || "").trim();

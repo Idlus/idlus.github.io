@@ -1,6 +1,14 @@
 {
-  "version": "2.2.4.6",
+  "version": "2.2.4.7",
   "versions": [
+    {
+      "v": "2.2.4.7",
+      "name": "Commerce par serveur",
+      "items": [
+        "Chat : chaque serveur a son propre Commerce et son propre PvP. Dans l'Éternel, la Saison 1 ou le Monocompte, tu ne vois que les ventes et les messages des joueurs de ton serveur",
+        "Le salon Saison 1 garde bien ses messages : avant, un message écrit dedans partait dans le salon de l'Éternel"
+      ]
+    },
     {
       "v": "2.2.4.6",
       "name": "Connexion plus sûre",

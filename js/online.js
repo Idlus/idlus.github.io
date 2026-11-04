@@ -433,7 +433,7 @@
   ON.chatLoad = async (ch) => {
     if (!sb) return null;
     let q = F("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
-    q = q.eq("ch", ["p", "c", "v", "m", "s"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
+    q = q.eq("ch", ["p", "c", "v", "m", "s", "sc", "sv", "mc", "mv"].includes(ch) ? ch : "g"); // 04/11 : Commerce et PvP de chaque serveur (sc/sv Saison 1, mc/mv Monocompte) // 0.1.48.2 : salons Commerce (c) et PvP (v) ; m : Général Monocompte (testeurs et admin, supabase/chat.sql)
     try { const { data, error } = await withTimeout(q, 12000); return error ? null : (data || []).reverse(); } catch (e) { return null; } // 1.0.9.1 : une erreur du serveur (délai dépassé côté base) compte comme « pas chargé », le chat réessaie
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
@@ -476,7 +476,7 @@
   ON.campCount = async () => { const r = await s1call("camp_count", {}); return r.err ? null : r.data || {}; };
   /* Saison 1, lot 3 : couleur du pseudo (js/garderobe.js), envoyée seulement quand le serveur la connaît (SRV.gr, posé à l'installation) */
   const pcOf = () => { const D = root.DX, S = D && D.S, E = D && D.E; return ON.grSrv && S && E && E.grPcol ? E.grPcol(S) : null; };
-  ON.chatSend = async (body, to, item, ch) => { const pc = pcOf(); const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" || ch === "m" ? { p_ch: ch } : {}, pc ? { p_pc: pc } : {})); return r.err ? r.err : r.data || null; };
+  ON.chatSend = async (body, to, item, ch) => { const pc = pcOf(); const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ["c", "v", "m", "s", "sc", "sv", "mc", "mv"].includes(ch) ? { p_ch: ch } : {}, pc ? { p_pc: pc } : {})); return r.err ? r.err : r.data || null; }; // 04/11 : salon Saison 1 (s) et Commerce/PvP de chaque serveur ; avant, un message du salon Saison 1 partait dans le Général de l'Éternel
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
   // 2.1.35.3 : carte Monocompte d'un joueur (clic sur son pseudo dans le salon Monocompte du chat) ; serveur pas à jour : null

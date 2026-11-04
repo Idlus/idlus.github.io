@@ -136,7 +136,7 @@ begin
   if g >= 2 and g > a.promo then
     update koli set promo = g where user_id = p_user;
     insert into chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data)
-      select 'v', p_user, pr.pseudo, l.main, l.main_lvl, 'ann', jsonb_build_object('t', 'koli', 'g', g, 'cote', a.cote)
+      select case current_schema() when 's1' then 'sv' else 'v' end, p_user, pr.pseudo, l.main, l.main_lvl, 'ann', jsonb_build_object('t', 'koli', 'g', g, 'cote', a.cote) -- 04/11 : PvP de chaque serveur (Saison 1 : 'sv')
       from profiles pr left join ladder l on l.user_id = pr.id where pr.id = p_user and not coalesce(l.flagged, false);
     ann := true;
   end if;
