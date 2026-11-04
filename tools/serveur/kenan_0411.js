@@ -47,6 +47,14 @@ do $$ declare u uuid; n int; m int; t text; c record; vrai boolean := (select kv
   if t_at is null then raise exception 'pas de partie S1'; end if;
   update s1.saves_ok set data = d, meta = mt, bilan = null, res = null, src_at = t_at, accept = false, at = now() where user_id = u;
   delete from s1.saves_jour where user_id = u; get diagnostics m = row_count; raise notice 's1.saves_jour : % copie(s) effacée(s)', m;
+  -- tout le reste de sa saison venu de la partie importée (alignement, chromatiques, élevage, Premiers, classement par classe,
+  -- naissances de montures, Songe, Brisage…) ; gardés : sa partie (remise ci-dessus), son classement (retiré ci-dessous), le journal du Bouclier
+  for t in select format('%I.%I', table_schema, table_name) from information_schema.columns where table_schema = 's1' and column_name = 'user_id'
+      and table_name in (select table_name from information_schema.tables where table_schema = 's1' and table_type = 'BASE TABLE')
+      and table_name not in ('saves', 'saves_ok', 'saves_jour', 'ladder', 'bouclier_log') order by 1 loop
+    execute format('delete from %s where user_id = $1', t) using u; get diagnostics m = row_count;
+    if m > 0 then raise notice '% : % ligne(s) effacée(s)', t, m; end if;
+  end loop;
   -- 3. retiré des classements de la saison (revient tout seul à la fin de la suspension, avec sa partie neuve)
   update s1.ladder set flagged = true, verified = false, flag_reason = 'compte suspendu' where user_id = u;
   perform public.alog('Bouclier : partie S1 de Kenan remise à zéro (sauvegarde de l''Éternel importée)');
