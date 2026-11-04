@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.2.3 « Menu réorganisé »
+
+- Mathis 04/11 (« tout se superpose ou dépasse »), maquette validée 1A 2A 3A 4A 5A. js/ui.js : rail d'icônes pour tous sur PC (`S.settings.navAll` remplace `navFull` pour la colonne complète ; `navFull` reste le réglage du menu du téléphone), liste des pages au survol d'une famille (`navFly`, `#navfly`, souris seulement) ; la colonne complète n'est plus écrasée à 66 px avec le chat. css/style.css (bloc 2.2.3) : `.app` remplit l'espace entre le menu et la colonne de droite, le chat ouvert pousse la page dès 1100 px. Barre compacte (`statusHtml`) : saison dans `srvPill(seasonShort())`, plus de lieu, Sablier replié (`ui.sabOpen`), sauvegarde en point. `stripTabs` copie les onglets de la page (`#main > nav.pg-mtabs`) dans le bandeau de la famille sur PC (`body.ptabs`). js/histoireui.js `trkPlace` : la quête suivie se range dans la colonne (classe `col`, `--trkc` descend le chat). js/chat.js `CHAT.close` : le menu du téléphone ferme le chat. Cartes d'avis : la jauge et la prime restent dans la carte.
+
 ## 2.2.2.9 « Garde-robe en Monocompte »
 
 - js/mono.js `M.PAGES` (Mathis 04/11 : « pourquoi la garde robe n'est pas sur monocompte ») : la page `garde` (lot 3 Saison 1, prévue pour toutes les parties) manquait à la liste blanche du Monocompte, `monoSeal` la retirait du menu. Ajoutée ; tests/mono_separation.test.js vérifie qu'elle est au menu Monocompte. Classique · Saison 1 l'avait déjà (seule L'Ascension y est retirée, `S1_OFF`).

@@ -1,6 +1,19 @@
 {
-  "version": "2.2.2.9",
+  "version": "2.2.3",
   "versions": [
+    {
+      "v": "2.2.3",
+      "name": "Menu réorganisé",
+      "guide": "menus",
+      "items": [
+        "Sur PC, le menu redevient une colonne d'icônes : passe la souris sur une famille et ses pages s'ouvrent à côté, un clic suffit. Plus de longue liste qui dépasse de l'écran (le bouton « Tout » la remet si tu la préfères)",
+        "Grand écran : la page prend toute la place entre le menu et la colonne de droite. Sur PC portable, le chat ouvert pousse la page au lieu de la recouvrir",
+        "Barre du haut allégée : la saison rejoint le bouton du serveur (« Monocompte · S1 »), le Sablier montre la vitesse choisie (clique dessus pour changer), la sauvegarde devient un point vert",
+        "Les onglets d'une page (Quêtes, Succès, Ornements…) passent dans le bandeau du haut : une rangée de moins avant le contenu",
+        "La quête suivie se range avec le chat (entre le combat et le chat sur grand écran) : elle ne cache plus le bas des pages",
+        "Corrigé : textes coupés des cartes d'avis de recherche, et au téléphone le menu qui s'ouvrait sous le chat"
+      ]
+    },
     {
       "v": "2.2.2.9",
       "name": "Garde-robe en Monocompte",

@@ -6576,3 +6576,48 @@ body.tb1 #chat .chmin{display:none}
 .hubtop.slim h2{font-size:clamp(18px,5vw,26px)}
 .svm{grid-template-columns:minmax(0,1fr)}.svlog{min-width:0}.svmail input{width:0} /* 2.2.2 : l'écran de choix ne déborde plus sur le côté au téléphone (non connecté) */
 .srvpill{border-radius:999px!important;padding:4px 10px!important;background:var(--panel3)!important;position:relative;z-index:2}
+/* ---------- 2.2.3 « Menu réorganisé » (Mathis 1A 2A 3A 4A 5A) ---------- */
+/* 1A : liste des pages d'une famille au survol du rail */
+#navfly{position:fixed;z-index:70;min-width:220px;max-width:300px;max-height:calc(100vh - 16px);overflow:auto;background:var(--panel);border:2px solid color-mix(in srgb,var(--gold) 40%,var(--frame));border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.55);padding:8px;display:grid;gap:2px}
+#navfly h4{margin:2px 8px 6px;font-size:11px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+#navfly button{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--ink);font:inherit;font-weight:800;font-size:14px;padding:6px 8px;border-radius:9px;text-align:left;cursor:pointer;position:relative;white-space:nowrap}
+#navfly button:hover,#navfly button:focus-visible{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+#navfly button[aria-current]{background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold2)}
+#navfly .med{width:24px;height:24px;flex:none}
+#navfly .navcnt,#navfly .navdot,#navfly .navcoin{position:static;margin-left:auto;flex:none}
+/* 1A : la colonne complète (« Tout ») garde sa largeur avec le chat ouvert (elle n'est plus écrasée en 66 px) */
+@media (min-width:1100px){
+  body.hasnav:not(.navrail).chat-open{padding-left:232px}
+  body:not(.navrail).chat-open #nav.sidenav{width:224px}
+}
+/* 2A : trois colonnes nettes. La page remplit la place entre le menu et la colonne de droite ; le chat ouvert pousse la page dès 1100 px */
+@media (min-width:1100px){
+  body.chat-open .app{margin-left:0;margin-right:356px;max-width:none}
+  body.chat-open #chat.chat{top:calc(16px + var(--trkc,0px));bottom:16px;right:8px;width:340px;height:auto}
+}
+@media (min-width:1600px){
+  body.chat-open .app,body.livecol .app{margin-left:0;margin-right:404px;max-width:none}
+  body.chat-open #chat.chat{right:16px;width:380px}
+  body.livecol #chat.chat{top:calc(16px + var(--lch,0px) + var(--trkc,0px))}
+}
+/* 3A : barre du haut allégée */
+@media (min-width:860px){body.hasnav.tb1 .status .brand{display:none}}
+body.tb1 .status .sabpill:not(.open) .seg button:not([aria-pressed="true"]){display:none}
+body.tb1 .status .sabpill:not(.open) .seg button[aria-pressed="true"]::after{content:" ▾";font-size:10px}
+body.tb1 #onPill[data-st="ok"]>span:last-child{display:none}
+body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
+/* 4A : les onglets de la page dans le bandeau de la famille (PC) */
+@media (min-width:860px){
+  body.ptabs #main>nav.pg-mtabs{display:none}
+  .sn-strip .sn-ptabs{display:flex;gap:6px;align-items:center;margin-left:auto;padding-left:10px;border-left:1px solid color-mix(in srgb,var(--gold) 22%,transparent);flex:none}
+  .sn-strip .sn-ptabs button{font:inherit;font-size:13px;font-weight:800;color:var(--ink);background:none;border:1px solid color-mix(in srgb,var(--gold) 28%,transparent);border-radius:999px;padding:4px 11px;white-space:nowrap;cursor:pointer;min-height:0}
+  .sn-strip .sn-ptabs button[aria-pressed="true"]{background:var(--gold);color:#13200a;border-color:var(--gold)}
+  .sn-strip .sn-ptabs .qj-cnt{font-size:11px;opacity:.75;margin-left:3px;background:none;padding:0}
+}
+/* 5A : la quête suivie rangée avec le chat (histoireui.js trkPlace) ; posée en bas, la page lui garde sa place */
+#hs-trk.col{bottom:auto;left:auto}
+/* cartes d'avis de recherche : la jauge et la prime restent dans la carte */
+.qx-pos>.row{max-width:100%;min-width:0}
+.qx-pos>.row .num{flex:none}
+.qx-pos .bar{min-width:0}
+.qx-prime{text-wrap:balance;max-width:100%}

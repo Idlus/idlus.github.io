@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.2.9";
+const GAME_VERSION = "2.2.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.3", name: "Menu réorganisé", guide: "menus", items: [
+    "Sur PC, le menu redevient une colonne d'icônes : passe la souris sur une famille et ses pages s'ouvrent à côté, un clic suffit. Plus de longue liste qui dépasse de l'écran (le bouton « Tout » la remet si tu la préfères)",
+    "Grand écran : la page prend toute la place entre le menu et la colonne de droite. Sur PC portable, le chat ouvert pousse la page au lieu de la recouvrir",
+    "Barre du haut allégée : la saison rejoint le bouton du serveur (« Monocompte · S1 »), le Sablier montre la vitesse choisie (clique dessus pour changer), la sauvegarde devient un point vert",
+    "Les onglets d'une page (Quêtes, Succès, Ornements…) passent dans le bandeau du haut : une rangée de moins avant le contenu",
+    "La quête suivie se range avec le chat (entre le combat et le chat sur grand écran) : elle ne cache plus le bas des pages",
+    "Corrigé : textes coupés des cartes d'avis de recherche, et au téléphone le menu qui s'ouvrait sous le chat" ] },
   { v: "2.2.2.9", name: "Garde-robe en Monocompte", guide: "s1garde", items: [
     "Monocompte : la Garde-robe (Héros › Garde-robe) était oubliée dans le menu. Auras, boucliers, compagnon, décor, effet de victoire, couleur du pseudo, bannière : tout s'y choisit, comme en Classique · Saison 1 et en Éternel" ] },
   { v: "2.2.2.8", name: "Quête suivie à côté du chat", items: [
@@ -3174,6 +3181,9 @@ function navBadges() {
 }
 /* 2.1.40.1 : menu complet (toutes les pages, un clic) ; par défaut seulement avec « Affichage détaillé » */
 const navFullOn = () => !!S && (S.settings.navFull === undefined ? detailOn() : !!S.settings.navFull);
+/* 2.2.3 (Mathis 1A) : sur PC, le rail d'icônes est le menu de tout le monde ; les pages d'une famille s'ouvrent à côté au survol (navFly).
+   « Tout » remet la colonne complète (S.settings.navAll), « « » revient au rail. Le menu du téléphone garde son propre réglage (navFull). */
+const navAllOn = () => !!S && !!S.settings.navAll;
 /* 9A : menu réduit aux icônes (bouton « ou chat ouvert de 1280 à 1599 px) : une icône par famille, le panneau de la famille s'ouvre à côté */
 let navFx = null; // 20A : la page cliquée et le point du clic, pour l'onde et le rebond posés après le redessin
 let navBadgeSeen = null; // 23A : pastilles déjà vues, pour ne faire pulser que celles qui apparaissent ou changent
@@ -3182,7 +3192,7 @@ function renderNav() {
   if (!S) { nav.innerHTML = ""; sub.innerHTML = ""; document.body.classList.remove("hasnav", "navmini", "navrail"); if (window.FORMUI) window.FORMUI.mini(); return; }
   const k = navKey(); const kk = navParent(k); const fight = ui.tab === "combat"; const B = navBadges(); const live = navLiveTxt();
   const curFam = navFam(k); const pins = navPins();
-  document.body.classList.add("hasnav"); document.body.classList.toggle("navrail", !navFullOn()); document.body.classList.remove("navmini");
+  document.body.classList.add("hasnav"); document.body.classList.toggle("navrail", !navAllOn()); document.body.classList.remove("navmini");
   const cur = (key) => (k === key || kk === key ? 'aria-current="page"' : "");
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
@@ -3194,19 +3204,19 @@ function renderNav() {
   const famPage = (F) => { const L = navFamPages(F); const last = ui.famLast && ui.famLast[F.id]; return L.some((p) => p[0] === last) ? last : (L[0] || [])[0]; };
   const rl = (key, n, ic, on, b, cls, fam) => `<button class="rl-i${cls ? " " + cls : ""}${on ? " cur" : ""}" data-act="nav" data-v="${key}" data-nk="${key}"${fam ? ` data-fam="${fam}"` : ""} ${on ? 'aria-current="page"' : ""} title="${h(n)}">${icon(ic)}<span class="rl-l">${h(n)}</span>${b || ""}</button>`;
   const rlFight = `<div class="rl-frow"><button class="rl-i rl-fight${live ? " on" : ""}${fight ? " cur" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""} title="${h(live ? "Combat en cours : " + live : "Combat")}">${med("combat")}<span class="rl-l">Combat</span><small id="navlive" hidden>${h(live)}</small></button>${navQuitBtn()}</div>`;
-  const rlFoot = `<button class="rl-i rl-f rl-all" data-act="navfull" aria-pressed="false" title="Toutes les pages : le menu complet, chaque page à un clic"><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span class="rl-l">Tout</span></button><button class="rl-i rl-f" data-act="options" title="Options">${G("gear")}<span class="rl-l">Options</span></button><button class="rl-i rl-f" data-act="navhelp" title="Aide : guide, suggestions, signaler un bug"><b class="sn-gq" aria-hidden="true">?</b><span class="rl-l">Aide</span></button>`;
+  const rlFoot = `<button class="rl-i rl-f rl-all" data-act="navall" aria-pressed="false" title="Toutes les pages : le menu complet, chaque page à un clic"><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span class="rl-l">Tout</span></button><button class="rl-i rl-f" data-act="options" title="Options">${G("gear")}<span class="rl-l">Options</span></button><button class="rl-i rl-f" data-act="navhelp" title="Aide : guide, suggestions, signaler un bug"><b class="sn-gq" aria-hidden="true">?</b><span class="rl-l">Aide</span></button>`;
   /* 2.1.40.1 (retour des joueurs relayé par Mathis : « ça double le nombre de clics ») : « Toutes les pages » déplie le menu en une colonne
      avec chaque famille et ses pages, à un clic de n'importe où ; « Menu réduit » revient au rail. Réglage partagé avec le menu du téléphone */
-  const full = navFullOn();
+  const full = navAllOn();
   const fb = (key, n, ic, on, b, cls) => `<button class="${cls || ""}" data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""} title="${h(NAV_DESC[key] || n)}">${icon(ic)}<span class="sn-l">${h(n)}</span>${b || ""}</button>`;
-  const sideFull = `<div class="sn-side sn-full"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""> idlus</button><button class="sn-mini" data-act="navfull" aria-pressed="true" title="Menu réduit : revenir au menu en icônes" aria-label="Menu réduit">«</button></div>
+  const sideFull = `<div class="sn-side sn-full"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""> idlus</button><button class="sn-mini" data-act="navall" aria-pressed="true" title="Menu réduit : revenir au menu en icônes" aria-label="Menu réduit">«</button></div>
       <div class="sn-frow"><button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span class="sn-l">Combat<small id="navlive"${live ? "" : " hidden"}>${h(live)}</small></span></button>${navQuitBtn()}</div>
       ${fb("home", "Havre-Sac", "logo", k === "home" && !fight)}
       ${NAV.map((F) => `<div class="sn-g">${h(F.season ? seasonName() : F.n)}</div>${navFamPages(F).map((p) => fb(p[0], p[1], p[2], !fight && (k === p[0] || kk === p[0]), badge(p[0]))).join("")}`).join("")}
       <span class="sn-grow"></span><div class="sn-g">Aide et réglages</div>
       <button data-act="options">${G("gear")}<span class="sn-l">Options</span></button><button data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Aide</span></button></div>`;
   const side = full ? sideFull : `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
-      ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea") : ""}<i class="rl-sep"></i>
+      ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea", SEA.id) : ""}<i class="rl-sep"></i>
       ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}
       <span class="sn-grow"></span>${rlFoot}</div>`;
   if (curFam && !fight && k !== "home") { if (!ui.famLast) ui.famLast = {}; ui.famLast[curFam.id] = kk; }
@@ -3234,9 +3244,34 @@ function renderNav() {
   }
   sub.innerHTML = strip;
   { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.offsetWidth / 2; } // téléphone : la page en cours reste visible dans le bandeau
+  stripTabs(); // 2.2.3 (4A)
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
   [".sn-side"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
   navAfter(k, B);
+}
+/* 2.2.3 (Mathis 1A) : au survol d'une famille du rail, la liste de ses pages s'ouvre à côté ; un clic sur une page y va directement.
+   Le clic sur la famille ouvre toujours sa dernière page vue. Rien au téléphone (menu du bas). */
+let navFlyT = null;
+function navFlyClose() { clearTimeout(navFlyT); const f = $("#navfly"); if (f) f.remove(); }
+function navFly(btn) {
+  clearTimeout(navFlyT); const F = NAV.find((x) => x.id === btn.dataset.fam); if (!F) return navFlyClose();
+  let f = $("#navfly"); if (!f) { f = document.createElement("div"); f.id = "navfly"; f.setAttribute("role", "menu"); document.body.appendChild(f); }
+  const k = navKey(), kk = navParent(k), B = navBadges(); const fight = ui.tab === "combat";
+  const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
+  f.dataset.fam = F.id;
+  f.innerHTML = `<h4>${h(F.season ? seasonName() : F.n)}</h4>` + navFamPages(F).map((p) => `<button role="menuitem" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${!fight && (k === p[0] || kk === p[0]) ? 'aria-current="page"' : ""} title="${h(NAV_DESC[p[0]] || p[1])}">${p[2] === null ? heroMed() : p[2] ? med(p[2]) : ""}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("");
+  const r = btn.getBoundingClientRect(); f.style.left = Math.round(r.right + 6) + "px"; f.style.top = "0px";
+  const fh = f.getBoundingClientRect().height; f.style.top = Math.round(Math.max(8, Math.min(r.top - 8, innerHeight - 8 - fh))) + "px";
+}
+if (window.matchMedia && matchMedia("(hover: hover) and (min-width: 860px)").matches) {
+  document.addEventListener("mouseover", (e) => {
+    const t = e.target; if (!t.closest) return;
+    const b = t.closest("#nav .sn-rail .rl-i[data-fam]"); if (b) { if (!$("#navfly") || $("#navfly").dataset.fam !== b.dataset.fam) navFly(b); else clearTimeout(navFlyT); return; }
+    if (t.closest("#navfly")) { clearTimeout(navFlyT); return; }
+    if ($("#navfly")) { clearTimeout(navFlyT); navFlyT = setTimeout(navFlyClose, 220); }
+  });
+  document.addEventListener("click", (e) => { if (e.target.closest && e.target.closest("#navfly [data-act], #nav [data-act]")) setTimeout(navFlyClose, 0); }, true);
+  window.addEventListener("blur", navFlyClose);
 }
 /* animations du menu (Mathis 20A à 25A), jamais avec « Animations réduites » */
 function navAfter(k, B) {
@@ -3313,9 +3348,12 @@ function statusHtml() {
   const sea = S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${seasonName()} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐<b class="hide-sm">&nbsp;${h(seasonName())}</b></span>` : "";
   const dust = (S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip hide-sm" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : "";
   const op = ui.tbOpen;
-  return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt=""><span class="hide-sm">idlus</span></button>${sea}
+  /* 2.2.3 (Mathis 3A) : barre allégée. La saison rejoint le bouton du serveur (« Monocompte · S1 »), le lieu n'y est plus (il est dans le menu
+     et la colonne de combat), le Sablier montre la vitesse choisie, « Sauvegardé » devient un point vert ; le logo est déjà dans le menu sur PC */
+  const sp = srvPill(S.mono ? seasonShort() : ""); void where;
+  return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt=""><span class="hide-sm">idlus</span></button>${sp ? "" : sea}
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>${dust}${sabHtml()}
-    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span><span class="tb-grow"></span>${srvPill()}${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
+    <span class="tb-grow"></span>${sp}${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}
     <button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>
     ${window.CHAT && window.CHAT.on ? `<button class="ic-btn tb-chat" data-act="ch-open" title="Chat" aria-label="Ouvrir le chat">${G("chat")}<span class="navcnt" id="tbChatN" hidden></span></button>` : ""}
     <button class="ic-btn tb-bell${op === "bell" ? " on" : ""}" data-act="tb-bell" aria-expanded="${op === "bell"}" title="Notifications : objectifs suivis, événements, annonces" aria-label="Notifications">${TB_BELL}<span class="navcnt" id="tbBellN" hidden></span></button>
@@ -3382,7 +3420,7 @@ const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.
 function sabHtml() {
   const B = E.sab(S);
   if (!B.open) return `<button class="it sabpill lock" data-act="sabinfo" data-tip="Vitesse ×2 / ×3 : se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim »)."><span class="sb">⏳</span>${G("lock")}<span class="hide-sm">Vitesse</span></button>`;
-  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="${h(sabPillTip())}"><span class="sb">⏳</span><b class="num" id="stSab">${sabPillTxt()}</b>${B.spd > 1 ? `<span class="sabmal hide-sm">butin ${sabMal(B.spd)}</span>` : ""}</button><span class="seg">${sabSpds().map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}${v > 1 ? ` (butin ${sabMal(v)})` : ""}">×${v}</button>`).join("")}</span></span>`;
+  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}${ui.sabOpen ? " open" : ""}"><button class="sbi" data-act="sabinfo" data-tip="${h(sabPillTip())}"><span class="sb">⏳</span><b class="num" id="stSab">${sabPillTxt()}</b>${B.spd > 1 ? `<span class="sabmal hide-sm">butin ${sabMal(B.spd)}</span>` : ""}</button><span class="seg">${sabSpds().map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}${v > 1 ? ` (butin ${sabMal(v)})` : ""}">×${v}</button>`).join("")}</span></span>`;
 }
 /* 1.0.14.2 « Menu de la poussière » : la pastille de poussière de stasis ouvre une petite fenêtre accrochée dessous
    (pleine largeur au téléphone) : parchemins à fabriquer sur place, autres dépenses avec « Y aller », et d'où elle vient. */
@@ -9280,7 +9318,7 @@ const tabKey = (el) => ui.tab + ":" + tabRows().indexOf(el);
 /* 2.1.40 (Mathis 1A des onglets) : une seule rangée d'onglets. La page mère reçoit les pages rangées avec elle au bout de sa rangée
    (HdV + Cours, Forgemagie + Gravure, Familiers + Élevage) ; une page rangée reçoit la page mère en tête. Quêtes et Succès : js/questui.js */
 const MERGE_HOST = { hdv: ".subtabs", forge: ".subtabs", pets: ".seg" };
-{ const mm = document.getElementById("main"); if (mm && window.MutationObserver) { let q = 0; new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; pageTabs(); }); }).observe(mm, { childList: true, subtree: true }); } } // les modules redessinent leur page eux-mêmes
+{ const mm = document.getElementById("main"); if (mm && window.MutationObserver) { let q = 0; new MutationObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; pageTabs(); stripTabs(); }); }).observe(mm, { childList: true, subtree: true }); } } // les modules redessinent leur page eux-mêmes
 function pageTabs() {
   if (!S || ui.tab === "combat" || ui.tab === "home") return; const m = $("#main"); if (!m || m.querySelector(".mg-tab, .pg-mtabs")) return;
   if (ui.tab === "builds" && !S.mono) { m.insertAdjacentHTML("afterbegin", `<div class="pg-mtabs">${lbGroupsHtml()}</div>`); return; }
@@ -9292,6 +9330,19 @@ function pageTabs() {
   else if (host) host.insertAdjacentHTML("afterbegin", b(kk));
   else m.insertAdjacentHTML("afterbegin", `<nav class="subtabs pg-mtabs">${[kk].concat(kids).map(b).join("")}</nav>`);
 }
+/* 2.2.3 (Mathis 4A) : sur PC, les onglets de la page (Quêtes · Succès · Ornements, HdV · Cours…) passent à droite du bandeau de la famille :
+   une seule rangée avant le contenu. Copie des boutons (mêmes actions) ; la rangée de la page est masquée par le CSS (body.ptabs) */
+const PT_MQ = window.matchMedia ? matchMedia("(min-width: 860px)") : null;
+function stripTabs() {
+  const st = document.querySelector("#subnav .sn-strip"); const src = PT_MQ && PT_MQ.matches && st ? document.querySelector("#main > nav.pg-mtabs") : null;
+  let box = st && st.querySelector(".sn-ptabs");
+  if (!src) { if (box) box.remove(); document.body.classList.remove("ptabs"); return; }
+  const html = [...src.querySelectorAll("button")].map((b) => { const c = b.cloneNode(true); c.classList.remove("mg-tab"); return c.outerHTML; }).join("");
+  if (!box) { box = document.createElement("span"); box.className = "sn-ptabs"; box.setAttribute("role", "tablist"); st.insertBefore(box, st.querySelector(".sn-guide")); }
+  if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = html; }
+  document.body.classList.add("ptabs");
+}
+if (PT_MQ && PT_MQ.addEventListener) PT_MQ.addEventListener("change", () => stripTabs());
 function tabsKeep() {
   if (!matchMedia("(max-width:640px)").matches) return;
   tabRows().forEach((el) => {
@@ -9504,7 +9555,7 @@ function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
   return optSec("Menus", "",
-      optChk(`data-act="setnavfull"`, navFullOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
+      optChk(`data-act="setnavfull"`, navAllOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
     + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
       optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
@@ -10837,6 +10888,7 @@ document.addEventListener("click", (ev) => {
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
   if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
+  if (ui.sabOpen && !ev.target.closest(".sabpill")) { ui.sabOpen = false; renderStatus(); } // 2.2.3 : un clic ailleurs referme le choix de vitesse
   if (ui.tbOpen && (!ev.target.closest(".tb-pop,#topchips,.tb-bell,.tb-acc,.srvpill") || ev.target.closest("#topchips [data-act],#topchips [data-tab],.tb-pop [data-act=options],.tb-pop [data-act=changelog]"))) { ui.tbOpen = null; renderStatus(); } // 2.1.40 : un clic ailleurs (ou sur une pastille) referme la cloche et le compte
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
@@ -11052,7 +11104,9 @@ document.addEventListener("click", (ev) => {
     case "chalall": Object.keys(E.CHALLENGES).forEach((id) => chalPickSet(id, d.v === "1")); dirty = true; chalPickSheet(); return;
     case "sabgo": sabGo(d.v); return;
     case "sabbuy": { const r = E.horlogerBuy(S); if (r) { toast(r); return; } toast("Fiole de temps achetée : elle est dans ton sac (Utiliser pour +1 h, ou à vendre à l'hôtel de vente)."); dirty = true; renderStatus(); sabSheet(); return; }
-    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % E.sabMaxSpd(S)) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3 (→ ×4 au niveau 50 de la Maîtrise du temps)
+    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % E.sabMaxSpd(S)) + 1);
+      else if (t.closest("#status") && !detailOn() && +v === E.sab(S).spd) { ui.sabOpen = !ui.sabOpen; renderStatus(); return; } // 2.2.3 (3A) : la vitesse choisie ouvre les autres
+      ui.sabOpen = false; // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3 (→ ×4 au niveau 50 de la Maîtrise du temps)
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": reloadTo(false); return; // 1.0.11 : on revient directement dans la partie en cours
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
@@ -11162,12 +11216,13 @@ document.addEventListener("click", (ev) => {
       else { navGo("quests"); ui.qt = t; }
       closeSheet(); window.scrollTo(0, 0); break; }
     case "nsfam": { const F = NAV.find((x) => x.id === d.v); if (!F) return; const op = nsOpen(F, navFam(navKey())); (ui.nsFams || (ui.nsFams = {}))[d.v] = !op; const sc = $("#sheet .sheet"); const y = sc ? sc.scrollTop : 0; navMenuSheet(); const sc2 = $("#sheet .sheet"); if (sc2) sc2.scrollTop = y; return; }
-    case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
+    case "navmenu": ui.navQ = ""; if (window.CHAT && window.CHAT.close && matchMedia("(max-width:859px)").matches) window.CHAT.close(); navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navhelp": helpSheet(); return;
     case "navfull": S.settings.navFull = !navFullOn(); dirty = true; renderNav(); if ($("#sheet .navsheet")) navMenuSheet(); return;
+    case "navall": S.settings.navAll = !navAllOn(); dirty = true; navFlyClose(); renderNav(); return; // 2.2.3 : rail ⇄ colonne complète sur PC
     case "tb-bell": case "tb-acc": case "tb-srv": { const w = a === "tb-bell" ? "bell" : a === "tb-srv" ? "srv" : "acc"; ui.tbOpen = ui.tbOpen === w ? null : w; renderStatus(); return; }
     case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
  toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); sheetLive(true); if (t.closest(".helpsheet")) helpSheet(); return; }
@@ -11447,7 +11502,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setlootup") { S.settings.lootUpOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
-  else if (a === "setnavfull") { S.settings.navFull = t.checked; dirty = true; renderNav(); return; }
+  else if (a === "setnavfull") { S.settings.navAll = t.checked; dirty = true; renderNav(); return; }
   else if (a === "setdetail") { S.settings.detail = t.checked; ui.tbOpen = null; dirty = true; optionsSheet(); renderStatus(); render(); return; }
   else if (a === "seteco") { S.settings.eco = t.checked; dirty = true; ui.arena = null; setTheme(); optionsSheet(); render(); toast(t.checked ? "Économie de batterie activée : animations et effets coupés." : "Économie de batterie coupée : animations de retour."); return; }
   else if (a === "setlivecol") { S.settings.liveCol = t.checked; dirty = true; liveColTick(true); return; }
@@ -11862,8 +11917,9 @@ function srvListHtml() {
     return `<div class="srvr${here ? " here" : ""}"><span class="sic">${v.ico}</span><span class="min0 grow"><b>${h(v.nom)}</b><small>${hero ? `${h(hero.name)} · niv. ${hero.lvl}` : "Pas encore de partie sur cet appareil"}</small></span>${here ? `<span class="srvici">Tu es ici</span>` : `<button class="btn sm${hero ? " primary" : ""}" data-act="sv-go" data-n="${to}" data-tip="${h(`Ta partie est sauvegardée et envoyée, puis le jeu se recharge sur ${v.nom}.`)}">${hero ? "Y aller" : "Ouvrir"}</button>`}</div>`; }).join("")}
     <button class="lnk" data-act="sv-menu">Toutes mes parties</button></div>`;
 }
-const srvPill = () => { const v = !TESTMODE && menuOn() ? slotSrv(SLOT) : null; if (!v) return "";
-  return `<button class="it srvpill${ui.tbOpen === "srv" ? " on" : ""}" data-act="tb-srv" aria-expanded="${ui.tbOpen === "srv"}" aria-haspopup="dialog" title="Tu joues sur ${h(v.nom)} : clique pour changer de serveur" aria-label="Serveur ${h(v.nom)} : changer de serveur">${v.ico}<b class="hide-sm">&nbsp;${h(v.court)}</b><i class="tb-dn" aria-hidden="true"></i></button>`; };
+const seasonShort = () => { const n = seasonName(); const m = /saison\s*(\d+)/i.exec(n); return m ? "S" + m[1] : n; };
+const srvPill = (sfx) => { const v = !TESTMODE && menuOn() ? slotSrv(SLOT) : null; if (!v) return "";
+  return `<button class="it srvpill${ui.tbOpen === "srv" ? " on" : ""}" data-act="tb-srv" aria-expanded="${ui.tbOpen === "srv"}" aria-haspopup="dialog" title="Tu joues sur ${h(v.nom)}${sfx ? " · " + h(seasonName()) : ""} : clique pour changer de serveur" aria-label="Serveur ${h(v.nom)} : changer de serveur">${v.ico}<b class="hide-sm">&nbsp;${h(v.court)}${sfx && !String(v.court).includes(sfx) ? " · " + h(sfx) : ""}</b><i class="tb-dn" aria-hidden="true"></i></button>`; };
 const srvPopHtml = () => (ui.tbOpen === "srv" ? `<div class="tb-pop tb-srvp" role="dialog" aria-label="Changer de serveur"><h4>Changer de serveur</h4>${srvListHtml()}</div>` : "");
 function hubHtmlOld() {
   const srv = (img, cls, nom, tag, txt) => `<div class="hubsrv ${cls}"><img src="assets/s1/${img}.webp" alt="" loading="lazy"><div class="hs-tx"><h3>${nom}${tag ? ` <span class="srvtg">${h(tag)}</span>` : ""}</h3><span class="small muted">${txt}</span></div></div>`;
