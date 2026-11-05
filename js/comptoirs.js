@@ -76,16 +76,21 @@
     fromShop("cite", "ailes", { desc: "Insignes de cité : 3 par mission d'alignement, 5 pour un boss.", need: (S) => (S.align ? null : "Choisis d'abord un alignement (Journal › Quêtes › Alignement).") }),
     fromShop("temple", "cristal", { desc: "Doplons : en battant les Dopeuls des temples." }),
     fromShop("koli", "combat", { desc: "Kolizetons : en combattant au Kolizéum.", page: "koli" }),
-    { id: "songe", icon: "carte", name: () => "Marché onirique", cur: () => E.BRIBES || "Bribes de rêve", desc: "Bribes de rêve : au Songe infini.", page: "exp",
+    { id: "songe", icon: "carte", name: () => "Marché onirique", cur: () => E.BRIBES || "Bribes de rêve", desc: "Bribes de rêve : au Songe infini.", page: "exp", classic: true,
       bal: (S) => (E.songe ? E.songe(S).br : 0), add: (S, x) => { E.songe(S).br += x; },
       items: (S) => (E.SG_SHOP || []).map((o) => ({ id: o.id, o, name: o.name, cost: o.price, many: false, owned: !!(o.once && E.sgOwned(S, o.id)), left: Infinity, per: null, lim: 0, rebuy: !o.once })),
       buy: (S, iid) => E.sgBuy(S, iid) },
-    { id: "wb", icon: "couronne", name: () => "Boss des mondes", cur: () => "Fragments d'anomalie", desc: "Fragments d'anomalie : à chaque essai contre le Boss des mondes.", page: "wb",
+    { id: "wb", icon: "couronne", name: () => "Boss des mondes", cur: () => "Fragments d'anomalie", desc: "Fragments d'anomalie : à chaque essai contre le Boss des mondes.", page: "wb", classic: true,
       bal: (S) => (E.wbFrags ? E.wbFrags(S) : 0), add: (S, x) => { const v = (S.res[FRAG()] || 0) + x; if (v > 0) S.res[FRAG()] = v; else delete S.res[FRAG()]; },
       items: (S) => (E.WB_SHOP || []).filter(([t]) => ITEMS[t]).map(([t, c]) => ({ id: t, tpl: t, name: ITEMS[t].name, cost: c, many: false, owned: false, left: Infinity, per: null, lim: 0, rebuy: true })),
       buy: (S, iid) => { const r = E.wbBuy(S, iid); return r.err || null; } },
   ];
   E.cptShop = (id) => E.CPT.find((x) => x.id === id) || null;
+  /* 2.2.9.10 (Mathis, carte « Menu Économie, page complète ») : en Monocompte, la page ouvre sans le Marché onirique
+     ni le Boss des mondes (Songe et Boss des mondes fermés là-bas) : 4 boutiques */
+  const mono = (S) => !!(S && E.isMono && E.isMono(S));
+  E.cptShops = (S) => E.CPT.filter((B) => !(B.classic && mono(S)));
+  E.cptOpen = (S, sid) => E.cptShops(S).some((B) => B.id === sid);
 
   /* ---------- état (migration 1.0.30, sans E.VERSION : créé s'il manque) ---------- */
   const week = () => (E.koliWeek ? E.koliWeek() : E.weekIdx());
@@ -108,7 +113,7 @@
   };
   /* acheter (offre = au prix de l'offre de la semaine si c'est elle) ; renvoie null ou le message d'erreur */
   E.cptBuy = (S, sid, iid, q, arg, offer) => {
-    const B = E.cptShop(sid); if (!B) return "Boutique inconnue.";
+    const B = E.cptShop(sid); if (!B || !E.cptOpen(S, sid)) return "Boutique inconnue.";
     const need = B.need && B.need(S); if (need) return need;
     const x = B.items(S).find((i) => i.id === iid); if (!x) return "Article inconnu.";
     const n = x.many ? Math.max(1, Math.min(100, Math.floor(+q || 1))) : 1;
@@ -125,14 +130,14 @@
   /* objets « neufs » : achetables maintenant (assez de monnaie, pas déjà obtenus, limite pas atteinte) et pas encore vus sur la page */
   const seenKey = (sid, x, O) => `${sid}:${x.id}${O && O.id === x.id ? ":w" + O.w : ""}`;
   E.cptNew = (S, sid) => {
-    const B = E.cptShop(sid); if (!B || (B.need && B.need(S))) return [];
+    const B = E.cptShop(sid); if (!B || !E.cptOpen(S, sid) || (B.need && B.need(S))) return [];
     const C = E.cptState(S); const bal = B.bal(S); const O = E.cptOffer(S, sid);
     return B.items(S).filter((x) => !x.owned && x.left > 0 && bal >= (O && O.id === x.id && O.left ? O.cost : x.cost) && (!x.key || E.shopKeys(S).length) && !C.seen[seenKey(sid, x, O)]).map((x) => x.id);
   };
   /* vus : ceux qu'on a montrés comme neufs (par défaut, ceux qui le sont maintenant) ; un objet encore trop cher redeviendra neuf */
   E.cptSeen = (S, sid, ids) => { const C = E.cptState(S); const B = E.cptShop(sid); if (!B) return; const O = E.cptOffer(S, sid); const L = ids || E.cptNew(S, sid);
     B.items(S).forEach((x) => { if (L.includes(x.id)) C.seen[seenKey(sid, x, O)] = 1; }); };
-  E.cptHasNew = (S) => E.CPT.some((B) => E.cptNew(S, B.id).length > 0);
+  E.cptHasNew = (S) => E.cptShops(S).some((B) => E.cptNew(S, B.id).length > 0);
 
   if (E.deserialize) { const d0 = E.deserialize; E.deserialize = (txt) => { const S = d0(txt); if (S && S.cpt) E.cptState(S); return S; }; }
 })(typeof window !== "undefined" ? window : globalThis);

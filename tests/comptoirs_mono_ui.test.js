@@ -1,5 +1,5 @@
-/* Bouton « Comptoirs » des Quêtes (2.2.9.8, signalé par Likie) : en Monocompte, la page Comptoirs est fermée (module CPTUI éteint),
-   le bouton renvoyait au Havre-Sac. Il doit ouvrir les 3 boutiques des quêtes ; au Classique, il ouvre toujours Économie › Comptoirs.
+/* Bouton « Comptoirs » des Quêtes (2.2.9.8, signalé par Likie) : en Monocompte, il renvoyait au Havre-Sac (page fermée).
+   2.2.9.10 (Mathis) : la page Comptoirs ouvre en Monocompte avec 4 boutiques (sans Marché onirique ni Boss des mondes), 6 au Classique.
    PC 1280 px et téléphone 390 px, sans erreur console.
    Lancer : node tests/comptoirs_mono_ui.test.js (SHOTS=dossier pour garder des captures) */
 "use strict";
@@ -42,20 +42,17 @@ const server = http.createServer((req, res) => {
       await page.waitForSelector("#nav [data-nk]", { timeout: 10000, state: "attached" });
       await page.waitForTimeout(500);
       await page.addStyleTag({ content: ".wtip{display:none!important}" });
-      if (mono) await page.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S);
-        // comme monoSeal (js/ui.js) : le module des Comptoirs du Classique est éteint
-        Object.defineProperty(window, "CPTUI", { configurable: true, get: () => null, set: () => {} }); });
+      if (mono) await page.evaluate(() => { const { E, S } = window.DX; E.monoStart(S); E.monoBoot(S); });
       await page.evaluate(() => window.DX.go("quests"));
       await page.waitForTimeout(400);
       const sel = w > 800 ? '.qj-shopbtn[data-v="shops"]' : '.qj-chips [data-act="qtab"][data-v="shops"]';
       const btn = await page.$(sel);
       if (!btn) { fail(`${tag} : bouton Comptoirs absent (${sel})`); await page.close(); continue; }
       await btn.scrollIntoViewIfNeeded(); await btn.click(); await page.waitForTimeout(500);
-      const r = await page.evaluate(() => ({ tab: window.DX.ui.tab, qt: window.DX.ui.qt, txt: document.querySelector("#main").textContent }));
-      if (mono) {
-        if (r.tab !== "quests" || r.qt !== "shops") fail(`${tag} : le bouton mène à ${r.tab}/${r.qt} au lieu des boutiques des quêtes`);
-        for (const n of ["Bureau des primes", "Comptoir de la cité", "Comptoir des temples"]) if (!r.txt.includes(n)) fail(`${tag} : « ${n} » absent`);
-      } else if (r.tab !== "comptoirs") fail(`${tag} : le bouton mène à ${r.tab} au lieu d'Économie › Comptoirs`);
+      const r = await page.evaluate(() => ({ tab: window.DX.ui.tab, ids: [...document.querySelectorAll(".cp-sh")].map((b) => b.dataset.v).join(",") }));
+      if (r.tab !== "comptoirs") fail(`${tag} : le bouton mène à ${r.tab} au lieu d'Économie › Comptoirs`);
+      const want = mono ? "prime,cite,temple,koli" : "prime,cite,temple,koli,songe,wb";
+      if (r.ids !== want) fail(`${tag} : boutiques ${r.ids}, attendu ${want}`);
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `comptoirs-${mono ? "mono" : "classique"}-${w}.png`) });
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
       if (sw[0] > sw[1] + 1) fail(`${tag} : la page défile de côté (${sw[0]} px pour ${sw[1]})`);
@@ -63,5 +60,5 @@ const server = http.createServer((req, res) => {
     }
   } finally { await browser.close(); server.close(); }
   if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
-  console.log("ok - bouton Comptoirs des Quêtes : 3 boutiques en Monocompte, page Comptoirs au Classique (PC 1280 px, téléphone 390 px)");
+  console.log("ok - bouton Comptoirs des Quêtes : page Comptoirs, 4 boutiques en Monocompte et 6 au Classique (PC 1280 px, téléphone 390 px)");
 })().catch((e) => { console.error(e); process.exit(1); });

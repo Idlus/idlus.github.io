@@ -776,6 +776,7 @@
       ["p", `Les ${N(() => E.CPT.length)} boutiques du jeu au même endroit, chacune avec sa monnaie. Un point sur le menu quand tu peux acheter quelque chose de neuf.`],
       ["ul", V(() => E.CPT.map((B) => `**${B.name()}** : ${B.cur()}${B.desc ? " · " + B.desc : ""}`), [])],
       ["p", `Chaque semaine, une **offre** par boutique : −${N(() => E.CPT_OFF.pct)} %, ${N(() => E.CPT_OFF.n)} fois.`],
+      ["p", "En Monocompte, 4 boutiques : Bureau des primes, Comptoir de la cité, Comptoir des temples et Kolizéum. Le Marché onirique et le Boss des mondes restent au Classique."],
     ] });
 
   add({ id: "expeditions", f: "Bien débuter", n: "Expéditions et heures de donjon", ic: "carte", page: "home", k: "expedition mission patrouille escorte fouille heures de donjon",

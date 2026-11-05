@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.9";
+const GAME_VERSION = "2.2.9.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.10", name: "Comptoirs en Monocompte", guide: "comptoirs", items: [
+    "Monocompte : la page Comptoirs ouvre (Économie › Comptoirs) avec 4 boutiques : Bureau des primes, Comptoir de la cité, Comptoir des temples et Kolizéum",
+    "Comme au Classique : offre de la semaine à −30 %, objets à racheter et point sur le menu quand une monnaie peut acheter du neuf. Le Marché onirique et le Boss des mondes restent au Classique" ] },
   { v: "2.2.9.9", name: "Xener dans tous les chats", items: [
     "Chat : Xener peut maintenant lire et écrire dans les salons des 3 serveurs (Éternel, Saison 1 et Monocompte), quelle que soit la partie qu'il a ouverte. Ses messages sont toujours signés Xener, avec sa couronne",
     "Écrire @Xener le prévient, dans n'importe quel salon" ] },

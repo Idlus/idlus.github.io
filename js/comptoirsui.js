@@ -22,7 +22,7 @@
   function dot() {
     const s = S(); if (!s) return false;
     if (UI().tab !== "comptoirs") commit();
-    return E.CPT.some((B) => newOf(s, B.id).length > 0);
+    return E.cptShops(s).some((B) => newOf(s, B.id).length > 0);
   }
 
   /* ---------- un objet ---------- */
@@ -78,11 +78,12 @@
   /* ---------- la page ---------- */
   function page(main) {
     const s = S();
-    if (!st.shop || !E.cptShop(st.shop)) st.shop = (E.CPT.find((B) => E.cptNew(s, B.id).length) || E.CPT[0]).id;
+    const L = E.cptShops(s);
+    if (!st.shop || !E.cptOpen(s, st.shop)) st.shop = (L.find((B) => E.cptNew(s, B.id).length) || L[0]).id;
     const B = E.cptShop(st.shop); const need = B.need ? B.need(s) : null; const O = E.cptOffer(s, B.id);
     const fresh = need ? [] : E.cptNew(s, B.id); const shownNew = new Set(fresh.concat(st.pend && st.pend.sid === B.id ? st.pend.ids : []));
     st.pend = { sid: B.id, ids: [...shownNew] };
-    const shops = E.CPT.map((x) => { const n = x.id === B.id ? 0 : newOf(s, x.id).length;
+    const shops = L.map((x) => { const n = x.id === B.id ? 0 : newOf(s, x.id).length;
       return `<button class="cp-sh ${x.id === B.id ? "on" : ""}" data-act="cp-shop" data-v="${x.id}" aria-pressed="${x.id === B.id}">${n ? `<span class="navdot" title="De quoi acheter du neuf"></span>` : ""}<span class="cp-shi">${X().IC(x.icon)}</span><b>${h(x.name())}</b><span>${h(x.cur())}</span><span class="cur num">${fmt(x.bal(s))}</span></button>`; }).join("");
     const items = B.items(s);
     const OI = O ? items.find((x) => x.id === O.id) : null;
@@ -93,7 +94,7 @@
     const go = B.page ? `<button class="btn sm" data-act="nav" data-v="${B.page}">Ouvrir la page</button>` : "";
     main.innerHTML = `<div class="pagehead"><h1>Comptoirs</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s.kamas)}</b> kamas</span></div>
       <div class="stack"><p class="note">Toutes les boutiques du jeu au même endroit, avec ce que tu peux t'offrir. Un point sur le menu quand une monnaie peut acheter quelque chose de neuf.</p>
-      <div class="cp-shops">${shops}</div>
+      <div class="cp-shops${L.length === 4 ? " four" : ""}">${shops}</div>
       <section class="panel"><div class="phead"><div><h2>${X().IC(B.icon)} ${h(B.name())}</h2><div class="xs muted"><b class="cp-gold num">${fmt(B.bal(s))}</b> ${h(B.cur().toLowerCase())}${OI ? ` · offre de la semaine : ${h(OI.name)} −${E.CPT_OFF.pct} %` : ""}</div></div>${go}</div>
         <div class="pad stack"><span class="xs muted">${h(B.desc || "")}</span>
         ${need ? `<div class="row between cp-need"><span class="small"><b>${h(need)}</b></span><button class="btn sm" data-act="qtab" data-v="align" data-gotab="quests">Alignement</button></div>` : ""}
@@ -102,7 +103,7 @@
   window.DX.pages.comptoirs = page;
   const paint = () => { if (UI().tab === "comptoirs" && S()) X().render(); };
   /* ouvrir la page sur une boutique (anciens boutons « Comptoir » des quêtes, alignement, avis de recherche) */
-  function open(sid) { const ui = UI(); if (sid && E.cptShop(sid)) { if (st.shop !== sid) commit(); st.shop = sid; } ui.tab = "comptoirs"; ui.slot = null; X().render(); window.scrollTo(0, 0); }
+  function open(sid) { const ui = UI(); if (sid && E.cptOpen(S(), sid)) { if (st.shop !== sid) commit(); st.shop = sid; } ui.tab = "comptoirs"; ui.slot = null; X().render(); window.scrollTo(0, 0); }
 
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act; if (!/^cp-/.test(a) || !S()) return;

@@ -80,6 +80,9 @@ console.log("ok - carnet de bord");
 {
   assert.deepStrictEqual(E.CPT.map((B) => B.id), ["prime", "cite", "temple", "koli", "songe", "wb"]);
   const S = E.newState("Comptoir", "iop");
+  assert.deepStrictEqual(E.cptShops(S).map((B) => B.id), ["prime", "cite", "temple", "koli", "songe", "wb"]);
+  { const M = Object.assign({}, S, { mono: { srv: 1 } }); if (E.isMono) { assert.deepStrictEqual(E.cptShops(M).map((B) => B.id), ["prime", "cite", "temple", "koli"], "2.2.9.10 : 4 boutiques en Monocompte");
+    assert.ok(E.cptBuy(M, "songe", "x"), "Monocompte : pas d'achat au Marché onirique"); } }
   E.CPT.forEach((B) => { assert.ok(B.name() && B.cur(), B.id); assert.strictEqual(typeof B.bal(S), "number"); assert.ok(B.items(S).length > 0, B.id + " vide"); });
   S.tokens.jetons = 100;
   assert.strictEqual(E.buyShop(S, "prime", "b1"), null); assert.strictEqual(S.cons.bonbon_sagesse, 1); assert.strictEqual(S.tokens.jetons, 96, "article d'origine");

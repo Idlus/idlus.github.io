@@ -82,7 +82,7 @@
     return `<aside class="qj-journal" aria-label="Journal de quêtes"><div class="qj-jh">${IC("quetes")}<h3>Journal</h3></div>
       ${fams(s).map((F) => `<div class="qj-grp"><div class="qj-gt">${F.n}${F.id === "day" ? `<i>dans ${untilMidnight()}</i>` : F.id === "hunt" ? `<i>rang ${E.hunterRank(s) + 1}</i>` : ""}</div>
         ${F.pages.map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
-      <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>${window.CPTUI ? "6 boutiques" : "3 boutiques"}</span></button></aside>`;
+      <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>${window.CPTUI ? (window.DX && window.DX.S && E.cptShops ? E.cptShops(window.DX.S).length : 6) + " boutiques" : "3 boutiques"}</span></button></aside>`;
   }
   /* téléphone : les 3 familles en gros boutons, puis les pages de la famille (0.1.49) */
   function mtabs(s, qt) {
