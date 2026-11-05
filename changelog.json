@@ -1,6 +1,15 @@
 {
-  "version": "2.2.9",
+  "version": "2.2.9.1",
   "versions": [
+    {
+      "v": "2.2.9.1",
+      "name": "Zones cliquables dans l'encyclopédie",
+      "guide": "enc",
+      "items": [
+        "Encyclopédie › Bestiaire : le nom de chaque zone est maintenant un lien. Un clic ouvre directement la zone pour y chasser, et le bouton « ← Encyclopédie » te ramène où tu étais. Merci pour l'idée !",
+        "Une zone encore fermée montre un cadenas : sa fiche explique comment l'ouvrir"
+      ]
+    },
     {
       "v": "2.2.9",
       "name": "Flotte d'apprentis",

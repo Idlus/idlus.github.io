@@ -6678,3 +6678,8 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .ulttier.done{opacity:.6}
 .ultweek{margin:0 0 8px;padding:8px 10px;border-radius:10px;font-size:13px;background:color-mix(in srgb,#ff3a5a 12%,transparent);border:1px solid color-mix(in srgb,#ff3a5a 45%,transparent)}
 @media (max-width:520px){.ulttier{grid-template-columns:auto 1fr}.ulttier .btn{grid-column:1/-1;justify-self:start}}
+/* 2.2.9.1 : nom de sous-zone cliquable dans le Bestiaire */
+.enczlink{display:inline-flex;align-items:center;gap:5px;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.enczlink .uico,.enczlink svg,.enczlink img{width:15px;height:15px;flex:none}
+.enczlink:hover span,.enczlink:focus-visible span{color:var(--gold2);text-decoration:underline;text-underline-offset:3px}
+.enczlink.locked{opacity:.75}

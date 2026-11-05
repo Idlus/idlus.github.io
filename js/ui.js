@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9";
+const GAME_VERSION = "2.2.9.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.1", name: "Zones cliquables dans l'encyclopédie", guide: "enc", items: [
+    "Encyclopédie › Bestiaire : le nom de chaque zone est maintenant un lien. Un clic ouvre directement la zone pour y chasser, et le bouton « ← Encyclopédie » te ramène où tu étais. Merci pour l'idée !",
+    "Une zone encore fermée montre un cadenas : sa fiche explique comment l'ouvrir" ] },
   { v: "2.2.9", name: "Flotte d'apprentis", guide: "metiers", items: [
     "Monocompte (idée d'un joueur) : l'Atelier des apprentis accueille jusqu'à 5 apprentis récolteurs, un par métier, qui travaillent en même temps pendant que ton héros combat",
     "Débloque les apprentis 2 à 5 avec le niveau du héros (60, 120, 160, 190), une quête d'atelier et des kamas. Économie › Métiers › Récolte",
@@ -4819,6 +4822,13 @@ function encTabsHtml(enc) {
   return `<nav class="subtabs enctabs">${G0.map(([n, L]) => `<button data-act="enctab" data-v="${L[0][0]}" aria-pressed="${cur[0] === n}">${n}</button>`).join("")}${window.COLL ? "" : `<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button>`}</nav>`
     + (cur[1].length > 1 ? `<div class="catchips enc-sub">${cur[1].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}</div>` : "");
 }
+/* 2.2.9.1 (idée de Mathis) : dans le Bestiaire, le nom d'une sous-zone ouvre la zone (bouton « ← Encyclopédie » pour revenir).
+   Zone fermée : verrou + raison dans la bulle, la fiche de zone dit comment l'ouvrir ; zone cachée encore fermée : pas de lien. */
+function encSubLink(s) {
+  const un = E.subUnlocked(S, s.id);
+  if (s.hidden && !un) return h(s.name);
+  return `<button class="enczlink ${un ? "" : "locked"}" data-act="searchzone" data-from="enc" data-id="${s.id}" data-tip="${h(un ? "Ouvrir la zone : " + s.name : s.name + " · zone verrouillée : " + lockReason(s.id))}">${un ? IC("carte") : G("lock")}<span>${h(s.name)}</span> ›</button>`;
+}
 function encBestHtml(enc) {
   if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
   const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
@@ -4834,12 +4844,12 @@ function encBestHtml(enc) {
       return (encMet(k) && txtHas(m.name, q)) || m.drops.some(([n]) => txtHas(n, q) && ((S.seenDrops[k] || {})[n] || E.huntTier(S, k) >= 0)); }).slice(0, 60);
     body = `<h3 class="sec">Résultats pour « ${h(enc.q)} » <span class="xs muted">${hits.length}${hits.length === 60 ? "+" : ""}</span></h3>${hits.length ? `<div class="mons enc">${hits.map((k) => encCard(k, true)).join("")}</div>` : `<div class="empty">Aucun monstre connu ne correspond. Les butins se révèlent en les obtenant ou au palier Connaisseur.</div>`}`;
   } else if (enc.f === "near") {
-    const out = []; ZONES.forEach((zz) => zz.subs.forEach((s) => { if (!E.subUnlocked(S, s.id)) return; const ks = s.monsters.filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf && near(k)); if (ks.length) out.push(`<h3 class="sec">${h(s.name)} <span class="xs muted num">${h(zz.name)} · niv. ${s.lvl[0]}–${s.lvl[1]}</span></h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`); }));
+    const out = []; ZONES.forEach((zz) => zz.subs.forEach((s) => { if (!E.subUnlocked(S, s.id)) return; const ks = s.monsters.filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf && near(k)); if (ks.length) out.push(`<h3 class="sec">${encSubLink(s)} <span class="xs muted num">${h(zz.name)} · niv. ${s.lvl[0]}–${s.lvl[1]}</span></h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`); }));
     body = `<p class="note">Les monstres des zones ouvertes autour du niveau de ton équipe (niveau ${top}), toutes zones confondues.</p>` + (out.join("") || `<div class="empty">Aucun monstre à ta portée.</div>`);
   } else {
     const subs = z.subs.map((s) => { const ks = s.monsters.filter((k) => MONSTERS[k] && keep(k)); if (!ks.length) return "";
       const a = s.monsters.filter(encMet).length;
-      return `<h3 class="sec">${h(s.name)} <span class="xs muted num">niv. ${s.lvl[0]}–${s.lvl[1]} · ${a}/${s.monsters.length}</span> ${S.trophies && S.trophies[s.id] ? IC("trophee") : ""}</h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`; }).join("");
+      return `<h3 class="sec">${encSubLink(s)} <span class="xs muted num">niv. ${s.lvl[0]}–${s.lvl[1]} · ${a}/${s.monsters.length}</span> ${S.trophies && S.trophies[s.id] ? IC("trophee") : ""}</h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`; }).join("");
     body = subs || `<div class="empty">Rien à montrer avec ce filtre dans ${h(z.name)}.</div>`;
   }
   const [za, zb] = zprog(z);
