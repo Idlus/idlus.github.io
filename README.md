@@ -10,6 +10,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.9 « Voter aussi sur Jeux Indé »
+
+- Choix de Mathis (05/11, carte « Fiche + vote demi-récompense ») : 2e site de vote, Jeux Indé (https://jeux-inde.com/jeux/idlus). Règle du site : récompense modeste et identique pour tous, donc ni série, ni objectif du mois, ni top 10.
+- supabase/vote.sql (fin) : vote_cfg.cle_ji, vote_ji_claims, vote_ji_srv_claim (15 min de Sablier, kamas = vote_kamas / 2, 85 min par compte, un vote = une récompense), vote_ji_moi / mono_vote_ji_moi, adm_votes.ji_sept.
+- Fonction vote : { site: "ji" } interroge https://jeux-inde.com/api/v1/votes par adresse IP puis par pseudo du compte (pré-rempli dans le lien de vote). Clé : secret JI_VOTE_KEY, étape vote-cle-ji de Serveur OVH.
+- js/vote.js : bloc « Aussi sur Jeux Indé » de la page Voter, ligne d'accueil quand Dofus Fan Games attend, pastille du menu. Couvertures 16:9 pour les sites de référencement dans assets/promo.
+
 ## 2.2.8.8 « Grand nettoyage »
 
 - Audit (fil « Grand nettoyage des bugs et failles ») : droits de la base lus en lecture seule (étape audit-securite de Serveur OVH, tools/serveur/audit) : aucune table modifiable par les joueurs hors pseudo et ignorés, fonctions du panel protégées, vues de classement non modifiables. Balayage Playwright de toutes les pages (Éternel, S1, Mono ; 1280 et 390 px) : 0 erreur.

@@ -1,6 +1,15 @@
 {
-  "version": "2.2.8.8",
+  "version": "2.2.8.9",
   "versions": [
+    {
+      "v": "2.2.8.9",
+      "name": "Voter aussi sur Jeux Indé",
+      "items": [
+        "Nouveau : tu peux aussi voter pour Idlus sur Jeux Indé (jeux-inde.com), en plus de Dofus Fan Games. Va dans Joueurs › Voter pour Idlus, bloc « Aussi sur Jeux Indé »",
+        "Chaque vote sur Jeux Indé rapporte 15 min de Sablier et la moitié des kamas d'un vote Dofus Fan Games, toutes les 1 h 30. La récompense est la même pour tous, comme le demande le site",
+        "Ton pseudo est déjà rempli sur la page de vote. Ces votes ne comptent pas dans la série ni dans l'objectif du mois de Dofus Fan Games"
+      ]
+    },
     {
       "v": "2.2.8.8",
       "name": "Grand nettoyage",

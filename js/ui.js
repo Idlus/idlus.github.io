@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.8";
+const GAME_VERSION = "2.2.8.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.9", name: "Voter aussi sur Jeux Indé", items: [
+    "Nouveau : tu peux aussi voter pour Idlus sur Jeux Indé (jeux-inde.com), en plus de Dofus Fan Games. Va dans Joueurs › Voter pour Idlus, bloc « Aussi sur Jeux Indé »",
+    "Chaque vote sur Jeux Indé rapporte 15 min de Sablier et la moitié des kamas d'un vote Dofus Fan Games, toutes les 1 h 30. La récompense est la même pour tous, comme le demande le site",
+    "Ton pseudo est déjà rempli sur la page de vote. Ces votes ne comptent pas dans la série ni dans l'objectif du mois de Dofus Fan Games" ] },
   { v: "2.2.8.8", name: "Grand nettoyage", items: [
     "Grand nettoyage des bugs et des failles : le serveur et toutes les pages du jeu ont été vérifiés sur les trois serveurs (Éternel, Saison 1, Monocompte), sur PC et sur téléphone. Aucune grosse faille trouvée",
     "Hauts faits du chat : un niveau 200, une renaissance ou un Dofus n'est plus annoncé qu'une seule fois, même quand tu changes d'appareil (téléphone puis PC). Merci pour vos signalements !",
