@@ -1,6 +1,14 @@
 {
-  "version": "2.2.9.6",
+  "version": "2.2.9.7",
   "versions": [
+    {
+      "v": "2.2.9.7",
+      "name": "La carte de Sac",
+      "items": [
+        "Album de cartes : nouvelle carte Héros d'Idlus pour Sac, le 1er joueur à atteindre le niveau 200 dans le Monocompte en Serment de fer, avec son Iop, sa Pandawa et sa Huppermage et leurs familiers",
+        "Comme les autres héros : Sac l'a d'office, et elle peut sortir dans les boosters de saison (1 booster sur 50 contient un héros), aussi en version brillante"
+      ]
+    },
     {
       "v": "2.2.9.6",
       "name": "Clavier du téléphone",

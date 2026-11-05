@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.6";
+const GAME_VERSION = "2.2.9.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.7", name: "La carte de Sac", items: [
+    "Album de cartes : nouvelle carte Héros d'Idlus pour Sac, le 1er joueur à atteindre le niveau 200 dans le Monocompte en Serment de fer, avec son Iop, sa Pandawa et sa Huppermage et leurs familiers",
+    "Comme les autres héros : Sac l'a d'office, et elle peut sortir dans les boosters de saison (1 booster sur 50 contient un héros), aussi en version brillante" ] },
   { v: "2.2.9.6", name: "Clavier du téléphone", items: [
     "Téléphone : en tapant dans une recherche (choix d'équipement par exemple), le menu du bas et le suivi de quête ne restent plus coincés au milieu de l'écran. Ils se cachent pendant la saisie et reviennent quand le clavier se ferme" ] },
   { v: "2.2.9.5", name: "Élevage en Monocompte", guide: "elevage", items: [
