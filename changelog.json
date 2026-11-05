@@ -1,6 +1,13 @@
 {
-  "version": "2.2.9.7",
+  "version": "2.2.9.8",
   "versions": [
+    {
+      "v": "2.2.9.8",
+      "name": "Bouton Comptoirs",
+      "items": [
+        "Monocompte : le bouton Comptoirs des Quêtes ouvre bien les 3 boutiques (Bureau des primes, Comptoir de la cité, Comptoir des temples) au lieu de renvoyer au Havre-Sac"
+      ]
+    },
     {
       "v": "2.2.9.7",
       "name": "La carte de Sac",

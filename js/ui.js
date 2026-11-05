@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.7";
+const GAME_VERSION = "2.2.9.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.8", name: "Bouton Comptoirs", items: [
+    "Monocompte : le bouton Comptoirs des Quêtes ouvre bien les 3 boutiques (Bureau des primes, Comptoir de la cité, Comptoir des temples) au lieu de renvoyer au Havre-Sac" ] },
   { v: "2.2.9.7", name: "La carte de Sac", items: [
     "Album de cartes : nouvelle carte Héros d'Idlus pour Sac, le 1er joueur à atteindre le niveau 200 dans le Monocompte en Serment de fer, avec son Iop, sa Pandawa et sa Huppermage et leurs familiers",
     "Comme les autres héros : Sac l'a d'office, et elle peut sortir dans les boosters de saison (1 booster sur 50 contient un héros), aussi en version brillante" ] },
@@ -11252,7 +11254,8 @@ document.addEventListener("click", (ev) => {
     case "monoiron": monoIronGo(); return;
     case "monoironquit": { if (!confirm(`Quitter le mode Ironman ? Tes métiers hors spécialités redescendent au niveau ${E.MONO.jobs.cap} et le mode ne se reprend pas de la saison.`)) return; const r = E.monoIronQuit(S); if (r) toast(r); dirty = true; renderMetiers(); return; }
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
-    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Économie › Comptoirs ; 1.0.33 : Héros › Dofus
+    case "qtab": if (d.v === "shops" && PAGES.comptoirs && window.CPTUI) { // 2.2.9.8 : en Monocompte (CPTUI éteint, page Comptoirs fermée), on reste sur les 3 boutiques des quêtes au lieu de retomber sur le Havre-Sac
+      navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Économie › Comptoirs ; 1.0.33 : Héros › Dofus
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
     case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null };
       if (d.all) { const fr = S.chars.filter((x) => !x.job && !x.inTeam).map((x) => x.id); if (fr.length) { ui.gs.pick = fr; ui.gs.cid = fr[0]; } } gatherSheet(); return;
