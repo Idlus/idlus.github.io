@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.4 « Classements de la Saison 1 »
+
+- Bug signalé par Hicham et Tist (#176) : Joueurs › Classements affichait « Partie 5 : solo » sur la partie Classique · Saison 1 (test `SLOT !== 1` dans js/ui.js). Maintenant `rankSlot(SLOT)`, comme le reste du jeu (ON.solo). Les données étaient déjà bonnes : Tist est bien 4ᵉ de la course S1.
+
 ## 2.2.8.3 « Points de la carte à leur place »
 
 - Bug #174 (Panda) : les points de la carte (js/carte.js) étaient la moyenne des cartes de chaque sous-zone, et la moyenne des sous-zones pour une région. Une sous-zone a souvent des cartes éloignées (entrées, bateaux, morceaux détachés) et DofusDB ne rendait que ses 50 premières cartes : la moyenne tombait dans la mer (Frigost, Otomaï, Vulkania…). tools/build_carte.py lit maintenant toutes les cartes (pages de 50) et prend la plus centrale (médoïde), pour les sous-zones comme pour les régions ; les sous-zones posées seulement en [0, 0] (Arche d'Otomaï, Pitons rocheux) sortent de la carte. Images inchangées (`--images` pour les refaire).

@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.3";
+const GAME_VERSION = "2.2.8.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.4", name: "Classements de la Saison 1", items: [
+    "Classements : ta partie Classique · Saison 1 n'affiche plus « Partie 5 : solo ». Elle prend bien part aux classements de la saison (course, niveau, succès…) : seul le message était faux" ] },
   { v: "2.2.8.3", name: "Points de la carte à leur place", items: [
     "Carte du Monde des Douze : les points des régions sont maintenant sur leur île ou leur région (Frigost, Otomaï, Vulkania, Sakaï, Minotoror, Moon, Albuera…), et plus parfois dans la mer à côté. Merci Panda !",
     "Même correction sur la carte de la guerre des régions (Bonta et Brâkmar)" ] },
@@ -12810,7 +12812,7 @@ function renderLadder() {
     : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
-  const login = ON.user ? (monoSlot(SLOT) && !E.monoEternal(S) && window.DX.pages.saisonlb ? `<div class="panel"><div class="pad row between"><span class="small muted">Ici, ce sont les classements du serveur Classique.</span><button class="btn sm primary" data-act="lb-mono">Classements de ma saison</button></div></div>` : SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  const login = ON.user ? (monoSlot(SLOT) && !E.monoEternal(S) && window.DX.pages.saisonlb ? `<div class="panel"><div class="pad row between"><span class="small muted">Ici, ce sont les classements du serveur Classique.</span><button class="btn sm primary" data-act="lb-mono">Classements de ma saison</button></div></div>` : !rankSlot(SLOT) ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     ${lbGroupsHtml()}
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;

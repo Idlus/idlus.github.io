@@ -1,6 +1,13 @@
 {
-  "version": "2.2.8.3",
+  "version": "2.2.8.4",
   "versions": [
+    {
+      "v": "2.2.8.4",
+      "name": "Classements de la Saison 1",
+      "items": [
+        "Classements : ta partie Classique · Saison 1 n'affiche plus « Partie 5 : solo ». Elle prend bien part aux classements de la saison (course, niveau, succès…) : seul le message était faux"
+      ]
+    },
     {
       "v": "2.2.8.3",
       "name": "Points de la carte à leur place",
