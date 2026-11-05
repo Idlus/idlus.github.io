@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.2";
+const GAME_VERSION = "2.2.8.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.3", name: "Points de la carte à leur place", items: [
+    "Carte du Monde des Douze : les points des régions sont maintenant sur leur île ou leur région (Frigost, Otomaï, Vulkania, Sakaï, Minotoror, Moon, Albuera…), et plus parfois dans la mer à côté. Merci Panda !",
+    "Même correction sur la carte de la guerre des régions (Bonta et Brâkmar)" ] },
   { v: "2.2.8.2", name: "Mob l'Éponge ne boit plus tout", items: [
     "Mob l'Éponge : Essorage gardait 60 % des boucliers volés, sans limite. Avec la Botte du Roublard (ou tout bouclier refait chaque tour), ses PV ne bougeaient plus : tous les coups faisaient −0. Il garde maintenant un tiers des boucliers des héros (pas des invocations), au plus 8 % de ses PV",
     "Même plafond pour les autres boss qui cumulent des boucliers volés : Picots dorés (Scarabosse Doré), Or du roi (Roi Nidas) et Larcin (Trône de la Cour Sombre), au plus 20 % de leurs PV",
