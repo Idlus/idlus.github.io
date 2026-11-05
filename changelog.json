@@ -1,6 +1,17 @@
 {
-  "version": "2.2.8.4",
+  "version": "2.2.8.5",
   "versions": [
+    {
+      "v": "2.2.8.5",
+      "name": "Consommables bien visibles",
+      "items": [
+        "Parfum de pistage (et Pierre d'âme dorée) : le bonus marchait déjà (archimonstres ×2, ×3 avec la pierre) mais ne s'affichait nulle part en combat. Il apparaît maintenant dans la barre des consommables avec son temps restant, et l'infobulle donne ta chance totale d'archimonstre",
+        "Chaque bonbon, potion ou parfum activé dit son effet et sa durée, par exemple « Parfum de pistage activé : archis ×2 pendant 2 h »",
+        "Potion de récolte : affichée avec son vrai bonus (+20 %), plus comme un Bonbon Récolteur (+15 %)",
+        "Bonbon Prospecteur, Doré ou Royal quand ton bonus est déjà au plafond : il n'est plus mangé pour rien, il reste dans ton sac avec un message",
+        "Deux bonus du même type en même temps (Parfum et Pierre d'âme dorée, Bonbon Récolteur et Potion de récolte) : le message dit lequel est en cours et pour combien de temps"
+      ]
+    },
     {
       "v": "2.2.8.4",
       "name": "Classements de la Saison 1",

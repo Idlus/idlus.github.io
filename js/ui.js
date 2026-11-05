@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.4";
+const GAME_VERSION = "2.2.8.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.5", name: "Consommables bien visibles", items: [
+    "Parfum de pistage (et Pierre d'âme dorée) : le bonus marchait déjà (archimonstres ×2, ×3 avec la pierre) mais ne s'affichait nulle part en combat. Il apparaît maintenant dans la barre des consommables avec son temps restant, et l'infobulle donne ta chance totale d'archimonstre",
+    "Chaque bonbon, potion ou parfum activé dit son effet et sa durée, par exemple « Parfum de pistage activé : archis ×2 pendant 2 h »",
+    "Potion de récolte : affichée avec son vrai bonus (+20 %), plus comme un Bonbon Récolteur (+15 %)",
+    "Bonbon Prospecteur, Doré ou Royal quand ton bonus est déjà au plafond : il n'est plus mangé pour rien, il reste dans ton sac avec un message",
+    "Deux bonus du même type en même temps (Parfum et Pierre d'âme dorée, Bonbon Récolteur et Potion de récolte) : le message dit lequel est en cours et pour combien de temps" ] },
   { v: "2.2.8.4", name: "Classements de la Saison 1", items: [
     "Classements : ta partie Classique · Saison 1 n'affiche plus « Partie 5 : solo ». Elle prend bien part aux classements de la saison (course, niveau, succès…) : seul le message était faux" ] },
   { v: "2.2.8.3", name: "Points de la carte à leur place", items: [
@@ -3461,7 +3467,7 @@ const TB_BELL = '<svg class="uico gl" viewBox="0 0 24 24" fill="none" stroke="cu
 function accPanelHtml() {
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0); const team = E.team(S);
   const bon = [(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %).">${G("flame")} <b>×${S.chalStreak}</b> +${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span>` : "",
-    activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : "",
+    activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.tip} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : "",
     E.almOn(S) ? `<span class="it boostchip" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""].filter(Boolean).join("");
   const c = mainHero();
   return `<div class="tb-pop tb-accp" role="dialog" aria-label="Mon compte"><div class="tb-ph">${heroMed()}<span class="grow"><b>${h(c ? c.name : "")}</b><small>${S.mono ? `Monocompte · ${h(seasonName())}` : `${h((slotSrv(SLOT) || { nom: clNom() }).nom)} · ${team.length}/8 héros`}</small></span></div>
@@ -3494,7 +3500,7 @@ function statusHtmlFull() {
     ${S.mono ? "" : `<span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>`}
     <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
-    ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
+    ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.tip} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b></span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
@@ -3726,15 +3732,25 @@ function renderStart() {
   </section>`;
 }
 /* ---------- ACCUEIL ---------- */
-const BOOST_INFO = { xp: ["🍬", "Bonbon Sagesse", "+10 % XP"], drop: ["🍭", "Bonbon Prospecteur", "+10 % butin"], kamas: ["🪙", "Bonbon Doré", "+15 % kamas"], gather: ["🌾", "Bonbon Récolteur", "+15 % récolte"], archi: ["🎯", "Bonbon Traqueur", "archis ×1,5"], royal: ["👑", "Bonbon Royal", "+10 % XP/butin/kamas"] };
-function activeBoosts() { return Object.keys(BOOST_INFO).filter((k) => E.boostPct(S, k) > 0).map((k) => ({ k, icon: BOOST_INFO[k][0], name: BOOST_INFO[k][1], txt: BOOST_INFO[k][2], left: E.boostLeft(S, k) })); }
+/* 2.2.8.5 : les bonus en cours viennent de S.boosts (et plus d'une liste fixe) : le Parfum de pistage et la Pierre d'âme dorée (« piste »)
+   ne s'affichaient nulle part en combat, et la Potion de récolte (+20 %) passait pour un Bonbon Récolteur (+15 %). */
+const BOOST_TXT = { xp: (p) => `+${p} % XP`, drop: (p) => `+${p} % butin`, kamas: (p) => `+${p} % kamas`, gather: (p) => `+${p} % récolte`, royal: (p) => `+${p} % XP/butin/kamas`,
+  archi: (p) => `archis ×${fmtMul(1 + p / 100)}`, piste: (p) => `archis ×${fmtMul(1 + p / 100)}` };
+const fmtMul = (x) => String(Math.round(x * 100) / 100).replace(".", ",");
+function activeBoosts() {
+  return Object.keys(S.boosts || {}).filter((k) => E.boostPct(S, k) > 0).map((k) => { const p = E.boostPct(S, k);
+    const C = Object.values(CONSUMABLES).find((x) => x.kind === "boost" && x.boost === k && x.pct === p) || {};
+    const txt = BOOST_TXT[k] ? BOOST_TXT[k](p) : `+${p} %`;
+    const tip = (k === "archi" || k === "piste") && E.archiOdds ? `${txt} (en tout : 1 chance sur ${fmt(Math.round(1 / E.archiOdds(S)))} par monstre)` : txt;
+    return { k, icon: C.icon || "✨", name: C.name || "Bonus", txt, tip, left: E.boostLeft(S, k) }; });
+}
 /* Barre de raccourcis des consommables (combat + accueil) */
 function consBar(full) {
   const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id] && CONSUMABLES[id].kind !== "wpot" && (full || CONSUMABLES[id].kind !== "scroll"));
   const act = activeBoosts();
   const items = owned.map(([id, n]) => { const C = CONSUMABLES[id];
     return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${consIco(C, true)}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
-  return `<div class="consbar">${act.map((b) => `<span class="cact" data-tip="${h(`${b.name} : ${b.txt}`)}">${emo(b.icon)} ${h(b.txt)} <b class="num" data-boostleft="${b.k}">${dur(b.left)}</b></span>`).join("")}${S.fmShield ? `<span class="cact" data-tip="La prochaine forgemagie ne peut rien faire baisser">${IC("cristal")} Cristal actif</span>` : ""}
+  return `<div class="consbar">${act.map((b) => `<span class="cact" data-tip="${h(`${b.name} : ${b.tip}`)}">${emo(b.icon)} ${h(b.txt)} <b class="num" data-boostleft="${b.k}">${dur(b.left)}</b></span>`).join("")}${S.fmShield ? `<span class="cact" data-tip="La prochaine forgemagie ne peut rien faire baisser">${IC("cristal")} Cristal actif</span>` : ""}
     ${items || (full ? `<span class="xs muted">Aucun consommable. Quêtes, avis de recherche, coffres et boss en donnent.</span>` : "")}</div>`;
 }
 /* 2.1.3 « Tout ouvrir » : tous les coffres d'un coup, et l'ouverture automatique (S.settings.autoChest) */
@@ -11264,7 +11280,7 @@ document.addEventListener("click", (ev) => {
     case "usecons": { if (CONSUMABLES[d.id] && CONSUMABLES[d.id].kind === "scroll") { const C = CONSUMABLES[d.id];
         openSheet(`<h2>${IC("quetes")} ${h(C.name)}</h2><p class="small muted">${h(C.desc)} Choisissez le héros.</p><div class="list">${S.chars.map((x) => `<div class="li">${head(x)}<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${STATS[C.stat].name} par parchemins : ${(x.scrolls || {})[C.stat] || 0}/${E.SCROLL_MAX}</span></span><button class="btn sm primary" data-act="scrollto" data-id="${x.id}" data-sid="${d.id}" ${E.scrollRoom(x, C.stat) <= 0 ? "disabled" : ""}>Utiliser</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       if (d.id === "potion_savoir") { openSheet(`<h2>${IC("parchemin_or")} Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
-      const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`);
+      const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") { const B = activeBoosts().find((x) => x.k === C.boost); toast(B ? `${C.name} activé : ${B.txt} pendant ${dur(B.left)}.` : `${C.name} activé.`); }
       if (C.kind === "sab") { toast(E.monoFer && E.monoFer(S) ? `${C.name} : changée en ${fmt(Math.round(C.h * E.sabFerKh(S)))} kamas (Serment de fer).` : `${C.name} : +${C.h >= 1 ? C.h + " h" : Math.round(C.h * 60) + " min"} de Sablier.`); dirty = true; renderStatus(); if ($("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) { sabSheet(); return; } } break; }
     case "chestall": { if (!E.openAllChests(S)) { toast("Aucun coffre à ouvrir."); return; } break; }
     case "chestauto": { S.settings.autoChest = d.v === "1"; if (S.settings.autoChest) E.openAllChests(S, true); toast(S.settings.autoChest ? "Ouverture automatique des coffres activée." : "Ouverture automatique désactivée : les coffres attendent dans le sac."); break; }

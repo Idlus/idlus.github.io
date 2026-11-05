@@ -197,12 +197,24 @@
   E.boostPct = (S, kind, at = E.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
   E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - E.now()) / 1000) : 0; };
   E.addCons = (S, id, n = 1) => { S.cons[id] = (S.cons[id] || 0) + n; };
+  /* 2.2.8.5 : butin, kamas et Bonbon Royal comptent dans le plafond de bonus (E.capOf) : si tout est déjà au plafond, le bonbon n'ajouterait rien.
+     Renvoie le message de refus (le bonbon reste dans le sac) ou null. */
+  E.BOOST_CAPPED = { drop: ["drop"], kamas: ["kamas"], royal: ["xp", "drop", "kamas"] };
+  E.boostWasted = (S, C) => {
+    const kinds = C && E.BOOST_CAPPED[C.boost]; if (!kinds || !E.bonus) return null;
+    const keep = S.boosts[C.boost]; const val = () => kinds.map((k) => E.bonus(S, k));
+    let off, on; try { delete S.boosts[C.boost]; off = val(); S.boosts[C.boost] = { pct: C.pct, until: E.now() + 3600e3 }; on = val(); } finally { if (keep) S.boosts[C.boost] = keep; else delete S.boosts[C.boost]; }
+    if (on.some((v, i) => v > off[i] + 1e-9)) return null;
+    const NM = { xp: "d'XP", drop: "de butin", kamas: "de kamas" };
+    return `Ton bonus ${kinds.map((k) => NM[k]).join(", ")} est déjà au plafond (${kinds.map((k) => `+${E.capOf(S, k)} %`).join(", ")}) : ${C.name} n'ajouterait rien. Il reste dans ton sac.`;
+  };
   E.useConsumable = (S, id, arg) => {
     const C = CONSUMABLES[id]; if (!C) return "Objet inconnu.";
     if (!(S.cons[id] > 0)) return "Vous n'en avez plus.";
     if (C.kind !== "boost") return E.useSpecial ? E.useSpecial(S, id, arg) : "Inutilisable.";
     const now = E.now(); const b = S.boosts[C.boost];
-    if (b && b.until > now && b.pct !== C.pct) return "Un autre bonus de ce type est déjà actif.";
+    if (b && b.until > now && b.pct !== C.pct) { const O = Object.values(CONSUMABLES).find((x) => x.kind === "boost" && x.boost === C.boost && x.pct === b.pct); return `Bonus déjà en cours : ${O ? O.name : "un bonus du même type"} (encore ${Math.ceil((b.until - now) / 60000)} min). ${C.name} ne se cumule pas avec, attends la fin.`; } // 2.2.8.5 : on dit lequel
+    const wasted = E.boostWasted(S, C); if (wasted) return wasted; // 2.2.8.5 : un bonbon au-dessus du plafond ne serait pas consommé pour rien
     const dur = C.dur * (E.teamHas(S, "panda") ? 1.25 : 1) * 1000;
     const start = b && b.until > now ? b.until : now;
     const until = Math.min(now + E.BOOST_MAX_S * 1000, start + dur);

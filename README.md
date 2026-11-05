@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.5 « Consommables bien visibles »
+
+- Bug signalé en jeu par Ley (2.2.8.2, « le parfum de pistage ne fonctionne pas en combat ») et demande de Mathis de vérifier tous les consommables. Le bonus `piste` (Parfum de pistage, Pierre d'âme dorée) agissait bien (`E.archiMult`, js/archis.js) mais `BOOST_INFO` (js/ui.js) ne connaissait que 6 bonus : rien dans la barre du combat ni dans le portrait. `activeBoosts()` lit maintenant `S.boosts` et retrouve le consommable par `boost` + `pct` (la Potion de récolte +20 % ne passe plus pour le Bonbon Récolteur +15 %). Le message d'activation donne l'effet et la durée.
+- `E.boostWasted` (js/engine.js) : Bonbon Prospecteur, Doré et Royal comptent dans le plafond de bonus ; si aucune valeur ne monte, le bonbon reste dans le sac avec un message. Le refus « même type déjà actif » nomme le bonus en cours.
+- Audit des consommables (Classique et Monocompte) : bonbons, potions, parfum, Pierre d'âme dorée, Potion de Savoir, Cristal, parchemins, coffres, Sablier, automatiques. Tests `tests/consommables.test.js` et `tests/consommables_ui.test.js` (PC 1280, téléphone 390).
+
 ## 2.2.8.4 « Classements de la Saison 1 »
 
 - Bug signalé par Hicham et Tist (#176) : Joueurs › Classements affichait « Partie 5 : solo » sur la partie Classique · Saison 1 (test `SLOT !== 1` dans js/ui.js). Maintenant `rankSlot(SLOT)`, comme le reste du jeu (ON.solo). Les données étaient déjà bonnes : Tist est bien 4ᵉ de la course S1.
