@@ -84,10 +84,9 @@
       const idx = s.enclos.pairs.findIndex((p) => p.s === i);
       rows.push(idx >= 0 ? coupleHtml(s, s.enclos.pairs[idx], idx) : `<div class="el-couple free"><div class="grow"><b>Couple ${i + 1} libre</b><div class="xs muted">${s.elev.auto.on ? "L'éleveur automatique le remplira." : "Choisissez deux montures de la même espèce."}</div>${slotItems(s, i)}</div><button class="btn sm primary" data-act="breedpick" data-reset="1">Croiser</button></div>`);
     }
-    const c4 = !(s.elev.c4 || E.grandEleveur(s));
     return `<section class="panel"><div class="phead"><h2>Enclos ${window.GUIDE ? GUIDE.q("elevage") : ""}</h2><span class="xs muted">${s.enclos.pairs.length} couple${s.enclos.pairs.length > 1 ? "s" : ""} sur ${cap}</span></div><div class="pad stack" style="gap:8px">
       ${rows.join("")}
-      <div class="row"><button class="btn sm" data-act="breedpick" data-reset="1">Croiser deux montures au choix</button><button class="btn sm" data-act="mtree">Voir l'arbre</button>${c4 ? `<button class="btn sm" data-act="el-pair4" ${s.kamas >= E.PAIR4_COST ? "" : "disabled"} data-tip="Offert avec les trois carnets complets (Grand Éleveur)">4e couple · ${fmt(E.PAIR4_COST)} k</button>` : ""}</div></div></section>`;
+      <div class="row"><button class="btn sm" data-act="breedpick" data-reset="1">Croiser deux montures au choix</button><button class="btn sm" data-act="mtree">Voir l'arbre</button>${!s.elev.c4 ? `<button class="btn sm" data-act="el-pair4" ${s.kamas >= E.PAIR4_COST ? "" : "disabled"} data-tip="Un couple de plus à l'enclos">Couple en plus · ${fmt(E.PAIR4_COST)} k</button>` : ""}${!s.elev.c6 ? `<button class="btn sm" data-act="el-pair6" ${E.grandEleveur(s) && s.kamas >= E.PAIR6_COST && s.elev.ess >= E.PAIR6_ESS ? "" : "disabled"} data-tip="${E.grandEleveur(s) ? "Un couple de plus à l'enclos, réservé aux Grands Éleveurs" : "Se débloque avec les trois carnets complets (Grand Éleveur), qui offrent déjà un couple"}">6e couple · ${fmt(E.PAIR6_COST)} k + ${fmt(E.PAIR6_ESS)} Ess.</button>` : ""}</div></div></section>`;
   }
   function nextPanel(s) {
     const L = []; E.MOUNT_ORDER.forEach((sp) => E.nextCrosses(s, sp).forEach((x) => L.push(Object.assign({ sp }, x))));
@@ -290,6 +289,7 @@
       case "el-uneq": done(E.act(s, "elvUnequip", +d.s, d.k)); break;
       case "el-autoeq": { const n = E.act(s, "elvAutoEquip", +d.s); X().markDirty(); if (!n) X().toast("Rien à poser.", "warn"); break; }
       case "el-pair4": done(E.act(s, "pair4Buy")); break;
+      case "el-pair6": done(E.act(s, "pair6Buy")); break;
       case "el-tier": st.tier[d.k] = +d.v; break;
       case "el-buy": done(E.act(s, "elvBuy", d.k, +d.v), `${E.ELV_ITEMS[d.k].name} ${E.ROMAN5[+d.v]} acheté : il se pose sur un couple de l'enclos.`); break;
       case "el-ord": done(E.act(s, "orderDeliver", +d.i)); break; // 1.1.0.1 : la note du moteur suffit (le message s'affichait deux fois)
@@ -347,7 +347,7 @@
     window.VERIFY.summary = (E0, S0) => { const r = sum0(E0, S0); try { if (r && S0.mounts) { r.elev = E.elevSummary(S0); if (S0.elev && S0.elev.rare && S0.elev.rare.length) r.mrare = S0.elev.rare.slice(-10); } } catch (x) { /* résumé sans élevage */ } return r; };
     Object.assign(window.VERIFY.summary, sum0); window.VERIFY.summary.elev = 1;
   }
-  if (E.carnetCat) E.carnetCat({ elvBuy: "monture", elvEquip: "monture", elvUnequip: "monture", elvAutoEquip: "monture", feedMount: "monture", polishMount: "monture", renameMount: "monture", massRelease: "monture", setAuto: "monture", baladeStart: "monture", baladeStop: "monture", orderDeliver: "monture", stableBuy: "monture", pair4Buy: "monture" });
+  if (E.carnetCat) E.carnetCat({ elvBuy: "monture", elvEquip: "monture", elvUnequip: "monture", elvAutoEquip: "monture", feedMount: "monture", polishMount: "monture", renameMount: "monture", massRelease: "monture", setAuto: "monture", baladeStart: "monture", baladeStop: "monture", orderDeliver: "monture", stableBuy: "monture", pair4Buy: "monture", pair6Buy: "monture" });
   if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "elev")) E.SEARCH_PAGES.push(["elev", "Élevage", "Héros › Élevage : enclos, écurie, carnet, capture"]);
 
   window.ELEVUI = { page, cele, figMount, roomHtml, starsOf, capTag, open: (tab) => { if (tab) st.tab = tab; UI().tab = "elev"; X().render(); }, st };

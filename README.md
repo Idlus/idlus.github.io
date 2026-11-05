@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.10.1 « Plus de couples à l'enclos »
+- Élevage : 6 couples au plus. Le couple acheté (5 M k) et celui du Grand Éleveur se cumulent (5) ; 6e couple réservé au Grand Éleveur pour 25 M k + 10 000 Essence (E.pair6Buy, S.elev.c6). Simulation : 12 → 15 → 18 naissances par jour (4/5/6 couples), plafond d'étoiles inchangé, donc puissance en combat inchangée.
+
 ## 2.2.10 « La fiche des joueurs »
 - Toucher un pseudo (chat, amis, guilde, classements, Songe, saison du Monocompte) ouvre la fiche du joueur : héros dessiné, titre, en ligne, camp, 4 chiffres et boutons Lui écrire, Échange, Ami, Ignorer. Monocompte : fiche du seul héros de saison (fonction serveur mono_fiche).
 

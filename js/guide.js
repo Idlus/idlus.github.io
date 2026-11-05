@@ -421,7 +421,7 @@
       ["kv", [
         ["Écuries", "une par espèce (Dragodindes, Muldos, Volkornes)"], ["Places de base par écurie", N(() => E.STABLE)], ["Avec l'enclos", "+" + N(() => E.STABLE_SP_ENCLOS) + " par écurie"], ["Carnet de l'espèce complet", "+" + N(() => E.STABLE_CARNET) + " à son écurie"],
         ["Agrandissement acheté", "+" + N(() => E.STABLE_BUY) + " à une écurie, prix doublé à chaque fois"], ["Places au plus", N(() => E.STABLE_SP_MAX) + " par écurie"],
-        ["Couples en même temps", N(() => E.PAIRS_BASE) + " (+1 possible)"], ["Niveau pour se reproduire", N(() => E.BREED_LVL)], ["Petits par monture", N(() => E.KIDS)],
+        ["Couples en même temps", N(() => E.PAIRS_BASE) + " (6 au plus : +1 acheté, +1 Grand Éleveur, +1 acheté par un Grand Éleveur)"], ["Niveau pour se reproduire", N(() => E.BREED_LVL)], ["Petits par monture", N(() => E.KIDS)],
         ["Durée d'une naissance", N(() => E.BIRTH_MS / 3600000) + " h"], ["Chance de capacité", pc(V(() => E.CAP_PCT > 1 ? E.CAP_PCT / 100 : E.CAP_PCT, 0))], ["Naissance chromatique", "1 / " + N(() => E.CHR_ODDS)],
       ]],
       ["ul", [

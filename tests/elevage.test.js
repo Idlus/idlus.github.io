@@ -166,6 +166,12 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
   assert.ok(S.titlesExtra.includes("Éleveur de dragodindes")); assert.strictEqual(E.stableCap(S, "dd"), cap0 + 5); assert.strictEqual(E.stableCap(S, "mu"), mu0, "le carnet ne touche que son écurie"); assert.strictEqual(E.starCap(S, { sp: "dd" }), 6);
   for (const sp of ["mu", "vk"]) for (const c of E.spColours(sp)) mk(S, sp, c);
   assert.ok(S.titlesExtra.includes("Grand Éleveur")); assert.strictEqual(E.pairCap(S), 4);
+  // 2.2.10.1 : le couple acheté et celui du Grand Éleveur s'ajoutent, puis un 6e (kamas + Essence) réservé au Grand Éleveur
+  S.kamas = 1e9; assert.strictEqual(E.pair4Buy(S), null); assert.strictEqual(E.pairCap(S), 5); assert.ok(E.elevState(S).slots.length >= 5);
+  S.elev.ess = 0; assert.ok(/Essence/.test(E.pair6Buy(S))); S.elev.ess = 12000; const k0 = S.kamas;
+  assert.strictEqual(E.pair6Buy(S), null); assert.strictEqual(E.pairCap(S), 6); assert.strictEqual(S.elev.ess, 2000); assert.strictEqual(S.kamas, k0 - 25e6);
+  assert.ok(E.pair6Buy(S)); assert.strictEqual(E.pairCap(S), 6, "6 couples au plus");
+  { const T = fresh(); T.elev.ess = 1e6; assert.ok(/Grand/.test(E.pair6Buy(T)), "6e couple réservé au Grand Éleveur"); assert.strictEqual(E.pair4Buy(T), null); assert.strictEqual(E.pairCap(T), 4); }
   const S2 = fresh(); const c0 = E.stableCap(S2, "mu"); S2.kamas = 2.5e6;
   assert.strictEqual(E.stableCap(S2, "dd"), 25, "25 places par espèce avec l'enclos");
   assert.strictEqual(E.stableBuy(S2, "mu"), null); assert.strictEqual(E.stableCap(S2, "mu"), c0 + 5); assert.strictEqual(E.stableCap(S2, "dd"), 25, "un achat ne touche que son écurie"); assert.strictEqual(S2.kamas, 1.5e6);

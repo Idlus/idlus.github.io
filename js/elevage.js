@@ -35,6 +35,7 @@
   E.CAP_PCT = 20;                // % : une capacité à la naissance
   E.CHR_ODDS = 150;              // une naissance chromatique sur 150
   E.PAIRS_BASE = 3; E.PAIR4_COST = 5000000;
+  E.PAIR6_COST = 25000000; E.PAIR6_ESS = 10000;  // 6e couple (2.2.10.1) : après Grand Éleveur, kamas + Essence
   E.BREED_PRE = 20;              // Précoce : élevage dès le niveau 20
   E.BIRTH_MIN = 2 * 3600e3;
   E.ESS_LVL = 100;               // Essence pour un niveau
@@ -107,8 +108,8 @@
     log(S, `Carnet des ${MOUNTS[sp].name.toLowerCase()}s complet : titre « ${t} »`);
     if (E.grandEleveur(S) && !S.titlesExtra.includes(E.GRAND_TITLE)) {
       S.titlesExtra.push(E.GRAND_TITLE);
-      note(S, `Les trois carnets sont complets : titre « ${E.GRAND_TITLE} » et un 4e couple à l'enclos !`, "rare");
-      log(S, `Grand Éleveur : 4e couple débloqué`);
+      note(S, `Les trois carnets sont complets : titre « ${E.GRAND_TITLE} » et un couple de plus à l'enclos !`, "rare");
+      log(S, `Grand Éleveur : un couple de plus à l'enclos`); E.elevState(S);
     }
     E.celebrate({ t: "elevcarnet", sp });
   };
@@ -179,11 +180,20 @@
   E.giveMountXp = (S, M, g) => gx0(S, M, M && M.cap === "sage" && g > 0 ? Math.round(g * 1.5) : g);
 
   /* ---------- couples ---------- */
-  E.pairCap = (S) => E.PAIRS_BASE + (S.elev && (S.elev.c4 || E.grandEleveur(S)) ? 1 : 0);
+  /* 3 couples, +1 acheté (5 M k), +1 Grand Éleveur (les trois carnets), +1 acheté après Grand Éleveur (25 M k + 10 000 Essence) : 6 au plus */
+  E.pairCap = (S) => { const v = S.elev || {}; const ge = E.grandEleveur(S); return E.PAIRS_BASE + (v.c4 ? 1 : 0) + (ge ? 1 : 0) + (ge && v.c6 ? 1 : 0); };
+  E.PAIRS_MAX = E.PAIRS_BASE + 3;
   E.pair4Buy = (S) => {
-    const v = EV(S); if (v.c4 || E.grandEleveur(S)) return "Le 4e couple est déjà là.";
+    const v = EV(S); if (v.c4) return "Ce couple est déjà acheté.";
     if (S.kamas < E.PAIR4_COST) return `Il faut ${fmt(E.PAIR4_COST)} kamas.`;
-    S.kamas -= E.PAIR4_COST; v.c4 = 1; E.elevState(S); note(S, "L'enclos accueille un 4e couple.", "up"); return null;
+    S.kamas -= E.PAIR4_COST; v.c4 = 1; E.elevState(S); note(S, `L'enclos accueille un ${E.pairCap(S)}e couple.`, "up"); return null;
+  };
+  E.pair6Buy = (S) => {
+    const v = EV(S); if (v.c6) return "Ce couple est déjà acheté.";
+    if (!E.grandEleveur(S)) return `Réservé aux ${E.GRAND_TITLE}s (les trois carnets complets).`;
+    if (S.kamas < E.PAIR6_COST) return `Il faut ${fmt(E.PAIR6_COST)} kamas.`;
+    if (v.ess < E.PAIR6_ESS) return `Il faut ${fmt(E.PAIR6_ESS)} Essence.`;
+    S.kamas -= E.PAIR6_COST; v.ess -= E.PAIR6_ESS; v.c6 = 1; E.elevState(S); note(S, `L'enclos accueille un ${E.pairCap(S)}e couple.`, "up"); return null;
   };
   E.kidsCap = (S, M) => E.KIDS + (E.furnBonus ? E.furnBonus(S, "kids") : 0) + (M && M.cap === "repro" ? 2 : 0);
   E.breedLvl = (M) => (M && M.cap === "pre" ? E.BREED_PRE : E.BREED_LVL);
@@ -626,7 +636,7 @@
     elvBuy: "acheter un objet d'élevage", elvEquip: "poser un objet d'élevage", elvUnequip: "retirer un objet d'élevage", elvAutoEquip: "poser les meilleurs objets d'élevage",
     feedMount: "nourrir une monture d'Essence", polishMount: "polir une étoile de monture", renameMount: "renommer une monture", massRelease: "relâcher des montures en masse",
     setAuto: "régler l'éleveur automatique", baladeStart: "envoyer une monture en balade", baladeStop: "rappeler une monture de balade", orderDeliver: "livrer une commande d'élevage",
-    stableBuy: "agrandir l'écurie", pair4Buy: "acheter le 4e couple", awayOk: "fermer le résumé de l'élevage",
+    stableBuy: "agrandir l'écurie", pair4Buy: "acheter un couple d'enclos", pair6Buy: "acheter le couple du Grand Éleveur", awayOk: "fermer le résumé de l'élevage",
   });
 
   root.ELEVAGE_READY = true;
