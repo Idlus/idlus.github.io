@@ -1,6 +1,13 @@
 {
-  "version": "2.2.9.5",
+  "version": "2.2.9.6",
   "versions": [
+    {
+      "v": "2.2.9.6",
+      "name": "Clavier du téléphone",
+      "items": [
+        "Téléphone : en tapant dans une recherche (choix d'équipement par exemple), le menu du bas et le suivi de quête ne restent plus coincés au milieu de l'écran. Ils se cachent pendant la saisie et reviennent quand le clavier se ferme"
+      ]
+    },
     {
       "v": "2.2.9.5",
       "name": "Élevage en Monocompte",

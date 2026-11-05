@@ -6683,3 +6683,5 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .enczlink .uico,.enczlink svg,.enczlink img{width:15px;height:15px;flex:none}
 .enczlink:hover span,.enczlink:focus-visible span{color:var(--gold2);text-decoration:underline;text-underline-offset:3px}
 .enczlink.locked{opacity:.75}
+/* 2.2.9.6 : pendant la saisie au téléphone (clavier ouvert), les barres fixées du bas sont cachées : iOS les dessinait au milieu de l'écran */
+body.kbd nav.main,body.kbd .mfstrip,body.kbd #backchip,body.kbd .dropbn,body.kbd .wtip,body.kbd .chmin{visibility:hidden!important;pointer-events:none!important}

@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.5";
+const GAME_VERSION = "2.2.9.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.6", name: "Clavier du téléphone", items: [
+    "Téléphone : en tapant dans une recherche (choix d'équipement par exemple), le menu du bas et le suivi de quête ne restent plus coincés au milieu de l'écran. Ils se cachent pendant la saisie et reviennent quand le clavier se ferme" ] },
   { v: "2.2.9.5", name: "Élevage en Monocompte", guide: "elevage", items: [
     "Monocompte : la page Élevage du Classique ouvre aussi (Héros › Familiers et montures › Élevage) : étoiles et capacités visibles, objets d'élevage, places d'écurie achetées famille par famille",
     "Aussi : éleveur automatique, balades, commandes du jour, Essence et carnet de l'éleveur. Ton enclos et tes montures restent tels quels",
@@ -13412,5 +13414,23 @@ function mtSheetHtml(c) {
     <div class="bar xp"><i style="width:${Math.min(100, M.xp / need * 100).toFixed(1)}%"></i></div><span class="xs muted num">${fmt(M.xp)} / ${fmt(need)} XP vers la Maîtrise ${fmt(M.lvl + 1)}</span>
     <div class="mts-l">${chips || `<span class="xs muted">Aucune étoile placée : ses bonus de Maîtrise s'afficheront ici.</span>`}</div></div>`;
 }
+/* 2.2.9.6 : clavier du téléphone (iPhone surtout). Quand le clavier s'ouvre, Safari laisse les barres « fixées » (menu du bas, suivi de quête,
+   « ← Retour aux quêtes ») à l'ancienne hauteur : elles se retrouvaient au milieu de la liste (choix d'équipement, recherche…).
+   On les cache pendant la saisie, puis on les remet en place à la fermeture du clavier. Le chat et la grande recherche gardent leur propre gestion. */
+(function kbdGuard() {
+  const isField = (el) => !!el && (el.tagName === "TEXTAREA" || el.isContentEditable || (el.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|color|file|image)$/i.test(el.type || "")));
+  const mobile = () => window.matchMedia("(max-width: 699px), (pointer: coarse)").matches;
+  const own = (el) => !!(el.closest && el.closest("#chat, #wsearch, .chat"));
+  const repin = () => { requestAnimationFrame(() => { window.scrollTo(window.scrollX, window.scrollY); document.body.style.transform = "translateZ(0)"; requestAnimationFrame(() => { document.body.style.transform = ""; }); }); };
+  const on = () => document.body.classList.add("kbd");
+  const off = () => { if (!document.body.classList.contains("kbd")) return; document.body.classList.remove("kbd"); repin(); };
+  document.addEventListener("focusin", (ev) => { const t = ev.target; if (isField(t) && !own(t) && mobile()) on(); });
+  document.addEventListener("focusout", () => { setTimeout(() => { const a = document.activeElement; if (!(isField(a) && !own(a) && mobile())) off(); }, 120); });
+  const vv = window.visualViewport;
+  if (vv) vv.addEventListener("resize", () => { // clavier fermé sans quitter le champ (Android, bouton « OK » d'iOS) : on remet les barres
+    const closed = vv.height > window.innerHeight * 0.85; const a = document.activeElement;
+    if (closed) off(); else if (isField(a) && !own(a) && mobile()) on();
+  });
+})();
 start();
 })();

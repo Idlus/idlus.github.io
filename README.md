@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.6 « Clavier du téléphone »
+
+- Bug signalé par Mathis (05/11, iPhone) : dans Héros › choix d'équipement, après la saisie dans la recherche, le menu du bas et le suivi de quête (mfstrip, « ← Retour aux quêtes ») étaient dessinés au milieu de la liste (iOS garde les barres fixées à la hauteur « clavier ouvert »). js/ui.js kbdGuard : au téléphone, body.kbd pendant la saisie dans un champ (hors chat et grande recherche) cache ces barres, retiré à la sortie du champ ou quand le clavier se ferme (visualViewport), avec un recalage. css body.kbd, test tests/clavier_tel_ui.test.js.
+
 ## 2.2.9.5 « Élevage en Monocompte »
 
 - Choix de Mathis (05/11, carte « Ouvrir l'Élevage complet ») : js/mono.js, « elev » dans M.PAGES et ELEVUI retiré de M.CLASSIC_MODS. Le moteur de l'élevage tournait déjà en Monocompte, seule la page manquait (l'ancien enclos du Havre-Sac montait les anciennes chances, sans étoiles). Pas de classement Élevage (classements de saison) ni d'annonce « mrare » (fonction mono). tests/mono_separation.test.js : la page s'ouvre en Monocompte.
