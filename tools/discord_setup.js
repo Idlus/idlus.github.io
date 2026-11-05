@@ -166,10 +166,10 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
       tags: [["Trop dur", "🔺"], ["Trop facile", "🔻"], ["Trop long", "⏳"], ["Ressources", "💎"], ["Pris en compte", "✅"]] },
     { key: "IDEASRA", name: "idées-re-arise", type: FORUM, slow: 300, topic: "Une idée par fil pour Re:Arise. Votez avec 👍 pour celles que vous voulez voir dans le jeu.",
       tags: [["Combat", "⚔️"], ["Ombres", "🌑"], ["Interface", "🖥️"], ["Histoire", "📖"], ["Équilibrage", "⚖️"], ["Retenue", "✅"]] } ] },
-  // 04/11 : futur jeu de fan DOFUS de Mathis, nom temporaire (renommer ici avec old: pour garder les salons et leurs messages)
-  { cat: "🔥 Dofus Diablo", chans: [
-    { key: "PROGDD", name: "avancement-dofus-diablo", lock: true, topic: "L'avancement du futur jeu Dofus Diablo (nom temporaire) : captures, nouveautés, coulisses" },
-    { key: "CHATDD", name: "discussion-dofus-diablo", topic: "Vos réactions, questions et idées sur Dofus Diablo (nom temporaire)" } ] },
+  // 05/11 : futur jeu de fan DOFUS de Mathis, « Diablofus : Les Douze Enfers » (old : nom temporaire du 04/11, salons renommés sans perdre leurs messages)
+  { cat: "🔥 Diablofus : Les Douze Enfers", old: ["🔥 Dofus Diablo"], chans: [
+    { key: "PROGDD", name: "avancement-diablofus", old: ["avancement-dofus-diablo"], lock: true, topic: "L'avancement de Diablofus : Les Douze Enfers : captures, nouveautés, coulisses" },
+    { key: "CHATDD", name: "discussion-diablofus", old: ["discussion-dofus-diablo"], topic: "Vos réactions, questions et idées sur Diablofus : Les Douze Enfers" } ] },
   { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["mod", "creator"], chans: [ // version de test fermée le 14/10 : gardée pour l'historique, visible par l'équipe
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
