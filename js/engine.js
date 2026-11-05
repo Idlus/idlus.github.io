@@ -305,7 +305,7 @@
   E.spellScore = spellScore;
   /* 2.1.38.6 : élément de la créature invoquée, comme dans DOFUS (Tofu Air, Bouftou Terre, Crapaud Eau, Dragonnet Feu…) ;
      sert à choisir l'invocation qui va avec le profil du héros quand les sorts sont automatiques */
-  const SUMMON_EL = [[/tofu|scarafoudre/i, "a"], [/bouf|craquolosse/i, "t"], [/crapi|crocol/i, "e"], [/dragou|dragonnet|sulf/i, "f"]];
+  const SUMMON_EL = [[/tofu|scarafoudre|tornabombe/i, "a"], [/bouf|craquolosse|sismobombe/i, "t"], [/crapi|crocol|bombe à eau/i, "e"], [/dragou|dragonnet|sulf|explobombe/i, "f"]]; // 2.2.9.4 : bombes du Roublard
   E.summonEl = (g) => { const f = g && g.fx && g.fx.find((x) => x.k === "summon"); const m = f && (D.SUMMONS || {})[String(f.mid)]; const r = m && SUMMON_EL.find(([re]) => re.test(m.name)); return r ? r[1] : null; };
   /* meilleure sélection automatique : attaques de l'élément principal + 1 invocation, 1 soin et 1 protection au maximum */
   E.autoLoadout = (c, st) => {
@@ -1913,7 +1913,7 @@
     const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 + 0.15 * (e.evc || 0) : 1;
     const hp = Math.round(e.hpMax * 0.35 * boost);
     const s = { side: "c", tm: e.tm, summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
-      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) * (e.cls === "cra" ? 0.35 : e.cls === "roub" ? 0.6 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e), // 0.1.12.4 : les balises du Crâ sont des outils, pas des combattants ; 0.1.14.4 : bombes du Roublard un peu moins fortes
+      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[sumElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) * (e.cls === "cra" ? 0.35 : e.cls === "roub" ? 0.6 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: sumElE(e), // 2.2.9.4 : meilleure caractéristique élémentaire du héros (avant : toujours celle de la classe) ; 0.1.12.4 : les balises du Crâ sont des outils, pas des combattants ; 0.1.14.4 : bombes du Roublard un peu moins fortes
       turret: e.cls === "steam", tree: e.cls === "sadi", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
     if (F.pvp) s.dmg *= e.kp || 1;
     // 2.1.37.1 : la nouvelle invocation prend la place d'une invocation morte du même lanceur (plus d'empilement infini)
@@ -1924,6 +1924,11 @@
     return s;
   };
   const mainElE = (e) => { const c = CLASSES[e.cls]; return (c && STATS[c.main] && STATS[c.main].el) || "t"; };
+  /* 2.2.9.4 : une invocation frappe dans l'élément le plus fort du héros (un Osamodas Air ou un Roublard Feu avaient des invocations
+     calées sur la Force ou l'Agilité de la classe, à 0) ; à égalité, l'élément de la classe */
+  const sumElE = (e) => { const m = mainElE(e); const st = e.st || {}; let best = m, v = st[ELEMENTS[m].stat] || 0;
+    ["t", "f", "e", "a"].forEach((x) => { const w = st[ELEMENTS[x].stat] || 0; if (w > v) { v = w; best = x; } }); return best; };
+  E.sumElE = sumElE;
 
   /* 2.1.40.12 : un soin à une cible va au héros le plus blessé ; une invocation n'est soignée que si aucun héros n'est blessé
      (le Lapino de l'Eniripsa, en première ligne, prenait presque tous ses soins et l'Eniripsa seule ne se soignait pas) */

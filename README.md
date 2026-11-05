@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.4 « Bombes du bon élément »
+
+- Retour de Mathis (05/11) : en sorts automatiques, un Roublard Air prenait l'Explobombe au lieu de la Tornabombe. Cause : les bombes n'avaient pas d'élément pour E.summonEl, toutes les invocations étaient à égalité et la première paire gagnait.
+- js/engine.js : SUMMON_EL connaît les 4 bombes ; makeSummon utilise sumElE (caractéristique élémentaire la plus forte du héros, celle de la classe à égalité) au lieu de l'élément de la classe. Pour un héros joué dans l'élément de sa classe rien ne change (simulate.js inchangé par construction) ; un héros joué dans un autre élément ne garde plus des invocations calées sur une caractéristique à 0.
+- tests/invoc_element.test.js.
+
 ## 2.2.9.3 « Couture fine réparée »
 
 - Signalé par Mathis (05/11) : la Couture fine ne marchait pas sur toutes les panoplies. js/collections.js : E.setWearable(sid) = le plus de pièces portables ensemble (1 par emplacement, 2 anneaux) ; « complète » se compte sur ce nombre. 8 panoplies avaient plus de pièces que d'emplacements (Dragoeuf Cuirassé et Vagabond : 4 armes ; Ephedrya : 3 anneaux + 2 armes ; Marteaux-Aigris, Déchireuse, Rhoarim : 2 armes ; Pins Perdus : 2 coiffes ; Grolandais : 2 armes), la Couture fine ne s'y déclenchait jamais.

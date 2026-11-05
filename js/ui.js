@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.3";
+const GAME_VERSION = "2.2.9.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.4", name: "Bombes du bon élément", guide: "sorts", items: [
+    "Sorts automatiques : le Roublard prend la bombe de son élément (Tornabombe en Air, Explobombe en Feu, Bombe à Eau en Eau, Sismobombe en Terre) au lieu de toujours l'Explobombe",
+    "Les invocations frappent maintenant avec la caractéristique la plus forte du héros : un Osamodas, un Roublard ou un Steamer joués dans un autre élément que celui de leur classe ont enfin des invocations à leur niveau" ] },
   { v: "2.2.9.3", name: "Couture fine réparée", items: [
     "Collection de panoplies : la Couture fine marche maintenant sur toutes les panoplies de 3 pièces et plus. Vérifié une par une (375 panoplies)",
     "8 panoplies avaient plus de pièces que d'emplacements (ex. 4 armes du Dragoeuf Cuirassé pour une seule main, 3 anneaux des Maléfices d'Ephedrya) : la Couture fine n'y jouait jamais. Maintenant, il manque 1 pièce sur ce que tu peux porter = bonus complet",
@@ -7548,7 +7551,7 @@ function spSentence0(c, sp) {
       case "weaken": out.push(`La cible frappe <b>${f.v} % moins fort</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
       case "vuln": out.push(`La cible <b>prend +${f.v} % de dégâts</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
       case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; const se = E.summonEl(g); const ce = (STATS[CLASSES[c.cls].main] || {}).el || "t"; // 2.1.38.6 : élément de la créature et de ses coups
-        out.push(`Invoque <b>${m ? h(m.name) : "une créature"}</b>${se ? ` (créature ${elS(se)})` : ""}, qui se bat avec l'équipe et frappe en ${elS(ce)}`); break; }
+        out.push(`Invoque <b>${m ? h(m.name) : "une créature"}</b>${se ? ` (créature ${elS(se)})` : ""}, qui se bat avec l'équipe et frappe dans l'élément le plus fort du héros (${elS(ce)} à égalité)`); break; }
       case "leech": out.push(`Vole <b>${f.v} %</b> des dégâts en PV`); break;
       case "push": out.push(`Repousse la cible de ${f.v} case${f.v > 1 ? "s" : ""} : si elle percute un monstre, les deux prennent des dégâts`); break;
     }
