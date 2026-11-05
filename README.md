@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.9 « Xener dans tous les chats »
+- Compte admin : choix du serveur des salons du chat (Éternel, Saison 1, Monocompte) depuis n'importe quelle partie, messages signés Xener, aucune limite d'écriture (mode lent, liens, niveau minimum), les 36 autocollants. Vérifié par le serveur (chat_send, is_admin).
+
 ## 2.2.9.8 « Bouton Comptoirs »
 - Monocompte : le bouton Comptoirs des Quêtes ouvre bien les 3 boutiques au lieu de renvoyer au Havre-Sac.
 

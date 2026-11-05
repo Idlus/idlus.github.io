@@ -195,21 +195,26 @@ security definer
 set search_path = public
 as $$
 declare
-  me uuid := auth.uid(); pr record; sa record; lad record; st record; last record; mh jsonb;
+  me uuid := auth.uid(); pr record; sa record; lad record; st record; last record; mh jsonb; ps text;
+  adm boolean := public.is_admin(); -- 05/11 (Mathis : « que j'ai tous les droits dans les chats et que je puisse m'appeler Xener ») : compte admin
   b text := btrim(coalesce(p_body, '')); best int; c text := case when p_to is not null then 'p' when p_ch in ('c', 'v', 'm', 's', 'sc', 'sv', 'mc', 'mv') then p_ch else 'g' end; -- 2.2.0 : 's' = salon de la Saison 1 du Classique ; 04/11 : Commerce et PvP par serveur
 begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
   if c in ('m', 'mc', 'mv') and not public.chat_mono_ok() then return 'Ce salon est réservé aux joueurs du Monocompte.'; end if;
   select pseudo, suspended_at into pr from profiles where id = me;
   if not found then return 'Choisis d''abord un pseudo.'; end if;
-  if public.susp(me) then return 'Ton compte est suspendu.'; end if;
+  ps := case when adm then 'Xener' else pr.pseudo end; -- 05/11 : Mathis signe « Xener » dans tous les salons, quel que soit le pseudo du compte
+  if public.susp(me) and not adm then return 'Ton compte est suspendu.'; end if;
+  -- 05/11 : le compte admin n'a aucune limite (sanctions, liens, niveau minimum, mode lent, Commerce 30 s, joueur qui l'ignore)
+  if not adm then
   select * into sa from chat_sanctions where user_id = me;
   if found and sa.banned then return 'Tu ne peux plus écrire dans le chat.'; end if;
   if found and sa.mute_until > now() then return format('Tu es muet encore %s min.', ceil(extract(epoch from (sa.mute_until - now())) / 60)); end if;
+  end if;
   if b = '' and p_item is null then return 'Le message est vide.'; end if;
   if length(b) > 200 then return '200 caractères au maximum.'; end if;
   if p_item is not null and (length(p_item::text) > 1500 or jsonb_typeof(p_item->'tpl') <> 'string') then return 'Objet illisible.'; end if;
-  if b ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans le chat.'; end if;
+  if not adm and b ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans le chat.'; end if;
   select * into st from chat_settings where id = 1;
   if coalesce(st.closed, false) and p_to is null and not public.is_staff() then return 'Le chat est fermé pour le moment.'; end if; -- 1.2.10.1 : chat fermé par Mathis (les messages privés restent ouverts)
   -- 2.2.8.1 (Mathis, 04/11 : « le chat saison 1 classique n'est pas bien synchronisé au perso ») : salons de la Saison 1 ('s', 'sc', 'sv') :
@@ -221,31 +226,34 @@ begin
     select * into lad from ladder where user_id = me;
   end if;
   if c in ('m', 'mc', 'mv') then mh := public.chat_mono_hero(me); end if; -- 2.1.35.3 : salon Monocompte : héros Monocompte, jamais le profil Classique
-  if coalesce(st.min_level, 0) > 0 and c in ('m', 'mc', 'mv') then
+  if adm then null; -- 05/11 : pas de niveau minimum pour Mathis
+  elsif coalesce(st.min_level, 0) > 0 and c in ('m', 'mc', 'mv') then
     if coalesce((mh ->> 'lvl')::int, 1) < st.min_level then return format('Il faut un héros au niveau %s pour écrire.', st.min_level); end if;
   elsif coalesce(st.min_level, 0) > 0 then
     select coalesce(max(case when coalesce((x->>'ren')::int, 0) > 0 then 200 else coalesce((x->>'lvl')::int, 1) end), 1) into best
       from jsonb_array_elements(coalesce(lad.heroes, '[]'::jsonb)) x;
     if coalesce(best, 1) < st.min_level then return format('Il faut un héros au niveau %s pour écrire.', st.min_level); end if;
   end if;
+  if not adm then
   select body, created_at into last from chat_msgs where user_id = me and kind = 'msg' order by id desc limit 1;
   if found and last.created_at > now() - make_interval(secs => coalesce(st.slow_s, 4)) then return format('Doucement : un message toutes les %s secondes.', coalesce(st.slow_s, 4)); end if;
   if found and b <> '' and lower(last.body) = lower(b) and last.created_at > now() - interval '2 minutes' then return 'Tu viens déjà d''envoyer ce message.'; end if;
   if c in ('c', 'sc', 'mc') and exists (select 1 from chat_msgs where user_id = me and ch = c and kind = 'msg' and created_at > now() - interval '30 seconds') then
     return 'Commerce : un message toutes les 30 secondes.';
   end if;
+  end if;
   if p_to is not null then
     if p_to = me then return 'Tu ne peux pas t''écrire à toi-même.'; end if;
     if not exists (select 1 from profiles where id = p_to) then return 'Ce joueur n''existe plus.'; end if;
-    if exists (select 1 from ignores where user_id = p_to and other = me) then return 'Ce joueur ne reçoit pas tes messages.'; end if;
+    if not adm and exists (select 1 from ignores where user_id = p_to and other = me) then return 'Ce joueur ne reçoit pas tes messages.'; end if;
   end if;
   -- 'm' : héros Monocompte (data.mono : le jeu sait que cls, lvl et title viennent du Monocompte, pas du Classique)
   if c in ('m', 'mc', 'mv') then
     insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
-      values (c, me, null, pr.pseudo, mh ->> 'cls', coalesce((mh ->> 'lvl')::int, 1), mh ->> 'title', b, p_item, jsonb_build_object('mono', true, 's', mh -> 's'));
+      values (c, me, null, ps, mh ->> 'cls', coalesce((mh ->> 'lvl')::int, 1), mh ->> 'title', b, p_item, jsonb_build_object('mono', true, 's', mh -> 's'));
   else
     insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item, data)
-      values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item,
+      values (c, me, p_to, ps, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item,
         case when p_pc in ('braise', 'sylve', 'givre', 'or', 'temps', 'voix', 'v_cadran', 'v_sablier') then jsonb_build_object('pc', p_pc) end);
   end if;
   -- le chat ne garde que 48 heures de messages
@@ -611,6 +619,7 @@ end $$;
 create or replace function public.staff_list() returns jsonb language sql stable security definer set search_path = public
 as $$ select coalesce(jsonb_agg(jsonb_build_object('u', x.id, 'p', x.pseudo, 'r', x.r)), '[]'::jsonb) from (
   select p.id, p.pseudo, 'crea' r from admins a join profiles p on p.id = a.user_id
+  union all select a.user_id, 'Xener', 'crea' from admins a -- 05/11 : Mathis signe « Xener » dans le chat (chat_send), couronne aussi sur ce nom
   union all select p.id, p.pseudo, 'mod' from mods m join profiles p on p.id = m.user_id where not exists (select 1 from admins a where a.user_id = m.user_id)) x $$;
 revoke all on function public.staff_list() from public;
 grant execute on function public.staff_list() to anon, authenticated;

@@ -3806,6 +3806,11 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .chat .ch-top .ch-on{margin-left:auto}
 /* 2.1.43.1 : les salons sur deux lignes au besoin, noms toujours entiers (plus de « Classiq… », « P… ») */
 .chat .ch-tabs{display:flex;flex-wrap:wrap;gap:3px}
+/* 05/11 : compte admin : serveur des salons affichés (Éternel, Saison 1, Monocompte) */
+.chat .ch-srv{display:flex;gap:3px;padding:2px;border-radius:8px;background:color-mix(in srgb,var(--gold,#e8c063) 14%,transparent)}
+.chat .ch-srv button{flex:1 1 0;min-width:0;padding:3px 4px;font-size:11px;font-weight:800;border-radius:6px;background:transparent;border:0;color:inherit;opacity:.75;cursor:pointer;white-space:nowrap}
+.chat .ch-srv button.on{background:var(--gold,#e8c063);color:#2a1d05;opacity:1}
+.chat .ch-srv button i{font-style:normal;margin-left:3px}
 .chat .ch-tabs .ch-tab{flex:1 1 auto;min-width:0;flex-direction:row;justify-content:center;align-items:center;gap:4px;padding:5px 4px;font-size:12px;position:relative;overflow:visible}
 .chat .ch-tabs .ch-tab > span:not(.n){white-space:nowrap}
 .chat .ch-tabs .ch-tab .uico{width:14px;height:14px;flex:none}

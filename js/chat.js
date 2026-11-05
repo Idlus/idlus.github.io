@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, m: [], unreadM: 0, s: [], unreadS: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
+  const C = { started: false, open: !!pref.open, vsrv: ["e", "s", "m"].includes(pref.vsrv) ? pref.vsrv : null, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, m: [], unreadM: 0, s: [], unreadS: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
   const LP0 = () => ({ id: null, body: "", every: 60, banner: true, chat: true, show: 10, ends: "" }); // 1.1.2.4 : formulaire « Annonces en boucle »
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24, srv: "e,s,m" }, lp: LP0(), loops: null, pin: null, busy: false,
     mann: { body: "", banner: true, chat: true, hours: 24 }, mpin: null, mclr: false, clr: null }; // 04/11 : clr = salon à vider (confirmation dans la page) // 2.1.36 : pages Monocompte du panel (chat et annonces du salon 'm')
@@ -27,18 +27,23 @@
   const S = () => window.DX.S;
   /* Salon « Général Monocompte » (m) : seulement pour un compte qui a accès au Monocompte (réponse de mono_acces, lue par
      js/online.js) ; le serveur le vérifie aussi (chat_mono_ok de supabase/chat.sql). Le Général (g) devient « Classique ». */
-  const monoOk = () => !!(ON.user && ON.mono && ON.mono.ok);
-  const defTab = () => { const E = window.ENGINE; return monoOk() && E && E.isMono && E.isMono(S()) ? "m" : s1Game() ? "s" : "g"; };
+  const monoOk = () => !!(ON.user && ((ON.mono && ON.mono.ok) || C.role === "admin")); // 05/11 : le compte admin a toujours les salons du Monocompte (chat_mono_ok côté serveur)
+  const defTab = () => (vMono() && monoOk() ? "m" : vS1() ? "s" : "g");
   /* 2.2.0 (Mathis : « un chat pour éternel, un pour mono et un pour classique ») : une partie Classique · Saison 1 a son
      salon 's' à la place du Général (g), qui devient le salon de l'Éternel. Commerce, PvP, guilde et privé restent communs. */
   const s1Game = () => { const E = window.ENGINE; return !!(E && E.isS1c && E.isS1c(S())); };
-  const genK = () => (s1Game() ? "s" : "g");
+  const genK = () => (vS1() ? "s" : "g");
   const PUB = ["g", "c", "v", "m", "s"];
   const PUB_C = ["s", "g", "c", "v"]; // 03/11 : 's' = salon Saison 1 (message épinglé) // 2.1.36 : salons du Classique (le message épinglé et le panel du Monocompte sont à part)
   const monoGame = () => { const E = window.ENGINE; return !!(E && E.isMono && E.isMono(S())); }; // partie Monocompte affichée
   /* 04/11 (Mathis : « les canaux commerce ect associés à chaque serveur ») : les onglets Commerce (c) et PvP (v) lisent le salon
      du serveur de la partie ouverte : 'c'/'v' Éternel, 'sc'/'sv' Saison 1, 'mc'/'mv' Monocompte (supabase/chat.sql). */
-  const srvK = () => (monoGame() ? "m" : s1Game() ? "s" : "e");
+  const gameK = () => (monoGame() ? "m" : s1Game() ? "s" : "e"); // serveur de la partie ouverte
+  /* 05/11 (Mathis : « que je puisse accéder à tous les chats des serveurs ») : le compte admin choisit le serveur dont il lit et écrit
+     les salons (C.vsrv), depuis n'importe quelle partie ; les joueurs voient toujours ceux de leur partie. Le serveur vérifie les droits
+     (chat_send, chat_mono_ok) : ce choix ne fait que changer l'affichage. */
+  const srvK = () => (C.role === "admin" && C.vsrv) || gameK(); // serveur des salons affichés
+  const vMono = () => srvK() === "m", vS1 = () => srvK() === "s";
   const CHC = { e: "c", s: "sc", m: "mc" }, CHV = { e: "v", s: "sv", m: "mv" };
   const CV_ALL = ["c", "v", "sc", "sv", "mc", "mv"];
   const SRV_DE = { e: "de l'Éternel", s: "de la Saison 1", m: "du Monocompte" };
@@ -62,13 +67,14 @@
     setInterval(banner, 120000);
     setInterval(loadPin, 120000); // 0.1.50.2 : un message épinglé changé dans le panel arrive aussi aux joueurs déjà en jeu // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
-    let wasMono = monoGame(), wasSrv = srvK(); setInterval(() => { const m = monoGame(); if (m !== wasMono) { wasMono = m; banner(); } const sv = srvK(); if (sv !== wasSrv) { wasSrv = sv; srvCv(); } }, 2000); // 2.1.36 : passage Classique ↔ Monocompte : bandeaux de l'autre serveur
+    let wasMono = monoGame(); C.wasSrv = srvK(); setInterval(() => { const m = monoGame(); if (m !== wasMono) { wasMono = m; banner(); } const sv = srvK(); if (sv !== C.wasSrv) { C.wasSrv = sv; srvCv(); } }, 2000); // 2.1.36 : passage Classique ↔ Monocompte : bandeaux de l'autre serveur
   }
   /* 04/11 : changement de serveur sans rechargement de la page : Commerce et PvP du nouveau serveur */
   async function srvCv() {
     C.c = []; C.v = []; C.unreadC = 0; C.unreadV = 0; paint(true);
-    const [c, v] = await Promise.all([ON.chatLoad(chOf("c")), ON.chatLoad(chOf("v"))]);
-    if (c) C.c = keepLive(C.c, c); if (v) C.v = keepLive(C.v, v); paint(true);
+    const g = genK() === "s" ? "s" : vMono() ? "m" : "g"; // 05/11 : salon général du serveur choisi (compte admin)
+    const [c, v, gl] = await Promise.all([ON.chatLoad(chOf("c")), ON.chatLoad(chOf("v")), g === "m" && !monoOk() ? null : ON.chatLoad(g)]);
+    if (c) C.c = keepLive(C.c, c); if (v) C.v = keepLive(C.v, v); if (gl) C[g] = keepLive(C[g], gl); paint(true);
   }
   /* Rechargé à la connexion ou au changement de compte. */
   /* 1.0.9.1 : si le serveur est lent au moment du chargement (délai dépassé), le chat ne restait plus jamais sur
@@ -128,13 +134,13 @@
   const MRE = new RegExp(`(^|[^@${PS}])@([${PS}]{3,16})`, "g");
   const myPs = () => ((ON.profile && ON.profile.pseudo) || "").toLowerCase();
   const mentions = (b) => { const o = []; String(b || "").replace(MRE, (x, a, p) => { o.push(p.toLowerCase()); return x; }); return o; };
-  const pingsMe = (m) => { const me = myPs(); return !!me && m.kind === "msg" && !!m.user_id && m.user_id !== myId() && !C.ign.has(m.user_id) && mentions(m.body).slice(0, 3).includes(me); };
+  const pingsMe = (m) => { const me = myPs(); if (!me || m.kind !== "msg" || !m.user_id || m.user_id === myId() || C.ign.has(m.user_id)) return false; const L = mentions(m.body).slice(0, 3); return L.includes(me) || (C.role === "admin" && L.includes("xener")); }; // 05/11 : @Xener prévient Mathis
   const fmtBody = (b) => { const st = /^:st:(\d{1,2}):$/.exec(b || ""); if (st && +st[1] >= 1 && +st[1] <= 36) return `<img class="ch-sti" src="assets/s1/st/${+st[1]}.webp" alt="autocollant" loading="lazy">`; // Saison 1, lot 5 : autocollant
     const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
   const PING = PUB;
   const seenMax = (k) => (pref.ms && pref.ms[chOf(k)]) || 0; // 04/11 : mentions lues gardées par salon de la base (Commerce de chaque serveur à part)
   const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
-  const pingsAll = () => (monoGame() ? ["m", "c", "v"] : PING.filter((k) => k !== "m" && k !== (s1Game() ? "g" : "s"))).reduce((n, k) => n + pings(k), 0); // Monocompte : mentions de son salon, du Commerce et du PvP (2.2.0)
+  const pingsAll = () => (vMono() ? ["m", "c", "v"] : PING.filter((k) => k !== "m" && k !== (vS1() ? "g" : "s"))).reduce((n, k) => n + pings(k), 0); // Monocompte : mentions de son salon, du Commerce et du PvP (2.2.0)
   function markSeen(k) {
     if (!PING.includes(k) || !C[k].length) return;
     const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [chOf(k)]: top }); savePref(); }
@@ -184,7 +190,7 @@
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
-    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA && (m.data.srv || "e") === srvK()) window.GIGA.onAnn(m); // 2.2.4.11 (ticket #173) : plein écran seulement sur le serveur du drop (data.srv ; sans srv : Éternel) // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
+    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA && (m.data.srv || "e") === gameK()) window.GIGA.onAnn(m); // 2.2.4.11 (ticket #173) : plein écran seulement sur le serveur du drop (data.srv ; sans srv : Éternel) // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
     if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind) && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
     if (PING.includes(t) && pingsMe(m) && !(C.open && C.tab === t)) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[t] || "Général"}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);
@@ -240,7 +246,7 @@
   function paintHead() { const e = $("#chat .ch-on"); if (e) e.innerHTML = onlineTxt(); }
   function paintMin() { if (!C.open) paint(); }
   const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
-  const minN = () => monoGame() ? (monoOk() ? C.unreadM : 0) + C.unreadP + C.unreadC + C.unreadV : (s1Game() ? C.unreadS : C.unread) + C.unreadP + C.unreadC + C.unreadV + ((window.GUILD && window.GUILD.unread) || 0);
+  const minN = () => vMono() ? (monoOk() ? C.unreadM : 0) + C.unreadP + C.unreadC + C.unreadV : (vS1() ? C.unreadS : C.unread) + C.unreadP + C.unreadC + C.unreadV + ((window.GUILD && window.GUILD.unread) || 0);
   function tbSync() { const b = $("#tbChatN"); if (!b) return; const n = minN() + pingsAll(); b.textContent = n > 99 ? "99+" : n; b.hidden = !n; } // 2.1.40 (7A) : le bouton Chat de la barre du haut porte les non-lus
   function minHtml() {
     const last = [...(C.tab === "m" && monoOk() ? C.m : C.tab === "s" ? C.s : C.g)].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
@@ -281,11 +287,14 @@
       : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
     const guild = window.GUILD && window.GUILD.inGuild();
     // 22/10 (Mathis, 1A) : partie Monocompte, seulement le salon Monocompte (verrouillé sans accès), aucun salon du Classique
-    const tabsH = monoGame() ? tab("m", "sparkle", "Monocompte", C.unreadM, monoOk() ? "" : "Salon des testeurs du Monocompte : connecte-toi au serveur Monocompte.") + tab("c", "cart", "Commerce", C.unreadC) + tab("v", "target", "PvP", C.unreadV) + tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.") + tab("h", "star", "Hauts faits", C.unreadH)
-      : `${s1Game() ? tab("s", "chat", "Saison 1", C.unreadS) : tab("g", "chat", "Éternel", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Joueurs › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}`;
+    const tabsH = vMono() ? tab("m", "sparkle", "Monocompte", C.unreadM, monoOk() ? "" : "Salon des testeurs du Monocompte : connecte-toi au serveur Monocompte.") + tab("c", "cart", "Commerce", C.unreadC) + tab("v", "target", "PvP", C.unreadV) + tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.") + tab("h", "star", "Hauts faits", C.unreadH)
+      : `${vS1() ? tab("s", "chat", "Saison 1", C.unreadS) : tab("g", "chat", "Éternel", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Joueurs › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}`;
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
-      <div class="ch-tabs" role="tablist">${tabsH}</div></div>`;
+      ${srvPick()}<div class="ch-tabs" role="tablist">${tabsH}</div></div>`;
   }
+  /* 05/11 : compte admin : choix du serveur des salons (Éternel, Saison 1, Monocompte), « partie » = celui de la partie ouverte */
+  const SRV3 = [["e", "Éternel"], ["s", "Saison 1"], ["m", "Monocompte"]];
+  const srvPick = () => (C.role === "admin" ? `<div class="ch-srv" role="group" aria-label="Serveur du chat">${SRV3.map(([k, n]) => `<button class="${srvK() === k ? "on" : ""}" data-act="ch-srv" data-v="${k}" aria-pressed="${srvK() === k}">${n}${gameK() === k ? `<i title="Serveur de ta partie">•</i>` : ""}</button>`).join("")}</div>` : "");
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
@@ -355,8 +364,8 @@
     return C.loaded && C.tab !== "u" && ON.chatLost && ON.chatLost() ? `<div class="sys">Chat en direct perturbé côté serveur : messages mis à jour chaque minute tant que le chat est ouvert. Tu peux toujours écrire.</div>${l}` : l;
   }
   function listHtml0() {
-    if (!monoGame() && (C.tab === "g" || C.tab === "s" || C.tab === "m")) C.tab = genK(); // 2.2.0.1 : le salon Monocompte seulement dans une partie Monocompte // 2.2.0 : Saison 1 → salon 's', Éternel → salon 'g'
-    if (monoGame() && !["m", "c", "v", "p", "h"].includes(C.tab)) C.tab = "m"; // 2.2.0 (Mathis) : partie Monocompte : son salon, plus Commerce, PvP, Privé et Hauts faits (pas de guilde en Monocompte)
+    if (!vMono() && (C.tab === "g" || C.tab === "s" || C.tab === "m")) C.tab = genK(); // 2.2.0.1 : le salon Monocompte seulement dans une partie Monocompte // 2.2.0 : Saison 1 → salon 's', Éternel → salon 'g'
+    if (vMono() && !["m", "c", "v", "p", "h"].includes(C.tab)) C.tab = "m"; // 2.2.0 (Mathis) : partie Monocompte : son salon, plus Commerce, PvP, Privé et Hauts faits (pas de guilde en Monocompte)
     if (!C.loaded) return tries || slow ? `<div class="sys">Chat momentanément indisponible, reconnexion automatique…<br>${busy ? `<span class="small" style="display:inline-block;margin-top:6px">Nouvel essai en cours…</span>` : `<button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button>`}</div>` : `<div class="sys">Connexion au chat…</div>`;
     if (C.tab === "p") {
       if (!C.peer) {
@@ -377,7 +386,7 @@
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
     if (C.tab === "m") {
-      if (!monoOk()) { if (monoGame()) return `<div class="sys">Le salon Monocompte s'ouvre avec ton compte testeur du Monocompte (Options › Compte).</div>`; C.tab = "g"; return listHtml(); }
+      if (!monoOk()) { if (vMono()) return `<div class="sys">Le salon Monocompte s'ouvre avec ton compte testeur du Monocompte (Options › Compte).</div>`; C.tab = "g"; return listHtml(); }
       const rows = C.m.filter((m) => !C.ign.has(m.user_id));
       return `<div class="sys">Général Monocompte : réservé aux joueurs du Monocompte. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
     }
@@ -423,14 +432,14 @@
     if (C.err && C.err === C.errWait) { C.err = ""; const b = $("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; }
   }
   /* Saison 1, lot 5 : autocollants (js/saisonsoc.js) : ceux de la partie ouverte, envoyés comme un message « :st:N: » */
-  const stMine = () => { const D = window.DX, E = D && D.E, S = D && D.S; return E && E.stMine && S ? E.stMine(S) : []; };
+  const stMine = () => { const D = window.DX, E = D && D.E, S = D && D.S; return C.role === "admin" && E && E.STICKERS ? E.STICKERS : E && E.stMine && S ? E.stMine(S) : []; }; // 05/11 : le compte admin a tous les autocollants
   const stBtn = () => (stMine().length ? `<button class="btn sm ch-stb" data-act="ch-stb" aria-label="Autocollants" aria-expanded="${!!C.stOpen}" title="Autocollants">☺</button>` : "");
   const stPick = () => (C.stOpen ? `<div class="ch-stp">${stMine().map((t) => `<button data-act="ch-st" data-v="${t.n}" title="${h(t.nm)}"><img src="assets/s1/st/${t.n}.webp" alt="${h(t.nm)}"></button>`).join("")}</div>` : "");
   async function send() {
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
     if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
-    const to = C.tab === "p" ? C.peer : null; const tk = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null, ch = tk ? chOf(tk) : to && s1Game() ? "s" : null; // 2.2.8.1 : message privé depuis la Saison 1 : héros de la saison ; 04/11 : Commerce et PvP du serveur de la partie
+    const to = C.tab === "p" ? C.peer : null; const tk = C.tab === "c" || C.tab === "v" || C.tab === "m" || C.tab === "s" ? C.tab : null, ch = tk ? chOf(tk) : to && vS1() ? "s" : null; // 2.2.8.1 : message privé depuis la Saison 1 : héros de la saison ; 04/11 : Commerce et PvP du serveur de la partie
     const err = C.tab === "a" && window.ALLY ? await window.ALLY.say(body) : C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (tk === "c") C.nextC = Date.now() + 30000;
@@ -803,10 +812,11 @@
       case "ch-retry": refresh(); return;
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
       case "ch-tab": C.tab = d.v; C.picked = true; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "m") C.unreadM = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "a" && window.ALLY) { window.ALLY.chatSeen(); window.ALLY.chatPoll(); } if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-srv": if (C.role !== "admin" || !SRV3.some((x) => x[0] === d.v)) return; C.vsrv = d.v === gameK() ? null : d.v; C.picked = false; C.tab = defTab(); C.err = ""; pref.vsrv = C.vsrv; savePref(); C.wasSrv = srvK(); await srvCv(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-stb": C.stOpen = !C.stOpen; paint(true); return;
-      case "ch-st": { const i = $("#chIn"); const D = window.DX; if (!i || !(D && D.E.stOk(D.S, +d.v))) return; i.value = `:st:${+d.v}:`; C.stOpen = false; send(); return; }
+      case "ch-st": { const i = $("#chIn"); const D = window.DX; if (!i || !(D && (C.role === "admin" ? D.E.STICKERS.some((x) => x.n === +d.v) : D.E.stOk(D.S, +d.v)))) return; i.value = `:st:${+d.v}:`; C.stOpen = false; send(); return; }
       case "ch-acpick": acPick(d.p); return;
       case "ch-ment": { closeMenu(); const i = $("#chIn"); if (!i) return; const v = i.value.replace(/\s+$/, ""); insertAt(i, 0, i.value.length, `${v ? v + " " : ""}@${d.p} `); return; }
       case "ch-who": menu(t); return;
