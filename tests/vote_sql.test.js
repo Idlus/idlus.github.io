@@ -40,7 +40,8 @@ const ROOT = path.join(__dirname, "..");
   { const mo = fs.readFileSync(path.join(ROOT, "js/mono.js"), "utf8"); assert(!/CLASSIC_MODS = \[[^\]]*"VOTE"/.test(mo) && /M\.FN = new Set\(\[[^\]]*"vote"/.test(mo), "04/11 : le vote marche aussi dans une partie Monocompte"); }
   assert(/c === "mono" \? await ON\.rpc\("mono_vote_moi"\)/.test(fs.readFileSync(path.join(ROOT, "js/vote.js"), "utf8")), "Monocompte : mono_vote_moi (liste blanche)");
   const v = fs.readFileSync(path.join(ROOT, "js/vote.js"), "utf8");
-  assert(!/cle|DFG_VOTE_KEY|api\/v1/i.test(v.replace(/\/\*[\s\S]*?\*\//g, "")), "le jeu ne connaît ni la clé ni l'API");
+  assert(/data-act="vt-getji"/.test(v) && /jeux-inde\.com\/jeux\/idlus\/voter/.test(v), "05/11 : bouton Jeux Indé");
+  assert(!/cle|DFG_VOTE_KEY|JI_VOTE_KEY|api\/v1/i.test(v.replace(/\/\*[\s\S]*?\*\//g, "")), "le jeu ne connaît ni la clé ni l'API");
 }
 
 const URL0 = process.env.IDLUS_PG;
@@ -190,6 +191,26 @@ try {
   fails(() => as(1, `select vote_verse('${U(1)}', 'eternel', '{"k": 1}', 'x')`), /permission denied/, "un joueur se verse des kamas");
   fails(() => as(1, `select vote_partie('${U(1)}', 's1')`), /permission denied/, "vote_partie réservée au serveur");
   assert.deepStrictEqual(Object.keys(JSON.parse(as(1, `select adm_votes()`)).parties).sort(), ["eternel", "mono", "s1"], "panel : votes par partie");
+  // 05/11 : Jeux Indé : récompense fixe (moitié de DFG sans série : 15 min, kamas / 2), 85 min par compte, indépendante de DFG
+  fails(() => as(1, `select vote_ji_srv_cfg()`), /permission denied/, "un joueur lit la clé Jeux Indé");
+  fails(() => as(1, `select vote_ji_srv_claim('${U(1)}', 'x', 1)`), /permission denied/, "un joueur se donne une récompense Jeux Indé");
+  assert.strictEqual(as(1, `select count(*) from vote_ji_claims`), "0", "table Jeux Indé illisible");
+  assert.strictEqual(JSON.parse(as(1, `select vote_ji_moi()`)).actif, false, "fermé sans clé");
+  q(`update vote_cfg set cle_ji = 'ji_SECRET'`); assert.strictEqual(srv(`vote_ji_srv_cfg()`).cle, "ji_SECRET");
+  const j0 = JSON.parse(as(5, `select vote_ji_moi()`)); assert(j0.actif === true && j0.n === 0 && j0.pseudo === "Serieux" && !("cle" in j0), JSON.stringify(j0));
+  const j1 = srv(`vote_ji_srv_claim('${U(5)}', 'hA', 1700000000123)`);
+  assert(j1.ok && j1.k === 108750 && Math.abs(j1.sab - 0.25) < 1e-6 && j1.bonus === 0, "série ignorée (U5 a +50 %) : " + JSON.stringify(j1));
+  assert(/Jeux Indé : 108 750 kamas et 15 min de Sablier\./.test(q(`select txt from hdv_ops where user_id = '${U(5)}' order by id desc limit 1`)));
+  assert(srv(`vote_ji_srv_claim('${U(3)}', 'hB', 1700000000123)`).deja, "le même vote (trouvé par pseudo et par adresse) ne paie qu'une fois");
+  assert(srv(`vote_ji_srv_claim('${U(5)}', 'hA', 1700000999000)`).attente > 5000, "85 min par compte");
+  q(`update vote_claims set at = now() - interval '2 hours' where user_id = '${U(3)}'`);
+  assert(srv(`vote_ji_srv_claim('${U(3)}', 'hC', 1700000555000)`).ok, "indépendant de Dofus Fan Games");
+  assert(/vérification/.test(srv(`vote_ji_srv_claim('${U(4)}', 'hD', 1700000666000)`).err));
+  assert(srv(`vote_ji_srv_claim('${U(32)}', 'hM', 1700000777000, 'mono')`).ok && q(`select payload->>'sab' from mono.ops where user_id = '${U(32)}' order by id desc limit 1`) === "0.25", "Monocompte");
+  const jm = JSON.parse(as(32, `select mono_vote_ji_moi()`)); assert(jm.n === 1 && jm.last, JSON.stringify(jm));
+  assert.strictEqual(JSON.parse(as(1, `select adm_votes()`)).ji_sept, 3, "panel : votes Jeux Indé");
+  q(`update vote_ji_claims set at = now() - interval '86 minutes' where user_id = '${U(5)}'`);
+  assert(srv(`vote_ji_srv_claim('${U(5)}', 'hA', 1700005000000)`).ok, "1 h 30 plus tard");
   q(`update vote_cfg set actif = false`); assert.strictEqual(JSON.parse(as(1, `select vote_moi()`)).actif, false, "coupé depuis la base");
   // empreinte de l'adresse effacée au bout de 30 jours, le vote reste compté
   q(`update vote_claims set at = now() - interval '31 days' where user_id = '${U(2)}'`); srv(`vote_srv_claim('${U(3)}', 'ipG', 9999)`);

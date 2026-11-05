@@ -7,6 +7,9 @@
    le site interdit de réserver un contenu aux votants. Compte connecté seulement.
    04/11 (Mathis : « pouvoir voter sur classique et monocompte saison 1 ») : la récompense va dans la partie ouverte :
    Éternel (partie 1), Classique · Saison 1 (partie 5, s1.hdv_ops) ou Monocompte de la saison ouverte (partie 4, mono.ops).
+   05/11 (Mathis, « Fiche + vote demi-récompense ») : 2e site, Jeux Indé (jeux-inde.com). Récompense fixe et identique pour tous
+   (règle du site) : 15 min de Sablier et la moitié des kamas de Dofus Fan Games, sans série. Le site laisse revoter toutes les
+   1 h 30 ; vérifié par l'adresse ou par le pseudo du compte, pré-rempli dans le lien « Voter ».
    ========================================================================== */
 (function () {
   "use strict";
@@ -15,7 +18,9 @@
   const X = () => window.DX.social;
   const URL_VOTE = "https://dofusfangames.com/jeu/idlus";
   const WAIT = 55 * 60e3;
-  const V = { st: null, off: 0, last: 0, busy: false, voted: false, msg: "" };
+  const WAIT_JI = 85 * 60e3;
+  const V = { st: null, ji: null, off: 0, last: 0, busy: false, busyJi: false, voted: false, msg: "" };
+  const urlJi = () => "https://jeux-inde.com/jeux/idlus/voter" + (V.ji && V.ji.pseudo ? "?pseudo=" + encodeURIComponent(V.ji.pseudo) : "");
 
   const monoP = () => !!(ON.monoPart && ON.monoPart());
   /* partie qui reçoit : null pour une partie solo ou un Monocompte hors saison ouverte (Éternel du Monocompte) */
@@ -23,12 +28,15 @@
   const NOM = { eternel: "Éternel", s1: "Classique · Saison 1", mono: "Monocompte" };
   const ready = () => !!(ON.user && ON.state === "ok" && cible() && V.st && V.st.actif && V.c === cible());
   const leftMs = () => (V.st && V.st.last ? Math.max(0, Date.parse(V.st.last) + WAIT - (Date.now() + V.off)) : 0);
+  const readyJi = () => !!(ON.user && ON.state === "ok" && cible() && V.ji && V.ji.actif && V.c === cible());
+  const leftJi = () => (V.ji && V.ji.last ? Math.max(0, Date.parse(V.ji.last) + WAIT_JI - (Date.now() + V.off)) : 0);
 
   async function poll() {
     V.last = Date.now();
     const c = cible(); if (!ON.user || !c || !ON.rpc) return;
     const r = c === "mono" ? await ON.rpc("mono_vote_moi") : await ON.rpc("vote_moi", { p_cible: c }); if (r.err || !r.data) return;
     V.st = r.data; V.c = c; if (V.st.now) V.off = Date.parse(V.st.now) - Date.now();
+    const rj = c === "mono" ? await ON.rpc("mono_vote_ji_moi") : await ON.rpc("vote_ji_moi"); V.ji = !rj.err && rj.data ? rj.data : null; // 05/11 : Jeux Indé
     /* 3A+B : paliers de l'objectif du mois versés par vote_moi (Sablier par l'hôtel de vente) */
     const P = Array.isArray(V.st.paye) ? V.st.paye : [];
     if (V.st.titre) { X().toast(`Top 10 des votants du mois dernier : titre « ${V.st.titre.t} » !`, "rare"); if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); }
@@ -37,9 +45,13 @@
 
   /* ligne de l'accueil (appelée par renderHome dans js/ui.js) ; rien tant que la récompense n'est pas ouverte */
   function line() {
+    const ic = `<span class="dc-i vt-i" aria-hidden="true">⏳</span>`;
+    /* 05/11 : Dofus Fan Games en premier ; s'il attend et que Jeux Indé est libre, la ligne propose Jeux Indé */
+    if (readyJi() && leftJi() <= 0 && (!ready() || leftMs() > 0))
+      return `<div class="dcline vtline">${ic}<span class="grow">Vote aussi pour Idlus sur Jeux Indé <span class="xs muted">15 min de Sablier et des kamas, toutes les 1 h 30</span></span>`
+        + `<span class="vt-b"><a class="btn sm" href="${urlJi()}" target="_blank" rel="noopener" data-act="vt-go">Voter ›</a><button class="btn sm primary" data-act="vt-getji" ${V.busyJi ? "disabled" : ""}>Récupérer</button></span></div>`;
     if (!ready()) return "";
     const ms = leftMs();
-    const ic = `<span class="dc-i vt-i" aria-hidden="true">⏳</span>`;
     if (ms > 0) {
       const m = Math.max(1, Math.ceil(ms / 60e3));
       return `<div class="dcline vtline done">${ic}<span class="grow">Merci pour ton vote ! <span class="xs muted">Prochaine récompense dans ${m} min.</span></span><a class="btn sm ghost" href="${URL_VOTE}" target="_blank" rel="noopener">Dofus Fan Games ›</a></div>`;
@@ -48,16 +60,18 @@
       + `<span class="vt-b"><a class="btn sm" href="${URL_VOTE}" target="_blank" rel="noopener" data-act="vt-go">Voter ›</a><button class="btn sm primary" data-act="vt-get" ${V.busy ? "disabled" : ""}>Récupérer</button></span></div>`;
   }
 
-  async function claim() {
-    if (V.busy) return;
+  async function claim(site) {
+    const ji = site === "ji", bk = ji ? "busyJi" : "busy";
+    if (V[bk]) return;
     if (!ON.user) { X().toast("Connecte-toi à ton compte pour récupérer la récompense de vote."); return; }
     const c = cible(); if (!c) { X().toast("Ouvre ta partie Éternel, Classique · Saison 1 ou Monocompte pour recevoir la récompense."); return; }
-    V.busy = true; repaint();
-    const r = await ON.vote(c);
-    V.busy = false;
+    V[bk] = true; repaint();
+    const r = ji ? await ON.vote(c, "ji") : await ON.vote(c);
+    V[bk] = false;
     if (r && r.ok) {
-      X().toast(`Merci pour ton vote ! +${X().fmt(r.k || 0)} kamas et ${Math.round((r.sab || 0.5) * 60)} min de Sablier${r.bonus ? ` (série +${r.bonus} %)` : ""} dans ta partie ${NOM[r.cible || c] || ""}.`, "rare");
-      V.st = Object.assign({}, V.st, { last: new Date(Date.now() + V.off).toISOString() });
+      X().toast(`Merci pour ton vote${ji ? " sur Jeux Indé" : ""} ! +${X().fmt(r.k || 0)} kamas et ${Math.round((r.sab || 0.5) * 60)} min de Sablier${r.bonus ? ` (série +${r.bonus} %)` : ""} dans ta partie ${NOM[r.cible || c] || ""}.`, "rare");
+      if (ji) V.ji = Object.assign({}, V.ji, { last: new Date(Date.now() + V.off).toISOString() });
+      else V.st = Object.assign({}, V.st, { last: new Date(Date.now() + V.off).toISOString() });
       if (window.MARKET && window.MARKET.sync) setTimeout(() => window.MARKET.sync(), 600); // les gains arrivent par l'hôtel de vente
     } else {
       X().toast((r && r.err) || "Pas de connexion au serveur. Réessaie dans un moment.");
@@ -69,6 +83,22 @@
     const ui = window.DX.ui || {};
     if (ui.tab === "vote") { const m = document.querySelector("#main"); if (m) page(m); return; }
     if (ui.tab === "home" && window.DX.render && !(document.querySelector("#sheet") || {}).innerHTML) { try { window.DX.render(); } catch (e) {} }
+  }
+
+  /* 05/11 : bloc Jeux Indé de la page (récompense fixe, sans série) ; rien tant que la récompense n'est pas ouverte */
+  function jiPanel() {
+    if (!readyJi()) return "";
+    const fmt = X().fmt, ms = leftJi(), m = Math.max(1, Math.ceil(ms / 60e3));
+    const E = window.ENGINE, fer = !!(E && E.monoFer && window.DX.S && E.monoFer(window.DX.S));
+    const k = Math.round(kamasOf(mainLvl()) / 2);
+    const btns = ms > 0
+      ? `<span class="vt-wait">Prochaine récompense dans <b class="num">${m} min</b></span>`
+      : `<a class="btn primary vt-big" href="${urlJi()}" target="_blank" rel="noopener" data-act="vt-go">1. Voter sur Jeux Indé ›</a><button class="btn vt-big" data-act="vt-getji" ${V.busyJi ? "disabled" : ""}>2. Récupérer ma récompense</button>`;
+    return `<section class="panel" style="margin-top:14px"><div class="phead"><h2>Aussi sur Jeux Indé</h2><span class="xs muted">toutes les 1 h 30</span></div><div class="pad stack">
+      <div class="vt-rew"><div><span class="xs muted">À chaque vote, la même récompense pour tous</span><div class="vt-rew-l">${fer ? `<span>⏳ 15 min de Sablier changées en <b class="num">${fmt(Math.round(0.25 * E.sabFerKh(window.DX.S)))}</b> kamas <span class="xs muted">(Serment de fer)</span></span>` : `<span>⏳ <b>15 min</b> de Sablier</span>`}<span>${X().IC("kamas")} <b class="num">${fmt(k)}</b> kamas</span></div></div></div>
+      <div class="row wrap vt-btns">${btns}</div>
+      <span class="xs muted">Ton pseudo est déjà rempli sur la page de vote : laisse-le tel quel. Ces votes ne comptent ni dans la série ni dans l'objectif du mois.</span>
+    </div></section>`;
   }
 
   /* ---------- page « Voter pour Idlus » (menu Joueurs) ---------- */
@@ -97,6 +127,7 @@
       ${V.c ? `<span class="small">La récompense arrive dans la partie ouverte : <b>${h(NOM[V.c])}</b>.</span>` : ""}${st.partie ? `<span class="small" style="color:var(--danger)">${h(st.partie)}</span>` : ""}
       <span class="xs muted">Vote depuis le même appareil et le même réseau (Wi-Fi ou 4G) que le jeu : le site reconnaît ton vote à ta connexion.</span>
     </div></section>
+    ${jiPanel()}
     <section class="grid2" style="margin-top:14px">
       <section class="panel"><div class="phead"><h2>Tes votes</h2></div><div class="pad stack">
         <div class="vt-stats"><span><b class="num">${fmt(st.n || 0)}</b><small>au total</small></span><span><b class="num">${fmt(st.nm || 0)}</b><small>ce mois-ci</small></span><span><b class="num">${serie}</b><small>jour${serie > 1 ? "s" : ""} d'affilée</small></span></div>
@@ -121,6 +152,7 @@
   document.addEventListener("click", (ev) => {
     const b = ev.target.closest && ev.target.closest("[data-act^='vt-']"); if (!b) return;
     if (b.dataset.act === "vt-get") { ev.preventDefault(); claim(); }
+    if (b.dataset.act === "vt-getji") { ev.preventDefault(); claim("ji"); }
     if (b.dataset.act === "vt-go") V.voted = true; // le lien s'ouvre dans un nouvel onglet
   });
 
@@ -131,6 +163,6 @@
     setTimeout(poll, 3000);
     setInterval(() => { if (document.visibilityState === "visible" && Date.now() - V.last >= (V.st ? 5 * 60e3 : 20e3)) poll(); }, 30e3);
   }
-  const dot = () => ready() && leftMs() <= 0; // 5A : pastille du menu quand un vote est possible
+  const dot = () => (ready() && leftMs() <= 0) || (readyJi() && leftJi() <= 0); // 5A : pastille du menu quand un vote est possible
   window.VOTE = { start, line, poll, dot, V };
 })();

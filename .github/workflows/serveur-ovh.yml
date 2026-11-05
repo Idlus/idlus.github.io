@@ -33,7 +33,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -399,6 +399,19 @@ jobs:
           bash tools/serveur/vps_sql.sh fichier /tmp/cle.sql; rm -f /tmp/cle.sql
           bash tools/serveur/vps_sql.sh lecture "select (cle is not null) as cle_posee, actif, length(cle) as longueur from public.vote_cfg"
           bash tools/serveur/vps_sql.sh commande 'ls -l volumes/functions/vote/ && docker logs --since 10m supabase-edge-functions 2>&1 | grep -iE "vote" | grep -iE "error|erreur|exception" | tail -10'
+      - name: Vote sur Jeux Indé, clé de l'API (secret JI_VOTE_KEY, jamais affichée)
+        # 05/11/2026 : 2e site de vote (supabase/vote.sql, fin du fichier ; supabase/functions/vote, jeuxInde). À lancer après
+        # « Serveur en ligne », et de nouveau si Mathis change la clé. Clé écrite dans public.vote_cfg.cle_ji seulement.
+        if: inputs.etape == 'vote-cle-ji'
+        env:
+          CLE: ${{ secrets.JI_VOTE_KEY }}
+        run: |
+          CLE=$(printf '%s' "$CLE" | tr -d '[:space:]'); CLE=${CLE#Bearer}
+          if ! printf '%s' "$CLE" | grep -qE '^ji_[A-Za-z0-9_-]{8,200}$'; then echo "Secret JI_VOTE_KEY absent ou illisible (la clé seule, qui commence par ji_)." >&2; exit 1; fi
+          printf "update public.vote_cfg set cle_ji = \$cle\$%s\$cle\$ where id = 1;\n" "$CLE" > /tmp/cle.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/cle.sql; rm -f /tmp/cle.sql
+          bash tools/serveur/vps_sql.sh lecture "select (cle_ji is not null) as cle_ji_posee, actif, length(cle_ji) as longueur from public.vote_cfg"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLE" "https://jeux-inde.com/api/v1/jeu"); echo "API Jeux Indé avec la clé : $code (200 attendu)"
       - name: Saison 1, installation du Classique (sauvegarde de la base, schéma s1, API, date d'ouverture)
         # Ne se lance que sur l'ordre écrit de Mathis (phrase d'installation de la Saison 1). Relançable : la date d'ouverture
         # n'est posée qu'une fois (si elle est vide). Ne touche à aucune table du Classique actuel (l'Éternel) : saison1.sql

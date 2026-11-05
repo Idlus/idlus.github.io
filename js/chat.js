@@ -677,7 +677,7 @@
       <div class="box"><h2>Bandeaux affichés</h2>${L.map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span>${srvTags(x.srv)}<span class="t">${untilTxt(x)}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>
       ${loopBox()}
       <div id="plAdm">${window.PLUIE ? window.PLUIE.adminBox() : ""}</div>
-      ${A.votes && typeof A.votes === "object" && !Array.isArray(A.votes) ? `<div class="box"><h2>Votes sur Dofus Fan Games</h2><div class="small">Votes récompensés : <b class="num">${A.votes.jour || 0}</b> aujourd'hui · <b class="num">${A.votes.sept || 0}</b> en 7 jours (${A.votes.joueurs || 0} joueurs) · <b class="num">${A.votes.trente || 0}</b> en 30 jours</div></div>` : ""}`;
+      ${A.votes && typeof A.votes === "object" && !Array.isArray(A.votes) ? `<div class="box"><h2>Votes sur Dofus Fan Games</h2><div class="small">Votes récompensés : <b class="num">${A.votes.jour || 0}</b> aujourd'hui · <b class="num">${A.votes.sept || 0}</b> en 7 jours (${A.votes.joueurs || 0} joueurs) · <b class="num">${A.votes.trente || 0}</b> en 30 jours${A.votes.ji_sept != null ? ` · Jeux Indé : <b class="num">${A.votes.ji_sept}</b> en 7 jours` : ""}</div></div>` : ""}`;
   }
   /* vider un salon : confirmation dans la page (A.clr), jamais de boîte confirm() */
   function clrHtml(k) {

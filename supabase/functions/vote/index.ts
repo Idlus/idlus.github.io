@@ -7,6 +7,7 @@
 //    La clé reste sur le serveur (table vote_cfg, supabase/vote.sql) : jamais envoyée au jeu.
 // 4. vote_srv_claim (supabase/vote.sql) décide : un vote = une récompense, une par compte toutes les 55 minutes,
 //    puis envoie kamas et Sablier par l'hôtel de vente (hdv_ops). On ne garde qu'une empreinte salée de l'adresse.
+// 05/11 : { claim: 1, cible, site: "ji" } : vote sur Jeux Indé (jeuxInde, plus bas) : récompense fixe, la moitié de celle de DFG.
 // 04/11 : { claim: 1, cible } : partie qui reçoit, celle ouverte dans le jeu (« eternel », « s1 » Classique · Saison 1, « mono »
 //    Monocompte de la saison ouverte) ; vote_srv_claim vérifie que le serveur la connaît.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -50,13 +51,16 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "Connecte-toi à ton compte pour récupérer la récompense de vote." }, 401);
 
-  let demande: { cible?: unknown } = {};
+  let demande: { cible?: unknown; site?: unknown } = {};
   try { demande = await req.json(); } catch (_) { /* corps vide : partie Éternel */ }
   const cible = ["s1", "mono"].includes(String(demande && demande.cible)) ? String(demande.cible) : "eternel";
 
   const now = Date.now();
-  if (now - (lastTry.get(user.id) || 0) < WAIT_S * 1000) return json({ ok: false, err: "Doucement : réessaie dans quelques secondes." });
-  lastTry.set(user.id, now);
+  const tk = user.id + (String(demande && demande.site) === "ji" ? ":ji" : ""); // 05/11 : un délai par site
+  if (now - (lastTry.get(tk) || 0) < WAIT_S * 1000) return json({ ok: false, err: "Doucement : réessaie dans quelques secondes." });
+  lastTry.set(tk, now);
+
+  if (String(demande && demande.site) === "ji") return jeuxInde(db, user.id, cible, req);
 
   const { data: cfg, error: e0 } = await db.rpc("vote_srv_cfg");
   if (e0 || !cfg || !cfg.cle || !cfg.actif) return json({ ok: false, err: "La récompense de vote n'est pas encore ouverte." });
@@ -80,3 +84,38 @@ Deno.serve(async (req) => {
   if (v.attente) return json({ ok: false, attente: v.attente, err: "Une récompense par heure : la prochaine dans " + Math.max(1, Math.ceil(Number(v.attente) / 60)) + " min." });
   return json({ ok: true, k: v.k, sab: v.sab, bonus: v.bonus, cible: v.cible, next });
 });
+
+// 05/11 : Jeux Indé (https://jeux-inde.com/api-docs). GET /api/v1/votes?ip=… ou ?pseudo=… avec « Authorization: Bearer ji_… »
+// → { voted, voted_at, next_vote_at } (dernier vote des 1 h 30 passées). On cherche d'abord par adresse, puis par pseudo du compte
+// (le lien « Voter » du jeu pré-remplit ?pseudo=). Un vote (son heure exacte) ne paie qu'une fois, quel que soit le chemin.
+const JI_API = "https://jeux-inde.com/api/v1/votes";
+type JiVote = { voted?: boolean; voted_at?: string; next_vote_at?: string };
+async function jiCherche(cle: string, q: string): Promise<{ st: number; v: JiVote }> {
+  const r = await fetch(JI_API + "?" + q, { headers: { Authorization: "Bearer " + cle }, signal: AbortSignal.timeout(6000) });
+  let v: JiVote = {}; try { v = await r.json(); } catch (_) { /* réponse vide */ }
+  return { st: r.status, v };
+}
+// deno-lint-ignore no-explicit-any
+async function jeuxInde(db: any, uid: string, cible: string, req: Request): Promise<Response> {
+  const { data: cfg, error: e0 } = await db.rpc("vote_ji_srv_cfg");
+  if (e0 || !cfg || !cfg.cle || !cfg.actif) return json({ ok: false, err: "La récompense de vote Jeux Indé n'est pas encore ouverte." });
+  const ip = ipJoueur(req.headers.get("x-forwarded-for"), req.headers.get("x-real-ip"));
+  let trouve: JiVote | null = null, par = "";
+  try {
+    if (ip) { const a = await jiCherche(cfg.cle, "ip=" + encodeURIComponent(ip)); if (a.st === 200 && a.v.voted && a.v.voted_at) { trouve = a.v; par = "ip:" + ip; } else if (a.st === 401) return json({ ok: false, err: "Vérification du vote impossible pour le moment." }); }
+    if (!trouve) {
+      const { data: ps } = await db.rpc("vote_ji_pseudo", { p_user: uid });
+      if (ps) { const b = await jiCherche(cfg.cle, "pseudo=" + encodeURIComponent(String(ps))); if (b.st === 200 && b.v.voted && b.v.voted_at) { trouve = b.v; par = "p:" + String(ps).toLowerCase(); } }
+    }
+  } catch (_) { return json({ ok: false, err: "Jeux Indé ne répond pas : réessaie dans un moment." }); }
+  if (!trouve) return json({ ok: false, novote: true, err: "Aucun vote trouvé. Vote d'abord sur Jeux Indé avec le bouton du jeu (ton pseudo est déjà rempli), puis réessaie." });
+  const t = Date.parse(String(trouve.voted_at));
+  if (!(t > 0)) return json({ ok: false, err: "Vérification du vote impossible pour le moment." });
+  const { data: v, error: e1 } = await db.rpc("vote_ji_srv_claim", { p_user: uid, p_ip: await empreinte(String(cfg.sel), par), p_voted_at: Math.floor(t), p_cible: cible });
+  if (e1 || !v) return json({ ok: false, err: "Écriture impossible : réessaie dans un moment." });
+  const next = Math.max(0, Math.floor(((Date.parse(String(trouve.next_vote_at)) || 0) - Date.now()) / 1000));
+  if (v.err) return json({ ok: false, err: v.err });
+  if (v.deja) return json({ ok: false, deja: true, next, err: "Ce vote a déjà été récompensé. Tu pourras revoter sur Jeux Indé dans " + Math.max(1, Math.ceil(next / 60)) + " min." });
+  if (v.attente) return json({ ok: false, attente: v.attente, err: "Une récompense Jeux Indé toutes les 1 h 30 : la prochaine dans " + Math.max(1, Math.ceil(Number(v.attente) / 60)) + " min." });
+  return json({ ok: true, k: v.k, sab: v.sab, bonus: 0, cible: v.cible, site: "ji", next });
+}

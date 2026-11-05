@@ -25,7 +25,7 @@ const CLASSIQUE = new Set([
   "builds_list", "builds_me", "defi_guild_prize", "defi_share", "defi_vote", "foire_jackpot", "foire_jackpot_buy", "gboss_claim", "gift_mine", "gift_redeem",
   "guild_chat", "guild_extra", "guild_give", "guild_list", "guild_me", "guild_of", "guild_say", "guild_view", "hdv_prix7", "koli_me", "perco_map", "rain_join", "rain_state", "tour_leave", "lb_chev", "lb_exps1",
   "songe_claim", "vente_courbe", "vente_cours", "vente_sell", "wb_info", "adm_rain_open", "adm_rain_stop", "adm_rains", "adm_hdv_remove", "record",
-  "vote_moi", // 02/11 : récompense de vote sur Dofus Fan Games (supabase/vote.sql) ; 04/11 : le Monocompte passe par mono_vote_moi et la fonction « vote » (E.MONO.FN)
+  "vote_moi", "vote_ji_moi", // 05/11 : Jeux Indé (mono_vote_ji_moi en Monocompte) ; 02/11 : récompense de vote sur Dofus Fan Games (supabase/vote.sql) ; 04/11 : le Monocompte passe par mono_vote_moi et la fonction « vote » (E.MONO.FN)
   // sauvegarde : chaque emplacement a les siennes (le Monocompte passe par mono_push, mono_pull, mono_info, mono_delete)
   "push_save", "push_slot", "save_info", "slot_info", "delete_slot",
 ]);

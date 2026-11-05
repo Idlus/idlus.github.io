@@ -527,11 +527,12 @@
   };
   /* 02/11 : récompense de vote sur Dofus Fan Games (supabase/functions/vote) : la fonction vérifie le vote avec l'adresse IP. */
   /* 04/11 : cible = partie qui reçoit (« eternel », « s1 », « mono »), celle ouverte dans le jeu (js/vote.js) */
-  ON.vote = async (cible) => {
+  /* 05/11 : site = "ji" pour Jeux Indé (récompense fixe, moitié de celle de Dofus Fan Games) */
+  ON.vote = async (cible, site) => {
     if (!sb || !ON.user) return { ok: false, err: "Connecte-toi à ton compte pour récupérer la récompense de vote." };
     if (ON.monoPart() !== (cible === "mono")) return { ok: false, err: "Ouvre la partie qui doit recevoir la récompense, puis réessaie." };
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("vote", { body: { claim: 1, cible } }), 20000);
+      const { data, error } = await withTimeout(sb.functions.invoke("vote", { body: site === "ji" ? { claim: 1, cible, site } : { claim: 1, cible } }), 20000);
       if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} return j && j.err ? j : { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." }; }
       return data || { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." };
     } catch (e) { return { ok: false, err: "Pas de connexion au serveur. Réessaie dans un moment." }; }

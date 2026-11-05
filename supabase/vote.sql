@@ -228,7 +228,80 @@ as $$ begin
     'trente', (select count(*) from vote_claims where at > now() - interval '30 days'),
     'mois', (select count(*) from vote_claims where at >= (date_trunc('month', now() at time zone 'Europe/Paris')) at time zone 'Europe/Paris'),
     'joueurs', (select count(distinct user_id) from vote_claims where at > now() - interval '7 days'),
-    'parties', (select coalesce(jsonb_object_agg(cible, n), '{}'::jsonb) from (select cible, count(*) as n from vote_claims where at > now() - interval '7 days' group by cible) x));
+    'parties', (select coalesce(jsonb_object_agg(cible, n), '{}'::jsonb) from (select cible, count(*) as n from vote_claims where at > now() - interval '7 days' group by cible) x),
+    'ji_sept', (select count(*) from vote_ji_claims where at > now() - interval '7 days')); -- 05/11 : votes Jeux Indé récompensés
 end $$;
 revoke all on function public.adm_votes() from public;
 grant execute on function public.adm_votes() to authenticated;
+
+-- ============================================================================
+-- 05/11 (Mathis, carte « Fiche + vote demi-récompense ») : 2e site de vote, Jeux Indé (https://jeux-inde.com/jeux/idlus).
+-- Règle du site : récompense « modeste et identique pour tous les votants » : ici ni série, ni objectif du mois, ni top 10.
+-- Récompense fixe = la moitié de celle de Dofus Fan Games sans série : 15 min de Sablier et un huitième d'heure de kamas
+-- au niveau du héros principal. Le site laisse revoter toutes les 1 h 30 : une récompense par compte toutes les 85 minutes,
+-- indépendante de Dofus Fan Games. La fonction « vote » ({ claim: 1, site: "ji" }) demande à l'API du site si l'adresse du
+-- joueur (ou, en secours, son pseudo, pré-rempli dans le lien de vote) a voté, puis appelle vote_ji_srv_claim.
+-- Clé posée par le workflow « Serveur OVH » (étape vote-cle-ji) depuis le secret JI_VOTE_KEY ; jamais envoyée au jeu.
+-- ============================================================================
+alter table public.vote_cfg add column if not exists cle_ji text;
+create table if not exists public.vote_ji_claims (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  ip text not null,           -- empreinte salée (adresse ou pseudo), jamais l'adresse
+  voted_at bigint not null,   -- heure du vote donnée par le site (millisecondes Unix) : un vote = une récompense
+  k bigint not null default 0,
+  sab real not null default 0,
+  cible text not null default 'eternel',
+  at timestamptz not null default now()
+);
+create unique index if not exists vote_ji_claims_vote on public.vote_ji_claims (voted_at);
+create index if not exists vote_ji_claims_user on public.vote_ji_claims (user_id, at desc);
+alter table public.vote_ji_claims enable row level security;
+
+create or replace function public.vote_ji_srv_cfg() returns jsonb language sql stable security definer set search_path = public
+as $$ select jsonb_build_object('cle', cle_ji, 'sel', sel, 'actif', actif) from vote_cfg where id = 1 $$;
+-- pseudo du compte (secours de la vérification par adresse) : le lien de vote le pré-remplit
+create or replace function public.vote_ji_pseudo(p_user uuid) returns text language sql stable security definer set search_path = public
+as $$ select pseudo from profiles where id = p_user $$;
+
+create or replace function public.vote_ji_srv_claim(p_user uuid, p_ip text, p_voted_at bigint, p_cible text default 'eternel') returns jsonb
+language plpgsql security definer set search_path = public
+as $$ declare c text := vote_cible(p_cible); pt jsonb; last timestamptz; k bigint; s real := 0.25; n int;
+begin
+  if p_user is null or coalesce(p_ip, '') = '' or coalesce(p_voted_at, 0) <= 0 then return jsonb_build_object('err', 'Demande invalide.'); end if;
+  update vote_ji_claims set ip = 'efface:' || id where at < now() - interval '30 days' and ip not like 'efface:%';
+  pt := vote_partie(p_user, c);
+  if pt ? 'err' then return jsonb_build_object('err', pt ->> 'err'); end if;
+  if exists (select 1 from vote_ji_claims where voted_at = p_voted_at) then return jsonb_build_object('deja', true); end if;
+  select max(at) into last from vote_ji_claims where user_id = p_user;
+  if last is not null and last > now() - interval '85 minutes' then
+    return jsonb_build_object('attente', ceil(extract(epoch from (last + interval '85 minutes' - now())))::int);
+  end if;
+  k := round(vote_kamas((pt ->> 'lvl')::int) / 2.0);
+  insert into vote_ji_claims (user_id, ip, voted_at, k, sab, cible) values (p_user, p_ip, p_voted_at, k, s, c) on conflict do nothing;
+  get diagnostics n = row_count;
+  if n = 0 then return jsonb_build_object('deja', true); end if;
+  perform vote_verse(p_user, c, jsonb_build_object('k', k, 'sab', s, 'vote', 1),
+    'Merci pour ton vote sur Jeux Indé : ' || replace(to_char(k, 'FM999G999G999'), ',', ' ') || ' kamas et 15 min de Sablier.');
+  return jsonb_build_object('ok', true, 'k', k, 'sab', s, 'bonus', 0, 'cible', c);
+end $$;
+revoke all on function public.vote_ji_srv_cfg() from public, anon, authenticated;
+revoke all on function public.vote_ji_pseudo(uuid) from public, anon, authenticated;
+revoke all on function public.vote_ji_srv_claim(uuid, text, bigint, text) from public, anon, authenticated;
+grant execute on function public.vote_ji_srv_cfg() to service_role;
+grant execute on function public.vote_ji_pseudo(uuid) to service_role;
+grant execute on function public.vote_ji_srv_claim(uuid, text, bigint, text) to service_role;
+
+-- état Jeux Indé pour la page Voter (ajouté à vote_moi par le jeu : un appel de plus, sans rien verser)
+create or replace function public.vote_ji_moi() returns jsonb language sql stable security definer set search_path = public
+as $$ select case when auth.uid() is null then jsonb_build_object('actif', false) else jsonb_build_object(
+  'actif', coalesce((select actif and cle_ji is not null from vote_cfg where id = 1), false),
+  'last', (select max(at) from vote_ji_claims where user_id = auth.uid()),
+  'n', (select count(*) from vote_ji_claims where user_id = auth.uid()),
+  'pseudo', (select pseudo from profiles where id = auth.uid())) end $$;
+revoke all on function public.vote_ji_moi() from public;
+grant execute on function public.vote_ji_moi() to authenticated;
+create or replace function public.mono_vote_ji_moi() returns jsonb language sql security invoker set search_path = public
+as $$ select public.vote_ji_moi() $$;
+revoke all on function public.mono_vote_ji_moi() from public;
+grant execute on function public.mono_vote_ji_moi() to authenticated;
