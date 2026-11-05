@@ -68,7 +68,7 @@ console.log(`ok - aucune des ${credit.size} fonctions du Classique qui versent d
 /* modules éteints : chacun existe bien dans le jeu (un nom mal écrit ne couperait rien) */
 { const all = files.map((f) => fs.readFileSync(f, "utf8")).join("\n");
   for (const k of E.MONO.CLASSIC_MODS) assert(new RegExp(`window\\.${k} = `).test(all), `module ${k} : introuvable dans js/`); }
-for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+for (const k of ["exp", "asc", "wb", "comptoirs", "foire", "guild", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
 assert(E.monoPageOk("builds") && !E.MONO.CLASSIC_MODS.includes("BUILDS"), "2.2.4.1 : Builds ouverte en Monocompte, avec ses propres builds (mono_builds_*)");
 console.log("ok - liste blanche des pages et modules du Classique éteints : noms vérifiés");
 
@@ -143,13 +143,14 @@ function fake() {
       const keys = await navKeys(p);
       const hors = keys.filter((k) => !E.monoPageOk(k));
       if (hors.length) fail(`${w} px : pages hors de la liste blanche dans le menu Monocompte : ` + hors.join(", "));
-      for (const k of ["exp", "asc", "wb", "elev", "comptoirs", "foire", "guild", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
+      for (const k of ["exp", "asc", "wb", "comptoirs", "foire", "guild", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
       for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder", "garde"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
       const pins = await p.evaluate(() => window.DX.S.settings.pins);
       if (pins.some((k) => !E.monoPageOk(k))) fail(`${w} px : épingles du Classique gardées : ` + JSON.stringify(pins));
       const mods = await p.evaluate((L) => L.filter((k) => window[k]), E.MONO.CLASSIC_MODS);
       if (mods.length) fail(`${w} px : modules du Classique encore actifs : ` + mods.join(", "));
-      for (const k of ["exp", "asc", "wb", "guild", "foire", "comptoirs", "elev"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      for (const k of ["exp", "asc", "wb", "guild", "foire", "comptoirs"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      { const t = await go(p, "elev"); const tx = await p.evaluate(() => document.querySelector("#main").textContent); if (t !== "elev" || !/Enclos/.test(tx)) fail(`${w} px : page Élevage du Monocompte (05/11, Mathis) non ouverte (onglet ${t})`); await noScroll(p, `${w} px, Élevage Monocompte`); }
       { const t = await go(p, "defi"); const tx = await p.evaluate(() => document.querySelector("#main").textContent);
         if (t !== "defi" || /Classement ·|vote/i.test(tx)) fail(`${w} px : Défi du jour du Monocompte (onglet ${t}) : jouable, sans classement ni vote du Classique`); }
       await go(p, "home");

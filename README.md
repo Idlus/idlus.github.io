@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.5 « Élevage en Monocompte »
+
+- Choix de Mathis (05/11, carte « Ouvrir l'Élevage complet ») : js/mono.js, « elev » dans M.PAGES et ELEVUI retiré de M.CLASSIC_MODS. Le moteur de l'élevage tournait déjà en Monocompte, seule la page manquait (l'ancien enclos du Havre-Sac montait les anciennes chances, sans étoiles). Pas de classement Élevage (classements de saison) ni d'annonce « mrare » (fonction mono). tests/mono_separation.test.js : la page s'ouvre en Monocompte.
 ## 2.2.9.4 « Bombes du bon élément »
 
 - Retour de Mathis (05/11) : en sorts automatiques, un Roublard Air prenait l'Explobombe au lieu de la Tornabombe. Cause : les bombes n'avaient pas d'élément pour E.summonEl, toutes les invocations étaient à égalité et la première paire gagnait.
