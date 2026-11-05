@@ -1,6 +1,14 @@
 {
-  "version": "2.2.8.6",
+  "version": "2.2.8.7",
   "versions": [
+    {
+      "v": "2.2.8.7",
+      "name": "Légendaires : un taux plus clair",
+      "items": [
+        "Songe infini : la chance de légendaire (1 sur 4 000 en Paradoxe 1 à 1 sur 500 en Cauchemar 3) est un seul tirage par songe validé, pour toute l'équipe : pas à chaque combat ni à chaque vague, et pas par héros",
+        "C'est maintenant écrit sur la fiche de l'intensité (avec une bulle d'aide), dans l'onglet Légendaires et dans le guide. Le taux ne change pas"
+      ]
+    },
     {
       "v": "2.2.8.6",
       "name": "Boss des mondes : annonce réparée",

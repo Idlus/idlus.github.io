@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.7 « Légendaires : un taux plus clair »
+
+- Question de Mathis (« 1/500 par run ou par combat ? par groupe ou perso ? ») : le légendaire du Songe est tiré une seule fois à la validation d'un songe (`E.legRoll` dans js/songe.js `validate`), pour toute l'équipe, parmi les légendaires du niveau du héros le plus haut. Le texte le dit maintenant (fiche de l'intensité, onglet Légendaires, nouveautés du Songe, guide). `E.LEG_RATE` inchangé.
+
 ## 2.2.8.6 « Boss des mondes : annonce réparée »
 
 - Bug signalé par Mathis (05/11, Monocompte · S1 : « quand je clique ça ne fait rien ») : en Monocompte, `window.WBUI` vaut null (modules du Classique éteints par `monoSeal`), mais les minuteurs internes de js/wbossui.js tournaient encore et affichaient l'annonce plein écran et le bandeau ; le routeur de js/ui.js ne trouvait plus personne pour les clics `wb-*`. js/wbossui.js : garde `off()` (partie Monocompte) sur l'annonce, le bandeau et le chargement du boss ; une annonce restée se ferme ; les boutons de l'annonce ont leur propre écouteur.

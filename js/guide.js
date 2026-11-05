@@ -680,6 +680,7 @@
         "Valider une intensité ouvre la suivante.",
         "Les **Bribes de rêve** paient le Marché onirique (Comptoirs) ; la moitié est gagnée vague par vague, même en cas de défaite.",
         "La validation donne un coffre : kamas, XP, poussière, objets, rune de transcendance dès Paradoxe 2, chance de légendaire et du Dofus Onirique.",
+        `**Légendaires** : un seul tirage à la fin d'un songe validé, pour toute l'équipe (pas à chaque combat, pas par héros) : ${V(() => E.LEG_RATE.map((p, i) => (p ? `${E.SG_INT[i].name} 1 sur ${fr(Math.round(1 / p))}` : "")).filter(Boolean).join(", "), "")}. L'objet est tiré parmi ceux du niveau de ton héros le plus haut ou en dessous.`,
         "Une défaite réveille l'équipe (le butin des combats est gardé), sauf avec un Sable de Draconiros.",
         `Choix automatique (case Auto) : si tu ne réponds pas, le jeu choisit à ta place après ${N(() => E.EXP_DOOR_MS / 1000)} s, selon le mode Prudent, Équilibré ou Gourmand.`,
         "Pas de plafond : la Fin du rêve continue tant que l'équipe tient, et les monstres se renforcent à chaque vague.",

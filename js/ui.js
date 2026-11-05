@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.6";
+const GAME_VERSION = "2.2.8.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.7", name: "Légendaires : un taux plus clair", items: [
+    "Songe infini : la chance de légendaire (1 sur 4 000 en Paradoxe 1 à 1 sur 500 en Cauchemar 3) est un seul tirage par songe validé, pour toute l'équipe : pas à chaque combat ni à chaque vague, et pas par héros",
+    "C'est maintenant écrit sur la fiche de l'intensité (avec une bulle d'aide), dans l'onglet Légendaires et dans le guide. Le taux ne change pas" ] },
   { v: "2.2.8.6", name: "Boss des mondes : annonce réparée", items: [
     "L'annonce plein écran du Boss des mondes ne s'affiche plus en Monocompte (le Boss des mondes n'y existe pas) : ses boutons ne répondaient pas et elle restait bloquée",
     "Le bandeau du Boss des mondes en haut de l'écran disparaît aussi du Monocompte",
