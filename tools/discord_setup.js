@@ -117,6 +117,14 @@ const ROLES = [
   ...SHADOW_ROLES.map(([n, color]) => ({ key: "sh_" + n, name: n, color })),
 ];
 // lock : lecture seule pour @everyone ; only : visible seulement par ces rôles
+const VOTES_TXT = `**🗳️ Vote pour idlus**
+Chaque vote fait monter idlus dans les classements de fan games et amène de nouveaux joueurs. Les votes sur Jeux Indé s'affichent ici en direct.
+
+Dans le jeu : **Joueurs › Voter pour Idlus**.
+• **Dofus Fan Games** : une fois par heure, 30 min de Sablier et des kamas (bonus de série jusqu'à +50 %).
+• **Jeux Indé** : toutes les 1 h 30, 15 min de Sablier et des kamas, la même récompense pour tous.
+
+Vote depuis le même appareil et le même réseau que le jeu, puis clique « Récupérer ». Voter reste libre : rien n'est réservé aux votants.`;
 const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
   { cat: "🌙 Ombrelune Studio", old: ["📌 Bienvenue"], lock: true, chans: [
     { key: "WELCOME", name: "bienvenue", topic: "Présentation du studio, de ses jeux et liens utiles", text: WELCOME },
@@ -131,6 +139,8 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
     { key: "UPDATES", name: "note-de-mise-a-jour", lock: true, topic: "Notes de chaque mise à jour d'idlus, publiées automatiquement" },
     { key: "ROADMAP", name: "feuille-de-route", lock: true, topic: "Ce qui est déjà dans idlus et ce qui arrive", text: ROADMAP },
     { key: "ALMANAX", name: "almanax", lock: true, topic: "Le bonus et l'offrande du jour d'idlus, publiés chaque matin" },
+    // 05/11 (Mathis « prépare le salon votes ») : chaque vote sur Jeux Indé y est annoncé par le webhook Discord du site (posé par Mathis)
+    { key: "VOTES", name: "votes", lock: true, topic: "Les votes pour idlus en direct. Vote toi aussi : Joueurs › Voter pour Idlus dans le jeu", text: VOTES_TXT },
     { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs d'idlus" },
     { key: "BUILDS", name: "builds-et-équipes", topic: "Partage tes compositions (bouton « Partager le build » dans le jeu)" },
     { key: "SHOTS", name: "captures", topic: "Montre tes héros, trophées et ton Havre-Sac. Les aperçus des prochaines nouveautés arrivent aussi ici" },
