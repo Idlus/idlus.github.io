@@ -10,6 +10,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9 « Flotte d'apprentis »
+
+- Idée d'un joueur (Discord), choix de Mathis (05/11, maquette https://claude.ai/artifact/FyDtcZXoCwoGE17RBhPiqn) : 1A 2A 3A+3B 5A 6A, 5 apprentis au plus.
+- js/outils.js : S.mono.apps (l'ancien S.mono.app devient le 1er apprenti). Rangs E.APP_RANKS (50 à 70 %, 150 k / 450 k / 1,35 M / 4 M), contrat = 4 000 × niveau du héros × rythme / 50 % (plus cher que la récolte vendue au marchand). Niveaux par heures de travail (E.APP_LVH, niveau 9 à 240 h), talents E.APP_TAL aux niveaux 3, 6, 9 (Studieux/Prospecteur, Sourcier/Économe, Fidèle/Maître ; changer = 100 000 kamas). Déblocage E.APP_SLOTS : héros 60/120/160/190 + quêtes d'atelier (2 000 ressources d'apprentis, 3 métiers au 60, 50 000 ressources, un apprenti niveau 9) + 0,3/2/5/9 M kamas. Un apprenti par métier.
+- js/engine.js gatherHit : opts.ax (talents d'apprenti) s'ajoute aux gravures de l'outil.
+- Simulation (5 métiers au 100 + 1 spécialité au 200, héros toujours au combat, outils niveau 10) : 305 h avec 1 apprenti, 121 h avec 3 au rang 1, 86 h au rang 5 (scripts /mnt/project-files/monocompte/flotte-apprentis/).
+
 ## 2.2.8.9 « Voter aussi sur Jeux Indé »
 
 - Choix de Mathis (05/11, carte « Fiche + vote demi-récompense ») : 2e site de vote, Jeux Indé (https://jeux-inde.com/jeux/idlus). Règle du site : récompense modeste et identique pour tous, donc ni série, ni objectif du mois, ni top 10.

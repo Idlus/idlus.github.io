@@ -3293,6 +3293,22 @@ button.pres.on{border-color:var(--action);box-shadow:0 0 0 2px var(--action)}
 .rtip .grow,.papp .grow,.pappc .grow{min-width:0}
 .pappc{flex-wrap:wrap;flex:1 1 320px;max-width:560px}
 .pappb{display:flex;gap:6px;margin-left:auto}
+/* 2.2.9 : atelier des apprentis (Monocompte) */
+.aphead{gap:8px;flex-wrap:wrap}
+.apgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.apc{display:grid;grid-template-columns:auto 1fr;gap:6px 8px;align-content:start;padding:8px 10px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);min-width:0}
+.apc>.grow{min-width:0}.apc>:not(.head):not(.grow):not(.apk){grid-column:1/-1}
+.apc .aphd{gap:6px}.apc.lock{background:transparent;border-style:dashed}
+.apk{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px dashed var(--line);font-size:18px}
+.aprk{display:inline-flex;gap:3px;flex:none}.aprk i{width:14px;height:6px;border-radius:3px;background:var(--line)}.aprk i.on{background:var(--good)}
+.apxp{gap:6px;align-items:center}.apxp .bar{min-width:40px}
+.aptals{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.aptals .aplock{opacity:.6}.aptals .aptal{cursor:pointer;border:0}
+.apb{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.apcond{display:grid;gap:2px;margin-top:2px}
+.joblogo.xs{display:inline-block;width:16px;height:16px;border-radius:4px;border-width:1px;vertical-align:-3px}
+.apc .grow,.apcond>span{white-space:normal;overflow-wrap:anywhere}.apcond>span{display:block}
+.aptsl{display:grid;gap:4px}.aptsl.lock{opacity:.6}
+
 @media (max-width:600px){.rtip{flex-wrap:wrap}.rtip>.btn{margin-left:auto}.pappc{flex-basis:100%}.pappb{width:100%;justify-content:flex-end}.papp{flex-wrap:wrap}.papp>.btn{margin-left:auto}.papp .pwt{flex-direction:column;align-items:flex-start}.rchips{display:grid;grid-template-columns:1fr 1fr}}
 .gslot{display:grid;gap:6px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
 .gslot.lock{opacity:.6}

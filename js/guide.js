@@ -542,7 +542,7 @@
         "**Maîtrise des ressources** : une étoile bronze, argent puis or à 1 000, 10 000 et 100 000 récoltes d'une même ressource, pour +5, +10 et +15 % de cette ressource.",
         `**Potion de récolte** : l'Alchimiste niveau ${N(() => E.POTION_REC.lvl)} la prépare depuis sa carte (+20 % de ressources pendant 1 h, sans cumul avec le Bonbon Récolteur).`,
         "**Améliorer ma récolte** : le bandeau en haut de Récolte résume tous tes bonus et propose les prochaines améliorations.",
-        `**Apprenti récolteur (Monocompte)** : engage-le 24 h (${N(() => E.APP.perLvl)} kamas × niveau du héros, prolongeable jusqu'à 3 jours). Il récolte avec tes niveaux de métier, à ${N(() => E.APP.rate * 100)} % du rythme de ton héros, pendant que celui-ci combat, et même hors-ligne.`,
+        `**Atelier des apprentis (Monocompte)** : jusqu'à ${N(() => E.APP.max)} apprentis, un par métier, qui récoltent avec tes niveaux de métier pendant que ton héros combat, même hors-ligne. Contrat de 24 h chacun (${N(() => E.APP.perLvl)} kamas × niveau du héros au rang 1), prolongeable jusqu'à 3 jours. Les kamas achètent 5 rangs (50 % à 70 % du rythme du héros). Le travail donne de l'expérience : aux niveaux 3, 6 et 9, un talent au choix (Studieux ou Prospecteur, Sourcier ou Économe, Fidèle ou Maître). Les apprentis 2 à 5 se débloquent avec le niveau du héros (60, 120, 160, 190), une quête d'atelier et des kamas.`,
       ]],
       ["h", "Artisanat"],
       ["ul", [

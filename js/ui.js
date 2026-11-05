@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.9";
+const GAME_VERSION = "2.2.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9", name: "Flotte d'apprentis", guide: "metiers", items: [
+    "Monocompte (idée d'un joueur) : l'Atelier des apprentis accueille jusqu'à 5 apprentis récolteurs, un par métier, qui travaillent en même temps pendant que ton héros combat",
+    "Débloque les apprentis 2 à 5 avec le niveau du héros (60, 120, 160, 190), une quête d'atelier et des kamas. Économie › Métiers › Récolte",
+    "Rangs achetés en kamas : de 50 % à 70 % du rythme de ton héros. En travaillant, chaque apprenti monte de niveau et choisit un talent aux niveaux 3, 6 et 9",
+    "Bouton « Tout prolonger » pour payer tous les contrats d'un coup. Ton apprenti actuel est gardé tel quel" ] },
   { v: "2.2.8.9", name: "Voter aussi sur Jeux Indé", items: [
     "Nouveau : tu peux aussi voter pour Idlus sur Jeux Indé (jeux-inde.com), en plus de Dofus Fan Games. Va dans Joueurs › Voter pour Idlus, bloc « Aussi sur Jeux Indé »",
     "Chaque vote sur Jeux Indé rapporte 15 min de Sablier et la moitié des kamas d'un vote Dofus Fan Games, toutes les 1 h 30. La récompense est la même pour tous, comme le demande le site",
@@ -3294,7 +3299,7 @@ function mtFreeBadge() { if (!S || !E.mtOn) return ""; let n = 0; S.chars.forEac
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
-  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "", vote: window.VOTE && window.VOTE.dot() ? dot : "", /* 02/11 (5A) : un vote est possible */ maitrise: mtFreeBadge(), metiers: S && E.appAlert && E.appAlert(S) ? `<span class="navcnt" title="${E.appAlert(S) > 1 ? "Contrat de l'apprenti terminé" : "Contrat de l'apprenti bientôt fini"}">!</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "", vote: window.VOTE && window.VOTE.dot() ? dot : "", /* 02/11 (5A) : un vote est possible */ maitrise: mtFreeBadge(), metiers: S && E.appAlert && E.appAlert(S) ? `<span class="navcnt" title="${E.appAlert(S) === 3 ? "Talent d'apprenti à choisir" : E.appAlert(S) > 1 ? "Contrat d'apprenti terminé" : "Contrat d'apprenti bientôt fini"}">!</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 /* 2.1.40.1 : menu complet (toutes les pages, un clic) ; par défaut seulement avec « Affichage détaillé » */
 const navFullOn = () => !!S && (S.settings.navFull === undefined ? detailOn() : !!S.settings.navFull);
@@ -8400,27 +8405,61 @@ function potionRow() {
   return `<div class="pwork ppot">${im(`assets/ui/potions/${C.pimg}.png`, "ico sm", C.name)}<div class="grow"><div class="pwt small"><b>${h(C.name)}${n ? ` <span class="xs muted">· ${n} en stock</span>` : ""}</b><span class="xs muted">+${C.pct} % de ressources 1 h · ${P.ing.map(([r, q]) => `${q} ${h(r)}`).join(" + ")} · ${fmt(P.kamas)} k</span></div>${err ? `<span class="xs minus">${h(err)}</span>` : ""}</div>
     <button class="btn sm ${err ? "" : "primary"}" data-act="brew" ${err ? "disabled" : ""}>Préparer</button>${n ? `<button class="btn sm" data-act="usecons" data-id="potion_recolte">Boire</button>` : ""}</div>`;
 }
+/* 2.2.9 « Flotte d'apprentis » : jusqu'à 5 apprentis (un par métier), rangs en kamas, niveaux et talents, déblocage niveau + quête + kamas */
+const appHead = (i) => `<span class="head" style="--cc:${CLASSES.enu.color}"><img src="assets/h/enu_${i % 2 ? "f" : "m"}.png" alt=""></span>`;
+const appLeft = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
 function appRow(id) {
-  const A = E.appState(S); if (!A || A.job !== id || !E.appActive(S)) return "";
-  const c = { id: -9, job: A }; const t = E.gatherPeriod(S, c);
-  return `<div class="pwork papp"><span class="head" style="--cc:${CLASSES.enu.color}"><img src="assets/h/enu_m.png" alt="${h(E.APP.name)}"></span>${im(resImg(A.res), "ico sm", A.res)}<div class="grow"><div class="pwt small"><b>${h(A.res)} <span class="tag soft">apprenti · ${Math.round(E.APP.rate * 100)} %</span></b><span class="xs muted">${h(E.APP.name)} · coup de ${hitDur(t)}</span></div><div class="row between xs pwhit"><span>Reste <b>${hitDur(Math.max(0, t - (A.prog || 0)))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.appQty(S))))} ${h(A.res)} à la fin du coup</span></div><div class="bar green"><i style="width:${pct(A.prog || 0, t)}%"></i></div></div><button class="btn sm" data-act="appsheet">Changer</button></div>`;
+  return E.appList(S).map((A, i) => {
+    if (A.job !== id || !E.appActive(S, E.now(), i)) return "";
+    const c = { id: -9 - i, job: A }; const t = E.gatherPeriod(S, c);
+    return `<div class="pwork papp">${appHead(i)}${im(resImg(A.res), "ico sm", A.res)}<div class="grow"><div class="pwt small"><b>${h(A.res)} <span class="tag soft">apprenti · ${Math.round(E.appRate(A) * 100)} %</span></b><span class="xs muted">${h(E.appName(i))} n° ${i + 1} · coup de ${hitDur(t)}</span></div><div class="row between xs pwhit"><span>Reste <b>${hitDur(Math.max(0, t - (A.prog || 0)))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.appQty(S, i))))} ${h(A.res)} à la fin du coup</span></div><div class="bar green"><i style="width:${pct(A.prog || 0, t)}%"></i></div></div><button class="btn sm" data-act="appsheet" data-i="${i}">Changer</button></div>`;
+  }).join("");
 }
+function appCard(A, i) {
+  const on = E.appActive(S, E.now(), i), k = E.appCost(S, i), L = E.appLvl(A), rate = Math.round(E.appRate(A) * 100);
+  const pips = `<span class="aprk" title="Rang ${A.rk + 1} sur 5">${[0, 1, 2, 3, 4].map((r) => `<i class="${r <= A.rk ? "on" : ""}"></i>`).join("")}</span>`;
+  const need = L < 9 ? E.APP_LVH[L + 1] : 0, base = E.APP_LVH[L] || 0;
+  const xp = `<div class="row xs muted apxp"><span>niv. ${L}</span>${L < 9 ? `<div class="bar thin grow"><i style="width:${pct((A.h || 0) - base, need - base)}%"></i></div><span>${Math.floor(A.h || 0)} / ${need} h de travail</span>` : `<span class="good">niveau maximum</span>`}</div>`;
+  const tal = [3, 6, 9].map((t) => { const c = A.tal[t]; if (c != null) { const T = E.APP_TAL[t][c]; return `<button class="tag good aptal" data-act="appsheet" data-i="${i}" data-tip="${h(T.desc)}">★ ${h(T.name)}</button>`; }
+    return L >= t ? `<button class="btn sm primary aptalgo" data-act="appsheet" data-i="${i}">Talent niv. ${t} à choisir</button>` : `<span class="tag soft aplock">niv. ${t}</span>`; }).join("");
+  const up = A.rk < 4 ? (() => { const c = E.APP_RANKS[A.rk + 1][1]; return `<button class="btn sm ${S.kamas >= c ? "primary" : ""}" data-act="apprank" data-i="${i}" ${S.kamas >= c ? "" : "disabled"} data-tip="${Math.round(E.APP_RANKS[A.rk + 1][0] * 100)} % du rythme du héros">Rang ${A.rk + 2} · ${fmtK(c)}</button>`; })() : "";
+  const st = on ? `contrat : reste <b>${appLeft(A.until - E.now())}</b>` : A.until ? `<span class="bad-t">contrat terminé</span>` : "pas encore engagé";
+  return `<div class="apc">${appHead(i)}<div class="grow"><div class="row between aphd"><b>${h(E.appName(i))} <span class="xs muted">n° ${i + 1}</span></b>${pips}</div>
+      <span class="xs muted">${A.job ? `${im(jobImg(A.job), "joblogo xs", "")} ${h(GATHER_JOBS[A.job].name)} · ${h(A.res || "")} · ` : ""}<b class="good">${rate} %</b></span></div>
+    ${xp}<div class="aptals">${tal}</div>
+    <div class="row between xs muted"><span>${st}</span><span>${fmt(k)} k / 24 h</span></div>
+    <div class="apb"><button class="btn sm" data-act="appsheet" data-i="${i}">${A.job ? "Changer" : "Choisir"}</button>${up}${A.job ? `<button class="btn sm ${on ? "" : "primary"}" data-act="apphire" data-i="${i}" ${S.kamas < k ? "disabled" : ""}>${on ? "Prolonger" : "Engager"}</button>` : ""}</div></div>`;
+}
+function appLockCard(i) {
+  const P = E.APP_SLOTS[i], err = E.appUnlockErr(S, i), Q = P.q && E.APP_QUESTS[P.q], q = Q ? E.appQuest(S, P.q) : null;
+  const ok = (b) => `<span class="${b ? "good" : "muted"}">${b ? "✓" : "○"}</span>`;
+  return `<div class="apc lock"><span class="apk">🔒</span><div class="grow"><b>${h(E.appName(i))} n° ${i + 1}</b>
+    <div class="xs apcond"><span>${ok(heroLvl() >= P.lvl)} Héros niveau ${P.lvl}</span>${Q ? `<span>${ok(q[0] >= q[1])} Quête « ${h(Q.name)} » : ${h(Q.txt.toLowerCase())} (${fmt(q[0])} / ${fmt(q[1])})</span>` : ""}<span>${ok(S.kamas >= P.k)} ${fmt(P.k)} kamas</span></div></div>
+    <div class="apb"><button class="btn sm ${err ? "" : "primary"}" data-act="appunlock" data-i="${i}" ${err ? "disabled" : ""}>Débloquer</button></div></div>`;
+}
+const heroLvl = () => { const c = S.chars.find((x) => !x.merc) || S.chars[0]; return (c && c.lvl) || 1; };
 function appBlock() {
   if (!S.mono) return ""; if (E.appSeen) E.appSeen(S);
-  const A = E.appState(S), on = E.appActive(S), k = E.appCost(S), left = on ? A.until - E.now() : 0;
-  const hl = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`; };
-  return `<div class="xs muted recsub">Apprenti récolteur · Monocompte</div><div class="pfree"><div class="pfreec pappc"><span class="head" style="--cc:${CLASSES.enu.color}"><img src="assets/h/enu_m.png" alt=""></span><span class="grow"><b>${h(E.APP.name)}</b><br><span class="xs muted">${on ? `reste ${hl(left)} · ${h(A.res)} · ${Math.round(E.APP.rate * 100)} %` : A && A.until ? `<span class="bad-t">contrat terminé</span> · réengage-le pour reprendre` : "récolte pendant que ton héros combat"}</span></span>
-    <span class="pappb">${on ? `<button class="btn sm" data-act="appsheet">Changer</button>` : ""}<button class="btn sm ${on ? "" : "primary"}" data-act="${on ? "apphire" : "appsheet"}" ${S.kamas < k ? "disabled" : ""}>${on ? "Prolonger" : "Engager"} · ${fmt(k)} k</button></span></div></div>
-    <span class="xs muted">Il récolte avec tes niveaux de métier, à ${Math.round(E.APP.rate * 100)} % du rythme de ton héros (comme un héros récolteur du Classique), sans bonus de classe ni de Maîtrise, même quand ton héros récolte lui-même. Contrat de 24 h : 4 000 kamas × niveau du héros.</span>`;
+  const L = E.appList(S), n = L.length, all = E.appHireAllCost(S);
+  const next = n < E.APP.max ? appLockCard(n) : "";
+  return `<div class="row between aphead"><span class="xs muted recsub">Atelier des apprentis · Monocompte · ${n} / ${E.APP.max}</span>${L.filter((A) => A.job).length > 1 ? `<button class="btn sm ${all && S.kamas >= all ? "primary" : ""}" data-act="apphireall" ${all && S.kamas >= all ? "" : "disabled"}>Tout prolonger${all ? ` · ${fmt(all)} k` : ""}</button>` : ""}</div>
+    <div class="apgrid">${L.map(appCard).join("")}${next}</div>
+    <span class="xs muted">Un apprenti par métier. Ils récoltent avec tes niveaux de métier, même hors-ligne, pendant que ton héros combat (sans bonus de classe ni de Maîtrise). Les kamas achètent les rangs (de 50 % à 70 % du rythme de ton héros). Le travail leur donne de l'expérience : aux niveaux 3, 6 et 9, un talent au choix. Contrat de 24 h chacun (selon le rang et ton niveau), prolongeable jusqu'à 3 jours.</span>`;
 }
 function appSheet() {
-  const A = E.appState(S) || {}; const job = ui.appJob || A.job || "paysan"; const lvl = S.jobs[job].lvl;
+  const i = ui.appI || 0, A = E.appGet(S, i); if (!A) return;
+  const job = ui.appJob || A.job || Object.keys(GATHER_JOBS).find((j) => !E.appList(S).some((B, k) => k !== i && B.job === j && B.until > E.now())) || "paysan"; const lvl = S.jobs[job].lvl;
   const list = E.jobRes(job).filter((x) => x[1] <= lvl); const res = ui.appRes && list.some((x) => x[0] === ui.appRes) ? ui.appRes : (A.job === job && A.res) || (list[list.length - 1] || [])[0];
-  const on = E.appActive(S);
-  openSheet(`<div class="appsheet"><div class="row between"><h3>${h(E.APP.name)}</h3><button class="btn sm ghost" data-act="closesheet">✕</button></div>
-    <div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(GATHER_JOBS).map((j) => `<button class="btn sm ${j === job ? "primary" : ""}" data-act="appjob" data-v="${j}">${im(jobImg(j), "joblogo sm", "")} ${h(GATHER_JOBS[j].name)} ${S.jobs[j].lvl}</button>`).join("")}</div>
+  const on = E.appActive(S, E.now(), i), L = E.appLvl(A);
+  const busy = (j) => E.appList(S).findIndex((B, k) => k !== i && B.job === j && B.until > E.now());
+  const tals = [3, 6, 9].map((t) => `<div class="aptsl ${L >= t ? "" : "lock"}"><div class="row between small"><b>Talent du niveau ${t}</b><span class="xs muted">${L >= t ? (A.tal[t] != null ? `changer : ${fmt(E.APP_RESPEC)} kamas` : "gratuit") : `niveau ${t} requis`}</span></div>
+      <div class="gopts">${E.APP_TAL[t].map((T, k) => { const cur = A.tal[t] === k; return `<button class="gopt ${cur ? "on" : ""}" data-act="apptal" data-i="${i}" data-t="${t}" data-k="${k}" ${L < t || cur ? "disabled" : ""}><b>★ ${h(T.name)}${cur ? ` <span class="tag good">choisi</span>` : ""}</b><span class="xs muted">${h(T.desc)}</span></button>`; }).join("")}</div></div>`).join("");
+  openSheet(`<div class="appsheet"><div class="row between"><h3 class="row" style="gap:8px">${appHead(i)}${h(E.appName(i))} n° ${i + 1}</h3><button class="btn sm ghost" data-act="closesheet">✕</button></div>
+    <p class="xs muted">Rang ${A.rk + 1} / 5 · ${Math.round(E.appRate(A) * 100)} % du rythme du héros · niveau ${L} (${Math.floor(A.h || 0)} h de travail)</p>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(GATHER_JOBS).map((j) => { const b = busy(j); return `<button class="btn sm ${j === job ? "primary" : ""}" data-act="appjob" data-v="${j}" ${b >= 0 ? `disabled data-tip="${h(E.appName(b))} n° ${b + 1} y travaille"` : ""}>${im(jobImg(j), "joblogo sm", "")} ${h(GATHER_JOBS[j].name)} ${S.jobs[j].lvl}</button>`; }).join("")}</div>
     <div class="presgrid" style="margin-top:8px">${list.map(([r]) => `<button class="pres ${r === res ? "on" : ""}" data-act="appres" data-v="${h(r)}" data-tip="${h(r)}">${im(resImg(r), "", r)}<b class="num">${fmtK(S.res[r] || 0)}</b></button>`).join("")}</div>
-    <div class="row" style="gap:8px;margin-top:10px"><button class="btn primary" data-act="appgo" data-job="${job}" data-res="${h(res || "")}">${on ? `Confier : ${h(res || "")}` : `Engager · ${fmt(E.appCost(S))} k`}</button><span class="xs muted">${on ? "Changer de ressource est gratuit." : "24 h de récolte, prolongeables jusqu'à 3 jours."}</span></div></div>`);
+    <div class="row" style="gap:8px;margin-top:10px"><button class="btn primary" data-act="appgo" data-i="${i}" data-job="${job}" data-res="${h(res || "")}" ${busy(job) >= 0 ? "disabled" : ""}>${on ? `Confier : ${h(res || "")}` : `Engager · ${fmt(E.appCost(S, i))} k`}</button><span class="xs muted">${on ? "Changer de ressource est gratuit." : `24 h de récolte, prolongeables jusqu'à ${E.appMaxDays(A)} jours.`}</span></div>
+    <h4 class="small" style="margin:12px 0 4px">Talents</h4><div class="stack" style="gap:8px">${tals}</div></div>`);
 }
 function recBand() {
   const tot = E.bonus(S, "gather"), jar = E.havreLvl(S, "gather"), H = E.HAVRE.find((x) => x.id === "gather");
@@ -11202,11 +11241,15 @@ document.addEventListener("click", (ev) => {
     case "toolsheet": toolSheet(d.job); return;
     case "engrave": { const r = E.engrave(S, d.job, +d.i, d.k); if (r) { toast(r); return; } toast(`${E.TGRAV[d.k].name} gravé !`); toolSheet(d.job); dirty = true; render(); return; }
     case "brew": { const r = E.brewPotion(S); if (r) { toast(r); return; } toast("Potion de récolte préparée."); break; }
-    case "appsheet": ui.appJob = null; ui.appRes = null; appSheet(); return;
+    case "appsheet": ui.appI = +d.i || 0; ui.appJob = null; ui.appRes = null; appSheet(); return;
     case "appjob": ui.appJob = d.v; ui.appRes = null; appSheet(); return;
     case "appres": ui.appRes = d.v; appSheet(); return;
-    case "appgo": { const r = E.appActive(S) ? E.appSet(S, d.job, d.res) : E.appHire(S, d.job, d.res); if (r) { toast(r); return; } closeSheet(); toast(`${E.APP.name} récolte : ${E.appState(S).res}.`); break; }
-    case "apphire": { const r = E.appHire(S); if (r) { toast(r); return; } break; }
+    case "appgo": { const i = +d.i || 0; const r = E.appActive(S, E.now(), i) ? E.appSet(S, d.job, d.res, false, i) : E.appHire(S, d.job, d.res, i); if (r) { toast(r); return; } closeSheet(); toast(`${E.appName(i)} récolte : ${E.appGet(S, i).res}.`); break; }
+    case "apphire": { const r = E.appHire(S, null, null, +d.i || 0); if (r) { toast(r); return; } break; }
+    case "apphireall": { const r = E.appHireAll(S); if (r) { toast(r); return; } toast("Contrats prolongés de 24 h."); break; }
+    case "apprank": { const r = E.appRankUp(S, +d.i); if (r) { toast(r); return; } break; }
+    case "appunlock": { const r = E.appUnlock(S, +d.i); if (r) { toast(r); return; } break; }
+    case "apptal": { const r = E.appTalent(S, +d.i, +d.t, +d.k); if (r) { toast(r); return; } toast(`Talent choisi : ${E.APP_TAL[+d.t][+d.k].name}.`); appSheet(); dirty = true; render(); return; }
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
     case "dustgo": dustClose(); if (d.id === "idols") { idolSheet(); return; } { const R = SPECIAL_CRAFTS[d.id]; if (!R) return; ui.craftJob = R.job; const F = fltOf("met"); F.q = d.id; F.mode = "all"; ui.recSel = d.id; ui.recStick = d.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
     case "shopgo": { const e = S.shop[+d.i]; if (!e) return;

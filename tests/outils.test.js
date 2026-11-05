@@ -78,7 +78,7 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
 { const C = E.newState("C", "iop"); C.kamas = 1e9; assert.ok(E.appHire(C, "paysan"), "pas d'apprenti en Classique"); assert.strictEqual(E.appTick(C, 60), 0); }
 { const S = E.monoStart(E.newState("A", "iop")); const h = S.chars[0]; h.lvl = 100; S.kamas = 1e7; S.jobs.bucheron.lvl = 60; S.jobs.paysan.lvl = 60;
   assert.strictEqual(E.appCost(S), 400000);
-  assert.strictEqual(E.appHire(S, "bucheron"), null); assert.strictEqual(S.kamas, 1e7 - 4e5); const A = S.mono.app; const r = A.res;
+  assert.strictEqual(E.appHire(S, "bucheron"), null); assert.strictEqual(S.kamas, 1e7 - 4e5); const A = E.appState(S); const r = A.res;
   assert.ok(Math.abs(A.until - now - E.APP.dur) < 1, "24 h");
   const app = run(S, 6 * 3600);
   // héros sur la même ressource pendant 6 h, pour comparer
@@ -98,7 +98,7 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   assert.strictEqual((S.res[A.res] || 0) - p0, got);
   assert.ok(!E.appActive(S)); assert.strictEqual(run(S, 3600), 0, "plus rien après le contrat");
   const back = E.deserialize ? E.deserialize(E.serialize(S)) : JSON.parse(E.serialize(S));
-  assert.strictEqual(back.mono.app.job, "paysan", "apprenti sauvegardé"); }
+  assert.strictEqual(back.mono.apps[0].job, "paysan", "apprenti sauvegardé"); }
 // Monocompte : métier plafonné à 100, l'outil reste améliorable (niveau requis = 100, kamas × 1,5)
 { const S = E.monoStart(E.newState("O", "iop")); S.jobs.mineur.lvl = 100; S.tools.mineur = 20; S.kamas = 1e12;
   const R = E.toolCost(S, "mineur"); const C = E.toolRecipe("mineur", 21);
@@ -111,7 +111,7 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   assert.strictEqual(E.appAlert(S), 0); run(S, 23 * 3600 + 60); assert.strictEqual(E.appAlert(S), 1, "pastille la dernière heure"); assert.ok(has("Plus qu'1 h"), "rappel 1 h avant");
   run(S, 3600); assert.strictEqual(E.appAlert(S), 2, "pastille contrat fini"); assert.ok(has("est terminé"), "message de fin");
   E.appSeen(S); assert.strictEqual(E.appAlert(S), 0, "pastille retirée une fois vue");
-  E.appHire(S); assert.strictEqual(S.mono.app.w, 0, "nouveau contrat : rappels remis à zéro"); }
+  E.appHire(S); assert.strictEqual(E.appState(S).w, 0, "nouveau contrat : rappels remis à zéro"); }
 // ticket #146 : un métier de récolte au niveau 200 garde l'XP en plus (classement) ; seul un plafond sous 200 (Monocompte) la bloque
 { const S = E.newState("T", "iop"); S.jobs.paysan.lvl = 200; S.jobs.paysan.xp = 40e6; S.chars[0].job = { job: "paysan", res: "Blé", prog: 0 };
   run(S, 600); assert.strictEqual(S.jobs.paysan.lvl, 200); assert.ok(S.jobs.paysan.xp > 40e6, `XP au-delà du 200 conservée (${S.jobs.paysan.xp})`);
@@ -122,3 +122,36 @@ for (const j of Object.keys(E.TOOL_TIERS)) {
   S.jobs.bucheron.lvl = 1; S.jobs.bucheron.xp = 0; E.addJobXp(S, "bucheron", E.jobXpNeed(1) + E.jobXpNeed(2)); assert.strictEqual(S.jobs.bucheron.lvl, 3, "l'XP rendue fait monter le métier");
   assert.strictEqual(E.addJobXp(S, "inconnu", 5), 0); assert.strictEqual(E.addJobXp(S, "paysan", -5), 0); }
 console.log("outils : OK");
+
+// 2.2.9 « Flotte d'apprentis » : 5 apprentis, un par métier, déblocage niveau + quête + kamas, rangs, niveaux, talents
+{ const S = E.monoStart(E.newState("F", "iop")); S.chars[0].lvl = 200; S.kamas = 1e9; Object.keys(S.jobs).forEach((j) => (S.jobs[j].lvl = 80));
+  // ancienne sauvegarde : S.mono.app repris comme 1er apprenti
+  S.mono.app = { until: now + 3600e3, job: "paysan", res: "Blé", prog: 0, w: 0 }; delete S.mono.apps;
+  assert.strictEqual(E.appList(S).length, 1); assert.strictEqual(E.appState(S).job, "paysan"); assert.ok(!S.mono.app, "ancien apprenti migré");
+  assert.ok(/Quête/.test(E.appUnlock(S, 1)), "quête requise"); assert.ok(E.appUnlock(S, 2), "dans l'ordre");
+  S.mono.appRes = 2000; const k0 = S.kamas; assert.strictEqual(E.appUnlock(S, 1), null); assert.strictEqual(k0 - S.kamas, 300000);
+  assert.ok(/travaille déjà/.test(E.appHire(S, "paysan", null, 1)), "un apprenti par métier");
+  assert.strictEqual(E.appHire(S, "mineur", null, 1), null);
+  // rangs : rythme et contrat
+  assert.strictEqual(E.appCost(S, 1), 800000); assert.strictEqual(E.appRankUp(S, 1), null); assert.strictEqual(E.appRate(E.appGet(S, 1)), 0.55); assert.strictEqual(E.appCost(S, 1), 880000);
+  const r0 = run(S, 3600); assert.ok(r0 > 0);
+  // 3e : 3 métiers au niveau 60 (ok) ; 4e : 50 000 ressources ; 5e : un apprenti niveau 9
+  assert.strictEqual(E.appUnlock(S, 2), null); S.mono.appRes = 50000; assert.strictEqual(E.appUnlock(S, 3), null);
+  assert.ok(/Quête/.test(E.appUnlock(S, 4))); E.appGet(S, 1).h = 240; assert.strictEqual(E.appLvl(E.appGet(S, 1)), 9); assert.strictEqual(E.appUnlock(S, 4), null);
+  assert.strictEqual(E.appList(S).length, 5); assert.ok(E.appUnlock(S, 5), "5 au plus");
+  // talents : niveau requis, premier choix gratuit, changement payant, effets
+  const A = E.appGet(S, 1); E.appSeen(S); assert.strictEqual(E.appAlert(S), 3, "talent à choisir signalé");
+  const k1 = S.kamas; assert.strictEqual(E.appTalent(S, 1, 9, 1), null); assert.strictEqual(S.kamas, k1); assert.ok(Math.abs(E.appRate(A) - 0.6) < 1e-9, "Maître : +5 %");
+  assert.strictEqual(E.appTalent(S, 1, 9, 0), null); assert.strictEqual(k1 - S.kamas, E.APP_RESPEC); assert.strictEqual(E.appMaxDays(A), 5, "Fidèle : 5 jours");
+  const c0 = E.appCost(S, 1); E.appTalent(S, 1, 6, 1); assert.strictEqual(E.appCost(S, 1), Math.round(c0 * 0.85), "Économe");
+  const B = E.appGet(S, 2); assert.ok(E.appTalent(S, 2, 3, 0), "niveau 3 requis");
+  // Studieux : +10 % d'XP de métier (même graine)
+  const xp = (tal) => { const T = E.monoStart(E.newState("X", "iop")); T.chars[0].lvl = 100; T.kamas = 1e9; T.jobs.bucheron.lvl = 60; T.jobs.bucheron.xp = 0; E.appHire(T, "bucheron"); if (tal) { E.appState(T).h = 24; E.appTalent(T, 0, 3, 0); } seed = 5; run(T, 1800); return T.jobs.bucheron.xp; };
+  const x0 = xp(false), x1 = xp(true); assert.ok(Math.abs(x1 / x0 - 1.1) < 0.02, `Studieux +10 % (${x0} → ${x1})`);
+  // niveaux : heures de travail
+  const T = E.monoStart(E.newState("L", "iop")); T.chars[0].lvl = 50; T.kamas = 1e9; T.jobs.paysan.lvl = 20; E.appHire(T, "paysan"); run(T, 7 * 3600);
+  assert.strictEqual(E.appLvl(E.appState(T)), 2, "niveau 2 après 6 h de travail");
+  // tout prolonger
+  E.appHire(S, "bucheron", null, 2); const k2 = S.kamas, tot = E.appHireAllCost(S); assert.ok(tot > 0); assert.strictEqual(E.appHireAll(S), null); assert.strictEqual(k2 - S.kamas, tot);
+  // Classique : rien
+  const C = E.newState("C", "iop"); assert.deepStrictEqual(E.appList(C), []); assert.ok(E.appUnlock(C, 1)); }

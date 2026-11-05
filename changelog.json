@@ -1,6 +1,17 @@
 {
-  "version": "2.2.8.9",
+  "version": "2.2.9",
   "versions": [
+    {
+      "v": "2.2.9",
+      "name": "Flotte d'apprentis",
+      "guide": "metiers",
+      "items": [
+        "Monocompte (idée d'un joueur) : l'Atelier des apprentis accueille jusqu'à 5 apprentis récolteurs, un par métier, qui travaillent en même temps pendant que ton héros combat",
+        "Débloque les apprentis 2 à 5 avec le niveau du héros (60, 120, 160, 190), une quête d'atelier et des kamas. Économie › Métiers › Récolte",
+        "Rangs achetés en kamas : de 50 % à 70 % du rythme de ton héros. En travaillant, chaque apprenti monte de niveau et choisit un talent aux niveaux 3, 6 et 9",
+        "Bouton « Tout prolonger » pour payer tous les contrats d'un coup. Ton apprenti actuel est gardé tel quel"
+      ]
+    },
     {
       "v": "2.2.8.9",
       "name": "Voter aussi sur Jeux Indé",

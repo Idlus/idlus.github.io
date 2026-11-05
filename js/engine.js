@@ -3744,7 +3744,8 @@
   /* un coup (ou la part frac d'un coup quand le héros est rappelé) : k récoltes de l'ancien rythme d'un seul bloc */
   const gatherHit = (S, c, frac, opts = {}) => {
     const W = c.job; const J = S.jobs[W.job]; const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!J || !def || def[1] > J.lvl) return 0;
-    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl), gf = E.tgravFx(S, W.job);
+    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl), g0 = E.tgravFx(S, W.job), ax = opts.ax; // 2.2.9 : ax = talents de l'apprenti (Monocompte)
+    const gf = ax ? { find: g0.find + (ax.find || 0), filon: g0.filon + (ax.filon || 0), xp: g0.xp + (ax.xp || 0) } : g0;
     if (k <= 0) return 0;
     if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon") * (1 + gf.filon)) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
     const fe = k * E.FIND_CHANCE * (1 + gf.find); const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
