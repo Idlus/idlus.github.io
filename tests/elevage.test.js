@@ -224,3 +224,24 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
   assert.ok(/js\/elevage\.js/.test(fs.readFileSync(path.join(ROOT, "sw.js"), "utf8")) && /js\/elevage\.js/.test(fs.readFileSync(path.join(ROOT, "index.html"), "utf8")));
   console.log("ok - résumé Élevage (couleurs, étoiles, chromatiques) et fichiers chargés");
 }
+
+// 15. 2.2.8.10 (Mathis : « ne pas pouvoir utiliser sa monture pendant l'accouchement ») : une monture à l'enclos ou en balade ne se monte pas
+{
+  const S = fresh(); const c = S.chars[0];
+  const A = mk(S, "dd", "Rousse"), B = mk(S, "dd", "Dorée");
+  assert.strictEqual(E.equipMount(S, c.id, A.uid), null); assert.strictEqual(c.mount, A.uid);
+  const pdv0 = E.charStats(S, c).vit;
+  assert.strictEqual(E.startBreed(S, A.uid, B.uid), null, "une monture montée peut aller à l'enclos");
+  assert.strictEqual(c.mount, undefined, "le héros descend de la monture qui entre à l'enclos");
+  assert.ok(E.charStats(S, c).vit < pdv0, "les bonus de la monture partent avec elle");
+  assert.ok(/enclos/.test(E.equipMount(S, c.id, A.uid) || ""), "pas de monture à l'enclos");
+  assert.strictEqual(c.mount, undefined);
+  // ancienne partie : un héros chevauchait déjà une monture à l'enclos → il en descend au premier passage du temps
+  c.mount = B.uid; E.enclosTick(S, 1000); assert.strictEqual(c.mount, undefined, "ancienne partie : descend au premier tick");
+  // après la naissance, la monture redevient montable
+  E.enclosTick(S, 30 * 24 * 3600e3); assert.ok(!E.inPair(S, A.uid)); assert.strictEqual(E.equipMount(S, c.id, A.uid), null, "montable après la naissance");
+  // balade : pas montable non plus
+  const C = mk(S, "dd", "Rousse"); E.equipMount(S, c.id, null);
+  assert.strictEqual(E.baladeStart(S, C.uid, 4), null); assert.ok(/balade/.test(E.equipMount(S, c.id, C.uid) || ""), "pas de monture en balade");
+  console.log("ok - monture à l'enclos (accouchement) ou en balade : pas montable, le héros en descend");
+}

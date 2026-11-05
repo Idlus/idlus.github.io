@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.1";
+const GAME_VERSION = "2.2.9.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.2", name: "Pas de monture pendant l'accouchement", items: [
+    "Une monture à l'enclos ne se monte plus pendant l'accouchement : le héros qui la chevauchait en descend quand le couple entre à l'enclos, et elle redevient montable à la naissance",
+    "Pareil pour une monture en balade. Sur sa fiche, le bouton affiche « À l'enclos » ou « En balade » au lieu de « Monter »",
+    "Monocompte : le Boss des mondes n'apparaît plus dans la recherche ni dans la liste des sources de Sablier (il n'existe pas sur ce serveur)" ] },
   { v: "2.2.9.1", name: "Zones cliquables dans l'encyclopédie", guide: "enc", items: [
     "Encyclopédie › Bestiaire : le nom de chaque zone est maintenant un lien. Un clic ouvre directement la zone pour y chasser, et le bouton « ← Encyclopédie » te ramène où tu étais. Merci pour l'idée !",
     "Une zone encore fermée montre un cadenas : sa fiche explique comment l'ouvrir" ] },
@@ -3652,7 +3656,7 @@ function horlogerHtml() {
 function sabWhereHtml() {
   return `<div class="sab-where"><b>Comment en obtenir</b>
     <p class="xs muted" style="margin:2px 0 6px">Les heures achetées ou gagnées peuvent dépasser la réserve, jusqu'à ${E.sabGiftMaxOf(S) / 3600} h.</p>
-    ${horlogerHtml()}${SAB_WHERE.map(([ic, t, d, v]) => (d = typeof d === "function" ? d() : d, `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`)).join("")}</div>`;
+    ${horlogerHtml()}${SAB_WHERE.filter(([, , , v]) => !(S.mono && E.monoPageOk && v && !E.monoPageOk(v.split(":")[0]))).map(([ic, t, d, v]) => (d = typeof d === "function" ? d() : d, `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`)).join("")}</div>`;
 }
 function sabGo(v) {
   closeSheet();
@@ -7281,7 +7285,7 @@ function mountSlot(c) {
 }
 function mountCard(M, c, opts = {}) {
   const cur = E.mountStatsAt(M); const mx = E.mountStatsMax(M.sp, M.c); const owner = E.mountOwner(S, M.uid); const ok = c.lvl >= E.mountReq(M);
-  const why = E.breedWhy(S, M);
+  const why = E.breedWhy(S, M); const away = E.inPair(S, M.uid) ? "à l'enclos" : E.onBalade && E.onBalade(S, M.uid) ? "en balade" : ""; // 2.2.8.10 : pas montable à l'enclos ni en balade
   return `<div class="petcard mountcard ${opts.big ? "big" : ""}">
     <span class="peticon">${im(mountImg(M.sp, M.c), "", E.mountName(M))}</span>
     <div class="grow stack" style="gap:3px;min-width:0">
@@ -7291,7 +7295,7 @@ function mountCard(M, c, opts = {}) {
       ${M.lvl < E.MOUNT_MAX ? `<div class="xs muted">Au niveau ${E.MOUNT_MAX} : ${mountStatTxt(mx)}</div>` : ""}
       ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S, M)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
     </div>
-    ${opts.act ? `<div class="stack" style="gap:4px">${c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`}<button class="btn sm" data-act="mountfree" data-uid="${M.uid}" ${E.inPair(S, M.uid) ? `disabled data-tip="À l'enclos"` : ""}>Relâcher</button></div>` : ""}
+    ${opts.act ? `<div class="stack" style="gap:4px">${c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : away ? `<button class="btn sm" disabled data-tip="${away === "à l'enclos" ? "Pas de monture pendant l'accouchement : elle revient à la naissance." : "Elle revient à la fin de sa balade."}">${away === "à l'enclos" ? "À l'enclos" : "En balade"}</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`}<button class="btn sm" data-act="mountfree" data-uid="${M.uid}" ${E.inPair(S, M.uid) ? `disabled data-tip="À l'enclos"` : ""}>Relâcher</button></div>` : ""}
   </div>`;
 }
 function mountPanel(c) {

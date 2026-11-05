@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.2 « Pas de monture pendant l'accouchement »
+
+- Demande de Mathis (05/11) : une monture à l'enclos ne se monte plus. js/elevage.js : E.pairDismount (le héros descend quand le couple entre à l'enclos, et au premier passage du temps pour une ancienne partie), E.equipMount refuse une monture à l'enclos ou en balade. Fiche de monture : bouton « À l'enclos » / « En balade ». Test : tests/elevage.test.js (15).
+- Monocompte : plus de Boss des mondes dans la recherche (page et monstres) ni dans les sources de Sablier (pages fermées du Monocompte filtrées). L'annonce plein écran et le bandeau étaient déjà retirés en 2.2.8.6.
 ## 2.2.9.1 « Zones cliquables dans l'encyclopédie »
 
 - Demande de Mathis (05/11) : dans le Bestiaire de l'Encyclopédie (vue par zone et « À ma portée »), le nom de chaque sous-zone ouvre la fiche de zone (action searchzone, from=enc, retour « ← Encyclopédie »). Zone fermée : cadenas et raison dans la bulle ; zone cachée encore fermée : pas de lien. js/ui.js encSubLink, css .enczlink, test tests/encyclo_zones_ui.test.js.

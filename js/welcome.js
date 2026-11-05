@@ -131,13 +131,14 @@
   E.searchIndex = () => {
     if (INDEX) return INDEX;
     const L = [];
-    E.SEARCH_PAGES.forEach(([id, name, sub]) => add(L, "page", id, name, sub));
+    const monoS = typeof window !== "undefined" && window.DX && window.DX.S && window.DX.S.mono; // 2.2.8.10 : partie Monocompte, pas de page fermée (Boss des mondes…) dans la recherche
+    E.SEARCH_PAGES.forEach(([id, name, sub]) => { if (monoS && id === "wb") return; add(L, "page", id, name, sub); });
     for (const did in DUNGEONS) { const dg = DUNGEONS[did]; const s = SUBS()[E.DUNGEON_SUB[did]]; add(L, "dg", did, dg.name, `niv. ${dg.lvl}${s ? " · " + zoneName(s.zone) : ""}`, { lvl: dg.lvl }); }
     for (const sid in SUBS()) { const s = SUBS()[sid]; if (s.hidden) continue; add(L, "zone", sid, s.name, `${zoneName(s.zone)} · niv. ${s.lvl[0]}–${s.lvl[1]}`, { lvl: s.lvl[0] }); }
     for (const t in ITEMS) { const T = ITEMS[t]; add(L, "item", t, T.name, `${SLOTS[T.slot] || SLOTS[T.slot + "1"] || T.slot} · niv. ${T.lvl}`, { lvl: T.lvl }); }
     for (const sid in SETS) add(L, "set", sid, SETS[sid].name, `${SETS[sid].size} pièces`);
     for (const n in RES) add(L, "res", n, n, `ressource · niv. ${RES[n].lvl}`, { lvl: RES[n].lvl });
-    for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.lvl) continue; add(L, "mon", k, m.name, `${m.boss ? "boss" : "monstre"} · niv. ${m.lvl[0]}–${m.lvl[1]}`, { lvl: m.lvl[0], boss: !!m.boss }); }
+    for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.lvl || (monoS && m.wboss)) continue; add(L, "mon", k, m.name, `${m.boss ? "boss" : "monstre"} · niv. ${m.lvl[0]}–${m.lvl[1]}`, { lvl: m.lvl[0], boss: !!m.boss }); }
     if (E.DOFUS) for (const id in E.DOFUS) add(L, "dofus", id, E.DOFUS[id].name, `Dofus · niv. ${E.DOFUS[id].lvl}`);
     if (E.IDOLS) for (const id in E.IDOLS) add(L, "idol", id, E.IDOLS[id].name, `idole · score ${E.IDOLS[id].score}`);
     if (E.PETS) for (const id in E.PETS) { const P = E.PETS[id]; add(L, "pet", id, P.name, P.sub && SUBS()[P.sub] ? SUBS()[P.sub].name : P.kind === "monti" ? "montilier" : "familier"); }

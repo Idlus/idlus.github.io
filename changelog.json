@@ -1,6 +1,15 @@
 {
-  "version": "2.2.9.1",
+  "version": "2.2.9.2",
   "versions": [
+    {
+      "v": "2.2.9.2",
+      "name": "Pas de monture pendant l'accouchement",
+      "items": [
+        "Une monture à l'enclos ne se monte plus pendant l'accouchement : le héros qui la chevauchait en descend quand le couple entre à l'enclos, et elle redevient montable à la naissance",
+        "Pareil pour une monture en balade. Sur sa fiche, le bouton affiche « À l'enclos » ou « En balade » au lieu de « Monter »",
+        "Monocompte : le Boss des mondes n'apparaît plus dans la recherche ni dans la liste des sources de Sablier (il n'existe pas sur ce serveur)"
+      ]
+    },
     {
       "v": "2.2.9.1",
       "name": "Zones cliquables dans l'encyclopédie",

@@ -227,9 +227,29 @@
     S.enclos.pairs.push({ a: ua, b: ub, t: T, T, s: si });
     const txt = `${E.mountName(A)} et ${E.mountName(B)} sont à l'enclos : naissance dans ${E.etaTxt ? E.etaTxt(Math.ceil(T / 1000)) : Math.round(T / 3600e3) + " h"}.`;
     if (why === "auto") log(S, `Éleveur : ${E.colourName(A.sp, A.c)} + ${E.colourName(B.sp, B.c)} lancés à l'enclos`); else note(S, txt, "info");
+    E.pairDismount(S);
     return null;
   };
   E.stopBreed = (S, i) => { const p = S.enclos.pairs[i]; if (!p) return "Couple introuvable."; S.enclos.pairs.splice(i, 1); return null; };
+  /* 2.2.8.10 (Mathis : « ne pas pouvoir utiliser sa monture pendant l'accouchement ») : une monture à l'enclos ou en balade ne se monte pas.
+     Le héros qui la chevauchait en descend quand le couple entre à l'enclos (et dans une ancienne partie, au premier passage du temps). */
+  E.pairDismount = (S) => {
+    let n = 0;
+    for (const p of (S.enclos && S.enclos.pairs) || []) for (const uid of [p.a, p.b]) {
+      const o = E.mountOwner(S, uid); if (!o) continue; delete o.mount; n++; if (E.refreshSpells && E.charStats) E.refreshSpells(o, E.charStats(S, o));
+      const M = S.mounts[uid]; if (M) note(S, `${o.name} descend de ${E.mountName(M)} : elle reste à l'enclos jusqu'à la naissance.`, "info");
+    }
+    if (n) E.emit(S, "equip", {});
+    return n;
+  };
+  { const eq0 = E.equipMount;
+    E.equipMount = (S, cid, uid) => {
+      if (uid != null && S.mounts && S.mounts[uid]) {
+        if (E.inPair(S, uid)) return "Cette monture est à l'enclos : elle ne peut pas être montée avant la naissance.";
+        if (E.onBalade(S, uid)) return "Cette monture est en balade : attendez son retour.";
+      }
+      return eq0(S, cid, uid);
+    }; }
 
   /* ---------- naissance ---------- */
   const pick = (odds) => { let r = rnd() * 100; let c = odds[odds.length - 1][0]; for (const [col, pc] of odds) { if (r < pc) return col; r -= pc; } return c; };
@@ -491,6 +511,7 @@
   /* 1.1.0.1 : une longue absence avance par étapes (naissance, fin de balade, passage de l'éleveur), sinon chaque couple ne donnait qu'un petit par absence et l'éleveur perdait le reste du temps */
   E.enclosTick = (S, ms) => {
     if (!S.enclos) return; const v = EV(S);
+    if (S.enclos.pairs.length) E.pairDismount(S); // 2.2.8.10 : ancienne partie dont un héros chevauchait une monture à l'enclos
     for (let g = 0; ms > 0 && g < 5000; g++) {
       let dt = ms;
       for (const p of S.enclos.pairs) if (p.t > 0) dt = Math.min(dt, p.t);

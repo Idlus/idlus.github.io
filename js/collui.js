@@ -355,6 +355,7 @@
       case "co-peq": {
         const cid = +d.cid; const c = s.chars.find((x) => x.id === cid); let r = null, nm = "";
         if (st.pk === "mt") { const [sp, col] = String(d.v).split(":"); const L = Object.values(s.mounts || {}).filter((M) => M.sp === sp && M.c === col).sort((a1, b1) => (E.mountOwner(s, a1.uid) ? 1 : 0) - (E.mountOwner(s, b1.uid) ? 1 : 0) || b1.lvl - a1.lvl);
+          const away = (M) => E.inPair(s, M.uid) || (E.onBalade && E.onBalade(s, M.uid)); L.sort((a1, b1) => (away(a1) ? 1 : 0) - (away(b1) ? 1 : 0)); // 2.2.8.10 : d'abord une monture qui n'est ni à l'enclos ni en balade
           if (!L.length) return; nm = E.mountName(L[0]); r = E.act(s, "equipMount", cid, L[0].uid); }
         else { const P = E.petOwned(s, d.v); if (!P) return; nm = E.PETS[P.id].name; r = E.act(s, "equipPet", cid, P.uid); }
         if (r) { X().toast(r, "warn"); return; }
