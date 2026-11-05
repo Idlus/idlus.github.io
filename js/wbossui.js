@@ -40,6 +40,8 @@
   const consTxt = (cons) => Object.entries(cons || {}).map(([k, q]) => `${q > 1 ? q + " " : ""}${(window.DATA.CONSUMABLES[k] || {}).name || k}${q > 1 ? "" : ""}`.replace(/^(\d+) Coffre/, "$1 Coffres")).join(", ");
   const ELC = { n: "neutre", t: "terre", f: "feu", e: "eau", a: "air" };
 
+  // 2.2.8.6 : le Boss des mondes n'existe pas en Monocompte (window.WBUI y vaut null, les clics « wb-* » ne trouvent plus personne) : ni effet plein écran, ni bandeau, ni appel au serveur
+  const off = () => { const o = ON(), s = S(); return !!((o && o.monoPart && o.monoPart()) || (s && E.isMono && E.isMono(s))); };
   const isS1 = () => !!(E.isS1c && S() && E.isS1c(S())); // Saison 1 : boss de la semaine (E.wbS1Def)
   const defOf = (n) => (isS1() ? E.wbS1Def(n) : E.wbDef(n));
   /* ---------- état du boss (serveur, ou boss local de la version de test) ---------- */
@@ -58,7 +60,7 @@
     return { n: I.n, hp: +I.hp, dmg: +I.dmg, phase: I.phase, started: Date.parse(I.started) - ui.off, players: I.players || 0, top: I.top || [], me: I.me, last: I.last, bonus: I.bonus ? Date.parse(I.bonus) - ui.off : 0 };
   }
   async function load(force) {
-    const o = ON(); if (!o || !o.enabled || ui.loading) return;
+    const o = ON(); if (!o || !o.enabled || ui.loading || off()) return;
     if (!force && ui.info && Date.now() - ui.at < 30000) return;
     ui.loading = true;
     const r = await o.rpc("wb_info");
@@ -294,6 +296,7 @@
 
   /* ---------- effet plein écran à l'arrivée d'un boss (E2) : une fois par joueur, jamais par-dessus le chat ouvert ---------- */
   function maybeOverlay() {
+    if (off()) { closeOverlay(); return; }
     const s = st(); if (!s || !S() || $(".wbo")) return;
     if ((pref.seen || 0) >= s.n || (S().sessions || 0) < 2) return; // pas pendant la toute première partie : il le verra à la suivante
     if (!fxOn()) { pref.seen = s.n; savePref(); return; }
@@ -303,6 +306,7 @@
     const def = defOf(s.n);
     const ch = [[18, 22, 30], [74, 18, -20], [12, 70, 60], [82, 66, -45], [30, 86, 15], [64, 84, -70], [44, 12, 80]].map(([x, y, r]) => `<span class="wbo-ch" style="left:${x}%;top:${y}%;--r:${r}deg"></span>`).join("");
     const o = document.createElement("div"); o.className = "wbo"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Nouveau boss des mondes");
+    o.addEventListener("click", (ev) => { const b = ev.target.closest("[data-act]"); if (!b || !o.contains(b)) return; ev.stopPropagation(); act(b.dataset.act, b); }); // 2.2.8.6 : les boutons répondent même sans le routeur de js/ui.js
     o.innerHTML = `${def.mon === "m8062" ? ch : ""}<div class="wbo-flash"></div><div class="wbo-in"><span class="wbo-k">Boss des mondes · nouveau boss</span><img class="wbo-boss" src="${img(def)}" alt=""><span class="wbo-t">${h(def.name)} ${h(def.line)}</span><span class="wbo-s">${h(def.story)}</span><div class="wbo-hp"><i style="width:${pctLeft(s)}%"></i></div><div class="row"><button class="btn primary" data-act="wb-go">Attaquer le boss</button><button class="btn" data-act="wb-ovclose">Plus tard</button></div><span class="xs wbo-n">Vu une seule fois · effets à couper dans Options</span></div>`;
     document.body.appendChild(o);
     setTimeout(() => o.classList.add("calm"), 3000);
@@ -313,7 +317,7 @@
   function paintBar() {
     let b = $("#wbbar");
     if (!b) { const up = $("#updbar"); if (!up) return; b = document.createElement("div"); b.id = "wbbar"; up.after(b); }
-    const s = st(); const tab = window.DX && window.DX.ui ? window.DX.ui.tab : "";
+    const s = off() ? null : st(); const tab = window.DX && window.DX.ui ? window.DX.ui.tab : "";
     if (!s || !S() || (window.DX.ui && window.DX.ui.watch)) { b.innerHTML = ""; return; }
     const def = defOf(s.n); let html = "";
     const C = X().tchip; // 1.0.4.7 : même pastille que le reste de la ligne du haut
@@ -354,8 +358,8 @@
   }
 
   /* le boss se rafraîchit seul ; le bandeau suit les changements d'onglet */
-  setTimeout(() => { if (mode() === "local") sync(); else load(true); }, 2500);
-  setInterval(() => { try { if (document.hidden) return; if (mode() === "local") sync(); else load(true); } catch (e) { /* jamais bloquer */ } }, 120000);
+  setTimeout(() => { if (off()) return; if (mode() === "local") sync(); else load(true); }, 2500);
+  setInterval(() => { try { if (document.hidden || off()) return; if (mode() === "local") sync(); else load(true); } catch (e) { /* jamais bloquer */ } }, 120000);
   document.addEventListener("click", () => setTimeout(() => { try { paintBar(); maybeOverlay(); } catch (e) { /* jamais bloquer */ } }, 0));
   window.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeOverlay(); });
 

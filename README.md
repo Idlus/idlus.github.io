@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.6 « Boss des mondes : annonce réparée »
+
+- Bug signalé par Mathis (05/11, Monocompte · S1 : « quand je clique ça ne fait rien ») : en Monocompte, `window.WBUI` vaut null (modules du Classique éteints par `monoSeal`), mais les minuteurs internes de js/wbossui.js tournaient encore et affichaient l'annonce plein écran et le bandeau ; le routeur de js/ui.js ne trouvait plus personne pour les clics `wb-*`. js/wbossui.js : garde `off()` (partie Monocompte) sur l'annonce, le bandeau et le chargement du boss ; une annonce restée se ferme ; les boutons de l'annonce ont leur propre écouteur.
+- Test tests/wboss_annonce_ui.test.js (PC 1280 et téléphone 390) : Classique, « Plus tard » ferme, « Attaquer le boss » ouvre la page ; Monocompte, ni annonce ni bandeau. Il échoue sans la correction.
+
 ## 2.2.8.5 « Consommables bien visibles »
 
 - Bug signalé en jeu par Ley (2.2.8.2, « le parfum de pistage ne fonctionne pas en combat ») et demande de Mathis de vérifier tous les consommables. Le bonus `piste` (Parfum de pistage, Pierre d'âme dorée) agissait bien (`E.archiMult`, js/archis.js) mais `BOOST_INFO` (js/ui.js) ne connaissait que 6 bonus : rien dans la barre du combat ni dans le portrait. `activeBoosts()` lit maintenant `S.boosts` et retrouve le consommable par `boost` + `pct` (la Potion de récolte +20 % ne passe plus pour le Bonbon Récolteur +15 %). Le message d'activation donne l'effet et la durée.

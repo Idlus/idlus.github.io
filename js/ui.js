@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.5";
+const GAME_VERSION = "2.2.8.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.6", name: "Boss des mondes : annonce réparée", items: [
+    "L'annonce plein écran du Boss des mondes ne s'affiche plus en Monocompte (le Boss des mondes n'y existe pas) : ses boutons ne répondaient pas et elle restait bloquée",
+    "Le bandeau du Boss des mondes en haut de l'écran disparaît aussi du Monocompte",
+    "Serveur Classique : les boutons « Attaquer le boss » et « Plus tard » de l'annonce répondent toujours, même si le reste de la page est occupé" ] },
   { v: "2.2.8.5", name: "Consommables bien visibles", items: [
     "Parfum de pistage (et Pierre d'âme dorée) : le bonus marchait déjà (archimonstres ×2, ×3 avec la pierre) mais ne s'affichait nulle part en combat. Il apparaît maintenant dans la barre des consommables avec son temps restant, et l'infobulle donne ta chance totale d'archimonstre",
     "Chaque bonbon, potion ou parfum activé dit son effet et sa durée, par exemple « Parfum de pistage activé : archis ×2 pendant 2 h »",

@@ -1,6 +1,15 @@
 {
-  "version": "2.2.8.5",
+  "version": "2.2.8.6",
   "versions": [
+    {
+      "v": "2.2.8.6",
+      "name": "Boss des mondes : annonce réparée",
+      "items": [
+        "L'annonce plein écran du Boss des mondes ne s'affiche plus en Monocompte (le Boss des mondes n'y existe pas) : ses boutons ne répondaient pas et elle restait bloquée",
+        "Le bandeau du Boss des mondes en haut de l'écran disparaît aussi du Monocompte",
+        "Serveur Classique : les boutons « Attaquer le boss » et « Plus tard » de l'annonce répondent toujours, même si le reste de la page est occupé"
+      ]
+    },
     {
       "v": "2.2.8.5",
       "name": "Consommables bien visibles",
