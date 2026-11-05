@@ -104,6 +104,47 @@ as $$ declare ps text; begin
 end $$;
 revoke all on function public.chat_mono_profil(uuid) from public, anon;
 grant execute on function public.chat_mono_profil(uuid) to authenticated;
+-- 2.2.10 (idée de Panda, choix 4A de Mathis) : fiche Monocompte d'un joueur (clic sur son pseudo en Monocompte). Lecture seule,
+-- seulement pour un compte qui a accès au Monocompte (chat_mono_ok), jamais le profil Classique. Héros de la partie validée par le
+-- Bouclier (resume, lb_saison), à défaut de la partie envoyée (meta) ; apparence, titre et équipement viennent de la partie envoyée
+-- (meta, comme l'équipement du profil Classique). Rang de saison = place au classement Niveau (comptes signalés exclus).
+create or replace function public.mono_fiche(p_user uuid) returns jsonb language plpgsql stable security definer set search_path = public
+as $$ declare ps text; s record; r jsonb; m jsonb; hx jsonb; l record; rk int; nb int; o jsonb; begin
+  if p_user is null or not public.chat_mono_ok() then return null; end if;
+  select pseudo into ps from profiles where id = p_user;
+  if not found then return null; end if;
+  o := public.chat_mono_hero(p_user) || jsonb_build_object('u', p_user, 'pseudo', ps);
+  if to_regclass('mono.saisons') is null or to_regclass('mono.parties') is null then return o; end if;
+  select id, nom into s from mono.saisons where etat in ('ouverte', 'cloture') order by id desc limit 1;
+  if not found then return o; end if;
+  if to_regclass('mono.parties_ok') is not null then select k.resume into r from mono.parties_ok k where k.user_id = p_user and k.saison = s.id; end if;
+  select p.meta into m from mono.parties p where p.user_id = p_user and p.saison = s.id;
+  r := coalesce(r, '{}'::jsonb); m := coalesce(m, '{}'::jsonb);
+  hx := case when jsonb_typeof(m -> 'heroes') = 'array' then m -> 'heroes' -> 0 else '{}'::jsonb end;
+  o := o || jsonb_build_object(
+    'sx', case when m ->> 'hs' = 'f' then 'f' else 'm' end,
+    'hd', case when (m ->> 'hh') ~ '^[0-9]{1,2}$' then (m ->> 'hh')::int else 0 end,
+    'pal', case when (hx ->> 'pal') ~ '^[a-z0-9_]{1,20}$' then hx ->> 'pal' end,
+    'gear', case when jsonb_typeof(hx -> 'gear') = 'array' then (select coalesce(jsonb_agg(g), '[]'::jsonb) from (select g from jsonb_array_elements_text(hx -> 'gear') g where g ~ '^[a-z0-9_]{1,40}$' limit 16) t) else '[]'::jsonb end,
+    'serment', case when r ->> 'serment' in ('fer', 'ord') then r ->> 'serment' end,
+    'iron', coalesce((r ->> 'iron')::boolean, false),
+    'camp', case when r ->> 'camp' in ('bonta', 'brakmar') then r ->> 'camp' end,
+    'arang', case when (r ->> 'rang') ~ '^[0-9]{1,2}$' then (r ->> 'rang')::int else 0 end,
+    'phx', case when (r -> 'phenix' ->> 'stade') ~ '^[0-9]{1,3}$' then (r -> 'phenix' ->> 'stade')::int else 0 end,
+    'pass', case when (r ->> 'pass') ~ '^[0-9]{1,3}$' then (r ->> 'pass')::int else 0 end);
+  if to_regclass('mono.lb_saison') is not null then
+    select * into l from mono.lb_saison x where x.user_id = p_user and x.saison = s.id;
+    if found then
+      select count(*) + 1 into rk from mono.lb_saison x where x.saison = s.id and coalesce(x.niveau, 0) > coalesce(l.niveau, 0)
+        and not exists (select 1 from public.ladder d where d.user_id = x.user_id and d.flagged);
+      select count(*) into nb from mono.lb_saison x where x.saison = s.id and not exists (select 1 from public.ladder d where d.user_id = x.user_id and d.flagged);
+      o := o || jsonb_build_object('rk', rk, 'nb', nb, 'grp_k', l.grp_k, 'grp_ms', l.grp_ms, 'fer', l.fer and not l.fer_perdu);
+    end if;
+  end if;
+  return o;
+end $$;
+revoke all on function public.mono_fiche(uuid) from public, anon;
+grant execute on function public.mono_fiche(uuid) to authenticated;
 drop policy if exists "chat lisible" on public.chat_msgs;
 -- 04/11 (Mathis : « les canaux commerce ect associés à chaque serveur ») : Commerce et PvP de chaque serveur à part :
 -- 'c'/'v' = Éternel, 'sc'/'sv' = Classique · Saison 1, 'mc'/'mv' = Monocompte (avec le salon 'm', héros Monocompte).

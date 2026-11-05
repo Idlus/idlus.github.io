@@ -455,16 +455,18 @@
     /* 2.1.35.3 : dans le salon Monocompte, carte Monocompte du joueur (héros, titre et saison du Monocompte, chat_mono_profil)
        au lieu de sa fiche Classique ; seulement les actions utiles (privé, ignorer, signaler, modération) */
     const msg = msgById(id), mono = (msg ? msg.ch : C.tab) === "m";
-    el.innerHTML = `<div class="hd"><b>${h(p)}</b>${mono ? `<span class="xs muted"> · Monocompte</span>` : ""}</div>
-      ${mono ? `<div class="chm-card" data-u="${h(u)}">${monoCard(msg ? Object.assign({ wait: true }, monoHero(msg)) : { wait: true })}</div>` : ""}
-      ${msg && msg.body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
-      ${mono ? "" : `<button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>`}
+    /* 2.2.10 (idée de Panda, 1A) : le haut du menu montre déjà le joueur (classe, niveau, titre, en ligne) et un gros bouton
+       « Voir sa fiche » ; dans le salon Monocompte, sa fiche Monocompte (jamais le Classique) */
+    const on = (() => { try { return !!(ON.onlineList && ON.onlineList().some((x) => x.id === u)); } catch (e) { return false; } })();
+    el.innerHTML = `${mono ? `<div class="hd"><b>${h(p)}</b><span class="xs muted"> · Monocompte</span></div><div class="chm-card" data-u="${h(u)}">${monoCard(msg ? Object.assign({ wait: true }, monoHero(msg)) : { wait: true })}</div>` : miniCard(u, p, msg, on)}
+      <button class="chm-go" data-act="ch-prof" data-u="${h(u)}"${mono || /^m[cv]$/.test(msg ? msg.ch : "") ? ` data-m="m"` : ""}>${mine ? "Voir ma fiche" : "Voir sa fiche"}</button>
       ${!mine && window.AMIS ? window.AMIS.menuBtn(u, p, "chat") : ""}
       ${!mine && canWrite() && !C.me.banned && C.tab !== "p" && C.tab !== "h" ? `<button data-act="ch-ment" data-p="${h(p)}"><b class="at">@</b> Le mentionner</button>` : ""}
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
       ${window.MARKET && !mono ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}
       <button data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${X().G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer ses messages"}</button>
       <button class="red" data-act="ch-rep" data-u="${h(u)}" data-p="${h(p)}" data-id="${id}">${X().G("warn")} Signaler</button>` : ""}
+      ${msg && msg.body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
       ${C.role && !mine ? `<button data-act="adm-find" data-q="${h(p)}">${X().G("shield")} Fiche admin</button>` : ""}
       ${id && canDel(msgById(id)) ? `<button class="red" data-act="adm-del" data-id="${id}">${X().G("warn")} Supprimer ce message</button>` : ""}
       ${C.role && !mine && canAct(u) ? `<button data-act="adm-warn" data-u="${h(u)}" data-p="${h(p)}" data-m="1">${X().G("warn")} L'avertir</button>` : ""}
@@ -475,6 +477,11 @@
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
     el.style.top = Math.max(8, r.bottom + 4 + hgt <= bot ? r.bottom + 4 : Math.min(bot, r.top - 4) - hgt) + "px"; // 1.0.12.8 : pas la place dessous : le menu s'ouvre au-dessus du pseudo
     if (mono && ON.chatMonoProfil) ON.chatMonoProfil(u).then((P) => { const c = $(`#chMenu .chm-card[data-u="${CSS.escape(u)}"]`); if (c) c.innerHTML = monoCard(P || (msg ? monoHero(msg) : {})); });
+  }
+  /* 2.2.10 (1A) : mini-fiche du menu d'un pseudo hors Monocompte : classe et niveau du message, titre, en ligne */
+  function miniCard(u, p, msg, on) {
+    const CL = msg && msg.cls && window.DATA.CLASSES[msg.cls];
+    return `<div class="chm-mini">${X().cmed(CL ? msg.cls : null, CL ? msg.lvl : 0)}<div class="chm-t"><b>${h(p)}</b><span class="xs muted">${CL ? `${h(CL.name)} niv. ${+msg.lvl || 1}` : "Joueur"}${on ? ` · <i class="chm-dot"></i>en ligne` : ""}</span>${msg && msg.title ? `<span class="tt">« ${h(msg.title)} »</span>` : ""}</div></div>`;
   }
   /* carte Monocompte : héros (classe, niveau, nom), titre Monocompte, saison ; jamais le profil Classique */
   function monoCard(P) {
@@ -821,9 +828,9 @@
       case "ch-ment": { closeMenu(); const i = $("#chIn"); if (!i) return; const v = i.value.replace(/\s+$/, ""); insertAt(i, 0, i.value.length, `${v ? v + " " : ""}@${d.p} `); return; }
       case "ch-who": menu(t); return;
       case "ch-copy": { closeMenu(); const m = msgById(+d.id); if (m && m.body) X().toast((await copyTxt(m.body)) ? "Message copié." : "Copie impossible : reste appuyé sur le texte pour le sélectionner."); return; }
-      case "ch-prof": closeMenu(); X().lbProfile(d.u); return;
-      case "ch-pm": closeMenu(); C.names[d.u] = d.p; C.tab = "p"; C.peer = d.u; C.open = true; pref.open = true; savePref(); paint(); return;
-      case "ch-ign": closeMenu(); ignore(d.u, d.v === "1"); return;
+      case "ch-prof": closeMenu(); X().lbProfile(d.u, d.m); return;
+      case "ch-pm": closeMenu(); X().closeSheet(); C.names[d.u] = d.p; C.tab = "p"; C.peer = d.u; C.open = true; pref.open = true; savePref(); paint(); return;
+      case "ch-ign": closeMenu(); if (t.closest("#sheet")) X().closeSheet(); ignore(d.u, d.v === "1"); return;
       case "ch-rep": closeMenu(); reportSheet(d.u, d.p, +d.id); return;
       case "ch-repgo": {
         const r = (document.querySelector('input[name="chRep"]:checked') || {}).value || "Autre"; const ig = $("#chRepIgn") && $("#chRepIgn").checked;

@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.10";
+const GAME_VERSION = "2.2.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.10", name: "La fiche des joueurs", items: [
+    "Toucher un pseudo dans le chat montre tout de suite le joueur (classe, niveau, titre, en ligne) avec un gros bouton « Voir sa fiche » (idée de Panda)",
+    "La fiche montre en haut le héros principal dessiné, son titre, s'il est en ligne, son camp et 4 chiffres, avec les boutons Lui écrire, Proposer un échange, Ajouter en ami et Ignorer",
+    "Les pseudos ouvrent aussi la fiche dans la liste d'amis, la guilde, le classement des donjons, le Songe et les classements de saison",
+    "Monocompte : nouvelle fiche avec seulement le héros de la saison (serment, camp, rang de saison, donjon de groupe, équipement), jamais le Classique" ] },
   { v: "2.2.9.10", name: "Comptoirs en Monocompte", guide: "comptoirs", items: [
     "Monocompte : la page Comptoirs ouvre (Économie › Comptoirs) avec 4 boutiques : Bureau des primes, Comptoir de la cité, Comptoir des temples et Kolizéum",
     "Comme au Classique : offre de la semaine à −30 %, objets à racheter et point sur le menu quand une monnaie peut acheter du neuf. Le Marché onirique et le Boss des mondes restent au Classique" ] },
@@ -2860,11 +2865,13 @@ function lookUrl(c, opts = {}) {
      les 64 d'ITEM_SKINS, ou une autre choisie exprès) : une apparence que seul DofusDB sait dessiner fait dessiner le héros
      par DofusDB, avec la tête et les couleurs d'origine de sa classe ; celles de NO_LOOK (sans apparence connue) ne se voient pas */
   const worn = []; let dbOnly = false;
-  if (!opts.bare && S) ["coiffe", "cape"].forEach((sl) => { const tpl = E.shownTpl(S, c, sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
+  /* 2.2.10 : opts.worn = coiffe et cape d'un autre joueur (fiche publique), sans lire la partie ouverte */
+  const wornTpl = (sl) => (opts.worn ? opts.worn.find((t) => ITEMS[t] && ITEMS[t].slot === sl) || null : E.shownTpl(S, c, sl));
+  if (!opts.bare && (S || opts.worn)) ["coiffe", "cape"].forEach((sl) => { const tpl = wornTpl(sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
     if (!/^i\d+$/.test(tpl)) return; // 1.0.30.2 : objets propres au jeu (légendaires du Songe « leg_… ») : pas d'apparence DofusDB (avant : demande « itemIds[]=NaN » refusée)
     if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (!(LK.NO_LOOK || []).includes(tpl)) { dbOnly = true; worn.push(+tpl.slice(1)); } });
   /* Saison 1, lot 3 : bouclier d'apparat (js/garderobe.js) : DofusDB le dessine dans la main du héros, avec la tête et les couleurs de sa classe */
-  if (!opts.bare && S && E.grWorn) { const sh = opts.shield !== undefined ? opts.shield : E.grWorn(S, c).shield; if (sh) { worn.push(+sh); dbOnly = true; } }
+  if (!opts.bare && S && E.grWorn && !opts.worn) { const sh = opts.shield !== undefined ? opts.shield : E.grWorn(S, c).shield; if (sh) { worn.push(+sh); dbOnly = true; } }
   if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
   if (dbOnly) return dbLook(c.cls, sx, worn);
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
@@ -12936,8 +12943,31 @@ function renderLadder() {
   lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === lbKey()) el.innerHTML = lbListHtml(d); })
     .catch(() => { const el = $("#lbList"); if (el) el.innerHTML = `<div class="empty">Classement indisponible : pas de connexion au serveur.</div>`; });
 }
-async function lbProfile(u) {
+/* 2.2.10 (idée de Panda, choix 2A et 4A de Mathis) : la fiche d'un joueur s'ouvre en touchant son pseudo, partout. En haut, sa
+   carte de visite (héros principal en pied, titre, en ligne, camp, classe et niveau, 4 chiffres) et une barre d'actions
+   (lui écrire, échange, ami, ignorer). Dans le Monocompte : seulement son héros Monocompte (mono_fiche), jamais le Classique. */
+const fpOnline = (u) => { try { return !!(u && ON.onlineList && ON.onlineList().some((x) => x.id === u)); } catch (e) { return false; } };
+function fpActs(u, p, mono) {
+  if (!u || !ON.user || u === ON.user.id) return "";
+  const CH = window.CHAT, can = !!(CH && CH.canShare && CH.canShare()), ign = !!(CH && CH.state && CH.state.ign && CH.state.ign.has(u));
+  const b = [can ? `<button class="btn sm primary" data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${G("chat")} Lui écrire</button>` : "",
+    !mono && can && window.MARKET ? `<button class="btn sm" data-act="mk-trade-ask" data-p="${h(p)}">${G("chat")} Proposer un échange</button>` : "",
+    window.AMIS ? window.AMIS.addBtn(u, p, "fiche", "sm") : "",
+    can ? `<button class="btn sm ghost" data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer"}</button>` : ""].filter(Boolean);
+  return b.length ? `<div class="fp-acts">${b.join("")}</div>` : "";
+}
+function fpHead(o) {
+  const C = CLASSES[o.cls];
+  const look = C ? lookImg({ cls: o.cls, sex: o.sx, head: o.hd || 0, palette: o.pal, name: "" }, "fp-look", { worn: (o.gear || []).filter((t) => ITEMS[t]) }) : "";
+  const side = o.camp !== undefined ? o.camp : window.ALIGNUI ? window.ALIGNUI.sideOf(o.u, o.p) : null, A = side && E.ALIGN[side];
+  const bd = [fpOnline(o.u) ? `<span class="fp-b on"><i class="fp-dot"></i>En ligne</span>` : "", C ? `<span class="fp-b">${h(C.name)} niv. ${fmt(o.lvl || 1)}</span>` : "",
+    A ? `<span class="fp-b camp ${side}"><img src="assets/i/${A.badge}.png" alt="">${h(A.name)}${o.arang ? ` · rang ${o.arang}` : ""}</span>` : ""].concat(o.badges || []).filter(Boolean);
+  return `<div class="fp-hero${staffCls(o.u)}">${look ? `<div class="fp-lk">${look}</div>` : `<div class="fp-lk med">${cmed(o.cls, o.lvl)}</div>`}<div class="fp-id">${o.kick ? `<span class="xs muted">${o.kick}</span>` : ""}<h2>${pname(o.p, o.u, { mono: 1 })}</h2>${o.title ? `<div class="fp-tt">« ${h(o.title)} »</div>` : ""}${bd.length ? `<div class="fp-bdg">${bd.join("")}</div>` : ""}${o.extra || ""}${o.tiles && o.tiles.length ? `<div class="fp-tiles">${o.tiles.map(([v, l]) => `<div><b>${v}</b><span>${h(l)}</span></div>`).join("")}</div>` : ""}</div></div>`;
+}
+const fpFail = (t, msg) => openSheet(`<h2>${t}</h2><div class="empty">${msg}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+async function lbProfile(u, mode) {
   if (!u) return;
+  if (mode === "m" || (mode !== "c" && S && S.mono)) return monoFiche(u); // Monocompte : jamais le profil Classique
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
   /* 2.1.37.9 (idée de Gagou) : sa guilde (guild_of, supabase/guildes.sql) ; sans réponse du serveur, la fiche s'affiche sans */
@@ -12947,20 +12977,47 @@ async function lbProfile(u) {
       db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
     const gd = await gq; // 2.1.37.9 (idée de Gagou) : sa guilde
     const gsee = !!(window.GUILD && window.GUILD.show && rankSlot(SLOT) && ON.user);
-    if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+    if (!p) return fpFail("Profil", "Ce joueur n'apparaît pas dans les classements.");
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 + (b.mt || 0) - (a.lvl + a.ren * 200 + (a.mt || 0)));
     ui.lbProf = { u, heroes };
     const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
       return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
     const ban = (heroes.find((x) => x.ban && E.BANNERS && E.BANNERS[x.ban]) || {}).ban; // Saison 1 : sa bannière (js/banniere.js)
-    openSheet(`${ban ? `<div class="pban" style="background-image:url(${E.banUrl(ban)})" role="img" aria-label="${h(E.BANNERS[ban].n)}"></div>` : ""}<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2>${gd ? `<${gsee ? "button" : "span"} class="pgld"${gsee ? ` data-act="lb-gview" data-g="${+gd.id}"` : ""}><span class="gemb" style="--gc:${h(gd.col || "#8cc63f")};--gs:22px"><img src="${h(window.gIco(gd.ic))}" alt=""></span><b>${h(gd.name)}</b><span class="small muted">niv. ${fmt(gd.lvl || 1)}${gd.rank ? ` · ${h(gd.rank)}` : ""}</span></${gsee ? "button" : "span"}>` : ""}<span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès${(() => { const t = (p.heroes || []).find((x) => x.smt > 1); return t ? ` · ⏳ Maîtrise du temps niv. ${Math.min(50, +t.smt)}` : ""; })()}</span></div></div>
+    const mh = heroes.find((x) => x.mn) || heroes.find((x) => x.cls === p.main) || heroes[0] || { cls: p.main, lvl: p.main_lvl || 1 };
+    const smt = (p.heroes || []).find((x) => x.smt > 1);
+    const gldH = gd ? `<${gsee ? "button" : "span"} class="pgld"${gsee ? ` data-act="lb-gview" data-g="${+gd.id}"` : ""}><span class="gemb" style="--gc:${h(gd.col || "#8cc63f")};--gs:22px"><img src="${h(window.gIco(gd.ic))}" alt=""></span><b>${h(gd.name)}</b><span class="small muted">niv. ${fmt(gd.lvl || 1)}${gd.rank ? ` · ${h(gd.rank)}` : ""}</span></${gsee ? "button" : "span"}>` : "";
+    const tiles = [[fmt(p.level), "niveaux d'équipe"], [`${p.album} / ${E.ARCHI_TOTAL}`, "album"], [fmt(p.succes), "succès"]];
+    if ((recs || []).length) tiles.push([`Stasis ${recs[0].k}`, "meilleur donjon"]);
+    if (smt) tiles.push([`⏳ ${Math.min(50, +smt.smt)}`, "Maîtrise du temps"]);
+    openSheet(`${ban ? `<div class="pban" style="background-image:url(${E.banUrl(ban)})" role="img" aria-label="${h(E.BANNERS[ban].n)}"></div>` : ""}
+      ${fpHead({ u, p: p.pseudo, cls: mh.cls || p.main, lvl: p.main_lvl || mh.lvl, sx: mh.sx, hd: mh.hd, pal: mh.pal, gear: mh.gear, title: mh.tt, extra: gldH, tiles })}
+      ${fpActs(u, p.pseudo, false)}
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
-      <div class="row" style="gap:8px;flex-wrap:wrap">${window.AMIS ? window.AMIS.addBtn(u, p.pseudo, "classement") : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+      <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     if (window.CHROMA) window.CHROMA.profile(u); // 1.0.33 : sa vitrine de chromatiques
-  } catch (e) { openSheet(`<h2>Profil</h2><div class="empty">Pas de connexion au serveur.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
+  } catch (e) { fpFail("Profil", "Pas de connexion au serveur."); }
+}
+/* 4A : fiche Monocompte (supabase/chat.sql, mono_fiche) : le héros de la saison, son serment, son camp, son rang, son équipement */
+async function monoFiche(u) {
+  const T = "Fiche Monocompte";
+  if (!ON || !ON.user) return fpFail(T, "Connecte-toi pour voir la fiche des joueurs du Monocompte.");
+  openSheet(`<h2>${T}</h2><div class="empty">Chargement…</div>`);
+  let r = null; try { r = ON.monoFiche ? await ON.monoFiche(u) : null; } catch (e) { r = { err: "réseau" }; }
+  if (!r || r.err || !r.pseudo) return fpFail(T, r && r.err ? "Fiche indisponible pour l'instant : pas de réponse du serveur." : "Fiche réservée aux joueurs du Monocompte.");
+  const gear = (r.gear || []).filter((t) => ITEMS[t]);
+  const tiles = [];
+  if (r.rk) tiles.push([`${r.rk}${r.rk === 1 ? "er" : "e"}${r.nb ? ` / ${fmt(r.nb)}` : ""}`, "classement de saison"]);
+  if (r.grp_k) tiles.push([`Stasis ${r.grp_k}`, "donjon de groupe"]);
+  if (r.pass) tiles.push([fmt(r.pass), "palier du pass"]);
+  const bd = [r.serment === "fer" || r.fer ? `<span class="fp-b fer">Serment de fer</span>` : r.serment === "ord" ? `<span class="fp-b">Serment ordinaire</span>` : "", r.iron ? `<span class="fp-b mp-iron">Ironman</span>` : ""];
+  const body = r.cls ? `${fpHead({ u, p: r.pseudo, cls: r.cls, lvl: r.lvl, sx: r.sx, hd: r.hd, pal: r.pal, gear, title: r.title, camp: r.camp || null, arang: r.arang, badges: bd, tiles, kick: `Monocompte${r.nom ? ` · ${h(r.nom)}` : ""}${r.hero ? ` · ${h(r.hero)}` : ""}` })}
+      ${fpActs(u, r.pseudo, true)}
+      <b>Équipement${r.hero ? ` de ${h(r.hero)}` : ""}</b>${gear.length ? `<div class="gearrow">${gear.map((t) => `<span class="icobox ${rarCls(t)}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})">${im(itemImg(t), "", ITEMS[t].name)}</span>`).join("")}</div>` : `<span class="small muted">Aucun objet équipé.</span>`}`
+    : `<h2>${pname(r.pseudo, u, { mono: 1 })}</h2><span class="small muted">Pas encore de héros Monocompte${r.nom ? ` dans la ${h(r.nom)}` : " cette saison"}.</span>${fpActs(u, r.pseudo, true)}`;
+  openSheet(`${body}<span class="xs muted">Seulement le héros Monocompte de la saison, jamais le Classique.</span><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function lbGearHtml(x) {
   if (!x) return "";
@@ -13062,7 +13119,7 @@ function lbAct(a, t) {
     case "lb-dweek": LB.dview = d.v; break;
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
-    case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
+    case "lb-prof": ui.lbHero = 0; lbProfile(d.u, d.m); return; // 2.2.10 : data-m="m" = fiche Monocompte (salon Monocompte du chat)
     case "lb-gview": closeSheet(); if (window.GUILD && window.GUILD.show) { window.GUILD.show(+d.g); ui.tab = "guild"; render(); window.scrollTo(0, 0); } return; // 2.1.37.9 : fiche de la guilde
     case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }
     case "lb-goto": closeSheet(); LB.tab = "dj"; LB.did = d.v; LB.dmode = d.w === "1" ? "week" : "all"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return;
@@ -13399,7 +13456,9 @@ function liveColTick(force) {
 }
 if (LC_MQ && LC_MQ.addEventListener) LC_MQ.addEventListener("change", () => liveColTick(true));
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { lookImg, lookSheet, heroCard, markDirty: () => { dirty = true; }, soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
+/* 2.2.10 (3A) : un pseudo qui ouvre la fiche du joueur (bouton discret autour du nom) */
+const plink = (u, inner) => (u ? `<button class="pnl" data-act="lb-prof" data-u="${h(u)}">${inner}</button>` : inner);
+window.DX.social = { plink, lookImg, lookSheet, heroCard, markDirty: () => { dirty = true; }, soloPanel, h, G, IC, tchip, cmed, wingSVG, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });

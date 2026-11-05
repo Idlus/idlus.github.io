@@ -91,7 +91,7 @@
     const renfOf = (u) => A.renf && (A.renf.amis || []).find((x) => x.u === u);
     const row = (f) => { const M = MODE[f.mode];
       return `<div class="am-fr ${f.on ? "" : "off"}">${X().cmed(f.cls, f.lvl)}<span class="am-dot ${f.on ? "on" : ""}"></span>
-      <div class="am-fi"><b>${X().pname(f.p, f.u)}</b><span class="xs muted">Niv. ${f.lvl || 1} · ${f.on ? (f.cherche ? "Cherche un groupe" : "En ligne") : ago(f.vu)}</span></div>
+      <div class="am-fi"><b>${X().plink(f.u, X().pname(f.p, f.u))}</b><span class="xs muted">Niv. ${f.lvl || 1} · ${f.on ? (f.cherche ? "Cherche un groupe" : "En ligne") : ago(f.vu)}</span></div>
       ${M ? `<span class="am-o ${M[1]}">${M[0]}</span>` : ""}${f.cherche ? `<span class="am-o am-grp">Cherche un groupe</span>` : ""}
       <span class="am-acts">${f.on && f.mode === "mo" && mo ? `<button class="btn sm" data-act="am-inv" data-u="${h(f.u)}" data-v="groupe">Inviter</button>` : ""}
         <button class="btn sm ghost" data-act="am-pm" data-u="${h(f.u)}" data-p="${h(f.p)}">Message</button>

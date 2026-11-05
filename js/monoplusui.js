@@ -62,7 +62,7 @@
     if (!season()) return leave();
     const t = LB.type, R = LB.data[t], s = S(), c = hero();
     const score = (r) => (t === "grp" ? `stasis ${r.k} · ${dur(r.ms)}` : t === "phenix" ? (r.phenix >= 1000 ? `étape ${Math.floor(r.phenix / 1000)}` : "en route") : `niv. ${r.niveau}`);
-    const line = (r, me) => `<div class="mp-lr ${me ? "me" : ""}"><span class="mp-rk">${r.rang}</span>${X().cmed(r.cls, r.niveau)}<div class="mp-fi"><b>${X().pname(r.p || "", r.u)}${r.fer ? ` <span class="mp-o mp-fer">fer</span>` : ""}${r.iron ? ` <span class="mp-o mp-iron">Ironman</span>` : ""}</b><span class="xs muted">${h(r.nom || "")}${t === "grp" && r.at ? ` · ${new Date(r.at).toLocaleDateString("fr-FR")}` : ""}</span></div><b class="mp-sc">${score(r)}</b></div>`;
+    const line = (r, me) => `<div class="mp-lr ${me ? "me" : ""}"><span class="mp-rk">${r.rang}</span>${X().cmed(r.cls, r.niveau)}<div class="mp-fi"><b>${X().plink(r.u, X().pname(r.p || "", r.u))}${r.fer ? ` <span class="mp-o mp-fer">fer</span>` : ""}${r.iron ? ` <span class="mp-o mp-iron">Ironman</span>` : ""}</b><span class="xs muted">${h(r.nom || "")}${t === "grp" && r.at ? ` · ${new Date(r.at).toLocaleDateString("fr-FR")}` : ""}</span></div><b class="mp-sc">${score(r)}</b></div>`;
     let body;
     if (!srvOn()) body = `<div class="mp-card"><b>Les classements de saison passent par le serveur</b><span class="small muted">Ils ne lisent que la partie validée par le Bouclier Monocompte. Hors connexion, ta partie reste sur l'appareil : ${h(c.name)}, niveau ${c.lvl}${E.monoFerOk(s) ? ", sous le Serment de fer" : ""}.</span></div>`;
     else if (!R) { body = `<div class="mp-card"><div class="empty">${LB.err ? h(LB.err) : "Chargement…"}</div></div>`; lbLoad(t); }

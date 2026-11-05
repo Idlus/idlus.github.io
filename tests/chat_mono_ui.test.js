@@ -57,6 +57,7 @@ function fake() {
       case "my_role": return null;
       case "cosm_mine": return [];
       case "staff_list": return [{ u: U2, p: "Zoé", r: "mod" }];
+      case "mono_fiche": return F.acces && a.p_user === U2 ? { s: 0, nom: "Saison de test", cls: "cra", lvl: 12, title: "Voyageur du Temps", hero: "Flèche", u: U2, pseudo: "Zoé", sx: "f", hd: 1, gear: [], serment: "fer", camp: "bonta", arang: 3, rk: 2, nb: 9, grp_k: 5 } : null; // 2.2.10 (4A)
       case "chat_mono_profil": return F.acces && a.p_user === U2 ? { s: 0, nom: "Saison de test", cls: "cra", lvl: 12, title: "Voyageur du Temps", hero: "Flèche", u: U2, pseudo: "Zoé" } : null;
       default: return null;
     }
@@ -129,7 +130,15 @@ function fake() {
     const card = await page.evaluate(() => { const el = document.querySelector("#chMenu"); if (!el) return null; const c = el.querySelector(".chm-card"); const r = el.getBoundingClientRect();
       return { card: c ? c.textContent : "", acts: [...el.querySelectorAll("button")].map((b) => b.dataset.act), txt: el.textContent, l: r.left, r: r.right, b: r.bottom, w: innerWidth, h: innerHeight }; });
     if (!card || !/Crâ/.test(card.card) || !/niv\. 12/.test(card.card) || !/Voyageur du Temps/.test(card.card) || !/Saison de test/.test(card.card) || !/Flèche/.test(card.card)) fail(`${w} px, carte Monocompte (Crâ niv. 12, titre et saison du Monocompte) : ` + JSON.stringify(card));
-    if (card && (card.acts.includes("ch-prof") || card.acts.includes("mk-trade-ask") || /Légende|Fondateur|niv\. 200|Iop/.test(card.txt))) fail(`${w} px, carte Monocompte : pas de fiche ni de profil Classique : ` + JSON.stringify(card.acts) + " " + card.txt);
+    if (card && (card.acts.includes("mk-trade-ask") || /Légende|Fondateur|niv\. 200|Iop/.test(card.txt))) fail(`${w} px, carte Monocompte : pas de profil Classique : ` + JSON.stringify(card.acts) + " " + card.txt);
+    // 2.2.10 (1A, 4A) : « Voir sa fiche » ouvre la fiche Monocompte (mono_fiche), jamais le profil Classique
+    if (!(await page.$('#chMenu [data-act="ch-prof"][data-m="m"]'))) fail(`${w} px, carte Monocompte : bouton « Voir sa fiche » vers la fiche Monocompte`);
+    else { await page.click('#chMenu [data-act="ch-prof"]'); await page.waitForFunction(() => /Serment de fer/.test((document.querySelector("#sheet") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => {});
+      const fs = await page.evaluate(() => (document.querySelector("#sheet") || {}).textContent || "");
+      if (!/Zoé/.test(fs) || !/Voyageur du Temps/.test(fs) || !/Serment de fer/.test(fs) || !/2er|2e/.test(fs) || /Légende|Fondateur|niv\. 200|Iop/.test(fs)) fail(`${w} px, fiche Monocompte (héros, titre, serment, rang ; rien du Classique) : ` + fs.slice(0, 300));
+      await shot(page, `chat-mono-fiche-${w}.png`);
+      await page.evaluate(() => { const b = document.querySelector('#sheet [data-act="closesheet"]'); if (b) b.click(); }); await page.waitForTimeout(200);
+      await page.evaluate(() => { const m = [...document.querySelectorAll("#chat .ch-list .msg")].find((x) => x.textContent.includes("Bonjour le Monocompte")); m.querySelector('[data-act="ch-who"]').click(); }); }
     if (card && !["ch-pm", "ch-ign", "ch-rep"].every((k) => card.acts.includes(k))) fail(`${w} px, carte Monocompte : privé, ignorer et signaler : ` + JSON.stringify(card.acts));
     if (card && (card.l < 0 || card.r > card.w + 1 || card.b > card.h + 1)) fail(`${w} px, carte Monocompte dans l'écran : ` + JSON.stringify(card));
     await shot(page, `chat-mono-carte-${w}.png`);

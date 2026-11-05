@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.10 « La fiche des joueurs »
+- Toucher un pseudo (chat, amis, guilde, classements, Songe, saison du Monocompte) ouvre la fiche du joueur : héros dessiné, titre, en ligne, camp, 4 chiffres et boutons Lui écrire, Échange, Ami, Ignorer. Monocompte : fiche du seul héros de saison (fonction serveur mono_fiche).
+
 ## 2.2.9.10 « Comptoirs en Monocompte »
 - Monocompte : la page Comptoirs ouvre avec 4 boutiques (primes, cité, temples, Kolizéum), offre de la semaine comprise. Marché onirique et Boss des mondes restent au Classique.
 

@@ -76,7 +76,7 @@
     if (c.err) return `${head}<span class="xs muted">Classement indisponible : le serveur ne répond pas.</span>${all}`;
     const me = ON.user && ON.user.id, inTop = !!me && c.rows.some((r) => r.u === me);
     const row = (r, i, mine) => { const tm = teamMini(r.team);
-      return `<div class="lbr${mine ? " me" : r.u === me ? " mine" : ""}${X().staffCls(r.u)}"><span class="rk">${mine ? r.rank : i + 1}</span>${X().cmed(r.cls, r.fl)}<span class="nm">${mine ? X().pname((ON.profile && ON.profile.pseudo) || r.p || "Toi", me) : X().pname(r.p, r.u)}${mine || r.u === me ? ` <small class="inl">toi</small>` : ""}${tm ? `<small>${tm}</small>` : ""}</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`; };
+      return `<div class="lbr${mine ? " me" : r.u === me ? " mine" : ""}${X().staffCls(r.u)}"><span class="rk">${mine ? r.rank : i + 1}</span>${X().cmed(r.cls, r.fl)}<span class="nm">${mine ? X().pname((ON.profile && ON.profile.pseudo) || r.p || "Toi", me) : X().plink(r.u, X().pname(r.p, r.u))}${mine || r.u === me ? ` <small class="inl">toi</small>` : ""}${tm ? `<small>${tm}</small>` : ""}</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`; };
     const r5 = c.rows[N - 1], foot = [];
     if (!c.rows.length) foot.push(week ? "Personne n'est encore classé cette semaine dans ce donjon : à toi de jouer !" : "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !");
     else if (!inTop) foot.push(r5 ? `Pour entrer dans le top ${N} : ${r5.k < E.STASIS_MAX ? `stasis ${r5.k + 1}, ou ` : ""}stasis ${r5.k} en moins de ${recTime(r5.t)}.` : `Il reste des places dans le top ${N} : termine une stasis de ce donjon pour y entrer.`);

@@ -6690,3 +6690,20 @@ body.tb1 #onPill[data-st="ok"]{padding-inline:8px}
 .enczlink.locked{opacity:.75}
 /* 2.2.9.6 : pendant la saisie au téléphone (clavier ouvert), les barres fixées du bas sont cachées : iOS les dessinait au milieu de l'écran */
 body.kbd nav.main,body.kbd .mfstrip,body.kbd #backchip,body.kbd .dropbn,body.kbd .wtip,body.kbd .chmin{visibility:hidden!important;pointer-events:none!important}
+/* 2.2.10 (idée de Panda, 1A 2A 3A 4A) : fiche d'un joueur au clic sur son pseudo */
+.chmenu .chm-mini{display:flex;gap:10px;align-items:center;padding:6px 8px 8px;margin-bottom:4px;border-bottom:1px solid var(--line);max-width:260px}
+.chmenu .chm-mini .cm{flex:none}.chm-mini .chm-t{display:grid;gap:1px;min-width:0}.chm-mini .chm-t b{font-size:15px}.chm-mini .tt{color:var(--gold2);font-size:12px;font-weight:800}
+.chm-dot,.fp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good,#7bd85a);margin-right:4px;vertical-align:1px}
+.chmenu button.chm-go{justify-content:center;margin:2px 0 6px;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1a1206;font-weight:900}
+.chmenu button.chm-go:hover{filter:brightness(1.06);background:linear-gradient(180deg,var(--gold2),var(--gold))}
+.fp-hero{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center;background:radial-gradient(260px 160px at 22% 60%,color-mix(in srgb,var(--gold) 18%,transparent),transparent 70%),var(--panel2);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+.fp-lk{height:150px;display:grid;place-items:center}.fp-lk .fp-look{max-height:150px;max-width:150px;object-fit:contain}.fp-lk.med .cm{transform:scale(1.6)}
+.fp-id{display:grid;gap:4px;min-width:0}.fp-id h2{margin:0;overflow-wrap:anywhere}.fp-tt{color:var(--gold2);font-weight:800;font-size:14px}
+.fp-bdg{display:flex;gap:6px;flex-wrap:wrap}.fp-b{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;border-radius:99px;padding:2px 9px;background:var(--panel3)}
+.fp-b img{width:16px;height:16px}.fp-b.fer{background:#3a4a56;color:#e6eff5}.fp-b.camp.brakmar{color:#ffb3a3}.fp-b.camp.bonta{color:#a9d6ff}
+.fp-tiles{display:flex;gap:8px;flex-wrap:wrap}.fp-tiles div{background:var(--panel3);border-radius:10px;padding:4px 10px;display:grid;line-height:1.2}.fp-tiles b{font-size:16px;font-variant-numeric:tabular-nums}.fp-tiles span{font-size:11.5px;opacity:.75}
+.fp-acts{display:flex;gap:8px;flex-wrap:wrap;padding:10px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}.fp-acts .btn{flex:1 1 auto}
+.fp-hero .pgld{justify-self:start}
+@media(max-width:600px){.fp-hero{grid-template-columns:96px minmax(0,1fr);padding:8px 10px;gap:10px}.fp-lk{height:110px}.fp-lk .fp-look{max-height:110px;max-width:96px}}
+/* 3A : un pseudo ouvre la fiche partout (amis, guilde, classements des donjons, Songe, saison du Monocompte) */
+.pnl{all:unset;cursor:pointer;font:inherit;color:inherit;font-weight:inherit;border-radius:4px}.pnl:hover{text-decoration:underline}.pnl:focus-visible{outline:2px solid var(--gold);outline-offset:2px}

@@ -21,6 +21,8 @@
       ...(E.mtPts && E.mtPts(c) ? { mt: E.mtPts(c), ks: E.mtStats && c.lvl >= 200 ? E.mtStats(S, c).ks.slice(0, 2).map((k) => k.n) : [], ...(E.mtCode && c.lvl >= 200 && c.mt ? { mc: E.mtCode(c) } : {}) } : {}) })); // 2.0 : Maîtrise (classement) ; 2.1 : code de l'arbre (« Voir l'arbre »)
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
     if (main && E.sabMtLvl && S.sabMt) { const i = S.chars.indexOf(main); if (heroes[i]) heroes[i].smt = E.sabMtLvl(S); }
+    /* 2.2.10 (idée de Panda, 2A) : carte de visite de la fiche publique : héros principal (mn), son apparence (sexe, tête, palette) et son titre */
+    if (main) { const i = S.chars.indexOf(main); if (heroes[i]) Object.assign(heroes[i], { mn: 1, sx: main.sex === "f" ? "f" : "m", hd: Math.max(0, Math.min(20, main.head || 0)) }, main.palette ? { pal: String(main.palette).slice(0, 20) } : {}, main.title ? { tt: String(main.title).slice(0, 40) } : {}); }
     if (main && E.banWorn) { const b = E.banWorn(S), i = S.chars.indexOf(main); if (b && heroes[i]) heroes[i].ban = b; } // Saison 1 : bannière de profil (js/banniere.js) // 2.1.27 (Mathis 4B) : niveau de Maîtrise du temps sur le profil public (porté par le héros principal)
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
     // 2.1.12 : chaque point de Maîtrise compte un niveau ; mtl = Maîtrise comptée dans level (le serveur ne la prend pas pour une montée suspecte au premier envoi)

@@ -353,7 +353,7 @@
   const DEMO = [["Kraken", "iop", 7, 31], ["Lynaë", "eni", 7, 27], ["Nyx", "sram", 6, 34], ["Bwakfu", "iop", 5, 22], ["Gloubi", "osa", 4, 41], ["Tofuzz", "feca", 4, 30], ["Mélusine", "xelor", 3, 44], ["Fléchette", "cra", 3, 25], ["Baloo", "panda", 2, 38], ["Krokmou", "sacri", 2, 19]];
   function rankBody(s) {
     const wk = E.sgWeek(s); const o = ONL(); const mine = wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé";
-    const row = (x, me) => `<div class="sgr-row ${me ? "me" : ""}"><b class="n">${x.r}</b><span class="who">${X().cmed(x.main, x.main_lvl)}<b>${X().pname(x.pseudo, x.user_id)}</b></span><span class="xs int">${h(intName(x.ii))}</span><b class="num">${plural(x.waves, "vague")}</b></div>`;
+    const row = (x, me) => `<div class="sgr-row ${me ? "me" : ""}"><b class="n">${x.r}</b><span class="who">${X().cmed(x.main, x.main_lvl)}<b>${X().plink(x.user_id, X().pname(x.pseudo, x.user_id))}</b></span><span class="xs int">${h(intName(x.ii))}</span><b class="num">${plural(x.waves, "vague")}</b></div>`;
     if (RANK.demo) { const c0 = s.chars[0]; const L = DEMO.map(([p, c, ii, w], i) => ({ r: i + 1, pseudo: p, main: c, main_lvl: 200, ii: Math.min(ii, E.SG_INT.length - 1), waves: w }));
       return `<div class="sgr-list">${L.map((x) => row(x, false)).join("")}${row({ r: 14, pseudo: c0.name, main: c0.cls, main_lvl: c0.lvl, ii: Math.max(0, wk.ii), waves: wk.waves }, true)}</div><div class="sgr-foot xs muted">Classement d'exemple (Panel Xener › Test) : rien n'est envoyé au serveur.</div>`; }
     if (!o || !o.enabled) return `<div class="sgr-empty small">Le classement se joue en ligne. Ton meilleur songe de la semaine : <b>${mine}</b>.</div>`;

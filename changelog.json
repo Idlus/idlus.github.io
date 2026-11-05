@@ -1,6 +1,16 @@
 {
-  "version": "2.2.9.10",
+  "version": "2.2.10",
   "versions": [
+    {
+      "v": "2.2.10",
+      "name": "La fiche des joueurs",
+      "items": [
+        "Toucher un pseudo dans le chat montre tout de suite le joueur (classe, niveau, titre, en ligne) avec un gros bouton « Voir sa fiche » (idée de Panda)",
+        "La fiche montre en haut le héros principal dessiné, son titre, s'il est en ligne, son camp et 4 chiffres, avec les boutons Lui écrire, Proposer un échange, Ajouter en ami et Ignorer",
+        "Les pseudos ouvrent aussi la fiche dans la liste d'amis, la guilde, le classement des donjons, le Songe et les classements de saison",
+        "Monocompte : nouvelle fiche avec seulement le héros de la saison (serment, camp, rang de saison, donjon de groupe, équipement), jamais le Classique"
+      ]
+    },
     {
       "v": "2.2.9.10",
       "name": "Comptoirs en Monocompte",

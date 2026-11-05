@@ -232,6 +232,21 @@ try {
   assert.deepStrictEqual(card(1, 99), { s: 0, nom: "Saison de test", cls: null, lvl: 1, title: null, hero: null, u: U(99), pseudo: "Joueur99" }, "carte d'un joueur sans héros Monocompte");
   assert.strictEqual(card(2, 1), null, "compte sans accès au Monocompte : pas de carte");
   fails(() => anon(`select chat_mono_profil('${U(1)}')`), /permission denied/, "visiteur : pas de carte");
+  // 2.2.10 (4A) : fiche Monocompte (mono_fiche) : héros Monocompte seulement, apparence et équipement de la partie envoyée,
+  // serment et camp de la partie validée, rang au classement Niveau de la saison ; jamais le profil Classique
+  q(`update mono.parties set meta = meta || '{"hs":"f","hh":2,"heroes":[{"cls":"cra","lvl":12,"pal":"nuit","gear":["i160","i219","x;drop"]}]}' where user_id = '${U(1)}';
+     update mono.parties_ok set resume = resume || '{"serment":"fer","camp":"bonta","rang":5,"iron":true,"phenix":{"stade":2},"pass":7}' where user_id = '${U(1)}';`);
+  const fiche = (i, who) => JSON.parse(as(i, `select coalesce(mono_fiche('${U(who)}')::text, 'null')`));
+  let F = fiche(99, 1);
+  assert.deepStrictEqual([F.pseudo, F.cls, F.lvl, F.hero, F.title, F.sx, F.hd, F.pal, F.gear, F.serment, F.camp, F.arang, F.iron, F.phx, F.pass, F.rk],
+    ["Joueur01", "cra", 12, "Flèche", "Voyageur du Temps", "f", 2, "nuit", ["i160", "i219"], "fer", "bonta", 5, true, 2, 7, undefined], "fiche Monocompte sans classement de saison");
+  assert(!JSON.stringify(F).includes("Légende"), "fiche Monocompte : jamais le titre Classique");
+  q(`create table if not exists mono.lb_saison (user_id uuid, saison int, nom text, cls text, niveau int, grp_k int, grp_ms int, fer boolean not null default false, fer_perdu boolean not null default false);
+     insert into mono.lb_saison (user_id, saison, niveau, grp_k, grp_ms, fer) values ('${U(1)}', 0, 12, 5, 61000, true), ('${U(3)}', 0, 30, null, null, false), ('${U(4)}', 0, 8, null, null, false);`);
+  F = fiche(99, 1); assert.deepStrictEqual([F.rk, F.nb, F.grp_k, F.grp_ms, F.fer], [2, 3, 5, 61000, true], "fiche Monocompte : rang de saison et donjon de groupe");
+  assert.strictEqual(fiche(2, 1), null, "compte sans accès au Monocompte : pas de fiche");
+  fails(() => anon(`select mono_fiche('${U(1)}')`), /permission denied/, "visiteur : pas de fiche");
+  q(`drop table mono.lb_saison`);
   // saison finie : plus de héros en cours
   q(`update mono.saisons set etat = 'finie' where id = 0`);
   reset(); assert.strictEqual(send(1, "T:saison finie", "m"), "OK");
