@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.9.2";
+const GAME_VERSION = "2.2.9.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.9.3", name: "Couture fine réparée", items: [
+    "Collection de panoplies : la Couture fine marche maintenant sur toutes les panoplies de 3 pièces et plus. Vérifié une par une (375 panoplies)",
+    "8 panoplies avaient plus de pièces que d'emplacements (ex. 4 armes du Dragoeuf Cuirassé pour une seule main, 3 anneaux des Maléfices d'Ephedrya) : la Couture fine n'y jouait jamais. Maintenant, il manque 1 pièce sur ce que tu peux porter = bonus complet",
+    "Concernées : Dragoeuf Cuirassé, Dragoeuf Vagabond, Maléfices d'Ephedrya, Marteaux-Aigris, Déchireuse, Rhoarim (les panoplies Pins Perdus et Grolandais, 2 pièces portables, restent hors Couture fine comme toutes les panoplies de 2 pièces)" ] },
   { v: "2.2.9.2", name: "Pas de monture pendant l'accouchement", items: [
     "Une monture à l'enclos ne se monte plus pendant l'accouchement : le héros qui la chevauchait en descend quand le couple entre à l'enclos, et elle redevient montable à la naissance",
     "Pareil pour une monture en balade. Sur sa fiche, le bouton affiche « À l'enclos » ou « En balade » au lieu de « Monter »",

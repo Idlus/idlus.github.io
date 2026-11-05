@@ -1,6 +1,15 @@
 {
-  "version": "2.2.9.2",
+  "version": "2.2.9.3",
   "versions": [
+    {
+      "v": "2.2.9.3",
+      "name": "Couture fine réparée",
+      "items": [
+        "Collection de panoplies : la Couture fine marche maintenant sur toutes les panoplies de 3 pièces et plus. Vérifié une par une (375 panoplies)",
+        "8 panoplies avaient plus de pièces que d'emplacements (ex. 4 armes du Dragoeuf Cuirassé pour une seule main, 3 anneaux des Maléfices d'Ephedrya) : la Couture fine n'y jouait jamais. Maintenant, il manque 1 pièce sur ce que tu peux porter = bonus complet",
+        "Concernées : Dragoeuf Cuirassé, Dragoeuf Vagabond, Maléfices d'Ephedrya, Marteaux-Aigris, Déchireuse, Rhoarim (les panoplies Pins Perdus et Grolandais, 2 pièces portables, restent hors Couture fine comme toutes les panoplies de 2 pièces)"
+      ]
+    },
     {
       "v": "2.2.9.2",
       "name": "Pas de monture pendant l'accouchement",

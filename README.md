@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.9.3 « Couture fine réparée »
+
+- Signalé par Mathis (05/11) : la Couture fine ne marchait pas sur toutes les panoplies. js/collections.js : E.setWearable(sid) = le plus de pièces portables ensemble (1 par emplacement, 2 anneaux) ; « complète » se compte sur ce nombre. 8 panoplies avaient plus de pièces que d'emplacements (Dragoeuf Cuirassé et Vagabond : 4 armes ; Ephedrya : 3 anneaux + 2 armes ; Marteaux-Aigris, Déchireuse, Rhoarim : 2 armes ; Pins Perdus : 2 coiffes ; Grolandais : 2 armes), la Couture fine ne s'y déclenchait jamais.
+- tests/collections.test.js 6 bis : chaque panoplie (375 de 3 pièces portables et plus) est portée en entier puis avec une pièce en moins, le bonus doit rester le même.
+- Audit des équipements (DofusDB, 940 panoplies) : les 470 panoplies du jeu ont toutes leurs pièces. 50 panoplies DOFUS ≤ niveau 200 sont absentes (Kolizéum/alignement, événements, montures sauvages, boss hors jeu) ; 2 viennent de monstres déjà en jeu : Krokilleur (Krokilles Matures, Vulkania) et Granduk.
+
 ## 2.2.9.2 « Pas de monture pendant l'accouchement »
 
 - Demande de Mathis (05/11) : une monture à l'enclos ne se monte plus. js/elevage.js : E.pairDismount (le héros descend quand le couple entre à l'enclos, et au premier passage du temps pour une ancienne partie), E.equipMount refuse une monture à l'enclos ou en balade. Fiche de monture : bouton « À l'enclos » / « En balade ». Test : tests/elevage.test.js (15).

@@ -114,6 +114,28 @@ console.log("ok - Garde-robe (une tenue de plus) et Retouche");
   const two = ids.find((x) => (SETS[x].size || E.setPieces(x).length) === 2); if (two) assert.strictEqual(E.setCountFx(S, two, 1), 1, "pas pour les panoplies de 2 pièces");
 }
 console.log("ok - Couture fine");
+// 6 bis (2.2.9.1) : chaque panoplie, une par une. On porte tout ce qu'un héros peut porter, on retire une pièce :
+// avec la Couture fine, le bonus doit rester celui de la panoplie complète (les 8 panoplies à 4 armes ou 3 anneaux comprises)
+{
+  const S = fresh(); const c = S.chars[0]; ids.slice(0, 105).forEach((x) => give(S, x)); assert.ok(E.collHas(S, "fine"));
+  let tested = 0; const bad = [];
+  for (const sid of ids) {
+    const w = E.setWearable(sid); if (w < 3) continue;
+    if (!E.setPieces(sid).every((t) => Object.values(S.items).some((it) => it.tpl === t))) give(S, sid);
+    c.equip = {}; E.equipSet(S, c.id, sid);
+    const n = E.setCounts(S, c)[sid] || 0; if (n !== w) { bad.push(`${SETS[sid].name} : ${n}/${w} portées`); continue; }
+    const full = JSON.stringify(E.setBonus(sid, n));
+    const slot = Object.keys(c.equip).find((sl) => S.items[c.equip[sl]] && ITEMS[S.items[c.equip[sl]].tpl].set === sid); E.unequip(S, c.id, slot);
+    const m = E.setCounts(S, c)[sid] || 0;
+    if (JSON.stringify(E.setBonus(sid, E.setCountFx(S, sid, m))) !== full) bad.push(`${SETS[sid].name} : ${m}/${w} sans le bonus complet`);
+    tested++;
+  }
+  assert.deepStrictEqual(bad, [], "Couture fine sur toutes les panoplies");
+  assert.ok(tested > 350, `${tested} panoplies vérifiées`);
+  const drag = Object.keys(SETS).find((x) => SETS[x].name === "Panoplie du Dragoeuf Cuirassé");
+  if (drag) { assert.strictEqual(E.setWearable(drag), 4, "4 armes, une seule main"); assert.strictEqual(E.setCountFx(S, drag, 3), 4); }
+  console.log(`ok - Couture fine vérifiée sur ${tested} panoplies, une par une`);
+}
 
 // 7. Migration : une partie d'avant la 1.0.30 reçoit ses titres sans fête ; une partie à jour ne refait pas la fête
 {

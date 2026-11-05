@@ -92,7 +92,16 @@
     return b;
   };
   /* Couture fine : une panoplie de 3 pièces et plus à qui il manque 1 pièce donne son bonus complet (appelé par E.charStats) */
-  const fullOf = (sid) => (SETS[sid] ? SETS[sid].size || E.setPieces(sid).length : 0); // pièces de la panoplie dans le jeu
+  /* 2.2.9.1 : « complète » = le plus de pièces qu'un héros peut porter en même temps. 8 panoplies ont plus de pièces que d'emplacements
+     (ex. 4 armes pour une seule main) : avant, il fallait 6 pièces sur 7 du Dragoeuf Cuirassé, impossible à porter, et la Couture fine ne jouait jamais. */
+  const CAP = { anneau: 2 }; // nombre d'emplacements par type (1 sinon)
+  const WEAR = {};
+  E.setWearable = (sid) => { if (WEAR[sid] !== undefined) return WEAR[sid]; const by = {};
+    E.setPieces(sid).forEach((t) => { const sl = ITEMS[t] && ITEMS[t].slot; if (sl) by[sl] = (by[sl] || 0) + 1; });
+    let w = 0; for (const sl in by) w += Math.min(by[sl], CAP[sl] || 1);
+    const size = SETS[sid] ? SETS[sid].size || E.setPieces(sid).length : 0;
+    return (WEAR[sid] = Math.min(size, w || size)); };
+  const fullOf = (sid) => (SETS[sid] ? E.setWearable(sid) : 0); // pièces de la panoplie portables ensemble
   E.setCountFx = (S, sid, n) => { const full = fullOf(sid); return full >= 3 && n === full - 1 && E.collHas(S, "fine") ? full : n; };
 
   /* ---------- Garde-robe : une tenue de plus par héros ---------- */
