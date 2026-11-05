@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.8.7";
+const GAME_VERSION = "2.2.8.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.8.8", name: "Grand nettoyage", items: [
+    "Grand nettoyage des bugs et des failles : le serveur et toutes les pages du jeu ont été vérifiés sur les trois serveurs (Éternel, Saison 1, Monocompte), sur PC et sur téléphone. Aucune grosse faille trouvée",
+    "Hauts faits du chat : un niveau 200, une renaissance ou un Dofus n'est plus annoncé qu'une seule fois, même quand tu changes d'appareil (téléphone puis PC). Merci pour vos signalements !",
+    "Artisanat : la liste des recettes ne s'arrête plus à 60 : un bouton « Voir plus » montre les suivantes. Merci pour le signalement !",
+    "Monocompte, mode Ironman : il est maintenant écrit clairement qu'il n'y a aucun bonus de récolte ni de vitesse en échange : c'est un défi" ] },
   { v: "2.2.8.7", name: "Légendaires : un taux plus clair", items: [
     "Songe infini : la chance de légendaire (1 sur 4 000 en Paradoxe 1 à 1 sur 500 en Cauchemar 3) est un seul tirage par songe validé, pour toute l'équipe : pas à chaque combat ni à chaque vague, et pas par héros",
     "C'est maintenant écrit sur la fiche de l'intensité (avec une bulle d'aide), dans l'onglet Légendaires et dans le guide. Le taux ne change pas" ] },
@@ -8642,7 +8647,8 @@ function craftHtml() {
   const all = job === "bricoleur" ? [] : Object.values(ITEMS).filter((T) => T.craft && T.craft.job === job);
   const stats = STAT_ORDER.filter((k) => all.some((T) => T.stats[k] && T.stats[k][1] > 0));
   const sets = [...new Set(all.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
-  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${(() => { if (!r.okLvl) return ""; const b = (r.T ? 12 : 20) + r.lvl * 3, x = E.craftXpOf(S, job, r.req, b), m = E.craftXpMult(S, job, r.req); return m >= 1 ? "" : ` · <b class="minus">${x <= 1 ? "1 XP" : `XP −${Math.round((1 - m) * 100)} %`}</b>`; })()}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
+  const recN = Math.max(60, ui.recN || 0); // 2.2.8.8 (ticket 53) : plus de 60 recettes avec « Voir plus »
+  const list = rs.slice(0, recN).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${(() => { if (!r.okLvl) return ""; const b = (r.T ? 12 : 20) + r.lvl * 3, x = E.craftXpOf(S, job, r.req, b), m = E.craftXpMult(S, job, r.req); return m >= 1 ? "" : ` · <b class="minus">${x <= 1 ? "1 XP" : `XP −${Math.round((1 - m) * 100)} %`}</b>`; })()}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
     <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recCanN(id, room); return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}${jobRenPip(E.craftRen(S, id), 1)}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
@@ -8651,7 +8657,7 @@ function craftHtml() {
     ${filterBar("met", F, { ph: "Nom de l'objet ou d'une ressource…", slots: job === "bricoleur" ? null : CRAFT_JOBS[job].slots, stats: stats.length ? stats : null, sets, cid: "Pour un héros", sort: [["useful", "Tri : utiles puis niveau ↓"], ["lvl", "Tri : niveau ↓"], ["lvlup", "Tri : niveau ↑"], ["name", "Tri : nom"]] })}
     <div class="row small" style="gap:6px"><div class="seg">${[["near", "Fabricables et presque"], ["can", "Fabricables"], ["all", "Toutes"]].map(([v, n]) => `<button data-act="fltset" data-ctx="met" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div>
       ${job === "bricoleur" ? "" : `<button class="btn sm ${F.util ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="util"><span class="pdot"></span> Utile pour mes héros</button>`}<button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="fav">★ Favoris</button></div>
-    <div class="psplit"><section class="panel"><div class="phead"><h2>Recettes</h2><span class="xs muted">${rs.length}${rs.length > 60 ? " · 60 premières" : ""}</span></div><div class="plist">${list || empty}</div></section>
+    <div class="psplit"><section class="panel"><div class="phead"><h2>Recettes</h2><span class="xs muted">${rs.length}${rs.length > recN ? ` · ${recN} premières` : ""}</span></div><div class="plist">${list || empty}${rs.length > recN ? `<button class="btn sm" style="margin:8px auto;display:block" data-act="recmore">Voir plus (${fmt(rs.length - recN)} autres)</button>` : ""}</div></section>
       ${narrow() ? "" : `<section class="panel pdetp"><div class="pad">${recDetail(R, job)}</div></section>`}</div>`;
 }
 /* 1.0.7.6 : la liste des recettes / des objets (qui défile à part sur PC) garde sa position quand la page se redessine */
@@ -8688,13 +8694,13 @@ function monoIronHtml() {
   const btn = on ? `<span class="tag perfect">${G("shield")} Ironman</span><button class="btn sm ghost" data-act="monoironquit">Quitter le mode Ironman</button>`
     : err ? `<span class="xs muted">${h(err)}</span>` : `<button class="btn sm primary" data-act="monoiron">Passer en Ironman</button>`;
   return `<div class="spc${on ? " spcon" : ""}" style="margin-top:10px"><span class="xs muted">Mode Ironman</span><b>${on ? "Tu fais tout seul" : "Tout faire seul"}</b>
-    <p class="xs" style="margin:2px 0 0;white-space:normal;overflow:visible;text-overflow:clip">${on ? "Tous tes métiers montent jusqu'au niveau 200. Pas d'HdV, pas d'échange, pas de renfort d'un ami ; groupes et mercenaire restent permis."
+    <p class="xs" style="margin:2px 0 0;white-space:normal;overflow:visible;text-overflow:clip">${on ? "Tous tes métiers montent jusqu'au niveau 200. Pas d'HdV, pas d'échange, pas de renfort d'un ami ; groupes et mercenaire restent permis. Aucun bonus de récolte ni de vitesse en échange : c'est un défi."
       : I && I.quit ? "Tu as quitté le mode Ironman cette saison."
-      : `Tous les métiers montent jusqu'au niveau 200, mais sans HdV, sans échange et sans renfort d'un ami. Pendant la manche 1, ou tant que ton héros n'a pas dépassé le niveau ${E.MONO.iron.lvlMax}. On peut le quitter une seule fois : les métiers hors spécialités redescendent alors au niveau ${E.MONO.jobs.cap}.`}</p>
+      : `Tous les métiers montent jusqu'au niveau 200, mais sans HdV, sans échange et sans renfort d'un ami. Pendant la manche 1, ou tant que ton héros n'a pas dépassé le niveau ${E.MONO.iron.lvlMax}. Aucun bonus de récolte ni de vitesse en échange : c'est un défi. On peut le quitter une seule fois : les métiers hors spécialités redescendent alors au niveau ${E.MONO.jobs.cap}.`}</p>
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${btn}</div></div>`;
 }
 async function monoIronGo() {
-  if (!confirm("Passer en mode Ironman ? Tous tes métiers pourront monter jusqu'au niveau 200, mais tu ne pourras plus utiliser l'HdV, échanger avec un joueur ni prendre le renfort d'un ami. Tu pourras le quitter une seule fois.")) return;
+  if (!confirm("Passer en mode Ironman ? Tous tes métiers pourront monter jusqu'au niveau 200, mais tu ne pourras plus utiliser l'HdV, échanger avec un joueur ni prendre le renfort d'un ami, et tu n'auras aucun bonus de récolte ni de vitesse en échange. Tu pourras le quitter une seule fois.")) return;
   const err = E.monoIronErr(S); if (err) { toast(err); return; }
   const ON = window.ONLINE;
   if (!ON || !ON.monoMarket || !ON.monoMarket()) { toast("Connecte-toi au Monocompte pour passer en Ironman : le jeu vérifie d'abord que tu n'as plus rien en cours à l'HdV."); return; }
@@ -11582,7 +11588,8 @@ document.addEventListener("click", (ev) => {
     case "hvgrow": { const r = E.act(S, "growRoom", d.v); if (r) { toast(r, "warn"); return; } toast(`${E.room(d.v).name} agrandie : une place de meuble en plus.`); break; }
     case "fbuy": { const r = E.act(S, "buyFurn", d.v); if (r) { toast(r, "warn"); return; } toast(E.isPlaced(S, d.v) ? `${d.v} acheté et placé !` : `${d.v} acheté. Pièce pleine : place-le en retirant un meuble.`); break; }
     case "fshopf": ui.fShop = d.v; break;
-    case "craftjob": ui.craftJob = d.v; ui.recSel = null; ui.recStick = null; break;
+    case "craftjob": ui.craftJob = d.v; ui.recSel = null; ui.recStick = null; ui.recN = 0; break;
+    case "recmore": ui.recN = Math.max(60, ui.recN || 0) + 60; break;
     /* 0.1.41 : métiers et forgemagie */
     case "pagego": pageGo(d.v); return;
     case "gbsheet": ui.tab = "inv"; ui.inv = "res"; window.scrollTo(0, 0); break;

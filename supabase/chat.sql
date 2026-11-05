@@ -276,11 +276,35 @@ as $$ select jsonb_build_object('mute_until', s.mute_until, 'banned', coalesce(s
 grant execute on function public.chat_me() to authenticated;
 
 -- ---------- annonces automatiques dans le chat ----------
+-- 05/11/2026 (tickets 27, 48, 49 : hauts faits en boucle) : un niveau 200, une renaissance ou un Dofus n'est annoncé qu'une fois
+-- par compte et par serveur. Avant, une partie plus ancienne envoyée depuis un autre appareil faisait redescendre le classement,
+-- et la partie suivante ré-annonçait les mêmes hauts faits. Table commune à l'Éternel ('e') et à la Saison 1 ('s', chat_s1.sql).
+create table if not exists public.chat_ann_once (
+  srv text not null, user_id uuid not null references auth.users (id) on delete cascade, k text not null,
+  at timestamptz not null default now(), primary key (srv, user_id, k));
+alter table public.chat_ann_once enable row level security;
+revoke all on public.chat_ann_once from anon, authenticated;
+create or replace function public.chat_ann_cle(p jsonb) returns text language sql immutable as $$
+  select case p->>'t'
+    when 'lvl200' then 'lvl200:' || coalesce(p->>'cls', '') || ':' || coalesce(p->>'name', '') || ':' || coalesce(p->>'ren', '0')
+    when 'ren' then 'ren:' || coalesce(p->>'cls', '') || ':' || coalesce(p->>'name', '') || ':' || coalesce(p->>'n', '')
+    when 'dofus' then 'dofus:' || coalesce(p->>'id', '')
+    when 'dsub' then 'dsub:' || coalesce(p->>'id', '')
+  end $$;
+-- vrai la première fois (le haut fait peut partir), faux s'il a déjà été annoncé
+create or replace function public.chat_ann_premier(p_srv text, p_user uuid, p_data jsonb) returns boolean language plpgsql security definer set search_path = public
+as $$ declare k text := public.chat_ann_cle(p_data); begin
+  if k is null then return true; end if;
+  insert into public.chat_ann_once (srv, user_id, k) values (p_srv, p_user, k) on conflict do nothing;
+  return found;
+end $$;
+revoke all on function public.chat_ann_premier(text, uuid, jsonb) from public, anon, authenticated;
 create or replace function public.chat_ann(p_user uuid, p_data jsonb) returns void language plpgsql security definer set search_path = public
 as $$ declare pr record; lad record; begin
   select pseudo into pr from profiles where id = p_user;
   select main, main_lvl, flagged into lad from ladder where user_id = p_user;
   if lad.flagged then return; end if;
+  if not public.chat_ann_premier('e', p_user, p_data) then return; end if;
   -- 2.2.4.9 : serveur du haut fait (les hauts faits sont communs) ; la Saison 1 a sa propre s1.chat_ann (supabase/chat_s1.sql)
   insert into chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data) values ('g', p_user, pr.pseudo, lad.main, lad.main_lvl, 'ann', jsonb_build_object('srv', 'e') || p_data);
 end $$;

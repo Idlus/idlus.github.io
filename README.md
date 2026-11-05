@@ -10,6 +10,14 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.8.8 « Grand nettoyage »
+
+- Audit (fil « Grand nettoyage des bugs et failles ») : droits de la base lus en lecture seule (étape audit-securite de Serveur OVH, tools/serveur/audit) : aucune table modifiable par les joueurs hors pseudo et ignorés, fonctions du panel protégées, vues de classement non modifiables. Balayage Playwright de toutes les pages (Éternel, S1, Mono ; 1280 et 390 px) : 0 erreur.
+- Tickets 27, 48, 49 : public.chat_ann_once + chat_ann_premier (supabase/chat.sql, chat_s1.sql) : niveau 200, renaissance, Dofus et Dofus sublimé annoncés une fois par compte et par serveur (une partie plus ancienne envoyée d'un autre appareil faisait redescendre le classement puis ré-annoncer).
+- Ticket 53 : recettes d'artisanat au-delà de 60 (« Voir plus », ui.recN). Ticket 57 : texte Ironman (aucun bonus en échange).
+- supabase/droits.sql (étape droits-ecriture) : insert / update / delete / truncate retirés à anon et authenticated sur public, s1 et mono, sauf profiles (insert) et ignores (insert, delete). tests/droits_sql.test.js.
+- tests/_audit_tmp.test.js (copie de panel_serveurs_ui.test.js) retiré.
+
 ## 2.2.8.7 « Légendaires : un taux plus clair »
 
 - Question de Mathis (« 1/500 par run ou par combat ? par groupe ou perso ? ») : le légendaire du Songe est tiré une seule fois à la validation d'un songe (`E.legRoll` dans js/songe.js `validate`), pour toute l'équipe, parmi les légendaires du niveau du héros le plus haut. Le texte le dit maintenant (fiche de l'intensité, onglet Légendaires, nouveautés du Songe, guide). `E.LEG_RATE` inchangé.

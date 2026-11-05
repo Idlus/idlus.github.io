@@ -33,7 +33,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord]
+        options: [verifier, vote-cle, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -712,6 +712,24 @@ jobs:
           echo "== CLE CHIFFREE"; openssl pkeyutl -encrypt -pubin -inkey "$d/cle.pub" -pkeyopt rsa_padding_mode:oaep -in "$d/k" | base64 -w0; echo
           echo "== LISTE CHIFFREE ($(wc -c < "$d/c.b64") octets)"; fold -w 4000 "$d/c.b64"; echo
           rm -rf "$d"
+      - name: Audit de sécurité de la base (lecture seule, aucune donnée de joueur, 05/11)
+        # Fil « Grand nettoyage des bugs et failles » : droits des fonctions et des tables vus par le jeu (anon, authenticated).
+        if: inputs.etape == 'audit-securite'
+        run: |
+          for q in ${AUDIT_Q:-fonctions tables colonnes annonces}; do echo "== $q"; bash tools/serveur/vps_sql.sh lecture "$(cat tools/serveur/audit/$q.sql)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.indexOf("[");const L=JSON.parse(s.slice(i));console.log(L.length+" lignes");L.forEach(x=>console.log(Object.values(x).map(v=>v===null?"-":v===true?"o":v===false?"n":String(v).slice(0,300)).join(" | ")))})'; done
+      - name: Droits d'écriture des joueurs retirés des tables (sauvegarde de la base, supabase/droits.sql, 05/11)
+        if: inputs.etape == 'droits-ecriture'
+        run: |
+          echo '== Sauvegarde complète de la base avant installation'
+          bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-droits-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -l $f; [ $(stat -c %s $f) -gt 100000 ] || { echo "sauvegarde trop petite" >&2; exit 1; }'
+          { echo "set lock_timeout = '3s';"; cat supabase/droits.sql; } > /tmp/q.sql
+          for essai in 1 2 3 4 5 6; do
+            if bash tools/serveur/vps_sql.sh fichier /tmp/q.sql > /tmp/r.txt 2>&1; then echo "OK (essai $essai)"; break; fi
+            tail -c 800 /tmp/r.txt; echo
+            if grep -qiE 'lock timeout|deadlock' /tmp/r.txt && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+            exit 1
+          done
+          bash tools/serveur/vps_sql.sh lecture "select count(*) filter (where privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')) ecritures_restantes, string_agg(distinct table_schema || '.' || table_name || ':' || privilege_type, ' ') filter (where privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')) lesquelles from information_schema.role_table_grants where grantee in ('anon', 'authenticated') and table_schema in ('public', 's1', 'mono')"
       - name: Sauvegarde complète de la base (avant une installation SQL)
         # 04/11/2026 : les installations de fonctions et de schéma SQL sont autorisées par Mathis « tests passés, sauvegarde de la base avant ».
         if: inputs.etape == 'sauvegarde-base'

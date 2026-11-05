@@ -1,6 +1,16 @@
 {
-  "version": "2.2.8.7",
+  "version": "2.2.8.8",
   "versions": [
+    {
+      "v": "2.2.8.8",
+      "name": "Grand nettoyage",
+      "items": [
+        "Grand nettoyage des bugs et des failles : le serveur et toutes les pages du jeu ont été vérifiés sur les trois serveurs (Éternel, Saison 1, Monocompte), sur PC et sur téléphone. Aucune grosse faille trouvée",
+        "Hauts faits du chat : un niveau 200, une renaissance ou un Dofus n'est plus annoncé qu'une seule fois, même quand tu changes d'appareil (téléphone puis PC). Merci pour vos signalements !",
+        "Artisanat : la liste des recettes ne s'arrête plus à 60 : un bouton « Voir plus » montre les suivantes. Merci pour le signalement !",
+        "Monocompte, mode Ironman : il est maintenant écrit clairement qu'il n'y a aucun bonus de récolte ni de vitesse en échange : c'est un défi"
+      ]
+    },
     {
       "v": "2.2.8.7",
       "name": "Légendaires : un taux plus clair",

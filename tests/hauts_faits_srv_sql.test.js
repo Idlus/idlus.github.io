@@ -42,4 +42,14 @@ try {
   assert.strictEqual(q(`select data->>'srv' from chat_msgs order by id desc limit 1`), "s", "un serveur déjà posé par l'appel est gardé");
   assert.strictEqual(q(`select has_function_privilege('authenticated', 's1.chat_ann(uuid, jsonb)', 'execute')::text`), "false", "s1.chat_ann : pas appelable par les joueurs");
   console.log("ok - hauts faits : serveur Éternel ou Saison 1 dans chaque annonce");
+  // 05/11 (tickets 27, 48, 49) : un niveau 200, une renaissance ou un Dofus ne part qu'une fois par compte et par serveur
+  q(`delete from chat_msgs`);
+  q(`create function s1.lvl(u uuid) returns void language plpgsql security definer set search_path = s1, public as $$ begin perform chat_ann(u, jsonb_build_object('t', 'lvl200', 'cls', 'cra', 'name', 'Bozo', 'ren', 0)); end $$;`);
+  for (let i = 0; i < 3; i++) q(`select public.chat_ann('${U(1)}', jsonb_build_object('t', 'lvl200', 'cls', 'cra', 'name', 'Bozo', 'ren', 0)); select public.chat_ann('${U(1)}', jsonb_build_object('t', 'dofus', 'id', 'dofus_emeraude')); select s1.lvl('${U(1)}');`);
+  q(`select public.chat_ann('${U(1)}', jsonb_build_object('t', 'lvl200', 'cls', 'cra', 'name', 'Bozo', 'ren', 1))`); // après une renaissance : nouveau haut fait
+  q(`select public.chat_ann('${U(1)}', jsonb_build_object('t', 'chroma', 'k', 'x')); select public.chat_ann('${U(1)}', jsonb_build_object('t', 'chroma', 'k', 'x'))`); // les autres annonces ne changent pas
+  assert.strictEqual(q(`select string_agg(data->>'t' || ':' || (data->>'srv') || ':' || coalesce(data->>'ren', data->>'id', data->>'k'), ',' order by id) from chat_msgs`),
+    "lvl200:e:0,dofus:e:dofus_emeraude,lvl200:s:0,lvl200:e:1,chroma:e:x,chroma:e:x", "chaque haut fait une seule fois par serveur");
+  assert.strictEqual(q(`select has_table_privilege('authenticated', 'public.chat_ann_once', 'select')::text`), "false", "chat_ann_once : invisible pour les joueurs");
+  console.log("ok - hauts faits : un niveau 200, une renaissance ou un Dofus n'est annoncé qu'une fois");
 } finally { run(`drop database if exists ${DB}`, URL0); }

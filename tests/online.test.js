@@ -1373,7 +1373,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       if (r.n1 !== r.n0 + 1 || r.n2 !== r.n0 + 2 || !r.fini) fail("Songe : record pas renvoyé 10 minutes après un refus passager " + JSON.stringify(r)); }
     // 2.1.26.3 : Grand défi du dimanche lancé depuis l'Accueil : la règle votée est lue au serveur avant de jouer (le serveur rejoue avec elle)
     { const r = await page.evaluate(async () => {
-        const E = window.ENGINE, S = window.DX.S; const day0 = E.defiDay, sun0 = E.defiSunday; const fake = day0() + 7 * 52;
+        const E = window.ENGINE, S = window.DX.S; const day0 = E.defiDay, sun0 = E.defiSunday; let fake = day0() + 7 * 52;
+        // 05/11 : un dimanche dont la règle d'équipe accepte l'équipe du test (le 52e dimanche suivant pouvait tomber sur « Sans Iop »)
+        { const T0 = E.DEFI_TIERS.find((x) => E.defiTierOk(S, x.id)); for (let k = 52; T0 && k < 200; k++) { const f = day0() + 7 * k; if (!E.defiTeamErr(S, E.defi(T0.id, f))) { fake = f; break; } } }
         const keep = JSON.stringify({ defi: S.defi, defiStreak: S.defiStreak, defiLog: S.defiLog, defiHist: S.defiHist, defiVoteRes: S.defiVoteRes, kamas: S.kamas, cnt: S.cnt });
         E.defiDay = () => fake; E.defiSunday = () => true;
         try {

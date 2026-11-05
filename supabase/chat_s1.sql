@@ -8,6 +8,7 @@ as $$ declare pr record; lad record; begin
   select pseudo into pr from public.profiles where id = p_user;
   select main, main_lvl, flagged into lad from s1.ladder where user_id = p_user;
   if lad.flagged then return; end if;
+  if not public.chat_ann_premier('s', p_user, p_data) then return; end if; -- 05/11 : chaque haut fait une seule fois (supabase/chat.sql)
   insert into public.chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data) values ('g', p_user, pr.pseudo, lad.main, lad.main_lvl, 'ann', p_data || jsonb_build_object('srv', 's'));
 end $$;
 revoke all on function s1.chat_ann(uuid, jsonb) from public, anon, authenticated;
