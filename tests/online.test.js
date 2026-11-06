@@ -558,6 +558,14 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(500);
     { const t = await page.textContent("#lbList"); if (!/Maîtrise 120/.test(t) || /renaissance/.test(t)) fail("classement par classe : la Maîtrise n'apparaît pas : " + t.slice(0, 200)); }
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-classe.png" });
+    // 2.2.12.1 : onglet Maîtrise (points de Maîtrise du compte, puis par héros)
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.views.lb_level[1].heroes = [{ cls: "eni", lvl: 200, ren: 0, name: "Soigne", gear: [], mt: 75 }, { cls: "cra", lvl: 200, ren: 0, name: "Flèche", gear: [], mt: 40 }]; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.selectOption('[data-act="lb-cls"]', ""); await lbTab(page, "mt"); await page.waitForTimeout(500);
+    { const t = await page.textContent("#lbList"); if (!/Tofuline/.test(t) || !/Maîtrise 115/.test(t) || /Kralamour/.test(t)) fail("classement Maîtrise du compte : " + t.slice(0, 200)); }
+    await page.click('[data-act="lb-mmode"][data-v="hero"]'); await page.waitForTimeout(500);
+    { const t = await page.textContent("#lbList"); if (!/Maîtrise 75/.test(t) || !/Soigne/.test(t) || !/Flèche/.test(t)) fail("classement Maîtrise par héros : " + t.slice(0, 200)); }
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-maitrise.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/lb-maitrise-mob.png" }); await page.setViewportSize(vp); }
+    await page.click('[data-act="lb-mmode"][data-v="acct"]'); await lbTab(page, "lvl");
     await page.selectOption('[data-act="lb-cls"]', ""); await page.waitForTimeout(300);
     // 1.0.8 : classement des métiers (tuiles, « Tous les métiers », un métier, ma ligne, Premiers)
     // 2.1.37.9 (idée de Gagou) : guilde sur le profil (guild_of) et classement des guildes par niveau

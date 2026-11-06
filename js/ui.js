@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12";
+const GAME_VERSION = "2.2.12.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12.1", name: "Maîtrise au classement", items: [
+    "Classements › Progression : nouvel onglet Maîtrise, avec les points de Maîtrise de chaque compte, ou héros par héros",
+    "Dans une partie Saison 1, il montre la Maîtrise gagnée dans la saison ; dans l'Éternel, celle de l'Éternel",
+  ] },
   { v: "2.2.12", name: "Bourse aux cartes", items: [
     "Cartes de collection : tes doubles se vendent à l'Hôtel de vente (nouvelle catégorie Cartes de collection) ou s'échangent avec un joueur (idée de Likie)",
     "Seulement les doubles : le dernier exemplaire reste toujours dans ton album, et ta propre carte de héros ne s'échange pas",
@@ -12551,8 +12555,8 @@ async function onBoot() {
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
 const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, fview: "sb", cache: {} };
-const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho, LB.fview].join("|");
-const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["gld", "Guildes"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
+const lbKey = () => [LB.tab, LB.mmode, LB.cls, LB.dmode, LB.did, LB.dtier, LB.dview, LB.job, LB.jgrp, LB.jmode, LB.jwho, LB.fview].join("|");
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["mt", "Maîtrise"], ["gld", "Guildes"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["chr", "Chromatiques"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]]; // 1.0.33 : Chromatiques (vue lb_chroma, supabase/chromatiques.sql)
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -12615,6 +12619,17 @@ async function lbFetch() {
   if (t === "gld") { // 2.1.37.9 (idée de Gagou) : guildes par niveau (guild_list, déjà rangée par niveau puis membres)
     const r = await ON.rpc("guild_list", { p_q: "" }); if (r.err) throw new Error(r.err);
     out.glds = (Array.isArray(r.data) ? r.data : []).slice().sort((a, b) => (b.lvl || 0) - (a.lvl || 0) || (b.n || 0) - (a.n || 0));
+  } else if (t === "mt") { // 2.2.12.1 (Mathis : la Maîtrise dans les classements Saison 1) : points de Maîtrise du compte ou de chaque héros, lus dans lb_level (heroes[].mt)
+    const hero = LB.mmode === "hero", fmtv = (v) => `Maîtrise ${fmt(v)}`;
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,heroes${LB.ml ? ",main_lvl" : ""}`).order("level", { ascending: false }).limit(1000);
+    const all = [];
+    (data || []).forEach((r) => { const H = (Array.isArray(r.heroes) ? r.heroes : []).filter((x) => x && Math.floor(+x.mt) > 0 && CLASSES[x.cls]);
+      if (hero) H.forEach((x) => all.push({ u: r.user_id, p: r.pseudo, cls: x.cls, v: Math.floor(+x.mt), fl: lbLvl((x.lvl || 1) + Math.floor(+x.mt)), nm: String(x.name || CLASSES[x.cls].name) }));
+      else { const v = H.reduce((a, x) => a + Math.floor(+x.mt), 0); if (v > 0) all.push({ u: r.user_id, p: r.pseudo, cls: r.main, v, fl: r.main_lvl }); } });
+    all.sort((a, b) => b.v - a.v); all.forEach((r) => (r.sc = (r.nm ? r.nm + " · " : "") + fmtv(r.v)));
+    out.rows = all.slice(0, 50);
+    if (me && S) { const mc = hero ? S.chars.slice().sort((a, b) => E.mtPts(b) - E.mtPts(a))[0] : null, v = hero ? E.mtPts(mc) : S.chars.reduce((a, c) => a + E.mtPts(c), 0);
+      if (v > 0) out.me = { u: me, cls: hero ? mc.cls : mine && mine.main, sc: (hero && mc.name ? mc.name + " · " : "") + fmtv(v), fl: hero ? lbLvl(mc.lvl + v) : mine && mine.mainLvl, rank: all.filter((r) => r.v > v).length + 1 }; }
   } else if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
@@ -12834,7 +12849,7 @@ function lbListHtml(d) {
   const me = ON.user && ON.user.id;
   let yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
   if (LB.tab === "dj" && d.sb) yest = sbGrid(d.sb) + yest; // Premiers depuis les sorts des boss, au-dessus des records
-  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "chr" ? "Personne n'a encore de chromatique au classement. Ils comptent dès le prochain envoi de ta partie." : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
+  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "chr" ? "Personne n'a encore de chromatique au classement. Ils comptent dès le prochain envoi de ta partie." : LB.tab === "mt" ? "Personne n'a encore de Maîtrise ici. Elle s'ouvre au niveau 200 et compte dès le prochain envoi de ta partie." : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
@@ -12945,7 +12960,7 @@ function raceChip() {
 }
 /* 2.1.40 (Mathis 3A des onglets) : 6 groupes au lieu de 11 onglets, les classements du groupe en pastilles ;
    l'Ascension et le Kolizéum y sont rangés (leur page garde « Ton rang »), Builds devient le 6e groupe */
-const LB_GRP = [["Progression", ["race", "lvl", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds ↗", ["#builds"]]];
+const LB_GRP = [["Progression", ["race", "lvl", "mt", "succ", "first"]], ["Combat", ["dj", "defi", "#asc", "#koli"]], ["Collection", ["album", "chr", "elev"]], ["Métiers", ["job"]], ["Guildes", ["gld"]], ["Builds ↗", ["#builds"]]];
 function lbGroupsHtml() {
   const N = Object.fromEntries(LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n])); const LN = { "#asc": "L'Ascension ↗", "#koli": "Kolizéum ↗", "#builds": "Builds ↗" };
   const onB = ui.tab === "builds"; const cur = onB ? LB_GRP[5] : LB_GRP.find(([, L]) => L.includes(LB.tab)) || LB_GRP[0];
@@ -12972,6 +12987,8 @@ function renderLadder() {
         <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
+    : LB.tab === "mt" ? `<div class="row between"><span class="small muted">${LB.mmode === "hero" ? "Les héros qui ont le plus de points de Maîtrise (au-delà du niveau 200)." : "Les points de Maîtrise de tous les héros du compte (au-delà du niveau 200)."}${SLOT === S1_SLOT ? " Ici, ceux de la Saison 1." : ""}</span>
+      <span class="seg">${[["acct", "Compte"], ["hero", "Héros"]].map(([v, n]) => `<button data-act="lb-mmode" data-v="${v}" aria-pressed="${(LB.mmode === "hero" ? "hero" : "acct") === v}">${n}</button>`).join("")}</span></div>`
     : LB.tab === "race" ? ""
     : LB.tab === "gld" ? `<span class="small muted">Les guildes du serveur Classique, de la plus haute à la plus basse. Le niveau monte avec l'XP que les membres donnent à leur guilde.</span>`
     : LB.tab === "job" ? jobLbHead()
@@ -13159,6 +13176,7 @@ function lbAct(a, t) {
     case "lb-jwho": LB.jwho = d.v; break;
     case "lb-jobgo": LB.tab = "job"; LB.jgrp = d.g || "craft"; LB.job = d.v; LB.jwho = "p"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat (1.0.9 : et Récolte)
     case "lb-dmode": LB.dmode = d.v; break;
+    case "lb-mmode": LB.mmode = d.v === "hero" ? "hero" : "acct"; break; // 2.2.12.1 : Maîtrise du compte ou par héros
     case "lb-fview": LB.fview = d.v === "all" ? "all" : "sb"; break;
     case "lb-dtier": LB.dtier = d.v; break;
     case "lb-dweek": LB.dview = d.v; break;

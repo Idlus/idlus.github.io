@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12.1 « Maîtrise au classement »
+- Classements › Progression › Maîtrise (onglet "mt" de js/ui.js, LB.mmode compte/héros) : lu dans lb_level (heroes[].mt), comme la page Maîtrise › Classement, dans l'espace de la partie (s1 pour une partie Saison 1). Demande de Mathis : « les maîtrises dans les classements saison 1 ». Test dans tests/online.test.js (7b).
+
 ## 2.2.12 « Bourse aux cartes »
 - Cartes de collection à l'HdV (catégorie card, clé = id de la carte, « * » pour la brillante, lots de 1) et dans l'échange direct (bucket cards des opérations), pour le Classique S1 (supabase/hdv.sql → saison1.sql) et le Monocompte (supabase/monocompte.sql). Choix de Mathis 1A 2A 3B 4A 5A sur la maquette de l'idée de Likie.
 - Seulement les doubles (hdv_card_qty / mono.card_qty : exemplaires de la sauvegarde validée + opérations − 1), après E.CARD_TRADE_MIN (7) boosters ouverts (hdv_card_lock / mono.card_lock, aussi refusé depuis l'Éternel).

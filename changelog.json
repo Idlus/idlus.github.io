@@ -1,6 +1,14 @@
 {
-  "version": "2.2.12",
+  "version": "2.2.12.1",
   "versions": [
+    {
+      "v": "2.2.12.1",
+      "name": "Maîtrise au classement",
+      "items": [
+        "Classements › Progression : nouvel onglet Maîtrise, avec les points de Maîtrise de chaque compte, ou héros par héros",
+        "Dans une partie Saison 1, il montre la Maîtrise gagnée dans la saison ; dans l'Éternel, celle de l'Éternel"
+      ]
+    },
     {
       "v": "2.2.12",
       "name": "Bourse aux cartes",
