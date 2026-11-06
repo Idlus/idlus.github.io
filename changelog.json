@@ -1,6 +1,14 @@
 {
-  "version": "2.2.10.3",
+  "version": "2.2.10.4",
   "versions": [
+    {
+      "v": "2.2.10.4",
+      "name": "Honneur des donjons accepté",
+      "items": [
+        "Monocompte : les parties des joueurs qui enchaînent les donjons n'étaient plus validées par le serveur à cause de leur honneur. C'est corrigé : leur progression revient dans les classements de saison",
+        "Chat : sur PC, le menu d'un pseudo du salon Monocompte ne dépasse plus du bas de l'écran"
+      ]
+    },
     {
       "v": "2.2.10.3",
       "name": "Nouvelle carte de Ley",

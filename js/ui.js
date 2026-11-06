@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.10.3";
+const GAME_VERSION = "2.2.10.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.10.4", name: "Honneur des donjons accepté", items: [
+    "Monocompte : les parties des joueurs qui enchaînent les donjons n'étaient plus validées par le serveur à cause de leur honneur. C'est corrigé : leur progression revient dans les classements de saison",
+    "Chat : sur PC, le menu d'un pseudo du salon Monocompte ne dépasse plus du bas de l'écran",
+  ] },
   { v: "2.2.10.3", name: "Nouvelle carte de Ley", items: [
     "Album de cartes : la carte Héros d'Idlus de Ley change d'illustration, avec son nouveau héros aux cheveux blancs qui lance ses bombes jaunes dans les champs dorés, aussi en version brillante" ] },
   { v: "2.2.10.2", name: "Absence mieux comptée", items: [

@@ -476,7 +476,7 @@
     const nv = $("#nav .sn-mob"), nr = nv && nv.getBoundingClientRect(), bot = (nr && nr.height ? nr.top : innerHeight) - 8; // 1.0.12.8 : jamais sur la barre du bas du téléphone
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
     el.style.top = Math.max(8, r.bottom + 4 + hgt <= bot ? r.bottom + 4 : Math.min(bot, r.top - 4) - hgt) + "px"; // 1.0.12.8 : pas la place dessous : le menu s'ouvre au-dessus du pseudo
-    if (mono && ON.chatMonoProfil) ON.chatMonoProfil(u).then((P) => { const c = $(`#chMenu .chm-card[data-u="${CSS.escape(u)}"]`); if (c) c.innerHTML = monoCard(P || (msg ? monoHero(msg) : {})); });
+    if (mono && ON.chatMonoProfil) ON.chatMonoProfil(u).then((P) => { const c = $(`#chMenu .chm-card[data-u="${CSS.escape(u)}"]`); if (c) { c.innerHTML = monoCard(P || (msg ? monoHero(msg) : {})); const t = Math.max(8, Math.min(parseFloat(el.style.top) || 0, bot - el.offsetHeight)); el.style.top = t + "px"; } }); // 2.2.10.3 : la carte remplie grandit, le menu reste dans l'écran
   }
   /* 2.2.10 (1A) : mini-fiche du menu d'un pseudo hors Monocompte : classe et niveau du message, titre, en ligne */
   function miniCard(u, p, msg, on) {

@@ -21,9 +21,12 @@
      tools/sim_honneur_mono.js : 800 honneur par jour au plus (actif, fin de saison) ; pass : 3 quêtes du jour (100),
      3 de la semaine (350) et le Défi de la manche. */
   VM.LVL0 = 30; VM.LVL_D = 70;     // niveau du héros au plus 30 + 70 × √(jours de saison) (100 au jour 1, 200 au jour 6)
-  VM.HON0 = 2000; VM.HON_D = 2500; // honneur au plus 2 000 + 2 500 par jour de saison (3 fois l'actif)
+  /* 06/11/2026 (2.2.10.3) : relevé des parties refusées (Likie, Sac, Nerisia, Takkar) : un joueur qui enchaîne les donjons gagne
+     environ 6 honneur par donjon (2 d'honneur + 400 d'XP d'alignement au niveau 200), soit 4 000 à 5 000 par jour, sans triche.
+     L'ancienne limite (2 500 par jour, 400 par heure) refusait leurs parties. */
+  VM.HON0 = 2000; VM.HON_D = 7000; // honneur au plus 2 000 + 7 000 par jour de saison
   VM.BP0 = 2000; VM.BP_D = 1000;   // points du pass au plus 2 000 + 1 000 par jour de saison
-  VM.HON_H = 400;                  // honneur gagné par heure réelle entre deux parties validées (+ 2 000 de marge)
+  VM.HON_H = 900;                  // honneur gagné par heure réelle entre deux parties validées (+ 2 000 de marge ; relevé du 06/11 : 500 au plus)
   VM.PHX_H = 120;                  // renaissances du Phénix par heure réelle (+ 30)
   // progression des défis par heure réelle (+ 5 de marge) : donjons, archimonstres, objets fabriqués, runes, agressions
   VM.DEFI_H = { d1: 40, d3: 40, d4: 120, d5: 3000, d8: 3000, d9: 30, d11: 600 };
