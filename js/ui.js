@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.10.1";
+const GAME_VERSION = "2.2.10.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.10.2", name: "Absence mieux comptée", items: [
+    "Correction : dans certains cas, un rechargement du jeu pouvait compter une longue absence qui n'avait pas eu lieu (avec des gains et du Sablier en trop)",
+    "L'absence comptée au retour suit maintenant à la fois l'heure du serveur et celle de ton appareil : une vraie absence reste comptée comme avant",
+  ] },
   { v: "2.2.10.1", name: "Plus de couples à l'enclos", items: [
     "Élevage : l'enclos peut accueillir jusqu'à 6 couples au lieu de 4",
     "Le couple acheté (5 M kamas) et celui offert au Grand Éleveur (les trois carnets complets) s'ajoutent maintenant : 5 couples",
@@ -9377,6 +9381,22 @@ function optionsSheet() {
    Pendant le calcul : fenêtre « Pendant votre absence » avec une barre et le nombre de combats calculés, jeu en pause (aucun tick,
    aucune sauvegarde, aucun envoi : un rechargement en plein calcul repart de la partie d'avant, sans gain en double ni perte),
    puis le résumé habituel avec les récompenses définitives. Une absence courte (moins de 0,3 s de calcul) ne montre pas la barre. */
+/* 06/11/2026 (2.2.10.2, retour de Likie : « j'ai rafraîchi pendant la sauvegarde et ça m'a compté 40 h d'absence ») :
+   l'heure du jeu peut être restée en retard (appareil mis en veille, serveur injoignable au réveil : le jeu comptait au chronomètre
+   du navigateur, arrêté pendant la veille). La partie était alors sauvegardée avec une heure ancienne et, au rechargement remis à
+   l'heure, l'écart passait pour une absence. Chaque sauvegarde garde aussi l'heure de l'appareil (S.devAt) : l'absence comptée est
+   la plus petite des deux (heure du jeu, heure de l'appareil). Avancer l'heure de l'appareil ne sert à rien (l'heure du serveur
+   reste la limite), une heure du jeu en retard non plus. Le Sablier est recalé de la même façon. */
+function absGap(S) {
+  const now = E.now(), eg = (now - (S.lastTick || now)) / 1000;
+  if (!(S.devAt > 0)) return eg;
+  const dg = (Date.now() - S.devAt) / 1000;
+  if (dg < -60 || eg - Math.max(0, dg) <= 120) return eg; // heure de l'appareil reculée depuis : l'heure du jeu (serveur) fait foi
+  const corr = (eg - Math.max(0, dg)) * 1000;
+  S.lastTick = Math.min(now, S.lastTick + corr);
+  if (S.sablier && S.sablier.at > 0) S.sablier.at = Math.min(now, S.sablier.at + corr);
+  return Math.max(0, dg);
+}
 let offRun = null;
 function offCatch(gap, done) {
   if (offRun && offRun.S === S) return; // déjà en cours pour cette partie
@@ -11874,7 +11894,7 @@ if (tabBc) tabBc.onmessage = (ev) => { const m = ev.data || {}; if (m.id !== TAB
 function saveNow(manual) {
   if (tabLost) return; tabClaim();
   if (!S || offRun) return; // calcul de l'absence en cours : la partie d'avant reste sauvegardée
-  S.savedAt = E.now(); S.lastTick = E.now();
+  S.savedAt = E.now(); S.lastTick = E.now(); S.devAt = Date.now();
   let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
   if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); if (SV.freed) { SV.freed = null; toast("Stockage du navigateur plein : de vieilles copies de secours ont été effacées pour garder ta partie à jour.", "warn", 10000); } }
   else if (manual || Date.now() - saveWarnAt > 120000) { saveWarnAt = Date.now(); toast(`Impossible de sauvegarder dans ce navigateur (stockage plein) : exporte ta partie (Options) pour ne rien perdre.`, "warn", 15000); } // 1.0.32.8 : avant, l'échec d'une sauvegarde automatique ne disait rien
@@ -12340,7 +12360,7 @@ async function takeRemote(info) {
   SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
   if (!booted) return bootGame();
   closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
-  const gap = (E.now() - (S.lastTick || E.now())) / 1000; render();
+  const gap = absGap(S); render();
   offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée."); });
 }
 function onPush(force) {
@@ -12475,8 +12495,11 @@ function horlogeNow() {
 function horlogeRegle(off) {
   HZ.off = off != null && Math.abs(off) > 120000 ? Math.round(off) : 0;
   HZ.perf = performance.now(); HZ.d0 = Date.now() - HZ.perf; HZ.srv = Date.now() + HZ.off;
+  const t0 = S ? E.now() : 0;
   E.setBaseClock(horlogeNow);
   const t = E.now();
+  // 06/11/2026 (2.2.10.2) : l'heure du jeu avance d'un coup (remise à l'heure du serveur) : le Sablier ne se remplit pas de ce saut
+  if (S && t - t0 > 60000 && S.sablier && S.sablier.at > 0) S.sablier.at = Math.min(t, S.sablier.at + (t - t0));
   if (S) { if (S.lastTick > t) S.lastTick = t; if (S.sablier && S.sablier.at > t) S.sablier.at = t; }
   if (HZ.off < -600000 && !HZ.vu && booted) { HZ.vu = true; toast("L'heure de ton appareil n'est pas à l'heure : le jeu suit l'heure du serveur. Règle l'heure en automatique.", "warn", 12000); }
 }
@@ -13180,7 +13203,7 @@ function loop() {
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.sabNow = m; try { E.tick(S, real * m, real); } finally { E.sabNow = 1; }
       if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
-    S.lastTick = E.now();
+    S.lastTick = E.now(); S.devAt = Date.now(); // 2.2.10.2 : heure de l'appareil à côté (absGap)
     lootUpCheck();
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
@@ -13224,9 +13247,9 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
   else if (S && !offRun) {
     // 04/11/2026 : l'heure du serveur d'abord (au plus 2,5 s), puis l'absence depuis le dernier passage de la boucle
-    const lt = S.lastTick, s0 = S;
-    horlogeSync(2500).then(() => { if (S !== s0 || offRun) return; const now = E.now(), gap = (now - (lt || now)) / 1000;
-      if (gap > 60) { S.lastTick = lt; offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); } last = performance.now(); });
+    const lt = S.lastTick, ld = S.devAt, s0 = S;
+    horlogeSync(2500).then(() => { if (S !== s0 || offRun) return; const t1 = S.lastTick, d1 = S.devAt; S.lastTick = lt; S.devAt = ld; const gap = absGap(S);
+      if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); else { S.lastTick = Math.max(S.lastTick, t1); S.devAt = d1; } last = performance.now(); });
   }
 });
 window.addEventListener("pagehide", () => saveNow());
@@ -13248,7 +13271,7 @@ function bootGame(pushNow) {
     else if (!S.mono && E.vitImport) try { const St = SV.peek(slotKey(S1_SLOT)).state; E.vitImport(S, St); if (E.cardImport) E.cardImport(S, St); } catch (e) {} // lots 4 et 6 : vitrine et album de saison liés au compte (js/vitrine.js, js/cartes.js)
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
-    const gap = (E.now() - (S.lastTick || E.now())) / 1000;
+    const gap = absGap(S);
     render();
     if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
     const mig = S.migration; if (mig) { migrationSheet(mig); S.migration = null; }
@@ -13335,7 +13358,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, monoBetaOn: () => MONO_BETA.on, NAV, NAV_DESC, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, monoBetaOn: () => MONO_BETA.on, NAV, NAV_DESC, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText, absGap };
 /* lot ergonomie (21/10) : au téléphone, la bulle du chat s'efface quand on descend dans une page (elle cachait des boutons) et revient quand on remonte */
 { let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY || 0; const dn = y > lastY + 6 && y > 120; const up = y < lastY - 6 || y < 120;
   if (dn) document.body.classList.add("scrolldn"); else if (up) document.body.classList.remove("scrolldn"); if (dn || up) lastY = y; }, { passive: true }); }

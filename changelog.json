@@ -1,6 +1,14 @@
 {
-  "version": "2.2.10.1",
+  "version": "2.2.10.2",
   "versions": [
+    {
+      "v": "2.2.10.2",
+      "name": "Absence mieux comptée",
+      "items": [
+        "Correction : dans certains cas, un rechargement du jeu pouvait compter une longue absence qui n'avait pas eu lieu (avec des gains et du Sablier en trop)",
+        "L'absence comptée au retour suit maintenant à la fois l'heure du serveur et celle de ton appareil : une vraie absence reste comptée comme avant"
+      ]
+    },
     {
       "v": "2.2.10.1",
       "name": "Plus de couples à l'enclos",

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.10.2 « Absence mieux comptée »
+- Rechargement : l'absence comptée est la plus petite entre l'heure du jeu (serveur) et celle de l'appareil (S.devAt, gardé à chaque sauvegarde) ; une heure du jeu restée en retard (veille, serveur injoignable au réveil) ne passe plus pour une absence. Le Sablier est recalé pareil, et ne se remplit plus d'un saut d'heure du jeu (horlogeRegle). Test tests/absence_horloge_ui.test.js.
+
 ## 2.2.10.1 « Plus de couples à l'enclos »
 - Élevage : 6 couples au plus. Le couple acheté (5 M k) et celui du Grand Éleveur se cumulent (5) ; 6e couple réservé au Grand Éleveur pour 25 M k + 10 000 Essence (E.pair6Buy, S.elev.c6). Simulation : 12 → 15 → 18 naissances par jour (4/5/6 couples), plafond d'étoiles inchangé, donc puissance en combat inchangée.
 
