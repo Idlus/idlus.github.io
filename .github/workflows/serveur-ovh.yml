@@ -33,7 +33,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -682,6 +682,34 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select etat, count(*) lignes, sum(n) envois, count(distinct user_id) comptes from mono.verifs where at > now() - interval '2 hours' group by etat"
           bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(user_id) pseudo, etat, n, at, left(why, 140) why from (select distinct on (user_id) * from mono.verifs order by user_id, at desc) d order by at desc"
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 3h supabase-edge-functions 2>&1 | grep -iE "mono" | grep -iE "error|erreur|exception|refus" | tail -20; echo "== appels mono (3 h) : $(docker logs --since 3h supabase-edge-functions 2>&1 | grep -ic mono)"'
+      - name: Enquête absence (lecture seule, 06/11)
+        # 06/11/2026 (retour du modérateur Likie : « j'ai rafraîchi pendant la sauvegarde et ça m'a compté 40 h d'absence »).
+        # Lecture seule, 3 serveurs : écart entre l'heure de la partie (lastTick, écrite par le jeu) et l'heure d'arrivée sur le
+        # serveur (updated_at). Un écart de plus de 30 min = l'heure du jeu était fausse quand la partie a été envoyée.
+        # Puis les refus du Bouclier liés au temps (3 jours). Aucune partie n'est affichée, seulement des chiffres.
+        if: inputs.etape == 'enquete-absence'
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          q() { echo "== $1"; bash tools/serveur/vps_sql.sh lecture "$2" | python3 -c 'import json,sys; [print(json.dumps(r, ensure_ascii=False)) for r in json.load(sys.stdin)]'; }
+          W="(substring(data from '\"lastTick\":([0-9]{12,14})'))::bigint"
+          V="(substring(data from '\"savedAt\":([0-9]{12,14})'))::bigint"
+          for sc in public s1; do
+            q "Écarts heure du jeu / heure du serveur ($sc, parties envoyées depuis 3 jours, écart > 30 min)" "select p.pseudo, s.updated_at, s.game_version, s.device, round(((extract(epoch from s.updated_at) * 1000 - $W) / 60000)::numeric, 1) as ecart_min, round(((extract(epoch from s.updated_at) * 1000 - $V) / 60000)::numeric, 1) as ecart_save_min from $sc.saves s join public.profiles p on p.id = s.user_id where s.updated_at > now() - interval '3 days' and abs(extract(epoch from s.updated_at) * 1000 - $W) > 1800000 order by s.updated_at desc limit 80"
+            q "Bouclier $sc, 3 jours, raisons liées au temps" "select p.pseudo, b.at, left(b.why, 160) why from $sc.bouclier_log b join public.profiles p on p.id = b.user_id where b.at > now() - interval '3 days' and (b.why ilike '%réelle%' or b.why ilike '%heure%' or b.why ilike '%temps%' or b.why ilike '%sablier%') order by b.at desc limit 60"
+          done
+          q "Écarts heure du jeu / heure du serveur (mono, 3 jours, > 30 min)" "select mono.pseudo(s.user_id) pseudo, s.saison, s.updated_at, s.game_version, s.device, round(((extract(epoch from s.updated_at) * 1000 - $W) / 60000)::numeric, 1) as ecart_min, round(((extract(epoch from s.updated_at) * 1000 - $V) / 60000)::numeric, 1) as ecart_save_min from mono.parties s where s.updated_at > now() - interval '3 days' and abs(extract(epoch from s.updated_at) * 1000 - $W) > 1800000 order by s.updated_at desc limit 80"
+          q "Bouclier mono, 3 jours, raisons liées au temps" "select mono.pseudo(b.user_id) pseudo, b.at, left(b.why, 160) why from mono.bouclier b where b.at > now() - interval '3 days' and (b.why ilike '%réelle%' or b.why ilike '%heure%' or b.why ilike '%temps%' or b.why ilike '%sablier%') order by b.at desc limit 60"
+          p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_-')
+          if [ -n "$p" ]; then
+            for sc in public s1; do
+              q "$p sur $sc" "select p.pseudo, s.updated_at, s.game_version, s.device, s.meta->>'sa' as meta_sa, $V as saved_at, $W as last_tick, (substring(data from '\"playtime\":([0-9.]+)')) as playtime from public.profiles p join $sc.saves s on s.user_id = p.id where p.pseudo ilike '%$p%'"
+              q "$p sur $sc, Bouclier (40 dernières lignes)" "select b.at, left(b.why, 200) why from $sc.bouclier_log b join public.profiles p on p.id = b.user_id where p.pseudo ilike '%$p%' order by b.at desc limit 40"
+            done
+            q "$p sur mono" "select mono.pseudo(s.user_id) pseudo, s.saison, s.updated_at, s.game_version, s.device, s.meta->>'sa' as meta_sa, $V as saved_at, $W as last_tick from mono.parties s join public.profiles p on p.id = s.user_id where p.pseudo ilike '%$p%'"
+            q "$p sur mono, Bouclier et vérifications" "select b.at, left(b.why, 200) why from mono.bouclier b join public.profiles p on p.id = b.user_id where p.pseudo ilike '%$p%' order by b.at desc limit 40"
+            q "$p sur mono, vérifications" "select v.at, v.etat, v.n, left(v.why, 200) why from mono.verifs v join public.profiles p on p.id = v.user_id where p.pseudo ilike '%$p%' order by v.at desc limit 30"
+          fi
       - name: Codes cadeaux dans les parties (lecture seule, liste chiffrée)
         # 04/11/2026 (fil « Fermer la faille des codes cadeaux ») : codes cadeaux présents dans les parties des 3 serveurs,
         # comparés à ce que le serveur a enregistré (gift_uses). Lecture seule. En clair : seulement des totaux par code ;
