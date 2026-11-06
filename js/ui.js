@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.11";
+const GAME_VERSION = "2.2.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12", name: "Bourse aux cartes", items: [
+    "Cartes de collection : tes doubles se vendent à l'Hôtel de vente (nouvelle catégorie Cartes de collection) ou s'échangent avec un joueur (idée de Likie)",
+    "Seulement les doubles : le dernier exemplaire reste toujours dans ton album, et ta propre carte de héros ne s'échange pas",
+    "Vendre ou échanger demande 7 boosters ouverts dans la partie ; acheter est ouvert à tous",
+    "Un double reste une carte : sur sa fiche, « Réduire » le change en Poussière d'étoile, et « Tout réduire » en haut de l'album les réduit tous d'un coup",
+    "Une carte achetée ou reçue compte pour l'album, les paliers, les titres et les hauts faits, mais ne donne jamais de Poussière",
+    "Sur la fiche d'une carte : boutons Vendre à l'HdV et Proposer à un joueur, et Acheter à l'HdV pour une carte qui te manque",
+    "Classique Saison 1 et Monocompte, chacun son marché. Taxe de 2 %, annonces de 14 jours, mêmes 20 places de vente" ] },
   { v: "2.2.11", name: "Songes en boucle", items: [
     "Songe infini : nouvelle case « En boucle » à côté d'Auto. Au réveil, le même songe se relance tout seul 5 s plus tard (idée d'Aglouglou)",
     "La boucle s'arrête si 2 songes de suite ne sont pas validés, ou si tu te réveilles toi-même",

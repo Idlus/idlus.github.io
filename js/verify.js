@@ -110,6 +110,7 @@
     const dof = Object.values(S.items || {}).filter((it) => /^dofus_/.test(it.tpl)).length;
     // 2.1.25 : pt = heures de temps de jeu (le vrai temps, même en vitesse ×2 / ×3)
     return { k: Math.floor(+S.kamas || 0), r: Math.floor(r), mt, bn, lv, dof, rec: Math.max(0, Math.floor(+S.recLv || 0)), pt: Math.max(0, (+(S.stats && S.stats.playtime) || 0) / 3600), sl: E.sabMtLvl ? E.sabMtLvl(S) : 1, sx: Math.max(0, Math.floor(+(S.sabMt && S.sabMt.xp) || 0)),
+      ...(E.cardBilan && E.cardBilan(S) ? (() => { const C = E.cardBilan(S); return { cn: C.n, cnb: C.nb, cnc: C.nc }; })() : {}), // 2.2.11 « Bourse aux cartes » : exemplaires de cartes, boosters ouverts, cartes fabriquées
       mn: Object.keys(S.mounts || {}).length, ms: Object.values(S.mounts || {}).reduce((a, M) => a + Math.max(1, Math.floor(+M.st || 1)), 0), pn: Object.keys(S.pets || {}).length }; // 2.1.30 : montures (nombre, étoiles) et familiers, qui se vendent // 2.1.27 : sl / sx = niveau et XP de Maîtrise du temps
   };
 
@@ -213,6 +214,7 @@
      les points des vies passées et le temps de jeu restent contrôlés comme pour tout le monde (en 2.1.18, un compte vérifié
      ne passait plus du tout ce contrôle, et une partie retouchée à 1,6 milliard de kamas et +160 h de jeu en 27 h passait) */
   V.SURE = 2;
+  V.CARD_B0 = 40; V.CARD_BH = 2; // 2.2.11 : boosters ouverts et cartes fabriquées entre deux parties validées (marge de départ, par heure réelle)
   V.BEAST_N0 = 30; V.BEAST_H = 12; V.BEAST_PH = 6; V.ST_MAX = 7; // 2.1.30 : bêtes apparues hors du serveur (marge de départ, par heure réelle)
   V.check = (E, prev, cur, hours, gift, res0, topLvl, sure) => {
     // 2.1.27 : ×2 illimité dès le niveau 15 de la Maîtrise du temps (plafonnée par V.impossible) : 2 h de jeu par heure réelle
@@ -239,6 +241,15 @@
       if (dn > V.BEAST_N0 + V.BEAST_H * h) return { ok: false, res, why: `+${dn} montures en ${hs}` };
       if (ds > V.ST_MAX * Math.max(0, dn) + cur.mn * (1 + Math.ceil(h / 24)) + V.BEAST_N0) return { ok: false, res, why: `+${ds} étoiles de montures en ${hs}` };
     }
+    /* 2.2.11 « Bourse aux cartes » : les cartes se vendent, donc celles qui apparaissent sans passer par le serveur (HdV, échange : gift.cn)
+       sont bornées par les boosters ouverts (5 cartes, 10 exemplaires au plus avec une brillante) et les cartes fabriquées. Les boosters
+       ouverts sont eux-mêmes bornés (réserve de 30, 5 par jour, lots de quêtes) : 40 + 2 par heure réelle, très large. */
+    if (prev.cn != null && cur.cn != null) { const h = Math.max(0, hours), hs = h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10).toLocaleString("fr-FR") + " h";
+      const db = Math.max(0, (cur.cnb || 0) - (prev.cnb || 0)), dc = Math.max(0, (cur.cnc || 0) - (prev.cnc || 0));
+      if (db > V.CARD_B0 + V.CARD_BH * h) return { ok: false, res, why: `+${db} boosters de cartes ouverts en ${hs}` };
+      if (dc > V.CARD_B0 + V.CARD_BH * h) return { ok: false, res, why: `+${dc} cartes fabriquées en ${hs}` };
+      const dn = cur.cn - prev.cn - 2 * (gift.cn || 0);
+      if (dn > 10 * db + dc + 2) return { ok: false, res, why: `+${dn} cartes pour ${db} booster${db > 1 ? "s" : ""} ouvert${db > 1 ? "s" : ""} en ${hs}` }; }
     if (prev.pn != null && cur.pn != null) { const h = Math.max(0, hours), dp = cur.pn - prev.pn - (gift.pt || 0);
       if (dp > V.BEAST_N0 + V.BEAST_PH * h) return { ok: false, res, why: `+${dp} familiers en ${h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10).toLocaleString("fr-FR") + " h"}` }; }
     const need = { k: Math.max(0, dk) / R.k, r: Math.max(0, dr) / R.r, mt: Math.max(0, dm) / R.mt, lv: Math.max(0, dl) / R.lv };

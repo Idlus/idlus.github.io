@@ -41,7 +41,7 @@
     const cnt = { miss: T - n, new: fresh().length, dbl: e.CARTES.filter((c) => M.o[c.id] > 1).length, sh: e.cardShinyCount(s) };
     const bst = S1 ? (() => { const bl = e.boosterLeft(s), over = e.s1cOver(s), dj = e.cardDjDone ? e.cardDjDone(s) : null;
       return `<div class="ca-bst"><span class="ca-dust"><img src="assets/ui/poussiere.webp" alt=""><b>${dust}</b> Poussière d'étoile <button class="ca-q" data-act="ca-rules" aria-label="Règles de l'album" title="Règles de l'album">?</button></span>
-        ${bl && !over ? `<button class="btn primary" data-act="ca-open">Ouvrir un booster (${bl})</button>` : ""}
+        ${bl && !over ? `<button class="btn primary" data-act="ca-open">Ouvrir un booster (${bl})</button>` : ""}${(() => { const p = e.cardReduceAllPreview(s); return p.n ? `<button class="btn" data-act="ca-redall">${G.ra ? `Confirmer : ${p.n} double${p.n > 1 ? "s" : ""} → +${p.pd}` : `Tout réduire (${p.n} double${p.n > 1 ? "s" : ""} · +${p.pd})`}</button>` : ""; })()}
         <span class="xs muted">${over ? "La saison est finie : l'album reste, les boosters s'arrêtent." : `${e.boosterFree(s) ? "Booster du jour disponible" : `Prochain offert dans ${dur(e.boosterNext())}`}${dj === null ? "" : e.boosterDjLeft(s) ? ` · donjons ${dj} / ${e.BOOSTER_DJ} pour le suivant` : " · boosters de donjon du jour déjà gagnés"}`}</span></div>`; })()
       : `<div class="ca-bst"><span class="xs muted">L'album est lié à ton compte : il montre les cartes de ta partie de saison, où s'ouvrent les boosters. <button class="ca-q" data-act="ca-rules" aria-label="Règles de l'album">?</button></span></div>`;
     const head = `<div class="ca-hd"><div><div class="ca-cnt"><b>${n} / ${T}</b><span class="small muted">cartes · ${e.cardShinyCount(s)} brillante${e.cardShinyCount(s) > 1 ? "s" : ""}</span></div>
@@ -65,22 +65,28 @@
     X().openSheet(`<div class="stack"><h2>L'album de cartes</h2>
       <p class="small">Une carte par boss de donjon${e.CARTE_HEROS.length ? ", et la page Héros d'Idlus : les héros des joueurs (1 booster sur 50 en contient un)" : ""}.</p>
       <p class="small">Un booster offert par jour, et un de plus tous les ${e.BOOSTER_DJ} donjons de la partie de saison (${e.BOOSTER_DJ_JOUR} par jour au plus). 5 cartes par booster, la 5e rare ou mieux ; chaque carte a 1 chance sur 100 d'être brillante.</p>
-      <p class="small">Les doubles donnent de la Poussière d'étoile, qui fabrique une carte manquante (le ⚒ doré montre celles que tu peux déjà fabriquer). Les cartes ne changent pas la puissance.</p>
+      <p class="small">Un double reste une carte : tu choisis de le réduire en Poussière d'étoile (« Réduire » sur sa fiche, ou « Tout réduire ») ou de le vendre. La Poussière fabrique une carte manquante (le ⚒ doré montre celles que tu peux déjà fabriquer). Les cartes ne changent pas la puissance.</p>
+      <p class="small">Bourse aux cartes : les doubles se vendent à l'Hôtel de vente (catégorie Cartes de collection) ou s'échangent avec un joueur, après ${e.CARD_TRADE_MIN} boosters ouverts. Le dernier exemplaire reste toujours dans l'album, et ta propre carte de Héros ne s'échange pas. Une carte reçue compte pour l'album, les paliers et les titres, mais ne donne jamais de Poussière. Pas d'échange de cartes en Ironman ni depuis l'Éternel.</p>
       <p class="small">Paliers : ${e.CARTE_PAL.map(([k, nm]) => `${k} cartes « ${h(nm)} »`).join(", ")}.</p>
       <button class="btn" data-act="closesheet">Fermer</button></div>`); }
   function see(id) { const s = S(), e = E(), c = e.carte(id), M = e.cardMine(s); if (!c) return; const own = !!M.o[id], S1 = e.cardOn && e.cardOn(s);
     const L = e.CARTES, i = L.indexOf(c), p = e.CARTE_CRAFT[c.rar], ok = S1 && !own && e.cardDust(s) >= p, dbl = own ? M.o[id] - 1 : 0;
     const dg = (window.DATA && window.DATA.DUNGEONS || {})[id], R = e.CARTE_RAR[c.rar];
+    const MK = !!(window.MARKET && window.MARKET.sellCard), lock = S1 && e.cardTradeLock ? e.cardTradeLock(s) : null;
     const rows = [[c.rar === "h" ? "Héros" : "Boss", c.rar === "h" ? h(c.d) : `${h(c.n)}, niveau ${c.lvl}`]];
     if (dg) rows.push(["Donjon", h(c.d)]);
     rows.push(["Dans ton album", own ? `${M.o[id]} exemplaire${M.o[id] > 1 ? "s" : ""}${M.b[id] ? " · brillante ✦" : ""}` : "pas encore"]);
-    if (own) rows.push(["Doubles", dbl ? `${dbl} → +${dbl * e.CARTE_DUST[c.rar]} Poussières d'étoile gagnées` : "aucun"]);
+    const DB = S1 ? [false, true].map((sh) => ({ sh, n: e.cardDbl(s, id, sh), r: e.cardDustable(s, id, sh), pd: e.cardDustOf(id, sh), key: e.cardKey(id, sh) })).filter((x) => x.n > 0) : [];
+    if (own) rows.push(["Doubles", DB.length ? DB.map((x) => `${x.n}${x.sh ? " brillante" + (x.n > 1 ? "s" : "") : ""}${x.r < x.n ? ` (${x.n - x.r} sans Poussière)` : ""}`).join(" · ") : dbl && !S1 ? `${dbl}` : "aucun"]);
     else rows.push(["Fabriquer", c.rar === "h" ? "dans les boosters seulement" : `${p} Poussières d'étoile${S1 ? ` (tu en as ${e.cardDust(s)})` : ""}`]);
     rows.push(["Brillante", M.b[id] ? "obtenue ✦" : "1 chance sur 100 par carte de booster"]);
     X().openSheet(`<div class="ca-see">${card(c, { own, sh: !!M.b[id], big: 1 })}
       <div class="stack"><h2>${h(c.n)}</h2><span><span class="ca-tag" style="--rc:${RC[c.rar]}">${R}</span> <span class="xs muted">carte ${i + 1} / ${L.length}</span></span>
       <div class="ca-kv">${rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join("")}</div>
       ${S1 && !own && c.rar !== "h" ? `<button class="btn${ok ? " primary" : ""}" data-act="ca-craft" data-v="${id}"${ok ? "" : " disabled"}>Fabriquer · ${p} Poussières d'étoile</button>` : ""}
+      ${DB.map((x) => `<div class="ca-dbl"><b class="small">${x.sh ? "Double brillant ✦" : "Double"}${x.n > 1 ? ` ×${x.n}` : ""}</b><span class="row">${x.r ? `<button class="btn sm" data-act="ca-red" data-v="${id}" data-sh="${x.sh ? 1 : ""}">Réduire 1 · +${x.pd} Poussières</button>` : ""}${MK && !lock ? `<button class="btn sm primary" data-act="ca-sell" data-v="${x.key}">Vendre à l'HdV</button><button class="btn sm" data-act="ca-trade">⇄ Proposer à un joueur</button>` : ""}</span></div>`).join("")}
+      ${DB.length && MK && lock ? `<span class="xs muted">${h(lock)}</span>` : ""}
+      ${S1 && MK && !own ? `<button class="btn" data-act="ca-buy" data-v="${id}">Acheter à l'HdV</button>` : ""}
       ${dg ? `<button class="btn" data-act="dgopen" data-id="${id}">Voir le donjon</button>` : ""}
       ${c.art ? "" : `<span class="xs muted">Illustration de saison à venir : la carte montre le boss en attendant.</span>`}
       <div class="ca-nav"><button class="btn" data-act="ca-see" data-v="${L[(i - 1 + L.length) % L.length].id}">‹ Précédente</button><button class="btn" data-act="ca-see" data-v="${L[(i + 1) % L.length].id}">Suivante ›</button></div>
@@ -99,11 +105,11 @@
   function tear() { const el = document.querySelector(".ca-cer"); if (!el || !G.open) return; const e = E();
     el.querySelector(".ca-pack").classList.add("torn");
     el.querySelector(".ca-row").innerHTML = G.open.L.map((x, i) => { const c = e.carte(x.id);
-      return `<button class="ca-flip r-${c.rar}${x.sh ? " sh" : ""}" data-act="ca-flip" data-i="${i}" style="--d:${i * 90}ms"><span class="ca-back"><i></i></span><span class="ca-face">${card(c, { sh: x.sh, nw: x.nw })}${x.pd ? `<small class="ca-pd">+${x.pd} poussière</small>` : ""}</span></button>`; }).join("");
+      return `<button class="ca-flip r-${c.rar}${x.sh ? " sh" : ""}" data-act="ca-flip" data-i="${i}" style="--d:${i * 90}ms"><span class="ca-back"><i></i></span><span class="ca-face">${card(c, { sh: x.sh, nw: x.nw })}${x.dbl ? `<small class="ca-pd">double</small>` : x.pd ? `<small class="ca-pd">+${x.pd} poussière</small>` : ""}</span></button>`; }).join("");
     bar(); }
   function bar() { const el = document.querySelector(".ca-cer"); if (!el || !G.open) return; const e = E(), s = S(); const all = G.open.up >= G.open.L.length;
-    const nw = G.open.L.filter((x) => x.nw).length, pd = G.open.L.reduce((a, x) => a + x.pd, 0), sh = G.open.L.some((x) => x.sh);
-    el.querySelector(".ca-cbar").innerHTML = all ? `<span class="small">${sh ? "✦ Carte brillante ! " : ""}${nw} nouvelle${nw > 1 ? "s" : ""}${pd ? ` · +${pd} Poussière d'étoile` : ""}</span>
+    const nw = G.open.L.filter((x) => x.nw).length, pd = G.open.L.reduce((a, x) => a + (x.pd || 0), 0), sh = G.open.L.some((x) => x.sh), db = G.open.L.filter((x) => x.dbl).length;
+    el.querySelector(".ca-cbar").innerHTML = all ? `<span class="small">${sh ? "✦ Carte brillante ! " : ""}${nw} nouvelle${nw > 1 ? "s" : ""}${pd ? ` · +${pd} Poussière d'étoile` : ""}${db ? ` · ${db} double${db > 1 ? "s" : ""} : réduis-les ou vends-les depuis l'album` : ""}</span>
         ${e.boosterLeft(s) && !e.s1cOver(s) ? `<button class="btn primary" data-act="ca-open">Encore un (${e.boosterLeft(s)})</button>` : ""}<button class="btn" data-act="ca-close">Fermer</button>`
       : `<button class="btn" data-act="ca-all">Tout retourner</button>`; }
   function flip(b) { if (!b || b.classList.contains("up") || !G.open) return; b.classList.add("up"); G.open.up++; if (G.open.up >= G.open.L.length) bar(); }
@@ -120,6 +126,11 @@
     if (a === "ca-f") { G.f = G.f === t.dataset.v ? "" : t.dataset.v; repaint(); return; }
     if (a === "ca-rules") { rules(); return; }
     if (a === "ca-see") { see(t.dataset.v); return; }
+    if (a === "ca-red") { const g = E().cardReduce(S(), t.dataset.v, !!t.dataset.sh, 1); if (typeof g !== "number") { X().toast(g); return; } X().markDirty(); X().toast(`+${g} Poussière d'étoile.`); see(t.dataset.v); return; }
+    if (a === "ca-redall") { if (!G.ra) { G.ra = 1; repaint(); setTimeout(() => { if (G.ra) { G.ra = 0; if (UI().tab === "album") repaint(); } }, 5000); return; }
+      G.ra = 0; const r = E().cardReduceAll(S()); if (r.n) { X().markDirty(); X().toast(`${r.n} double${r.n > 1 ? "s" : ""} réduit${r.n > 1 ? "s" : ""} : +${r.pd} Poussière d'étoile.`); } repaint(); return; }
+    if (a === "ca-sell" || a === "ca-buy") { if (!window.MARKET) return; X().closeSheet(); if (a === "ca-sell") window.MARKET.sellCard(t.dataset.v); else window.MARKET.buyCard(t.dataset.v); window.DX.go("hdv"); window.scrollTo(0, 0); return; }
+    if (a === "ca-trade") { if (!window.MARKET) return; X().closeSheet(); window.MARKET.M.tPick = "card"; window.MARKET.tradeAsk(""); return; }
     if (a === "ca-craft") { const err = E().cardCraft(S(), t.dataset.v); if (err) { X().toast(err); return; } X().markDirty(); X().toast("Carte fabriquée : elle rejoint l'album."); X().closeSheet(); repaint(); }
   });
   window.CARTEUI = { tile, card, pageHtml };

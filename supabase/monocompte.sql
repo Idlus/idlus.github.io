@@ -312,6 +312,9 @@ create table if not exists mono.hdv (
   expires_at timestamptz not null default now() + interval '14 days',
   closed_at timestamptz
 );
+-- 2.2.11 « Bourse aux cartes » : cartes de collection de l'album (card, clé = id de la carte, « * » pour la brillante, lots de 1)
+alter table mono.hdv drop constraint if exists hdv_cat_check;
+alter table mono.hdv add constraint hdv_cat_check check (cat in ('eq', 'res', 'rune', 'cons', 'mt', 'pet', 'tf', 'col', 'card'));
 create index if not exists hdv_open on mono.hdv (saison, monde, key, price) where status = 'open';
 create index if not exists hdv_seller on mono.hdv (seller, saison, status);
 create table if not exists mono.ventes (
@@ -903,7 +906,17 @@ as $$ select coalesce(case when (d ->> 'kamas') ~ '^\d{1,15}(\.\d+)?$' then (d -
 create or replace function mono.qty(u uuid, p_s int, d jsonb, b text, k text) returns numeric language sql stable security definer set search_path = mono, public
 as $$ select coalesce(case when (d -> b ->> k) ~ '^\d{1,12}(\.\d+)?$' then (d -> b ->> k)::numeric end, 0)
   + coalesce((select sum((o.payload -> b ->> k)::numeric) from mono.ops o where o.user_id = u and o.saison = p_s and o.id > mono.cursor(d)), 0) $$;
-create or replace function mono.bucket(c text) returns text language sql immutable as $$ select case c when 'res' then 'res' when 'rune' then 'runes' when 'cons' then 'cons' end $$;
+create or replace function mono.bucket(c text) returns text language sql immutable as $$ select case c when 'res' then 'res' when 'rune' then 'runes' when 'cons' then 'cons' when 'card' then 'cards' end $$;
+-- 2.2.11 « Bourse aux cartes » (Mathis 2A 4A) : doubles d'une carte qu'on peut céder (le dernier exemplaire reste dans l'album), lus dans
+-- la partie validée (mono.cards.o, ou .b pour la brillante « id* ») plus les opérations pas encore dedans ; après 7 boosters ouverts.
+create or replace function mono.card_qty(u uuid, p_s int, d jsonb, k text) returns numeric language sql stable security definer set search_path = mono, public
+as $$ select greatest(0, coalesce(case when (case when k like '%*' then d -> 'mono' -> 'cards' -> 'b' ->> left(k, -1) else d -> 'mono' -> 'cards' -> 'o' ->> k end) ~ '^\d{1,9}$'
+    then (case when k like '%*' then d -> 'mono' -> 'cards' -> 'b' ->> left(k, -1) else d -> 'mono' -> 'cards' -> 'o' ->> k end)::numeric end, 0)
+  + coalesce((select sum((o.payload -> 'cards' ->> k)::numeric) from mono.ops o where o.user_id = u and o.saison = p_s and o.id > mono.cursor(d)), 0) - 1) $$;
+create or replace function mono.card_lock(d jsonb) returns text language sql immutable
+as $$ select case when d -> 'mono' -> 'cards' is null or coalesce((d -> 'mono' ->> 'eternel')::boolean, false) then 'Les cartes s''échangent depuis la partie de saison.'
+  when coalesce(case when (d -> 'mono' -> 'cards' ->> 'nb') ~ '^\d{1,9}$' then (d -> 'mono' -> 'cards' ->> 'nb')::int end, 0) < 7
+  then 'Les cartes s''échangent après 7 boosters ouverts dans la partie (ou ta partie validée n''est pas encore à jour).' end $$;
 create or replace function mono.tf_res() returns text language sql immutable as $$ select 'Éclat du Temps'::text $$;
 -- objets jamais échangeables au Monocompte : Dofus (dont le Phénix), trophées, équipements de rang de l'Arsenal (liés au compte)
 create or replace function mono.bloque(tpl text) returns boolean language sql immutable as $$ select coalesce(tpl, '') ~ '^(dofus_|trophee_|hon_)' $$;
@@ -1041,6 +1054,13 @@ as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); m text; 
       perform mono.mouvement(u, s, -p_lot, 'hdv_vente', 'hdv:' || lid || ':mise', 'hdv');
     end loop;
     perform mono.op(u, s, jsonb_build_object('k', -tax * n, 'tf', -p_lot * n), 'Mis en vente : ' || n || ' × ' || mono.tf_res() || ' ×' || p_lot);
+  elsif c = 'card' then -- 2.2.11 « Bourse aux cartes »
+    if m <> 's' then return mono.err('Les cartes s''échangent dans la saison.'); end if;
+    if p_key is null or p_key !~ '^[a-z0-9_]{1,48}[*]?$' then return mono.err('Carte inconnue.'); end if;
+    if mono.card_lock(d) is not null then return mono.err(mono.card_lock(d)); end if;
+    if mono.card_qty(u, s, d, p_key) < n then return mono.err('Pas assez de doubles de cette carte : le dernier exemplaire reste dans l''album (ou ta partie validée n''est pas encore à jour).'); end if;
+    insert into mono.hdv (saison, monde, seller, cat, key, name, lvl, slot, qty, price) select s, m, u, 'card', p_key, left(coalesce(p_name, p_key), 80), coalesce(p_lvl, 0), left(p_slot, 20), 1, p_price from generate_series(1, n);
+    perform mono.op(u, s, jsonb_build_object('k', -tax * n, 'cards', jsonb_build_object(p_key, -n)), 'Mis en vente : ' || case when n > 1 then n || ' × ' else '' end || coalesce(p_name, p_key));
   elsif c = 'col' then
     select * into cl from mono.collection where id = p_uid and user_id = u and saison = s and hdv is null for update;
     if cl.id is null then return mono.err('Objet de collection introuvable.'); end if;
@@ -1236,6 +1256,12 @@ as $$ declare oi jsonb := '[]'::jsonb; om jsonb := '[]'::jsonb; op_ jsonb := '[]
       if mono.qty(u, p_s, d, b, e.key) < e.value::numeric then raise exception 'Pas assez de % (ou ta partie validée n''est pas encore à jour).', e.key; end if;
     end loop;
   end loop;
+  -- 2.2.11 « Bourse aux cartes » : doubles seulement, après 7 boosters ouverts
+  for e in select * from jsonb_each_text(coalesce(o -> 'cards', '{}'::jsonb)) loop
+    if e.key !~ '^[a-z0-9_]{1,48}[*]?$' or e.value !~ '^[1-9][0-9]{0,3}$' then raise exception 'Carte invalide.'; end if;
+    if mono.card_lock(d) is not null then raise exception '%', mono.card_lock(d); end if;
+    if mono.card_qty(u, p_s, d, e.key) < e.value::numeric then raise exception 'Pas assez de doubles de cette carte : le dernier exemplaire reste dans l''album (ou ta partie validée n''est pas encore à jour).'; end if;
+  end loop;
   return jsonb_build_object('items', oi, 'mounts', om, 'pets', op_);
 end $$;
 -- ce qu'un joueur donne (négatif) et reçoit, en une seule opération
@@ -1248,7 +1274,8 @@ as $$ select jsonb_strip_nulls(jsonb_build_object(
   'tf', nullif(coalesce((theirs ->> 'tf')::int, 0) - coalesce((mine ->> 'tf')::int, 0), 0),
   'res', (select jsonb_object_agg(key, v) from (select key, sum(v) v from (select key, -value::numeric v from jsonb_each_text(coalesce(mine -> 'res', '{}')) union all select key, value::numeric from jsonb_each_text(coalesce(theirs -> 'res', '{}'))) a group by key) z),
   'runes', (select jsonb_object_agg(key, v) from (select key, sum(v) v from (select key, -value::numeric v from jsonb_each_text(coalesce(mine -> 'runes', '{}')) union all select key, value::numeric from jsonb_each_text(coalesce(theirs -> 'runes', '{}'))) a group by key) z),
-  'cons', (select jsonb_object_agg(key, v) from (select key, sum(v) v from (select key, -value::numeric v from jsonb_each_text(coalesce(mine -> 'cons', '{}')) union all select key, value::numeric from jsonb_each_text(coalesce(theirs -> 'cons', '{}'))) a group by key) z))) $$;
+  'cons', (select jsonb_object_agg(key, v) from (select key, sum(v) v from (select key, -value::numeric v from jsonb_each_text(coalesce(mine -> 'cons', '{}')) union all select key, value::numeric from jsonb_each_text(coalesce(theirs -> 'cons', '{}'))) a group by key) z),
+  'cards', (select jsonb_object_agg(key, v) from (select key, sum(v) v from (select key, -value::numeric v from jsonb_each_text(coalesce(mine -> 'cards', '{}')) union all select key, value::numeric from jsonb_each_text(coalesce(theirs -> 'cards', '{}'))) a group by key) z))) $$;
 
 create or replace function public.mono_trade_start(p_pseudo text, p_saison int default null) returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); v uuid; i bigint; begin
@@ -1282,7 +1309,7 @@ as $$ declare u uuid := mono.need(); t mono.echanges; o jsonb; r jsonb; tf int; 
   if r ? mono.tf_res() then tf := tf + greatest(0, coalesce(case when (r ->> mono.tf_res()) ~ '^\d{1,9}$' then (r ->> mono.tf_res())::int end, 0)); r := r - mono.tf_res(); end if; -- Éclats posés comme une ressource du sac
   o := jsonb_strip_nulls(jsonb_build_object('k', greatest(0, coalesce(case when (p_offer ->> 'k') ~ '^\d{1,15}$' then (p_offer ->> 'k')::bigint end, 0)), 'items', mono.uniq(p_offer -> 'items'),
     'mounts', mono.uniq(p_offer -> 'mounts'), 'pets', mono.uniq(p_offer -> 'pets'), 'col', mono.uniq(p_offer -> 'col'), 'tf', nullif(tf, 0),
-    'res', nullif(r, '{}'::jsonb), 'runes', p_offer -> 'runes', 'cons', p_offer -> 'cons'));
+    'res', nullif(r, '{}'::jsonb), 'runes', p_offer -> 'runes', 'cons', p_offer -> 'cons', 'cards', p_offer -> 'cards'));
   if jsonb_array_length(coalesce(o -> 'items', '[]')) + jsonb_array_length(coalesce(o -> 'mounts', '[]')) + jsonb_array_length(coalesce(o -> 'pets', '[]')) + jsonb_array_length(coalesce(o -> 'col', '[]')) > 12 then return mono.err('12 objets et bêtes au maximum.'); end if;
   if t.a = u then update mono.echanges set offer_a = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id;
   else update mono.echanges set offer_b = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id; end if;

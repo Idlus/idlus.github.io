@@ -1,6 +1,19 @@
 {
-  "version": "2.2.11",
+  "version": "2.2.12",
   "versions": [
+    {
+      "v": "2.2.12",
+      "name": "Bourse aux cartes",
+      "items": [
+        "Cartes de collection : tes doubles se vendent à l'Hôtel de vente (nouvelle catégorie Cartes de collection) ou s'échangent avec un joueur (idée de Likie)",
+        "Seulement les doubles : le dernier exemplaire reste toujours dans ton album, et ta propre carte de héros ne s'échange pas",
+        "Vendre ou échanger demande 7 boosters ouverts dans la partie ; acheter est ouvert à tous",
+        "Un double reste une carte : sur sa fiche, « Réduire » le change en Poussière d'étoile, et « Tout réduire » en haut de l'album les réduit tous d'un coup",
+        "Une carte achetée ou reçue compte pour l'album, les paliers, les titres et les hauts faits, mais ne donne jamais de Poussière",
+        "Sur la fiche d'une carte : boutons Vendre à l'HdV et Proposer à un joueur, et Acheter à l'HdV pour une carte qui te manque",
+        "Classique Saison 1 et Monocompte, chacun son marché. Taxe de 2 %, annonces de 14 jours, mêmes 20 places de vente"
+      ]
+    },
     {
       "v": "2.2.11",
       "name": "Songes en boucle",

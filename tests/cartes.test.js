@@ -41,7 +41,9 @@ console.log("ok - boosters : un par jour, 4 de plus en donjon au plus, 5 cartes,
   for (let i = 0; i < 2000; i++) { E.boosterGive(S, 1); const o = E.boosterOpen(S); if (typeof o === "string") continue; cards += o.length; sh += o.filter((x) => x.sh).length; }
   E.setRng(Math.random);
   const p = sh / cards; assert(p > 0.006 && p < 0.014, "brillantes ≈ 1 sur 100 : " + p);
-  assert(E.cardDust(S) > 0, "les doubles donnent de la poussière");
+  assert.strictEqual(E.cardDust(S), 0, "2.2.11 (3B) : un double reste une carte au tirage");
+  const pv = E.cardReduceAllPreview(S), ra = E.cardReduceAll(S); assert(ra.pd > 0 && ra.pd === pv.pd && ra.n === pv.n, "« Tout réduire » donne la Poussière annoncée");
+  assert.strictEqual(E.cardDust(S), ra.pd, "les doubles réduits donnent de la poussière"); assert.strictEqual(E.cardReduceAll(S).n, 0, "plus rien à réduire");
   const T = s1(); T.s1c.cards = { o: {}, b: {}, pd: 1000, bst: 0, free: 0, dj: 0, djd: 0, djn: 0 };
   const c = E.CARTES.find((x) => x.rar === "l"); assert.strictEqual(E.cardCraft(T, c.id), null); assert.strictEqual(E.cardDust(T), 1000 - E.CARTE_CRAFT.l);
   assert(E.cardCraft(T, c.id), "pas deux fois"); assert(!E.cardShiny(T, c.id), "jamais brillante en fabrication");
@@ -73,3 +75,40 @@ console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de 
   assert.deepStrictEqual(E.cardNewTake(E.newState("X", "iop")), [], "rien hors saison");
   assert.strictEqual(E.cardDjDone(S), 0); E.emit(S, "dungeon", {}); assert.strictEqual(E.cardDjDone(S), 1); assert.strictEqual(E.cardDjDone(E.newState("X", "iop")), null); }
 console.log("ok - nouvelles cartes jusqu'à la visite de l'album, donjons vers le booster suivant");
+
+// 2.2.11 « Bourse aux cartes » (Mathis 1A 2A 3B 4A 5A)
+{ const S = s1(), a = () => S.s1c.cards; const c = E.CARTES.find((x) => x.rar === "e"), id = c.id;
+  E.cardTradeLock(S); a().o[id] = 3; a().nb = 3;
+  assert.strictEqual(E.cardDbl(S, id), 2, "2A : seulement les doubles"); assert.strictEqual(E.cardDbl(S, id, true), 0);
+  assert(/Encore 4 boosters/.test(E.cardTradeLock(S)), "4A : 7 boosters ouverts avant d'échanger"); a().nb = 7; assert.strictEqual(E.cardTradeLock(S), null);
+  assert(E.cardDoubles(S).some((x) => x.key === id && x.n === 2));
+  assert.strictEqual(E.cardReduce(S, id, false, 1), E.CARTE_DUST.e, "3B : réduire un double"); assert.strictEqual(a().o[id], 2);
+  // vendre : l'exemplaire part ; reçu : jamais de Poussière
+  E.cardOps(S, { [id]: -1 }); assert.strictEqual(a().o[id], 1); assert.strictEqual(E.cardDbl(S, id), 0, "le dernier exemplaire reste");
+  E.cardOps(S, { [id]: 2 }); assert.strictEqual(a().o[id], 3); assert.strictEqual(E.cardDustable(S, id), 0, "une carte reçue ne donne pas de Poussière");
+  assert(typeof E.cardReduce(S, id, false, 1) === "string");
+  E.cardOps(S, { [id]: -1 }); assert.strictEqual(E.cardDustable(S, id), 0, "une carte qui part prend d'abord un exemplaire sans Poussière"); assert.strictEqual(a().r[id], 1);
+  // une carte nouvelle reçue entre dans l'album (5A : elle compte), comme « Nouvelle »
+  const l = E.CARTES.find((x) => x.rar === "l" && !a().o[x.id]); const n0 = E.cardCount(S); E.cardNewTake(S);
+  E.cardOps(S, { [l.id]: 1 }); assert.strictEqual(E.cardCount(S), n0 + 1, "5A : une carte achetée compte"); assert.deepStrictEqual(E.cardNewTake(S), [l.id]);
+  assert.strictEqual(E.cardDustable(S, l.id), 0);
+  // brillante reçue : la carte entre dans l'album
+  const k = E.CARTES.find((x) => x.rar === "r" && !a().o[x.id]); E.cardOps(S, { [E.cardKey(k.id, true)]: 1 }); assert(E.cardHas(S, k.id) && E.cardShiny(S, k.id));
+  assert.deepStrictEqual(E.cardKeyOf(k.id + "*"), { id: k.id, sh: true });
+  // anciens doubles (avant 2.2.11) : déjà réduits, échangeables une fois
+  const T = s1(); T.s1c.cards = { o: { [id]: 4 }, b: { [id]: 2 }, pd: 50, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 9 };
+  assert.strictEqual(E.cardDustable(T, id), 0); assert.strictEqual(E.cardDbl(T, id), 3); assert.strictEqual(E.cardDbl(T, id, true), 1); assert.strictEqual(T.s1c.cards.v, 2);
+  // le bilan du Bouclier
+  const B = E.cardBilan(T); assert.deepStrictEqual([B.n, B.nb], [6, 9]);
+  assert.strictEqual(E.cardTradeLock(E.newState("X", "iop")) !== null, true, "pas hors saison"); }
+console.log("ok - bourse aux cartes : doubles seulement, réduire ou vendre, 7 boosters, carte reçue sans Poussière, compte pour l'album");
+
+// 2.2.11 : le Bouclier compte les cartes (elles se vendent) : exemplaires bornés par les boosters ouverts, la fabrication et le serveur
+{ const V = require("../js/verify.js"); const S = s1(); E.boosterGive(S, 3); for (let i = 0; i < 4; i++) E.boosterOpen(S);
+  const p = V.bilan(E, S); assert(p.cn >= 20 && p.cnb === 4, "bilan des cartes " + JSON.stringify([p.cn, p.cnb]));
+  E.boosterGive(S, 2); E.boosterOpen(S); E.boosterOpen(S); const ok = V.check(E, p, V.bilan(E, S), 1, {}, null, 50); assert(ok.ok, "boosters ouverts : " + ok.why);
+  const T = E.deserialize(E.serialize(S)); const c = E.CARTES.find((x) => x.rar === "l"); T.s1c.cards.o[c.id] = (T.s1c.cards.o[c.id] || 0) + 40;
+  const bad = V.check(E, p, V.bilan(E, T), 1, {}, null, 50); assert(!bad.ok && /cartes pour/.test(bad.why), "cartes inventées signalées : " + bad.why);
+  assert(V.check(E, p, V.bilan(E, T), 1, { cn: 40 }, null, 50).ok, "cartes reçues du serveur : acceptées");
+  T.s1c.cards.nb += 500; assert(/boosters de cartes/.test(V.check(E, p, V.bilan(E, T), 1, {}, null, 50).why), "boosters inventés signalés"); }
+console.log("ok - Bouclier : cartes inventées et boosters inventés signalés, cartes reçues du serveur acceptées");

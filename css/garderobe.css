@@ -248,3 +248,12 @@
 .gr-it .gr-banpic{width:100%;height:44px;object-fit:cover;border-radius:6px}
 @media (max-width:600px){.pban{height:72px}}
 .s1-lb{margin-top:12px}.s1-lbl{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}.s1-lbl li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:8px;background:var(--panel2)}.s1-lbl li b{min-width:26px;color:var(--accent,#f0b43c)}
+/* 2.2.11 « Bourse aux cartes » : doubles sur la fiche, cartes dans l'Hôtel de vente et l'échange */
+.ca-dbl{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-radius:10px;background:var(--panel2)}
+.ca-dbl .row{gap:6px;flex-wrap:wrap}
+.mkcard{border:2px solid var(--rc,#9aa3ad);overflow:hidden;background:var(--panel3)}
+.icobox.mkcard img{width:100%;height:100%;object-fit:cover}
+.itile .mkcard{position:absolute;inset:4px;border-radius:9px;display:block}
+.itile .mkcard img{width:100%;height:100%;object-fit:cover}
+.mkcard.sh{box-shadow:0 0 0 1px #fff6,0 0 10px rgba(255,214,110,.75)}
+.itile .icount{z-index:1}

@@ -281,13 +281,14 @@
   /* Ce que le serveur a donné entre la partie validée (op0) et la partie envoyée (op1) : opérations de l'HdV de saison et
      des échanges déjà appliquées par le jeu (kamas, ressources, Éclats du Temps, objets, montures, familiers). */
   VM.gift = (ops, op0, op1) => {
-    const g = { k: 0, r: 0, dof: 0, mt: 0, ms: 0, pt: 0 };
+    const g = { k: 0, r: 0, dof: 0, mt: 0, ms: 0, pt: 0, cn: 0 };
     for (const o of ops || []) { if (!(o.id > op0 && o.id <= op1)) continue; const p = o.p || {};
       g.k += Math.max(0, +p.k || 0); g.r += Math.max(0, +p.tf || 0);
       for (const b of ["res", "runes", "cons"]) for (const x in p[b] || {}) if (b === "res") g.r += Math.max(0, +p[b][x] || 0);
       for (const it of p.add || []) if (it && /^dofus_/.test(String(it.tpl))) g.dof++;
       for (const m of p.addM || []) { g.mt++; g.ms += Math.max(1, Math.floor(+(m && m.st) || 1)); }
-      g.pt += (p.addP || []).length; }
+      g.pt += (p.addP || []).length;
+      for (const x in p.cards || {}) g.cn += Math.max(0, Math.round(+p.cards[x] || 0)); } // 2.2.11 : cartes reçues (HdV de saison, échange)
     return g;
   };
 

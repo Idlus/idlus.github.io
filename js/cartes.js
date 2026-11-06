@@ -59,7 +59,12 @@
   E.carte = (id) => BY[id] || null;
 
   /* ---------------- l'album du compte ---------------- */
-  const A = (S) => { const c = S.mono ? S.mono : S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0 }; return c.cards; };
+  /* 2.2.11 « Bourse aux cartes » (Mathis 3B) : r / rb = exemplaires (normaux / brillants) qui ne donnent pas de Poussière : les doubles
+     déjà réduits avant la 2.2.11 (ils restent échangeables une fois) et les cartes reçues d'un joueur. nc = cartes fabriquées. */
+  const A = (S) => { const c = S.mono ? S.mono : S.s1c; if (!c.cards) c.cards = { o: {}, b: {}, pd: 0, bst: 0, free: 0, dj: 0, djd: 0, djn: 0, nb: 0, v: 2, r: {}, rb: {}, nc: 0 };
+    const a = c.cards; if (a.v !== 2) { a.v = 2; a.r = {}; a.rb = {}; a.nc = a.nc || 0;
+      for (const id in a.o || {}) if (a.o[id] > 1) a.r[id] = a.o[id] - 1; for (const id in a.b || {}) if (a.b[id] > 1) a.rb[id] = a.b[id] - 1; }
+    if (!a.r) a.r = {}; if (!a.rb) a.rb = {}; return a; };
   const me = () => { const O = root.ONLINE || root.ON, p = O && O.profile && O.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
   const mine = (S) => { const a = ((S.mono ? S.mono : S.s1c) || {}).cards || {}, x = S.xcards || {};
     const o = Object.assign({}, x.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, a.b || {}), m = me();
@@ -97,10 +102,10 @@
     for (let i = 0; i < E.BOOSTER_N; i++) {
       const c = hero && i === 0 ? pick("h") : pick(roll(i === E.BOOSTER_N - 1)), sh = E.rnd() < E.CARTE_SHINY;
       const had = sh ? !!a.b[c.id] : !!a.o[c.id];
-      let pd = 0;
-      if (sh) { if (had) pd = DUST[c.rar] * 5; a.b[c.id] = (a.b[c.id] || 0) + 1; a.o[c.id] = a.o[c.id] || 1; }
-      else { if (had) pd = DUST[c.rar]; a.o[c.id] = (a.o[c.id] || 0) + 1; }
-      a.pd += pd; out.push({ id: c.id, sh, nw: !had, pd });
+      // 2.2.11 (3B) : un double reste une carte ; on choisit ensuite de le réduire en Poussière ou de le vendre
+      if (sh) { a.b[c.id] = (a.b[c.id] || 0) + 1; a.o[c.id] = a.o[c.id] || 1; }
+      else a.o[c.id] = (a.o[c.id] || 0) + 1;
+      out.push({ id: c.id, sh, nw: !had, pd: 0, dbl: had });
       if (!had) { a.nw = (a.nw || []).filter((x) => x !== c.id); a.nw.push(c.id); if (a.nw.length > 60) a.nw.shift(); } // 2.2.6 (6A) : « Nouvelle » dans l'album jusqu'à la visite
     }
     a.nb = (a.nb || 0) + 1;
@@ -111,8 +116,59 @@
   E.cardCraft = (S, id) => {
     if (!s1(S)) return "La fabrication se fait dans la partie de saison."; const c = BY[id]; if (!c) return "Carte inconnue.";
     const a = A(S); if (a.o[id]) return "Tu as déjà cette carte."; const p = CRAFT[c.rar]; if (a.pd < p) return `Il faut ${p} Poussières d'étoile.`;
-    a.pd -= p; a.o[id] = 1; return null;
+    a.pd -= p; a.o[id] = 1; a.nc = (a.nc || 0) + 1; return null;
   };
+
+  /* ---------------- 2.2.11 « Bourse aux cartes » (Mathis 1A 2A 3B 4A 5A) ----------------
+     1A : à l'HdV (catégorie « Cartes de collection ») et en échange direct. 2A : seulement les doubles, le dernier exemplaire reste.
+     3B : un double se réduit en Poussière ou se vend ; une carte reçue d'un joueur ne donne jamais de Poussière.
+     4A : après 7 boosters ouverts dans la partie. 5A : une carte achetée compte comme les autres (album, paliers, succès).
+     Clé d'échange : l'id de la carte, suivi de « * » pour sa version brillante. Le serveur (supabase/hdv.sql, monocompte.sql) relit
+     les mêmes compteurs dans la partie validée. */
+  E.CARD_TRADE_MIN = 7;
+  E.cardKey = (id, sh) => (sh ? id + "*" : id);
+  E.cardKeyOf = (k) => { k = String(k || ""); const sh = k.endsWith("*"); return { id: sh ? k.slice(0, -1) : k, sh }; };
+  const cnt = (a, id, sh) => Math.max(0, Math.floor(+(sh ? a.b : a.o)[id] || 0));
+  const nod = (a, id, sh) => Math.max(0, Math.floor(+(sh ? a.rb : a.r)[id] || 0));
+  const setN = (a, id, sh, n) => { const o = sh ? a.b : a.o; if (n > 0) o[id] = n; else delete o[id]; };
+  const setNod = (a, id, sh, n) => { const o = sh ? a.rb : a.r; if (n > 0) o[id] = n; else delete o[id]; };
+  E.cardDbl = (S, id, sh) => (s1(S) && BY[id] ? Math.max(0, cnt(A(S), id, sh) - 1) : 0); // doubles qu'on peut céder
+  E.cardDustable = (S, id, sh) => { if (!s1(S) || !BY[id]) return 0; const a = A(S); return Math.max(0, cnt(a, id, sh) - 1 - nod(a, id, sh)); };
+  E.cardDustOf = (id, sh) => (BY[id] ? DUST[BY[id].rar] * (sh ? 5 : 1) : 0);
+  // tous les doubles qu'on peut céder : [{ key, id, sh, n }]
+  E.cardDoubles = (S) => { if (!s1(S)) return []; const a = A(S), L = [];
+    C.forEach((c) => { [false, true].forEach((sh) => { const n = cnt(a, c.id, sh) - 1; if (n > 0) L.push({ key: E.cardKey(c.id, sh), id: c.id, sh, n }); }); }); return L; };
+  E.cardTradeLock = (S) => {
+    if (!s1(S)) return "Les cartes s'échangent depuis la partie de saison.";
+    if (over(S)) return "La saison est finie : l'album reste, les échanges de cartes s'arrêtent.";
+    const k = E.CARD_TRADE_MIN - (A(S).nb || 0);
+    return k > 0 ? `Encore ${k} booster${k > 1 ? "s" : ""} à ouvrir : les cartes s'échangent après ${E.CARD_TRADE_MIN} boosters ouverts dans la partie.` : null;
+  };
+  // réduire n doubles en Poussière (ceux qui en donnent encore) ; renvoie la Poussière gagnée ou un message
+  E.cardReduce = (S, id, sh, n) => {
+    if (!s1(S)) return "La Poussière se fait dans la partie de saison."; if (!BY[id]) return "Carte inconnue.";
+    const a = A(S), k = Math.min(Math.max(1, Math.floor(n || 1)), E.cardDustable(S, id, sh));
+    if (k <= 0) return cnt(a, id, sh) > 1 ? "Ces doubles ont déjà donné leur Poussière : tu peux les vendre ou les échanger." : "Pas de double à réduire.";
+    setN(a, id, sh, cnt(a, id, sh) - k); const g = E.cardDustOf(id, sh) * k; a.pd += g; return g;
+  };
+  // « Tout réduire » : tous les doubles qui donnent encore de la Poussière ; { n, pd }
+  E.cardReduceAll = (S) => { const out = { n: 0, pd: 0 }; if (!s1(S)) return out;
+    E.CARTES.forEach((c) => [false, true].forEach((sh) => { const k = E.cardDustable(S, c.id, sh); if (k > 0) { const g = E.cardReduce(S, c.id, sh, k); if (typeof g === "number") { out.n += k; out.pd += g; } } }));
+    return out; };
+  E.cardReduceAllPreview = (S) => { const out = { n: 0, pd: 0 }; if (!s1(S)) return out;
+    E.CARTES.forEach((c) => [false, true].forEach((sh) => { const k = E.cardDustable(S, c.id, sh); if (k > 0) { out.n += k; out.pd += k * E.cardDustOf(c.id, sh); } })); return out; };
+  /* Opération du serveur (HdV, échange) : { clé: ±n }. Une carte qui part prend d'abord un exemplaire sans Poussière ;
+     une carte reçue n'en donne jamais (le premier exemplaire d'une carte nouvelle entre dans l'album, « Nouvelle »). */
+  E.cardOps = (S, d) => { if (!s1(S) || !d) return; const a = A(S);
+    for (const k in d) { const { id, sh } = E.cardKeyOf(k), v = Math.round(+d[k] || 0); if (!v || !BY[id]) continue; const c0 = cnt(a, id, sh);
+      if (v < 0) { const c1 = Math.max(0, c0 + v); setN(a, id, sh, c1); setNod(a, id, sh, Math.min(Math.max(0, nod(a, id, sh) + v), Math.max(0, c1 - 1))); }
+      else { const had = !!a.o[id]; setN(a, id, sh, c0 + v); setNod(a, id, sh, nod(a, id, sh) + (c0 ? v : v - 1)); a.rcv = (a.rcv || 0) + v;
+        if (sh && !a.o[id]) a.o[id] = 1;
+        if (!had) { a.nw = (a.nw || []).filter((x) => x !== id); a.nw.push(id); if (a.nw.length > 60) a.nw.shift(); } } } };
+  // pour le Bouclier (js/verify.js) : exemplaires, boosters ouverts, cartes fabriquées et reçues
+  E.cardBilan = (S) => { const c = S && (S.mono ? S.mono : S.s1c), a = c && c.cards; if (!a) return null; let n = 0;
+    for (const id in a.o || {}) n += Math.max(0, Math.floor(+a.o[id] || 0)); for (const id in a.b || {}) n += Math.max(0, Math.floor(+a.b[id] || 0));
+    return { n, nb: Math.max(0, Math.floor(+a.nb || 0)), nc: Math.max(0, Math.floor(+a.nc || 0)), rcv: Math.max(0, Math.floor(+a.rcv || 0)) }; };
 
   /* ---------------- les donjons de saison donnent des boosters ---------------- */
   { const emit0 = E.emit; E.emit = function (S, t, d) { const r = emit0.apply(this, arguments);

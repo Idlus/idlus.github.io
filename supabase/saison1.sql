@@ -966,7 +966,8 @@ create table if not exists s1.hdv_listings (
 );
 -- 2.1.30 « Marché des bêtes » : montures (mt) et familiers (pet) ; item = la bête exacte (niveau, étoiles, capacité…)
 alter table s1.hdv_listings drop constraint if exists hdv_listings_cat_check;
-alter table s1.hdv_listings add constraint hdv_listings_cat_check check (cat in ('eq', 'res', 'rune', 'cons', 'mt', 'pet'));
+-- 2.2.11 « Bourse aux cartes » : cartes de collection (card, clé = id de la carte, « * » au bout pour la brillante, lots de 1)
+alter table s1.hdv_listings add constraint hdv_listings_cat_check check (cat in ('eq', 'res', 'rune', 'cons', 'mt', 'pet', 'card'));
 create index if not exists hdv_open_key on s1.hdv_listings (key, price) where status = 'open';
 create index if not exists hdv_open_cat on s1.hdv_listings (cat, lvl) where status = 'open';
 create index if not exists hdv_seller on s1.hdv_listings (seller, status);
@@ -1040,7 +1041,7 @@ as $$ select coalesce((d->>'kamas')::numeric, 0) + coalesce((select sum((o.paylo
 create or replace function s1.hdv_qty(p_user uuid, d jsonb, b text, k text) returns numeric language sql stable security definer set search_path = s1, public
 as $$ select coalesce((d->b->>k)::numeric, 0) + coalesce((select sum((o.payload->b->>k)::numeric) from hdv_ops o where o.user_id = p_user and o.id > hdv_cursor(d)), 0) $$;
 
-create or replace function s1.hdv_bucket(c text) returns text language sql immutable as $$ select case c when 'res' then 'res' when 'rune' then 'runes' when 'cons' then 'cons' end $$;
+create or replace function s1.hdv_bucket(c text) returns text language sql immutable as $$ select case c when 'res' then 'res' when 'rune' then 'runes' when 'cons' then 'cons' when 'card' then 'cards' end $$;
 
 -- Objet échangeable ? Renvoie l'objet (sans uid) ou lève une erreur.
 create or replace function s1.hdv_item(p_user uuid, d jsonb, p_uid bigint) returns jsonb language plpgsql stable security definer set search_path = s1, public
@@ -1059,6 +1060,16 @@ end $$;
 
 -- Nombre positif lu dans un texte, sinon null (sans erreur de conversion).
 create or replace function s1.hdv_num(t text) returns numeric language sql immutable as $$ select case when t ~ '^\d{1,12}(\.\d{1,12})?$' then t::numeric end $$;
+
+-- 2.2.11 « Bourse aux cartes » (Mathis 2A 4A) : doubles d'une carte qu'on peut céder (le dernier exemplaire reste dans l'album),
+-- lus dans la partie de saison validée (s1c.cards.o, ou .b pour la brillante « id* ») plus les opérations pas encore dedans.
+create or replace function s1.hdv_card_qty(p_user uuid, d jsonb, k text) returns numeric language sql stable security definer set search_path = s1, public
+as $$ select greatest(0, coalesce(hdv_num(case when k like '%*' then d->'s1c'->'cards'->'b'->>left(k, -1) else d->'s1c'->'cards'->'o'->>k end), 0)
+  + coalesce((select sum((o.payload->'cards'->>k)::numeric) from hdv_ops o where o.user_id = p_user and o.id > hdv_cursor(d)), 0) - 1) $$;
+-- Les cartes s'échangent depuis la partie de saison, après 7 boosters ouverts (4A : pas de compte « réserve » créé la veille). Null si permis.
+create or replace function s1.hdv_card_lock(d jsonb) returns text language sql immutable
+as $$ select case when d->'s1c'->'cards' is null then 'Les cartes s''échangent depuis la partie de saison.'
+  when coalesce(hdv_num(d->'s1c'->'cards'->>'nb'), 0) < 7 then 'Les cartes s''échangent après 7 boosters ouverts dans la partie (ou la sauvegarde en ligne n''est pas encore à jour).' end $$;
 
 -- 2.1.30 : monture ou familier échangeable ? Renvoie la bête (sans uid) ou lève une erreur.
 -- Une bête déjà sortie de la partie (vendue, échangée) ne repart jamais, même si une vieille partie la contient encore.
@@ -1143,6 +1154,12 @@ begin
     if hdv_qty(me, d, b, p_key) < p_lot * n then return hdv_err('Tu n''en as pas assez (ou la sauvegarde en ligne n''est pas encore à jour).'); end if;
     insert into hdv_listings (seller, cat, key, name, lvl, slot, qty, price) select me, p_cat, p_key, left(coalesce(p_name, p_key), 80), coalesce(p_lvl, 0), left(p_slot, 20), p_lot, p_price from generate_series(1, n);
     perform hdv_op(me, jsonb_build_object('k', -tax * n, b, jsonb_build_object(p_key, -p_lot * n)), 'Mis en vente : ' || n || ' × ' || p_key || ' ×' || p_lot);
+  elsif p_cat = 'card' then -- 2.2.11 « Bourse aux cartes »
+    if p_key is null or p_key !~ '^[a-z0-9_]{1,48}[*]?$' then return hdv_err('Carte inconnue.'); end if;
+    if hdv_card_lock(d) is not null then return hdv_err(hdv_card_lock(d)); end if;
+    if hdv_card_qty(me, d, p_key) < n then return hdv_err('Pas assez de doubles de cette carte : le dernier exemplaire reste dans l''album (ou la sauvegarde en ligne n''est pas encore à jour).'); end if;
+    insert into hdv_listings (seller, cat, key, name, lvl, slot, qty, price) select me, 'card', p_key, left(coalesce(p_name, p_key), 80), coalesce(p_lvl, 0), left(p_slot, 20), 1, p_price from generate_series(1, n);
+    perform hdv_op(me, jsonb_build_object('k', -tax * n, 'cards', jsonb_build_object(p_key, -n)), 'Mis en vente : ' || case when n > 1 then n || ' × ' else '' end || coalesce(p_name, p_key));
   elsif p_cat in ('mt', 'pet') then
     begin it := hdv_beast(me, d, p_cat, p_uid); exception when raise_exception then return hdv_err(sqlerrm); end;
     tpl := case p_cat when 'mt' then (it->>'sp') || ':' || (it->>'c') else it->>'id' end;
@@ -1260,6 +1277,12 @@ begin
       if hdv_qty(p_user, d, b, e.key) < e.value::numeric then raise exception 'Pas assez de % (ou la sauvegarde en ligne n''est pas encore à jour).', e.key; end if;
     end loop;
   end loop;
+  -- 2.2.11 « Bourse aux cartes » : doubles seulement, après 7 boosters ouverts
+  for e in select * from jsonb_each_text(coalesce(o->'cards', '{}'::jsonb)) loop
+    if e.key !~ '^[a-z0-9_]{1,48}[*]?$' or e.value !~ '^[1-9][0-9]{0,3}$' then raise exception 'Carte invalide.'; end if;
+    if hdv_card_lock(d) is not null then raise exception '%', hdv_card_lock(d); end if;
+    if hdv_card_qty(p_user, d, e.key) < e.value::numeric then raise exception 'Pas assez de doubles de cette carte : le dernier exemplaire reste dans l''album (ou la sauvegarde en ligne n''est pas encore à jour).'; end if;
+  end loop;
   return jsonb_build_object('items', out_items, 'mounts', out_m, 'pets', out_p);
 end $$;
 
@@ -1267,7 +1290,8 @@ create or replace function s1.trade_neg(o jsonb) returns jsonb language sql immu
 as $$ select jsonb_strip_nulls(jsonb_build_object('k', -coalesce((o->>'k')::numeric, 0), 'rm', o->'items', 'rmM', o->'mounts', 'rmP', o->'pets',
   'res', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'res', '{}'::jsonb))),
   'runes', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'runes', '{}'::jsonb))),
-  'cons', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'cons', '{}'::jsonb))))) $$;
+  'cons', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'cons', '{}'::jsonb))),
+  'cards', (select jsonb_object_agg(key, -value::numeric) from jsonb_each_text(coalesce(o->'cards', '{}'::jsonb))))) $$;
 
 -- Additionne deux opérations (ce qu'on donne et ce qu'on reçoit) en une seule.
 create or replace function s1.trade_sum(x jsonb, y jsonb) returns jsonb language sql immutable
@@ -1281,7 +1305,8 @@ as $$ select jsonb_strip_nulls(jsonb_build_object(
   'addP', case when jsonb_array_length(coalesce(x->'addP', '[]')) + jsonb_array_length(coalesce(y->'addP', '[]')) > 0 then coalesce(x->'addP', '[]') || coalesce(y->'addP', '[]') end,
   'res', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'res', '{}')) union all select * from jsonb_each_text(coalesce(y->'res', '{}'))) a group by key) b),
   'runes', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'runes', '{}')) union all select * from jsonb_each_text(coalesce(y->'runes', '{}'))) a group by key) b),
-  'cons', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'cons', '{}')) union all select * from jsonb_each_text(coalesce(y->'cons', '{}'))) a group by key) b))) $$;
+  'cons', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'cons', '{}')) union all select * from jsonb_each_text(coalesce(y->'cons', '{}'))) a group by key) b),
+  'cards', (select jsonb_object_agg(key, s) from (select key, sum(value::numeric) s from (select * from jsonb_each_text(coalesce(x->'cards', '{}')) union all select * from jsonb_each_text(coalesce(y->'cards', '{}'))) a group by key) b))) $$;
 
 create or replace function s1.trade_start(p_pseudo text) returns jsonb language plpgsql security definer set search_path = s1, public
 as $$
@@ -1325,7 +1350,7 @@ begin
   if t.id is null then return hdv_err('Échange terminé.'); end if;
   -- 2.1.30 : montures et familiers ; chaque numéro une seule fois (un objet posé deux fois aurait été reçu en double)
   o := jsonb_strip_nulls(jsonb_build_object('k', greatest(0, coalesce((p_offer->>'k')::bigint, 0)), 'items', hdv_uniq(p_offer->'items'), 'mounts', hdv_uniq(p_offer->'mounts'), 'pets', hdv_uniq(p_offer->'pets'),
-    'res', p_offer->'res', 'runes', p_offer->'runes', 'cons', p_offer->'cons'));
+    'res', p_offer->'res', 'runes', p_offer->'runes', 'cons', p_offer->'cons', 'cards', p_offer->'cards'));
   if jsonb_array_length(coalesce(o->'items', '[]')) + jsonb_array_length(coalesce(o->'mounts', '[]')) + jsonb_array_length(coalesce(o->'pets', '[]')) > 12 then return hdv_err('12 objets et bêtes au maximum.'); end if;
   if t.a = me then update trades set offer_a = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id;
   else update trades set offer_b = o, ok_a = false, ok_b = false, ver = ver + 1, updated_at = now() where id = t.id; end if;
@@ -1354,9 +1379,9 @@ begin
     return hdv_err(sqlerrm);
   end;
   perform hdv_op(t.a, trade_sum(trade_neg(t.offer_a), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_b->>'k')::numeric, 0), 'add', case when jsonb_array_length(ib->'items') > 0 then ib->'items' end,
-    'addM', case when jsonb_array_length(ib->'mounts') > 0 then ib->'mounts' end, 'addP', case when jsonb_array_length(ib->'pets') > 0 then ib->'pets' end, 'res', t.offer_b->'res', 'runes', t.offer_b->'runes', 'cons', t.offer_b->'cons'))), 'Échange avec ' || pseudo_of(t.b));
+    'addM', case when jsonb_array_length(ib->'mounts') > 0 then ib->'mounts' end, 'addP', case when jsonb_array_length(ib->'pets') > 0 then ib->'pets' end, 'res', t.offer_b->'res', 'runes', t.offer_b->'runes', 'cons', t.offer_b->'cons', 'cards', t.offer_b->'cards'))), 'Échange avec ' || pseudo_of(t.b));
   perform hdv_op(t.b, trade_sum(trade_neg(t.offer_b), jsonb_strip_nulls(jsonb_build_object('k', coalesce((t.offer_a->>'k')::numeric, 0), 'add', case when jsonb_array_length(ia->'items') > 0 then ia->'items' end,
-    'addM', case when jsonb_array_length(ia->'mounts') > 0 then ia->'mounts' end, 'addP', case when jsonb_array_length(ia->'pets') > 0 then ia->'pets' end, 'res', t.offer_a->'res', 'runes', t.offer_a->'runes', 'cons', t.offer_a->'cons'))), 'Échange avec ' || pseudo_of(t.a));
+    'addM', case when jsonb_array_length(ia->'mounts') > 0 then ia->'mounts' end, 'addP', case when jsonb_array_length(ia->'pets') > 0 then ia->'pets' end, 'res', t.offer_a->'res', 'runes', t.offer_a->'runes', 'cons', t.offer_a->'cons', 'cards', t.offer_a->'cards'))), 'Échange avec ' || pseudo_of(t.a));
   update trades set status = 'done', note = 'fait', updated_at = now() where id = t.id;
   return jsonb_build_object('ok', true, 'done', true, 'ops', hdv_ops_after(me, p_after));
 end $$;
@@ -1560,7 +1585,7 @@ $$;
 do $$
 declare f text;
 begin
-  foreach f in array array['hdv_err(text)', 'hdv_save(uuid)', 'hdv_cursor(jsonb)', 'hdv_kamas(uuid, jsonb)', 'hdv_qty(uuid, jsonb, text, text)', 'hdv_bucket(text)', 'hdv_item(uuid, jsonb, bigint)',
+  foreach f in array array['hdv_err(text)', 'hdv_save(uuid)', 'hdv_cursor(jsonb)', 'hdv_kamas(uuid, jsonb)', 'hdv_qty(uuid, jsonb, text, text)', 'hdv_bucket(text)', 'hdv_card_qty(uuid, jsonb, text)', 'hdv_card_lock(jsonb)', 'hdv_item(uuid, jsonb, bigint)',
     'hdv_op(uuid, jsonb, text)', 'hdv_ops_after(uuid, bigint)', 'hdv_back(hdv_listings)', 'hdv_expire()', 'hdv_tax(bigint)', 'trade_check(uuid, jsonb, jsonb)', 'trade_neg(jsonb)', 'trade_sum(jsonb, jsonb)',
     'hdv_otax(numeric)', 'hdv_order_close(hdv_orders, text, text)', 'hdv_order_expire()', 'hdv_fold(text)'] loop
     execute 'revoke all on function s1.' || f || ' from public, anon, authenticated';

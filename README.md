@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12 « Bourse aux cartes »
+- Cartes de collection à l'HdV (catégorie card, clé = id de la carte, « * » pour la brillante, lots de 1) et dans l'échange direct (bucket cards des opérations), pour le Classique S1 (supabase/hdv.sql → saison1.sql) et le Monocompte (supabase/monocompte.sql). Choix de Mathis 1A 2A 3B 4A 5A sur la maquette de l'idée de Likie.
+- Seulement les doubles (hdv_card_qty / mono.card_qty : exemplaires de la sauvegarde validée + opérations − 1), après E.CARD_TRADE_MIN (7) boosters ouverts (hdv_card_lock / mono.card_lock, aussi refusé depuis l'Éternel).
+- 3B : un double tiré reste une carte (plus de Poussière automatique) ; E.cardReduce / E.cardReduceAll. Migration cards.v = 2 : les doubles déjà réduits avant (r, rb) et les cartes reçues ne donnent jamais de Poussière. Carte achetée ou reçue : compte partout (E.cardOps).
+- Bouclier : V.bilan compte les cartes (cn), boosters ouverts (cnb) et fabriquées (cnc) ; gift.cn dans la fonction record et VM.gift. Tests tests/cartes.test.js, cartes_bourse_sql.test.js, cartes_bourse_mono_sql.test.js.
+
 ## 2.2.11 « Songes en boucle »
 - Songe infini : case « En boucle » (S.settings.sgLoop) à côté d'Auto et sous « Entrer » : au réveil, la même intensité est relancée après E.SG_LOOP_MS (5 s) ; arrêt après E.SG_LOOP_FAILS (2) songes de suite non validés, sur un réveil voulu (Se réveiller, « Se réveiller (tout garder) » choisi à la main) ou avec « Arrêter la boucle » dans le récap. Une absence d'au moins E.SG_AWAY_S (5 min) en plein songe réveille l'équipe au départ (endRun « away ») et l'absence compte comme de la chasse (E.catchUpGen enveloppé dans js/songe.js). Tests tests/songe_boucle.test.js et songe_boucle_ui.test.js.
 
