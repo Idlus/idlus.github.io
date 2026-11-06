@@ -57,6 +57,12 @@
   E.SG_BET = 10;               // mise du Gobledore
   E.EXP_AUTO_MS = 5000;        // choix automatique (faveur, fontaine, vague…) après ce délai (2.1.40.8 : 20 s → 5 s, retour de Ley)
   E.EXP_DOOR_MS = 5000;        // choix automatique du couloir (2.1.40.8 : 30 s → 5 s)
+  /* 2.2.11 « Songes en boucle » (idée d'Aglouglou, choix A de Mathis, 06/11) : la case « En boucle » relance la même intensité
+     E.SG_LOOP_MS après le réveil ; elle s'arrête après E.SG_LOOP_FAILS songes de suite non validés, ou quand le joueur se réveille
+     lui-même. Une absence d'au moins E.SG_AWAY_S en plein songe réveille l'équipe et l'absence compte comme de la chasse. */
+  E.SG_LOOP_MS = 5000;
+  E.SG_LOOP_FAILS = 2;
+  E.SG_AWAY_S = 300;
   E.EXP_KO = 15;               // PV (%) d'un héros à terre à la salle suivante
   E.EXP_ZONE = 10;             // zones de niveau ± 10 autour de l'équipe
   E.SG_ROOM_REW = 0.02;        // XP : +2 % par salle
@@ -286,9 +292,10 @@
     return null;
   };
   const queue = (X, p) => { p.at = E.now(); p.id = (X.pseq = (X.pseq || 0) + 1); X.pend.push(p); };
-  E.expStart = (S, ii) => {
+  E.expStart = (S, ii, fromLoop) => {
     ii = clamp(Math.round(+ii || 0), 0, E.SG_INT.length - 1);
     const err = E.expCanStart(S, ii); if (err) return err;
+    if (fromLoop !== true) S.sgLoop = null; // un songe lancé à la main recommence le compte des échecs de la boucle
     const team = E.team(S); const wasHunt = S.hunting && S.sub ? S.sub : null;
     S.hunting = false; S.fight = null; S.pause = E.PAUSE_MS; S.protector = null;
     const w = E.weekIdx();
@@ -371,7 +378,7 @@
       if (i === "bet" || +i === 1) { if (X.pts < E.SG_BET) return `La mise est de ${E.SG_BET} points de rêve.`; const win = rnd() < 0.5; X.pts += win ? E.SG_BET : -E.SG_BET; S.cnt = S.cnt || {}; if (win) S.cnt.sgBets = (S.cnt.sgBets || 0) + 1; note(S, win ? `Pari gagné : +${E.SG_BET} points de rêve !` : `Pari perdu : −${E.SG_BET} points de rêve.`, win ? "rare" : "warn"); resolved(S, X); return null; }
       X.pts += E.SG_PTS.gob; resolved(S, X); return null;
     }
-    if (p.t === "wave") { X.pend.shift(); if (i === "no") { endRun(S, X, "wake"); return null; } X.wave++; X.retry = 0; S.fight = null; S.pause = E.PAUSE_MS; return null; }
+    if (p.t === "wave") { X.pend.shift(); if (i === "no") { endRun(S, X, "wake", !p.auto); return null; } X.wave++; X.retry = 0; S.fight = null; S.pause = E.PAUSE_MS; return null; }
     if (p.t === "sable") {
       X.pend.shift();
       if (i === "no" || X.sable <= 0) { endRun(S, X, "fall"); return null; }
@@ -543,17 +550,45 @@
     if (X.sable > 0) { queue(X, { t: "sable" }); return; }
     endRun(S, X, X.valid ? "wake" : "fall");
   };
-  const endRun = (S, X, how) => {
+  const endRun = (S, X, how, manual) => {
     X.on = false; S.fight = null;
     if (X.valid) recordWeek(S, X);
     S.cnt = S.cnt || {};
     S.expLast = { t: E.now(), how, ii: X.ii, valid: X.valid, waves: X.waves, d: X.at !== null && X.nodes[X.at] ? X.nodes[X.at].d : 0, rew: X.rew, bribes: X.bribes || 0, fights: X.fights, relics: X.relics.slice(), loss: X.lastLoss || null, lvl: X.lvl, dur: E.now() - X.t0, chest: X.chest || null, leg: X.leg || null, path: X.path.map((i) => X.nodes[i].t) };
-    note(S, X.valid ? `Réveil après ${X.waves} vague${X.waves > 1 ? "s" : ""} : songe validé, +${X.bribes || 0} Bribes de rêve.` : how === "quit" ? "Tu quittes le songe : le butin des combats est gardé." : `L'équipe se réveille salle ${S.expLast.d} : le butin des combats est gardé, mais le songe n'est pas validé.`, X.valid ? "rare" : "warn");
+    if (how === "away") S.expLast.away = 1;
+    note(S, X.valid ? `Réveil après ${X.waves} vague${X.waves > 1 ? "s" : ""} : songe validé, +${X.bribes || 0} Bribes de rêve.` : how === "away" ? "Tu étais absent : l'équipe s'est réveillée du songe (le butin des combats est gardé) et a chassé pendant ton absence." : how === "quit" ? "Tu quittes le songe : le butin des combats est gardé." : `L'équipe se réveille salle ${S.expLast.d} : le butin des combats est gardé, mais le songe n'est pas validé.`, X.valid ? "rare" : "warn");
     if (X.resume && E.SUBS[X.resume]) { S.hunting = true; S.sub = X.resume; S.pause = E.PAUSE_MS; }
+    loopNext(S, X, how === "away" || how === "quit" || manual);
     E.events.push({ kind: "expend" });
     if (E.checkAch) E.checkAch(S);
   };
-  E.expQuit = (S) => { const X = X_(S); if (!X) return "Aucun songe en cours."; endRun(S, X, X.valid ? "wake" : "quit"); return null; };
+  E.expQuit = (S) => { const X = X_(S); if (!X) return "Aucun songe en cours."; endRun(S, X, X.valid ? "wake" : "quit", true); return null; };
+  /* ---------- 2.2.11 : songes en boucle ---------- */
+  E.sgLoopOn = (S) => !!(S.settings && S.settings.sgLoop) && !S.mono;
+  E.sgSetLoop = (S, on) => { S.settings.sgLoop = !!on; if (!on) S.sgLoop = null; return null; };
+  E.sgLoopLeft = (S) => (S.sgLoop && S.sgLoop.at > 0 && !X_(S) ? Math.max(0, S.sgLoop.at - E.now()) : null); // ms avant la relance, ou null
+  E.sgLoopStop = (S) => { S.sgLoop = null; return null; };
+  /* au réveil : prochaine relance, ou arrêt (réveil voulu par le joueur, absence, trop d'échecs de suite) */
+  function loopNext(S, X, stop) {
+    if (stop || !E.sgLoopOn(S)) { S.sgLoop = null; return; }
+    const fail = X.valid ? 0 : ((S.sgLoop && S.sgLoop.fail) || 0) + 1;
+    if (fail >= E.SG_LOOP_FAILS) { S.sgLoop = null; note(S, `Boucle des songes arrêtée : ${E.SG_LOOP_FAILS} songes de suite non validés en ${E.SG_INT[X.ii].name}.`, "warn"); return; }
+    S.sgLoop = { at: E.now() + E.SG_LOOP_MS, ii: X.ii, fail };
+  }
+  function loopTick(S) {
+    const L = S.sgLoop; if (!L || !(L.at > 0) || X_(S) || E.now() < L.at) return;
+    if (!E.sgLoopOn(S)) { S.sgLoop = null; return; }
+    const err = E.expStart(S, L.ii, true);
+    if (err) { S.sgLoop = null; note(S, `Boucle des songes arrêtée : ${err}`, "warn"); return; }
+    S.sgLoop = { at: 0, ii: L.ii, fail: L.fail }; S.exp.loop = 1;
+  }
+  /* une absence d'au moins E.SG_AWAY_S en plein songe : l'équipe se réveille au départ et chasse pendant l'absence (avant, elle restait
+     figée dans le songe et l'absence ne rapportait rien). Les modules enveloppent E.catchUpGen : celui-ci passe avant le calcul. */
+  { const cu = E.catchUpGen; if (cu) E.catchUpGen = function* (S, seconds) {
+      const X = X_(S);
+      if (X && seconds >= E.SG_AWAY_S) { endRun(S, X, "away"); if (!S.hunting && S.sub && E.SUBS[S.sub] && E.team(S).length) { S.hunting = true; S.pause = E.PAUSE_MS; } }
+      return yield* cu(S, seconds);
+    }; }
   E.expSetAuto = (S, on) => { S.settings.expAuto = !!on; return null; };
   E.expAutoOn = (S) => S.settings.expAuto !== false;
   E.sgSetMode = (S, m) => { if (!E.SG_MODES[m]) return "Mode inconnu."; S.settings.sgMode = m; return null; };
@@ -588,6 +623,7 @@
   /* appelé par E.tick : le jeu choisit à la place du joueur après le délai (si le réglage le permet) */
   E.expTick = (S) => {
     if (!S.mono && (!S.songe || !S.songe.seen)) { const top = S.chars && S.chars.length ? Math.max(...S.chars.map((c) => c.lvl)) : 0; if (top >= E.EXP_MIN_LVL) { E.songe(S).seen = 1; E.celebrate({ t: "songe" }); } }
+    loopTick(S);
     const X = X_(S); if (!X || !E.expAutoOn(S)) return;
     const now = E.now();
     if (X.pend.length) { const p = X.pend[0]; if (now - p.at > E.EXP_AUTO_MS) { p.auto = true; autoDo(S); } return; }
@@ -630,7 +666,7 @@
   E.sgOfficial = (claim, best) => Math.max(0, Math.min(claim, best + Math.max(2, Math.ceil(best * 0.25))));
 
   /* ---------- actions officielles ---------- */
-  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire" });
+  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetLoop: "songes en boucle", sgLoopStop: "arrêter la boucle des songes", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire" });
 
   /* ---------- familier, ornement, succès, bulle de découverte ---------- */
   if (E.PETS && !E.PETS.draconiros_mini) E.PETS.draconiros_mini = { name: "Draconiros miniature", icon: 18048, stats: { pui: 70, cri: 5 }, kind: "zone", lvl: 100, food: "Viande Goûtue", songe: true };

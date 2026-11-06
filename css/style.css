@@ -4011,7 +4011,7 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .sgx-hp i{position:absolute;inset:0 auto 0 0;border-radius:99px;opacity:.75}.sgx-hp b{position:relative;width:100%;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 2px #000}
 .sgx-acts{display:flex;gap:6px;align-items:center;margin-left:auto}
 .sgx-acts select{padding:5px 8px;border-radius:9px;font-size:12.5px}
-.sgx-auto{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;font-weight:800;cursor:pointer}
+.sgx-auto{display:inline-flex;gap:5px;align-items:center;white-space:nowrap;font-size:12.5px;font-weight:800;cursor:pointer}
 .sgx-bon{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.12)}
 .sgx-tot{margin-left:auto}
 .sgx-state{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 16px}

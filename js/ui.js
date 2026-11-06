@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.10.4";
+const GAME_VERSION = "2.2.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.11", name: "Songes en boucle", items: [
+    "Songe infini : nouvelle case « En boucle » à côté d'Auto. Au réveil, le même songe se relance tout seul 5 s plus tard (idée d'Aglouglou)",
+    "La boucle s'arrête si 2 songes de suite ne sont pas validés, ou si tu te réveilles toi-même",
+    "Correction : fermer le jeu en plein songe ne fait plus perdre l'absence. L'équipe se réveille et chasse pendant que tu n'es pas là" ] },
   { v: "2.2.10.4", name: "Honneur des donjons accepté", items: [
     "Monocompte : les parties des joueurs qui enchaînent les donjons n'étaient plus validées par le serveur à cause de leur honneur. C'est corrigé : leur progression revient dans les classements de saison",
     "Chat : sur PC, le menu d'un pseudo du salon Monocompte ne dépasse plus du bas de l'écran",

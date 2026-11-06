@@ -43,6 +43,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **Rythme (fait).** 451 versions publiées depuis le 12/10, dont environ 25 le 22/10 (de 2.1.36 à 2.1.39.1). Chaque publication part sur Discord et souvent en annonce dans le jeu.
 
+**Songe infini en boucle (fait, 06/11, 2.2.11).** Case « En boucle » : au réveil, la même intensité repart 5 s plus tard ; arrêt après 2 songes de suite non validés ou sur un réveil voulu. Une absence d'au moins 5 min en plein songe réveille l'équipe et compte comme de la chasse (avant : absence perdue). Simulation : ~3 songes/h, kamas/h 1,0-1,6 × chasse, mêmes chances de légendaire par songe validé qu'en relançant à la main. Idée d'Aglouglou, choix A de Mathis. À surveiller : Bribes et légendaires gagnés par semaine.
+
 **Social (fait, 05/11, 2.2.10).** Toucher un pseudo, partout dans le jeu, ouvre la fiche du joueur (héros dessiné, titre, en ligne, camp, actions) ; le Monocompte a sa propre fiche (fonction `mono_fiche`, jamais le Classique). Idée de Panda, choix 1A 2A 3A 4A de Mathis.
 
 **Coûts (à compléter).** VPS OVH VPS-3 (coût mensuel à noter ici), nom de domaine : aucun, services payants : aucun connu. Le temps de développement est le coût principal.

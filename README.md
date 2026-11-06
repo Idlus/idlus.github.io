@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.11 « Songes en boucle »
+- Songe infini : case « En boucle » (S.settings.sgLoop) à côté d'Auto et sous « Entrer » : au réveil, la même intensité est relancée après E.SG_LOOP_MS (5 s) ; arrêt après E.SG_LOOP_FAILS (2) songes de suite non validés, sur un réveil voulu (Se réveiller, « Se réveiller (tout garder) » choisi à la main) ou avec « Arrêter la boucle » dans le récap. Une absence d'au moins E.SG_AWAY_S (5 min) en plein songe réveille l'équipe au départ (endRun « away ») et l'absence compte comme de la chasse (E.catchUpGen enveloppé dans js/songe.js). Tests tests/songe_boucle.test.js et songe_boucle_ui.test.js.
+
 ## 2.2.10.4 « Honneur des donjons accepté »
 - Bouclier Monocompte (js/verify_mono.js) : honneur au plus 2 000 + 7 000 par jour de saison (avant 2 500) et +900 par heure réelle (avant 400). Relevé du 06/11 : environ 6 honneur par donjon, 4 000 à 5 000 par jour pour les gros joueurs de donjons (Likie, Sac, Nerisia, Takkar refusés en boucle depuis le 05/11). Les 27 parties trichées du test restent refusées.
 - Chat (js/chat.js) : le menu d'un pseudo Monocompte se recale dans l'écran une fois la carte remplie.
