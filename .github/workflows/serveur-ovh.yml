@@ -708,6 +708,9 @@ jobs:
             done
             q "$p sur mono" "select mono.pseudo(s.user_id) pseudo, s.saison, s.updated_at, s.game_version, s.device, s.meta->>'sa' as meta_sa, $V as saved_at, $W as last_tick from mono.parties s join public.profiles p on p.id = s.user_id where p.pseudo ilike '%$p%'"
             q "$p sur mono, Bouclier et vérifications" "select b.at, left(b.why, 200) why from mono.bouclier b join public.profiles p on p.id = b.user_id where p.pseudo ilike '%$p%' order by b.at desc limit 40"
+            q "$p sur mono, partie validée" "select o.at, o.src_at, (substring(o.data from '\"playtime\":([0-9.]+)')) as playtime_ok, (substring(m.data from '\"playtime\":([0-9.]+)')) as playtime_now, (substring(o.data from '\"kamas\":([0-9.]+)')) as kamas_ok, (substring(m.data from '\"kamas\":([0-9.]+)')) as kamas_now from mono.parties_ok o join mono.parties m on m.user_id = o.user_id and m.saison = o.saison join public.profiles p on p.id = o.user_id where p.pseudo ilike '%$p%'"
+            q "$p sur mono, vérifications regroupées (2 jours)" "select v.etat, left(regexp_replace(coalesce(v.why, ''), '[0-9 ]+', '#', 'g'), 80) motif, min(v.at) debut, max(v.at) fin, count(*) n from mono.verifs v join public.profiles p on p.id = v.user_id where p.pseudo ilike '%$p%' and v.at > now() - interval '2 days' group by 1, 2 order by 3"
+            q "Monocompte, refus du Bouclier par compte depuis 6 h (motifs)" "select mono.pseudo(v.user_id) pseudo, left(regexp_replace(coalesce(v.why, ''), '[0-9 ,]+', '#', 'g'), 70) motif, min(v.at) debut, count(*) n from mono.verifs v where v.etat = 'refus' and v.at > now() - interval '6 hours' group by 1, 2 order by 3 limit 60"
             q "$p sur mono, vérifications" "select v.at, v.etat, v.n, left(v.why, 200) why from mono.verifs v join public.profiles p on p.id = v.user_id where p.pseudo ilike '%$p%' order by v.at desc limit 30"
           fi
       - name: Codes cadeaux dans les parties (lecture seule, liste chiffrée)
