@@ -1,6 +1,13 @@
 {
-  "version": "2.2.10.2",
+  "version": "2.2.10.3",
   "versions": [
+    {
+      "v": "2.2.10.3",
+      "name": "Nouvelle carte de Ley",
+      "items": [
+        "Album de cartes : la carte Héros d'Idlus de Ley change d'illustration, avec son nouveau héros aux cheveux blancs qui lance ses bombes jaunes dans les champs dorés, aussi en version brillante"
+      ]
+    },
     {
       "v": "2.2.10.2",
       "name": "Absence mieux comptée",

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.10.3 « Nouvelle carte de Ley »
+- Album de cartes : nouvelle illustration pour la carte Héros d'Idlus de Ley (assets/s1/ca/legende_ley.webp et -b.webp, même nom de fichier donc cache des images sw.js MEDIA v12).
+
 ## 2.2.10.2 « Absence mieux comptée »
 - Rechargement : l'absence comptée est la plus petite entre l'heure du jeu (serveur) et celle de l'appareil (S.devAt, gardé à chaque sauvegarde) ; une heure du jeu restée en retard (veille, serveur injoignable au réveil) ne passe plus pour une absence. Le Sablier est recalé pareil, et ne se remplit plus d'un saut d'heure du jeu (horlogeRegle). Test tests/absence_horloge_ui.test.js.
 
