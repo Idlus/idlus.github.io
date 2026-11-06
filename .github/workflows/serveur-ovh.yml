@@ -700,9 +700,10 @@ jobs:
           done
           q "Écarts heure du jeu / heure du serveur (mono, 3 jours, > 30 min)" "select mono.pseudo(s.user_id) pseudo, s.saison, s.updated_at, s.game_version, s.device, round(((extract(epoch from s.updated_at) * 1000 - $W) / 60000)::numeric, 1) as ecart_min, round(((extract(epoch from s.updated_at) * 1000 - $V) / 60000)::numeric, 1) as ecart_save_min from mono.parties s where s.updated_at > now() - interval '3 days' and abs(extract(epoch from s.updated_at) * 1000 - $W) > 1800000 order by s.updated_at desc limit 80"
           q "Bouclier mono, 3 jours, raisons liées au temps" "select mono.pseudo(b.user_id) pseudo, b.at, left(b.why, 160) why from mono.bouclier b where b.at > now() - interval '3 days' and (b.why ilike '%réelle%' or b.why ilike '%heure%' or b.why ilike '%temps%' or b.why ilike '%sablier%') order by b.at desc limit 60"
-          H="(substring(m.data from '\"align\":\\{.*?\"hon\":([0-9.]+)'))"
-          HO="(substring(o.data from '\"align\":\\{.*?\"hon\":([0-9.]+)'))"
-          q "Monocompte, honneur des 40 plus hauts (partie envoyée et partie validée)" "select mono.pseudo(m.user_id) pseudo, round($H::numeric) hon_now, round($HO::numeric) hon_ok, o.at ok_at, round(((substring(m.data from '\"playtime\":([0-9.]+)'))::numeric) / 3600, 1) jeu_h, (select left(why, 60) from mono.verifs v where v.user_id = m.user_id order by at desc limit 1) dernier from mono.parties m left join mono.parties_ok o on o.user_id = m.user_id and o.saison = m.saison where m.saison = (select max(saison) from mono.parties) order by $H::numeric desc nulls last limit 40"
+          echo "== Honneur des parties Monocompte refusées pour l'honneur (partie envoyée et partie validée)"
+          f="$RUNNER_TEMP/hon.json"
+          bash tools/serveur/vps_sql.sh lecture "select mono.pseudo(m.user_id) pseudo, 'envoyee' quoi, m.updated_at at, m.data from mono.parties m where m.user_id in (select distinct user_id from mono.verifs where why like '%honneur (au plus%' and at > now() - interval '1 day') union all select mono.pseudo(o.user_id), 'validee', o.at, o.data from mono.parties_ok o where o.user_id in (select distinct user_id from mono.verifs where why like '%honneur (au plus%' and at > now() - interval '1 day') union all select mono.pseudo(m.user_id), 'temoin', m.updated_at, m.data from mono.parties m where mono.pseudo(m.user_id) in ('Ley', 'ChokeHola', 'Mycs', 'Jecht')" > "$f"
+          node tools/enquete_honneur_mono.js "$f"; rm -f "$f"
           p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_-')
           if [ -n "$p" ]; then
             for sc in public s1; do
