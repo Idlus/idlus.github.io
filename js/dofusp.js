@@ -93,7 +93,7 @@
   E.dofpOf = (S, c) => { const out = [];
     D.DOFUS_SLOTS.forEach((sl) => { const it = c && c.equip && S.items[c.equip[sl]]; const id = it && D.ITEMS[it.tpl] && D.ITEMS[it.tpl].dofus; if (id && E.DOFP_LIST[id] && !out.includes(id)) out.push(id); });
     return out; };
-  /* 2.2.12.2 : les Dofus qui comptent pour l'Éveil et combien il en faut (6 ; le Monocompte, à 3 emplacements, change les deux dans js/monodofus.js) */
+  /* 2.2.12.3 : les Dofus qui comptent pour l'Éveil et combien il en faut (6 ; le Monocompte, à 3 emplacements, change les deux dans js/monodofus.js) */
   E.dofpPrim = (S) => E.DOFP_PRIM;
   E.dofpResoNeed = (S) => E.DOFP_PRIM.length;
   E.dofpPrimN = (S, c) => { const w = E.dofpOf(S, c); return E.dofpPrim(S).filter((id) => w.includes(id)).length; };

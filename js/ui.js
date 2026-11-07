@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12.2";
+const GAME_VERSION = "2.2.12.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12.3", name: "Éveil des Dragons en Monocompte", items: [
+    "Monocompte : l'Éveil des Dragons se réveille avec 3 Dofus primordiaux sur le héros, et le Dofus du Phénix compte comme un primordial (idée de Nerisia)",
+    "Monocompte : le haut fait « Six Dofus portés » demande 3 Dofus, le maximum du serveur",
+  ] },
   { v: "2.2.12.2", name: "Maîtrise sur chaque ligne", items: [
     "Classements › Niveau : chaque ligne montre aussi la Maîtrise du compte, par exemple « 1 600 niveaux · Maîtrise 120 » (choix de Mathis)",
   ] },
@@ -6632,7 +6636,7 @@ function dofpHeroPanel(c) {
   if (!worn.length && !E.DOFUS_ORDER.some((id) => E.dofusOwned(S, id))) return `<div class="panel dofp-panel"><div class="pad row" style="gap:10px;flex-wrap:nowrap">${im(dofusImg("emeraude"), "dofp-img", "")}<span class="grow small"><b>Passifs des Dofus</b><br><span class="xs muted">Chaque Dofus porté ajoute un passif unique à ses caractéristiques.</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">Où trouver les Dofus</button></div></div>`;
   const reso = E.dofpReso(S, c), boost = reso;
   const N = (S.fight && S.fight.dpN && S.fight.dpN[c.id]) || {};
-  const PL = E.dofpPrim(S), need = E.dofpResoNeed(S); // 2.2.12.2 : 3 en Monocompte, Phénix compris
+  const PL = E.dofpPrim(S), need = E.dofpResoNeed(S); // 2.2.12.3 : 3 en Monocompte, Phénix compris
   const prim = PL.filter((id) => worn.some((x) => x.id === id)).length;
   const cards = slots.map(({ sl, id, tro }) => {
     if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;

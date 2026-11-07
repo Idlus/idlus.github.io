@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12.3 « Éveil des Dragons en Monocompte »
+- En Monocompte (3 emplacements de Dofus), l'Éveil des Dragons demande 3 primordiaux au lieu de 6 et le Dofus du Phénix compte comme un primordial (E.dofpPrim / E.dofpResoNeed, surchargés dans js/monodofus.js). Haut fait « Six Dofus portés » à 3 en Mono. Simulation optimisé niveau 200 (8 donjons) : Phénix + Pourpre + Ébène 7,10 sans Éveil, 7,21 avec. Idée de Nerisia, option choisie par Mathis.
+
 ## 2.2.12.2 « Maîtrise sur chaque ligne »
 - Onglet Niveau des classements (lb_level, colonne heroes en plus) : la Maîtrise du compte (somme des heroes[].mt) après les niveaux, aussi sur sa propre ligne (VF.summary). Choix de Mathis sur la carte (option « Maîtrise sur chaque ligne »), l'onglet Maîtrise de la 2.2.12.1 reste.
 

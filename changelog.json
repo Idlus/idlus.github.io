@@ -1,6 +1,14 @@
 {
-  "version": "2.2.12.2",
+  "version": "2.2.12.3",
   "versions": [
+    {
+      "v": "2.2.12.3",
+      "name": "Éveil des Dragons en Monocompte",
+      "items": [
+        "Monocompte : l'Éveil des Dragons se réveille avec 3 Dofus primordiaux sur le héros, et le Dofus du Phénix compte comme un primordial (idée de Nerisia)",
+        "Monocompte : le haut fait « Six Dofus portés » demande 3 Dofus, le maximum du serveur"
+      ]
+    },
     {
       "v": "2.2.12.2",
       "name": "Maîtrise sur chaque ligne",

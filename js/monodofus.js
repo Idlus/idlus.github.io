@@ -117,7 +117,7 @@
   };
   const info0 = E.dofusDropInfo;
   E.dofusDropInfo = function (k) { if (k === id) return null; return info0.apply(this, arguments); };
-  /* 2.2.12.2 (idée de Nerisia) : 3 emplacements de Dofus en Monocompte, donc l'Éveil des Dragons s'y réveille avec 3 Dofus primordiaux,
+  /* 2.2.12.3 (idée de Nerisia) : 3 emplacements de Dofus en Monocompte, donc l'Éveil des Dragons s'y réveille avec 3 Dofus primordiaux,
      et le Dofus du Phénix compte comme un primordial (sinon, le retirer pour un 3e primordial fait perdre plus qu'on ne gagne).
      Simulation (tools/sim_mono.js, optimisé niveau 200, 8 donjons) : Phénix + 2 primordiaux 7,10 sans Éveil, 7,21 avec. */
   const prim0 = E.dofpPrim, need0 = E.dofpResoNeed;

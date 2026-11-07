@@ -302,7 +302,7 @@
   function dofpHtml(x) {
     const ids = DOF.map((sl) => x.b.eq[sl] && ITEMS[x.b.eq[sl]].dofus).filter((id) => id && E().DOFP_LIST && E().DOFP_LIST[id]);
     if (!ids.length || !X().dofpBlock) return "";
-    const s = S(), P = E().dofpPrim ? E().dofpPrim(s) : E().DOFP_PRIM || [], need = E().dofpResoNeed ? E().dofpResoNeed(s) : 6; // 2.2.12.2 : 3 en Monocompte
+    const s = S(), P = E().dofpPrim ? E().dofpPrim(s) : E().DOFP_PRIM || [], need = E().dofpResoNeed ? E().dofpResoNeed(s) : 6; // 2.2.12.3 : 3 en Monocompte
     const prim = P.filter((id) => ids.includes(id)).length, on = prim >= need;
     return `<section class="panel pad stack bd-dofp" style="gap:8px"><h3>Passifs des Dofus</h3>${ids.map((id) => X().dofpBlock(id, { mini: true, boost: on, r: 0 })).join("")}
       ${on ? `<p class="xs plus" style="margin:0">${prim} Dofus primordiaux : Éveil des Dragons, passifs +${E().DOFP_RESO} %.</p>` : ""}</section>`;
