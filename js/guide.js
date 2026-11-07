@@ -458,7 +458,7 @@
           `Rang 1 : ${N(() => E.dpotNeed(1))} éclats ; rang 10 : ${N(() => E.dpotNeed(10))} éclats, plus des kamas (rang² × ${N(() => E.DPOT_KAMAS)}).`,
           "Un exemplaire en double du même Dofus vaut un rang d'éclats.",
           "Rang X = **Sublimé** : +50 %, aura dorée et annonce sur le serveur.",
-          `Porter les 6 Dofus primordiaux réveille l'**Éveil des Dragons** : +${N(() => E.DOFP_RESO * (E.DOFP_RESO < 1 ? 100 : 1))} %.`,
+          `Porter les 6 Dofus primordiaux réveille l'**Éveil des Dragons** : +${N(() => E.DOFP_RESO * (E.DOFP_RESO < 1 ? 100 : 1))} %. En Monocompte (3 emplacements), 3 primordiaux suffisent et le Dofus du Phénix compte.`,
           `Au Kolizéum, les passifs comptent ×${N(() => E.DOFP_PVP)}.`,
           "La **Lueur d'Ilyzaelle** (Dofus Argenté Scintillant) ne sauve qu'un allié par équipe et par combat, même avec plusieurs porteurs.",
         ]],

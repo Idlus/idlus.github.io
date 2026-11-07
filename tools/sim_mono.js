@@ -23,7 +23,8 @@ require("../js/sram.js"); // le nouveau Sram (NO_SRAM=1 : l'ancien)
 if (process.env.NO_SRAM) E.SR2 = false;
 const D = require("../js/data.js");
 require("../js/mono.js");
-if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/monodofus.js"); E.phxFreeze = 1; } // PHX=n : renaissances du Dofus du Phénix (25 Braise, 100 Flamme, 300 Phénix) // passifs des Dofus pour comparer le 3e Dofus
+if (process.env.DOFUS3) { require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/monodofus.js"); E.phxFreeze = 1;
+  if (process.env.RESO) { const n = +process.env.RESO; E.dofpReso = (S, c) => n > 0 && [...E.DOFP_PRIM, ...(process.env.RESO_PHX ? ["phenix"] : [])].filter((id) => E.dofpOf(S, c).includes(id)).length >= n; } } // RESO=n : Éveil des Dragons dès n primordiaux portés (0 = jamais) // PHX=n : renaissances du Dofus du Phénix (25 Braise, 100 Flamme, 300 Phénix) // passifs des Dofus pour comparer le 3e Dofus
 if (process.env.MONO) { const [hp, dr, dmg] = process.env.MONO.split(",").map(Number); Object.assign(E.MONO, { hp, dr, dmg }); }
 if (process.env.MONOCLS) E.MONO.cls = JSON.parse(process.env.MONOCLS);
 if (process.env.ALIGN) { require("../js/alignement.js"); require("../js/honneur.js"); require("../js/monoalign.js"); } // ALIGN=bonta|brakmar [RANG=20] : héros aligné à ce rang (bonus de camp, d'ordre et talents ; étape 3)
@@ -80,6 +81,7 @@ const gearUp = (S, c, prof) => {
   if (perfect) {
     const dl = bestFor("dofus", c.lvl, main).filter((t) => t !== "dofus_phenix").slice(0, E.MONO.dofus);
     if (process.env.DOFUS3) dl[E.MONO.dofus - 1] = "dofus_" + process.env.DOFUS3; // comparer un Dofus à la place du 3e
+    if (process.env.DOFSET) process.env.DOFSET.split(",").forEach((k, i) => (dl[i] = "dofus_" + k)); // DOFSET="pourpre,ebene,ocre" : ces Dofus-là (avec DOFUS3=… pour charger les passifs)
     dl.forEach((t, i) => give(S, c, t, D.DOFUS_SLOTS[i], true));
     c.scrolls = { vit: 100, sa: 100, [main]: 100 };
   }
