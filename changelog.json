@@ -1,6 +1,13 @@
 {
-  "version": "2.2.12.1",
+  "version": "2.2.12.2",
   "versions": [
+    {
+      "v": "2.2.12.2",
+      "name": "Maîtrise sur chaque ligne",
+      "items": [
+        "Classements › Niveau : chaque ligne montre aussi la Maîtrise du compte, par exemple « 1 600 niveaux · Maîtrise 120 » (choix de Mathis)"
+      ]
+    },
     {
       "v": "2.2.12.1",
       "name": "Maîtrise au classement",

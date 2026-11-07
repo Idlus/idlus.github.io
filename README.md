@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12.2 « Maîtrise sur chaque ligne »
+- Onglet Niveau des classements (lb_level, colonne heroes en plus) : la Maîtrise du compte (somme des heroes[].mt) après les niveaux, aussi sur sa propre ligne (VF.summary). Choix de Mathis sur la carte (option « Maîtrise sur chaque ligne »), l'onglet Maîtrise de la 2.2.12.1 reste.
+
 ## 2.2.12.1 « Maîtrise au classement »
 - Classements › Progression › Maîtrise (onglet "mt" de js/ui.js, LB.mmode compte/héros) : lu dans lb_level (heroes[].mt), comme la page Maîtrise › Classement, dans l'espace de la partie (s1 pour une partie Saison 1). Demande de Mathis : « les maîtrises dans les classements saison 1 ». Test dans tests/online.test.js (7b).
 

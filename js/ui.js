@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12.1";
+const GAME_VERSION = "2.2.12.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12.2", name: "Maîtrise sur chaque ligne", items: [
+    "Classements › Niveau : chaque ligne montre aussi la Maîtrise du compte, par exemple « 1 600 niveaux · Maîtrise 120 » (choix de Mathis)",
+  ] },
   { v: "2.2.12.1", name: "Maîtrise au classement", items: [
     "Classements › Progression : nouvel onglet Maîtrise, avec les points de Maîtrise de chaque compte, ou héros par héros",
     "Dans une partie Saison 1, il montre la Maîtrise gagnée dans la saison ; dans l'Éternel, celle de l'Éternel",
@@ -12637,10 +12640,12 @@ async function lbFetch() {
     if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : LB.pts ? "pts" : "succes";
-    const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : col === "pts" ? `${fmt(v)} pts` : `${v} succès`);
-    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
-    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+    // 2.2.12.2 (Mathis, choix « Maîtrise sur chaque ligne ») : onglet Niveau, la Maîtrise du compte (somme des heroes[].mt) après les niveaux
+    const mtOf = (H) => (Array.isArray(H) ? H : []).reduce((a, x) => a + (x ? Math.max(0, Math.floor(+x.mt) || 0) : 0), 0);
+    const fmtv = (v, mt) => (t === "lvl" ? `${fmt(v)} niveaux${mt > 0 ? ` · Maîtrise ${fmt(mt)}` : ""}` : t === "album" ? `${v} âmes` : col === "pts" ? `${fmt(v)} pts` : `${v} succès`);
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}${t === "lvl" ? ",heroes" : ""}`).order(col, { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col], t === "lvl" ? mtOf(r.heroes) : 0), fl: r.main_lvl }));
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v, t === "lvl" ? mtOf(mine.heroes) : 0), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "chr") { // 1.0.33 : chromatiques de l'album ; tant que le serveur n'a pas la vue, le classement reste vide
     const fmtv = (v) => `${fmt(v)} chromatique${v > 1 ? "s" : ""}`;
     const { data, error } = await db.from("lb_chroma").select("user_id,pseudo,main,main_lvl,n").order("n", { ascending: false }).limit(50);
