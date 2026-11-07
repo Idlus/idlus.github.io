@@ -1,6 +1,14 @@
 {
-  "version": "2.2.13.1",
+  "version": "2.2.13.2",
   "versions": [
+    {
+      "v": "2.2.13.2",
+      "name": "Recycler les Rayonnants",
+      "items": [
+        "Recycleur : nouvelle case « Inclure les Rayonnants et les Parfaits », décochée par défaut. Fini de briser un par un les vieux objets bas niveau (merci Nerisia)",
+        "Les objets portés, verrouillés, en tenue ou forgemagés restent toujours protégés"
+      ]
+    },
     {
       "v": "2.2.13.1",
       "name": "Maîtrise par serveur",

@@ -34,6 +34,13 @@ console.log("ok - sac de 4 000 places");
   assert.ok(L.includes(h1.uid) && !L.includes(h2.uid), "doublon haut niveau : seul le meilleur reste");
   [lk, rad, fm, pf].forEach((x) => assert.ok(!L.includes(x.uid), "cadenas, Rayonnant, forgemagé et Parfait jamais recyclés"));
   S.chars[0].equip.coiffe = a.uid; assert.ok(!E.recyList(S).includes(a.uid), "porté : gardé"); delete S.chars[0].equip.coiffe;
+  // 2.2.12.3 (Nerisia) : case « Inclure les Rayonnants et les Parfaits », décochée par défaut ; cadenas, forgemagé et porté restent gardés
+  assert.strictEqual(R.rare, false, "protection par défaut");
+  R.rare = true; { const LR = E.recyList(S); assert.ok(LR.includes(rad.uid) && LR.includes(pf.uid), "case cochée : Rayonnant et Parfait bas niveau recyclés");
+    assert.ok(!LR.includes(lk.uid) && !LR.includes(fm.uid), "cadenas et forgemagé toujours gardés");
+    const pr = mk(S, low, 1); pr.radiant = 10; S.chars[0].equip.coiffe = pr.uid; assert.ok(!E.recyList(S).includes(pr.uid), "Rayonnant porté : gardé");
+    delete S.chars[0].equip.coiffe; delete S.items[pr.uid]; }
+  R.rare = false;
   R.keepSets = false; assert.ok(E.recyList(S).includes(s2.uid), "sans la case panoplie : recyclé");
   R.lvlOn = false; R.dup = false; assert.strictEqual(E.recyList(S).length, 0, "aucune règle : rien");
   R.qOn = true; R.q = 50; const LQ = E.recyList(S); assert.ok(LQ.includes(h1.uid) && !LQ.includes(h2.uid), "jet sous 50 %");

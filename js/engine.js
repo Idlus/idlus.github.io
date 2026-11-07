@@ -635,30 +635,33 @@
      keepSets : le meilleur exemplaire de chaque objet de panoplie est toujours gardé. auto : quand le sac déborde, les objets qui
      correspondent sont recyclés au lieu d'aller au trop-plein. craft + keep : à la fabrication, garder les keep meilleurs exemplaires
      de l'objet et recycler les autres aussitôt (la fabrication ne s'arrête plus quand le sac est plein). */
-  E.RECY_DEF = { lvlOn: true, lvl: 0, qOn: false, q: 50, dup: true, keepSets: true, auto: false, craft: false, keep: 1 };
+  E.RECY_DEF = { lvlOn: true, lvl: 0, qOn: false, q: 50, dup: true, keepSets: true, auto: false, craft: false, keep: 1, rare: false };
   E.recyCfg = (S) => {
     const st = S.settings || (S.settings = {}); if (!st.recy || typeof st.recy !== "object") st.recy = {};
     for (const k in E.RECY_DEF) if (st.recy[k] === undefined) st.recy[k] = E.RECY_DEF[k];
     return st.recy;
   };
   E.recyLvl = (S, R) => { if (R.lvl > 0) return R.lvl; const team = E.team ? E.team(S) : []; return team.length ? Math.max(0, Math.min(...team.map((c) => c.lvl)) - 30) : 0; };
-  /* jamais recyclés : portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, transcendés, Dofus, trophées et légendaires */
-  E.recySafe = (S, it) => {
+  /* jamais recyclés : portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, transcendés, Dofus, trophées et légendaires.
+     2.2.12.3 (retour de Nerisia) : la case « rare » (décochée par défaut) laisse passer les Rayonnants et les Parfaits ; le reste reste protégé. */
+  E.recyRare = (it) => !!(it && (it.radiant || E.isPerfect(it)));
+  E.recySafe = (S, it, R) => {
     const T = ITEMS[it && it.tpl]; if (!T || T.slot === "dofus" || T.trophy || T.leg) return true;
-    return !!(it.radiant || it.exo || it.locked || it.fm || it.trans || E.isPerfect(it) || E.equippedBy(S, it.uid) || E.inGear(S, it.uid));
+    if (it.exo || it.locked || it.fm || it.trans || E.equippedBy(S, it.uid) || E.inGear(S, it.uid)) return true;
+    return !(R && R.rare) && E.recyRare(it);
   };
   const recyRank = (a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a) || a.uid - b.uid;
   E.recyBest = (S) => { const by = {}; for (const u in S.items) { const it = S.items[u]; const b = by[it.tpl]; if (!b || recyRank(it, b) < 0) by[it.tpl] = it; } const o = {}; for (const t in by) o[t] = by[t].uid; return o; };
   E.recyMatch = (S, it, R, best, lvl) => {
-    if (E.recySafe(S, it)) return false; const T = ITEMS[it.tpl]; const top = best[it.tpl] === it.uid;
+    if (E.recySafe(S, it, R)) return false; const T = ITEMS[it.tpl]; const top = best[it.tpl] === it.uid;
     if (R.keepSets && T.set && top) return false;
     return (R.lvlOn && T.lvl <= lvl) || (R.qOn && E.itemQuality(it) * 100 < R.q) || (R.dup && !top);
   };
   E.recyList = (S, R = E.recyCfg(S)) => { const best = E.recyBest(S); const lvl = E.recyLvl(S, R); return Object.values(S.items).filter((it) => E.recyMatch(S, it, R, best, lvl)).map((it) => it.uid); };
   const recyAdd = (got, r) => { if (r && typeof r === "object") for (const k in r) got[k] = (got[k] || 0) + r[k]; };
   E.recycle = (S, uids) => {
-    const got = {}; let n = 0;
-    (uids || E.recyList(S)).forEach((u) => { if (!S.items[u] || E.recySafe(S, S.items[u])) return; const r = E.breakItem(S, u, null); if (r && typeof r === "object") { n++; recyAdd(got, r); } });
+    const got = {}; let n = 0; const R = E.recyCfg(S);
+    (uids || E.recyList(S)).forEach((u) => { if (!S.items[u] || E.recySafe(S, S.items[u], R)) return; const r = E.breakItem(S, u, null); if (r && typeof r === "object") { n++; recyAdd(got, r); } });
     if (n) { S.cnt = S.cnt || {}; S.cnt.recy = (S.cnt.recy || 0) + n; }
     return { n, got };
   };

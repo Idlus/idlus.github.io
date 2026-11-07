@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.13.2 « Recycler les Rayonnants »
+- Recycleur : réglage `rare` (E.RECY_DEF, décoché par défaut) qui laisse passer les Rayonnants et les Parfaits (E.recyRare) dans E.recySafe ; exo, cadenas, forgemagés, transcendés, portés et tenues restent protégés. La confirmation indique combien de Rayonnants/Parfaits partent. Retour joueur de Nerisia (impossible de vider les vieux objets parfaits bas niveau). « Recycler aussitôt » à la fabrication garde la protection.
+
 ## 2.2.13.1 « Maîtrise par serveur »
 - #185 (Nerisia) : js/maitrise.js lisait lb_level (Éternel) pour Maîtrise › Classement même dans une partie Monocompte. Plus de classement serveur ni de popularité des nœuds clés en Monocompte (message « pas encore de classement de Maîtrise ») ; le cache RK est gardé par espace (e / s1). Test dans tests/online.test.js (7b).
 
