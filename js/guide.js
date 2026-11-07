@@ -1153,6 +1153,7 @@
         "La chance de Dofus ne monte plus après la stasis 10. Les stasis 11 à 15 servent aux gains, aux coffres de premier passage et au classement des temps.",
         "Boss ultimes (stasis 11 à 15) : une règle de plus à chaque palier (11 phase ultime, 12 enrage dès le 15e tour, 13 onde ultime tous les 3 tours, 14 deux gardiens à tuer d'abord, 15 forme finale). L'enrage en fait une course aux dégâts.",
         "Chaque victoire en stasis 11 et plus donne des Sceaux ultimes (1 à 3), liés au compte : 3 000 pour un légendaire au choix, 1 200 pour une copie d'Éveil. La première stasis 15 d'un boss donne le titre « Fléau de… ».",
+        "**En Monocompte** (le Songe y est fermé) : les Sceaux ultimes tombent dès la stasis 7, seul ou en groupe (1 en stasis 7 et 8, 2 en 9 et 10, 3 dès la 11). C'est la source des légendaires et des copies d'Éveil, avec l'Hôtel de vente.",
         "Avant le légendaire, des paliers : 100 Sceaux pour 3 Bons de fusion ou 3 Galets brasillants, 300 pour 3 Pierres d'âme dorées, 600 pour le Cadre ultime.",
         "Boss ultime de la semaine : chaque lundi, un donjon de niveau 161 à 200 double les Sceaux ultimes. Son classement de la semaine range les temps de victoire, stasis 15 en tête.",
         "Les leviers de fin de jeu : forgemagie près du jet parfait, Potentiel des Dofus, Sceaux des Champions, arbre de Maîtrise.",

@@ -3491,6 +3491,11 @@
   /* 2.1.38 « Boss ultimes » : Sceaux ultimes gagnés en stasis 11 à 15, liés au compte (pas d'HdV), échangés contre un légendaire */
   E.ULT_TR = [1, 1, 2, 2, 3]; E.ULT_TR_NAME = "Sceau ultime"; E.ULT_LEG = 3000; E.ULT_COPY = 1200; // Mathis 22/10 : « beaucoup plus de run » (≈ 1 000 victoires en stasis 15 pour un légendaire au choix)
   E.ultSt = (S) => (S.ult = S.ult || { tr: 0, tot: 0 });
+  /* 2.2.12.2 (#183, Nerisia) : en Monocompte, le Songe est fermé et un héros seul plafonne vers la stasis 7 : les Sceaux ultimes y tombent dès la stasis 7 (solo et groupe) */
+  E.ULT_MONO_MIN = 7; E.ULT_TR_MONO = [1, 1, 2, 2, 3]; // stasis 7-8 : 1, 9-10 : 2, 11 et plus : 3
+  E.ultMin = (S) => (S && S.mono ? E.ULT_MONO_MIN : 11);
+  E.ultGain = (S, did, k) => { const m = E.ultMin(S); if (E.ULT_OFF || k < m) return 0; const T = S && S.mono ? E.ULT_TR_MONO : E.ULT_TR; return (T[Math.min(T.length - 1, k - m)] || 1) * (did === E.ultWeek() ? E.ULT_WEEK_MULT : 1); };
+  E.ultAdd = (S, n) => { const U = E.ultSt(S); U.tr += n; U.tot = (U.tot || 0) + n; };
   E.ultTr = (n) => `${n} ${n > 1 ? "Sceaux" : "Sceau"} ultime${n > 1 ? "s" : ""}`; // Mathis 22/10 : « Sceaux ultimes » (et non trophées, déjà pris par les sous-zones et les boss)
   E.ultTitle = (did) => { const n = MONSTERS[DUNGEONS[did].boss].name.replace(/ Légendaire$/, "");
     const de = /^Le /.test(n) ? `du ${n.slice(3)}` : /^Les /.test(n) ? `des ${n.slice(4)}` : /^(La |L')/.test(n) ? `de ${n.charAt(0).toLowerCase()}${n.slice(1)}` : /^(Comte|Roi|Chevalier|Seigneur|Prince|Maître|Général|Capitaine|Baron|Duc|Chef|Grand|Professeur|Docteur|Père|Gardien|Mage|Tengu|Kanniboul|Shogun|Vénérable) /.test(n) ? `du ${n}` : /^(Reine|Princesse|Comtesse|Dame|Mère|Déesse|Gardienne|Larve|Prêtresse|Déchireuse)(?: |$)/.test(n) ? `de la ${n}` : /^[AEIOUYÉÈÊaeiouyéèê]/.test(n) ? `d'${n}` : `de ${n}`;
@@ -3549,7 +3554,8 @@
     if (k > (SI.sk || 0)) { SI.sk = k; SI.st = t; } else if (k === SI.sk && t > 0 && (!SI.st || t < SI.st)) SI.st = t;
     if (k >= 10) S.unlocks.stasis10 = true;
     if (k >= 15) { S.unlocks.stasis15 = true; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.STASIS15_TITLE)) { S.titlesExtra.push(E.STASIS15_TITLE); note(S, `Stasis 15 : titre « ${E.STASIS15_TITLE} » !`, "rare"); } }
-    if (k >= 11 && !E.ULT_OFF) { const n = (E.ULT_TR[k - 11] || 1) * (did === E.ultWeek() ? E.ULT_WEEK_MULT : 1); const U = E.ultSt(S); U.tr += n; U.tot = (U.tot || 0) + n; out.push(E.ultTr(n)); // 2.1.38 : Sceaux ultimes (liés au compte)
+    const ultN = E.ultGain(S, did, k); if (ultN) { E.ultAdd(S, ultN); out.push(E.ultTr(ultN)); } // 2.1.38 : Sceaux ultimes (liés au compte) ; 2.2.12.2 : dès la stasis 7 en Monocompte
+    if (k >= 11 && !E.ULT_OFF) {
       if (k >= 15 && DUNGEONS[did] && MONSTERS[DUNGEONS[did].boss]) { const tt = E.ultTitle(did); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(tt)) { S.titlesExtra.push(tt); note(S, `Boss ultime vaincu en stasis 15 : titre « ${tt} » !`, "rare"); } } }
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
     if (rew) rew.stasis = { k, out, dust };

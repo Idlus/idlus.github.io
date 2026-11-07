@@ -290,7 +290,8 @@
       });
     } finally { S.dungeon = sd; }
     if (R.done) { const SI = E.stasisInfo(S, R.did); SI.max = Math.max(SI.max || 0, k); S.progress.bossKills[R.did] = (S.progress.bossKills[R.did] || 0) + 1;
-      S.mono.grp = (S.mono.grp || 0) + 1; E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true, players: R.players || 1, ids: Array.isArray(R.ids) ? R.ids : undefined }); } // ids : les autres joueurs (défi 12, Bureau des Aventuriers)
+      S.mono.grp = (S.mono.grp || 0) + 1; const ultN = E.ultGain ? E.ultGain(S, R.did, k) : 0; if (ultN) { E.ultAdd(S, ultN); tot.ult = ultN; } // 2.2.12.2 (#183) : Sceaux ultimes dès la stasis 7, aussi en groupe
+      E.emit(S, "dungeon", { id: R.did, stasis: k, chals: [], down: 0, group: true, players: R.players || 1, ids: Array.isArray(R.ids) ? R.ids : undefined }); } // ids : les autres joueurs (défi 12, Bureau des Aventuriers)
     return tot;
   };
 

@@ -122,7 +122,7 @@
       B.gain[b.combat] = got; // écran du combat en direct (js/bureau_direct.js) : « Ton butin »
       const fmt = X().fmt || String, sr = r.data.serie_n > 1 ? ` · combat ${r.data.serie_k} / ${r.data.serie_n}` : "";
       if (sr) { const k = B.cumul[r.data.serie_id] || (B.cumul[r.data.serie_id] = { n: 0, xp: 0, kamas: 0, items: 0 }); k.n++; k.xp += got.xp || 0; k.kamas += got.kamas || 0; k.items += (got.items || []).length; }
-      toast(`${r.data.win ? "Victoire" : "Défaite"} en groupe (${dname(r.data.did)}, stasis ${r.data.stasis}${sr}) : ${fmt(Math.round(got.xp))} XP, ${fmt(got.kamas)} kamas${got.items.length ? `, ${got.items.length} objet${got.items.length > 1 ? "s" : ""}` : ""}.`, "rare", 7000);
+      toast(`${r.data.win ? "Victoire" : "Défaite"} en groupe (${dname(r.data.did)}, stasis ${r.data.stasis}${sr}) : ${fmt(Math.round(got.xp))} XP, ${fmt(got.kamas)} kamas${got.items.length ? `, ${got.items.length} objet${got.items.length > 1 ? "s" : ""}` : ""}${got.ult && E.ultTr ? `, ${E.ultTr(got.ult)}` : ""}.`, "rare", 7000);
     }
     try { await X().onPush(); } catch (e) {}
     try { if (window.MARKET && window.MARKET.sync) window.MARKET.sync(); } catch (e) {} // clé du donjon retirée par une opération du serveur
