@@ -76,7 +76,7 @@
     fromShop("cite", "ailes", { desc: "Insignes de cité : 3 par mission d'alignement, 5 pour un boss.", need: (S) => (S.align ? null : "Choisis d'abord un alignement (Journal › Quêtes › Alignement).") }),
     fromShop("temple", "cristal", { desc: "Doplons : en battant les Dopeuls des temples." }),
     fromShop("koli", "combat", { desc: "Kolizetons : en combattant au Kolizéum.", page: "koli" }),
-    { id: "songe", icon: "carte", name: () => "Marché onirique", cur: () => E.BRIBES || "Bribes de rêve", desc: "Bribes de rêve : au Songe infini.", page: "exp", classic: true,
+    { id: "songe", icon: "carte", name: () => "Marché onirique", cur: () => E.BRIBES || "Bribes de rêve", desc: "Bribes de rêve : au Songe infini.", page: "exp", // 2.2.13 : aussi en Monocompte
       bal: (S) => (E.songe ? E.songe(S).br : 0), add: (S, x) => { E.songe(S).br += x; },
       items: (S) => (E.SG_SHOP || []).map((o) => ({ id: o.id, o, name: o.name, cost: o.price, many: false, owned: !!(o.once && E.sgOwned(S, o.id)), left: Infinity, per: null, lim: 0, rebuy: !o.once })),
       buy: (S, iid) => E.sgBuy(S, iid) },

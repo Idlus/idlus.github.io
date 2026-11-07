@@ -51,7 +51,7 @@ const server = http.createServer((req, res) => {
       await btn.scrollIntoViewIfNeeded(); await btn.click(); await page.waitForTimeout(500);
       const r = await page.evaluate(() => ({ tab: window.DX.ui.tab, ids: [...document.querySelectorAll(".cp-sh")].map((b) => b.dataset.v).join(",") }));
       if (r.tab !== "comptoirs") fail(`${tag} : le bouton mène à ${r.tab} au lieu d'Économie › Comptoirs`);
-      const want = mono ? "prime,cite,temple,koli" : "prime,cite,temple,koli,songe,wb";
+      const want = mono ? "prime,cite,temple,koli,songe" : "prime,cite,temple,koli,songe,wb";
       if (r.ids !== want) fail(`${tag} : boutiques ${r.ids}, attendu ${want}`);
       if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `comptoirs-${mono ? "mono" : "classique"}-${w}.png`) });
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
@@ -60,5 +60,5 @@ const server = http.createServer((req, res) => {
     }
   } finally { await browser.close(); server.close(); }
   if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
-  console.log("ok - bouton Comptoirs des Quêtes : page Comptoirs, 4 boutiques en Monocompte et 6 au Classique (PC 1280 px, téléphone 390 px)");
+  console.log("ok - bouton Comptoirs des Quêtes : page Comptoirs, 5 boutiques en Monocompte et 6 au Classique (PC 1280 px, téléphone 390 px)");
 })().catch((e) => { console.error(e); process.exit(1); });

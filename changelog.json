@@ -1,6 +1,16 @@
 {
-  "version": "2.2.12.5",
+  "version": "2.2.13",
   "versions": [
+    {
+      "v": "2.2.13",
+      "name": "Le Songe en Monocompte",
+      "items": [
+        "Monocompte : le Songe infini ouvre (menu Aventure › Songe infini, dès le niveau 10), avec ses Bribes de rêve, le Marché onirique et les objets légendaires (signalé par Nerisia)",
+        "Les copies d'un légendaire tombent de nouveau : on peut faire monter son Éveil en Monocompte (bouton Éveil du sac, puis « Fondre une copie »)",
+        "Ton héros garde son bonus Héros unique dans le Songe, comme en donjon. Songes en boucle et Marché onirique dans Économie › Comptoirs inclus",
+        "Le classement du Songe de la semaine reste au Classique pour l'instant"
+      ]
+    },
     {
       "v": "2.2.12.5",
       "name": "Mutation et Bureau",

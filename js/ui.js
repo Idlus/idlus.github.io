@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12.5";
+const GAME_VERSION = "2.2.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.13", name: "Le Songe en Monocompte", items: [
+    "Monocompte : le Songe infini ouvre (menu Aventure › Songe infini, dès le niveau 10), avec ses Bribes de rêve, le Marché onirique et les objets légendaires (signalé par Nerisia)",
+    "Les copies d'un légendaire tombent de nouveau : on peut faire monter son Éveil en Monocompte (bouton Éveil du sac, puis « Fondre une copie »)",
+    "Ton héros garde son bonus Héros unique dans le Songe, comme en donjon. Songes en boucle et Marché onirique dans Économie › Comptoirs inclus",
+    "Le classement du Songe de la semaine reste au Classique pour l'instant",
+  ] },
   { v: "2.2.12.5", name: "Mutation et Bureau", items: [
     "Bureau des Aventuriers : le combat de groupe que tu regardes est maintenant exactement celui joué par le serveur, sans la mutation de la semaine (avant, l'écran l'ajoutait et pouvait montrer un autre résultat)",
     "Mutation de la semaine : la page dit clairement que seuls les donjons de groupe du Bureau (stasis 7 et plus) font avancer le défi de groupe, pas les donjons solo (signalé par Nerisia)",

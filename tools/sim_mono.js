@@ -204,7 +204,7 @@ if (flag("songe")) {
       for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
         let top = -1;
         for (let ii = 0; ii < E.SG_INT.length; ii++) {
-          const S = E.newState("Sim", "iop"); S.chars = [];
+          const S = E.monoStart(E.newState("Sim", "iop")); S.chars = [];
           teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
           S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveMt(S); tagRows(S);
           E.songe(S).unl = 7; const err = E.expStart(S, ii); if (err) throw new Error(err);

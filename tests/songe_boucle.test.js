@@ -47,4 +47,4 @@ const fakeEnd = (S, valid) => { S.exp.valid = valid; E.expQuit(S); }; // fin d'u
   console.log("ok - boucle : l'absence en plein songe compte comme de la chasse"); }
 
 // 6. Monocompte : pas de boucle (Songe fermé).
-{ const S = mk(); S.mono = {}; E.sgSetLoop(S, true); assert.ok(!E.sgLoopOn(S)); console.log("ok - boucle : fermée en Monocompte"); }
+{ const S = mk(); S.mono = {}; E.sgSetLoop(S, true); assert.ok(E.sgLoopOn(S)); console.log("ok - boucle : aussi en Monocompte (2.2.13)"); }

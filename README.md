@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.13 « Le Songe en Monocompte »
+- Ticket #183 (Nerisia) : en Monocompte, l'Éveil des légendaires était impossible (aucune copie, Songe fermé, module SGUI éteint). Choix de Mathis : rouvrir le Songe. « exp » dans E.MONO.PAGES, SGUI retiré de CLASSIC_MODS, Marché onirique dans les Comptoirs, songes en boucle et succès du Songe visibles.
+- Bonus Héros unique (E.monoEnts, comme en donjon) aussi dans les combats du Songe. Simulation (tools/sim_mono.js --songe, niveau 200) : sans lui, même le Rêve échoue ; avec lui, bon équipement Paradoxe 1, optimisé Paradoxe 2 (max Paradoxe 4).
+- Pas de classement ni de lots du Songe en Monocompte (tables du Classique) : rkLoad, sgSubmit et sgClaim ne partent pas, l'encart est masqué.
+
 ## 2.2.12.5 « Mutation et Bureau »
 - Bug n°68 (#186, Nerisia) : le défi de groupe de la mutation ne compte que les donjons de groupe du Bureau des Aventuriers ; la page Mutation de la semaine le dit maintenant. Combat de groupe : le jeu rejouait le combat du Bureau (BC.run, BD.lecture) avec la mutation de la partie chargée (MU.cur), alors que la fonction « mono » ne charge pas js/monoplus.js : l'écran pouvait montrer un autre combat que celui du serveur. E.monoGroupRun prend un 6e argument mut, BC.run et BD.lecture passent null. Test dans tests/monoplus.test.js (7).
 

@@ -564,7 +564,7 @@
   };
   E.expQuit = (S) => { const X = X_(S); if (!X) return "Aucun songe en cours."; endRun(S, X, X.valid ? "wake" : "quit", true); return null; };
   /* ---------- 2.2.11 : songes en boucle ---------- */
-  E.sgLoopOn = (S) => !!(S.settings && S.settings.sgLoop) && !S.mono;
+  E.sgLoopOn = (S) => !!(S.settings && S.settings.sgLoop); // 2.2.13 : aussi en Monocompte
   E.sgSetLoop = (S, on) => { S.settings.sgLoop = !!on; if (!on) S.sgLoop = null; return null; };
   E.sgLoopLeft = (S) => (S.sgLoop && S.sgLoop.at > 0 && !X_(S) ? Math.max(0, S.sgLoop.at - E.now()) : null); // ms avant la relance, ou null
   E.sgLoopStop = (S) => { S.sgLoop = null; return null; };
@@ -622,7 +622,7 @@
   const autoDo = (S) => { const X = S.exp; const p = X.pend[0]; const a = E.expAutoChoice(S); if (a) E.expChoose(S, ...a); if (X.pend[0] === p && p.t === "fount") E.expChoose(S, "no"); else if (X.pend[0] === p) X.pend.shift(); };
   /* appelé par E.tick : le jeu choisit à la place du joueur après le délai (si le réglage le permet) */
   E.expTick = (S) => {
-    if (!S.mono && (!S.songe || !S.songe.seen)) { const top = S.chars && S.chars.length ? Math.max(...S.chars.map((c) => c.lvl)) : 0; if (top >= E.EXP_MIN_LVL) { E.songe(S).seen = 1; E.celebrate({ t: "songe" }); } }
+    if (!S.songe || !S.songe.seen) { const top = S.chars && S.chars.length ? Math.max(...S.chars.map((c) => c.lvl)) : 0; if (top >= E.EXP_MIN_LVL) { E.songe(S).seen = 1; E.celebrate({ t: "songe" }); } }
     loopTick(S);
     const X = X_(S); if (!X || !E.expAutoOn(S)) return;
     const now = E.now();

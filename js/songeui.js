@@ -208,7 +208,7 @@
     const got = E.sgMilesGot(s); return `<div class="sgx-miles"><span class="sg-k">Paliers de la semaine</span>${E.SG_MILES.map((n) => `<span class="sgx-mile ${got.includes(n) ? "ok" : ""}"><b>${n}</b><img src="assets/s1/co/obsidienne.webp" alt=""><span class="xs">${got.includes(n) ? "reçu ✓" : X_.waves < n ? `dans ${n - X_.waves}` : "déjà passé"}</span></span>`).join("")}<span class="xs muted">Un Coffre en obsidienne la première fois de la semaine</span></div>`; };
   const pendBtn = (p) => `<button class="sg-btn" data-act="sg-reopen">${p.t === "favor" ? "Ouvrir la Faveur onirique" : p.t === "fount" ? "Ouvrir la Fontaine onirique" : p.t === "gob" ? "Voir le Gobledore" : p.t === "wave" ? "Vague suivante ?" : "Sable de Draconiros ?"}</button>`;
   /* 2.2.11 : la case « En boucle » (relance la même intensité 5 s après le réveil) */
-  const loopBox = (s) => (s.mono ? "" : `<label class="sgx-auto" data-tip="Relancer la même intensité ${Math.round(E.SG_LOOP_MS / 1000)} s après le réveil. Arrêt après ${E.SG_LOOP_FAILS} songes de suite non validés ou si tu te réveilles toi-même."><input type="checkbox" data-act="sg-loop" ${E.sgLoopOn(s) ? "checked" : ""}> En boucle</label>`);
+  const loopBox = (s) => (`<label class="sgx-auto" data-tip="Relancer la même intensité ${Math.round(E.SG_LOOP_MS / 1000)} s après le réveil. Arrêt après ${E.SG_LOOP_FAILS} songes de suite non validés ou si tu te réveilles toi-même."><input type="checkbox" data-act="sg-loop" ${E.sgLoopOn(s) ? "checked" : ""}> En boucle</label>`);
   const loopLine = (s) => { const ms = E.sgLoopLeft(s); return ms === null ? "" : `<div class="row" style="gap:8px;justify-content:center;align-items:center"><span class="small" id="sgLoopT">Prochain songe dans ${Math.ceil(ms / 1000)} s</span><button class="sg-btn ghost" data-act="sg-loopstop">Arrêter la boucle</button></div>`; };
   const runHead = (s, X_, compact) => { const d = curD(X_); const hp = E.sgAvgHp(s); const pal = E.SG_PALIERS[Math.max(0, E.sgPalier(d))];
     return `<div class="sgx-rh"><span class="sgx-big" style="--gc:${E.SG_INT[X_.ii].col}">${gem(X_.ii)}</span><span class="sgx-rt"><b>${h(intName(X_.ii))} · salle ${d} sur ${E.SG_ROOMS}</b><span class="xs muted">${ROM[Math.max(0, E.sgPalier(d))]} · ${h(pal[2])}</span></span>
@@ -326,11 +326,13 @@
   /* ---------- 1.0.30 : classement de la semaine, lots du top 10, nouveautés, tuile du Havre-Sac ---------- */
   const ONL = () => window.ONLINE;
   const linked = () => { const o = ONL(); return !!(o && o.enabled && o.user && o.profile && !(o.solo && o.solo())); };
+  /* 2.2.13 : le Songe rouvre en Monocompte, sans le classement de la semaine ni ses lots (tables du serveur Classique) */
+  const monoP = (s) => { const o = ONL(); return !!((s && s.mono) || (o && o.monoPart && o.monoPart())); };
   const RANK = { w: -1, list: null, me: null, at: 0, busy: false, err: false, claimed: null, demo: false };
   const isoWeek = (t) => { const d = new Date(t); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day + 3); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round((d - y0) / 864e5 / 7 - ((y0.getUTCDay() + 6) % 7 - 3) / 7); }; // numéro de la semaine du calendrier
   const ord = (r) => `${r}${r === 1 ? "er" : "e"}`;
   async function rkLoad(force) {
-    const o = ONL(); const db = o && o.enabled && o.db && o.db(); if (!db || RANK.busy) return;
+    const o = ONL(); const db = o && o.enabled && o.db && o.db(); if (!db || RANK.busy || monoP(S())) return;
     const w = E.weekIdx(); if (!force && RANK.w === w && Date.now() - RANK.at < 60000) return;
     RANK.busy = true; RANK.at = Date.now();
     try {
@@ -375,7 +377,7 @@
     return `<div class="sgr-list">${list}</div><div class="sgr-foot xs muted">${st}<br>Top 3 : titre « Maître des Songes » pour la semaine et 2 000 Bribes · top 10 : 1 000 Bribes. Records vérifiés par le serveur.</div>`;
   }
   function rankHtml(s) {
-    const o = ONL(); if (o && o.enabled) rkLoad(false);
+    const o = ONL(); if (monoP(s)) return ""; if (o && o.enabled) rkLoad(false);
     const rk = `<section class="sgd sgr"><div class="sgr-h"><span class="sg-k">${uimg("trophee")} Classement du Songe · semaine ${isoWeek(E.now())}</span><span class="xs muted">même carte pour tous · finit dans ${weekLeft()}</span></div><div id="sgRank">${rankBody(s)}</div></section>`;
     if (s.settings.sgNews) return `<div class="sgr-grid one">${rk}</div>`;
     const wk = E.sgWeekShop();
@@ -408,7 +410,7 @@
   /* envoi du record de la semaine (après une sauvegarde en ligne réussie) et lots des semaines passées */
   let subBusy = false, subAt = 0;
   async function sgSubmit() {
-    const s = S(); if (!s || !linked() || subBusy || s.panelUsed) return;
+    const s = S(); if (!s || !linked() || subBusy || s.panelUsed || monoP(s)) return;
     const wk = E.sgWeek(s); if (wk.ii < 0) return;
     const uid = ONL().user.id; const sent = sentGet();
     const again = sent && sent.res && sent.res.retry && Date.now() >= sent.res.retry; // refus passager : on renvoie
