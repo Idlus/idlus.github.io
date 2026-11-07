@@ -269,10 +269,10 @@
   /* joue tout le combat (graine commune) : { win, rooms, done, stasis } */
   /* onTick (facultatif, Bureau des Aventuriers : écran du combat regardé ensemble) : appelé après chaque seconde de combat, sans tirer au hasard.
      R.t : durée du combat en millisecondes de jeu. */
-  E.monoGroupRun = (snaps, did, stasis, seed, onTick) => {
+  E.monoGroupRun = (snaps, did, stasis, seed, onTick, mut) => {
     const rng0 = E.getRng(); const evLen = E.events.length; E.setRng(mulberry(seed >>> 0));
     const tm = E.TEAM_MAX; E.TEAM_MAX = Math.max(tm, snaps.length); let S2, t = 0;
-    try { const G = E.monoGroupSetup(snaps, did, stasis); if (G.err) return G; S2 = G.S2;
+    try { const G = E.monoGroupSetup(snaps, did, stasis, mut); if (G.err) return G; S2 = G.S2; // mut : mutation de la semaine imposée (null : aucune ; js/monoplus.js)
       while (S2.dungeon && t < 3 * 3600 * 1000) { E.tick(S2, 1000); t += 1000; if (onTick) onTick(S2, t); if (S2.fight && S2.fight.over && S2.fight.result === "lose") break; } }
     finally { E.setRng(rng0); E.events.length = evLen; E.TEAM_MAX = tm; }
     const R = S2.monoRun; R.win = R.done; R.players = snaps.filter((h) => !h.merc).length; R.t = t; return R;

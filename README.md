@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12.5 « Mutation et Bureau »
+- Bug n°68 (#186, Nerisia) : le défi de groupe de la mutation ne compte que les donjons de groupe du Bureau des Aventuriers ; la page Mutation de la semaine le dit maintenant. Combat de groupe : le jeu rejouait le combat du Bureau (BC.run, BD.lecture) avec la mutation de la partie chargée (MU.cur), alors que la fonction « mono » ne charge pas js/monoplus.js : l'écran pouvait montrer un autre combat que celui du serveur. E.monoGroupRun prend un 6e argument mut, BC.run et BD.lecture passent null. Test dans tests/monoplus.test.js (7).
+
 ## 2.2.12.4 « Le jeu tourne même caché »
 - Retour de Nerisia : onglet caché ou fenêtre recouverte, Chrome ne réveille plus la boucle qu'une fois par minute (intensive throttling) et chaque passage comptait 5 s au plus, soit 12 fois moins vite. js/ui.js loop() joue maintenant le vrai écart (jusqu'à LIVE_MAX = 5 min) par pas de 5 s, Sablier usé d'autant ; au-delà (page gelée, veille), resumeCheck() lance le calcul d'absence habituel, sans compter deux fois le temps déjà joué (liveMs). Test tests/onglet_cache_ui.test.js (horloge simulée de Playwright).
 

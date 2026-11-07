@@ -234,4 +234,14 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   assert.strictEqual(E.sabSpend(C, 10000), 2); assert(!C.mono, "aucune donnée Monocompte dans une partie Classique"); C.dungeon = null;
   assert.strictEqual(E.monoBilan(C), null); assert.strictEqual(E.monoMutOf(C), null); assert(!E.ferWorn(C));
 }
+// 7. #186 : le combat de groupe du Bureau se joue sans mutation chez le joueur comme sur le serveur (qui ne charge pas monoplus.js)
+{
+  const BC = require("../js/bureau_combat.js");
+  const S = mono(150); const did = dj(30); const sn = [E.monoSnap(S, S.chars[0]), E.monoSnap(S, S.chars[0])]; sn[1].id = 99;
+  MU.force = undefined; MU.cur = "miroir";
+  assert.strictEqual(E.monoGroupSetup(JSON.parse(JSON.stringify(sn)), did, 9, null).S2.dungeon.mut, null, "mutation coupée sur demande");
+  const a = BC.run(JSON.parse(JSON.stringify(sn)), did, 7, 1234, null, now);
+  MU.cur = null; const b = BC.run(JSON.parse(JSON.stringify(sn)), did, 7, 1234, null, now);
+  assert.deepStrictEqual([a.t, a.done, (a.rooms || []).length], [b.t, b.done, (b.rooms || []).length], "même combat avec ou sans mutation chargée");
+}
 console.log("ok - Saison plus : Serment de fer (choix, niveau 20, abandon, Sablier et mercenaire bloqués, aides comptées), renfort sans gain, mutation de la semaine (8 règles, stasis 7+, jamais au Classique), défi de groupe dans le quota, bilan et aura de fer");

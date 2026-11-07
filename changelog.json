@@ -1,6 +1,14 @@
 {
-  "version": "2.2.12.4",
+  "version": "2.2.12.5",
   "versions": [
+    {
+      "v": "2.2.12.5",
+      "name": "Mutation et Bureau",
+      "items": [
+        "Bureau des Aventuriers : le combat de groupe que tu regardes est maintenant exactement celui joué par le serveur, sans la mutation de la semaine (avant, l'écran l'ajoutait et pouvait montrer un autre résultat)",
+        "Mutation de la semaine : la page dit clairement que seuls les donjons de groupe du Bureau (stasis 7 et plus) font avancer le défi de groupe, pas les donjons solo (signalé par Nerisia)"
+      ]
+    },
     {
       "v": "2.2.12.4",
       "name": "Le jeu tourne même caché",

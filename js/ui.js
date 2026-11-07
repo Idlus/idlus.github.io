@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12.4";
+const GAME_VERSION = "2.2.12.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12.5", name: "Mutation et Bureau", items: [
+    "Bureau des Aventuriers : le combat de groupe que tu regardes est maintenant exactement celui joué par le serveur, sans la mutation de la semaine (avant, l'écran l'ajoutait et pouvait montrer un autre résultat)",
+    "Mutation de la semaine : la page dit clairement que seuls les donjons de groupe du Bureau (stasis 7 et plus) font avancer le défi de groupe, pas les donjons solo (signalé par Nerisia)",
+  ] },
   { v: "2.2.12.4", name: "Le jeu tourne même caché", items: [
     "Jeu caché derrière une autre fenêtre ou dans un onglet en arrière-plan : la progression suit maintenant le vrai temps, Sablier compris (avant, le jeu avançait jusqu'à 12 fois moins vite). Merci Nerisia !",
     "Si le navigateur arrête complètement la page (veille, onglet gelé), le temps passé compte comme une absence, comme avant",

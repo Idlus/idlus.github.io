@@ -25,7 +25,7 @@
 
   /* ---------- le combat pas à pas ---------- */
   /* chaque pas se joue dans les mêmes conditions que BC.run : hasard du combat, horloge arrêtée sur l'heure du lancement,
-     ni modificateurs de la semaine ni donjon éclair, équipe jusqu'à 4 ; la partie du joueur garde son propre hasard */
+     ni modificateurs ni mutation de la semaine, ni donjon éclair, équipe jusqu'à 4 ; la partie du joueur garde son propre hasard */
   const dans = (W, fn) => {
     const r0 = E.getRng(), c0 = E.getClock(), w0 = E.weekly, f0 = E.flashOf, ev = E.events.length, tm = E.TEAM_MAX;
     E.setRng(W.rng); E.weekly = () => null; E.flashOf = () => null; E.TEAM_MAX = Math.max(tm, W.n);
@@ -36,7 +36,7 @@
   BD.lecture = (c) => {
     const snaps = typeof c.snaps === "string" ? JSON.parse(c.snaps) : JSON.parse(JSON.stringify(c.snaps));
     const W = { c, snaps, n: snaps.length, at: Number(c.at), rng: mulberry(Number(c.seed) >>> 0), t: 0, done: false, err: null, base: {}, cur: [], fid: null, vu: null, salles: 0 };
-    dans(W, () => { const G = E.monoGroupSetup(JSON.parse(JSON.stringify(snaps)), c.did, c.stasis); if (G.err) { W.err = G.err; W.done = true; } else W.S2 = G.S2; });
+    dans(W, () => { const G = E.monoGroupSetup(JSON.parse(JSON.stringify(snaps)), c.did, c.stasis, null); if (G.err) { W.err = G.err; W.done = true; } else W.S2 = G.S2; });
     return W;
   };
   /* une seconde de combat (comme une tour de boucle de E.monoGroupRun) */

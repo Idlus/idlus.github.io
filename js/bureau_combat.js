@@ -6,7 +6,7 @@
      tout le combat d'un coup avec la graine tirée par la base (E.monoGroupRun, js/mono.js).
    - Jeu : BC.voir rejoue le même combat (même photos, même graine, même version du jeu) pour le regarder ensemble en
      direct (2A), seconde par seconde depuis l'heure de départ donnée par le serveur ; BC.butin donne le butin individuel.
-   Pendant un combat de groupe, ni modificateurs de la semaine ni donjon éclair (le même combat chez tous, à toute heure).
+   Pendant un combat de groupe, ni modificateurs de la semaine, ni mutation de la semaine, ni donjon éclair (le même combat chez tous, à toute heure).
    ========================================================================== */
 (function (root) {
   "use strict";
@@ -23,7 +23,9 @@
   BC.run = (snaps, did, stasis, seed, onTick, at) => {
     const w0 = E.weekly, f0 = E.flashOf, c0 = E.getClock(); E.weekly = () => null; E.flashOf = () => null;
     if (at > 0) { const t = Math.floor(at / 1000) * 1000; E.setClock(() => t); }
-    try { return E.monoGroupRun(JSON.parse(JSON.stringify(snaps)), did, stasis, seed >>> 0, onTick); }
+    // 2.2.12.3 (#186) : sans mutation de la semaine, comme sur le serveur (la fonction « mono » ne charge pas js/monoplus.js) ;
+    // avant, le jeu rejouait le combat avec la mutation de la partie chargée : ce qu'on regardait n'était pas le combat du serveur
+    try { return E.monoGroupRun(JSON.parse(JSON.stringify(snaps)), did, stasis, seed >>> 0, onTick, null); }
     finally { E.weekly = w0; E.flashOf = f0; E.setClock(c0); }
   };
 
