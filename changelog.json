@@ -1,6 +1,14 @@
 {
-  "version": "2.2.13",
+  "version": "2.2.13.1",
   "versions": [
+    {
+      "v": "2.2.13.1",
+      "name": "Maîtrise par serveur",
+      "items": [
+        "Monocompte : la page Maîtrise › Classement ne montre plus le classement de l'Éternel (signalé par Nerisia)",
+        "Une partie Saison 1 et une partie de l'Éternel ne partagent plus le même classement de Maîtrise quand on passe de l'une à l'autre"
+      ]
+    },
     {
       "v": "2.2.13",
       "name": "Le Songe en Monocompte",

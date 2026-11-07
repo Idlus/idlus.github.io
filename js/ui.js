@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.13";
+const GAME_VERSION = "2.2.13.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.13.1", name: "Maîtrise par serveur", items: [
+    "Monocompte : la page Maîtrise › Classement ne montre plus le classement de l'Éternel (signalé par Nerisia)",
+    "Une partie Saison 1 et une partie de l'Éternel ne partagent plus le même classement de Maîtrise quand on passe de l'une à l'autre",
+  ] },
   { v: "2.2.13", name: "Le Songe en Monocompte", items: [
     "Monocompte : le Songe infini ouvre (menu Aventure › Songe infini, dès le niveau 10), avec ses Bribes de rêve, le Marché onirique et les objets légendaires (signalé par Nerisia)",
     "Les copies d'un légendaire tombent de nouveau : on peut faire monter son Éveil en Monocompte (bouton Éveil du sac, puis « Fondre une copie »)",

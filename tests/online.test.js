@@ -565,6 +565,12 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('[data-act="lb-mmode"][data-v="hero"]'); await page.waitForTimeout(500);
     { const t = await page.textContent("#lbList"); if (!/Maîtrise 75/.test(t) || !/Soigne/.test(t) || !/Flèche/.test(t)) fail("classement Maîtrise par héros : " + t.slice(0, 200)); }
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/lb-maitrise.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/lb-maitrise-mob.png" }); await page.setViewportSize(vp); }
+    // 2.2.12.3 (#185) : page Maîtrise › Classement : celui du serveur (Éternel) dans une partie classique, jamais dans une partie Monocompte
+    { const rk = async (mono) => page.evaluate(async (mono) => { const S = window.DX.S, o = S.mono; if (mono) S.mono = {}; const el = document.createElement("div"); document.body.appendChild(el);
+        const b = document.createElement("button"); b.dataset.act = "mt-tab"; b.dataset.v = "rank"; try { window.DX.pages.maitrise(el); el.appendChild(b); b.click(); await new Promise((r) => setTimeout(r, 400)); window.DX.pages.maitrise(el); await new Promise((r) => setTimeout(r, 400)); window.DX.pages.maitrise(el); return el.textContent; } finally { el.remove(); if (mono) { if (o === undefined) delete S.mono; else S.mono = o; } } }, mono);
+      const t1 = await rk(false), t2 = await rk(true);
+      if (!/Soigne/.test(t1)) fail("Maîtrise › Classement : le classement du serveur manque : " + t1.slice(0, 200));
+      if (/Soigne/.test(t2) || !/Monocompte n'a pas encore de classement/.test(t2)) fail("Maîtrise › Classement : l'Éternel s'affiche dans une partie Monocompte (#185) : " + t2.slice(0, 200)); }
     await page.click('[data-act="lb-mmode"][data-v="acct"]'); await lbTab(page, "lvl");
     await page.waitForTimeout(500); { const t = await page.textContent("#lbList"); if (!/4[\s\u00a0\u202f]?650 niveaux · Maîtrise 115/.test(t)) fail("classement Niveau : la Maîtrise du compte n'est pas sur la ligne : " + t.slice(0, 300)); }
     await page.selectOption('[data-act="lb-cls"]', ""); await page.waitForTimeout(300);

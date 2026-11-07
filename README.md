@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.13.1 « Maîtrise par serveur »
+- #185 (Nerisia) : js/maitrise.js lisait lb_level (Éternel) pour Maîtrise › Classement même dans une partie Monocompte. Plus de classement serveur ni de popularité des nœuds clés en Monocompte (message « pas encore de classement de Maîtrise ») ; le cache RK est gardé par espace (e / s1). Test dans tests/online.test.js (7b).
+
 ## 2.2.13 « Le Songe en Monocompte »
 - Ticket #183 (Nerisia) : en Monocompte, l'Éveil des légendaires était impossible (aucune copie, Songe fermé, module SGUI éteint). Choix de Mathis : rouvrir le Songe. « exp » dans E.MONO.PAGES, SGUI retiré de CLASSIC_MODS, Marché onirique dans les Comptoirs, songes en boucle et succès du Songe visibles.
 - Bonus Héros unique (E.monoEnts, comme en donjon) aussi dans les combats du Songe. Simulation (tools/sim_mono.js --songe, niveau 200) : sans lui, même le Rêve échoue ; avec lui, bon équipement Paradoxe 1, optimisé Paradoxe 2 (max Paradoxe 4).

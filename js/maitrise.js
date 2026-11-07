@@ -150,7 +150,7 @@
     return ks.concat(Object.keys(B.t).map((k) => [k, B.t[k] - (A.t[k] || 0)]).filter(([, d]) => d > 0.0001).sort((a, b) => b[1] - a[1]))
       .concat(B.sym && !A.sym ? [["✦ Symbole allumé", null]] : []); };
   /* 2.1 (10A) : part des joueurs de la classe (classement du serveur) qui ont pris cette clé de voûte */
-  const popTxt = (n) => { if (!(n.t === "ks" || n.t === "cks") || !RK.rows) return ""; const L = RK.rows.filter((r) => r.cls === treeCls()); if (L.length < 5) return ""; const k = L.filter((r) => (r.all || r.ks).includes(n.n)).length;
+  const popTxt = (n) => { if (!(n.t === "ks" || n.t === "cks") || !RK.rows || (S() && S().mono) || RK.sp !== (E.isS1c && E.isS1c(S()) ? "s1" : "e")) return ""; const L = RK.rows.filter((r) => r.cls === treeCls()); if (L.length < 5) return ""; const k = L.filter((r) => (r.all || r.ks).includes(n.n)).length;
     return `<span class="mt-pop">👥 Prise par ${Math.round(k * 100 / L.length)} % des joueurs ${h(CLASSES[treeCls()].name)}</span>`; };
   /* 2.1 (12A) : objectif épinglé (une clé de voûte) ; les nouveaux niveaux y placent leurs points tout seuls */
   const objPath = () => { const c = hero(); const M = E.mt(c); if (M.obj == null || !E.mtOn(c) || got.has(M.obj)) return null; return pathTo(M.obj); };
@@ -377,6 +377,8 @@
   /* classement du serveur : lu dans lb_level (les héros envoyés par js/verify.js portent leurs points de Maîtrise) */
   const RK = { at: 0, rows: null, err: null, busy: false, cls: "" };
   async function rkLoad() {
+    const s0 = S(); if (!s0 || s0.mono) return; // 2.2.12.3 (#185) : pas de classement de l'Éternel dans une partie Monocompte
+    const sp = E.isS1c && E.isS1c(s0) ? "s1" : "e"; if (RK.sp !== sp) { RK.sp = sp; RK.at = 0; RK.rows = null; RK.acct = null; } // une partie Saison 1 a son propre classement
     const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null; if (!ON || !ON.db || RK.busy || Date.now() - RK.at < 60000) return;
     RK.busy = true;
     try { const { data, error } = await ON.db().from("lb_level").select("user_id,pseudo,heroes").order("level", { ascending: false }).limit(1000); if (error) throw error;
@@ -386,7 +388,8 @@
     RK.at = Date.now(); RK.busy = false; if (st.tab === "rank" && ui().tab === "maitrise") window.DX.render(); else if (st.tab === "arbre") draw();
   }
   function rankHtml() {
-    const s = S(); const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null; const me = ON && ON.user && ON.user.id;
+    const s = S(); const mono = !!(s && s.mono); // 2.2.12.3 (#185, Nerisia) : lb_level est le classement de l'Éternel (ou de la Saison 1) : jamais dans une partie Monocompte
+    const ON = !mono && window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null; const me = ON && ON.user && ON.user.id;
     const line = (c, i) => `<div class="mt-rk ${c.u && c.u === me ? "me" : ""}" style="--cc:${CLASSES[c.cls].color}"><b class="num">${i + 1}</b><img src="${sym(c.cls)}" alt=""><span class="grow"><b>${h(c.n)}</b> <span class="xs muted">${h(CLASSES[c.cls].name)}${c.p ? ` · ${h(c.p)}` : ""}</span></span><span class="num"><b>${fmt(c.mt)}</b> points</span>${(c.ks || []).slice(0, 2).map((k) => `<span class="mt-chip">✦ ${h(k)}</span>`).join("")}${c.ids && c.ids.length && RK.rows ? `<button class="btn xs" data-act="mt-peek" data-v="${RK.rows.indexOf(c)}">Voir l'arbre</button>` : ""}</div>`; // 2.1 (15A)
     const mine = s.chars.filter((c) => E.mtPts(c)).sort((a, b) => E.mtPts(b) - E.mtPts(a)).map((c) => ({ n: c.name, cls: c.cls, mt: E.mtPts(c), ks: E.mtOn(c) ? E.mtStats(s, c).ks.map((k) => k.n) : [] }));
     let srv = "";
@@ -396,7 +399,7 @@
         ${RK.err ? `<p class="note">${h(RK.err)}</p>` : !RK.rows ? `<p class="xs muted">Chargement…</p>` : `<div class="mt-rank">${L.slice(0, 50).map(line).join("") || `<div class="empty">Personne n'a encore de Maîtrise${RK.cls ? " dans cette classe" : ""}.</div>`}</div>`}
         ${RK.acct && RK.acct.length && !RK.cls ? `<h3>Maîtrise du compte</h3><div class="mt-rank">${RK.acct.map((r, i) => `<div class="mt-rk ${r.u === me ? "me" : ""}"><b class="num">${i + 1}</b><span class="grow"><b>${h(r.p)}</b></span><span class="num"><b>${fmt(r.mt)}</b> points</span></div>`).join("")}</div>` : ""}</div>`;
     }
-    return `${srv || `<p class="note">Le classement du serveur s'affiche avec un compte en ligne. Tes héros :</p>`}
+    return `${srv || `<p class="note">${mono ? "Le serveur Monocompte n'a pas encore de classement de Maîtrise. Tes héros :" : "Le classement du serveur s'affiche avec un compte en ligne. Tes héros :"}</p>`}
       ${srv ? `<h3 style="margin:10px 14px 0">Tes héros</h3>` : ""}<div class="mt-rank">${mine.map(line).join("") || `<div class="empty">Aucun héros n'a encore de Maîtrise.</div>`}</div>
       <div class="mt-sum mt-card"><span>Maîtrise du compte : <b class="num">${fmt(E.mtAcct(s))}</b> points</span><b>+${E.mtAcctPct(s)} % d'XP</b></div>`;
   }
