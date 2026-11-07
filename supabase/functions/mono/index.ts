@@ -61,7 +61,7 @@ async function validate(db: any, uid: string): Promise<Record<string, unknown>> 
   const prev = ok ? { bilan: ok.bilan, res: ok.res, at: ok.src_ms } : null;
   const s = st.saison || {};
   const r = V.mono.verifier(E, st.partie.data, {
-    prev, at: st.partie.ms, admin: !!st.admin, accept: !!(ok && ok.accept), ops: st.ops || [], reg: st.reg,
+    prev, at: st.partie.ms, admin: !!st.admin, pause: V.PAUSE === true, // 07/11/2026 : Bouclier en pause (js/verify.js), seule la règle Ironman reste accept: !!(ok && ok.accept), ops: st.ops || [], reg: st.reg,
     ctx: { debut: s.debut, date: s.date, objets: st.objets || {}, sortis: st.sortis || [], renforts: st.renforts || [], opMax: st.op_max, opsK: st.ops_k }, // renforts : copies rendues par mono_renfort_prendre
   });
   E.setClock(null); // la vérification a réglé l'horloge du moteur sur la date de saison

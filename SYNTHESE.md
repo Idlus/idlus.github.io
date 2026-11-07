@@ -58,6 +58,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 - Pas de version bêta séparée : tests (PC 1280 px, téléphone 390 px) puis publication directe sur `main`, note Discord et annonce en jeu sans redemander (22/10).
 - Serveur, base de données, sauvegardes des joueurs, remises à zéro, posts X : les mots écrits de Mathis sont obligatoires.
 - Seul Mathis décide qui triche ; le Bouclier est la seule protection des sauvegardes.
+- **Bouclier EN PAUSE depuis le 07/11/2026** (demande de Mathis) : interrupteur `V.PAUSE = true` dans `js/verify.js`, pour le Classique, la Saison 1 et le Monocompte. Plus aucun nouveau signalement ni partie retenue ; les signalements et sanctions déjà posés restent. Seule la règle Ironman du Monocompte reste vérifiée. Pour le rallumer : `false`, publier, redéployer la fonction mono.
 - Modération (2.2.2, 03/11) : Mathis nomme seul les modérateurs (Panel › Équipe en jeu, rôle à la main sur Discord). Un modo supprime un message public, avertit en privé, rend muet 24 h au plus, jamais sur Mathis ni un autre modo ; pas de bannissement, de suspension, ni d'accès aux sauvegardes ou aux kamas. Ses actions arrivent dans #modération. La triche reste du ressort de Mathis.
 - Dofus : quête (1 par compte), butin de boss, codes ; aucun bonus sur leurs chances.
 - Pas de jetons de challenge.

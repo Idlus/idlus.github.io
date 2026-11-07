@@ -39,7 +39,7 @@ const createClient = () => { const c = ({ auth: { getUser: async (j) => ({ data:
   rpc: async (name, a) => { if (name === "bouclier_signal") { const l = T.ladder.find((x) => x.user_id === a.p_user); if (l) Object.assign(l, { suspect: true, flag_reason: "Bouclier : " + a.p_why }); else T.ladder.push({ user_id: a.p_user, suspect: true, flag_reason: "Bouclier : " + a.p_why }); } return { data: null, error: null }; } }); c.schema = () => c; return c; }; // Saison 1 : mêmes tables en mémoire (comptes différents)
 let H = null; globalThis.Deno = { serve(h) { H = h; }, env: { get() { return "x"; } } };
 `;
-fs.writeFileSync(tmp, fake + `import { D, E, V } from ${game};\n` + src.replace(/^import .*$/gm, "") + `
+fs.writeFileSync(tmp, fake + `import { D, E, V } from ${game};\nV.PAUSE = false; // Bouclier allumé pour ces tests (interrupteur de js/verify.js)\n` + src.replace(/^import .*$/gm, "") + `
 const call = async (uid, body) => (await H(new Request("http://x/", { method: "POST", headers: { Authorization: "Bearer " + uid }, body: JSON.stringify(body) }))).json();
 const fail = (m) => { console.error("ÉCHEC - " + m); process.exit(1); };
 const iso = (t) => new Date(t).toISOString();
@@ -175,6 +175,19 @@ console.log("ok - Saison 1 : premier envoi contrôlé (kamas, temps de jeu inven
   delete G.gifts.faux; G.gifts["srv:INVENTE"] = tg + 100e3; Object.assign(sv8, { data: E.serialize(G), updated_at: iso(tg + 120e3) }); ok8().at = iso(Date.now() - 60e3);
   r = await call("u8", { verif: 1 }); if (!r.signale) fail("codes : code « du serveur » inventé non signalé"); }
 console.log("ok - codes cadeaux : seuls les codes donnés par le serveur passent");
+// 11. 07/11/2026 (Mathis : « Met en pause le bouclier ») : V.PAUSE : rien n'est vérifié ni signalé, rien ne bouge dans les signalements existants
+{ V.PAUSE = true;
+  const P = E.newState("Pause", "iop"); P.s1c = {}; P.kamas = 9e10; P.stats.playtime = 60 * 3600;
+  T.saves.push({ user_id: "u9", data: E.serialize(P), meta: {}, updated_at: iso(Date.now()) });
+  const n0 = T.bouclier_log.length;
+  r = await call("u9", { verif: 1, saison: 1 }); if (!r.ok || r.signale || r.held) fail("pause : partie signalée ou retenue : " + JSON.stringify(r));
+  if (T.bouclier_log.length !== n0 || T.ladder.some((x) => x.user_id === "u9" && x.suspect)) fail("pause : signalement écrit");
+  T.ladder.push({ user_id: "u10", verified: true, suspect: true, flag_reason: "Bouclier : ancien" });
+  T.saves.push({ user_id: "u10", data: E.serialize(E.newState("Ancien signalé", "iop")), meta: {}, updated_at: iso(Date.now()) });
+  r = await call("u10", { verif: 1 }); if (!r.ok) fail("pause : partie refusée");
+  if (!T.ladder.find((x) => x.user_id === "u10").suspect) fail("pause : un signalement existant a été effacé");
+  V.PAUSE = false; }
+console.log("ok - Bouclier en pause : aucun signalement, les anciens restent");
 process.exit(0);
 `);
 try { const out = execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", tmp], { stdio: "pipe" }); process.stdout.write(out.toString()); }

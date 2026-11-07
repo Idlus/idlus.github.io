@@ -305,7 +305,16 @@
     try { bil = VM.bilan(E, S); bil.jour = VM.withClock(E, S, ctx, () => (E.monoDay ? E.monoDay(S) : 0)); } catch (e) { return { ok: false, why: "partie illisible" }; }
     const nu0 = prev && prev.bilan ? +prev.bilan.nu0 || 0 : +S.nextUid || 0;
     let note = null, iron = false;
-    if (!o.admin) {
+    /* 07/11/2026 (Mathis : « Met en pause le bouclier ») : o.pause (interrupteur V.PAUSE) : aucune vérification anti-triche ;
+       seule la règle Ironman (règle du mode de jeu, pas de la triche) reste. L'avance de niveau est retenue comme après un « C'est bon »,
+       pour que le Bouclier rallumé ne signale pas ce qui a été joué pendant la pause. */
+    if (o.pause && !o.admin) {
+      const lvx0 = prev && prev.bilan ? Math.max(0, +prev.bilan.lvx || 0) : 0, cap = VM.lvlCap(ctx);
+      const top0 = Math.max(1, ...(S.chars || []).filter((c) => !c.merc).map((c) => c.lvl || 1));
+      bil.lvx = Math.max(lvx0, top0 - cap); if (bil.lvx > 0) bil.lvt = top0; else delete bil.lvx;
+      if (prev && prev.bilan) { why = VM.iron(S, ctx, prev.bilan, bil, o.ops); iron = !!why; }
+      else if (VM.ironSt(S) === 1) { why = VM.ironStart(S, ctx, null); iron = !!why; }
+    } else if (!o.admin) {
       // 22/10 (Mathis, « C'est bon » passe aussi le niveau) : l'avance de niveau acceptée reste acquise (bilan.lvx)
       // le héros continue de monter après la validation : au-delà, le plafond suit le dernier niveau validé (bilan.lvt) au rythme VM.LVL_H
       const lvx0 = prev && prev.bilan ? Math.max(0, +prev.bilan.lvx || 0) : 0, cap = VM.lvlCap(ctx);

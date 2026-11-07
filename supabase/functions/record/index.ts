@@ -547,7 +547,9 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   // la partie de Mathis (panel de test) n'est pas retenue : elle reste hors des classements par le résumé (panel)
   // 2.1.25 : le « C'est bon » de Mathis (accept) passe le contrôle des gains, plus celui de l'impossible : une partie à 31 710 points
   // de Maîtrise et 1,6 milliard de kamas était acceptée telle quelle juste après un « C'est bon »
-  if (!adm) {
+  // 07/11/2026 (Mathis : « Met en pause le bouclier ») : interrupteur V.PAUSE (js/verify.js) : aucune vérification, aucun signalement
+  const pause = V.PAUSE === true;
+  if (!adm && !pause) {
     why = V.impossible(E, S, nu0);
     // 04/11 (Kenan) : partie de saison née hors de la saison (sauvegarde importée) ou temps de jeu plus long que la saison
     if (!why && db.isS1) why = V.s1Bad(E, S);
@@ -609,7 +611,7 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
   const { error } = await db.from("saves_ok").upsert({ user_id: uid, data: cur.data, meta, bilan: ref, res: res == null ? (first ? 0 : V.RES_MAX) : res, src_at: cur.updated_at, at: now, accept: false });
   if (error) return { ok: false, err: "écriture impossible" };
   // 2.1.18 : compte vérifié par Mathis signalé seulement par le Bouclier : la partie passe, le signalement s'efface
-  if (!why && lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);
+  if (!why && !pause && lad && lad.verified && lad.suspect && String(lad.flag_reason || "").startsWith("Bouclier : ")) await db.from("ladder").update({ suspect: false, flag_reason: null }).eq("user_id", uid).eq("flagged", false);
   // 4A : une copie de la partie validée par jour (heure de Paris), gardée 7 jours, pour que Mathis puisse remettre un joueur en arrière
   // (04/11 : pas de copie pour une partie signalée par le Bouclier : les copies restent des parties qui ont passé la vérification)
   const day = parisDay(Date.now());

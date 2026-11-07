@@ -86,7 +86,7 @@ let H = null; globalThis.Deno = { serve(h) { H = h; }, env: { get() { return "x"
 globalThis.__CALL = async (uid, body) => (await H(new Request("http://x/", { method: "POST", headers: { Authorization: "Bearer " + uid }, body: JSON.stringify(body) }))).json();
 `;
     const tmp = path.join(dir, "mono.mts");
-    fs.writeFileSync(tmp, fake + `import { D, E, V } from ${game};\nglobalThis.__GAME = { D, E, V };\n` + src.replace(/^import .*$/gm, ""));
+    fs.writeFileSync(tmp, fake + `import { D, E, V } from ${game};\nV.PAUSE = false; // Bouclier allumé pour ces tests (interrupteur de js/verify.js)\nglobalThis.__GAME = { D, E, V };\n` + src.replace(/^import .*$/gm, ""));
     const RPC = [];
     globalThis.__RPC = (name, a) => {
       assert(/^mono_srv_/.test(name), "la fonction n'appelle que les fonctions mono_srv_* : " + name); RPC.push(name);
