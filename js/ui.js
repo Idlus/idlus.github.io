@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.12.3";
+const GAME_VERSION = "2.2.12.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.12.4", name: "Le jeu tourne même caché", items: [
+    "Jeu caché derrière une autre fenêtre ou dans un onglet en arrière-plan : la progression suit maintenant le vrai temps, Sablier compris (avant, le jeu avançait jusqu'à 12 fois moins vite). Merci Nerisia !",
+    "Si le navigateur arrête complètement la page (veille, onglet gelé), le temps passé compte comme une absence, comme avant",
+  ] },
   { v: "2.2.12.3", name: "Éveil des Dragons en Monocompte", items: [
     "Monocompte : l'Éveil des Dragons se réveille avec 3 Dofus primordiaux sur le héros, et le Dofus du Phénix compte comme un primordial (idée de Nerisia)",
     "Monocompte : le haut fait « Six Dofus portés » demande 3 Dofus, le maximum du serveur",
@@ -13235,23 +13239,32 @@ document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.ta
 
 /* ---------- boucle ---------- */
 let testSpeed = 1; // panel de test (béta uniquement) : accélération du temps
+const LIVE_MAX = 5 * 60000; // 2.2.12.4 : plus long écart entre deux passages de la boucle encore joué « en direct »
+let liveMs = 0; // vrai temps joué en direct par la boucle (resumeCheck s'en sert pour ne pas compter deux fois)
 let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
   if (tabLost) return; // une autre fenêtre a pris la partie (tabPause)
   if (offRun) { last = performance.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
-  const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
+  const now = performance.now(), raw = Math.max(0, now - last), dt = Math.min(raw, 5000); last = now;
   if (S) {
     if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
     if (ui.launchPending && !window.__IDLUS_NOLAUNCH && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (Équipe et héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
-    { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.sabNow = m; try { E.tick(S, real * m, real); } finally { E.sabNow = 1; }
+    { const sp0 = S.sablier && S.sablier.spd;
+      // 07/11/2026 (2.2.12.4, retour de Nerisia) : onglet caché ou fenêtre recouverte, le navigateur ne réveille plus la boucle
+      // qu'une fois par minute. Avant, chaque passage comptait 5 s au plus : le jeu avançait 12 fois moins vite. Le vrai temps
+      // écoulé (jusqu'à LIVE_MAX) est maintenant joué par pas de 5 s, à la vitesse choisie et en usant le Sablier, comme à l'écran.
+      // Au-delà (page gelée, appareil en veille), c'est une absence : calcul hors ligne habituel (taux et plafond d'absence).
+      const live = raw <= LIVE_MAX ? raw : dt; let left = live;
+      while (left > 0) { const p = Math.min(left, 5000); left -= p; const real = p * (BETA ? testSpeed : 1), m = E.sabSpend(S, p); E.sabNow = m; try { E.tick(S, real * m, real); } finally { E.sabNow = 1; } }
+      if (raw > LIVE_MAX) resumeCheck(); liveMs += live;
       if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
     S.lastTick = E.now(); S.devAt = Date.now(); // 2.2.10.2 : heure de l'appareil à côté (absGap)
     lootUpCheck();
-    sinceSave += dt; sinceView += dt;
+    sinceSave += raw; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
         if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && !S.settings.keyToastOff && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
@@ -13291,13 +13304,20 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S && !offRun) {
-    // 04/11/2026 : l'heure du serveur d'abord (au plus 2,5 s), puis l'absence depuis le dernier passage de la boucle
-    const lt = S.lastTick, ld = S.devAt, s0 = S;
-    horlogeSync(2500).then(() => { if (S !== s0 || offRun) return; const t1 = S.lastTick, d1 = S.devAt; S.lastTick = lt; S.devAt = ld; const gap = absGap(S);
-      if (gap > 60) offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); else { S.lastTick = Math.max(S.lastTick, t1); S.devAt = d1; } last = performance.now(); });
-  }
+  else resumeCheck();
 });
+/* 04/11/2026 : l'heure du serveur d'abord (au plus 2,5 s), puis l'absence depuis le dernier passage de la boucle.
+   2.2.12.4 : aussi lancé par la boucle après un long arrêt (page gelée, veille). Le temps que la boucle a joué en direct pendant
+   l'attente (liveMs) est retiré de l'absence : rien n'est compté deux fois. */
+let resumeBusy = false;
+function resumeCheck() {
+  if (!S || offRun || resumeBusy) return;
+  resumeBusy = true;
+  const lt = S.lastTick, ld = S.devAt, s0 = S, l0 = liveMs;
+  horlogeSync(2500).then(() => { resumeBusy = false; if (S !== s0 || offRun) return; const t1 = S.lastTick, d1 = S.devAt, used = liveMs - l0;
+    S.lastTick = Math.min(t1, lt + used); if (ld > 0) S.devAt = Math.min(d1, ld + used); const gap = absGap(S);
+    if (gap > 60) { last = performance.now(); offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); } else { S.lastTick = Math.max(S.lastTick, t1); S.devAt = d1; } }, () => { resumeBusy = false; });
+}
 window.addEventListener("pagehide", () => saveNow());
 
 function start() { if (ON) onBoot(); else if (menuOn()) menuStart(); else bootGame(); if (TESTMODE) setTimeout(() => { if (testerOk() && S) { const b = document.querySelector('[data-adm="open"]'); if (b) b.click(); } }, 500); }

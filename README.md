@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.12.4 « Le jeu tourne même caché »
+- Retour de Nerisia : onglet caché ou fenêtre recouverte, Chrome ne réveille plus la boucle qu'une fois par minute (intensive throttling) et chaque passage comptait 5 s au plus, soit 12 fois moins vite. js/ui.js loop() joue maintenant le vrai écart (jusqu'à LIVE_MAX = 5 min) par pas de 5 s, Sablier usé d'autant ; au-delà (page gelée, veille), resumeCheck() lance le calcul d'absence habituel, sans compter deux fois le temps déjà joué (liveMs). Test tests/onglet_cache_ui.test.js (horloge simulée de Playwright).
+
 ## 2.2.12.3 « Éveil des Dragons en Monocompte »
 - En Monocompte (3 emplacements de Dofus), l'Éveil des Dragons demande 3 primordiaux au lieu de 6 et le Dofus du Phénix compte comme un primordial (E.dofpPrim / E.dofpResoNeed, surchargés dans js/monodofus.js). Haut fait « Six Dofus portés » à 3 en Mono. Simulation optimisé niveau 200 (8 donjons) : Phénix + Pourpre + Ébène 7,10 sans Éveil, 7,21 avec. Idée de Nerisia, option choisie par Mathis.
 

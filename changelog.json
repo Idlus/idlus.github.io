@@ -1,6 +1,14 @@
 {
-  "version": "2.2.12.3",
+  "version": "2.2.12.4",
   "versions": [
+    {
+      "v": "2.2.12.4",
+      "name": "Le jeu tourne même caché",
+      "items": [
+        "Jeu caché derrière une autre fenêtre ou dans un onglet en arrière-plan : la progression suit maintenant le vrai temps, Sablier compris (avant, le jeu avançait jusqu'à 12 fois moins vite). Merci Nerisia !",
+        "Si le navigateur arrête complètement la page (veille, onglet gelé), le temps passé compte comme une absence, comme avant"
+      ]
+    },
     {
       "v": "2.2.12.3",
       "name": "Éveil des Dragons en Monocompte",
