@@ -1629,7 +1629,7 @@
   [[1, "Première âme", "Capturer l'âme d'un archimonstre avec une Pierre d'âme.", 500, ""], [25, "25 âmes", "Capturer 25 âmes d'archimonstres.", 2500, ""], [100, "100 âmes", "Capturer 100 âmes d'archimonstres.", 10000, "Chasseur d'âmes"], [205, "L'album complet", "Capturer l'âme de tous les archimonstres.", 50000, ""]]
     .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= (n === 205 ? E.ARCHI_TOTAL || n : n), k, t ? { title: t } : {}));
   add("dofus1", "Archimonstres", "Premier Dofus", "Obtenir un Dofus.", (S) => (S.cnt.dofus || 0) >= 1, 2000);
-  add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps.", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= 6), 10000, { title: "Porteur de Dofus" });
+  add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps (3 en Monocompte).", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= (E.isMono && E.isMono(S) ? E.MONO.dofus : 6)), 10000, { title: "Porteur de Dofus" });
   add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });
   add("dofus31", "Archimonstres", "Tous les Dofus", "Obtenir les 31 Dofus.", (S) => (S.cnt.dofus || 0) >= 31, 500000, { title: "Seigneur des Dofus" }); // 1.0 : les 31 Dofus
   E.ACH = ACH;

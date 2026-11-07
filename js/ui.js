@@ -6608,7 +6608,7 @@ const dofpHi = (t) => h(t).replace(/([+−-]?\d+(?:,\d+)? ?%|\+1 PA|1 PM|1 PV)/g
 function dofpNotes(id) {
   const out = [E.dofpOnce(id) ? "Compté une seule fois par équipe, même si plusieurs héros le portent." : "Chaque héros qui le porte a son propre passif."];
   if (E.dofpFam(id) !== "Gains") out.push(["vulbis", "argente", "ocre"].includes(id) ? "Kolizéum : effet entier (tout ou rien)." : "Kolizéum : moitié de l'effet.");
-  if (E.DOFP_PRIM.includes(id)) out.push(`Dofus primordial : avec les 6 sur le même héros, Éveil des Dragons (+${E.DOFP_RESO} %).`);
+  if (E.dofpPrim(S).includes(id)) out.push(`Dofus primordial : avec ${E.dofpResoHow(S)} sur le même héros, Éveil des Dragons (+${E.DOFP_RESO} %).`);
   return out;
 }
 function dofpChips(id, c) {
@@ -6632,13 +6632,14 @@ function dofpHeroPanel(c) {
   if (!worn.length && !E.DOFUS_ORDER.some((id) => E.dofusOwned(S, id))) return `<div class="panel dofp-panel"><div class="pad row" style="gap:10px;flex-wrap:nowrap">${im(dofusImg("emeraude"), "dofp-img", "")}<span class="grow small"><b>Passifs des Dofus</b><br><span class="xs muted">Chaque Dofus porté ajoute un passif unique à ses caractéristiques.</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">Où trouver les Dofus</button></div></div>`;
   const reso = E.dofpReso(S, c), boost = reso;
   const N = (S.fight && S.fight.dpN && S.fight.dpN[c.id]) || {};
-  const prim = E.DOFP_PRIM.filter((id) => worn.some((x) => x.id === id)).length;
+  const PL = E.dofpPrim(S), need = E.dofpResoNeed(S); // 2.2.12.2 : 3 en Monocompte, Phénix compris
+  const prim = PL.filter((id) => worn.some((x) => x.id === id)).length;
   const cards = slots.map(({ sl, id, tro }) => {
     if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;
     return `<button class="dofp-card fam-${dofpFc(id)} ${ui.slot === sl ? "on" : ""}" data-act="slot" data-slot="${sl}"><span class="dofp-ch">${im(dofusImg(id), "dofp-img", E.DOFUS[id].name)}<span class="dofp-nm"><small>${h(E.DOFUS[id].name)}</small><b>${h(E.dofpName(id))}</b></span>${dofpIco(id)}</span>
       <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost, false, dofpRank(id)))}${dofpPotTag(dofpRank(id))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
-  const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
-    : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
+  const resoH = reso ? `<div class="dofp-reso on">${PL.filter((id) => need >= PL.length || worn.some((x) => x.id === id)).map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">${prim} Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
+    : prim ? `<div class="dofp-reso">${PL.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / ${need}</b><br><span class="muted">Avec ${E.dofpResoHow(S)} : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
   return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / ${D.DOFUS_SLOTS.length} actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
 }
 /* choix du Dofus : familles, passif lisible, conseillés pour le héros en premier, Dofus pas encore obtenus avec leur quête */
