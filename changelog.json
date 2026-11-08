@@ -1,6 +1,15 @@
 {
-  "version": "2.2.14.8",
+  "version": "2.2.14.9",
   "versions": [
+    {
+      "v": "2.2.14.9",
+      "name": "Vendre plusieurs en Monocompte",
+      "guide": "hdv",
+      "items": [
+        "Monocompte : Héros › Inventaire › Ressources a maintenant le bouton « Vendre plusieurs ». Touche les ressources (ou « Tout ce filtre », sans tes favorites ★), règle les quantités, puis « Vendre la sélection »",
+        "Sans vente directe en Monocompte, la sélection part au marchand, à 30 % de la valeur (comme le surplus de « Garder au maximum »). Permis sous le Serment de fer. Pour un meilleur prix : l'hôtel de vente de saison"
+      ]
+    },
     {
       "v": "2.2.14.8",
       "name": "Butin utile",

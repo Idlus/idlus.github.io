@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.8";
+const GAME_VERSION = "2.2.14.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.9", name: "Vendre plusieurs en Monocompte", guide: "hdv", items: [
+    "Monocompte : Héros › Inventaire › Ressources a maintenant le bouton « Vendre plusieurs ». Touche les ressources (ou « Tout ce filtre », sans tes favorites ★), règle les quantités, puis « Vendre la sélection »",
+    "Sans vente directe en Monocompte, la sélection part au marchand, à 30 % de la valeur (comme le surplus de « Garder au maximum »). Permis sous le Serment de fer. Pour un meilleur prix : l'hôtel de vente de saison" ] },
   { v: "2.2.14.8", name: "Butin utile", items: [
     "Les monstres ne lâchent plus les 630 ressources qui ne servaient à aucune recette (elles remplissaient le filtre « Inutilisées »)",
     "Les commandes du jour, l'Almanax et les quêtes demandent donc des ressources qui servent aussi aux crafts",
@@ -8139,6 +8142,63 @@ function usefulNow() {
   Object.entries(DUNGEONS).forEach(([id, d]) => { if (E.dungeonUnlocked(S, id) && SPECIAL_CRAFTS[d.key]) SPECIAL_CRAFTS[d.key].ing.forEach(([r]) => set.add(r)); });
   return set;
 }
+/* 2.2.14.9 (Mathis : « le vendre plusieurs n'est pas sur monocompte ») : sans vente directe (Monocompte, Éternel : window.VENTEUI éteint),
+   « Vendre plusieurs » vend la sélection au marchand de secours, au prix qu'il paie déjà pour le surplus (E.MERCHANT, 30 % de la valeur).
+   Vente au PNJ seulement, sans serveur ni autre joueur : permise sous le Serment de fer. MK.pick = Map(ressource → quantité, null = tout le stock) */
+const MK = { pick: null, pickL: [], pres: null };
+const mkOk = (n) => !!(E.venteOk ? E.venteOk(n) : RES[n] && E.resPrice(n) > 0 && !E.isKey(n)) && !(E.TF_RES && n === E.TF_RES);
+const mkQ = (n) => { const have = S.res[n] || 0; const q = MK.pick.get(n); return Math.max(0, Math.min(have, q == null ? have : q)); };
+const mkRows = () => [...MK.pick.keys()].filter((n) => (S.res[n] || 0) > 0);
+const mkTotal = () => mkRows().reduce((a, n) => a + E.merchantPrice(n, mkQ(n)), 0);
+const MERCHPICK = {
+  picking: () => !!MK.pick, picked: (n) => !!(MK.pick && MK.pick.has(n)), tileAct: "mk-ptile",
+  pickBtn: () => `<button class="btn sm ${MK.pick ? "primary" : ""}" data-act="mk-pick" title="Choisir plusieurs ressources et les vendre au marchand d'un seul coup">${MK.pick ? "Terminer" : `☑<span class="ilbl"> Vendre plusieurs</span>`}</button>`,
+  pickHtml(L) {
+    if (!MK.pick) return { top: "", bar: "" };
+    MK.pickL = (L || []).filter((n) => mkOk(n) && !S.resFav[n]);
+    const R = MK.pres && Date.now() - MK.pres.at < 5 * 60000 ? MK.pres : null;
+    const res = R ? `<div class="vd-pres"><div class="row between"><b>${h(R.head)}</b><button class="linkbtn xs" data-act="mk-pclose">Fermer</button></div></div>` : "";
+    const rows = mkRows();
+    const lines = rows.map((n, i) => { const q = mkQ(n); const have = S.res[n] || 0;
+      return `<div class="li small vd-prow">${im(resImg(n), "ico", n)}<span class="grow"><b>${S.resFav[n] ? "★ " : ""}${h(n)}</b><br><span class="xs muted">tu en as ${fmt(have)} · ${(Math.floor(E.merchantPrice(n, 100) / 10) / 10).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} k l'unité</span></span>
+        <input type="number" id="mkPq${i}" data-act="mk-pq" data-n="${h(n)}" min="1" max="${have}" value="${q}" aria-label="Quantité de ${h(n)} à vendre"><b class="num mk-psub" data-n="${h(n)}">${fmt(E.merchantPrice(n, q))} k</b><button class="btn sm" data-act="mk-ptile" data-n="${h(n)}" title="Retirer de la sélection">✕</button></div>`; }).join("");
+    const top = `<section class="panel vd-pick"><div class="phead"><h2>Vendre plusieurs ressources</h2><span class="xs muted">au marchand, ${Math.round(E.MERCHANT * 100)} % de la valeur</span></div><div class="pad stack" style="gap:8px">
+      ${res}
+      ${rows.length ? `<div class="list">${lines}</div><span class="xs muted">Touche une ressource pour l'ajouter ou la retirer. Par défaut tout le stock est vendu : change la quantité si tu veux en garder. Pour un meilleur prix, passe par l'hôtel de vente.</span>`
+        : `<span class="small muted">Touche les ressources à vendre dans la grille, ou « Tout ce filtre » (les favorites ★ sont laissées de côté).</span>`}</div></section>`;
+    const bar = `<div class="invpickbar vd-pbar"><b class="num">${rows.length}</b><span class="small">ressource${rows.length > 1 ? "s" : ""}${rows.length ? ` · <b class="num" id="mkPtot">${fmt(mkTotal())}</b> kamas` : ""}</span><span class="grow"></span>
+      <button class="btn sm" data-act="mk-pall" ${MK.pickL.length ? "" : "disabled"}>Tout ce filtre</button>${rows.length ? `<button class="btn sm" data-act="mk-pclear">Vider</button>` : ""}
+      <button class="btn sm primary" data-act="mk-psell" ${rows.length ? "" : "disabled"}>Vendre la sélection</button><button class="btn sm" data-act="mk-pick">Terminer</button></div>`;
+    return { top, bar };
+  },
+};
+function mkSell() {
+  const ask = mkRows().map((n) => [n, mkQ(n)]).filter(([, q]) => q > 0);
+  if (!ask.length) { toast("Choisis au moins une quantité à vendre.", "warn"); return; }
+  let k = 0, nOk = 0;
+  for (const [n, q] of ask) { const have0 = S.res[n] || 0; const p = E.merchantRes(S, n, q); if ((S.res[n] || 0) < have0) { k += p; nOk++; MK.pick.delete(n); } }
+  const head = nOk ? `${nOk} ressource${nOk > 1 ? "s" : ""} vendue${nOk > 1 ? "s" : ""} au marchand pour ${fmt(k)} kamas` : "Rien n'a été vendu";
+  MK.pres = { at: Date.now(), head }; dirty = true;
+  toast(head + ".", nOk ? "rare" : "warn", 6000); render();
+}
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t || !S) return; const a = t.dataset.act; if (!/^mk-/.test(a)) return;
+  const n = t.dataset.n;
+  if (a === "mk-pick") { MK.pick = MK.pick ? null : new Map(); MK.pres = null; if (MK.pick) { ui.resSel = null; closeSheet(); } }
+  else if (!MK.pick) return;
+  else if (a === "mk-ptile") { if (MK.pick.has(n)) MK.pick.delete(n); else if (!mkOk(n)) toast(`${n} ne se vend pas au marchand.`, "warn"); else if (MK.pick.size >= 200) toast("200 ressources au plus dans une sélection.", "warn"); else MK.pick.set(n, null); }
+  else if (a === "mk-pall") { for (const k of MK.pickL) if (MK.pick.size < 200 && !MK.pick.has(k)) MK.pick.set(k, null); }
+  else if (a === "mk-pclear") MK.pick.clear();
+  else if (a === "mk-pclose") MK.pres = null;
+  else if (a === "mk-psell") { mkSell(); return; }
+  render();
+});
+document.addEventListener("input", (ev) => {
+  const t = ev.target; if (!S || !MK.pick || !t.dataset || t.dataset.act !== "mk-pq") return;
+  const n = t.dataset.n; const have = S.res[n] || 0; const q = Math.max(0, Math.min(have, Math.floor(+t.value || 0))); MK.pick.set(n, q >= have ? null : q);
+  const sub = document.querySelector(`.mk-psub[data-n="${CSS.escape(n)}"]`); if (sub) sub.textContent = `${fmt(E.merchantPrice(n, q))} k`;
+  const tot = $("#mkPtot"); if (tot) tot.textContent = fmt(mkTotal());
+});
 function resTabHtml() {
   const IX = resIndex(); const cats = D.RES_CATS; const all = Object.entries(S.res).filter(([, q]) => q > 0);
   if (!ui.newResDone) { ui.newRes = new Set(all.map(([n]) => n).filter((n) => !S.resSeen[n])); all.forEach(([n]) => (S.resSeen[n] = 1)); ui.newResDone = true; }
@@ -8154,14 +8214,15 @@ function resTabHtml() {
   if (f === "cmd") list = list.filter(([n]) => GBN.has(n));
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
-  const VU = window.VENTEUI; const pk = !!(VU && VU.picking()); // 2.1.29.5 : sélection de plusieurs ressources à vendre (js/venteui.js)
+  const VU = window.VENTEUI || MERCHPICK; const pk = !!(VU && VU.picking()); // 2.1.29.5 : sélection de plusieurs ressources à vendre (js/venteui.js) ; 2.2.14.9 : au marchand sans vente directe (Monocompte)
+  const PA = VU.tileAct || "vd-ptile";
   const picked = new Set(pk ? list.map(([n]) => n).filter((n) => VU.picked(n)) : []);
   const PK = pk ? VU.pickHtml(list.map(([n]) => n)) : { top: "", bar: "" };
   const detail = !pk && invSide() && ui.resSel && (S.res[ui.resSel] || resKept(ui.resSel)) ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
-      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span>${pk ? `<button class="btn sm ${sel ? "primary" : ""}" data-act="vd-ptile" data-n="${h(n)}">${sel ? "☑ Choisie" : "☐ Choisir"}</button>` : `<button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button>`}</div>`
-      : `<button class="itile rtile ${r} ${ui.resSel === n && !pk ? "on" : ""} ${sel ? "picked" : ""}" data-act="${pk ? "vd-ptile" : "ressel"}" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}${pk ? `<span class="ipick">${sel ? "✓" : ""}</span>` : ""}</button>`; };
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span>${pk ? `<button class="btn sm ${sel ? "primary" : ""}" data-act="${PA}" data-n="${h(n)}">${sel ? "☑ Choisie" : "☐ Choisir"}</button>` : `<button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button>`}</div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n && !pk ? "on" : ""} ${sel ? "picked" : ""}" data-act="${pk ? PA : "ressel"}" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}${pk ? `<span class="ipick">${sel ? "✓" : ""}</span>` : ""}</button>`; };
   return `<div class="row resbar">
       <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${catIco(c)} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
     <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">

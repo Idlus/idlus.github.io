@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.9 « Vendre plusieurs en Monocompte »
+Héros › Inventaire › Ressources : le bouton « Vendre plusieurs » arrive en Monocompte. Sans vente directe, la sélection part au marchand (30 % de la valeur), permis sous le Serment de fer.
+
 ## 2.2.14.8 « Butin utile »
 - Les 630 ressources de monstres qui ne servaient à aucune recette ne tombent plus (liste : `node tools/build_sans_recette.js`, dans js/data.js). Les stocks restent et gardent leur prix ; commandes du jour, Almanax et quêtes se rabattent sur des ressources utiles.
 
