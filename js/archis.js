@@ -303,6 +303,7 @@
     });
     if (type === "soul") checkOcre(S);
     if (type === "dofus") E.gardienCheck(S);
+    if (E.achHold && (type === "craft" || type === "brk")) return; // 2.2.14.6 : fabrication en série, les étapes avancent une fois à la fin (E.craftMany → E.refreshArchis)
     advance(S);
   };
   E.dofusQuestEvent = onEvent; // 1.1 : Kolizéum, Foire, guilde et Songe préviennent les quêtes des Dofus sans passer par E.emit (ni succès ni carnet)

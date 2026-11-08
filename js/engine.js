@@ -3891,6 +3891,7 @@
   };
   E.craftMany = (S, k, id, n, galet) => {
     n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null, over: 0, recy: 0, got: {} }; const o0 = overLen(S); E.recyGot = out.got; const c0 = (S.cnt && S.cnt.recy) || 0;
+    const hold = n > 1; if (hold) E.achHold = (E.achHold || 0) + 1; // 2.2.14.6 : succès vérifiés une seule fois, à la fin de la série (js/systems.js)
     try {
       for (let i = 0; i < n; i++) {
         E.craftTwin = null; const r = k === "tpl" ? E.craftItem(S, id, galet) : E.craftSpecial(S, id);
@@ -3898,7 +3899,7 @@
         out.n++; if (r && r.uid) out.items.push(r);
         if (E.craftTwin) { out.items.push(E.craftTwin); out.twins = (out.twins || 0) + 1; E.craftTwin = null; }
       }
-    } finally { E.recyGot = null; }
+    } finally { E.recyGot = null; if (hold) { E.achHold--; if (out.n) { if (E.refreshArchis) E.refreshArchis(S); if (E.checkAch) E.checkAch(S); } } }
     out.over = Math.max(0, overLen(S) - o0); out.recy = ((S.cnt && S.cnt.recy) || 0) - c0;
     return out.n ? out : (out.err || "Fabrication impossible.");
   };

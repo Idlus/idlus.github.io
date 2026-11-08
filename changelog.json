@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.5",
+  "version": "2.2.14.6",
   "versions": [
+    {
+      "v": "2.2.14.6",
+      "name": "Fabrication en série sans gel",
+      "items": [
+        "Métiers : fabriquer ×1000 ne fige plus le jeu. Les succès et les quêtes des Dofus étaient revérifiés à chaque exemplaire (deux fois avec « Recycler aussitôt »), ils le sont maintenant une fois à la fin de la série : environ 10 fois plus rapide",
+        "Rien ne change pour les récompenses : chaque exemplaire compte toujours pour les quêtes, les succès et l'XP de métier"
+      ]
+    },
     {
       "v": "2.2.14.5",
       "name": "La carte de Likie",

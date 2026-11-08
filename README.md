@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.6 « Fabrication en série sans gel »
+- Mathis (08/11) : craft ×1000 figeait ~4 s. E.craftMany pose E.achHold : systems.js saute checkAch et archis.js saute advance pour « craft »/« brk » pendant la série, puis E.refreshArchis + E.checkAch une fois à la fin. Mesure (sac 3 000 objets, ×1000) : 817 → 117 ms, avec « Recycler aussitôt » 1 349 → 129 ms.
+
 ## 2.2.14.5 « La carte de Likie »
 - Album de cartes : nouvelle carte Héros d'Idlus pour Likie (Énutrof sur une pile de kamas, coffre vivant, décor du Rituel de Kabahal). Likie l'a d'office ; 1 booster sur 50 contient un héros.
 

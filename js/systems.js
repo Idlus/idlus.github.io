@@ -1691,6 +1691,9 @@
     // 1.0.30 : compte connecté, le surplus attend la vente directe (js/vente.js, js/venteui.js) au lieu du marchand
     if (type === "win" || type === "harvest") { const vd = !!(E.venteDirect && E.venteDirect(S)); for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0 && !(vd && E.venteOk(n))) E.merchantRes(S, n, ex); } }
     checkQuest(S);
+    /* 2.2.14.6 « Fabrication en série sans gel » : pendant une série (E.achHold, js/engine.js E.craftMany), les succès sont vérifiés une fois à la fin
+       (avant : tous les succès retestés à chaque exemplaire, et deux fois avec « Recycler aussitôt » : ×1000 figeait le jeu plusieurs secondes) */
+    if (E.achHold) return;
     if (type !== "harvest" || (S._achT || 0) + 1500 < E.now()) { S._achT = E.now(); checkAch(S); }
   };
   E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); if (E.refreshArchis) E.refreshArchis(S); checkAch(S); };

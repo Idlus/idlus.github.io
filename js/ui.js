@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.5";
+const GAME_VERSION = "2.2.14.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.6", name: "Fabrication en série sans gel", items: [
+    "Métiers : fabriquer ×1000 ne fige plus le jeu. Les succès et les quêtes des Dofus étaient revérifiés à chaque exemplaire (deux fois avec « Recycler aussitôt »), ils le sont maintenant une fois à la fin de la série : environ 10 fois plus rapide",
+    "Rien ne change pour les récompenses : chaque exemplaire compte toujours pour les quêtes, les succès et l'XP de métier" ] },
   { v: "2.2.14.5", name: "La carte de Likie", items: [
     "Album de cartes : nouvelle carte Héros d'Idlus pour Likie, Énutrof debout sur sa montagne de kamas au Rituel de Kabahal, avec son coffre vivant",
     "Comme les autres héros : Likie l'a d'office, et elle peut sortir dans les boosters de saison (1 booster sur 50 contient un héros), aussi en version brillante" ] },

@@ -78,4 +78,20 @@ const span = (job) => (job === "bricoleur" ? [9, 11] : [2, 4]);
     crafts += Math.ceil(E.jobXpNeed(L) / best); }
   assert.ok(crafts >= 550 && crafts <= 750, `Tailleur 1 → 200 : ${crafts} fabrications`);
 }
+/* 2.2.14.6 « Fabrication en série sans gel » : une série vérifie les succès une seule fois, à la fin ; les succès et quêtes restent gagnés */
+{ const S8 = E.newState("Série", "iop"); for (const j in S8.crafts) S8.crafts[j].lvl = 200;
+  const t8 = Object.keys(ITEMS).find((k) => ITEMS[k].craft && ITEMS[k].lvl >= 20 && ITEMS[k].slot !== "dofus" && !ITEMS[k].leg);
+  ITEMS[t8].craft.ing.forEach(([r, q]) => (S8.res[r] = q * 50));
+  let n = 0; const c0 = E.checkAch; E.checkAch = (S) => { n++; return c0(S); };
+  let tests = 0; const fake = { id: "zz_serie", cat: "Test", name: "Test", desc: "", test: () => { tests++; return false; }, kamas: 0 }; E.ACH.push(fake);
+  const r8 = E.craftMany(S8, "tpl", t8, 40); E.checkAch = c0; E.ACH.splice(E.ACH.indexOf(fake), 1);
+  assert.strictEqual(r8.n, 40, "40 fabrications");
+  assert.strictEqual(n, 1, "succès vérifiés une fois à la fin de la série");
+  assert.ok(tests <= 2, `succès testés ${tests} fois pour 40 fabrications (avant : 40)`);
+  assert.ok(!E.achHold, "plus de série en cours");
+  E.craftItem(S8, t8); ITEMS[t8].craft.ing.forEach(([r, q]) => (S8.res[r] = q * 5)); E.ACH.push(fake); tests = 0; E.craftItem(S8, t8); E.ACH.splice(E.ACH.indexOf(fake), 1);
+  assert.strictEqual(tests, 1, "une fabrication seule vérifie toujours les succès");
+  const S9 = E.newState("Série2", "iop"); for (const j in S9.crafts) S9.crafts[j].lvl = 200; ITEMS[t8].craft.ing.forEach(([r, q]) => (S9.res[r] = q * 12));
+  const r9 = E.craftMany(S9, "tpl", t8, 12); assert.strictEqual(r9.n, 12); assert.strictEqual(S9.cnt.craft, 12, "chaque exemplaire compte");
+  assert.ok(S9.ach.craft10, "succès « Fabriquer 10 objets » gagné à la fin de la série"); }
 console.log("artisanat : OK");
