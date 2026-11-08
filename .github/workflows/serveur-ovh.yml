@@ -13,6 +13,9 @@
 #   relais-discord : installe ou met à jour le relais Discord du serveur (idées et fils des bugs toutes les 5 min, tools/serveur/relais).
 #   envois-discord : lecture seule : les derniers bugs et idées envoyés depuis le jeu et s'ils sont arrivés sur Discord (chiffres seulement).
 #   boucle-enquete : lecture seule : quelle session se renouvelle en boucle, à quel rythme, avec quel navigateur.
+#   consommation : lecture seule, processeur et mémoire de chaque service, requêtes les plus coûteuses (tools/serveur/consommation.sh).
+#   alleger-services : 2.2.14.3 (Mathis 08/11) : arrête Studio, pg-meta, Storage et imgproxy, inutilisés par le jeu (tools/serveur/alleger.sh).
+#   rallumer-services : les remet en route.
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
 #               200 renouvellements en 10 minutes). Accord écrit de Mathis (14/10/2026).
 #   guildes-zero-essai : 1.0.30, remise à zéro des guildes À BLANC (tools/serveur/guildes_reset.sql) : affiche les guildes
@@ -33,7 +36,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, consommation, alleger-services, rallumer-services]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -161,6 +164,12 @@ jobs:
           else
             printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/restaurer.sh /tmp/idlus-copie"
           fi
+      - name: Consommation de chaque service (lecture seule, 2.2.14.3)
+        if: inputs.etape == 'consommation'
+        run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/consommation.sh)"
+      - name: Services inutilisés (Studio, pg-meta, Storage, imgproxy) arrêtés ou remis en route (2.2.14.3, choix 2 de Mathis)
+        if: inputs.etape == 'alleger-services' || inputs.etape == 'rallumer-services'
+        run: bash tools/serveur/vps_sql.sh commande "ACTION=$([ '${{ inputs.etape }}' = rallumer-services ] && echo rallumer || echo arreter); $(cat tools/serveur/alleger.sh)"
       - name: Limites de calcul des fonctions (Boss des mondes, Kolizéum…)
         if: inputs.etape == 'fonctions-limites'
         run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/fonctions_limites.sh)"

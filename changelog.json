@@ -1,6 +1,15 @@
 {
-  "version": "2.2.14.2",
+  "version": "2.2.14.3",
   "versions": [
+    {
+      "v": "2.2.14.3",
+      "name": "Serveur allégé",
+      "items": [
+        "Ta partie est envoyée sur ton compte toutes les minutes au lieu de toutes les 30 secondes : le serveur travaille deux fois moins",
+        "Rien ne change pour toi : la partie est toujours sauvegardée sur ton appareil, et envoyée aussi quand tu quittes l'onglet ou le jeu",
+        "Monocompte : pendant la pause du Bouclier, la règle Ironman (ni vente, ni achat, ni échange) est de nouveau bien vérifiée, comme prévu"
+      ]
+    },
     {
       "v": "2.2.14.2",
       "name": "Défi de la mutation en solo",

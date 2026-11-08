@@ -571,6 +571,8 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       const t1 = await rk(false), t2 = await rk(true);
       if (!/Soigne/.test(t1)) fail("Maîtrise › Classement : le classement du serveur manque : " + t1.slice(0, 200));
       if (/Soigne/.test(t2) || !/Monocompte n'a pas encore de classement/.test(t2)) fail("Maîtrise › Classement : l'Éternel s'affiche dans une partie Monocompte (#185) : " + t2.slice(0, 200)); }
+    // 2.2.14.3 : un envoi de la partie (toutes les 60 s) peut retomber pendant le faux passage en Monocompte ci-dessus et laisser la page des classements de saison : on redessine la page avec la vraie partie
+    await page.evaluate(() => window.DX.render()); await page.waitForTimeout(300);
     await page.click('[data-act="lb-mmode"][data-v="acct"]'); await lbTab(page, "lvl");
     await page.waitForTimeout(500); { const t = await page.textContent("#lbList"); if (!/4[\s\u00a0\u202f]?650 niveaux · Maîtrise 115/.test(t)) fail("classement Niveau : la Maîtrise du compte n'est pas sur la ligne : " + t.slice(0, 300)); }
     await page.selectOption('[data-act="lb-cls"]', ""); await page.waitForTimeout(300);

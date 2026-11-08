@@ -10,6 +10,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.3 « Serveur allégé »
+- Mathis (08/11, « on peux faire en sorte que le cpu et la mémoire baisse ? », choix 1 et 2) : mesure du serveur (tools/serveur/consommation.sh) : les fonctions serveur prennent 72 % d'un cœur et 1,8 Go (≈ 2 600 appels « record » et 1 100 « mono » par heure, un par envoi de partie). js/ui.js : envoi automatique toutes les 60 s (PUSH_MS, 30 s avant), donc deux fois moins d'appels aux fonctions et d'écritures dans la base ; sauvegarde locale toujours toutes les 15 s, envoi aussi en quittant l'onglet ou le jeu.
+- supabase/functions/mono/index.ts : depuis la pause du Bouclier (07/11), accept, ops et reg étaient tombés dans un commentaire ; la règle Ironman ne voyait plus les ventes et échanges du serveur. Remis.
+- Serveur OVH, étapes `consommation` (lecture seule), `alleger-services` / `rallumer-services` (tools/serveur/alleger.sh) : Studio, pg-meta, Storage et imgproxy arrêtés le 08/11 (non exposés ou vides, ≈ 0,5 Go).
+- tests/online.test.js : la page des classements est redessinée après le faux passage en Monocompte (un envoi pouvait tomber pendant).
+
 ## 2.2.14.2 « Défi de la mutation en solo »
 - Choix de Mathis (08/11, suite du #186) : le défi de la mutation de la semaine (js/monoplus.js, E.emit « dungeon ») compte les donjons de stasis 7+ faits seul ou en groupe ; pas ceux de l'absence (offline). Même gain (20 Éclats, activité « mut », borne serveur de 20 par semaine inchangée). Test dans tests/monoplus.test.js (4).
 

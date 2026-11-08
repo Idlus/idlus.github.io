@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.2";
+const GAME_VERSION = "2.2.14.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.3", name: "Serveur allégé", items: [
+    "Ta partie est envoyée sur ton compte toutes les minutes au lieu de toutes les 30 secondes : le serveur travaille deux fois moins",
+    "Rien ne change pour toi : la partie est toujours sauvegardée sur ton appareil, et envoyée aussi quand tu quittes l'onglet ou le jeu",
+    "Monocompte : pendant la pause du Bouclier, la règle Ironman (ni vente, ni achat, ni échange) est de nouveau bien vérifiée, comme prévu",
+  ] },
   { v: "2.2.14.2", name: "Défi de la mutation en solo", items: [
     "Mutation de la semaine : le défi compte maintenant tes donjons de stasis 7 et plus faits seul, pas seulement ceux en groupe au Bureau (choix de Mathis, après le signalement de Nerisia)",
     "Toujours 5 donjons pour 20 Éclats du Temps, comptés dans le quota de la semaine ; les donjons faits pendant l'absence ne comptent pas",
@@ -11990,9 +11995,10 @@ function copyBeforeUpdate(st) { SV.beforeUpdate(st, restoredCopy); }
 /* ---------- 0.1.15 : compte et sauvegarde en ligne (js/online.js) ----------
    Au lancement : écran de connexion (une fois, « Jouer sans compte » reste possible), pseudo,
    puis on choisit quelle partie lancer (celle de l'appareil, celle du compte, ou on demande).
-   Pendant le jeu : envoi toutes les 30 s et quand on quitte l'onglet, pastille dans la barre du haut. */
+   Pendant le jeu : envoi toutes les 60 s (2.2.14.3, 30 s avant) et quand on quitte l'onglet, pastille dans la barre du haut. */
 const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
 let booted = false, sincePush = 0;
+const PUSH_MS = 60000; // 2.2.14.3 « Serveur allégé » (Mathis 08/11) : envoi automatique toutes les 60 s (30 s avant) : deux fois moins de travail pour le serveur ; la partie reste sauvegardée sur l'appareil toutes les 15 s, et envoyée aussi en quittant l'onglet ou le jeu
 /* 1.0.11 : + héros principal (nom, apparence) et kamas, pour la carte de la partie sur l'écran « Choisis ta partie » */
 const onMeta = (st) => { if (!st || !st.chars) return {}; const mh = st.chars.find((c) => c.id === st.mainHero) || st.chars[0];
   return Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length, hn: String(mh.name || "").slice(0, 20), hc: mh.cls, hs: mh.sex === "f" ? "f" : "m", hh: mh.head || 0, hl: mh.lvl || 1, km: Math.floor(st.kamas || 0) }, st.mono && !st.mono.eternel ? { gen: monoGenOf(st), sid: monoSidOf(st) } : {}); };
@@ -13331,7 +13337,7 @@ function loop() {
     else if (ui.tab === "world" && (ui.zoneView || (ui.world === "enc" && ["best", "fam", "boss", "tro"].includes(ui.enc && ui.enc.tab))) && sinceView > 2500 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; morphTo($("#main"), ui.zoneView ? zoneViewHtml(ui.zoneView) : worldHtml()); } // 1.2.10.5 : fiche de zone et Encyclopédie, compteurs de monstres tués à jour sans changer d'onglet (mise à jour ciblée)
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
-    if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
+    if (ON) { sincePush += dt; if (sincePush > PUSH_MS && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
     if (sinceRes > 2500) { sinceRes = 0; const now = E.now(); updNavLive();
