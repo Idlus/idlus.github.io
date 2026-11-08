@@ -79,14 +79,14 @@
     const DB = S1 ? [false, true].map((sh) => ({ sh, n: e.cardDbl(s, id, sh), r: e.cardDustable(s, id, sh), pd: e.cardDustOf(id, sh), key: e.cardKey(id, sh) })).filter((x) => x.n > 0) : [];
     if (own) rows.push(["Doubles", DB.length ? DB.map((x) => `${x.n}${x.sh ? " brillante" + (x.n > 1 ? "s" : "") : ""}${x.r < x.n ? ` (${x.n - x.r} sans Poussière)` : ""}`).join(" · ") : dbl && !S1 ? `${dbl}` : "aucun"]);
     else rows.push(["Fabriquer", c.apart ? "jamais : offerte par Xener avec un code cadeau" : c.rar === "h" ? "dans les boosters seulement" : `${p} Poussières d'étoile${S1 ? ` (tu en as ${e.cardDust(s)})` : ""}`]);
-    rows.push(["Brillante", M.b[id] ? "obtenue ✦" : "1 chance sur 100 par carte de booster"]);
+    rows.push(["Brillante", M.b[id] ? "obtenue ✦" : c.apart ? (c.artB ? "un seul exemplaire au monde, offert par Xener" : "aucune") : "1 chance sur 100 par carte de booster"]);
     X().openSheet(`<div class="ca-see">${card(c, { own, sh: !!M.b[id], big: 1 })}
       <div class="stack"><h2>${h(c.n)}</h2><span><span class="ca-tag" style="--rc:${RC[c.rar]}">${R}</span> <span class="xs muted">carte ${i + 1} / ${L.length}</span></span>
       <div class="ca-kv">${rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join("")}</div>
       ${S1 && !own && c.rar !== "h" ? `<button class="btn${ok ? " primary" : ""}" data-act="ca-craft" data-v="${id}"${ok ? "" : " disabled"}>Fabriquer · ${p} Poussières d'étoile</button>` : ""}
       ${DB.map((x) => `<div class="ca-dbl"><b class="small">${x.sh ? "Double brillant ✦" : "Double"}${x.n > 1 ? ` ×${x.n}` : ""}</b><span class="row">${x.r ? `<button class="btn sm" data-act="ca-red" data-v="${id}" data-sh="${x.sh ? 1 : ""}">Réduire 1 · +${x.pd} Poussières</button>` : ""}${MK && !lock ? `<button class="btn sm primary" data-act="ca-sell" data-v="${x.key}">Vendre à l'HdV</button><button class="btn sm" data-act="ca-trade">⇄ Proposer à un joueur</button>` : ""}</span></div>`).join("")}
       ${DB.length && MK && lock ? `<span class="xs muted">${h(lock)}</span>` : ""}
-      ${S1 && MK && !own ? `<button class="btn" data-act="ca-buy" data-v="${id}">Acheter à l'HdV</button>` : ""}
+      ${S1 && MK && !own && !c.apart ? `<button class="btn" data-act="ca-buy" data-v="${id}">Acheter à l'HdV</button>` : ""}
       ${dg ? `<button class="btn" data-act="dgopen" data-id="${id}">Voir le donjon</button>` : ""}
       ${c.art ? "" : `<span class="xs muted">Illustration de saison à venir : la carte montre le boss en attendant.</span>`}
       <div class="ca-nav"><button class="btn" data-act="ca-see" data-v="${L[(i - 1 + L.length) % L.length].id}">‹ Précédente</button><button class="btn" data-act="ca-see" data-v="${L[(i + 1) % L.length].id}">Suivante ›</button></div>

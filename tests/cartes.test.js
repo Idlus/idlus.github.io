@@ -67,7 +67,7 @@ console.log("ok - brillantes ≈ 1 sur 100, doubles en poussière, fabrication d
   assert.strictEqual(E.CARTE_CRAFT.h, 400); }
 console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de donjon, son héros d'office");
 
-// 2.2.14.2 (Mathis 08/11) : la carte de Xener est à part : jamais dans un booster, offerte par code cadeau, ni échangeable ni réductible
+// 2.2.14.4 (Mathis 08/11) : la carte de Xener est à part : jamais dans un booster, offerte par code cadeau, ni échangeable ni réductible
 { const X = E.carte("legende_xener"); assert(X && X.apart && X.rar === "h" && X.d === "Créateur d'Idlus");
   const T = s1(); E.boosterGive(T, 1); let seen = 0; for (let i = 0; i < 6000; i++) { T.s1c.cards.bst = 5; const o = E.boosterOpen(T); if (o.some((x) => x.id === X.id)) seen++; }
   assert.strictEqual(seen, 0, "jamais dans un booster");

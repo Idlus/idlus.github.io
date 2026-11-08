@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.4 « La carte de Xener »
+- Mathis (08/11) : cartes Héros d'Idlus à part (`apart: 1` dans E.CARTE_HEROS, js/cartes.js) : legende_xener (normale + brillante) et legende_xener_alt (sans brillante, `nob`). Jamais dans les boosters (pick saute les cartes à part) ; offertes par code cadeau avec le nouveau type E.GIFT_X.carte (« Carte d'album (à part) » dans le panel ; id `legende_xener`, `legende_xener/b`, `legende_xener_alt`). Rangées dans S.gcards, hors album de saison : ni échangeables, ni réductibles, ni à l'HdV. Brillante unique = code à 1 utilisation. Xener les a d'office.
+
 ## 2.2.14.3 « Serveur allégé »
 - Mathis (08/11, « on peux faire en sorte que le cpu et la mémoire baisse ? », choix 1 et 2) : mesure du serveur (tools/serveur/consommation.sh) : les fonctions serveur prennent 72 % d'un cœur et 1,8 Go (≈ 2 600 appels « record » et 1 100 « mono » par heure, un par envoi de partie). js/ui.js : envoi automatique toutes les 60 s (PUSH_MS, 30 s avant), donc deux fois moins d'appels aux fonctions et d'écritures dans la base ; sauvegarde locale toujours toutes les 15 s, envoi aussi en quittant l'onglet ou le jeu.
 - supabase/functions/mono/index.ts : depuis la pause du Bouclier (07/11), accept, ops et reg étaient tombés dans un commentaire ; la règle Ironman ne voyait plus les ventes et échanges du serveur. Remis.
