@@ -1,6 +1,14 @@
 {
-  "version": "2.2.13.2",
+  "version": "2.2.13.3",
   "versions": [
+    {
+      "v": "2.2.13.3",
+      "name": "Réveil du PC",
+      "items": [
+        "PC mis en veille avec le jeu ouvert : au réveil, l'absence est maintenant comptée (fenêtre « Pendant votre absence » et gains). Avant, elle passait à la trappe (merci Piwki)",
+        "Si Internet revient quelques secondes après le réveil, le jeu attend l'heure du serveur au lieu de perdre l'absence"
+      ]
+    },
     {
       "v": "2.2.13.2",
       "name": "Recycler les Rayonnants",

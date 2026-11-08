@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.13.3 « Réveil du PC »
+- #190 (Piwki, Monocompte, PC) : jeu laissé ouvert pendant la veille du PC. performance.now s'arrête pendant la veille : la boucle (js/ui.js loop) ne voyait qu'un petit écart et remettait l'heure de la partie à jour sans calcul d'absence. La boucle compare maintenant aussi l'heure de l'appareil (devJump > LIVE_MAX → resumeCheck). resumeCheck réessaie toutes les 16 s pendant 2 min (même point de départ) quand l'appareil a avancé mais que le serveur n'a pas encore répondu (HZ.okAt) : pas de temps offert sur la seule heure de l'appareil. Tests tests/veille_ui.test.js et tests/online.test.js (partie 12).
+
 ## 2.2.13.2 « Recycler les Rayonnants »
 - Recycleur : réglage `rare` (E.RECY_DEF, décoché par défaut) qui laisse passer les Rayonnants et les Parfaits (E.recyRare) dans E.recySafe ; exo, cadenas, forgemagés, transcendés, portés et tenues restent protégés. La confirmation indique combien de Rayonnants/Parfaits partent. Retour joueur de Nerisia (impossible de vider les vieux objets parfaits bas niveau). « Recycler aussitôt » à la fabrication garde la protection.
 

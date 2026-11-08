@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.13.2";
+const GAME_VERSION = "2.2.13.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.13.3", name: "Réveil du PC", items: [
+    "PC mis en veille avec le jeu ouvert : au réveil, l'absence est maintenant comptée (fenêtre « Pendant votre absence » et gains). Avant, elle passait à la trappe (merci Piwki)",
+    "Si Internet revient quelques secondes après le réveil, le jeu attend l'heure du serveur au lieu de perdre l'absence",
+  ] },
   { v: "2.2.13.2", name: "Recycler les Rayonnants", items: [
     "Recycleur : nouvelle case « Inclure les Rayonnants et les Parfaits », décochée par défaut. Fini de briser un par un les vieux objets bas niveau (merci Nerisia)",
     "Les objets portés, verrouillés, en tenue ou forgemagés restent toujours protégés",
@@ -12540,7 +12544,7 @@ async function onAct(a, t) {
    - Entre deux relevés, un saut de l'heure de l'appareil (plus d'une minute d'écart avec le chronomètre du navigateur) est
      ignoré : le jeu continue au chronomètre jusqu'au relevé suivant, lancé aussitôt.
    - Serveur injoignable : l'heure de l'appareil reste la référence (jeu hors ligne) ; le Bouclier du serveur vérifie au retour. */
-const HZ = { off: 0, d0: null, srv: 0, perf: 0, busy: null, essai: 0, vu: false };
+const HZ = { off: 0, d0: null, srv: 0, perf: 0, busy: null, essai: 0, vu: false, okAt: 0 }; // okAt : dernière réponse du serveur (2.2.13.3)
 function horlogeNow() {
   const p = performance.now(), d = Date.now() - p;
   if (HZ.d0 != null && Math.abs(d - HZ.d0) > 60000) { horlogeSync(); return Math.round(HZ.srv + (p - HZ.perf)); }
@@ -12562,7 +12566,7 @@ function horlogeSync(ms) {
   if (Date.now() - HZ.essai < 15000 && HZ.d0 != null && HZ.essai) { const p = performance.now(), d = Date.now() - p; if (Math.abs(d - HZ.d0) <= 60000) return Promise.resolve(); }
   HZ.essai = Date.now();
   HZ.busy = ON.horloge(ms || 4000).then((off) => {
-    if (off != null) horlogeRegle(off);
+    if (off != null) { HZ.okAt = Date.now(); horlogeRegle(off); }
     else if (HZ.d0 != null) { const p = performance.now(); HZ.srv = Math.round(HZ.srv + (p - HZ.perf)); HZ.perf = p; HZ.off = HZ.srv - Date.now(); if (Math.abs(HZ.off) <= 120000) HZ.off = 0; HZ.d0 = Date.now() - p; } // serveur muet : l'appareil fait foi
   }).catch(() => {}).finally(() => { HZ.busy = null; });
   return HZ.busy;
@@ -13261,13 +13265,15 @@ document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.ta
 let testSpeed = 1; // panel de test (béta uniquement) : accélération du temps
 const LIVE_MAX = 5 * 60000; // 2.2.12.4 : plus long écart entre deux passages de la boucle encore joué « en direct »
 let liveMs = 0; // vrai temps joué en direct par la boucle (resumeCheck s'en sert pour ne pas compter deux fois)
+let lastDev = Date.now(); // 2.2.13.3 : heure de l'appareil au passage précédent de la boucle
 let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
   if (tabLost) return; // une autre fenêtre a pris la partie (tabPause)
-  if (offRun) { last = performance.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
+  if (offRun) { last = performance.now(); lastDev = Date.now(); setTimeout(loop, 250); return; } // jeu en pause pendant le calcul de l'absence
   const now = performance.now(), raw = Math.max(0, now - last), dt = Math.min(raw, 5000); last = now;
+  const devNow = Date.now(), devJump = devNow - lastDev - raw; lastDev = devNow; // > 0 : l'appareil a avancé sans le chronomètre (veille)
   if (S) {
     if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
     if (ui.launchPending && !window.__IDLUS_NOLAUNCH && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
@@ -13280,7 +13286,10 @@ function loop() {
       // Au-delà (page gelée, appareil en veille), c'est une absence : calcul hors ligne habituel (taux et plafond d'absence).
       const live = raw <= LIVE_MAX ? raw : dt; let left = live;
       while (left > 0) { const p = Math.min(left, 5000); left -= p; const real = p * (BETA ? testSpeed : 1), m = E.sabSpend(S, p); E.sabNow = m; try { E.tick(S, real * m, real); } finally { E.sabNow = 1; } }
-      if (raw > LIVE_MAX) resumeCheck(); liveMs += live;
+      // 08/11/2026 (2.2.13.3, #190, retour de Piwki) : PC mis en veille avec le jeu ouvert. Le chronomètre du navigateur
+      // (performance.now) s'arrête pendant la veille : au réveil, la boucle croyait n'avoir attendu qu'un instant et l'absence
+      // passait à la trappe (heure de la partie remise à l'heure sans calcul). L'heure de l'appareil qui saute aussi lance le calcul.
+      if (raw > LIVE_MAX || devJump > LIVE_MAX) resumeCheck(); liveMs += live;
       if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
     S.lastTick = E.now(); S.devAt = Date.now(); // 2.2.10.2 : heure de l'appareil à côté (absGap)
     lootUpCheck();
@@ -13330,11 +13339,17 @@ document.addEventListener("visibilitychange", () => {
    2.2.12.4 : aussi lancé par la boucle après un long arrêt (page gelée, veille). Le temps que la boucle a joué en direct pendant
    l'attente (liveMs) est retiré de l'absence : rien n'est compté deux fois. */
 let resumeBusy = false;
-function resumeCheck() {
-  if (!S || offRun || resumeBusy) return;
+/* 2.2.13.3 (#190) : au réveil d'un PC, Internet revient souvent quelques secondes après. Si l'appareil dit qu'il s'est passé
+   du temps mais que le serveur n'a pas encore répondu, l'heure du jeu reste prudente (pas de temps offert sur la seule heure de
+   l'appareil) : on réessaie toutes les 16 s pendant 2 minutes, depuis le même point de départ, au lieu de perdre l'absence. */
+function resumeCheck(b) {
+  if (!S || offRun || (resumeBusy && !b)) return;
   resumeBusy = true;
-  const lt = S.lastTick, ld = S.devAt, s0 = S, l0 = liveMs;
-  horlogeSync(2500).then(() => { resumeBusy = false; if (S !== s0 || offRun) return; const t1 = S.lastTick, d1 = S.devAt, used = liveMs - l0;
+  const lt = b ? b.lt : S.lastTick, ld = b ? b.ld : S.devAt, s0 = b ? b.s0 : S, l0 = b ? b.l0 : liveMs, n = b ? b.n : 0, a0 = Date.now();
+  horlogeSync(2500).then(() => { if (S !== s0 || offRun) { resumeBusy = false; return; } const t1 = S.lastTick, d1 = S.devAt, used = liveMs - l0;
+    const devGap = ld > 0 ? Date.now() - ld - used : 0;
+    if (ON && ON.horloge && HZ.okAt < a0 && devGap > LIVE_MAX && (E.now() - lt - used) < devGap - 120000 && n < 8) { setTimeout(() => resumeCheck({ lt, ld, s0, l0, n: n + 1 }), 16000); return; } // serveur muet : on attend sa réponse
+    resumeBusy = false;
     S.lastTick = Math.min(t1, lt + used); if (ld > 0) S.devAt = Math.min(d1, ld + used); const gap = absGap(S);
     if (gap > 60) { last = performance.now(); offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); }); } else { S.lastTick = Math.max(S.lastTick, t1); S.devAt = d1; } }, () => { resumeBusy = false; });
 }

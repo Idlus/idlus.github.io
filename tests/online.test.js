@@ -1668,6 +1668,34 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // la partie a été en ligne : la dernière copie du registre du serveur reste affichée, le gain attend, la boutique attend le serveur
     if (loc[0] !== 553 || loc[1] !== 0 || !/Connexion au serveur/.test(loc[2])) fail("Monocompte : partie hors serveur après avoir été en ligne " + JSON.stringify(loc));
     await ctx4.close();
+    // 12. 2.2.13.3 (#190, Piwki) : PC mis en veille avec le jeu ouvert. Le chronomètre du navigateur s'arrête pendant la veille,
+    // seule l'heure de l'appareil avance (Date.now décalé ici). Au réveil, le serveur ne répond pas tout de suite (Internet revient
+    // après) : le jeu attend sa réponse puis compte l'absence, sans rien offrir tant que le serveur n'a pas confirmé l'heure.
+    { const ctx5 = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+      await ctx5.addInitScript(MOCK); await ctx5.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; });
+      await ctx5.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+      const p5 = await ctx5.newPage();
+      p5.on("console", (x) => { if (x.type() === "error") fail(`veille, console : ${x.text()}`); });
+      p5.on("pageerror", (e) => fail(`veille, exception : ${e.message}`));
+      await p5.goto(base); await p5.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+      await p5.click('[data-act="startgame"]'); await p5.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+      await p5.evaluate(() => { const { S, E } = window.DX; const sid = Object.keys(E.SUBS).find((k) => E.subUnlocked(S, k)); E.startHunt(S, sid); });
+      // heure du serveur : ON.horloge (l'adresse du faux serveur n'est pas en https) ; muet = pas de réponse, sinon même heure que l'appareil
+      await p5.evaluate(() => { window.__srvMute = false; window.ONLINE.horloge = async () => (window.__srvMute ? null : 0); });
+      await p5.waitForTimeout(1500);
+      const H3 = 3 * 3600e3;
+      const k0 = await p5.evaluate((H) => { window.__srvMute = true; const r = Date.now.bind(Date); Date.now = () => r() + H; return window.DX.S.kamas; }, H3); // réveil : l'appareil a avancé de 3 h, pas le chronomètre
+      await p5.waitForTimeout(4000);
+      const a = await p5.evaluate(() => ({ off: !!document.getElementById("offc") || /Pendant votre absence/.test(document.body.innerText), lag: window.DX.E.now() - window.DX.S.lastTick }));
+      if (a.off) fail("veille : absence comptée sur la seule heure de l'appareil, sans réponse du serveur");
+      await p5.evaluate(() => { window.__srvMute = false; }); // Internet revient : le serveur confirme les 3 h
+      await p5.waitForFunction(() => /Pendant votre absence/.test(document.body.innerText) && !document.getElementById("offc"), null, { timeout: 30000 }).catch(() => fail("veille : absence de 3 h non comptée au réveil du PC"));
+      await p5.waitForTimeout(1000);
+      const b = await p5.evaluate(() => ({ t: (document.querySelector("#sheet") || {}).innerText || "", k: window.DX.S.kamas, lag: window.DX.E.now() - window.DX.S.lastTick }));
+      if (!/Absent (2 h 5\d|3 h)/.test(b.t)) fail("veille : durée d'absence fausse : " + b.t.slice(0, 120));
+      if (!(b.k > k0)) fail("veille : pas de kamas pendant l'absence");
+      if (!(b.lag < 10000)) fail(`veille : heure de la partie pas reprise (${b.lag} ms)`);
+      await ctx5.close(); }
   } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus
   finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }
