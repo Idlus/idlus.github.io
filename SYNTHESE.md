@@ -43,6 +43,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 **Rythme (fait).** 451 versions publiées depuis le 12/10, dont environ 25 le 22/10 (de 2.1.36 à 2.1.39.1). Chaque publication part sur Discord et souvent en annonce dans le jeu.
 
+**Un seul Général pour les trois serveurs (fait, 08/11, 2.2.14, choix 1 de Mathis).** Le chat Général réunit Éternel, Saison 1 et Monocompte avec une étiquette de serveur ; Commerce et PvP restent par serveur (économies séparées). Aucun changement côté serveur. À mesurer : plus de messages par jour dans le Général qu'avant la fusion.
+
 **Absence au réveil du PC (fait, 08/11, 2.2.13.3, #190 Piwki).** Jeu laissé ouvert pendant la veille : le chronomètre du navigateur s'arrête, l'absence n'était pas comptée au réveil. La boucle regarde aussi l'heure de l'appareil et attend la réponse du serveur (2 min au plus) avant de compter. À vérifier : que Piwki retrouve sa fenêtre « Pendant votre absence ».
 
 **Bourse aux cartes (fait, 06/11, 2.2.12).** Les doubles des cartes de collection se vendent à l'HdV (catégorie Cartes de collection) ou s'échangent, en Classique S1 et en Monocompte, après 7 boosters ouverts ; le dernier exemplaire reste, la carte de son propre héros ne s'échange pas. Un double tiré reste une carte (« Réduire » / « Tout réduire » pour la Poussière) ; une carte achetée ou reçue compte partout mais ne donne jamais de Poussière. Le Bouclier compte désormais cartes, boosters et cartes fabriquées. Idée de Likie, choix 1A 2A 3B 4A 5A de Mathis. À surveiller : prix des légendaires et brillantes, volume de cartes vendues par compte.

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14 « Un seul Général »
+- Mathis (08/11, choix 1) : chat Général commun aux trois serveurs. js/chat.js : un seul onglet `g` qui lit les salons 'g' (Éternel), 's' (Saison 1) et 'm' (Monocompte), mélangés par id (genRows), avec une étiquette de serveur (.ch-sb) à côté du pseudo. L'envoi part dans le salon du serveur de la partie (genCh : p_ch 'm' ou 's', sinon 'g'), donc chat_send garde le bon héros sans changement côté serveur. Annonce admin envoyée aux trois salons dédoublonnée. Non lus et mentions des trois salons comptés dans le Général ; message épinglé : celui du Classique, sinon celui du Monocompte en partie Monocompte. Commerce et PvP restent par serveur ; « Proposer un échange » caché pour un joueur d'un autre serveur. Aucune modification SQL. Tests tests/chat_mono_ui.test.js (réécrit), chat_admin_ui, chat_lisible_ui.
+
 ## 2.2.13.3 « Réveil du PC »
 - #190 (Piwki, Monocompte, PC) : jeu laissé ouvert pendant la veille du PC. performance.now s'arrête pendant la veille : la boucle (js/ui.js loop) ne voyait qu'un petit écart et remettait l'heure de la partie à jour sans calcul d'absence. La boucle compare maintenant aussi l'heure de l'appareil (devJump > LIVE_MAX → resumeCheck). resumeCheck réessaie toutes les 16 s pendant 2 min (même point de départ) quand l'appareil a avancé mais que le serveur n'a pas encore répondu (HZ.okAt) : pas de temps offert sur la seule heure de l'appareil. Tests tests/veille_ui.test.js et tests/online.test.js (partie 12).
 

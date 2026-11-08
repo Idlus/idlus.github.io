@@ -111,7 +111,7 @@ function fake() {
     if (!l.includes("Bonjour le Classique")) fail(`${w} px : salon de l'Éternel par défaut : ` + l.slice(0, 200));
     // Saison 1
     await pick(page, "s");
-    if (!(await tabs(page)).startsWith("s,")) fail(`${w} px : Saison 1 : onglet du salon Saison 1 : ` + (await tabs(page)));
+    if (!(await tabs(page)).startsWith("g,")) fail(`${w} px : Saison 1 : Général commun (2.2.14) : ` + (await tabs(page)));
     l = await listTxt(page); if (!l.includes("Bonjour la Saison 1")) fail(`${w} px : Saison 1 lue : ` + l.slice(0, 200));
     let a = await sendTxt(page, "salut la S1"); if (a.p_ch !== "s") fail(`${w} px : envoi dans 's' : ` + JSON.stringify(a));
     await page.click('#chat .ch-tab[data-v="c"]'); l = await listTxt(page);
@@ -119,13 +119,13 @@ function fake() {
     a = await sendTxt(page, "achète S1"); if (a.p_ch !== "sc") fail(`${w} px : envoi dans 'sc' : ` + JSON.stringify(a));
     // Monocompte, sans accès testeur
     await pick(page, "m");
-    if (!(await tabs(page)).startsWith("m,c,v,p,h")) fail(`${w} px : Monocompte : ses onglets : ` + (await tabs(page)));
+    if (!(await tabs(page)).startsWith("g,c,v,p,h")) fail(`${w} px : Monocompte : ses onglets : ` + (await tabs(page)));
     l = await listTxt(page); if (!l.includes("Bonjour le Monocompte")) fail(`${w} px : salon Monocompte lu : ` + l.slice(0, 200));
     a = await sendTxt(page, "salut Mono"); if (a.p_ch !== "m") fail(`${w} px : envoi dans 'm' : ` + JSON.stringify(a));
     await page.click('#chat .ch-tab[data-v="v"]'); l = await listTxt(page);
     if (!l.includes("Koli Mono")) fail(`${w} px : PvP du Monocompte : ` + l.slice(0, 200));
     a = await sendTxt(page, "koli ?"); if (a.p_ch !== "mv") fail(`${w} px : envoi dans 'mv' : ` + JSON.stringify(a));
-    await page.click('#chat .ch-tab[data-v="m"]'); await page.waitForTimeout(1600);
+    await page.click('#chat .ch-tab[data-v="g"]'); await page.waitForTimeout(1600);
     if (!(await listTxt(page)).includes("Xener")) fail(`${w} px : le message de Mathis signé Xener`);
     await shot(page, `admin-m-${w}.png`); await noScroll(page, `${w} px Monocompte`);
     // autocollants : les 36

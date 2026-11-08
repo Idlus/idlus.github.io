@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.13.3";
+const GAME_VERSION = "2.2.14";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14", name: "Un seul Général", items: [
+    "Chat : un seul salon Général pour les trois serveurs (Éternel, Saison 1, Monocompte). Une petite étiquette à côté du pseudo indique où joue chacun",
+    "Chaque message garde le héros du serveur d'où il est écrit ; Commerce et PvP restent propres à ton serveur (les économies sont séparées)",
+    "Une annonce envoyée aux trois serveurs n'apparaît plus qu'une fois",
+  ] },
   { v: "2.2.13.3", name: "Réveil du PC", items: [
     "PC mis en veille avec le jeu ouvert : au réveil, l'absence est maintenant comptée (fenêtre « Pendant votre absence » et gains). Avant, elle passait à la trappe (merci Piwki)",
     "Si Internet revient quelques secondes après le réveil, le jeu attend l'heure du serveur au lieu de perdre l'absence",

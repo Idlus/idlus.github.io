@@ -99,7 +99,7 @@ function fake() {
       return [...document.querySelectorAll("#chat .ch-tabs .ch-tab")].map((b) => { const s = b.querySelector("span:not(.n)"), r = b.getBoundingClientRect(), sr = s.getBoundingClientRect();
         return { n: s.textContent, cut: s.scrollWidth > s.clientWidth + 1 || sr.right > r.right + 1 || sr.left < r.left - 1, out: r.left < ch.left - 1 || r.right > ch.right + 1 }; }); });
     const names = t.map((x) => x.n);
-    for (const k of ["Éternel", "Commerce", "PvP", "Guilde", "Alliance", "Privé", "Hauts faits"]) if (!names.includes(k)) fail(`${w} px : onglet « ${k} » absent : ${names.join(", ")}`);
+    for (const k of ["Général", "Commerce", "PvP", "Guilde", "Alliance", "Privé", "Hauts faits"]) if (!names.includes(k)) fail(`${w} px : onglet « ${k} » absent : ${names.join(", ")}`);
     for (const x of t) if (x.cut || x.out) fail(`${w} px : onglet « ${x.n} » coupé ou hors du chat`);
     await shot(page, `chat-onglets-${w}.png`);
     // cloche ouverte avec le chat ouvert : le panneau Notifications est au-dessus
