@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.10 « Fabrication en série sans gel (suite) »
+- Mathis (08/11, vidéo + sauvegarde de Segfault) : ×1000 figeait encore ~6 s. Cause : craftXp appelait E.mtOwn (donc E.mtFx, dont la clé de cache coûte cher) pour chaque héros à chaque exemplaire. craftArt mémorise le bonus Artisan pendant E.achHold. Mesure sur la partie de Segfault (19 héros) : tâche de 13,3 s → 0,18 s.
+
 ## 2.2.14.9 « Vendre plusieurs en Monocompte »
 Héros › Inventaire › Ressources : le bouton « Vendre plusieurs » arrive en Monocompte. Sans vente directe, la sélection part au marchand (30 % de la valeur), permis sous le Serment de fer.
 

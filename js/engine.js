@@ -3899,12 +3899,16 @@
         out.n++; if (r && r.uid) out.items.push(r);
         if (E.craftTwin) { out.items.push(E.craftTwin); out.twins = (out.twins || 0) + 1; E.craftTwin = null; }
       }
-    } finally { E.recyGot = null; if (hold) { E.achHold--; if (out.n) { if (E.refreshArchis) E.refreshArchis(S); if (E.checkAch) E.checkAch(S); } } }
+    } finally { E.recyGot = null; if (hold) { E.achHold--; artMemo = null; if (out.n) { if (E.refreshArchis) E.refreshArchis(S); if (E.checkAch) E.checkAch(S); } } }
     out.over = Math.max(0, overLen(S) - o0); out.recy = ((S.cnt && S.cnt.recy) || 0) - c0;
     return out.n ? out : (out.err || "Fabrication impossible.");
   };
+  /* 2.2.14.10 : bonus Artisan de la Maîtrise (le meilleur héros), calculé une fois par série : E.mtOwn recalcule la Maîtrise de chaque héros,
+     et ×1000 avec 19 héros Maîtrise figeait le jeu 6 à 13 s (partie de Segfault) */
+  let artMemo = null;
+  const craftArt = (S) => { if (artMemo && artMemo.S === S) return artMemo.v; const v = E.mtOwn ? Math.max(1, ...S.chars.map((c) => E.mtOwn(S, c, "xpj"))) : 1; if (E.achHold) artMemo = { S, v }; return v; };
   const craftXp = (S, job, x) => {
-    const J = S.crafts[job]; J.xp += x * (E.mtOwn ? Math.max(1, ...S.chars.map((c) => E.mtOwn(S, c, "xpj"))) : 1); // 2.1 : Artisan (le meilleur héros du compte)
+    const J = S.crafts[job]; J.xp += x * craftArt(S); // 2.1 : Artisan (le meilleur héros du compte)
     const cap = E.jobCap(S, "c", job);
     while (J.lvl < cap && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
     if (J.lvl >= cap && cap < 200) J.xp = Math.min(J.xp, E.jobXpNeed(J.lvl) - 1);

@@ -94,4 +94,14 @@ const span = (job) => (job === "bricoleur" ? [9, 11] : [2, 4]);
   const S9 = E.newState("Série2", "iop"); for (const j in S9.crafts) S9.crafts[j].lvl = 200; ITEMS[t8].craft.ing.forEach(([r, q]) => (S9.res[r] = q * 12));
   const r9 = E.craftMany(S9, "tpl", t8, 12); assert.strictEqual(r9.n, 12); assert.strictEqual(S9.cnt.craft, 12, "chaque exemplaire compte");
   assert.ok(S9.ach.craft10, "succès « Fabriquer 10 objets » gagné à la fin de la série"); }
+/* 2.2.14.10 : le bonus Artisan de la Maîtrise est calculé une fois par série (avant : 19 héros × 1000 fabrications figeaient le jeu) */
+{ const SA = E.newState("Artisan", "iop"); for (const j in SA.crafts) SA.crafts[j].lvl = 200;
+  const tA = Object.keys(ITEMS).find((k) => ITEMS[k].craft && ITEMS[k].lvl >= 20 && ITEMS[k].slot !== "dofus" && !ITEMS[k].leg);
+  ITEMS[tA].craft.ing.forEach(([r, q]) => (SA.res[r] = q * 30));
+  const m0 = E.mtOwn; let calls = 0; E.mtOwn = (S, c, k) => { calls++; return k === "xpj" ? 1.5 : 1; };
+  const xp0 = SA.crafts[ITEMS[tA].craft.job].xp; E.craftMany(SA, "tpl", tA, 20); const per = calls;
+  E.craftItem(SA, tA); E.mtOwn = m0;
+  assert.ok(per <= SA.chars.length, `bonus Artisan calculé ${per} fois pour 20 fabrications`);
+  assert.strictEqual(calls - per, SA.chars.length, "une fabrication seule le calcule toujours");
+  assert.ok(SA.crafts[ITEMS[tA].craft.job].xp > xp0 || SA.crafts[ITEMS[tA].craft.job].lvl >= 200, "XP de métier gagnée"); }
 console.log("artisanat : OK");
