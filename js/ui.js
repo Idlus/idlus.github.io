@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.6";
+const GAME_VERSION = "2.2.14.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.7", name: "Forgemagie fluide", items: [
+    "Forgemagie : enchaîner les runes ne fait plus ramer le jeu. Chaque rune ne redessine plus toute la page, seulement l'établi, la ligne de l'objet et la barre des métiers (environ 3 à 4 fois plus rapide)",
+    "Les boutons des runes restent en place entre deux clics : un clic rapide n'est plus perdu" ] },
   { v: "2.2.14.6", name: "Fabrication en série sans gel", items: [
     "Métiers : fabriquer ×1000 ne fige plus le jeu. Les succès et les quêtes des Dofus étaient revérifiés à chaque exemplaire (deux fois avec « Recycler aussitôt »), ils le sont maintenant une fois à la fin de la série : environ 10 fois plus rapide",
     "Rien ne change pour les récompenses : chaque exemplaire compte toujours pour les quêtes, les succès et l'XP de métier" ] },
@@ -8972,18 +8975,21 @@ function fmList() {
   items.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || (F.sort === "jet" ? E.itemQuality(b) - E.itemQuality(a) : F.sort === "fm" ? (b.fm || 0) - (a.fm || 0) : 0) || (E.equippedBy(S, b.uid) ? 1 : 0) - (E.equippedBy(S, a.uid) ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
   return items;
 }
+let fmRowsLast = null; // lignes de la liste des objets au dernier dessin (fmPatch ne remplace que celles qui changent)
+const fmRowArr = (fmG) => fmG.slice(0, 120).map((gr) => { const x = gr.items.find((y) => y.uid === ui.fmSel) || gr.rep; const by = E.equippedBy(S, x.uid); const T = ITEMS[x.tpl]; return `<div class="prec ${x.uid === ui.fmSel ? "on" : ""}" data-act="fmsel" data-uid="${x.uid}"><button class="btn sm ghost" data-act="fmfav" data-uid="${x.uid}" title="Favori">${x.fav ? "★" : "☆"}</button>${itemIcon(x)}<span class="grow"><b>${itemName(x)}</b>${grpN(gr.items.length)}<br><span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${x.fm ? ` · ${IC("forge")} ${x.fm}` : ""}${x.well ? ` · reliquat ${runeW(x.well)}` : ""}</span></span>${by ? head(by) : ""}${E.fmPlanOf(S, x.uid) ? `<span class="tag good">plan</span>` : ""}</div>`; });
+const fmRows = (fmG) => { const R = fmRowArr(fmG); fmRowsLast = R; return `${R.join("") || `<div class="empty">Aucun objet ne correspond.</div>`}${fmG.length > 120 ? `<div class="empty">… ${fmG.length - 120} autres : affine les filtres.</div>` : ""}`; };
 function fmHtml() {
   const F = fltOf("fm"); const items = fmList(); const fmG = grpItems(items, false, (x) => E.equippedBy(S, x.uid) || E.fmPlanOf(S, x.uid)); // 1.0.8.8 : exemplaires identiques regroupés
   if (!ui.fmSel || !S.items[ui.fmSel]) ui.fmSel = items[0] ? items[0].uid : null; const it = ui.fmSel ? S.items[ui.fmSel] : null;
   const present = Object.values(S.items).map((x) => ITEMS[x.tpl]).filter((T) => T && !T.trophy && T.slot !== "dofus");
   const sets = [...new Set(present.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
   const stats = STAT_ORDER.filter((k) => present.some((T) => T.stats[k] && T.stats[k][1] > 0));
-  const bench = `<section class="panel"><div class="phead"><h2>Établi</h2><span class="xs muted">seules les runes sont consommées</span></div><div class="pad stack" style="gap:10px">${it ? fmBench(it) : `<div class="empty">Choisis un objet à forgemager.</div>`}</div></section>`;
+  const bench = `<section class="panel"><div class="phead"><h2>Établi</h2><span class="xs muted">seules les runes sont consommées</span></div><div class="pad stack" id="fmbench" style="gap:10px">${it ? fmBench(it) : `<div class="empty">Choisis un objet à forgemager.</div>`}</div></section>`;
   if (narrow() && ui.fmBench && it) return `<button class="btn sm" data-act="fmback" style="align-self:flex-start">← Objets</button>${bench}`;
   const list = `<section class="panel"><div class="pad stack" style="gap:8px;padding-bottom:4px"><div class="seg sm">${[["worn", "Portés"], ["bag", "Sac"], ["all", "Tous"]].map(([v, n]) => `<button data-act="fltset" data-ctx="fm" data-k="view" data-v="${v}" aria-pressed="${F.view === v}">${n}</button>`).join("")}</div>
       ${filterBar("fm", F, { ph: "Rechercher un objet…", slots: ALL_SLOTS, stats, sets, cid: "Tous les héros", sort: [["lvl", "Tri : niveau"], ["jet", "Tri : jet"], ["fm", "Tri : forgemagies"]] })}
       <div class="row small"><button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="fm" data-k="fav">★ Favoris</button><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div></div>
-    <div class="plist">${fmG.slice(0, 120).map((gr) => { const x = gr.items.find((y) => y.uid === ui.fmSel) || gr.rep; const by = E.equippedBy(S, x.uid); const T = ITEMS[x.tpl]; return `<div class="prec ${x.uid === ui.fmSel ? "on" : ""}" data-act="fmsel" data-uid="${x.uid}"><button class="btn sm ghost" data-act="fmfav" data-uid="${x.uid}" title="Favori">${x.fav ? "★" : "☆"}</button>${itemIcon(x)}<span class="grow"><b>${itemName(x)}</b>${grpN(gr.items.length)}<br><span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${x.fm ? ` · ${IC("forge")} ${x.fm}` : ""}${x.well ? ` · reliquat ${runeW(x.well)}` : ""}</span></span>${by ? head(by) : ""}${E.fmPlanOf(S, x.uid) ? `<span class="tag good">plan</span>` : ""}</div>`; }).join("") || `<div class="empty">Aucun objet ne correspond.</div>`}${fmG.length > 120 ? `<div class="empty">… ${fmG.length - 120} autres : affine les filtres.</div>` : ""}</div></section>`;
+    <div class="plist">${fmRows(fmG)}</div></section>`;
   return `${dayBar("fm")}<div class="psplit fm">${list}${narrow() ? "" : bench}</div>`;
 }
 /* ---------- Brisage ---------- */
@@ -9130,12 +9136,27 @@ function fmHelpSheet() {
     <p>La forgemagie ne coûte plus de kamas : seules les runes sont consommées.</p></div>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-function renderForge() {
+function renderForge() { keepList("fg:" + ui.fg + ":" + (fltOf("fm").view || ""), () => $("#main").innerHTML = forgeHtml()); }
+/* 2.2.14.7 « Forgemagie fluide » (Mathis 08/11 : « le serveur lag trop pour spam les runes ») : aucune rune ne passe par le serveur,
+   c'était le redessin complet de la page (liste de 120 objets, filtres, établi) à chaque clic, puis le recalcul de toute la mise en page.
+   Une rune (ou un exo) ne redessine plus que ce qui change : l'établi, les lignes de la liste qui changent, la barre des métiers. Les boutons
+   restent les mêmes éléments, donc un clic rapide n'est plus perdu quand la page se redessine entre l'appui et le relâchement. */
+function fmPatch() {
+  if (!S || ui.tab !== "forge" || ui.fg !== "fm" || $("#sheet").innerHTML || !$("#main .psplit.fm, #main [data-act=fmback]")) return false;
+  const it = ui.fmSel && S.items[ui.fmSel], pad = $("#fmbench"), jb = $("#main .pfmjobs"); if (!it || !pad || !jb) return false;
+  morphTo(pad, fmBench(it));
+  const t = document.createElement("template"); t.innerHTML = fmJobsBar(); const nj = t.content.querySelector(".pfmjobs"); if (nj) morphEl(jb, nj);
+  const L = $("#main .psplit.fm .plist"); if (L) { const fmG = grpItems(fmList(), false, (x) => E.equippedBy(S, x.uid) || E.fmPlanOf(S, x.uid)), prev = fmRowsLast, R = fmRowArr(fmG);
+    if (prev && R.length && prev.length === R.length && L.children.length === R.length + (fmG.length > 120 ? 1 : 0)) { R.forEach((r, i) => { if (r !== prev[i]) { const t2 = document.createElement("template"); t2.innerHTML = r; morphEl(L.children[i], t2.content.firstElementChild); } }); fmRowsLast = R; }
+    else morphTo(L, fmRows(fmG)); }
+  return true;
+}
+function forgeHtml() {
   const nPlans = E.fmPlanActive(S).length;
   const tabs = [["fm", "Établi"], ["brisage", "Brisage"], ["runes", "Runes"], ["plans", `Plans${nPlans ? " · " + nPlans : ""}`]];
-  keepList("fg:" + ui.fg + ":" + (fltOf("fm").view || ""), () => $("#main").innerHTML = `<div class="pagehead prow"><h1>Forgemagie</h1><button class="btn sm ghost" data-act="fmhelp">? Comment ça marche</button></div>${fmJobsBar()}
+  return `<div class="pagehead prow"><h1>Forgemagie</h1><button class="btn sm ghost" data-act="fmhelp">? Comment ça marche</button></div>${fmJobsBar()}
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="fgtab" data-v="${id}" aria-pressed="${ui.fg === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : ui.fg === "plans" ? fmPlansHtml() : fmHtml()}</section>`);
+    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : ui.fg === "plans" ? fmPlansHtml() : fmHtml()}</section>`;
 }
 /* ---------- QUÊTES ---------- */
 function mainQuestHtml() {
@@ -11430,8 +11451,8 @@ document.addEventListener("click", (ev) => {
     case "wpprep": ui.wpPrep = !ui.wpPrep; break;
     case "wbrew": { const err = E.brewPotion(S, d.id); if (err) { toast(err); return; } toast(`${CONSUMABLES[d.id].name} préparée.`, "rare"); break; }
     case "wpotgo": ui.tab = "forge"; ui.fg = "fm"; closeSheet(); window.scrollTo(0, 0); break;
-    case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
-    case "exo": { const r = E.exoForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
+    case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); if (!r.perfect && fmPatch()) { dirty = true; return; } break; }
+    case "exo": { const r = E.exoForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); if (!r.perfect && fmPatch()) { dirty = true; return; } break; }
     case "fmplan": fmPlanSheet(+d.uid); return;
     case "fmplango": { const goals = {}; document.querySelectorAll(".fmg:checked").forEach((x) => { const i = $("#fmgv_" + x.dataset.k); goals[x.dataset.k] = i ? +i.value : 0; });
       const rr = document.querySelector('input[name="fmr"]:checked'); const err = E.startFmPlan(S, +d.uid, { goals, runes: rr ? rr.value : "all", floor: ($("#fmfloor") || {}).value });

@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.6",
+  "version": "2.2.14.7",
   "versions": [
+    {
+      "v": "2.2.14.7",
+      "name": "Forgemagie fluide",
+      "items": [
+        "Forgemagie : enchaîner les runes ne fait plus ramer le jeu. Chaque rune ne redessine plus toute la page, seulement l'établi, la ligne de l'objet et la barre des métiers (environ 3 à 4 fois plus rapide)",
+        "Les boutons des runes restent en place entre deux clics : un clic rapide n'est plus perdu"
+      ]
+    },
     {
       "v": "2.2.14.6",
       "name": "Fabrication en série sans gel",

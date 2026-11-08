@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.7 « Forgemagie fluide »
+- Mathis (08/11, « le serveur lag trop pour spam les runes ») : aucune rune ne passe par le serveur, le lag venait du redessin complet de la page Forgemagie (liste de 120 objets, filtres) à chaque rune. `fmPatch()` (js/ui.js) ne met à jour que l'établi (#fmbench, morphTo), les lignes de la liste qui changent (fmRowArr/fmRowsLast) et la barre des métiers ; redessin complet si l'objet devient Parfait. Mesure (400-900 objets) : 50-90 ms → 15-25 ms par rune. Test tests/forgemagie_fluide_ui.test.js.
+
 ## 2.2.14.6 « Fabrication en série sans gel »
 - Mathis (08/11) : craft ×1000 figeait ~4 s. E.craftMany pose E.achHold : systems.js saute checkAch et archis.js saute advance pour « craft »/« brk » pendant la série, puis E.refreshArchis + E.checkAch une fois à la fin. Mesure (sac 3 000 objets, ×1000) : 817 → 117 ms, avec « Recycler aussitôt » 1 349 → 129 ms.
 
