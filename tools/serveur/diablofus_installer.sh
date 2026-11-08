@@ -6,7 +6,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l NEEDRESTART_SUSPEND=1   # apt ne redémarre aucun service (Docker !)
 s() { echo; echo "== $*"; }
 # Fichiers pris au commit relu (pas « main » : le cache de raw.githubusercontent.com peut servir une vieille version)
-B=https://raw.githubusercontent.com/Mathiss29/dofus-diablo/deff92a9f3711e967ec6c9b4ff92645483bb4985/serveur/installation
+B=https://raw.githubusercontent.com/Mathiss29/dofus-diablo/5ef2f1fe8bc769e98d7922eea79232b3a05a3914/serveur/installation
 for c in git rsync curl sha256sum; do command -v $c >/dev/null || { echo "$c absent" >&2; exit 1; }; done
 avant=$(docker ps -q | wc -l)
 
@@ -36,7 +36,7 @@ sha256sum -c - <<'SUM'
 444195b150a0b2733c4693693af15fc0a4218b3f6f6a7986b95ad1488edf6aac  sudoers-diablofus
 ff8712ddf4fed258fc004a0ca198d589ba0f4d12875de7866adf551742b90ef2  diablofus-maj.service
 bfa0ac0506f494441317a4932ade7a20a36bf25ba35859aa5fc5ab2ef1ed6c6c  diablofus-maj.timer
-fcc732b11c3d0953e86021ddb8c0e1d58e80827a660ab07c72595fda975b5a1c  maj.sh
+1ad6cfb9b9b7822d140bd5380e0cf585540cf551a41cfb36cb194b8caabfd572  maj.sh
 SUM
 cmp -s diablofus.service /etc/systemd/system/diablofus.service && change= || change=1   # 08/11 : 2 Go (PR #228), EnvironmentFile discord.env (PR #229)
 install -m 644 diablofus.service diablofus-maj.service diablofus-maj.timer /etc/systemd/system/
