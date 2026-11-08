@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.4",
+  "version": "2.2.14.5",
   "versions": [
+    {
+      "v": "2.2.14.5",
+      "name": "La carte de Likie",
+      "items": [
+        "Album de cartes : nouvelle carte Héros d'Idlus pour Likie, Énutrof debout sur sa montagne de kamas au Rituel de Kabahal, avec son coffre vivant",
+        "Comme les autres héros : Likie l'a d'office, et elle peut sortir dans les boosters de saison (1 booster sur 50 contient un héros), aussi en version brillante"
+      ]
+    },
     {
       "v": "2.2.14.4",
       "name": "La carte de Xener",

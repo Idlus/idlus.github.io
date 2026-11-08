@@ -50,6 +50,7 @@
     { id: "legende_gagou", n: "Gagou", d: "Sacrigag, 1er à réunir tous les Dofus", cls: "sacri", el: "f", qui: "Gagou", leg: 6 },
     { id: "legende_zoukani", n: "Zoukani", d: "Kosea, Sacrieuse fidèle de Missiz Frizz", cls: "sacri", el: "e", qui: "Zoukani" },
     { id: "legende_sac", n: "Sac", d: "1er niveau 200 du Monocompte en Serment de fer", cls: "iop", qui: "Sac" }, // Mathis 05/11
+    { id: "legende_likie", n: "Likie", d: "Énutrof reine des kamas, et son coffre vivant", cls: "enu", qui: "Likie" }, // Mathis 08/11
     // Mathis 08/11 : carte à part, jamais dans les boosters ; Mathis l'offre lui-même par code cadeau (E.GIFT_X.carte)
     { id: "legende_xener", n: "Xener", d: "Créateur d'Idlus", cls: "elio", qui: "Xener", apart: 1 },
     { id: "legende_xener_alt", n: "Xener", d: "Créateur d'Idlus, carte alternative", cls: "elio", qui: "Xener", apart: 1, nob: 1 }, // pas de brillante
