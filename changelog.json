@@ -1,6 +1,15 @@
 {
-  "version": "2.2.14.7",
+  "version": "2.2.14.8",
   "versions": [
+    {
+      "v": "2.2.14.8",
+      "name": "Butin utile",
+      "items": [
+        "Les monstres ne lâchent plus les 630 ressources qui ne servaient à aucune recette (elles remplissaient le filtre « Inutilisées »)",
+        "Les commandes du jour, l'Almanax et les quêtes demandent donc des ressources qui servent aussi aux crafts",
+        "Celles déjà dans ton sac restent et se vendent au même prix"
+      ]
+    },
     {
       "v": "2.2.14.7",
       "name": "Forgemagie fluide",

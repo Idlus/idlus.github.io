@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.8 « Butin utile »
+- Les 630 ressources de monstres qui ne servaient à aucune recette ne tombent plus (liste : `node tools/build_sans_recette.js`, dans js/data.js). Les stocks restent et gardent leur prix ; commandes du jour, Almanax et quêtes se rabattent sur des ressources utiles.
+
 ## 2.2.14.7 « Forgemagie fluide »
 - Mathis (08/11, « le serveur lag trop pour spam les runes ») : aucune rune ne passe par le serveur, le lag venait du redessin complet de la page Forgemagie (liste de 120 objets, filtres) à chaque rune. `fmPatch()` (js/ui.js) ne met à jour que l'établi (#fmbench, morphTo), les lignes de la liste qui changent (fmRowArr/fmRowsLast) et la barre des métiers ; redessin complet si l'objet devient Parfait. Mesure (400-900 objets) : 50-90 ms → 15-25 ms par rune. Test tests/forgemagie_fluide_ui.test.js.
 

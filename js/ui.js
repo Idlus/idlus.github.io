@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.7";
+const GAME_VERSION = "2.2.14.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.8", name: "Butin utile", items: [
+    "Les monstres ne lâchent plus les 630 ressources qui ne servaient à aucune recette (elles remplissaient le filtre « Inutilisées »)",
+    "Les commandes du jour, l'Almanax et les quêtes demandent donc des ressources qui servent aussi aux crafts",
+    "Celles déjà dans ton sac restent et se vendent au même prix" ] },
   { v: "2.2.14.7", name: "Forgemagie fluide", items: [
     "Forgemagie : enchaîner les runes ne fait plus ramer le jeu. Chaque rune ne redessine plus toute la page, seulement l'établi, la ligne de l'objet et la barre des métiers (environ 3 à 4 fois plus rapide)",
     "Les boutons des runes restent en place entre deux clics : un clic rapide n'est plus perdu" ] },
@@ -3124,6 +3128,7 @@ const dgLockTxt = (did) => (E.dungeonUnlocked(S, did) ? "" : dgNeedTxt(did) || `
 function dgGoBtn(did, cls = "sm") { const lk = dgLockTxt(did); return `<button class="btn ${cls}" data-act="dgopen" data-id="${did}" data-tip="${h(`Donjon · ${DUNGEONS[did].name}${lk ? ` · ${lk} pour y accéder` : ""}`)}">${lk ? G("lock") : IC("carte")} Y aller</button>`; }
 function bestSource(r) {
   if (E.RES_SOURCE && E.RES_SOURCE[r]) return E.RES_SOURCE[r];
+  if (D.SANS_RECETTE && D.SANS_RECETTE.has(r) && !(resIndex().src[r] || []).length) return "ne tombe plus (aucune recette) : à vendre"; // 2.2.14.8
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job); if (g) return `${GATHER_JOBS[g.job].name} niv. ${g.lvl}`;
   const m = L.find((x) => x.m); if (!m) return r === E.RARE_COMPONENT ? "trouvailles de récolte, boss et coffres" : "source inconnue";
   const s = subOfMon(m.m); return `${MONSTERS[m.m].name}${s ? " (" + (typeof s === "string" ? DUNGEONS[s].name : s.name) + ")" : ""} · ${E.resRate(m.p).toFixed(1).replace(".", ",")} %`;
@@ -8229,7 +8234,7 @@ function resDetail(n) {
       ${VDB(n) ? window.VENTEUI.box(n) : ""}
       ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">${window.VENTEUI ? window.VENTEUI.capTxt(n) : `le surplus part au marchand de secours (${Math.round(E.MERCHANT * 100)} % de la valeur, ${fmt(E.merchantPrice(n, 100) / 100)} k l'unité)`}</span></label>` : ""}
       ${A.res === n && !A.done ? `<div class="tag good">${IC("almanax")} Offrande de l'Almanax du jour (${A.qty})</div>` : ""}
-      <h3 class="sec">D'où elle vient</h3><div class="list">${srcHtml || `<div class="empty">${n === E.RARE_COMPONENT ? "Trouvailles de récolte, coffres et boss." : "Source inconnue."}</div>`}</div>
+      <h3 class="sec">D'où elle vient</h3><div class="list">${srcHtml || `<div class="empty">${n === E.RARE_COMPONENT ? "Trouvailles de récolte, coffres et boss." : D.SANS_RECETTE && D.SANS_RECETTE.has(n) ? "Ne tombe plus sur les monstres depuis la 2.2.14.8 : elle ne sert à aucune recette. Tu peux vendre ton stock." : "Source inconnue."}</div>`}</div>
       <h3 class="sec">À quoi elle sert</h3><div class="list">${useHtml || `<div class="empty">N'entre dans aucune recette du jeu : tu peux la vendre à l'hôtel de vente.</div>`}${use.length > 10 ? `<div class="empty">… et ${use.length - 10} autres recettes.</div>` : ""}</div>
     </div></div>`;
 }
