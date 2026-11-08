@@ -15,7 +15,7 @@ const s1 = () => { const S = E.newState("Héros", "iop"); E.s1cStart(S, t0); ret
 
 // les cartes
 assert.strictEqual(E.CARTES.filter((c) => c.rar !== "h").length, Object.keys(D.DUNGEONS).length, "une carte par donjon");
-E.CARTE_HEROS.forEach((x) => { assert(fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}.webp`)) && fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}-b.webp`)), "images du héros " + x.id); });
+E.CARTE_HEROS.forEach((x) => { assert(fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}.webp`)) && (x.nob || fs.existsSync(path.join(__dirname, "..", `assets/s1/ca/${x.id}-b.webp`))), "images du héros " + x.id); });
 const n = { c: 0, r: 0, e: 0, l: 0 }; E.CARTES.forEach((c) => n[c.rar]++);
 assert(n.c > n.r && n.r > n.e && n.e > n.l && n.l >= 10, "pyramide des raretés " + JSON.stringify(n));
 E.CARTES.forEach((c) => { assert(c.img || c.art, "image de " + c.id); if (c.art) assert(fs.existsSync(path.join(__dirname, "..", c.art)), c.art);
@@ -76,7 +76,9 @@ console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de 
   const S = s1(); assert(!E.cardHas(S, X.id)); G.give(S, "legende_xener"); assert(E.cardHas(S, X.id) && !E.cardShiny(S, X.id));
   G.give(S, "legende_xener/b"); assert(E.cardShiny(S, X.id)); assert.strictEqual(E.cardDbl(S, X.id, false), 0, "pas échangeable");
   const S2 = E.deserialize(E.serialize(S)); assert(E.cardHas(S2, X.id), "gardée dans la sauvegarde");
-  assert(/Xener/.test(G.txt("legende_xener/b"))); }
+  assert(/Xener/.test(G.txt("legende_xener/b")));
+  assert(G.ok("legende_xener_alt") && !G.ok("legende_xener_alt/b"), "l'alternative n'a pas de brillante");
+  G.give(S, "legende_xener_alt"); assert(E.cardHas(S, "legende_xener_alt") && /alternative/.test(G.txt("legende_xener_alt"))); }
 console.log("ok - carte de Xener : à part, offerte par code cadeau seulement");
 
 // 2.2.6 (refonte de l'album, 6A) : les nouvelles cartes restent marquées jusqu'à la visite de l'album ; donjons vers le booster suivant

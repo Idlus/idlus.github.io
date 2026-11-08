@@ -1356,9 +1356,9 @@
             give: (S, id) => E.relSeen(S, id), txt: (id) => `relique « ${E.relById(id).n} » au Reliquaire` },
     part: { name: "Partition", list: () => Object.keys(tracks()).map((k) => [k, `Partition « ${tracks()[k]} »`]), ok: (id) => !!tracks()[id],
             give: (S, id) => { S.partitions = S.partitions || {}; if (!S.partitions[id]) S.partitions[id] = Date.now(); }, txt: (id) => `partition « ${tracks()[id] || id} »` },
-    carte:{ name: "Carte d'album (à part)", list: () => (E.cardApart ? E.cardApart() : []).flatMap((c) => [[c.id, `Carte ${c.n}`], [c.id + "/b", `Carte ${c.n} brillante`]]), // 2.2.14.2 : Mathis 08/11
-            ok: (id) => { const [k] = String(id).split("/"); return !!(E.carte && E.carte(k) && E.carte(k).apart); },
-            give: (S, id) => { const [k, b] = String(id).split("/"); E.cardGift(S, k, b === "b"); }, txt: (id) => { const [k, b] = String(id).split("/"); return `carte « ${E.carte(k).n} »${b === "b" ? " brillante" : ""} dans l'album`; } },
+    carte:{ name: "Carte d'album (à part)", list: () => (E.cardApart ? E.cardApart() : []).flatMap((c) => { const t = c.id.endsWith("_alt") ? ` alternative` : ""; return [[c.id, `Carte ${c.n}${t}`]].concat(c.artB ? [[c.id + "/b", `Carte ${c.n}${t} brillante`]] : []); }), // 2.2.14.2 : Mathis 08/11
+            ok: (id) => { const [k, b] = String(id).split("/"), c = E.carte && E.carte(k); return !!(c && c.apart && (b !== "b" || c.artB)); },
+            give: (S, id) => { const [k, b] = String(id).split("/"); E.cardGift(S, k, b === "b"); }, txt: (id) => { const [k, b] = String(id).split("/"); const c = E.carte(k); return `carte « ${c.n} »${k.endsWith("_alt") ? " alternative" : ""}${b === "b" ? " brillante" : ""} dans l'album`; } },
     joy:  { name: "Joyau de Maîtrise", qty: true, max: 10, list: () => Object.keys(E.JOY || {}).map((k) => [k, E.JOY[k].n]), ok: (id) => !!(E.JOY && E.JOY[id]), // 2.0 : joyaux de la Maîtrise
             give: (S, id, q) => { S.joy = S.joy || []; for (let i = 0; i < q; i++) { S.joyUid = (S.joyUid || 0) + 1; S.joy.push({ uid: S.joyUid, k: id }); } }, txt: (id, q) => `${q > 1 ? `${q} × ` : ""}${E.JOY[id].n}` },
   };

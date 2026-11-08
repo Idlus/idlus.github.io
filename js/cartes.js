@@ -52,16 +52,17 @@
     { id: "legende_sac", n: "Sac", d: "1er niveau 200 du Monocompte en Serment de fer", cls: "iop", qui: "Sac" }, // Mathis 05/11
     // Mathis 08/11 : carte à part, jamais dans les boosters ; Mathis l'offre lui-même par code cadeau (E.GIFT_X.carte)
     { id: "legende_xener", n: "Xener", d: "Créateur d'Idlus", cls: "elio", qui: "Xener", apart: 1 },
+    { id: "legende_xener_alt", n: "Xener", d: "Créateur d'Idlus, carte alternative", cls: "elio", qui: "Xener", apart: 1, nob: 1 }, // pas de brillante
   ]);
   const BY = Object.fromEntries(C.map((c) => [c.id, c]));
-  const heroCard = (x) => { const c = { id: x.id, n: x.n, d: x.d, lvl: 200, el: x.el || "n", rar: "h", qui: x.qui || "", leg: x.leg || 0, apart: x.apart ? 1 : 0, img: "", art: `assets/s1/ca/${x.id}.webp`, artB: `assets/s1/ca/${x.id}-b.webp` };
+  const heroCard = (x) => { const c = { id: x.id, n: x.n, d: x.d, lvl: 200, el: x.el || "n", rar: "h", qui: x.qui || "", leg: x.leg || 0, apart: x.apart ? 1 : 0, img: "", art: `assets/s1/ca/${x.id}.webp`, artB: x.nob ? "" : `assets/s1/ca/${x.id}-b.webp` };
     C.push(c); BY[c.id] = c; return c; };
   HEROS.forEach(heroCard);
   E.carteHerosAdd = (x) => { if (BY[x.id]) return BY[x.id]; HEROS.push(x); return heroCard(x); }; // pour les tests
   E.carte = (id) => BY[id] || null;
   E.cardApart = () => HEROS.filter((x) => x.apart).map((x) => BY[x.id]);
   // code cadeau : la carte à part (sh = version brillante, qui donne aussi la normale)
-  E.cardGift = (S, id, sh) => { const c = BY[id]; if (!c || !c.apart) return false; const g = (S.gcards = S.gcards || { o: {}, b: {} });
+  E.cardGift = (S, id, sh) => { const c = BY[id]; if (!c || !c.apart || (sh && !c.artB)) return false; const g = (S.gcards = S.gcards || { o: {}, b: {} });
     g.o = g.o || {}; g.b = g.b || {}; g.o[id] = 1; if (sh) g.b[id] = 1; return true; };
 
   /* ---------------- l'album du compte ---------------- */
