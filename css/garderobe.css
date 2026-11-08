@@ -103,7 +103,7 @@
 .gc-o img{width:100%;height:100%;object-fit:contain}.gc-o.on{border-color:var(--gold)}
 .ch-sti{width:84px;height:84px;object-fit:contain;display:block;margin:2px 0}
 .ch-stb{min-width:34px;font-size:16px;padding-inline:6px}
-.ch-stp{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-radius:10px;background:var(--panel2);margin-top:6px}
+.ch-stp{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-radius:10px;background:var(--panel2);margin-top:6px;max-height:min(180px,30dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin} /* 2.2.13.4 : la grille défile (36 autocollants) au lieu d'écraser les messages */
 .ch-stp button{width:52px;height:52px;padding:2px;border-radius:8px;background:none;border:1px solid transparent;cursor:pointer}
 .ch-stp button:hover{border-color:var(--gold)}.ch-stp img{width:100%;height:100%;object-fit:contain}
 .rfurn{display:grid;gap:8px;margin-top:6px}

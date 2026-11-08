@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.1 « Autocollants du chat »
+- Chat (signalé par Mathis, PC, salon Saison 1) : la grille des autocollants (.ch-stp, css/garderobe.css) n'avait pas de hauteur maximale. Avec 36 autocollants elle écrasait la liste des messages et le bas était coupé par le panneau. Elle est limitée à min(180px, 30dvh) et défile. Test tests/chat_admin_ui.test.js (défilement, dernier autocollant atteignable, messages ≥ 60 px).
+
 ## 2.2.14 « Un seul Général »
 - Mathis (08/11, choix 1) : chat Général commun aux trois serveurs. js/chat.js : un seul onglet `g` qui lit les salons 'g' (Éternel), 's' (Saison 1) et 'm' (Monocompte), mélangés par id (genRows), avec une étiquette de serveur (.ch-sb) à côté du pseudo. L'envoi part dans le salon du serveur de la partie (genCh : p_ch 'm' ou 's', sinon 'g'), donc chat_send garde le bon héros sans changement côté serveur. Annonce admin envoyée aux trois salons dédoublonnée. Non lus et mentions des trois salons comptés dans le Général ; message épinglé : celui du Classique, sinon celui du Monocompte en partie Monocompte. Commerce et PvP restent par serveur ; « Proposer un échange » caché pour un joueur d'un autre serveur. Aucune modification SQL. Tests tests/chat_mono_ui.test.js (réécrit), chat_admin_ui, chat_lisible_ui.
 

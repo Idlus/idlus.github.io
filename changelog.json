@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14",
+  "version": "2.2.14.1",
   "versions": [
+    {
+      "v": "2.2.14.1",
+      "name": "Autocollants du chat",
+      "items": [
+        "Chat : la grille des autocollants défile maintenant, on peut descendre pour voir et envoyer tous les autocollants (PC et téléphone)",
+        "La grille ne prend plus toute la place : les messages restent visibles au-dessus"
+      ]
+    },
     {
       "v": "2.2.14",
       "name": "Un seul Général",

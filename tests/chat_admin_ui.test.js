@@ -133,6 +133,13 @@ function fake() {
     const n = await page.evaluate(() => document.querySelectorAll("#chat .ch-stp button").length);
     if (n !== 36) fail(`${w} px : Xener a les 36 autocollants, trouvé ${n}`);
     await shot(page, `admin-st-${w}.png`);
+    // 2.2.14.1 : la grille défile, le dernier autocollant est atteignable et les messages gardent de la place
+    const g = await page.evaluate(() => { const p = document.querySelector("#chat .ch-stp"), l = document.querySelector("#chat .ch-list"), cs = getComputedStyle(p);
+      p.scrollTop = p.scrollHeight; const last = p.lastElementChild.getBoundingClientRect(), r = p.getBoundingClientRect(), ch = document.querySelector("#chat").getBoundingClientRect();
+      return { ov: cs.overflowY, sh: p.scrollHeight, ph: p.clientHeight, top: p.scrollTop, lastIn: last.bottom <= r.bottom + 1 && last.bottom <= ch.bottom + 1, list: l ? l.clientHeight : 0 }; });
+    if (g.ov !== "auto" || g.sh <= g.ph || g.top <= 0) fail(`${w} px : la grille des autocollants ne défile pas : ` + JSON.stringify(g));
+    if (!g.lastIn) fail(`${w} px : le dernier autocollant reste caché : ` + JSON.stringify(g));
+    if (g.list < 60) fail(`${w} px : les messages sont écrasés par la grille : ` + JSON.stringify(g));
     await page.click('#chat .ch-stp [data-v="36"]'); await page.waitForTimeout(300);
     a = await page.evaluate(() => { const c = window.__CM.calls.filter((x) => x[0] === "chat_send"); return c[c.length - 1][1]; });
     if (a.p_body !== ":st:36:") fail(`${w} px : autocollant 36 envoyé : ` + JSON.stringify(a));
