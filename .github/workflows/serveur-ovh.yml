@@ -799,10 +799,13 @@ jobs:
         if: inputs.etape == 'diablofus-installer'
         env:
           J: ${{ secrets.DIABLOFUS_TUNNEL_TOKEN }}
+          DS: ${{ secrets.DIABLOFUS_DISCORD_SECRET }}
         run: |
+          DS=$(printf '%s' "$DS" | tr -d '[:space:]')
+          if [ -n "$DS" ]; then echo "::add-mask::$DS"; printf '%s' "$DS" | grep -Eq '^[A-Za-z0-9_-]{16,128}$' || { echo "Secret Discord inattendu." >&2; exit 1; }; fi
           J=$(printf '%s' "$J" | tr -d '[:space:]'); J=${J##*install}
           if [ -n "$J" ]; then echo "::add-mask::$J"; printf '%s' "$J" | grep -Eq '^[A-Za-z0-9+/=_-]{50,}$' || { echo "Jeton inattendu." >&2; exit 1; }; fi
-          bash tools/serveur/vps_sql.sh commande "JETON='$J'
+          bash tools/serveur/vps_sql.sh commande "JETON='$J' DISCORD_ID='1567902042180026499' DISCORD_SECRET='$DS'
           $(cat tools/serveur/diablofus_installer.sh)"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
