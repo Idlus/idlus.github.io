@@ -33,13 +33,15 @@ for f in diablofus.service sudoers-diablofus diablofus-maj.service diablofus-maj
 sha256sum -c - <<'SUM'
 555a0e05333a4843f43283351d110dbbd264bfb7e011200a0aaf5ce4e7ca3a07  diablofus.service
 444195b150a0b2733c4693693af15fc0a4218b3f6f6a7986b95ad1488edf6aac  sudoers-diablofus
-831fa35ca230bd7192f1621d69341b13fe12396e0838331ddc442bf4096be4f9  diablofus-maj.service
+ff8712ddf4fed258fc004a0ca198d589ba0f4d12875de7866adf551742b90ef2  diablofus-maj.service
 bfa0ac0506f494441317a4932ade7a20a36bf25ba35859aa5fc5ab2ef1ed6c6c  diablofus-maj.timer
-3293228f22397835ec4e293e3e2ebabbbcc55d10c7e89cc661cc065267bf381b  maj.sh
+fcc732b11c3d0953e86021ddb8c0e1d58e80827a660ab07c72595fda975b5a1c  maj.sh
 SUM
 install -m 644 diablofus.service diablofus-maj.service diablofus-maj.timer /etc/systemd/system/
 visudo -cf sudoers-diablofus && install -m 440 sudoers-diablofus /etc/sudoers.d/diablofus
-install -o root -g root -m 755 maj.sh /home/diablofus/maj.sh
+# 08/11 : maj.sh rangé hors du dossier de diablofus (qui pourrait sinon le remplacer), ancien fichier retiré
+install -D -o root -g root -m 755 maj.sh /usr/local/lib/diablofus/maj.sh
+rm -f /home/diablofus/maj.sh
 systemctl daemon-reload && systemctl enable diablofus && systemctl enable --now diablofus-maj.timer
 systemctl start diablofus-maj.service || { journalctl -u diablofus-maj -n 30 --no-pager; exit 1; }
 sleep 4; systemctl is-active diablofus || { journalctl -u diablofus -n 30 --no-pager; exit 1; }
@@ -58,9 +60,11 @@ if [ -n "${JETON:-}" ]; then
   if [ ! -f /etc/systemd/system/cloudflared.service ]; then cloudflared service install "$JETON" >/dev/null 2>&1 || { echo "cloudflared service install a échoué (jeton ?)" >&2; exit 1; }; fi
   curl -fsSLO "$B/cloudflared-limites.conf"
   echo "573b667d1d58f56a25876002ee1e25fd960b564cae3169075add238692347509  cloudflared-limites.conf" | sha256sum -c -
-  install -D -m 644 cloudflared-limites.conf /etc/systemd/system/cloudflared.service.d/limites.conf
-  systemctl daemon-reload && systemctl restart cloudflared
-  sleep 5; systemctl is-active cloudflared
+  if ! cmp -s cloudflared-limites.conf /etc/systemd/system/cloudflared.service.d/limites.conf; then
+    install -D -m 644 cloudflared-limites.conf /etc/systemd/system/cloudflared.service.d/limites.conf
+    systemctl daemon-reload && systemctl restart cloudflared
+  else echo "limites du tunnel déjà en place (tunnel non redémarré)"; fi
+  sleep 2; systemctl is-active cloudflared
   journalctl -u cloudflared -n 15 --no-pager | grep -iE 'registered|error|connection' | sed -E 's/token[^ ]*//Ig' | tail -8 || true
   curl -fsS -m 10 https://api.diablofus.com/sante && echo || echo "api.diablofus.com ne répond pas encore (DNS ou Public Hostname ?)"
 else
