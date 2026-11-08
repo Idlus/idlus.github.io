@@ -158,16 +158,16 @@
      first : les monstres jouent avant ; vamp / heroVamp : vol de vie ; heroPa : PA des héros en moins ; heroDmg : % de dégâts des héros. */
   const MU = (M.mut = {
     from: 7,
-    defi: { need: 5, n: 20, kind: "mut" }, // défi de groupe : 5 donjons de stasis 7+ en groupe sous la mutation ; 20 Éclats (une source par semaine, dans le quota)
+    defi: { need: 5, n: 20, kind: "mut" }, // défi de la semaine : 5 donjons de stasis 7+, seul ou en groupe (choix de Mathis 08/11, #186), hors donjons de l'absence ; 20 Éclats (une source par semaine, dans le quota)
     list: [
-      { id: "seve", n: "Sève tenace", d: "Les monstres se soignent de 3 % de leurs PV au début de chaque tour. Les poisons font 25 % de dégâts en plus.", fx: { regen: 3, dot: 1.25, monHp: 0.94 }, c: "Racines arrachées", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "compte", n: "Temps compté", d: "Tes héros ont 2 PA de moins, mais leurs coups font 60 % de dégâts en plus.", fx: { heroPa: 2, heroDmg: 60 }, c: "Chaque seconde compte", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "miroir", n: "Miroir", d: "Les monstres renvoient 30 % des dégâts qu'ils reçoivent, mais ont 14 % de PV en moins.", fx: { reflect: 1, monHp: 0.86 }, c: "Briser les reflets", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "ambre", n: "Carapace d'ambre", d: "Les monstres commencent le combat avec un bouclier de 20 % de leurs PV, mais frappent 12 % moins fort.", fx: { shield: 0.2, monDmg: 0.88 }, c: "Fendre l'ambre", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "verre", n: "Verre fragile", d: "Tes héros frappent 30 % plus fort, les monstres 20 % plus fort.", fx: { heroDmg: 30, monDmg: 1.2 }, c: "Coups de cristal", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "sang", n: "Pacte de sang", d: "Héros et monstres volent 15 % des dégâts qu'ils infligent.", fx: { vamp: 0.15, heroVamp: 0.15 }, c: "Le prix du sang", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "aube", n: "Aube pressée", d: "Les monstres jouent toujours avant tes héros, mais ont 10 % de PV en moins.", fx: { first: 1, monHp: 0.9 }, c: "Plus vite que l'aube", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
-      { id: "colere", n: "Colère du Temps", d: "Sous la moitié de leurs PV, les monstres font 25 % de dégâts en plus ; au-dessus, ils frappent 10 % moins fort.", fx: { enrage: 1, monDmg: 0.9 }, c: "Apaiser la colère", cd: "Finir 5 donjons de stasis 7 et plus en groupe au Bureau des Aventuriers" },
+      { id: "seve", n: "Sève tenace", d: "Les monstres se soignent de 3 % de leurs PV au début de chaque tour. Les poisons font 25 % de dégâts en plus.", fx: { regen: 3, dot: 1.25, monHp: 0.94 }, c: "Racines arrachées", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "compte", n: "Temps compté", d: "Tes héros ont 2 PA de moins, mais leurs coups font 60 % de dégâts en plus.", fx: { heroPa: 2, heroDmg: 60 }, c: "Chaque seconde compte", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "miroir", n: "Miroir", d: "Les monstres renvoient 30 % des dégâts qu'ils reçoivent, mais ont 14 % de PV en moins.", fx: { reflect: 1, monHp: 0.86 }, c: "Briser les reflets", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "ambre", n: "Carapace d'ambre", d: "Les monstres commencent le combat avec un bouclier de 20 % de leurs PV, mais frappent 12 % moins fort.", fx: { shield: 0.2, monDmg: 0.88 }, c: "Fendre l'ambre", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "verre", n: "Verre fragile", d: "Tes héros frappent 30 % plus fort, les monstres 20 % plus fort.", fx: { heroDmg: 30, monDmg: 1.2 }, c: "Coups de cristal", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "sang", n: "Pacte de sang", d: "Héros et monstres volent 15 % des dégâts qu'ils infligent.", fx: { vamp: 0.15, heroVamp: 0.15 }, c: "Le prix du sang", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "aube", n: "Aube pressée", d: "Les monstres jouent toujours avant tes héros, mais ont 10 % de PV en moins.", fx: { first: 1, monHp: 0.9 }, c: "Plus vite que l'aube", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
+      { id: "colere", n: "Colère du Temps", d: "Sous la moitié de leurs PV, les monstres font 25 % de dégâts en plus ; au-dessus, ils frappent 10 % moins fort.", fx: { enrage: 1, monDmg: 0.9 }, c: "Apaiser la colère", cd: "Finir 5 donjons de stasis 7 et plus, seul ou en groupe" },
     ],
   });
   MU.byId = {}; MU.list.forEach((x) => (MU.byId[x.id] = x));
@@ -218,7 +218,7 @@
     if (X.dot && e.dots && e.dots.length) e.dots.forEach((d) => { if (!d.mu && !d.role) { d.v *= X.dot; d.mu = 1; } });
     if (X.regen && e.hp < e.hpMax) E.fightApi.doHeal(e, (e.hpMax * X.regen) / 100, F);
   };
-  /* défi de groupe de la semaine : progression gardée par semaine, payée une fois (registre, activité « mut ») */
+  /* défi de la semaine (solo ou groupe) : progression gardée par semaine, payée une fois (registre, activité « mut ») */
   E.monoMutDefi = (S) => {
     if (!season(S)) return null; const w = E.monoMutWeek(S), m = E.monoMutOf(S); if (!m) return null;
     const key = `s${S.mono.s || 1}-w${w}`; let R = S.mono.mutd; if (!R || R.k !== key) R = S.mono.mutd = { k: key, n: 0, paid: 0 };
@@ -231,8 +231,8 @@
     if (g <= 0) return 0;
     // ligne « act:<jour>:mut » du registre provisoire : le serveur en fait des bons de butin à la partie validée suivante
     // (borne de 20 par semaine de saison, supabase/mono_social.sql), comme les autres gains d'activité (6a)
-    if (!E.tfPost(S, g, "act", `act:${E.monoDay(S)}:${MU.defi.kind}`, `Défi de groupe de la semaine : ${X.m.c}`)) return 0;
-    if (E.note) E.note(S, `Défi de groupe de la semaine « ${X.m.c} » réussi : +${g} Éclats du Temps.`, "rare");
+    if (!E.tfPost(S, g, "act", `act:${E.monoDay(S)}:${MU.defi.kind}`, `Défi de la semaine : ${X.m.c}`)) return 0;
+    if (E.note) E.note(S, `Défi de la semaine « ${X.m.c} » réussi : +${g} Éclats du Temps.`, "rare");
     return g;
   };
   const emit0 = E.emit;
@@ -240,7 +240,7 @@
     const r = emit0.apply(this, arguments);
     if (t === "dungeon" && S && !S.monoRun && season(S)) try {
       d = d || {};
-      if (d.group && (d.stasis || 1) >= MU.from) { const X = E.monoMutDefi(S); if (X && !X.paid) { S.mono.mutd.n++; E.monoMutPay(S); } }
+      if (!d.offline && (d.stasis || 1) >= MU.from) { const X = E.monoMutDefi(S); if (X && !X.paid) { S.mono.mutd.n++; E.monoMutPay(S); } }
       if (d.group && Array.isArray(d.with) && d.with.length) { const G = (S.mono.grpWith = S.mono.grpWith || {}); const k = d.with.map((x) => String(x).slice(0, 20)).sort().join(", "); G[k] = (G[k] || 0) + 1; }
     } catch (e) {}
     return r;

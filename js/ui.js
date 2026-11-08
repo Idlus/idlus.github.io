@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.1";
+const GAME_VERSION = "2.2.14.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.2", name: "Défi de la mutation en solo", items: [
+    "Mutation de la semaine : le défi compte maintenant tes donjons de stasis 7 et plus faits seul, pas seulement ceux en groupe au Bureau (choix de Mathis, après le signalement de Nerisia)",
+    "Toujours 5 donjons pour 20 Éclats du Temps, comptés dans le quota de la semaine ; les donjons faits pendant l'absence ne comptent pas",
+  ] },
   { v: "2.2.14.1", name: "Autocollants du chat", items: [
     "Chat : la grille des autocollants défile maintenant, on peut descendre pour voir et envoyer tous les autocollants (PC et téléphone)",
     "La grille ne prend plus toute la place : les messages restent visibles au-dessus",

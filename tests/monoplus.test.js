@@ -160,16 +160,16 @@ const finish = (S) => { for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1
   MU.cur = null;
 }
 
-// 4. Défi de groupe de la semaine : 5 donjons de stasis 7+ en groupe, 20 Éclats une fois, dans le quota
+// 4. Défi de la semaine : 5 donjons de stasis 7+, seul ou en groupe (pas ceux de l'absence), 20 Éclats une fois, dans le quota
 {
   const S = mono(150); now = E.monoT0(S) + 3600000; // semaine 1 : quota de 100
   const X0 = E.monoMutDefi(S); assert.deepStrictEqual([X0.n, X0.need, X0.gain, X0.src], [0, 5, 20, "s1-w1-mut"]);
   const did = dj(140);
   for (let i = 0; i < 4; i++) E.emit(S, "dungeon", { id: did, stasis: 7, group: true, players: 2, with: ["Ombrelune"] });
-  E.emit(S, "dungeon", { id: did, stasis: 6, group: true }); E.emit(S, "dungeon", { id: did, stasis: 9 }); // stasis 6, ou seul : pas compté
+  E.emit(S, "dungeon", { id: did, stasis: 6, group: true }); E.emit(S, "dungeon", { id: did, stasis: 9, offline: true }); // stasis 6, ou donjon de l'absence : pas compté
   assert.strictEqual(E.monoMutDefi(S).n, 4); const b0 = E.tfBalance(S);
-  E.emit(S, "dungeon", { id: did, stasis: 8, group: true, with: ["Ombrelune"] });
-  assert(E.monoMutDefi(S).paid > 0, "défi réussi"); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "20 Éclats d'activité");
+  E.emit(S, "dungeon", { id: did, stasis: 8 }); // 2.2.14.2 (choix de Mathis, #186) : un donjon solo compte aussi
+  assert(E.monoMutDefi(S).paid > 0, "défi réussi"); E.emit(S, "dungeon", { id: did, stasis: 8, group: true, with: ["Ombrelune"] }); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "20 Éclats d'activité");
   const b1 = E.tfBalance(S); E.emit(S, "dungeon", { id: did, stasis: 8, group: true }); assert.strictEqual(E.tfLedger(S).filter((l) => l.src === "act:1:mut").reduce((a, l) => a + l.n, 0), 20, "payé une seule fois");
   assert(b1 - b0 >= 20); assert(E.tfActTotal(S) <= E.tfQuota(S), "dans le quota");
   // quota déjà rempli : rien de plus (la règle des 800 tient)

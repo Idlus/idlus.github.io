@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.1",
+  "version": "2.2.14.2",
   "versions": [
+    {
+      "v": "2.2.14.2",
+      "name": "Défi de la mutation en solo",
+      "items": [
+        "Mutation de la semaine : le défi compte maintenant tes donjons de stasis 7 et plus faits seul, pas seulement ceux en groupe au Bureau (choix de Mathis, après le signalement de Nerisia)",
+        "Toujours 5 donjons pour 20 Éclats du Temps, comptés dans le quota de la semaine ; les donjons faits pendant l'absence ne comptent pas"
+      ]
+    },
     {
       "v": "2.2.14.1",
       "name": "Autocollants du chat",

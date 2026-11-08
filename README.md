@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.2 « Défi de la mutation en solo »
+- Choix de Mathis (08/11, suite du #186) : le défi de la mutation de la semaine (js/monoplus.js, E.emit « dungeon ») compte les donjons de stasis 7+ faits seul ou en groupe ; pas ceux de l'absence (offline). Même gain (20 Éclats, activité « mut », borne serveur de 20 par semaine inchangée). Test dans tests/monoplus.test.js (4).
+
 ## 2.2.14.1 « Autocollants du chat »
 - Chat (signalé par Mathis, PC, salon Saison 1) : la grille des autocollants (.ch-stp, css/garderobe.css) n'avait pas de hauteur maximale. Avec 36 autocollants elle écrasait la liste des messages et le bas était coupé par le panneau. Elle est limitée à min(180px, 30dvh) et défile. Test tests/chat_admin_ui.test.js (défilement, dernier autocollant atteignable, messages ≥ 60 px).
 
