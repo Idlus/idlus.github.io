@@ -31,18 +31,20 @@ s "Bloc 3 : service, droit de redémarrage, mise à jour automatique (fichiers r
 T=$(mktemp -d); cd "$T"
 for f in diablofus.service sudoers-diablofus diablofus-maj.service diablofus-maj.timer maj.sh; do curl -fsSLO "$B/$f"; done
 sha256sum -c - <<'SUM'
-555a0e05333a4843f43283351d110dbbd264bfb7e011200a0aaf5ce4e7ca3a07  diablofus.service
+eeab1c3fa3ef59c271c67be5adc0adb6118f61f135ece0fb5f83d4d5662e2e78  diablofus.service
 444195b150a0b2733c4693693af15fc0a4218b3f6f6a7986b95ad1488edf6aac  sudoers-diablofus
 ff8712ddf4fed258fc004a0ca198d589ba0f4d12875de7866adf551742b90ef2  diablofus-maj.service
 bfa0ac0506f494441317a4932ade7a20a36bf25ba35859aa5fc5ab2ef1ed6c6c  diablofus-maj.timer
 fcc732b11c3d0953e86021ddb8c0e1d58e80827a660ab07c72595fda975b5a1c  maj.sh
 SUM
+cmp -s diablofus.service /etc/systemd/system/diablofus.service && change= || change=1   # 08/11 18h : 1 Go → 2 Go (PR #228)
 install -m 644 diablofus.service diablofus-maj.service diablofus-maj.timer /etc/systemd/system/
 visudo -cf sudoers-diablofus && install -m 440 sudoers-diablofus /etc/sudoers.d/diablofus
 # 08/11 : maj.sh rangé hors du dossier de diablofus (qui pourrait sinon le remplacer), ancien fichier retiré
 install -D -o root -g root -m 755 maj.sh /usr/local/lib/diablofus/maj.sh
 rm -f /home/diablofus/maj.sh
 systemctl daemon-reload && systemctl enable diablofus && systemctl enable --now diablofus-maj.timer
+[ -n "$change" ] && systemctl is-active -q diablofus && { echo "service modifié : redémarrage de Diablofus"; systemctl restart diablofus; }
 systemctl start diablofus-maj.service || { journalctl -u diablofus-maj -n 30 --no-pager; exit 1; }
 sleep 4; systemctl is-active diablofus || { journalctl -u diablofus -n 30 --no-pager; exit 1; }
 curl -fsS -m 5 http://127.0.0.1:3100/sante; echo
