@@ -78,7 +78,7 @@
     rows.push(["Dans ton album", own ? `${M.o[id]} exemplaire${M.o[id] > 1 ? "s" : ""}${M.b[id] ? " · brillante ✦" : ""}` : "pas encore"]);
     const DB = S1 ? [false, true].map((sh) => ({ sh, n: e.cardDbl(s, id, sh), r: e.cardDustable(s, id, sh), pd: e.cardDustOf(id, sh), key: e.cardKey(id, sh) })).filter((x) => x.n > 0) : [];
     if (own) rows.push(["Doubles", DB.length ? DB.map((x) => `${x.n}${x.sh ? " brillante" + (x.n > 1 ? "s" : "") : ""}${x.r < x.n ? ` (${x.n - x.r} sans Poussière)` : ""}`).join(" · ") : dbl && !S1 ? `${dbl}` : "aucun"]);
-    else rows.push(["Fabriquer", c.rar === "h" ? "dans les boosters seulement" : `${p} Poussières d'étoile${S1 ? ` (tu en as ${e.cardDust(s)})` : ""}`]);
+    else rows.push(["Fabriquer", c.apart ? "jamais : offerte par Xener avec un code cadeau" : c.rar === "h" ? "dans les boosters seulement" : `${p} Poussières d'étoile${S1 ? ` (tu en as ${e.cardDust(s)})` : ""}`]);
     rows.push(["Brillante", M.b[id] ? "obtenue ✦" : "1 chance sur 100 par carte de booster"]);
     X().openSheet(`<div class="ca-see">${card(c, { own, sh: !!M.b[id], big: 1 })}
       <div class="stack"><h2>${h(c.n)}</h2><span><span class="ca-tag" style="--rc:${RC[c.rar]}">${R}</span> <span class="xs muted">carte ${i + 1} / ${L.length}</span></span>

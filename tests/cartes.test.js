@@ -67,6 +67,18 @@ console.log("ok - brillantes ≈ 1 sur 100, doubles en poussière, fabrication d
   assert.strictEqual(E.CARTE_CRAFT.h, 400); }
 console.log("ok - Héros d'Idlus : 1 booster sur 50, sans toucher aux cartes de donjon, son héros d'office");
 
+// 2.2.14.2 (Mathis 08/11) : la carte de Xener est à part : jamais dans un booster, offerte par code cadeau, ni échangeable ni réductible
+{ const X = E.carte("legende_xener"); assert(X && X.apart && X.rar === "h" && X.d === "Créateur d'Idlus");
+  const T = s1(); E.boosterGive(T, 1); let seen = 0; for (let i = 0; i < 6000; i++) { T.s1c.cards.bst = 5; const o = E.boosterOpen(T); if (o.some((x) => x.id === X.id)) seen++; }
+  assert.strictEqual(seen, 0, "jamais dans un booster");
+  const G = E.GIFT_X.carte; assert(G.ok("legende_xener") && G.ok("legende_xener/b") && !G.ok("legende_sac") && !G.ok("nimp"), "seules les cartes à part s'offrent");
+  assert(G.list().some((r) => r[0] === "legende_xener/b"));
+  const S = s1(); assert(!E.cardHas(S, X.id)); G.give(S, "legende_xener"); assert(E.cardHas(S, X.id) && !E.cardShiny(S, X.id));
+  G.give(S, "legende_xener/b"); assert(E.cardShiny(S, X.id)); assert.strictEqual(E.cardDbl(S, X.id, false), 0, "pas échangeable");
+  const S2 = E.deserialize(E.serialize(S)); assert(E.cardHas(S2, X.id), "gardée dans la sauvegarde");
+  assert(/Xener/.test(G.txt("legende_xener/b"))); }
+console.log("ok - carte de Xener : à part, offerte par code cadeau seulement");
+
 // 2.2.6 (refonte de l'album, 6A) : les nouvelles cartes restent marquées jusqu'à la visite de l'album ; donjons vers le booster suivant
 { const S = s1(); const o = E.boosterOpen(S); const nw = o.filter((x) => x.nw).map((x) => x.id);
   const t = E.cardNewTake(S); assert.deepStrictEqual([...new Set(t)].sort(), [...new Set(nw)].sort(), "les nouvelles du booster");

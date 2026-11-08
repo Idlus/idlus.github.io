@@ -50,13 +50,19 @@
     { id: "legende_gagou", n: "Gagou", d: "Sacrigag, 1er à réunir tous les Dofus", cls: "sacri", el: "f", qui: "Gagou", leg: 6 },
     { id: "legende_zoukani", n: "Zoukani", d: "Kosea, Sacrieuse fidèle de Missiz Frizz", cls: "sacri", el: "e", qui: "Zoukani" },
     { id: "legende_sac", n: "Sac", d: "1er niveau 200 du Monocompte en Serment de fer", cls: "iop", qui: "Sac" }, // Mathis 05/11
+    // Mathis 08/11 : carte à part, jamais dans les boosters ; Mathis l'offre lui-même par code cadeau (E.GIFT_X.carte)
+    { id: "legende_xener", n: "Xener", d: "Créateur d'Idlus", cls: "elio", qui: "Xener", apart: 1 },
   ]);
   const BY = Object.fromEntries(C.map((c) => [c.id, c]));
-  const heroCard = (x) => { const c = { id: x.id, n: x.n, d: x.d, lvl: 200, el: x.el || "n", rar: "h", qui: x.qui || "", leg: x.leg || 0, img: "", art: `assets/s1/ca/${x.id}.webp`, artB: `assets/s1/ca/${x.id}-b.webp` };
+  const heroCard = (x) => { const c = { id: x.id, n: x.n, d: x.d, lvl: 200, el: x.el || "n", rar: "h", qui: x.qui || "", leg: x.leg || 0, apart: x.apart ? 1 : 0, img: "", art: `assets/s1/ca/${x.id}.webp`, artB: `assets/s1/ca/${x.id}-b.webp` };
     C.push(c); BY[c.id] = c; return c; };
   HEROS.forEach(heroCard);
   E.carteHerosAdd = (x) => { if (BY[x.id]) return BY[x.id]; HEROS.push(x); return heroCard(x); }; // pour les tests
   E.carte = (id) => BY[id] || null;
+  E.cardApart = () => HEROS.filter((x) => x.apart).map((x) => BY[x.id]);
+  // code cadeau : la carte à part (sh = version brillante, qui donne aussi la normale)
+  E.cardGift = (S, id, sh) => { const c = BY[id]; if (!c || !c.apart) return false; const g = (S.gcards = S.gcards || { o: {}, b: {} });
+    g.o = g.o || {}; g.b = g.b || {}; g.o[id] = 1; if (sh) g.b[id] = 1; return true; };
 
   /* ---------------- l'album du compte ---------------- */
   /* 2.2.11 « Bourse aux cartes » (Mathis 3B) : r / rb = exemplaires (normaux / brillants) qui ne donnent pas de Poussière : les doubles
@@ -66,8 +72,9 @@
       for (const id in a.o || {}) if (a.o[id] > 1) a.r[id] = a.o[id] - 1; for (const id in a.b || {}) if (a.b[id] > 1) a.rb[id] = a.b[id] - 1; }
     if (!a.r) a.r = {}; if (!a.rb) a.rb = {}; return a; };
   const me = () => { const O = root.ONLINE || root.ON, p = O && O.profile && O.profile.pseudo; return p ? String(p).toLowerCase() : ""; };
-  const mine = (S) => { const a = ((S.mono ? S.mono : S.s1c) || {}).cards || {}, x = S.xcards || {};
-    const o = Object.assign({}, x.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, a.b || {}), m = me();
+  /* S.gcards : cartes offertes par code cadeau (cartes à part) ; hors album de saison, donc ni échangeables ni réductibles */
+  const mine = (S) => { const a = ((S.mono ? S.mono : S.s1c) || {}).cards || {}, x = S.xcards || {}, g = S.gcards || {};
+    const o = Object.assign({}, x.o || {}, g.o || {}, a.o || {}), b = Object.assign({}, x.b || {}, g.b || {}, a.b || {}), m = me();
     if (m) HEROS.forEach((h) => { if (h.qui && h.qui.toLowerCase() === m) o[h.id] = o[h.id] || 1; }); // son propre héros, d'office
     return { o, b }; };
   E.cardMine = mine;
@@ -89,7 +96,7 @@
   E.boosterNext = () => (dayOf(E.now()) + 1) * DAY - E.now();
   E.boosterDjLeft = (S) => { if (!s1(S)) return 0; const a = A(S); return a.djd === dayOf(E.now()) ? Math.max(0, E.BOOSTER_DJ_JOUR - a.djn) : E.BOOSTER_DJ_JOUR; };
   E.boosterGive = (S, n) => { if (!s1(S)) return 0; const a = A(S); const k = Math.max(0, Math.min(n || 1, E.BOOSTER_MAX - a.bst)); a.bst += k; return k; };
-  const pick = (r) => { const L2 = C.filter((c) => c.rar === r); return L2[Math.floor(E.rnd() * L2.length)]; };
+  const pick = (r) => { const L2 = C.filter((c) => c.rar === r && !c.apart); return L2[Math.floor(E.rnd() * L2.length)]; };
   const roll = (best) => { const W = best ? { r: POIDS.r, e: POIDS.e, l: POIDS.l } : POIDS; const tot = Object.values(W).reduce((a, b) => a + b, 0);
     let x = E.rnd() * tot; for (const [r, w] of Object.entries(W)) { if ((x -= w) < 0) return r; } return "c"; };
   // renvoie les 5 cartes tirées [{ id, sh, nw, pd }] ou un message d'erreur
@@ -98,7 +105,7 @@
     if (over(S)) return "La saison est finie : l'album reste, les boosters s'arrêtent.";
     const a = A(S); let from = "";
     if (E.boosterFree(S)) { a.free = E.now(); from = "jour"; } else if (a.bst > 0) { a.bst--; from = "reserve"; } else return "Plus de booster : un nouveau demain, ou en finissant des donjons de saison.";
-    const out = [], hero = HEROS.length && E.rnd() < E.CARTE_HEROS_P;
+    const out = [], hero = HEROS.some((x) => !x.apart) && E.rnd() < E.CARTE_HEROS_P;
     for (let i = 0; i < E.BOOSTER_N; i++) {
       const c = hero && i === 0 ? pick("h") : pick(roll(i === E.BOOSTER_N - 1)), sh = E.rnd() < E.CARTE_SHINY;
       const had = sh ? !!a.b[c.id] : !!a.o[c.id];
