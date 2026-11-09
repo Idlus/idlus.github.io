@@ -1698,6 +1698,48 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       if (!(b.k > k0)) fail("veille : pas de kamas pendant l'absence");
       if (!(b.lag < 10000)) fail(`veille : heure de la partie pas reprise (${b.lag} ms)`);
       await ctx5.close(); }
+    // 13. 2.2.14.11 (#193, Fulfutor) : partie reprise d'un autre appareil. Jeu resté ouvert sur l'ordinateur (dernier envoi il y a
+    // 30 s) : pas d'absence, mais ce que la partie a gagné là-bas depuis la dernière visite ici s'affiche. PC éteint depuis 10 h :
+    // l'absence reste comptée comme avant. Téléphone 390 px (« sur l'ordinateur ») et PC 1280 px.
+    for (const [w, hgt, ua] of [[390, 844, "Mozilla/5.0 (Linux; Android 14) Mobile"], [1280, 800, null]]) {
+      for (const H of [30e3, 10 * 3600e3]) {
+        const c6 = await browser.newContext(Object.assign({ viewport: { width: w, height: hgt } }, ua ? { userAgent: ua } : {}));
+        await c6.addInitScript(MOCK);
+        await c6.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; const o = localStorage.getItem("__set"); if (o) { localStorage.removeItem("__set"); const v = JSON.parse(o); for (const k in v) localStorage.setItem(k, v[k]); } });
+        await c6.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+        const p6 = await c6.newPage(), tag = `reprise ${w} px ${H > 1e6 ? "10 h" : "30 s"}`;
+        p6.on("console", (x) => { if (x.type() === "error") fail(`${tag}, console : ${x.text()}`); });
+        p6.on("pageerror", (e) => fail(`${tag}, exception : ${e.message}`));
+        await p6.goto(base); await p6.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+        await p6.click('[data-act="startgame"]'); await p6.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+        await p6.evaluate(() => { const { S, E } = window.DX; const sid = Object.keys(E.SUBS).find((k) => E.subUnlocked(S, k)); E.startHunt(S, sid); });
+        await p6.waitForTimeout(800);
+        await p6.evaluate((H) => { const { S, E } = window.DX; window.DX.saveNow(); const now = Date.now(), H20 = 20 * 3600e3;
+          const loc = JSON.parse(E.serialize(S)); loc.savedAt = loc.lastTick = loc.devAt = now - H20; loc.kamas = 100;
+          const rem = JSON.parse(E.serialize(S)); rem.kamas = 50100; rem.savedAt = rem.lastTick = rem.devAt = now - H; 
+          const d = JSON.parse(localStorage.getItem("__mock") || '{"session":null,"profiles":[],"saves":{}}');
+          d.session = { id: "u6", email: "six@idlus.fr", identities: [{ provider: "discord", identity_data: { global_name: "Six" } }] }; d.profiles.push({ id: "u6", pseudo: "Fulfu" });
+          d.saves.u6 = { data: JSON.stringify(rem), meta: { level: 5, succes: 0, n: 1, lvl: 5, pid: "pc", sa: rem.savedAt }, device: "ordinateur", game_version: "2.2.14.10", updated_at: new Date(now - H).toISOString() };
+          localStorage.setItem("__mock", JSON.stringify(d));
+          localStorage.setItem("__set", JSON.stringify({ "dofousxen-save-beta": JSON.stringify(loc), "dofousxen-save-beta-online": JSON.stringify({ uid: "u6", base: new Date(now - H20).toISOString(), savedAt: loc.savedAt, pids: ["tel"] }) }));
+        }, H);
+        await p6.reload(); await p6.waitForSelector('.svm, #nav [data-nk]', { state: "attached", timeout: 10000 });
+        const pl = await p6.$('[data-slot="1"] [data-act="sv-play"]'); if (pl) await pl.click();
+        await p6.waitForFunction(() => /Ta partie a avancé|Pendant votre absence/.test((document.querySelector("#sheet") || {}).innerText || "") && !document.getElementById("offc"), null, { timeout: 30000 }).catch(() => {});
+        const r6 = await p6.evaluate(() => ({ t: (document.querySelector("#sheet") || {}).innerText || "", k: window.DX.S && window.DX.S.kamas, sw: document.documentElement.scrollWidth, vw: innerWidth }));
+        if (H < 1e6) {
+          if (!/Ta partie a avancé/.test(r6.t)) fail(`${tag} : rien ne dit ce que la partie a gagné sur l'autre appareil (${r6.t.slice(0, 80)})`);
+          if (!/\+50\s?000 kamas/.test(r6.t)) fail(`${tag} : gains de l'autre appareil absents : ${r6.t.slice(0, 200)}`);
+          if (ua && !/sur l'ordinateur/.test(r6.t)) fail(`${tag} : l'appareil d'origine n'est pas nommé`);
+          if (/Pendant votre absence/.test(r6.t)) fail(`${tag} : absence comptée alors que le jeu tournait sur l'autre appareil`);
+          if (process.env.SHOTS) await p6.screenshot({ path: `${process.env.SHOTS}/reprise-${w}.png` });
+        } else {
+          if (!/Pendant votre absence/.test(r6.t) || !/Absent (9 h 5\d|10 h)|8 h/.test(r6.t)) fail(`${tag} : absence de 10 h non comptée : ${r6.t.slice(0, 120)}`);
+        }
+        if (r6.sw > r6.vw + 1) fail(`${tag} : la page déborde (${r6.sw} px)`);
+        await c6.close();
+      }
+    }
   } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus
   finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }

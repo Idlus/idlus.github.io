@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.10";
+const GAME_VERSION = "2.2.14.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.11", name: "Partie reprise d'un autre appareil", items: [
+    "Charger sur ton téléphone la partie plus récente de ton ordinateur (ou l'inverse) montre maintenant ce qu'elle a gagné là-bas depuis ta dernière visite : kamas, niveaux, objets, ressources",
+    "Si le jeu est resté ouvert sur l'autre appareil, ces heures y ont été jouées en direct (à 100 %) : il n'y a pas d'absence à rattraper, et c'est maintenant écrit. Appareil éteint : l'absence est comptée comme avant" ] },
   { v: "2.2.14.10", name: "Fabrication en série sans gel (suite)", items: [
     "Métiers : fabriquer ×1000 ne fige plus le jeu avec une grosse équipe en Maîtrise. Le bonus Artisan était recalculé pour chaque héros à chaque exemplaire, il l'est maintenant une fois par série (sur une partie de 19 héros : 13 s de gel → moins de 0,2 s)",
     "Même XP de métier qu'avant, au point près" ] },
@@ -12526,6 +12529,41 @@ async function keepRemoteCopy() {
   try { const txt = await ON.remoteData(); if (!txt) return true; pushCopy(txt, "enligne", E.deserialize(txt)); return true; } catch (e) { return false; }
 }
 /* Remplace la partie de l'appareil par celle du compte (l'ancienne part en copie de secours). */
+/* 09/11/2026 (2.2.14.11, #193, retour de Fulfutor) : partie reprise d'un autre appareil. Quand le jeu est resté ouvert sur
+   l'ordinateur (même en arrière-plan), les heures y ont été jouées en direct et envoyées chaque minute : la partie chargée ici
+   est déjà à jour, il n'y a pas d'absence à calculer et rien ne s'affichait (« comme si je n'avais pas fait de pause »).
+   On montre maintenant ce que la partie a gagné ailleurs depuis la dernière visite sur cet appareil. */
+let takenFrom = null;
+function devGainOf(prev, st) {
+  if (!prev || !st || !prev.chars || !st.chars || (prev.created && st.created && prev.created !== st.created)) return null;
+  const t0 = prev.savedAt || prev.lastTick || 0, t1 = st.savedAt || st.lastTick || 0;
+  if (!(t1 - t0 > 600000)) return null; // moins de 10 min d'écart : rien à raconter
+  const res = {}; for (const k in st.res || {}) { const d = (st.res[k] || 0) - ((prev.res || {})[k] || 0); if (d > 0) res[k] = d; }
+  const lvls = st.chars.map((c) => { const o = prev.chars.find((x) => x.id === c.id); return [c.name, o ? o.lvl : null, c.lvl]; }).filter((x) => x[1] != null && x[2] > x[1]);
+  const fresh = st.chars.filter((c) => !prev.chars.some((x) => x.id === c.id)).map((c) => c.name);
+  const kills = (B) => Object.values(B || {}).reduce((a, b) => a + (+b || 0), 0);
+  const g = { seconds: (t1 - t0) / 1000, ago: Math.max(0, (E.now() - (st.lastTick || t1)) / 1000), kamas: Math.floor((st.kamas || 0) - (prev.kamas || 0)), res, lvls, fresh,
+    items: Object.keys(st.items || {}).filter((u) => !(prev.items || {})[u]).length, kills: Math.max(0, kills(st.bestiary) - kills(prev.bestiary)) };
+  return g.kamas > 0 || g.items || g.lvls.length || g.fresh.length || g.kills || Object.keys(res).length ? g : null;
+}
+function devGainSheet(g, dev) {
+  const res = Object.entries(g.res).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  const where = dev === "ordinateur" ? "sur l'ordinateur" : dev === "téléphone" ? "sur le téléphone" : dev ? `sur ${h(dev)}` : "sur ton autre appareil";
+  openSheet(`<h2>Ta partie a avancé ${where}</h2>
+    <p class="small">Depuis ta dernière partie ici, il y a ${dur(g.seconds)}, ton équipe a joué ${where}${g.ago < 900 ? ` (jeu encore ouvert il y a ${dur(Math.max(60, g.ago))})` : ""} : ce temps y a été joué, il n'y a pas d'absence à rattraper ici.</p>
+    <p class="small">${g.kills ? `<b>${fmt(g.kills)}</b> monstres vaincus · ` : ""}<span class="coin"></span> <b>${g.kamas >= 0 ? "+" : ""}${fmt(g.kamas)}</b> kamas${g.items ? ` · ${fmt(g.items)} nouvel${g.items > 1 ? "s" : ""} objet${g.items > 1 ? "s" : ""}` : ""}</p>
+    ${g.lvls.length ? `<p class="small">${g.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
+    ${g.fresh.length ? `<p class="small">Nouveaux héros : ${g.fresh.map(h).join(", ")}</p>` : ""}
+    ${res.length ? `<h3 class="sec">Ressources</h3><div class="list small" style="max-height:240px;overflow:auto">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><span class="num">+${fmt(q)}</span></div>`).join("")}</div>` : ""}
+    <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
+}
+/* après le calcul de l'absence d'une partie reprise : le résumé de l'absence s'il y en a une, sinon ce qu'elle a gagné ailleurs */
+function takenShow(r, quiet) {
+  const tf = takenFrom; takenFrom = null;
+  if (offWorth(r)) return offlineSheet(r);
+  const g = tf && devGainOf(tf.prev, S); if (g) return devGainSheet(g, tf.dev);
+  if (!quiet) toast("Partie en ligne chargée.");
+}
 async function takeRemote(info) {
   if (!booted) onBlank("Récupération de ta partie…");
   let txt = null, st = null;
@@ -12534,11 +12572,12 @@ async function takeRemote(info) {
     toast("Impossible de récupérer la partie en ligne pour l'instant."); ON.setState("offline"); return booted ? closeSheet() : bootGame(); }
   const cur = booted && S ? E.serialize(S) : SV.read();
   if (cur) pushCopy(cur, "avant", booted ? S : null);
+  { let prev = booted ? S : null; if (!prev && cur) try { prev = E.deserialize(cur); } catch (e) {} takenFrom = prev ? { prev, dev: info && info.device && info.device !== ON.device() ? info.device : "" } : null; }
   SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
   if (!booted) return bootGame();
   closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
   const gap = absGap(S); render();
-  offCatch(gap, (r) => { render(); if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée."); });
+  offCatch(gap, (r) => { render(); takenShow(r); });
 }
 function onPush(force) {
   if (!onLive() || offRun || tabLost) return Promise.resolve(null);
@@ -13495,7 +13534,7 @@ function bootGame(pushNow) {
     render();
     if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
     const mig = S.migration; if (mig) { migrationSheet(mig); S.migration = null; }
-    offCatch(gap, (r) => { render(); if (!mig && offWorth(r)) offlineSheet(r); });
+    offCatch(gap, (r) => { render(); if (mig) takenFrom = null; else if (takenFrom) takenShow(r, true); else if (offWorth(r)) offlineSheet(r); });
     S.sessions = (S.sessions || 0) + 1; dirty = true;
     if (window.FORGEUI) window.FORGEUI.boot(S); // 1.0.30 : soft reset des jets, seulement si E.SOFT_RESET_ON (js/forge.js)
   } else render();

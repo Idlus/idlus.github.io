@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.11 « Partie reprise d'un autre appareil »
+- #193 (Fulfutor) : après « Charger » la partie plus récente du PC sur téléphone, aucun résultat des 10 h. Reproduit : PC éteint, l'absence est bien comptée ; jeu resté ouvert sur le PC (même caché, 2.2.12.4), les heures y sont jouées en direct et envoyées chaque minute, la partie chargée est à jour et rien ne s'affichait. takeRemote garde la partie d'avant de l'appareil (takenFrom) ; sans absence, devGainSheet montre les gains faits ailleurs (kamas, niveaux, objets, monstres, ressources). Test : section 13 de tests/online.test.js.
+
 ## 2.2.14.10 « Fabrication en série sans gel (suite) »
 - Mathis (08/11, vidéo + sauvegarde de Segfault) : ×1000 figeait encore ~6 s. Cause : craftXp appelait E.mtOwn (donc E.mtFx, dont la clé de cache coûte cher) pour chaque héros à chaque exemplaire. craftArt mémorise le bonus Artisan pendant E.achHold. Mesure sur la partie de Segfault (19 héros) : tâche de 13,3 s → 0,18 s.
 
