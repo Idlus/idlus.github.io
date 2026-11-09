@@ -9,21 +9,23 @@ const SERVER = "Ombrelune Studio";
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
 const WELCOME = `# Bienvenue chez Ombrelune Studio !
-🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan gratuits. Ce serveur réunit ses jeux : **idlus** et **Re:Arise**.
+🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan gratuits. Ce serveur réunit ses jeux : **idlus**, **Re:Arise** et bientôt **Diablofus**.
 
-⚔️ **idlus**, inspiré de DOFUS : monte une équipe parmi les 19 classes et affronte donjons et boss jusqu'à la stasis 15, même quand tu n'es pas là.
+⚔️ **idlus**, inspiré de DOFUS : monte une équipe parmi les 19 classes et affronte donjons et boss jusqu'à la stasis 15, même quand tu n'es pas là. Serveurs : Éternel, Saison 1 (tout le monde repart de zéro) et Monocompte (un seul héros).
 🎮 ${GAME} · connecte-toi avec Discord (facultatif) pour garder ta partie partout, le chat, l'Hôtel des ventes, les guildes, le Kolizéum et les classements.
-📣 Nouvelles : <#NEWSIDLUS> · notes : <#UPDATES> · feuille de route : <#ROADMAP> · sondages : <#POLLS> · captures : <#SHOTS>
+📣 Nouvelles : <#NEWSIDLUS> · notes : <#UPDATES> · feuille de route : <#ROADMAP> · sondages : <#POLLS> · votes : <#VOTES>
 🐞 Bug : <#BUGS> (bouton « Signaler un bug » dans Options) · 💡 idées : <#IDEAS>, votez avec 👍
 
 🌑 **Re:Arise**, inspiré de Solo Leveling : incarne Sung Jinwoo depuis le double donjon, relève les ennemis vaincus en ombres et mène ton armée. 1.0 bêta : 8 chapitres, jusqu'au Portail rouge.
 🎮 ${RA} · gratuit, dans le navigateur, installable sur PC et téléphone. Tout est expliqué dans <#PRESRA>.
 
+🔥 **Diablofus : Les Douze Enfers**, le prochain jeu, en préparation : suis son avancement dans <#PROGDD>.
+
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT> (ou <#OFFTOPIC> pour le reste). Les grosses nouvelles du studio : <#NEWS>.
 
 🎭 **Tes rôles** : clique sur **Salons et rôles** en haut de la liste des salons pour être prévenu des nouveautés de chaque jeu et afficher ta classe ou ton ombre préférée. Modifiable à tout moment.
 
-*Projets de fan non officiels : idlus n'a aucun lien avec Ankama, ni Re:Arise avec les ayants droit de Solo Leveling.*`;
+*Projets de fan non officiels : idlus et Diablofus n'ont aucun lien avec Ankama, ni Re:Arise avec les ayants droit de Solo Leveling.*`;
 const RULES = `# Règles du serveur
 **1.** Respecte tout le monde : pas d'insultes, de harcèlement ni de propos discriminatoires.
 **2.** Pas de spam, de flood ni de mentions en masse.
@@ -38,14 +40,16 @@ const ROADMAP = `# Feuille de route d'idlus
 Sans dates : chaque partie sort quand elle est prête.
 
 **✅ Déjà dans le jeu**
-• Niveaux 1 à 200, les 19 classes, stasis 1 à 15 avec les boss ultimes, qui préviennent avant leurs grosses attaques
-• Dofus et leurs quêtes, Maîtrise, Ascension, Songe, défi du jour, Almanax
-• Familiers, montures et élevage, forgemagie, métiers et récolte, Havre-Sac
-• En ligne : chat, Hôtel des ventes, guildes et boss de guilde, alliances, alignements, Kolizéum, classements
-• Deux serveurs : le Classique et le Monocompte (un seul héros, en bêta fermée)
+• Trois serveurs : l'**Éternel** (tes parties d'avant la saison, pour toujours), la **Saison 1** « Les Fragments du Temps » (tout le monde repart de zéro, avec ses classements) et le **Monocompte** (un seul héros, avec le défi Serment de fer)
+• Niveaux 1 à 200, les 19 classes (changement de classe possible), stasis 1 à 15, boss ultimes et boss ultime de la semaine
+• Dofus et leurs quêtes, Maîtrise, Ascension (Éternel), Songe infini et objets légendaires, défi du jour, Almanax
+• Familiers, montures et élevage, forgemagie, métiers, récolte et apprentis, Havre-Sac, album de cartes
+• En ligne : chat (Général commun aux trois serveurs), Hôtel des ventes, bourse aux cartes, guildes, alliances, alignements, Kolizéum, boss des mondes, classements
+• Votes pour idlus : du Sablier et des kamas à chaque vote (<#VOTES>)
 
 **🔨 En préparation**
-• La Saison 1, sur le Classique et le Monocompte, avec un écran pour choisir son serveur
+• La suite de la Saison 1 et son équilibrage, au fil de vos retours
+• De nouvelles cartes de héros, dont des cartes de joueurs de la communauté
 • Vos idées les plus votées dans <#IDEAS> et les sondages de <#POLLS>`;
 const PRES_RA = `# Re:Arise
 🌑 **Re:Arise** est un idle game de fan inspiré de **Solo Leveling**. Tu incarnes Sung Jinwoo, le chasseur le plus faible, depuis le double donjon. Le Système te fait monter de niveau ; plus tard, tu relèves les ennemis vaincus en **ombres** (maintiens le bouton **ARISE**) et ton armée se bat avec toi, même quand tu n'es pas là.
@@ -123,6 +127,8 @@ Chaque vote fait monter idlus dans les classements de fan games et amène de nou
 Dans le jeu : **Joueurs › Voter pour Idlus**.
 • **Dofus Fan Games** : une fois par heure, 30 min de Sablier et des kamas (bonus de série jusqu'à +50 %).
 • **Jeux Indé** : toutes les 1 h 30, 15 min de Sablier et des kamas, la même récompense pour tous.
+
+🎯 **Objectif du mois** : chaque palier de votes atteint donne du Sablier à tous les joueurs du serveur.
 
 Vote depuis le même appareil et le même réseau que le jeu, puis clique « Récupérer ». Voter reste libre : rien n'est réservé aux votants.`;
 const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
@@ -283,7 +289,7 @@ async function main() {
         id: sid(), type: 0, title: `Ta classe préférée (${part[0][0]} à ${part[part.length - 1][0]})`, single_select: true, required: false, in_onboarding: true,
         options: part.map(([n]) => opt(n, "La couleur de ton pseudo", null, "cl_" + n)) })),
       { id: sid(), type: 0, title: "Ton serveur dans idlus", single_select: false, required: false, in_onboarding: true, options: [
-        opt("Classique", "Une équipe de héros", "⚔️", "srvclassic"),
+        opt("Classique", "Une équipe de héros : Éternel ou Saison 1", "⚔️", "srvclassic"),
         opt("Monocompte", "Un seul héros, en saison", "🛡️", "srvmono") ] },
       // Discord limite le nombre de questions de l'accueil : celle-ci n'apparaît que dans « Salons et rôles »
       { id: sid(), type: 0, title: "Ton ombre préférée dans Re:Arise", single_select: true, required: false, in_onboarding: false,
