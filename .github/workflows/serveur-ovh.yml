@@ -14,6 +14,7 @@
 #   envois-discord : lecture seule : les derniers bugs et idées envoyés depuis le jeu et s'ils sont arrivés sur Discord (chiffres seulement).
 #   boucle-enquete : lecture seule : quelle session se renouvelle en boucle, à quel rythme, avec quel navigateur.
 #   consommation : lecture seule, processeur et mémoire de chaque service, requêtes les plus coûteuses (tools/serveur/consommation.sh).
+#   code-top3 / code-top2 : 09/11, crée le code TOP3VOTES ou TOP2VOTES (tools/serveur/codes_top_votes.sql). Avec les mots de Mathis.
 #   alleger-services : 2.2.14.3 (Mathis 08/11) : arrête Studio, pg-meta, Storage et imgproxy, inutilisés par le jeu (tools/serveur/alleger.sh).
 #   rallumer-services : les remet en route.
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
@@ -36,7 +37,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, consommation, alleger-services, rallumer-services]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, code-top3, code-top2, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, consommation, alleger-services, rallumer-services]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -173,6 +174,13 @@ jobs:
       - name: Limites de calcul des fonctions (Boss des mondes, Kolizéum…)
         if: inputs.etape == 'fonctions-limites'
         run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/fonctions_limites.sh)"
+      - name: Code cadeau du top des votes (TOP3VOTES ou TOP2VOTES, avec les mots de Mathis)
+        if: inputs.etape == 'code-top3' || inputs.etape == 'code-top2'
+        run: |
+          f="$RUNNER_TEMP/codes_top_votes.sql"
+          q=$([ "${{ inputs.etape }}" = code-top2 ] && echo top2 || echo top3)
+          { echo "\\set QUEL '$q'"; cat tools/serveur/codes_top_votes.sql; } > "$f"
+          bash tools/serveur/vps_sql.sh fichier "$f"
       - name: Couper la session qui se renouvelle en boucle
         if: inputs.etape == 'couper-boucle'
         run: bash tools/serveur/vps_sql.sh fichier tools/serveur/couper_boucle.sql
