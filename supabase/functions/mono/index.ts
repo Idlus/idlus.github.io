@@ -23,6 +23,21 @@ const CORS = {
 };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
+// 09/11/2026 (SegFault : jusqu'à 32 Mbit/s d'envoi avec deux parties ouvertes) : le jeu envoie sa partie compressée (gzip,
+// environ 4 fois plus légère). Corps compressé reconnu à ses deux premiers octets ; sinon JSON comme avant. Au plus 32 Mo une fois décompressé.
+const BODY_MAX = 32 * 1024 * 1024;
+// deno-lint-ignore no-explicit-any
+async function readBody(req: Request): Promise<any> {
+  const buf = new Uint8Array(await req.arrayBuffer());
+  if (!buf.length) return {};
+  if (!(buf[0] === 0x1f && buf[1] === 0x8b)) return JSON.parse(new TextDecoder().decode(buf));
+  const rd = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+  const parts: Uint8Array[] = []; let n = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; n += value.length; if (n > BODY_MAX) { await rd.cancel(); throw new Error("trop gros"); } parts.push(value); }
+  const all = new Uint8Array(n); let o = 0; for (const p of parts) { all.set(p, o); o += p.length; }
+  return JSON.parse(new TextDecoder().decode(all));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ ok: false, err: "méthode refusée" }, 405);
@@ -33,7 +48,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
   // deno-lint-ignore no-explicit-any
   let body: { push?: any; verif?: number; bureau?: any } = {};
-  try { body = await req.json(); } catch (_) { /* corps vide */ }
+  try { body = await readBody(req); } catch (_) { /* corps vide */ }
   if (body.push) {
     const p = body.push;
     if (typeof p.data !== "string") return json({ ok: false, err: "partie manquante" }, 400);

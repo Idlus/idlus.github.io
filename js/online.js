@@ -306,6 +306,25 @@
      joué (« Deux versions de ta partie »). Chaque envoi porte maintenant un numéro (meta.pid) gardé sur l'appareil :
      si la version en ligne est l'un de nos propres envois, ce n'est pas un conflit. */
   ON.ownPush = (info, l) => { l = l || ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
+  /* 09/11/2026 (SegFault : « jusqu'à 32 Mbps d'upload » avec deux parties ouvertes) : la partie part compressée (gzip, environ
+     4 fois plus légère : 700 Ko → 160 Ko) par la fonction serveur, qui l'écrit avec les mêmes règles (push_save, mono_push) et
+     la vérifie dans le même appel. Navigateur sans CompressionStream, fonction pas encore à jour ou en panne : envoi direct comme
+     avant (et plus d'essai compressé pendant 10 min). Jamais avec le faux serveur des tests (sauf __IDLUS_GZ). */
+  let gzOff = 0;
+  const gzOn = () => typeof CompressionStream === "function" && typeof Blob === "function" && typeof Response === "function" && (!root.__IDLUS_SB || !!root.__IDLUS_GZ) && Date.now() > gzOff;
+  ON.gzip = async (txt) => { try { return await new Response(new Blob([txt]).stream().pipeThrough(new CompressionStream("gzip"))).blob(); } catch (e) { return null; } };
+  ON.gzStat = { n: 0, raw: 0, z: 0 }; // tailles envoyées depuis l'ouverture (console : ONLINE.gzStat)
+  const gzInvoke = async (fn, body, ms) => {
+    if (!gzOn()) return null;
+    const raw = JSON.stringify(body), z = await ON.gzip(raw);
+    if (!z) { gzOff = Date.now() + 600000; return null; }
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke(fn, { body: z }), ms);
+      if (!error && data) { ON.gzStat.n++; ON.gzStat.raw += raw.length; ON.gzStat.z += z.size; return data; }
+      if (error && error.name === "FunctionsFetchError") return { net: error };
+    } catch (e) { return { net: e }; } // réseau coupé ou délai dépassé : la partie a peut-être été écrite, pas de second envoi (1.0.10.2 s'en charge)
+    gzOff = Date.now() + 600000; return null; // la fonction a répondu une erreur (fonction d'avant, en panne) : envoi direct
+  };
   const setLinkOf = (key, p) => { const l = Object.assign(ON.linkOf(key), p); try { root.localStorage.setItem(key + "-online", JSON.stringify(l)); } catch (e) {} return l; };
   ON.push = (txt, meta, savedAt, force) => {
     if (!sb || !ON.user || !ON.slotOnline()) return Promise.resolve("offline");
@@ -324,11 +343,12 @@
     const m = Object.assign({}, meta || {}, { pid, sa: savedAt || 0 });
     const p = (async () => {
       try {
-        let data = null;
+        let data = null, verified = false;
         for (let i = 0; i < 2; i++) {
           const l = link();
           const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
-          const r = slot === MONO_N ? await monoPush(args) : await withTimeout(slot === 1 || slot === S1_N ? R("push_save", args, slot) : R("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
+          const r = slot === MONO_N ? await monoPush(args) : (slot === 1 || slot === S1_N) && gzOn() && (await zPush(args, slot)) || await withTimeout(slot === 1 || slot === S1_N ? R("push_save", args, slot) : R("push_slot", Object.assign({ p_slot: slot }, args)), 20000);
+          if (r.verif) verified = true;
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
           const info = await ON.remoteInfo(slot); // envoi refusé : la version en ligne est-elle un de nos envois ?
@@ -339,7 +359,7 @@
         setLinkOf(key, { uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok");
         if (slot === MONO_N && ON.onMonoPush) { try { ON.onMonoPush(ON.monoVerif); } catch (e) {} } // registre des Éclats et réponse du Bouclier Monocompte (js/mono_online.js)
-        if (slot === 1 || slot === S1_N) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
+        if ((slot === 1 || slot === S1_N) && !verified) await ON.verif(); // 2.1.4 « Bouclier du serveur » : le serveur vérifie la partie reçue (classements, hôtel de vente)
         return "ok";
       } catch (e) {
         // 2.1.35.2 : partie Monocompte d'avant la remise à zéro de la bêta, refusée par le serveur : le jeu la met de côté (js/ui.js)
@@ -355,12 +375,24 @@
   ON.monoVerif = null;
   const monoPush = async (args) => {
     try {
-      const { data, error } = await withTimeout(sb.functions.invoke("mono", { body: { push: { data: args.p_data, meta: args.p_meta, version: args.p_version, device: args.p_device, expected: args.p_expected, force: args.p_force } } }), 30000);
+      const body = { push: { data: args.p_data, meta: args.p_meta, version: args.p_version, device: args.p_device, expected: args.p_expected, force: args.p_force } };
+      const zd = await gzInvoke("mono", body, 30000); // 09/11 : compressé ; fonction d'avant (« demande inconnue ») : envoi normal
+      if (zd && zd.net) throw zd.net; // injoignable : envoi direct, comme avant
+      const { data, error } = zd ? { data: zd, error: null } : await withTimeout(sb.functions.invoke("mono", { body }), 30000);
       if (!error && data && data.ok) { ON.monoVerif = data.verif || null; return { data: data.at || null }; }
       if (!error && data && data.err) return { error: { message: data.err } };
     } catch (e) { /* fonction injoignable : envoi direct */ }
     ON.monoVerif = null;
     return withTimeout(R("mono_push", args), 20000);
+  };
+  /* 09/11/2026 : partie 1 et Classique · Saison 1 envoyées compressées par la fonction « record » (envoi + Bouclier en un appel).
+     null : envoi direct (navigateur ou fonction pas prêts). Réponse { data, verif } comme un appel direct à push_save. */
+  const zPush = async (args, slot) => {
+    const d = await gzInvoke("record", Object.assign(slot === S1_N ? { saison: 1 } : {}, { push: { data: args.p_data, meta: args.p_meta, version: args.p_version, device: args.p_device, expected: args.p_expected, force: args.p_force } }), 30000);
+    if (d && d.net) throw d.net;
+    if (!d || !d.push) { if (d) gzOff = Date.now() + 600000; return null; } // fonction d'avant : pas de marque « push »
+    if (d.err) return { error: { message: d.err } };
+    return { data: d.at || null, verif: !!d.at };
   };
   /* 2.1.4 « Bouclier du serveur » : après chaque envoi, le serveur relit la partie, calcule lui-même le résumé des classements
      et la garde comme « dernière partie validée » si elle est possible (fonction « record », { verif: 1 }). Rien à montrer

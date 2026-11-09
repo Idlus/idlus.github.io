@@ -167,7 +167,7 @@ jobs:
       - name: Consommation de chaque service (lecture seule, 2.2.14.3)
         if: inputs.etape == 'consommation'
         run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/consommation.sh)"
-      - name: Taille des sauvegardes en ligne (lecture seule, 09/11, envois SegFault)
+      - name: Taille des sauvegardes en ligne (lecture seule, 09/11, poids des envois)
         if: inputs.etape == 'taille-sauvegardes'
         run: |
           for t in public.saves s1.saves mono.parties public.save_slots; do
@@ -177,10 +177,13 @@ jobs:
           echo "== 10 plus grosses (S1 et Mono)"
           bash tools/serveur/vps_sql.sh lecture "select 's1' as srv, p.pseudo, round(octet_length(s.data::text)/1024) as ko from s1.saves s join public.profiles p on p.id = s.user_id order by 3 desc limit 10" || true
           bash tools/serveur/vps_sql.sh lecture "select 'mono' as srv, p.pseudo, round(octet_length(s.data::text)/1024) as ko from mono.parties s join public.profiles p on p.id = s.user_id order by 3 desc limit 5" || true
-          bash tools/serveur/vps_sql.sh lecture "select p.pseudo, round(octet_length(s.data::text)/1024) as ko, s.updated_at from s1.saves s join public.profiles p on p.id = s.user_id where lower(p.pseudo) = 'segfault'" || true
+          echo "== Envois récents par version du jeu (vérifiée = le Bouclier a relu la dernière partie envoyée)"
+          for sc in public s1; do bash tools/serveur/vps_sql.sh lecture "select '$sc' as srv, s.game_version, count(*) as n, count(*) filter (where o.src_at = s.updated_at) as verifiee from $sc.saves s left join $sc.saves_ok o on o.user_id = s.user_id where s.updated_at > now() - interval '20 minutes' group by 2 order by 2 desc" || true; done
+          echo "== Fonctions (erreurs des 30 dernières minutes)"
+          bash tools/serveur/vps_sql.sh commande 'docker logs --since 30m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception" | tail -15' || true
           echo "== Contenu des 15 plus grosses parties S1 (tailles seulement, tools/taille_sauvegarde.js)"
           f="$RUNNER_TEMP/tailles.json"
-          bash tools/serveur/vps_sql.sh lecture "select case when lower(p.pseudo) = 'segfault' then p.pseudo end as pseudo, s.data from s1.saves s join public.profiles p on p.id = s.user_id order by octet_length(s.data::text) desc limit 15" > "$f"
+          bash tools/serveur/vps_sql.sh lecture "select s.data from s1.saves s join public.profiles p on p.id = s.user_id order by octet_length(s.data::text) desc limit 15" > "$f"
           node tools/taille_sauvegarde.js "$f"; rm -f "$f"
       - name: Services inutilisés (Studio, pg-meta, Storage, imgproxy) arrêtés ou remis en route (2.2.14.3, choix 2 de Mathis)
         if: inputs.etape == 'alleger-services' || inputs.etape == 'rallumer-services'

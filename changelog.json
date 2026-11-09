@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.12",
+  "version": "2.2.14.13",
   "versions": [
+    {
+      "v": "2.2.14.13",
+      "name": "Sauvegarde en ligne plus légère",
+      "items": [
+        "Ta partie part sur le serveur compressée : environ 4 fois moins de données envoyées à chaque sauvegarde en ligne (une grosse partie de 700 Ko n'en envoie plus qu'environ 160)",
+        "Onglet caché : la sauvegarde en ligne part toutes les 3 minutes au lieu de chaque minute (elle part toujours en quittant l'onglet), et elle ne repart pas si rien n'a changé. La sauvegarde sur ton appareil reste toutes les 15 secondes"
+      ]
+    },
     {
       "v": "2.2.14.12",
       "name": "Monter l'Éveil d'un légendaire",

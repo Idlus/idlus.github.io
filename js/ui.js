@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.12";
+const GAME_VERSION = "2.2.14.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.13", name: "Sauvegarde en ligne plus légère", items: [
+    "Ta partie part sur le serveur compressée : environ 4 fois moins de données envoyées à chaque sauvegarde en ligne (une grosse partie de 700 Ko n'en envoie plus qu'environ 160)",
+    "Onglet caché : la sauvegarde en ligne part toutes les 3 minutes au lieu de chaque minute (elle part toujours en quittant l'onglet), et elle ne repart pas si rien n'a changé. La sauvegarde sur ton appareil reste toutes les 15 secondes" ] },
   { v: "2.2.14.12", name: "Monter l'Éveil d'un légendaire", items: [
     "Fiche d'un légendaire : le bouton pour monter l'Éveil est maintenant juste sous « Encore N copies », au lieu d'être tout en bas de la fiche. « Monter à l'Éveil II » fond d'un coup les copies qu'il faut, « Tout fondre » monte aussi haut que tes copies le permettent",
     "Une copie rangée dans une tenue (ou dans la tenue gardée d'un mercenaire en Monocompte) n'est plus choisie par erreur : la fiche dit combien de copies sont libres et lesquelles sont bloquées dans une tenue" ] },
@@ -12104,6 +12107,8 @@ function copyBeforeUpdate(st) { SV.beforeUpdate(st, restoredCopy); }
    Pendant le jeu : envoi toutes les 60 s (2.2.14.3, 30 s avant) et quand on quitte l'onglet, pastille dans la barre du haut. */
 const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
 let booted = false, sincePush = 0;
+const PUSH_HIDDEN_MS = 180000; // 2.2.14.13 (SegFault, deux parties ouvertes) : onglet caché, envoi automatique toutes les 3 min (la partie part déjà en quittant l'onglet)
+let pushedTxt = null; // dernière partie envoyée telle quelle : l'envoi automatique saute si rien n'a changé
 const PUSH_MS = 60000; // 2.2.14.3 « Serveur allégé » (Mathis 08/11) : envoi automatique toutes les 60 s (30 s avant) : deux fois moins de travail pour le serveur ; la partie reste sauvegardée sur l'appareil toutes les 15 s, et envoyée aussi en quittant l'onglet ou le jeu
 /* 1.0.11 : + héros principal (nom, apparence) et kamas, pour la carte de la partie sur l'écran « Choisis ta partie » */
 const onMeta = (st) => { if (!st || !st.chars) return {}; const mh = st.chars.find((c) => c.id === st.mainHero) || st.chars[0];
@@ -12582,10 +12587,11 @@ async function takeRemote(info) {
   const gap = absGap(S); render();
   offCatch(gap, (r) => { render(); takenShow(r); });
 }
-function onPush(force) {
+function onPush(force, auto) {
   if (!onLive() || offRun || tabLost) return Promise.resolve(null);
-  saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
+  saveNow(); const sa = S.savedAt, txt = SV.read();
+  if (auto && txt === pushedTxt && ON.state === "ok") return Promise.resolve("same"); // 2.2.14.13 : rien de neuf depuis le dernier envoi
+  return ON.push(txt, onMeta(S), sa, force).then((r) => { pushedTxt = r === "ok" ? txt : null; if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
@@ -13479,7 +13485,7 @@ function loop() {
     else if (ui.tab === "world" && (ui.zoneView || (ui.world === "enc" && ["best", "fam", "boss", "tro"].includes(ui.enc && ui.enc.tab))) && sinceView > 2500 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; morphTo($("#main"), ui.zoneView ? zoneViewHtml(ui.zoneView) : worldHtml()); } // 1.2.10.5 : fiche de zone et Encyclopédie, compteurs de monstres tués à jour sans changer d'onglet (mise à jour ciblée)
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
-    if (ON) { sincePush += dt; if (sincePush > PUSH_MS && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
+    if (ON) { sincePush += dt; if (sincePush > (document.visibilityState === "hidden" ? PUSH_HIDDEN_MS : PUSH_MS) && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(false, true); } }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
     if (sinceRes > 2500) { sinceRes = 0; const now = E.now(); updNavLive();

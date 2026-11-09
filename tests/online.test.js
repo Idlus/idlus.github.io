@@ -152,7 +152,7 @@ const MOCK = () => {
     else r = { ok: false, err: "refusé" };
     put(d); return { data: r, error: null };
   };
-  window.__IDLUS_SB = { createClient: () => ({
+  window.__IDLUS_SB = { createClient: () => { const cli = ({
     auth: {
       getSession: async () => ({ data: { session: user() ? { user: user() } : null } }),
       onAuthStateChange: (cb) => { window.__authCb = cb; return { data: { subscription: { unsubscribe() {} } } }; }, // 1.0.29.6 : __authCb rejoue les évènements de la bibliothèque
@@ -165,7 +165,16 @@ const MOCK = () => {
     channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
-    functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco || o.body.prism) return guildInvoke(o.body); const d = db();
+    functions: { invoke: async (name, o) => {
+      // 2.2.14.13 : partie envoyée compressée (gzip) par la fonction : la fonction « record » l'écrit comme push_save et la vérifie
+      if (typeof Blob !== "undefined" && o.body instanceof Blob) { const raw = await new Response(o.body.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+        const d0 = db(); d0.gz = (d0.gz || 0) + 1; d0.gzRaw = (d0.gzRaw || 0) + raw.length; d0.gzZ = (d0.gzZ || 0) + o.body.size; put(d0); o = { body: JSON.parse(raw) };
+        if (name === "record" && o.body.push) { if (window.__offline) throw new Error("Failed to fetch"); const p = o.body.push;
+          const r = await cli.rpc("push_save", { p_data: p.data, p_meta: p.meta, p_version: p.version, p_device: p.device, p_expected: p.expected, p_force: p.force });
+          if (r.error) return { data: { ok: false, push: 1, err: r.error.message }, error: null };
+          if (!r.data) return { data: { ok: true, push: 1, at: null }, error: null };
+          const d1 = db(); d1.verifs = (d1.verifs || 0) + 1; put(d1); return { data: { ok: true, push: 1, at: r.data, verif: { ok: true } }, error: null }; } }
+      if (o.body.gboss || o.body.raid || o.body.perco || o.body.prism) return guildInvoke(o.body); const d = db();
       // Bouclier Monocompte (fonction « mono », étape 5) : envoi de la partie 4 puis vérification ; bons de butin d'après les lignes
       // d'activité de la partie (un par gain), registre renvoyé au jeu
       if (name === "mono" && o.body.push) { if (window.__offline) throw new Error("Failed to fetch"); const u = d.session; const M = (d.mono = d.mono || { testers: [] }); const a = o.body.push;
@@ -410,7 +419,7 @@ const MOCK = () => {
       if (name === "gift_mine") return d.giftMine ? { data: d.giftMine, error: null } : { data: null, error: { message: "pas encore" } }; // 1.0.6.2
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
-  }) };
+  }); return cli; } };
 };
 
 /* 1.2 : une page peut être repliée dans sa famille (ou rangée en onglet) : on ouvre la famille puis on clique, sinon DX.go */
@@ -425,7 +434,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await ctx.addInitScript(MOCK);
-    await ctx.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; }); // 1.0 : pas d'écran de lancement pendant ce test
+    await ctx.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; window.__IDLUS_GZ = true; }); // 1.0 : pas d'écran de lancement pendant ce test ; 2.2.14.13 : envoi compressé
     await ctx.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
     const page = await ctx.newPage();
     page.on("console", (m) => { if (m.type() === "error") fail(`console : ${m.text()}`); });
@@ -644,6 +653,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
       m = await mock(); if (m.invoked.length !== n0) fail("2.1.30.8 : record déjà envoyé renvoyé depuis un autre appareil");
     }
     if (!m.verifs) fail("2.1.4 : la partie envoyée n'a pas été vérifiée par le serveur (bouclier)");
+    if (!m.gz || !(m.gzZ * 3 < m.gzRaw)) fail(`2.2.14.13 : partie pas envoyée compressée (${m.gz || 0} envois, ${m.gzRaw || 0} → ${m.gzZ || 0} octets)`); else console.log(`  envoi compressé : ${m.gz} envois, ${Math.round(m.gzRaw / m.gz)} → ${Math.round(m.gzZ / m.gz)} octets`);
     // 1.0.30 : classement du donjon dans sa fiche : top 5 et ma place, équipe de chaque record, Records / Cette semaine, « Classement complet »
     const dgW = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const V = window.VERIFY; const W = V.weekIdx(Date.now()); const did = V.weeklyDungeons(window.DATA.DUNGEONS, W)[0].did;
       const P = [["u9", "Kralamour", "iop", 10, 250, ["iop", "eni", "sacri", "cra"]], ["u8", "Tofuline", "eni", 10, 300, ["eni", "feca"]], ["u7", "Bworkman", "sacri", 9, 200, []], ["u6", "Xenerium", "cra", 8, 400, ["cra", "osa", "eni"]], ["u5", "Nyx", "sram", 8, 450, ["sram"]], ["u4", "Gloubi", "osa", 7, 500, ["osa", "cra"]]];

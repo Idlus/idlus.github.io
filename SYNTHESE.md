@@ -66,6 +66,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 - Modération (2.2.2, 03/11) : Mathis nomme seul les modérateurs (Panel › Équipe en jeu, rôle à la main sur Discord). Un modo supprime un message public, avertit en privé, rend muet 24 h au plus, jamais sur Mathis ni un autre modo ; pas de bannissement, de suspension, ni d'accès aux sauvegardes ou aux kamas. Ses actions arrivent dans #modération. La triche reste du ressort de Mathis.
 - Dofus : quête (1 par compte), butin de boss, codes ; aucun bonus sur leurs chances.
 - Pas de jetons de challenge.
+- Sauvegarde en ligne (2.2.14.13, 09/11) : envoyée compressée (gzip, ×4 plus légère) par les fonctions record/mono, Bouclier dans le même appel ; onglet caché : toutes les 3 min ; rien de changé : pas d'envoi. Poids des parties : workflow Serveur OVH, étape « taille-sauvegardes ».
 - Butin (2.2.14.8, 08/11) : les ressources de monstres sans aucune recette ne tombent plus (liste `node tools/build_sans_recette.js`, à relancer après tout changement de recettes ou de butin). Les stocks gardent leur prix.
 - Combat : la grille tactique est mise de côté pour la Saison 1 ; le combat idle est enrichi par les annonces du boss et les parades (2.1.42, 02/11). Mesure à suivre : le taux de parades.
 - Répartition des rôles : ChatGPT conçoit, Claude analyse, réalise et vérifie, Mathis tranche.

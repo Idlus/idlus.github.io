@@ -29,6 +29,20 @@ const SHARED_T = new Set(["profiles", "chat_msgs", "admins", "gift_uses"]);
 // deno-lint-ignore no-explicit-any
 const seasonDb = (db: any) => new Proxy(db, { get: (t, k) => (k === "isS1" ? true : k === "from" ? (x: string) => (SHARED_T.has(x) ? t.from(x) : t.schema("s1").from(x)) : k === "rpc" ? (n: string, a?: unknown) => t.schema("s1").rpc(n, a) : t[k]) });
 const lastTry = new Map<string, number>(); // anti-rafale (par instance)
+// 09/11/2026 (SegFault : jusqu'à 32 Mbit/s d'envoi avec deux parties ouvertes) : le jeu envoie sa partie compressée (gzip,
+// environ 4 fois plus légère). Corps compressé reconnu à ses deux premiers octets ; sinon JSON comme avant. Au plus 32 Mo une fois décompressé.
+const BODY_MAX = 32 * 1024 * 1024;
+// deno-lint-ignore no-explicit-any
+async function readBody(req: Request): Promise<any> {
+  const buf = new Uint8Array(await req.arrayBuffer());
+  if (!buf.length) return {};
+  if (!(buf[0] === 0x1f && buf[1] === 0x8b)) return JSON.parse(new TextDecoder().decode(buf));
+  const rd = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+  const parts: Uint8Array[] = []; let n = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; n += value.length; if (n > BODY_MAX) { await rd.cancel(); throw new Error("trop gros"); } parts.push(value); }
+  const all = new Uint8Array(n); let o = 0; for (const p of parts) { all.set(p, o); o += p.length; }
+  return JSON.parse(new TextDecoder().decode(all));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -40,8 +54,8 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { saison?: number; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string; tournoi?: any } = {};
-  try { body = await req.json(); } catch (_) { /* corps vide */ }
+  let body: { saison?: number; push?: any; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string; tournoi?: any } = {};
+  try { body = await readBody(req); } catch (_) { /* corps vide */ }
   /* Saison 1, lot 0b : partie Classique · Saison 1 (saison: 1) : tout ce que la fonction lit et écrit est dans l'espace « s1 »
      (supabase/saison1.sql), sauf le compte et ce qui reste commun (profils, chat, admins, codes cadeaux). */
   const db = body.saison === 1 ? seasonDb(db0) : db0;
@@ -55,6 +69,7 @@ Deno.serve(async (req) => {
   if (body.songe) return songe(db, user.id);
   if (body.prism) return prism(db, user.id, String(body.prism));
   if (body.tournoi) return tournoi(db, user.id, body.tournoi);
+  if (body.push) return json(await pushSave(db, jwt, body.saison === 1, user.id, body.push));
   if (body.verif) return json(await validate(db, user.id, false));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
@@ -499,6 +514,24 @@ async function songe(db: any, uid: string) {
 // partie validée, comparés au temps réel). Si tout va bien, elle devient la « dernière partie validée » (saves_ok) : les
 // classements, l'hôtel de vente et les combats rejoués partent d'elle. Sinon, le compte est signalé à Mathis (suspect) ;
 // depuis le 04/11, la partie passe quand même (le Bouclier ne bloque plus l'affichage). Mathis décide toujours (panel Xener › En vérification : « C'est bon » l'accepte).
+// 09/11/2026 : envoi de la partie (Classique et Classique · Saison 1) par la fonction, compressé, puis vérification du Bouclier dans
+// le même appel (avant : un envoi direct à la base, puis un second appel { verif: 1 }). L'écriture passe par push_save avec le
+// compte du joueur (mêmes règles : conflit entre appareils, remise imposée, compte suspendu). Réponse marquée « push » : sans
+// elle, le jeu repasse par l'envoi direct (fonction d'avant).
+// deno-lint-ignore no-explicit-any
+async function pushSave(db: any, jwt: string, s1: boolean, uid: string, p: any): Promise<Record<string, unknown>> {
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!anon) return { ok: false, err: "envoi direct" }; // pas de marque push : le jeu envoie lui-même
+  if (!p || typeof p.data !== "string") return { ok: false, push: 1, err: "partie manquante" };
+  const uc = createClient(Deno.env.get("SUPABASE_URL")!, anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${jwt}` } } });
+  const c = s1 ? uc.schema("s1") : uc;
+  const { data: at, error } = await c.rpc("push_save", { p_data: p.data, p_meta: p.meta || {}, p_version: String(p.version || ""), p_device: String(p.device || ""), p_expected: p.expected || null, p_force: !!p.force });
+  if (error) return { ok: false, push: 1, err: error.message || "erreur" };
+  if (!at) return { ok: true, push: 1, at: null }; // conflit entre deux appareils : rien d'écrit, rien à vérifier
+  let verif: Record<string, unknown>;
+  try { verif = await validate(db, uid, false); } catch (_) { verif = { ok: false, err: "vérification impossible" }; }
+  return { ok: true, push: 1, at, verif };
+}
 const VERIF_MIN_S = 20; // au plus une vérification toutes les 20 s par compte (le jeu envoie sa partie toutes les 30 s), sauf avant un combat rejoué
 const parisDay = (t: number) => new Date(t + 2 * 3600 * 1000).toISOString().slice(0, 10);
 // deno-lint-ignore no-explicit-any
