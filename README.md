@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.12 « Monter l'Éveil d'un légendaire »
+- Mathis (09/11, Monocompte) : fiche du Diadème de Canymède « Encore 1 copie pour l'Éveil II. Tu en as 7 dans le sac » sans trouver comment monter l'Éveil. Le bouton « Fondre une copie » était en bas de la fiche (sous les caractéristiques) et prenait la première copie venue, même rangée dans une tenue (E.inGear, aussi les tenues gardées des mercenaires en Mono) → refus. Nouveau : E.legSpare (copies libres / dans une tenue) et l'action E.legFuseUp (jusqu'à l'Éveil suivant ou jusqu'au V), boutons juste sous la ligne des copies, texte qui compte les copies libres et nomme celles bloquées. Test tests/legendaires.test.js §6.
+
 ## 2.2.14.11 « Partie reprise d'un autre appareil »
 - #193 (Fulfutor) : après « Charger » la partie plus récente du PC sur téléphone, aucun résultat des 10 h. Reproduit : PC éteint, l'absence est bien comptée ; jeu resté ouvert sur le PC (même caché, 2.2.12.4), les heures y sont jouées en direct et envoyées chaque minute, la partie chargée est à jour et rien ne s'affichait. takeRemote garde la partie d'avant de l'appareil (takenFrom) ; sans absence, devGainSheet montre les gains faits ailleurs (kamas, niveaux, objets, monstres, ressources). Test : section 13 de tests/online.test.js.
 

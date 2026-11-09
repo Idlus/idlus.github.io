@@ -85,4 +85,18 @@ E.subUnlocked = () => true; // toutes les zones ouvertes pour les combats de tes
   console.log("ok - légendaires : les 38 passifs en combat");
 }
 
+// 6. 2.2.14.12 (Mathis, Monocompte) : « Monter l'Éveil » fond d'un coup les copies libres, jamais une copie rangée dans une tenue.
+{
+  const S = team(200); const h = S.chars[0]; const a = E.giveLeg(S, "crocobur"); const cs = [0, 1, 2, 3].map(() => E.giveLeg(S, "crocobur"));
+  const sl = ITEMS[a.tpl].slot === "anneau" ? "anneau1" : ITEMS[a.tpl].slot === "dofus" ? "dofus1" : ITEMS[a.tpl].slot;
+  assert.strictEqual(E.equip(S, h.id, a.uid, sl), null);
+  h.gear = [{ name: "Tenue", eq: { [sl]: cs[3].uid } }];
+  const sp = E.legSpare(S, a.uid); assert.strictEqual(sp.ok.length, 3, "3 copies libres"); assert.strictEqual(sp.gear.length, 1, "1 dans une tenue");
+  assert.strictEqual(E.act(S, "legFuseUp", a.uid, false), null); assert.strictEqual(E.legEv(S.items[a.uid]), 2, "Éveil II d'un clic");
+  assert.strictEqual(E.act(S, "legFuseUp", a.uid, true), null); assert.strictEqual(E.legCopies(S.items[a.uid]), 4, "toutes les copies libres fondues");
+  assert.ok(S.items[cs[3].uid], "la copie de la tenue est gardée");
+  assert.ok(/tenue/.test(E.act(S, "legFuseUp", a.uid, true)), "explique pourquoi la dernière copie ne se fond pas");
+  console.log("ok - légendaires : monter l'Éveil d'un clic, copies des tenues gardées");
+}
+
 console.log("legendaires.test.js : tout est bon");

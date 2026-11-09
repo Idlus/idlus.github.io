@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.11";
+const GAME_VERSION = "2.2.14.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.12", name: "Monter l'Éveil d'un légendaire", items: [
+    "Fiche d'un légendaire : le bouton pour monter l'Éveil est maintenant juste sous « Encore N copies », au lieu d'être tout en bas de la fiche. « Monter à l'Éveil II » fond d'un coup les copies qu'il faut, « Tout fondre » monte aussi haut que tes copies le permettent",
+    "Une copie rangée dans une tenue (ou dans la tenue gardée d'un mercenaire en Monocompte) n'est plus choisie par erreur : la fiche dit combien de copies sont libres et lesquelles sont bloquées dans une tenue" ] },
   { v: "2.2.14.11", name: "Partie reprise d'un autre appareil", items: [
     "Charger sur ton téléphone la partie plus récente de ton ordinateur (ou l'inverse) montre maintenant ce qu'elle a gagné là-bas depuis ta dernière visite : kamas, niveaux, objets, ressources",
     "Si le jeu est resté ouvert sur l'autre appareil, ces heures y ont été jouées en direct (à 100 %) : il n'y a pas d'absence à rattraper, et c'est maintenant écrit. Appareil éteint : l'absence est comptée comme avant" ] },

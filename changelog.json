@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.11",
+  "version": "2.2.14.12",
   "versions": [
+    {
+      "v": "2.2.14.12",
+      "name": "Monter l'Éveil d'un légendaire",
+      "items": [
+        "Fiche d'un légendaire : le bouton pour monter l'Éveil est maintenant juste sous « Encore N copies », au lieu d'être tout en bas de la fiche. « Monter à l'Éveil II » fond d'un coup les copies qu'il faut, « Tout fondre » monte aussi haut que tes copies le permettent",
+        "Une copie rangée dans une tenue (ou dans la tenue gardée d'un mercenaire en Monocompte) n'est plus choisie par erreur : la fiche dit combien de copies sont libres et lesquelles sont bloquées dans une tenue"
+      ]
+    },
     {
       "v": "2.2.14.11",
       "name": "Partie reprise d'un autre appareil",

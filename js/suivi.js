@@ -34,7 +34,7 @@
     enterDungeon: "donjon", leaveDungeon: "donjon", stopChain: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",
     defiPlay: "defi", tresorClaim: "tresor", tresorLegClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
-    expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition", expBuy: "expedition", sgBuy: "expedition", sgBuyWeek: "expedition", legFuse: "expedition",
+    expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition", expBuy: "expedition", sgBuy: "expedition", sgBuyWeek: "expedition", legFuse: "expedition", legFuseUp: "expedition",
     koliFight: "koli", koliRefresh: "koli", useConsumable: "coffre", shardBuy: "champion", sealShard: "champion", sealFuse: "champion", sealEveil: "champion",
     ascStart: "ascension", ascReroll: "ascension", ascChoose: "ascension", ascQuit: "ascension", ascDrink: "ascension", ascUnlock: "ascension", ascBuy: "ascension", ascBrew: "ascension",
     misSend: "mission", misRecall: "mission", misBuildRoom: "mission",

@@ -666,7 +666,7 @@
   E.sgOfficial = (claim, best) => Math.max(0, Math.min(claim, best + Math.max(2, Math.ceil(best * 0.25))));
 
   /* ---------- actions officielles ---------- */
-  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetLoop: "songes en boucle", sgLoopStop: "arrêter la boucle des songes", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire" });
+  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetLoop: "songes en boucle", sgLoopStop: "arrêter la boucle des songes", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire", legFuseUp: "fondre les copies d'un légendaire" });
 
   /* ---------- familier, ornement, succès, bulle de découverte ---------- */
   if (E.PETS && !E.PETS.draconiros_mini) E.PETS.draconiros_mini = { name: "Draconiros miniature", icon: 18048, stats: { pui: 70, cri: 5 }, kind: "zone", lvl: 100, food: "Viande Goûtue", songe: true };

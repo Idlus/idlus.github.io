@@ -306,10 +306,21 @@
       ${mine.length ? `<div class="sgx-sub">Ta collection</div><div class="sgx-lgos">${mine.map(big).join("")}</div>` : ""}
       ${lv === -1 ? "" : `<div class="sgx-sub">À découvrir</div>${groups || `<span class="xs muted">Tu les as tous !</span>`}`}</section>`;
   }
+  /* 2.2.14.12 (Mathis, Monocompte) : le bouton pour monter l'Éveil est juste sous la ligne des copies (il était tout en bas de la fiche,
+     hors de l'écran sur téléphone) ; il fond d'un coup les copies qu'il faut et ne prend jamais une copie rangée dans une tenue */
+  const fuseHtml = (it, ev, n, nGear) => {
+    const need = E.legNext(it); const s2 = (v) => (v > 1 ? "s" : "");
+    let line = `Encore ${need} copie${s2(need)} pour l'Éveil ${ROM[ev]}.`;
+    line += n ? ` Tu en as ${n} de libre${s2(n)} dans le sac.` : " Aucune copie libre dans le sac.";
+    if (nGear) line += ` ${nGear} autre${s2(nGear)} rangée${s2(nGear)} dans une tenue : retire-la${nGear > 1 ? "s" : ""} de la tenue pour la${nGear > 1 ? "s" : ""} fondre.`;
+    let to = ev, c = E.legCopies(it) + n; while (to < 5 && c >= E.LEG_COPIES[to]) to++;
+    const btns = n ? `<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">${n >= need ? `<button class="btn primary" data-act="sg-fuseup" data-u="${it.uid}">${G("star")} Monter à l'Éveil ${ROM[ev]}</button>` : `<button class="btn primary" data-act="sg-fuseup" data-u="${it.uid}">Fondre ${n} copie${s2(n)}</button>`}${to > ev + 1 ? `<button class="btn" data-act="sg-fuseup" data-u="${it.uid}" data-all="1">Tout fondre (Éveil ${ROM[to - 1]})</button>` : ""}</div>` : "";
+    return `<span class="xs">${line}</span>${btns}`;
+  };
   /* fiche d'un légendaire (aussi ouverte depuis le sac) */
   function legSheet(s, k, uid) {
     const x = E.LEG[k]; const T = ITEMS[x.tpl]; const it = uid ? s.items[uid] : Object.values(s.items).filter((i) => i.tpl === x.tpl).sort((a, b) => E.legCopies(b) - E.legCopies(a))[0];
-    const ev = it ? E.legEv(it) : 1; const copies = it ? Object.values(s.items).filter((i) => i.tpl === x.tpl && i.uid !== it.uid && !E.equippedBy(s, i.uid)) : [];
+    const ev = it ? E.legEv(it) : 1; const sp = it ? E.legSpare(s, it.uid) : { ok: [], gear: [] }; const copies = sp.ok; const nCp = copies.reduce((a, b) => a + E.legCopies(b), 0);
     const best = x.best && ITEMS[x.best] ? ITEMS[x.best].name : "";
     const ranks = ROM.map((r, i) => `<span class="${i + 1 === ev && it ? "on" : ""}"><b>${r}</b>${h(String(x.v[i]))}<em class="xs muted">${i ? `+${E.LEG_COPIES[i] - E.LEG_COPIES[i - 1]} copie${E.LEG_COPIES[i] - E.LEG_COPIES[i - 1] > 1 ? "s" : ""}` : "à l'obtention"}</em></span>`).join("");
     const st = Object.keys(T.stats).map((k2) => `<span class="statl">${X().sIco(k2)}<span>${h(D.STATS[k2] ? `${T.stats[k2][0] > 0 ? "+" : ""}${T.stats[k2][0]}${D.STATS[k2].pct ? " %" : ""} ${D.STATS[k2].name}` : k2)}</span></span>`).join("");
@@ -317,10 +328,10 @@
     X().openSheet(`<div class="stack" style="gap:12px"><div class="row" style="gap:14px;align-items:center"><span class="icobox lx cf ${ev <= 2 ? "e1" : ev >= 5 ? "e5" : ""}" style="width:72px;height:72px;border-radius:16px;display:grid;place-items:center">${ev >= 5 ? `<i class="lxsp"></i>` : ""}<img src="assets/i/${x.icon}.png" alt="" style="width:56px;height:56px;object-fit:contain"></span>
       <span class="stack" style="gap:3px;min-width:0"><span class="xs muted">Objet légendaire · ${h(T.slot)} · niveau ${x.lvl} · ${x.db ? "DOFUS" : "inédit Idlus"}</span><h2 style="margin:0">${legName(x.tpl)}</h2><span class="xs muted">${it ? (owner ? `porté par ${h(owner.name)}` : "dans ton sac") : "pas encore obtenu"}</span></span></div>
       <div class="lgpas"><b class="small">${G("star")} Passif unique${it ? ` · Éveil ${ROM[ev - 1]}` : ""}</b><b>${h(E.legTxt(x, ev))}</b><div class="lgranks">${ranks}</div>
-        ${it ? (ev >= 5 ? `<span class="xs muted">Éveil V atteint.</span>` : `<span class="xs">Encore ${E.legNext(it)} copie${E.legNext(it) > 1 ? "s" : ""} pour l'Éveil ${ROM[ev]}.${copies.length ? ` Tu en as ${copies.length} dans le sac.` : ""}</span>`) : ""}</div>
+        ${it ? (ev >= 5 ? `<span class="xs muted">Éveil V atteint.</span>` : fuseHtml(it, ev, nCp, sp.gear.length)) : ""}</div>
       <div class="stack" style="gap:4px"><span class="xs muted">Caractéristiques fixes : ${Math.round(x.ratio * 100)} % du meilleur objet de même emplacement et de même niveau${best ? ` (${h(best)})` : ""}, le passif en plus.</span><div class="tipstats">${st}</div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">1 légendaire par héros</span><span class="pill">se vend à l'HdV avec son Éveil</span><span class="pill">pas de forgemagie</span><span class="pill">passif actif partout</span></div>
-      <div class="row" style="gap:8px;flex-wrap:wrap">${it && copies.length && ev < 5 ? `<button class="btn primary" data-act="sg-fuse" data-u="${it.uid}" data-u2="${copies[0].uid}">Fondre une copie</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
   }
 
   /* ---------- 1.0.30 : classement de la semaine, lots du top 10, nouveautés, tuile du Havre-Sac ---------- */
@@ -473,6 +484,7 @@
       case "sg-cadre": after(E.act(s, "sgCadre", t.checked)); return;
       case "sg-legf": ui.lv = +d.v; X().render(); return;
       case "sg-leg": legSheet(s, d.k, d.u ? +d.u : undefined); return;
+      case "sg-fuseup": { const r = E.act(s, "legFuseUp", +d.u, !!d.all); if (r) { X().toast(r); return; } X().markDirty(); const it = s.items[+d.u]; if (it) legSheet(s, ITEMS[it.tpl].leg, it.uid); X().render(); return; }
       case "sg-fuse": { const r = E.act(s, "legFuse", +d.u, +d.u2); if (r) { X().toast(r); return; } X().markDirty(); const it = s.items[+d.u]; if (it) legSheet(s, ITEMS[it.tpl].leg, it.uid); X().render(); return; }
     }
   }

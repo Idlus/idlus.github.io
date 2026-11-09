@@ -163,6 +163,20 @@
     if (after > before) E.celebrate({ t: "leg", tpl: a.tpl, ev: after, up: true });
     return null;
   };
+  /* 2.2.14.12 (Mathis, Monocompte) : les copies qu'on peut fondre (ni portées, ni rangées dans une tenue) et celles bloquées dans une tenue */
+  E.legSpare = (S, uid) => { const a = S.items[uid]; const ok = [], gear = [];
+    if (a) for (const u in S.items) { const b = S.items[u]; if (+u === +uid || b.tpl !== a.tpl || E.equippedBy(S, +u)) continue; (E.inGear(S, +u) ? gear : ok).push(b); }
+    ok.sort((x, y) => E.legCopies(y) - E.legCopies(x)); return { ok, gear }; };
+  /* fondre d'un coup les copies libres : jusqu'à l'Éveil suivant (all = false) ou jusqu'à l'Éveil V (all = true) */
+  E.legFuseUp = (S, uid, all) => {
+    const a = S.items[uid]; if (!a || !ITEMS[a.tpl] || !ITEMS[a.tpl].leg) return "Légendaire introuvable.";
+    if (E.legEv(a) >= 5) return "Éveil V atteint : il ne monte plus.";
+    const { ok, gear } = E.legSpare(S, uid);
+    if (!ok.length) return gear.length ? `Tes copies sont rangées dans une tenue (${gear.length}) : retire-les de la tenue pour les fondre.` : "Aucune copie libre dans le sac.";
+    const goal = all ? 5 : E.legEv(a) + 1;
+    for (const b of ok) { if (E.legEv(a) >= goal) break; const r = E.legFuse(S, uid, b.uid); if (r) return r; }
+    return null;
+  };
   /* donner un légendaire (butin du Songe, tests) */
   E.giveLeg = (S, k, why) => {
     const x = E.LEG[k]; if (!x) return null;
