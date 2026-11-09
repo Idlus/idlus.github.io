@@ -181,8 +181,8 @@ jobs:
           for sc in public s1; do bash tools/serveur/vps_sql.sh lecture "select '$sc' as srv, s.game_version, count(*) as n, count(*) filter (where o.src_at = s.updated_at) as verifiee from $sc.saves s left join $sc.saves_ok o on o.user_id = s.user_id where s.updated_at > now() - interval '20 minutes' group by 2 order by 2 desc" || true; done
           echo "== Fonctions (erreurs des 30 dernières minutes)"
           bash tools/serveur/vps_sql.sh commande 'docker logs --since 30m supabase-edge-functions 2>&1 | grep -iE "error|erreur|exception" | tail -15' || true
-          echo "== push_save des 15 dernières minutes (journal du proxy)"
-          bash tools/serveur/vps_sql.sh commande 'docker ps --format "{{.Names}}" | tr "\n" " "; echo; for c in supabase-kong supabase-rest; do echo "-- $c : $(docker logs --since 15m $c 2>&1 | wc -l) lignes, push_save $(docker logs --since 15m $c 2>&1 | grep -c push_save)"; docker logs --since 15m $c 2>&1 | grep push_save | tail -4 | sed -E "s/[0-9]+\.[0-9]+\.[0-9]+\.([0-9]+)/x.x.x.\1/g" | cut -c1-200; done' || true
+          echo "== Fonctions : clé publique présente (envoi compressé possible) et appels récents"
+          bash tools/serveur/vps_sql.sh commande 'echo "SUPABASE_ANON_KEY présente : $(docker exec supabase-edge-functions printenv SUPABASE_ANON_KEY 2>/dev/null | grep -c .)"; echo "SUPABASE_URL : $(docker exec supabase-edge-functions printenv SUPABASE_URL)"; docker logs --since 15m supabase-envoy 2>&1 | grep -oE "(POST|GET) /(functions/v1/[a-z]+|rest/v1/rpc/push_save)" | sort | uniq -c' || true
           echo "== Contenu des 15 plus grosses parties S1 (tailles seulement, tools/taille_sauvegarde.js)"
           f="$RUNNER_TEMP/tailles.json"
           bash tools/serveur/vps_sql.sh lecture "select s.data from s1.saves s join public.profiles p on p.id = s.user_id order by octet_length(s.data::text) desc limit 15" > "$f"
