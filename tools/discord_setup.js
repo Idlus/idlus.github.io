@@ -19,7 +19,7 @@ const WELCOME = `# Bienvenue chez Ombrelune Studio !
 🌑 **Re:Arise**, inspiré de Solo Leveling : incarne Sung Jinwoo depuis le double donjon, relève les ennemis vaincus en ombres et mène ton armée. 1.0 bêta : 8 chapitres, jusqu'au Portail rouge.
 🎮 ${RA} · gratuit, dans le navigateur, installable sur PC et téléphone. Tout est expliqué dans <#PRESRA>.
 
-🔥 **Diablofus : Les Douze Enfers**, le prochain jeu, en préparation : suis son avancement dans <#PROGDD>.
+🔥 **Diablofus : Les Douze Enfers**, le prochain jeu, en préparation : suis son avancement dans <#1568634063189704846>.
 
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT> (ou <#OFFTOPIC> pour le reste). Les grosses nouvelles du studio : <#NEWS>.
 
@@ -172,10 +172,7 @@ const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lie
       tags: [["Trop dur", "🔺"], ["Trop facile", "🔻"], ["Trop long", "⏳"], ["Ressources", "💎"], ["Pris en compte", "✅"]] },
     { key: "IDEASRA", name: "idées-re-arise", type: FORUM, slow: 300, topic: "Une idée par fil pour Re:Arise. Votez avec 👍 pour celles que vous voulez voir dans le jeu.",
       tags: [["Combat", "⚔️"], ["Ombres", "🌑"], ["Interface", "🖥️"], ["Histoire", "📖"], ["Équilibrage", "⚖️"], ["Retenue", "✅"]] } ] },
-  // 05/11 : futur jeu de fan DOFUS de Mathis, « Diablofus : Les Douze Enfers » (old : nom temporaire du 04/11, salons renommés sans perdre leurs messages)
-  { cat: "🔥 Diablofus : Les Douze Enfers", old: ["🔥 Dofus Diablo"], chans: [
-    { key: "PROGDD", name: "avancement-diablofus", old: ["avancement-dofus-diablo"], lock: true, topic: "L'avancement de Diablofus : Les Douze Enfers : captures, nouveautés, coulisses" },
-    { key: "CHATDD", name: "discussion-diablofus", old: ["discussion-dofus-diablo"], topic: "Vos réactions, questions et idées sur Diablofus : Les Douze Enfers" } ] },
+  // 09/11 : la catégorie « 🔥 Diablofus : Les Douze Enfers » est gérée par le robot de Diablofus (ses propres salons) : ce script n'y touche plus
   { cat: "🧪 Bêta idlus", old: ["🧪 Bêta"], only: ["mod", "creator"], chans: [ // version de test fermée le 14/10 : gardée pour l'historique, visible par l'équipe
     { key: "BETANEWS", name: "bêta-nouveautés", lock: true, topic: "Ce qui vient d'arriver sur la version de test", text: BETA_TXT },
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
