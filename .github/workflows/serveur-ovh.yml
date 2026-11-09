@@ -178,6 +178,10 @@ jobs:
           bash tools/serveur/vps_sql.sh lecture "select 's1' as srv, p.pseudo, round(octet_length(s.data::text)/1024) as ko from s1.saves s join public.profiles p on p.id = s.user_id order by 3 desc limit 10" || true
           bash tools/serveur/vps_sql.sh lecture "select 'mono' as srv, p.pseudo, round(octet_length(s.data::text)/1024) as ko from mono.parties s join public.profiles p on p.id = s.user_id order by 3 desc limit 5" || true
           bash tools/serveur/vps_sql.sh lecture "select p.pseudo, round(octet_length(s.data::text)/1024) as ko, s.updated_at from s1.saves s join public.profiles p on p.id = s.user_id where lower(p.pseudo) = 'segfault'" || true
+          echo "== Contenu des 15 plus grosses parties S1 (tailles seulement, tools/taille_sauvegarde.js)"
+          f="$RUNNER_TEMP/tailles.json"
+          bash tools/serveur/vps_sql.sh lecture "select case when lower(p.pseudo) = 'segfault' then p.pseudo end as pseudo, s.data from s1.saves s join public.profiles p on p.id = s.user_id order by octet_length(s.data::text) desc limit 15" > "$f"
+          node tools/taille_sauvegarde.js "$f"; rm -f "$f"
       - name: Services inutilisés (Studio, pg-meta, Storage, imgproxy) arrêtés ou remis en route (2.2.14.3, choix 2 de Mathis)
         if: inputs.etape == 'alleger-services' || inputs.etape == 'rallumer-services'
         run: bash tools/serveur/vps_sql.sh commande "ACTION=$([ '${{ inputs.etape }}' = rallumer-services ] && echo rallumer || echo arreter); $(cat tools/serveur/alleger.sh)"
