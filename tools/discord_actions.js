@@ -2,7 +2,7 @@
    node tools/discord_actions.js [actions.json]   (ou la liste JSON dans DISCORD_ACTIONS)
    La liste : [{ "methode": "POST", "chemin": "/channels/{{salon:annonces}}/messages", "corps": { "content": "…" } }, …] (API Discord v10).
    Dans « chemin » et « corps » : {{serveur}} = identifiant du serveur, {{salon:nom}}, {{role:nom}}, {{N.champ}} = champ du résultat de l'action N (à partir de 0).
-   Chaque résultat est affiché dans le journal (tronqué à 4 000 caractères) ; --print affiche les appels sans les envoyer. */
+   Chaque résultat est affiché dans le journal (tronqué à 4 000 caractères, ou seulement les champs listés dans « champs » : ["id","name"]) ; --print affiche les appels sans les envoyer. */
 const fs = require("fs"); const { api, norm, guildId } = require("./discord_api.js");
 const DRY = process.argv.includes("--print"); const file = process.argv.slice(2).find((a) => !a.startsWith("--"));
 
@@ -29,7 +29,10 @@ async function main() {
     const body = a.corps || a.body ? JSON.parse(await fill(JSON.stringify(a.corps || a.body))) : undefined;
     if (DRY) { console.log(`#${i} ${method} ${path}`, body ? JSON.stringify(body) : ""); res.push(null); continue; }
     const r = await api(method, path, body); res.push(r);
-    console.log(`#${i} ${method} ${path} → ${JSON.stringify(r).slice(0, 4000)}`);
+    // « champs » : n'afficher que ces champs (utile pour une longue liste, ex. tous les salons), sans limite de taille
+    const pick = (o) => (o && typeof o === "object" ? Object.fromEntries(a.champs.map((k) => [k, o[k]])) : o);
+    const shown = a.champs ? JSON.stringify(Array.isArray(r) ? r.map(pick) : pick(r)) : JSON.stringify(r).slice(0, 4000);
+    console.log(`#${i} ${method} ${path} → ${shown}`);
     if (list.length > 1) await new Promise((ok) => setTimeout(ok, 600));
   }
   console.log("Actions effectuées :", list.length);
