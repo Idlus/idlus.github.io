@@ -1,0 +1,32 @@
+{
+ "salon": "sondages",
+ "duree_heures": 168,
+ "intro": "📣 **Sondage : des grades pour soutenir Idlus ?**\n\nIdlus est gratuit et le restera. Pour payer le serveur et continuer à faire grandir le jeu, je réfléchis à des **grades de soutien**, sous forme d'un petit abonnement mensuel. Ils pourraient donner :\n• un badge à côté du pseudo, un titre, une couleur de pseudo et un cadre ;\n• un cosmétique de soutien chaque mois, gardé à vie ;\n• un peu de Sablier chaque semaine ;\n• d'autres avantages, selon vos idées.\n\nPromis : rien qui casse l'équilibre du jeu, et les joueurs gratuits gardent tout le contenu.\n\nVotez juste en dessous, et vos idées en réponse sont les bienvenues !",
+ "sondages": [
+  {
+   "question": "Des grades de soutien, ça vous irait ?",
+   "reponses": [
+    {
+     "emoji": "✅",
+     "text": "Oui, je pourrais en prendre un"
+    },
+    {
+     "emoji": "👍",
+     "text": "Bonne idée, mais pas pour moi"
+    },
+    {
+     "emoji": "🎨",
+     "text": "Oui, mais seulement cosmétique, sans Sablier"
+    },
+    {
+     "emoji": "❌",
+     "text": "Non, je préfère que rien ne soit payant"
+    },
+    {
+     "emoji": "💡",
+     "text": "J'ai une autre idée (dites-la en réponse)"
+    }
+   ]
+  }
+ ]
+}
