@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.14",
+  "version": "2.2.14.15",
   "versions": [
+    {
+      "v": "2.2.14.15",
+      "name": "Maîtrise sans limite",
+      "items": [
+        "Saison 1 : la Maîtrise n'a plus de plafond par manche. Chaque point gagné compte tout de suite, comme dans l'Éternel",
+        "L'XP déjà gardée au plafond est versée à tes héros dès ta connexion. L'XP de Maîtrise ne donne plus de Fragments du Temps (22 Fragments au plus par jour, le quota de la semaine ne change pas)"
+      ]
+    },
     {
       "v": "2.2.14.14",
       "name": "Top 2 des votes",

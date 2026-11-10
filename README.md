@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.15 « Maîtrise sans limite »
+- Mathis (10/11, « enlève la limite d'xp des maitrise sur les serveurs Saison 1 ») : plus de plafond de Maîtrise par manche en Classique · Saison 1 (E.S1C.mtCap null, avant 50/100/150/250 ; E.s1cMtCap = Infinity). L'activité « XP au plafond de Maîtrise » (4 Fragments/jour) disparaît (DAYMAX 26 → 22, quota hebdo de 100 inchangé) ; l'XP gardée en réserve (S.s1c.bank) est versée au prochain tick. Éternel et Monocompte n'avaient pas ce plafond. Rien côté serveur (le Bouclier, en pause, ne connaît pas ce plafond). Le ×2 XP en cours ne double pas la Maîtrise (divisé au niveau 200), inchangé.
+
 ## 2.2.14.14 « Top 2 des votes »
 - Mathis (09/11 « 1 jour d'xp et drop x2 pour le top 2 », 10/11 « le top 2 est atteint ») : E.EVENT « Top 2 des votes » XP et butin ×2 du 10/11 13:00Z au 11/11 14:00Z (remplace l'ancien événement terminé de la Semaine de la Maîtrise ; un événement prévu à la main passe avant le Week-end du Temps de la Saison 1, qui commence le 13/11, donc pas de chevauchement). Code TOP2VOTES créé (tools/serveur/codes_top_votes.sql, étape code-top2 du workflow Serveur OVH).
 

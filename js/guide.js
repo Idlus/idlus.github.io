@@ -827,7 +827,7 @@
       ["h", "Les Fragments du Temps"],
       ["p", `La monnaie de saison. Ils viennent des donjons, des archimonstres, des métiers et des avis de recherche, avec une borne par jour (${N(() => S1().DAYMAX)} au plus) et un quota de ${N(() => S1().frag.quota)} par semaine, cumulable jusqu'à ${N(() => S1().frag.cap)}. Ils s'échangent à la **vitrine** de la semaine contre des cosmétiques. Les Kolizetons et les autres monnaies restent.`],
       ["h", "Bénédictions et Maîtrise"],
-      ["ul", ["Tous les 10 niveaux, tu choisis **1 bénédiction parmi 3** : un petit bonus (XP, kamas, butin, PV…) qui reste toute la saison.", `La **Maîtrise** a un plafond par manche (${V(() => S1().mtCap.join(", "))} points) : personne ne s'envole dès la première semaine.`]],
+      ["ul", ["Tous les 10 niveaux, tu choisis **1 bénédiction parmi 3** : un petit bonus (XP, kamas, butin, PV…) qui reste toute la saison.", "La **Maîtrise** n'a plus de plafond pendant la saison : chaque point gagné compte, comme dans l'Éternel."]],
       ["tip", "Rien de la saison ne s'achète avec de l'argent, et aucun cosmétique ne change la puissance."],
     ] });
   add({ id: "s1album", f: "Saison 1", n: "Album de cartes et boosters", ic: "carte", page: "album", k: "cartes booster brillante poussiere etoile album heros idlus legendes collection bourse echange vendre doubles reduire hdv",

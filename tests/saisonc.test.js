@@ -42,24 +42,17 @@ console.log("ok - Fragments du Temps : borne du jour, quota de 100 par semaine, 
   const T = s1(); T.chars[0].lvl = 25; assert.deepStrictEqual(E.s1cBoonOffer(T).ids, o.ids, "même offre pour tous"); }
 console.log("ok - bénédictions : un choix tous les 10 niveaux parmi 3, même offre pour tous, bonus ajouté");
 
-// Maîtrise par manche
-{ const S = s1(); const c = S.chars[0]; c.lvl = E.MAX_LVL; for (let i = 0; i < 400; i++) E.giveXp(S, c, 1e12);
-  assert.strictEqual(E.mt(c).lvl, C.mtCap[0], "manche 1 : plafond");
-  now = t0 + 15 * DAY; for (let i = 0; i < 400; i++) E.giveXp(S, c, 1e12); assert.strictEqual(E.mt(c).lvl, C.mtCap[1]); now = t0; }
-console.log("ok - Maîtrise : plafond par manche, relevé à la manche suivante");
-
-// équilibrage 2A + B : l'XP au plafond donne des Fragments (4 par jour), le reste est versé à la manche suivante
-{ const S = s1(); const c = S.chars[0]; c.lvl = E.MAX_LVL; const M = E.mt(c);
-  E.giveXp(S, c, E.mtXpTot(C.mtCap[0]) - 10); assert.strictEqual(M.lvl, C.mtCap[0] - 1, "sous le plafond : rien ne change");
-  const f0 = E.s1cFrag(S); E.giveXp(S, c, 10 + C.fragXp(S) * 2); assert.strictEqual(M.lvl, C.mtCap[0]); assert.strictEqual(E.s1cFrag(S) - f0, 2, "2 Fragments pour 2 quarts de point");
-  E.giveXp(S, c, C.fragXp(S) * 10); assert.strictEqual(E.s1cFrag(S) - f0, C.ACT.mt.max, "4 par jour au plus");
-  assert.strictEqual(E.s1cBanked(S, c), C.fragXp(S) * 8, "le reste est gardé");
-  E.s1cBankPay(S); assert.strictEqual(M.lvl, C.mtCap[0], "pas versé dans la même manche");
-  const keep = E.s1cBanked(S, c); now = t0 + 14 * DAY + 3600000; const pts = E.s1cBankPay(S);
-  assert(pts > 0 && M.lvl > C.mtCap[0] && M.lvl <= C.mtCap[1], "versé à l'ouverture de la manche 2, dans son plafond");
-  assert.strictEqual(E.s1cBanked(S, c), 0); assert.strictEqual(E.s1cBankPay(S), 0, "versé une seule fois");
-  assert(keep > 0); now = t0; }
-console.log("ok - XP au plafond : Fragments du Temps (4 par jour) puis réserve versée à la manche suivante");
+// 2.2.14.15 (Mathis 10/11) : plus de plafond de Maîtrise en Saison 1, plus de Fragments pour l'XP au plafond
+{ const S = s1(); const c = S.chars[0]; c.lvl = E.MAX_LVL; assert.strictEqual(E.s1cMtCap(S), Infinity); assert(!C.ACT.mt, "plus d'activité « XP au plafond »");
+  const f0 = E.s1cFrag(S); for (let i = 0; i < 400; i++) E.giveXp(S, c, 1e12);
+  assert(E.mt(c).lvl > 250, "manche 1 : plus de plafond"); assert.strictEqual(E.s1cFrag(S), f0, "pas de Fragments pour la Maîtrise"); assert.strictEqual(E.s1cBanked(S, c), 0, "rien gardé"); }
+console.log("ok - Maîtrise sans plafond en Saison 1");
+// l'XP déjà gardée (ancienne règle) est versée tout de suite, une seule fois
+{ const S = s1(); const c = S.chars[0]; c.lvl = E.MAX_LVL; const M = E.mt(c); E.giveXp(S, c, E.mtXpTot(50));
+  const l0 = M.lvl; E.s1cBank(S).x[c.id] = E.mtXpTot(80) - E.mtXpTot(50);
+  const pts = E.s1cBankPay(S); assert(pts >= 29 && M.lvl === l0 + pts, "réserve versée sans attendre la manche suivante");
+  assert.strictEqual(E.s1cBanked(S, c), 0); assert.strictEqual(E.s1cBankPay(S), 0, "versé une seule fois"); }
+console.log("ok - XP gardée au plafond : versée tout de suite");
 
 // équilibrage 1B : un week-end Double gain par manche (2e week-end, vendredi 18 h → dimanche 22 h UTC)
 { const ev0 = E.EVENT; assert.deepStrictEqual(E.s1Weekends(), [], "sans date d'ouverture : pas de week-end");
@@ -92,7 +85,7 @@ console.log("ok - retouches de classes : saison seulement, hors Kolizéum");
 
 // rien hors de la saison
 { const S = E.newState("Héros", "iop"); for (let i = 0; i < 10; i++) E.s1cActivity(S, "dj"); assert.strictEqual(E.s1cFrag(S), 0); S.res[RES] = 50; E.s1cSync(S); assert.strictEqual(S.res[RES], undefined, "Éternel : pas de Fragments");
-  S.chars[0].lvl = 50; assert.strictEqual(E.s1cBoonOffer(S), null); const c = S.chars[0]; c.lvl = E.MAX_LVL; for (let i = 0; i < 200; i++) E.giveXp(S, c, 1e12); assert(E.mt(c).lvl > C.mtCap[0], "Éternel : pas de plafond");
+  S.chars[0].lvl = 50; assert.strictEqual(E.s1cBoonOffer(S), null); const c = S.chars[0]; c.lvl = E.MAX_LVL; for (let i = 0; i < 200; i++) E.giveXp(S, c, 1e12); assert(E.mt(c).lvl > 50, "Éternel : pas de plafond");
   const M = E.monoStart(E.newState("Mono", "iop")); M.s1c = { s: 1, t0 }; assert(!E.isS1c(M), "Monocompte jamais touché");
   const txt = E.serialize ? E.serialize(s1()) : null; if (txt) { const R = E.deserialize(txt); assert(E.isS1c(R)); } }
 console.log("ok - Éternel et Monocompte jamais touchés, sauvegarde relue");

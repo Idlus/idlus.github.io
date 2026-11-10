@@ -19,7 +19,7 @@
     debut: null, // date d'ouverture donnée par le serveur ; sans elle, la date de création de la partie
     jours: 56, manche: 14,
     manches: ["La Fissure", "Échos du Passé", "La Rupture", "Dernier Sablier"],
-    mtCap: [50, 100, 150, 250], // plafond de Maîtrise (points) par manche ; la dernière laisse finir la saison
+    mtCap: null, // 2.2.14.15 (Mathis 10/11, « enlève la limite d'xp des maîtrises ») : plus de plafond de Maîtrise par manche (avant : 50, 100, 150, 250)
     frag: { res: "Fragment du Temps", icon: 995001, quota: 100, cap: 800 },
   });
   // activités : borne par jour, puis quota de 100 par semaine (cumulable jusqu'à 800 sur la saison)
@@ -28,9 +28,8 @@
     arch: { n: "Archimonstres", gain: 2, max: 6 },
     job: { n: "Métiers (1 toutes les 50 actions)", gain: 1, max: 4, per: 50 },
     bounty: { n: "Avis de recherche", gain: 2, max: 4 },
-    mt: { n: "XP au plafond de Maîtrise", gain: 1, max: 4 }, // équilibrage 2A (03/11)
   };
-  C.DAYMAX = Object.values(C.ACT).reduce((a, x) => a + x.max, 0); // 22
+  C.DAYMAX = Object.values(C.ACT).reduce((a, x) => a + x.max, 0); // 22 (26 avec l'XP au plafond de Maîtrise, retirée en 2.2.14.15)
   // bénédictions (3A) : petits bonus de saison, cumulables ; les mêmes 3 choix pour tous les joueurs à chaque palier
   C.BOONS = [
     { id: "xp", n: "Élan du Temps", k: "xp", v: 2, d: "+2 % d'XP" },
@@ -107,7 +106,7 @@
   E.bonus = function (S, kind) { const b = bonus0.apply(this, arguments); return E.isS1c(S) ? b + E.s1cBoon(S, kind) : b; };
 
   /* ---------------- Maîtrise par manche (4A) ---------------- */
-  E.s1cMtCap = (S) => (E.isS1c(S) ? C.mtCap[E.s1cManche(S) - 1] : Infinity);
+  E.s1cMtCap = (S) => (E.isS1c(S) && C.mtCap ? C.mtCap[E.s1cManche(S) - 1] : Infinity);
   /* Équilibrage de la Saison 1 (Mathis 03/11, choix 2 = A + B) : au plafond de la manche, l'XP n'est plus perdue.
      A : elle donne d'abord des Fragments du Temps (1 par quart de point de Maîtrise, 4 par jour au plus, dans le quota de la semaine) ;
      B : le reste est gardé par héros et versé à l'ouverture de la manche suivante (à nouveau dans son plafond). */
@@ -118,6 +117,7 @@
   E.giveXp = function (S, c, g) {
     if (!E.isS1c(S) || !c || c.lvl < E.MAX_LVL || !(g > 0)) return give0.apply(this, arguments);
     const cap = E.s1cMtCap(S), M = E.mt(c);
+    if (cap === Infinity) return give0.apply(this, arguments); // 2.2.14.15 : sans plafond, rien ne change
     const room = M.lvl >= cap ? 0 : Math.max(0, E.mtXpTot(cap) - E.mtXpTot(M.lvl) - (M.xp || 0)); // XP qui manque jusqu'au plafond
     const inG = Math.min(g, room); let r = false;
     if (inG > 0) r = give0.call(this, S, c, inG);
@@ -131,10 +131,11 @@
   };
   // ouverture d'une manche : l'XP gardée est versée (ce qui dépasse le nouveau plafond repart en Fragments puis en réserve)
   E.s1cBankPay = (S) => {
-    if (!open(S) || !S.s1c.bank) return 0; const B = S.s1c.bank, m = E.s1cManche(S); if (B.m >= m) return 0;
+    if (!open(S) || !S.s1c.bank) return 0; const B = S.s1c.bank, m = E.s1cManche(S);
+    if (B.m >= m && (C.mtCap || !Object.keys(B.x || {}).length)) return 0; // 2.2.14.15 : sans plafond, l'XP gardée est versée tout de suite
     const L = B.x; B.m = m; B.x = {}; let pts = 0;
     Object.keys(L).forEach((id) => { const c = S.chars.find((h) => String(h.id) === id); if (!c || !(L[id] > 0)) return; const M = E.mt(c), l0 = M.lvl; E.giveXp(S, c, L[id]); pts += M.lvl - l0; });
-    if (pts > 0) E.note(S, `Manche ${m} : l'XP gardée au plafond de Maîtrise est versée (+${pts} point${pts > 1 ? "s" : ""}).`, "rare");
+    if (pts > 0) E.note(S, !C.mtCap ? `Maîtrise sans limite : l'XP gardée au plafond est versée (+${pts} point${pts > 1 ? "s" : ""}).` : `Manche ${m} : l'XP gardée au plafond de Maîtrise est versée (+${pts} point${pts > 1 ? "s" : ""}).`, "rare");
     return pts;
   };
 
