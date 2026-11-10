@@ -36,7 +36,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, consommation, taille-sauvegardes, alleger-services, rallumer-services]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, consommation, taille-sauvegardes, alleger-services, rallumer-services, inventaire-machine, diablofus-installer, diablofus-ladder]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -812,6 +812,32 @@ jobs:
         if: inputs.etape == 'sauvegarde-base'
         run: |
           bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-install-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > "$f"; ls -lh "$f"'
+      - name: Inventaire de la machine avant Diablofus (lecture seule, demande de Mathis du 08/11)
+        if: inputs.etape == 'inventaire-machine'
+        run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/inventaire.sh)"
+      - name: Serveur de Diablofus à côté d'Idlus (demande écrite de Mathis du 08/11, sans toucher à Docker, Caddy, ufw ni /opt/idlus)
+        if: inputs.etape == 'diablofus-installer'
+        env:
+          J: ${{ secrets.DIABLOFUS_TUNNEL_TOKEN }}
+          DS: ${{ secrets.DIABLOFUS_DISCORD_SECRET }}
+        run: |
+          DS=$(printf '%s' "$DS" | tr -d '[:space:]')
+          if [ -n "$DS" ]; then echo "::add-mask::$DS"; printf '%s' "$DS" | grep -Eq '^[A-Za-z0-9_-]{16,128}$' || { echo "Secret Discord inattendu." >&2; exit 1; }; fi
+          J=$(printf '%s' "$J" | tr -d '[:space:]'); J=${J##*install}
+          if [ -n "$J" ]; then echo "::add-mask::$J"; printf '%s' "$J" | grep -Eq '^[A-Za-z0-9+/=_-]{50,}$' || { echo "Jeton inattendu." >&2; exit 1; }; fi
+          bash tools/serveur/vps_sql.sh commande "JETON='$J' DISCORD_ID='1567902042180026499' DISCORD_SECRET='$DS'
+          $(cat tools/serveur/diablofus_installer.sh)"
+      - name: Webhook Discord « Ladder » de Diablofus (annonces du classement, demande de Mathis du 10/11, URL dans le secret DIABLOFUS_LADDER_WEBHOOK)
+        if: inputs.etape == 'diablofus-ladder'
+        env:
+          L: ${{ secrets.DIABLOFUS_LADDER_WEBHOOK }}
+        run: |
+          L=$(printf '%s' "$L" | tr -d '[:space:]')
+          [ -n "$L" ] || { echo "Secret DIABLOFUS_LADDER_WEBHOOK manquant." >&2; exit 1; }
+          echo "::add-mask::$L"; echo "::add-mask::${L##*/}"
+          printf '%s' "$L" | grep -Eq '^https://(discord\.com|discordapp\.com)/api/webhooks/[0-9]{15,25}/[A-Za-z0-9_-]{40,100}$' || { echo "Le secret ne ressemble pas à une URL de webhook Discord." >&2; exit 1; }
+          bash tools/serveur/vps_sql.sh commande "LADDER='$L'
+          $(cat tools/serveur/diablofus_ladder.sh)"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
