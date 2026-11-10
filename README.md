@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.16 « Top 2 des votes : Maîtrise ×2 aussi »
+- Ticket #197 (Nerisia, « XP et butin x2 ne fonctionnent pas », même XP/h en donjon) : giveRewards divise exprès le ×2 de l'événement pour un héros au niveau 200 (XP de Maîtrise jamais doublée par un événement, règle des week-ends de saison). Le butin passe bien par E.evMult("drop") en donjon. Mathis (carte, 10/11 18:49Z) : doubler aussi la Maîtrise pour cet événement → E.EVENT.mt (le ×2 n'est plus retiré au niveau 200 quand mt est vrai) ; week-ends de saison inchangés. Pastille et détail des bonus le disent.
+
 ## 2.2.14.15 « Maîtrise sans limite »
 - Mathis (10/11, « enlève la limite d'xp des maitrise sur les serveurs Saison 1 ») : plus de plafond de Maîtrise par manche en Classique · Saison 1 (E.S1C.mtCap null, avant 50/100/150/250 ; E.s1cMtCap = Infinity). L'activité « XP au plafond de Maîtrise » (4 Fragments/jour) disparaît (DAYMAX 26 → 22, quota hebdo de 100 inchangé) ; l'XP gardée en réserve (S.s1c.bank) est versée au prochain tick. Éternel et Monocompte n'avaient pas ce plafond. Rien côté serveur (le Bouclier, en pause, ne connaît pas ce plafond). Le ×2 XP en cours ne double pas la Maîtrise (divisé au niveau 200), inchangé.
 

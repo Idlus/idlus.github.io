@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.15",
+  "version": "2.2.14.16",
   "versions": [
+    {
+      "v": "2.2.14.16",
+      "name": "Top 2 des votes : Maîtrise ×2 aussi",
+      "items": [
+        "Événement « Top 2 des votes » : l'XP de Maîtrise des héros niveau 200 est maintenant doublée elle aussi, jusqu'au mercredi 11/11 à 15 h. Avant, seuls l'XP sous le niveau 200 et le butin étaient ×2 (merci Nerisia)",
+        "La pastille de l'événement et le détail des bonus disent ce qui est doublé (les week-ends de saison, eux, ne doublent toujours pas la Maîtrise)"
+      ]
+    },
     {
       "v": "2.2.14.15",
       "name": "Maîtrise sans limite",

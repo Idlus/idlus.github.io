@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.15";
+const GAME_VERSION = "2.2.14.16";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.16", name: "Top 2 des votes : Maîtrise ×2 aussi", items: [
+    "Événement « Top 2 des votes » : l'XP de Maîtrise des héros niveau 200 est maintenant doublée elle aussi, jusqu'au mercredi 11/11 à 15 h. Avant, seuls l'XP sous le niveau 200 et le butin étaient ×2 (merci Nerisia)",
+    "La pastille de l'événement et le détail des bonus disent ce qui est doublé (les week-ends de saison, eux, ne doublent toujours pas la Maîtrise)" ] },
   { v: "2.2.14.15", name: "Maîtrise sans limite", items: [
     "Saison 1 : la Maîtrise n'a plus de plafond par manche. Chaque point gagné compte tout de suite, comme dans l'Éternel",
     "L'XP déjà gardée au plafond est versée à tes héros dès ta connexion. L'XP de Maîtrise ne donne plus de Fragments du Temps (22 Fragments au plus par jour, le quota de la semaine ne change pas)" ] },
@@ -4210,7 +4213,7 @@ function altarHtml() {
 }
 function bonusBox() {
   const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
-  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.honorCls ? `${CLASSES[E.honorCls()].name} à l'honneur : +${E.HONOR_PCT} % XP (ses héros) et butin (équipe avec un ${CLASSES[E.honorCls()].name})` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2${E.EVENT.mt ? ", Maîtrise comprise" : " (pas l'XP de Maîtrise au niveau 200)"}` : "", E.honorCls ? `${CLASSES[E.honorCls()].name} à l'honneur : +${E.HONOR_PCT} % XP (ses héros) et butin (équipe avec un ${CLASSES[E.honorCls()].name})` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
   const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
   return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
@@ -9686,7 +9689,7 @@ function renderUpdBar() {
   else if (MONO_BETA.on && SLOT === MONO_SLOT) html += tchip({ k: "sys", ico: G("sparkle"), t: "Bêta Monocompte", d: "partie remise à zéro avant la Saison 1", tip: "Bêta fermée du Monocompte : saison de test en temps réel, partie vérifiée et gardée par le serveur, Bureau des Aventuriers, amis, échanges et HdV de saison. Tout repart de zéro avant la Saison 1. Signale les bugs avec le bouton prévu." });
   else if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
-    html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
+    html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.${E.EVENT.mt ? " Maîtrise comprise au niveau 200." : " Au niveau 200, l'XP de Maîtrise n'est pas doublée."}` }); } // 2.2.14.16 (#197)
   if (S && E.honorCls && S.honorHide !== E.honorIdx()) { const k = E.honorCls(), C = CLASSES[k], hh = Math.max(1, Math.ceil((E.honorEnd() - E.now()) / 3600e3)), left = hh >= 24 ? `${Math.floor(hh / 24)} j` : `${hh} h`, mine = S.chars.some((c) => c.cls === k);
     html += tchip({ k: "ev", ico: `<img src="${symImg(k)}" alt="" style="width:18px;height:18px">`, t: `${h(C.name)} à l'honneur`, d: `+${E.HONOR_PCT} % XP et butin`, s: `+${E.HONOR_PCT} % · ${left}`, tip: `La classe à l'honneur : cette semaine, les héros ${h(C.name)} gagnent +${E.HONOR_PCT} % d'XP (Maîtrise comprise), et une équipe avec au moins un ${h(C.name)} a +${E.HONOR_PCT} % de butin. ${mine ? "Tu en as un !" : "Tu n'en as pas encore."} Encore ${left}, puis une autre classe peu jouée prend le relais.`, x: `data-act="honorhide"`, xt: "Masquer cette semaine" }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
