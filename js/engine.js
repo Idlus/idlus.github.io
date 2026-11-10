@@ -165,6 +165,7 @@
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
     E.addChar(S, cls || "iop", name || "Aventurier", 1);
     note(S, `${S.chars[0].name} arrive sur Incarnam.`, "info");
+    if (E.CC_GIFTS) { S.ccGot = E.CC_GIFTS.slice(); S.ccTok = E.CC_GIFTS.length; } // 2.2.14.17 : une nouvelle partie a aussi le changement de classe offert, sans message
     return S;
   };
 
@@ -4088,21 +4089,35 @@
   E.ccWait = (c) => (c && c.cc && c.cc.at ? Math.max(0, c.cc.at + E.CC_WAIT - E.now()) : 0);
   E.ccFrom = (c, l) => !!(c && c.cc && (c.cc.lv || 0) >= l); // niveau l déjà atteint avant un changement de classe : ne compte pas pour les succès de la nouvelle classe
   E.ccMonoOnce = (S) => !!(E.isMono && E.isMono(S) && !(E.monoEternal && E.monoEternal(S)));
+  /* 2.2.14.17 « Changement de classe offert » (Mathis 10/11 : « un changement de classe gratuit à tous les joueurs ») :
+     chaque partie (Éternel, Saison 1, Monocompte) reçoit une fois chaque cadeau de E.CC_GIFTS, soit un changement offert (S.ccTok).
+     Il ne sert que quand le changement aurait coûté quelque chose : prix en kamas, délai de 7 jours ou limite d'une fois par saison
+     au Monocompte. Le premier changement d'un héros reste gratuit sans le consommer. Un changement offert ne fait pas doubler le prix suivant. */
+  E.CC_GIFTS = ["2026-11-10"];
+  E.ccGiftSync = (S) => {
+    const got = S.ccGot || (S.ccGot = []); let n = 0;
+    E.CC_GIFTS.forEach((g) => { if (!got.includes(g)) { got.push(g); n++; } });
+    if (n) S.ccTok = (S.ccTok || 0) + n;
+    return n;
+  };
+  E.ccBlocked = (S, c) => !!(c && (E.ccCost(c) > 0 || E.ccWait(c) > 0 || (E.ccMonoOnce(S) && c.cc && c.cc.n)));
+  E.ccTokUse = (S, c) => !!(S && (S.ccTok || 0) > 0 && E.ccBlocked(S, c));
   E.ccErr = (S, c, cls) => {
     if (!c) return "Héros introuvable.";
     if (cls !== undefined && !CLASSES[cls]) return "Classe inconnue.";
     if (cls !== undefined && cls === c.cls) return `${c.name} est déjà ${CLASSES[cls].name}.`;
-    if (E.ccMonoOnce(S) && c.cc && c.cc.n) return "Un seul changement de classe par saison au Monocompte.";
-    const w = E.ccWait(c); if (w) { const hh = Math.ceil(w / 3600000); return `Prochain changement de classe dans ${hh >= 24 ? `${Math.floor(hh / 24)} j${hh % 24 ? ` ${hh % 24} h` : ""}` : `${hh} h`}.`; }
+    const tok = E.ccTokUse(S, c);
+    if (!tok && E.ccMonoOnce(S) && c.cc && c.cc.n) return "Un seul changement de classe par saison au Monocompte.";
+    const w = tok ? 0 : E.ccWait(c); if (w) { const hh = Math.ceil(w / 3600000); return `Prochain changement de classe dans ${hh >= 24 ? `${Math.floor(hh / 24)} j${hh % 24 ? ` ${hh % 24} h` : ""}` : `${hh} h`}.`; }
     const active = c.inTeam && !c.job;
     if (active && S.dungeon) return "Impossible pendant un donjon.";
     if (active && E.expActive && E.expActive(S)) return "Impossible pendant une expédition.";
-    const cost = E.ccCost(c); if (S.kamas < cost) return `Il te manque ${Math.ceil(cost - S.kamas).toLocaleString("fr-FR")} kamas.`;
+    const cost = tok ? 0 : E.ccCost(c); if (S.kamas < cost) return `Il te manque ${Math.ceil(cost - S.kamas).toLocaleString("fr-FR")} kamas.`;
     return null;
   };
   E.changeClass = (S, cid, cls, look) => {
     const c = S.chars.find((x) => x.id === cid); const err = E.ccErr(S, c, cls); if (err) return err;
-    const cost = E.ccCost(c); const from = c.cls; S.kamas -= cost;
+    const tok = E.ccTokUse(S, c); const cost = tok ? 0 : E.ccCost(c); const from = c.cls; S.kamas -= cost; if (tok) S.ccTok--;
     E.classesDone(S); // l'ancienne classe reste comptée (succès des classes au niveau 200)
     c.cls = cls; look = look || {};
     c.sex = look.sex === "f" || look.sex === "m" ? look.sex : CLASSES[cls].sex || c.sex || "m";
@@ -4113,9 +4128,9 @@
     c.autoStat = CLASSES[cls].main; E.resetPoints(S, c.id);
     /* Maîtrise : niveau, XP et points gardés ; étoiles rendues, joyaux au sac, objectif retiré */
     if (c.mt) { c.mt.t = [[], [], []]; c.mt.lo = 0; c.mt.j = {}; c.mt.obj = null; }
-    c.cc = { n: ((c.cc && c.cc.n) || 0) + 1, at: E.now(), from, lv: Math.max(c.lvl, c.ren ? E.MAX_LVL : 0, (c.cc && c.cc.lv) || 0) };
+    c.cc = { n: ((c.cc && c.cc.n) || 0) + (tok ? 0 : 1), g: ((c.cc && c.cc.g) || 0) + (tok ? 1 : 0), at: E.now(), from, lv: Math.max(c.lvl, c.ren ? E.MAX_LVL : 0, (c.cc && c.cc.lv) || 0) };
     E.refreshSpells(c, E.charStats(S, c));
-    note(S, `${c.name} devient ${CLASSES[cls].name} (avant : ${CLASSES[from].name})${cost ? ` pour ${cost.toLocaleString("fr-FR")} kamas` : ""}. Sa Maîtrise est gardée : ses points sont à replacer dans son nouveau ciel.`, "rare");
+    note(S, `${c.name} devient ${CLASSES[cls].name} (avant : ${CLASSES[from].name})${tok ? " grâce au changement de classe offert" : cost ? ` pour ${cost.toLocaleString("fr-FR")} kamas` : ""}. Sa Maîtrise est gardée : ses points sont à replacer dans son nouveau ciel.`, "rare");
     E.emit(S, "cls", { cid: c.id, from, to: cls });
     return null;
   };
@@ -4439,7 +4454,7 @@
   E.deserialize = (txt) => {
     const S = JSON.parse(E.unpackSave(txt));
     if (!S || !Array.isArray(S.chars) || !S.chars.length) throw new Error("Sauvegarde invalide");
-    const fresh = E.newState("x", "iop");
+    const fresh = E.newState("x", "iop"); delete fresh.ccGot; delete fresh.ccTok; // 2.2.14.17 : le cadeau d'une partie ancienne passe par E.ccGiftSync (avec son message)
     const report = [];
     if (!S.v || S.v < 2) {
       // v1 -> v2 : nouvelles données (vrais objets, monstres et sorts de DOFUS)
@@ -4559,6 +4574,7 @@
     if (S.v < 14 && S.align && E.honMigrate) { const m = E.honMigrate(S); // refonte des alignements : niveau d'alignement (0-100) → honneur, niveau 100 = rang 10 sur 20
       if (m) report.push(`Refonte des alignements : ton niveau d'alignement ${m.from} devient ${E.honCum ? E.honCum(m.rank).toLocaleString("fr-FR") : ""} points d'honneur, rang ${m.rank} sur 20. Nouveaux talents d'ordre, Arsenal de la cité, régions de la carte et agressions dans Journal › Quêtes › Alignement.`); }
     S.v = E.VERSION;
+    if (E.ccGiftSync(S)) (S.migration = S.migration || []).push("Cadeau : un changement de classe offert ! Il sert même pour un héros qui a déjà changé de classe, sans payer ni attendre 7 jours. Bouton « ⇄ Classe » sur la fiche du héros.");
     if (E.mtGateSync) { S.mtGates = E.mtGatesOpen(S); E.mtGateSync(S); } // 2.1 : Portes des étoiles déjà méritées, sans message
     if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); if (E.mtBrSync) E.mtBrSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
     return S;

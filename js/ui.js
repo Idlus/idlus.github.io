@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.16";
+const GAME_VERSION = "2.2.14.17";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.17", name: "Changement de classe offert", items: [
+    "Cadeau pour tout le monde : un changement de classe offert sur chaque partie (Éternel, Saison 1 et Monocompte). Il sert même pour un héros qui a déjà changé de classe : pas de kamas à payer ni 7 jours à attendre",
+    "Au Monocompte, il permet un 2e changement dans la saison. Le premier changement d'un héros reste gratuit et garde ton cadeau pour plus tard. Le prix du changement suivant ne double pas" ] },
   { v: "2.2.14.16", name: "Top 2 des votes : Maîtrise ×2 aussi", items: [
     "Événement « Top 2 des votes » : l'XP de Maîtrise des héros niveau 200 est maintenant doublée elle aussi, jusqu'au mercredi 11/11 à 15 h. Avant, seuls l'XP sous le niveau 200 et le butin étaient ×2 (merci Nerisia)",
     "La pastille de l'événement et le détail des bonus disent ce qui est doublé (les week-ends de saison, eux, ne doublent toujours pas la Maîtrise)" ] },
@@ -9433,9 +9436,11 @@ function classSheet() {
   const c = char(ui.ccCid); if (!c) return;
   if (!ui.ccCls || ui.ccCls === c.cls || !CLASSES[ui.ccCls]) ui.ccCls = CLASS_ORDER.find((x) => x !== c.cls);
   const sex = ui.ccSex || CLASSES[ui.ccCls].sex || "m"; ui.startHead = ui.ccHead || 0;
-  const cost = E.ccCost(c); const n = (c.cc && c.cc.n) || 0; const once = E.ccMonoOnce(S);
+  const tok = E.ccTokUse(S, c); const cost = tok ? 0 : E.ccCost(c); const n = (c.cc && c.cc.n) || 0; const once = E.ccMonoOnce(S);
   const err = E.ccErr(S, c, ui.ccCls); const M = c.mt; const pts = M && E.mtPts ? E.mtPts(c) : 0;
-  const price = !cost ? `<div class="rprice ok"><span class="xs muted">${n ? "Changement de classe" : "Premier changement de classe de ce héros"}</span><b class="num big">Gratuit</b>${once ? "" : `<div class="xs muted">Les suivants : niveau × ${fmt(E.CC_K)} kamas, doublé à chaque fois (${fmt(c.lvl * E.CC_K)} kamas aujourd'hui pour ${h(c.name)}, puis ${fmt(2 * c.lvl * E.CC_K)}…).</div>`}</div>`
+  const nTok = S.ccTok || 0; // 2.2.14.16 : changement de classe offert
+  const price = tok ? `<div class="rprice ok"><span class="xs muted">Changement de classe offert (cadeau)${nTok > 1 ? ` · il t'en reste ${nTok}` : ""}</span><b class="num big">Gratuit</b><div class="xs muted">Sans payer ni attendre. Le prix du suivant ne double pas.</div></div>`
+    : !cost ? `<div class="rprice ok"><span class="xs muted">${n ? "Changement de classe" : "Premier changement de classe de ce héros"}</span><b class="num big">Gratuit</b>${once ? "" : `<div class="xs muted">Les suivants : niveau × ${fmt(E.CC_K)} kamas, doublé à chaque fois (${fmt(c.lvl * E.CC_K)} kamas aujourd'hui pour ${h(c.name)}, puis ${fmt(2 * c.lvl * E.CC_K)}…).</div>`}</div>`
     : `<div class="rprice ${S.kamas >= cost ? "ok" : ""}"><span class="xs muted">Changement n° ${n + 1} de ${h(c.name)} : niveau ${c.lvl} × ${fmt(E.CC_K)}${n > 1 ? ` × ${Math.pow(2, n - 1)}` : ""} (le prix double à chaque fois)</span><b class="num big"><span class="coin"></span> ${fmt(cost)} kamas</b><div class="rbar"><i style="width:${Math.min(100, Math.round(100 * S.kamas / cost))}%"></i></div><div class="row between xs"><span>Tu as <b class="num">${fmt(S.kamas)}</b></span><span>Ensuite : ${fmt(2 * cost)} kamas</span></div></div>`;
   const mtTxt = M && (M.lvl || pts) ? `<b>toute sa Maîtrise</b> : niveau ${fmt(M.lvl || 0)} et ses ${fmt(pts)} points, rendus pour les placer dans le ciel de la nouvelle classe.${M.j && Object.keys(M.j).length ? " Les joyaux sertis reviennent au sac." : ""}` : "sa Maîtrise (elle commence au niveau 200).";
   openSheet(`<style>.clsbtn[disabled]{opacity:.35;filter:grayscale(1)}</style><h2>Changer la classe de ${h(c.name)}</h2>
@@ -9447,7 +9452,7 @@ function classSheet() {
     <div class="panel pad small stack" style="gap:6px;margin:8px 0"><div><b>Maîtrise</b> : ${h(c.name)} garde ${mtTxt}</div>
       <div><b>Garde aussi</b> : son niveau et son XP · tout son équipement, ses Dofus, son familier et sa monture · son nom, son titre, son ornement et son cadre · le Bestiaire, les métiers et les succès du compte.</div>
       <div><b>Change</b> : ses sorts (ceux de la nouvelle classe, rangés automatiquement ; stratégies enregistrées effacées) · ses points de caractéristiques (rendus puis replacés pour la nouvelle classe) · son apparence · ses classements de classe.</div></div>
-    <p class="xs muted">${once ? "Monocompte : un seul changement de classe par saison. " : "Un changement par héros tous les 7 jours. "}Impossible pendant un donjon ou une expédition.</p>
+    <p class="xs muted">${once ? "Monocompte : un seul changement de classe par saison. " : "Un changement par héros tous les 7 jours. "}Impossible pendant un donjon ou une expédition.${nTok && !tok ? ` Ton changement offert est gardé pour plus tard : celui-ci est déjà gratuit.` : ""}</p>
     ${err && !/^Il te manque/.test(err) ? `<p class="small" style="color:var(--danger)">${h(err)}</p>` : ""}
     <div class="row"><button class="btn kgold" data-act="ccgo" data-id="${c.id}" ${err ? "disabled" : ""}>Devenir ${h(CLASSES[ui.ccCls].name)}${cost ? ` · ${fmtK(cost)} kamas` : " · gratuit"}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }

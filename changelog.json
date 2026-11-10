@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.16",
+  "version": "2.2.14.17",
   "versions": [
+    {
+      "v": "2.2.14.17",
+      "name": "Changement de classe offert",
+      "items": [
+        "Cadeau pour tout le monde : un changement de classe offert sur chaque partie (Éternel, Saison 1 et Monocompte). Il sert même pour un héros qui a déjà changé de classe : pas de kamas à payer ni 7 jours à attendre",
+        "Au Monocompte, il permet un 2e changement dans la saison. Le premier changement d'un héros reste gratuit et garde ton cadeau pour plus tard. Le prix du changement suivant ne double pas"
+      ]
+    },
     {
       "v": "2.2.14.16",
       "name": "Top 2 des votes : Maîtrise ×2 aussi",
