@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.13";
+const GAME_VERSION = "2.2.14.14";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.14", name: "Top 2 des votes", items: [
+    "Idlus est 2e sur Dofus Fan Games : merci pour vos votes ! XP et butin ×2 pour tout le monde jusqu'au mercredi 11/11 à 15 h (heure de Paris), sur l'Éternel, la Saison 1 et le Monocompte (la Maîtrise n'est pas doublée)",
+    "Code cadeau TOP2VOTES pour tous pendant 14 jours : 3 h de Sablier de Xélor, 5 Teintures chromatiques et le titre « Vice-champion des votes » (une fois par compte, sur l'Éternel et sur la Saison 1)" ] },
   { v: "2.2.14.13", name: "Sauvegarde en ligne plus légère", items: [
     "Ta partie part sur le serveur compressée : environ 4 fois moins de données envoyées à chaque sauvegarde en ligne (une grosse partie de 700 Ko n'en envoie plus qu'environ 160)",
     "Onglet caché : la sauvegarde en ligne part toutes les 3 minutes au lieu de chaque minute (elle part toujours en quittant l'onglet), et elle ne repart pas si rien n'a changé. La sauvegarde sur ton appareil reste toutes les 15 secondes" ] },

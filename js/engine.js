@@ -2793,7 +2793,8 @@
   E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
   E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
   /* 0.1.28.3 : événement « Double gain », XP et butin x2 pour tout le monde (dates fixes ; 21 h → dimanche 18 octobre 23 h, heure de Paris ; prolongé en 0.1.48.6) */
-  E.EVENT = { name: "Semaine de la Maîtrise", from: Date.parse("2026-10-12T19:00:00Z"), to: Date.parse("2026-10-22T21:00:00Z"), xp: 2, drop: 2 };
+  // 2.2.14.14 (Mathis 09/11, « 1 jour d'xp et drop x2 pour le top 2 ») : Idlus 2e sur Dofus Fan Games le 10/11, 24 h pour tout le monde
+  E.EVENT = { name: "Top 2 des votes", from: Date.parse("2026-11-10T13:00:00Z"), to: Date.parse("2026-11-11T14:00:00Z"), xp: 2, drop: 2 };
   E.eventOn = (t = E.now()) => !!E.EVENT && t >= E.EVENT.from && t < E.EVENT.to;
   /* « La classe à l'honneur » (choix 5A de Mathis) : chaque semaine (du lundi au dimanche, heure de Paris), une classe peu jouée
      gagne +10 % d'XP pour ses héros (Maîtrise comprise au niveau 200) et +10 % de butin pour l'équipe qui en a un.
