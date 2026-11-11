@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.17";
+const GAME_VERSION = "2.2.14.18";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.18", name: "Ombrelune Studio", items: [
+    "Idlus a maintenant une grande sœur : la page Ombrelune Studio (ombrelune-studio.github.io) réunit Idlus et Diablofus, l'action-RPG du même créateur",
+    "Sur l'écran des serveurs, une carte « Découvre aussi Diablofus » et la signature « Un jeu Ombrelune Studio ». On les retrouve aussi dans Aide" ] },
   { v: "2.2.14.17", name: "Changement de classe offert", items: [
     "Cadeau pour tout le monde : un changement de classe offert sur chaque partie (Éternel, Saison 1 et Monocompte). Il sert même pour un héros qui a déjà changé de classe : pas de kamas à payer ni 7 jours à attendre",
     "Au Monocompte, il permet un 2e changement dans la saison. Le premier changement d'un héros reste gratuit et garde ton cadeau pour plus tard. Le prix du changement suivant ne double pas" ] },
@@ -3587,6 +3590,10 @@ function navMenuSheet() {
       : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
+/* 2.2.14.18 « Ombrelune Studio » (Mathis 5A + 5C) : signature du studio et carte « Découvre aussi Diablofus » */
+const STUDIO_URL = "https://ombrelune-studio.github.io/?depuis=idlus", DIABLOFUS_URL = "https://diablofus.com/?depuis=idlus";
+const studioSign = () => `<a class="studio-sign" href="${STUDIO_URL}" target="_blank" rel="noopener"><img src="assets/ui/ombrelune.webp" alt="" width="18" height="18">Un jeu Ombrelune Studio</a>`;
+const diablofusCard = () => `<a class="dfcard" href="${DIABLOFUS_URL}" target="_blank" rel="noopener"><img src="assets/ui/diablofus.webp" alt="" width="48" height="48"><span class="grow min0"><b>Découvre aussi Diablofus</b><small>L'action-RPG en temps réel du même studio. Gratuit, sur PC.</small></span><span class="dfplay">Jouer</span></a>`;
 /* 2.1.40 (Mathis 2A) : le bouton Aide regroupe le guide, les suggestions et le signalement de bug */
 function helpSheet() {
   const row = (act, ic, t, d) => `<button class="hp-row" ${act}>${ic}<span class="grow"><b>${t}</b><small>${d}</small></span><i class="chev">›</i></button>`;
@@ -3597,6 +3604,8 @@ function helpSheet() {
     ${row('data-act="nav" data-v="sugg"', med("idee"), "Suggestions", h(NAV_DESC.sugg))}
     ${row('data-act="nav" data-v="bug"', med("bug"), "Signaler un bug", h(NAV_DESC.bug))}
     <a class="hp-row" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow"><b>Discord idlus</b><small>Annonces, aide, builds et idées</small></span><i class="chev">›</i></a>
+    <a class="hp-row" href="${DIABLOFUS_URL}" target="_blank" rel="noopener"><img class="med" src="assets/ui/diablofus.webp" alt=""><span class="grow"><b>Diablofus</b><small>L'action-RPG du même studio, sur PC</small></span><i class="chev">›</i></a>
+    <div class="row" style="justify-content:center">${studioSign()}</div>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
@@ -12413,7 +12422,9 @@ function hubHtml() {
       const others = used.filter((sl) => sl !== main), more = free.filter((sl) => sl !== main);
       return `<div class="hdoor ${v.id}${sls.some((sl) => sl.n === last) ? " cur" : ""}"><div class="hdimg" style="background-image:url(assets/s1/${v.img}.webp)"><h3>${v.ico} ${h(v.nom)}</h3></div><span class="small muted hdtx">${v.txt}</span>
         ${main ? hubRow(main, true) : ""}${others.map((sl) => hubRow(sl)).join("")}${more.length ? `<div class="hmore">${more.map((sl) => `<span class="empty" data-slot="${sl.n}"><button data-act="sv-play" data-n="${sl.n}" title="${sl.n === 1 ? "Classements, Hôtel de vente, guilde" : "Solo, hors classements : une autre aventure dans le même compte"}">+ Nouvelle partie ${sl.n}${sl.n === 1 ? "" : " (solo)"}</button></span>`).join("")}</div>` : ""}</div>`; }).join("")}</div>
-    <div class="hgest"><button class="lnk" data-act="sv-gest">Gérer mes parties (copies de secours, suppression)</button></div>`;
+    ${diablofusCard()}
+    <div class="hgest"><button class="lnk" data-act="sv-gest">Gérer mes parties (copies de secours, suppression)</button></div>
+    <div class="hgest">${studioSign()}</div>`;
 }
 /* en jeu : la liste des serveurs, sous la pastille du serveur. Chaque serveur propose sa partie de l'appareil (la dernière jouée). */
 function srvListHtml() {

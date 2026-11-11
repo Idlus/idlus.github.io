@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.17",
+  "version": "2.2.14.18",
   "versions": [
+    {
+      "v": "2.2.14.18",
+      "name": "Ombrelune Studio",
+      "items": [
+        "Idlus a maintenant une grande sœur : la page Ombrelune Studio (ombrelune-studio.github.io) réunit Idlus et Diablofus, l'action-RPG du même créateur",
+        "Sur l'écran des serveurs, une carte « Découvre aussi Diablofus » et la signature « Un jeu Ombrelune Studio ». On les retrouve aussi dans Aide"
+      ]
+    },
     {
       "v": "2.2.14.17",
       "name": "Changement de classe offert",

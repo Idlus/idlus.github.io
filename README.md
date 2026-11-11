@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.18 « Ombrelune Studio »
+- Mathis (11/11, page Ombrelune Studio, choix 5A + 5C) : page du studio (ombrelune-studio.github.io) qui réunit Idlus et Diablofus ; carte « Découvre aussi Diablofus » et signature « Un jeu Ombrelune Studio » sur l'écran des serveurs et dans Aide.
+
 ## 2.2.14.17 « Changement de classe offert »
 - Mathis (10/11, « tu peux donner un changement de classe gratuit a tout les joueurs et l'annoncer ? ») : E.CC_GIFTS (js/engine.js) ; chaque partie reçoit une fois chaque cadeau au chargement (E.ccGiftSync dans E.deserialize, S.ccGot, S.ccTok) avec un message de connexion. Le jeton ne sert que si le changement serait bloqué (prix, délai de 7 jours, une fois par saison au Monocompte) ; c.cc.n n'augmente pas (le prix suivant ne double pas), c.cc.g compte les cadeaux. Rien côté serveur. Pour un futur cadeau : ajouter une date dans E.CC_GIFTS.
 

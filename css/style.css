@@ -6711,3 +6711,15 @@ body.kbd nav.main,body.kbd .mfstrip,body.kbd #backchip,body.kbd .dropbn,body.kbd
 @media(max-width:600px){.fp-hero{grid-template-columns:96px minmax(0,1fr);padding:8px 10px;gap:10px}.fp-lk{height:110px}.fp-lk .fp-look{max-height:110px;max-width:96px}}
 /* 3A : un pseudo ouvre la fiche partout (amis, guilde, classements des donjons, Songe, saison du Monocompte) */
 .pnl{all:unset;cursor:pointer;font:inherit;color:inherit;font-weight:inherit;border-radius:4px}.pnl:hover{text-decoration:underline}.pnl:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* 2.2.15 Ombrelune Studio : signature et carte « Découvre aussi Diablofus » */
+.studio-sign{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:8px}
+.studio-sign:hover{color:var(--ink);background:var(--panel2)}
+.studio-sign img{width:18px;height:18px}
+.dfcard{display:flex;align-items:center;gap:12px;max-width:620px;margin:14px auto 4px;padding:10px 14px;border-radius:14px;text-decoration:none;color:#fbf3e6;background:linear-gradient(110deg,#3a1206,#6b2310 55%,#a33a12);border:2px solid #e07a2c;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.dfcard img{width:48px;height:48px;flex:none}
+.dfcard b{display:block;font-size:15px;color:#ffd07a}
+.dfcard small{display:block;font-size:12.5px;color:#f2d9c2}
+.dfcard .dfplay{flex:none;font-weight:800;background:linear-gradient(#d6f56f,#a2d332);color:#1b2a05;border-radius:9px;padding:6px 12px;box-shadow:0 3px 0 #5d7d14}
+.dfcard:hover{filter:brightness(1.08)}
+@media (max-width:600px){.dfcard{margin:12px 8px 4px}.dfcard small{font-size:12px}}
