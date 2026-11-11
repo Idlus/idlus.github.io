@@ -27,6 +27,8 @@ try {
   file("droits.sql"); file("droits.sql"); // relançable
   assert.strictEqual(run(`select concat_ws(',', ${P("authenticated", "bouclier_log", "insert")}, ${P("anon", "admins", "truncate")}, ${P("authenticated", "saves", "update")}, ${P("authenticated", "profiles", "update")}, ${P("anon", "lb_level", "delete")})`), "f,f,f,f,f", "plus aucune écriture directe");
   assert.strictEqual(run(`select concat_ws(',', ${P("authenticated", "chat_msgs", "select")}, ${P("anon", "lb_level", "select")}, ${P("authenticated", "profiles", "insert")}, ${P("authenticated", "ignores", "insert")}, ${P("authenticated", "ignores", "delete")})`), "t,t,t,t,t", "lecture, pseudo et ignorés gardés");
+  run(`create table public.nouvelle_table (id int primary key);`);
+  assert.strictEqual(run(`select concat_ws(',', ${P("authenticated", "nouvelle_table", "insert")}, ${P("anon", "nouvelle_table", "truncate")}, ${P("anon", "nouvelle_table", "select")})`), "f,f,t", "une table créée après : lecture seule (droits par défaut retirés)");
   run(`insert into auth.users values ('${U(1)}'), ('${U(2)}');
      set role authenticated; select set_config('request.jwt.claim.sub', '${U(1)}', false);
      insert into public.profiles (id, pseudo) values ('${U(1)}', 'Testeur');

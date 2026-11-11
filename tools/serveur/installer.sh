@@ -47,6 +47,10 @@ regle ADDITIONAL_REDIRECT_URLS "https://idlus.github.io/**,https://mathiss29.git
 regle PROXY_DOMAIN "$DOMAINE"
 # Comme sur l'ancien serveur : pas d'inscription par e-mail (le jeu n'a pas encore de vrai service d'envoi d'e-mails)
 regle ENABLE_EMAIL_SIGNUP false
+# 11/11/2026 : pas d'inscription par téléphone ni de compte anonyme (Supabase les ouvre par défaut, sans vérification) : Discord seulement
+regle ENABLE_PHONE_SIGNUP false
+regle ENABLE_PHONE_AUTOCONFIRM false
+regle ENABLE_ANONYMOUS_USERS false
 regle CERTBOT_EMAIL "admin@$DOMAINE"
 # Caddy (HTTPS automatique) + nos réglages
 regle COMPOSE_FILE "docker-compose.yml:docker-compose.caddy.yml:docker-compose.idlus.yml"
