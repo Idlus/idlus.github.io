@@ -793,7 +793,7 @@ jobs:
         # Fil « Grand nettoyage des bugs et failles » : droits des fonctions et des tables vus par le jeu (anon, authenticated).
         if: inputs.etape == 'audit-securite'
         run: |
-          for q in ${AUDIT_Q:-fonctions tables colonnes annonces politiques secrets}; do echo "== $q"; bash tools/serveur/vps_sql.sh lecture "$(cat tools/serveur/audit/$q.sql)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.indexOf("[");const L=JSON.parse(s.slice(i));console.log(L.length+" lignes");L.forEach(x=>console.log(Object.values(x).map(v=>v===null?"-":v===true?"o":v===false?"n":String(v).slice(0,300)).join(" | ")))})'; done
+          for q in ${AUDIT_Q:-comptes admins}; do echo "== $q"; bash tools/serveur/vps_sql.sh lecture "$(cat tools/serveur/audit/$q.sql)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.indexOf("[");const L=JSON.parse(s.slice(i));console.log(L.length+" lignes");L.forEach(x=>console.log(Object.values(x).map(v=>v===null?"-":v===true?"o":v===false?"n":String(v).slice(0,300)).join(" | ")))})'; done
       - name: Droits d'écriture des joueurs retirés des tables (sauvegarde de la base, supabase/droits.sql, 05/11)
         if: inputs.etape == 'droits-ecriture'
         run: |
