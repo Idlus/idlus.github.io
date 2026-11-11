@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.19 « Sécurité renforcée »
+- Mathis (11/11, « vérifie qu'il n'y ai pas de faille dans le jeu pour accéder a mes données », puis « ok pour csp ») : audit de sécurité (rien ne permettait de lire les données d'un autre joueur ni le panel).
+- index.html : règle CSP (scripts du jeu seulement, connexions vers le serveur OVH et DofusDB seulement) ; les `onerror=`/`onload=` écrits dans le HTML sont remplacés par des attributs (`data-fb`, `data-oe="h"`, `data-dbload`) lus par un gestionnaire unique (js/ui.js). tests/csp.test.js (dans `npm run check`).
+- Serveur (déjà en ligne) : inscription par téléphone sans SMS fermée (étape « inscription-telephone », 0 compte concerné) ; droits d'écriture par défaut retirés pour les futures tables (supabase/droits.sql).
+
 ## 2.2.14.18 « Ombrelune Studio »
 - Mathis (11/11, page Ombrelune Studio, choix 5A + 5C) : page du studio (ombrelune-studio.github.io) qui réunit Idlus et Diablofus ; carte « Découvre aussi Diablofus » et signature « Un jeu Ombrelune Studio » sur l'écran des serveurs et dans Aide.
 

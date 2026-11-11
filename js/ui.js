@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.18";
+const GAME_VERSION = "2.2.14.19";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.19", name: "Sécurité renforcée", items: [
+    "Le jeu est mieux protégé : ton navigateur n'exécute plus que le code d'Idlus et ne parle qu'à ses serveurs, même si un texte piégé arrivait un jour dans le chat",
+    "Les comptes se créent uniquement avec Discord. Rien ne change pour toi : ta connexion et tes parties restent les mêmes" ] },
   { v: "2.2.14.18", name: "Ombrelune Studio", items: [
     "Idlus a maintenant une grande sœur : la page Ombrelune Studio (ombrelune-studio.github.io) réunit Idlus et Diablofus, l'action-RPG du même créateur",
     "Sur l'écran des serveurs, une carte « Découvre aussi Diablofus » et la signature « Un jeu Ombrelune Studio ». On les retrouve aussi dans Aide" ] },
@@ -2937,8 +2940,19 @@ const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mim
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
 const symImg = (cls) => `assets/h/${cls}_sym.png`;
-const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
-const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
+/* 11/11/2026 (audit de sécurité, CSP) : plus aucun gestionnaire écrit dans le HTML (onerror="…"), interdit par la règle CSP
+   d'index.html. Les images le disent par attributs : data-fb = image de secours (une fois), data-oerm = classe retirée en
+   passant au secours, data-oe="h" = cachée si rien ne charge, data-dbload = classe « db » quand l'image DofusDB arrive. */
+if (typeof document !== "undefined" && !window.__imgOe) {
+  window.__imgOe = 1;
+  document.addEventListener("error", (e) => { const t = e.target; if (!t || t.tagName !== "IMG") return;
+    const fb = t.getAttribute("data-fb");
+    if (fb) { t.removeAttribute("data-fb"); const rm = t.getAttribute("data-oerm"); if (rm) t.classList.remove(rm); t.src = fb; return; }
+    if (t.getAttribute("data-oe") === "h") t.style.visibility = "hidden"; }, true);
+  document.addEventListener("load", (e) => { const t = e.target; if (t && t.tagName === "IMG" && t.hasAttribute("data-dbload") && t.src.indexOf("dofusdb") > 0) t.classList.add("db"); }, true);
+}
+const im = (src, cls = "ico", alt = "") =>(src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" data-oe="h">` : "");
+const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" data-fb="assets/h/${cls}_logo.png">`;
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
 const IC = (n, c = "") => `<img class="uico ${c}" src="assets/ui/${n}.webp" alt="" loading="lazy">`;
 const GL = { spk: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>`, spkoff: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>`, note: `<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>`,
@@ -3029,7 +3043,7 @@ function dbLook(cls, sx, items) {
 const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0);
   if (c.chroma && c.chromaDye) cls += " chlook"; // 1.0.33 : teinture chromatique (js/chromaui.js)
   if (typeof u === "object") return `<img class="${cls}" src="${u.src}" data-fk="${u.key}" alt="" loading="lazy">`; // Forgelance recomposé (image locale en attendant)
-  return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
+  return `<img class="${cls}" src="${u}" alt="" loading="lazy" data-oe="h" data-fb="${fb}">`; };
 function lookSheet(c) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return;
   const sx = c.sex === "f" ? "f" : "m";
@@ -5305,7 +5319,7 @@ function sceneHud(F) {
     if (e.side === "c" && !e.summon) { const P = E.passiveInfo(e, F); if (P) t = h(P.n); } else if (e.role && E.MON_ROLES[e.role]) t = h(E.MON_ROLES[e.role].name);
     if (pv.dataset.k !== t) { pv.innerHTML = t; pv.dataset.k = t; }
     const ss = n.querySelector(".hss"); const live = own(i).filter(([x]) => x.alive); const sk = live.map(([, k]) => k).join(",");
-    if (ss.dataset.k !== sk) { ss.dataset.k = sk; ss.innerHTML = live.map(([x, k]) => `<span class="hsum" data-i="${k}" title="${h(x.name)}">${x.img ? `<img src="assets/m/${x.img}.png" alt="${h(x.name)}" onerror="this.style.visibility='hidden'">` : "✦"}<i></i></span>`).join(""); }
+    if (ss.dataset.k !== sk) { ss.dataset.k = sk; ss.innerHTML = live.map(([x, k]) => `<span class="hsum" data-i="${k}" title="${h(x.name)}">${x.img ? `<img src="assets/m/${x.img}.png" alt="${h(x.name)}" data-oe="h">` : "✦"}<i></i></span>`).join(""); }
     ss.querySelectorAll(".hsum").forEach((c) => { const x = F.ents[+c.dataset.i]; if (x) c.lastChild.style.width = pct(Math.max(0, x.hp), x.hpMax) + "%"; }); });
 }
 /* 3.3.0 : infobulles et classes de rangée, Champion et rôle */
@@ -12361,7 +12375,7 @@ function slotCard(sl) {
   const useRem = plan === "take" || plan === "remote";
   const ci = cardInfo(useRem ? rem.meta : sl.meta, useRem ? null : sl.st);
   const cls = CLASSES[ci.cls] || CLASSES.iop;
-  const head = `<div class="hd"><div class="pt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></div><div class="min0"><div class="sub">${h(partName(n))}</div><div class="nm">${h(ci.name || partName(n))}</div><div class="sub">${h(cls.name)} niv. ${ci.lvl}</div><div class="tags">${tags}</div></div></div>`;
+  const head = `<div class="hd"><div class="pt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" data-oe="h"></div><div class="min0"><div class="sub">${h(partName(n))}</div><div class="nm">${h(ci.name || partName(n))}</div><div class="sub">${h(cls.name)} niv. ${ci.lvl}</div><div class="tags">${tags}</div></div></div>`;
   let mid;
   if (plan === "both") {
     const lm = sl.meta, rm = rem.meta || {}, adv = saveAdv(rm, lm), rt = Date.parse(rem.updated_at) || 0, remFirst = adv ? adv > 0 : rt >= sl.at;
@@ -12404,12 +12418,12 @@ function hubRow(sl, big) {
   const ci = cardInfo(sl.meta, sl.st), cls = CLASSES[ci.cls] || CLASSES.iop;
   const pn = n <= 3 ? `Partie ${n} · ${rankSlot(n) ? "classements" : "solo"}` : isEter(n) ? "Éternel du Monocompte" : "";
   const dev = ON && ON.user && !ON.slotOnline(n) ? `<small class="hdev">Gardée sur cet appareil (pas en ligne)</small>` : "";
-  return `<div class="hrow${big ? " big" : ""}${last ? " last" : ""}" data-slot="${n}" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></span><span class="min0 grow"><b>${h(ci.name || partName(n))}</b><small>${h(cls.name)} niv. ${ci.lvl} · ${ci.kamas == null ? "—" : kShort(ci.kamas)} kamas${monoSlot(n) ? "" : ` · ${ci.n} héros`}</small>${pn || last ? `<small class="hpn">${pn}${last ? `<span class="lastp">Dernière jouée</span>` : ""}</small>` : ""}${dev}</span><button class="btn ${big || last ? "primary" : "sm"}" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
+  return `<div class="hrow${big ? " big" : ""}${last ? " last" : ""}" data-slot="${n}" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" data-oe="h"></span><span class="min0 grow"><b>${h(ci.name || partName(n))}</b><small>${h(cls.name)} niv. ${ci.lvl} · ${ci.kamas == null ? "—" : kShort(ci.kamas)} kamas${monoSlot(n) ? "" : ` · ${ci.n} héros`}</small>${pn || last ? `<small class="hpn">${pn}${last ? `<span class="lastp">Dernière jouée</span>` : ""}</small>` : ""}${dev}</span><button class="btn ${big || last ? "primary" : "sm"}" data-act="sv-play" data-n="${n}">Jouer</button></div>`;
 }
 function hubResume() {
   const n = menuPref().last || 1, sl = MENU.slots.find((x) => x.n === n); if (!sl || !sl.st || !SIMPLE.includes(sl.plan)) return "";
   const ci = cardInfo(sl.meta, sl.st), v = slotSrv(n), cls = CLASSES[ci.cls] || CLASSES.iop;
-  return `<div class="hresume" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" onerror="this.style.visibility='hidden'"></span><span class="min0 grow"><small>Reprendre là où tu t'es arrêté</small><b>${h(ci.name || partName(n))}</b><small>${v ? `${v.ico} ${h(v.nom)} · ` : ""}${h(cls.name)} niv. ${ci.lvl}</small></span><button class="btn primary big" data-act="sv-play" data-n="${n}">Reprendre</button></div>`;
+  return `<div class="hresume" style="--cc:${cls.color}"><span class="hpt"><img src="${lookLocal(ci.cls, ci.sex, ci.head)}" alt="" data-oe="h"></span><span class="min0 grow"><small>Reprendre là où tu t'es arrêté</small><b>${h(ci.name || partName(n))}</b><small>${v ? `${v.ico} ${h(v.nom)} · ` : ""}${h(cls.name)} niv. ${ci.lvl}</small></span><button class="btn primary big" data-act="sv-play" data-n="${n}">Reprendre</button></div>`;
 }
 function hubHtml() {
   if (MENU_GEST.on) return `<div class="hgest"><button class="btn sm" data-act="sv-gest">← Retour aux serveurs</button></div>${hubHtmlOld()}`;

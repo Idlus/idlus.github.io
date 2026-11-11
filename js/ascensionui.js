@@ -29,7 +29,7 @@
 
   /* ---------- petits morceaux ---------- */
   const sym = (cls) => `<span class="as-sym" style="--cc:${(CL()[cls] || {}).color || "#888"}"><img src="${X().symImg(cls)}" alt=""></span>`;
-  const look = (cls) => { const c = S().chars[0] || {}; return `<img class="as-look" src="${X().lookLocal(cls, c.sex, 0)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`; };
+  const look = (cls) => { const c = S().chars[0] || {}; return `<img class="as-look" src="${X().lookLocal(cls, c.sex, 0)}" alt="" loading="lazy" data-oe="h">`; };
   const spIco = (x) => (x ? X().spIcon({ name: x.name, el: x.el || (x.kind === "heal" ? "buff" : "n") }) : "");
   const spLine = (x) => { const d = x && E.ascDef({ k: x.k, lv: 1, gl: [] }); const g = d && d.grades[0]; if (!g) return "";
     const f = g.fx.find((y) => y.min !== undefined); return `${g.pa} PA${f ? ` · ${f.min}-${f.max}` : ""}${g.cd ? ` · relance ${g.cd}` : ""}`; };
@@ -178,7 +178,7 @@
       const hp = e.side === "m" && brume ? `<i style="width:100%;opacity:.25"></i>` : `<i style="width:${Math.round(pc * 100)}%"></i>${e.side === "m" && st0 < 1 ? `<s style="left:${Math.round(st0 * 100)}%;width:${Math.round((1 - st0) * 100)}%"></s>` : ""}`;
       return `<div class="as-u ${e.side === "c" ? "al" : "fo"} ${e.alive ? "" : "ko"} ${e.boss ? "boss" : ""} ${e.side === "c" && e.summon && e.recruit === undefined ? "soul" : ""} ${pickable ? "pick" : ""} ${i === tg ? "aimed" : ""} ${i === cur && !F.over ? "cur" : ""}" data-u="${i}" style="left:${p.x}%;bottom:${p.y}%;z-index:${p.z};--s:${p.s}" ${pickable ? `data-act="as-tgt" data-i="${i}" role="button" aria-label="Viser ${h(e.name)}"` : ""}>
         <div class="as-uh"><b>${who}</b><span class="as-hp ${e.side === "c" ? "ally" : ""}">${hp}</span>${e.side === "m" && !brume ? `<small>${fmt(Math.max(0, Math.round(e.hp)))}</small>` : ""}</div>
-        <span class="as-ring"></span><img src="${imgOf(e)}" alt="" onerror="this.style.visibility='hidden'">${i === tg ? `<span class="as-aim">🎯</span>` : ""}</div>`; };
+        <span class="as-ring"></span><img src="${imgOf(e)}" alt="" data-oe="h">${i === tg ? `<span class="as-aim">🎯</span>` : ""}</div>`; };
     const order = (F.order || []).slice(Math.max(0, F.oi - 1)).concat(F.order || []).filter((i) => F.ents[i] && F.ents[i].alive).slice(0, 8);
     const ord = order.map((i, k) => `<span class="as-oi ${F.ents[i].side === "c" ? "al" : "fo"} ${k === 0 && i === cur ? "now" : ""}"><img src="${imgOf(F.ents[i])}" alt=""></span>`).join("");
     const log = (F.log || []).slice(-3).map((l) => `<span>${h(l.txt)}</span>`).join("");

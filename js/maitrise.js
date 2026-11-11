@@ -454,7 +454,7 @@
 
   /* fiche du héros : une ligne Maîtrise ; Scène : aura des clés de voûte */
   const picSrc = (r) => { const k = (E.RACE_MONS[r] || []).find((x) => MONSTERS[x] && MONSTERS[x].img && !MONSTERS[x].archiOf); return k ? `assets/m/${MONSTERS[k].img}.png` : ""; };
-  function pic(r) { const s = picSrc(r); return s ? `<img src="${s}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ""; }
+  function pic(r) { const s = picSrc(r); return s ? `<img src="${s}" alt="" loading="lazy" data-oe="h">` : ""; }
   /* ornement du Bestiaire (palier 5) : le monstre de la famille en médaillon */
   const ornHtml = (id) => { const s = picSrc(String(id).slice(3)); return s ? `<img class="orn regorn btorn" src="${s}" alt="">` : ""; };
   const heroLine = (c) => { if (!c || !E.mtOn(c)) return ""; const M = E.mt(c); return `<div class="mt-line"><span class="small">${IC("cristal")} Maîtrise <b class="num">${fmt(M.lvl)}</b> · <b class="num">${fmt(E.mtPts(c))}</b> points</span><div class="bar xp"><i style="width:${pctf(M.xp, E.mtNeed(c))}%"></i></div><button class="btn xs" data-act="mt-open" data-v="${c.id}">Ouvrir l'arbre</button></div>`; };

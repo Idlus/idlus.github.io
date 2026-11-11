@@ -1,6 +1,14 @@
 {
-  "version": "2.2.14.18",
+  "version": "2.2.14.19",
   "versions": [
+    {
+      "v": "2.2.14.19",
+      "name": "Sécurité renforcée",
+      "items": [
+        "Le jeu est mieux protégé : ton navigateur n'exécute plus que le code d'Idlus et ne parle qu'à ses serveurs, même si un texte piégé arrivait un jour dans le chat",
+        "Les comptes se créent uniquement avec Discord. Rien ne change pour toi : ta connexion et tes parties restent les mêmes"
+      ]
+    },
     {
       "v": "2.2.14.18",
       "name": "Ombrelune Studio",

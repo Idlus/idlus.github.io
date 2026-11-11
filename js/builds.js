@@ -137,8 +137,8 @@
     const ids = ["coiffe", "cape", "bouclier"].map((s) => x.b.eq[s]).filter((t) => /^i\d+$/.test(t || "")).map((t) => +t.slice(1));
     if (!ids.length || !X().dbLook) return `<img class="${cls}" src="${local}" alt="" loading="lazy">`;
     const u = X().dbLook(x.cls, x.sex === "f" ? "f" : "m", ids);
-    if (typeof u === "string") return `<img class="${cls} db" src="${h(u)}" alt="" loading="lazy" onerror="this.onerror=null;this.classList.remove('db');this.src='${local}'">`;
-    return `<img class="${cls}" src="${local}" data-fk="${h(u.key)}" alt="" loading="lazy" onload="if(this.src.indexOf('dofusdb')>0)this.classList.add('db')">`;
+    if (typeof u === "string") return `<img class="${cls} db" src="${h(u)}" alt="" loading="lazy" data-fb="${local}" data-oerm="db">`;
+    return `<img class="${cls}" src="${local}" data-fk="${h(u.key)}" alt="" loading="lazy" data-dbload="1">`;
   }
 
   /* ---------- petits morceaux ---------- */
