@@ -36,7 +36,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, alleger-services, rallumer-services]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, enquete-sauvegarde-s1, alleger-services, rallumer-services]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -167,6 +167,23 @@ jobs:
       - name: Consommation de chaque service (lecture seule, 2.2.14.3)
         if: inputs.etape == 'consommation'
         run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/consommation.sh)"
+      - name: Sauvegardes d'un joueur sur les deux serveurs (lecture seule, 12/11, partie S1 écrasée par une partie Éternel)
+        if: inputs.etape == 'enquete-sauvegarde-s1'
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          # Chiffres seulement (dates, niveaux, kamas, tailles) : aucune partie n'est affichée ni modifiée.
+          p=$(printf '%s' "$PSEUDO" | tr -cd 'A-Za-z0-9_-'); [ -n "$p" ] || { echo "Pseudo manquant." >&2; exit 1; }
+          echo "== Comptes dont le pseudo ressemble à $p"
+          bash tools/serveur/vps_sql.sh lecture "select p.pseudo, p.created_at from public.profiles p where p.pseudo ilike '%$p%' order by p.created_at limit 10"
+          for sc in s1 public; do
+            echo "== $sc : partie en ligne, partie validée, classement"
+            bash tools/serveur/vps_sql.sh lecture "select p.pseudo, s.updated_at as partie_at, s.game_version, s.device, round(octet_length(s.data::text)/1024) as ko, s.meta - 'pids' as meta, o.src_at as validee_src_at, o.at as validee_at, round(octet_length(o.data::text)/1024) as validee_ko, o.bilan->'lv' as validee_lv, l.level as classement_niveau, l.playtime as classement_temps, l.updated_at as classement_at from public.profiles p left join $sc.saves s on s.user_id = p.id left join $sc.saves_ok o on o.user_id = p.id left join $sc.ladder l on l.user_id = p.id where p.pseudo ilike '%$p%'" || true
+            echo "== $sc : copies du jour (7 jours)"
+            bash tools/serveur/vps_sql.sh lecture "select p.pseudo, j.day, j.lvl, j.kamas, j.at, round(octet_length(j.data::text)/1024) as ko from public.profiles p join $sc.saves_jour j on j.user_id = p.id where p.pseudo ilike '%$p%' order by j.day" || true
+            echo "== $sc : bouclier (20 derniers)"
+            bash tools/serveur/vps_sql.sh lecture "select p.pseudo, b.why, b.at from public.profiles p join $sc.bouclier_log b on b.user_id = p.id where p.pseudo ilike '%$p%' order by b.at desc limit 20" || true
+          done
       - name: Taille des sauvegardes en ligne (lecture seule, 09/11, poids des envois)
         if: inputs.etape == 'taille-sauvegardes'
         run: |
