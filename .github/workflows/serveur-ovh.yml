@@ -249,7 +249,7 @@ jobs:
       - name: Eronny, partie S1 remise à sa copie du 11/11 23h02 (pour de vrai, seulement avec l'accord écrit de Mathis)
         if: inputs.etape == 'restaurer-eronny-s1'
         run: |
-          echo '== Partie actuelle mise de côté sur le serveur (fichier, rien n'est affiché)'
+          echo "== Partie actuelle mise de côté sur le serveur (fichier, rien n'est affiché)"
           bash tools/serveur/vps_sql.sh commande "set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/eronny-s1-avant-restauration-\$(date +%Y-%m-%d-%H%M).txt; docker exec supabase-db psql -U postgres -At -c \"select s.data from s1.saves s join public.profiles p on p.id = s.user_id where lower(p.pseudo) = 'eronny'\" > \$f; ls -l \$f; [ \$(stat -c %s \$f) -gt 10000 ] || { echo 'copie trop petite' >&2; exit 1; }"
           f="$RUNNER_TEMP/restaurer_eronny_s1.sql"
           sed "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'REMETS ERONNY AU 11/11'|" tools/serveur/restaurer_eronny_s1.sql > "$f"
