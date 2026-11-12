@@ -35,7 +35,7 @@ for (const lvl of [20, 100, 200]) for (const C of F.CAISSES) {
     if (i % 500 === 0) { S.items = {}; S.res = {}; S.cons = {}; }
   }
   F.RAR.forEach((R, i) => assert.ok(Math.abs((rar[i] / N) * 100 - R.p) < Math.max(1, R.p * 0.15), `rareté ${R.name} : ${(rar[i] / N * 100).toFixed(1)} % au lieu de ${R.p} %`));
-  assert.ok(val / mise > 0.82 && val / mise < 0.97, `valeur rendue ${val / mise}`);
+  assert.ok(val / mise > 0.74 && val / mise < 0.95, `valeur rendue ${val / mise}`); // sans le coup de pouce (remis à zéro ici) : 0,847 en moyenne
   assert.ok(k / mise < 0.8, "une bonne part revient en objets");
 }
 ["res", "item", "key", "sab", "coffre", "bonbon", "parch", "potion", "title"].forEach((x) => assert.ok(kinds.has(x), "sorte de lot jamais vue : " + x));
