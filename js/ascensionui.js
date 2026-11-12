@@ -62,21 +62,20 @@
 
   /* ---------- nouvelle montée ---------- */
   function startHtml(s) {
-    const Q = E.ascState(s); const MO = mono(); if (MO) st.mode = "x"; const cl = E.ascClassChoices(s); E.ascRk(s); const fastOk = E.brecheFast(s); const BR = st.mode === "x"; const wr = E.ASC_RULES[E.brecheRule()] || {};
+    const Q = E.ascState(s); const cl = E.ascClassChoices(s); const xOk = !E.ascCanStart(s, "x") || (Q.best0 || 0) >= 100 || Q.best.n >= 100;
     const left = Math.ceil((E.ascMonthEnd() - E.now()) / 86400000);
-    const seg = `<span class="seg" role="group" aria-label="Mode">${(MO ? ["x"] : ["n", "d", "x"]).map((m) => `<button data-act="as-mode" data-v="${m}" aria-pressed="${st.mode === m}">${E.ASC_MODES[m]}</button>`).join("")}</span>`;
-    const rec = BR ? `Record de la semaine : étage ${Q.rkx.x || "—"}` : `Record du mois : étage ${Q.best[st.mode] || 0} / 100`;
+    const seg = `<span class="seg" role="group" aria-label="Mode">${["n", "d", "x"].map((m) => `<button data-act="as-mode" data-v="${m}" aria-pressed="${st.mode === m}" ${m === "x" && !xOk ? "disabled data-tip=\"S'ouvre après l'étage 100 en Normal\"" : ""}>${m === "x" && !xOk ? "🔒 " : ""}${E.ASC_MODES[m]}</button>`).join("")}</span>`;
+    const rec = st.mode === "x" ? `Record de la semaine : étage ${Q.best.x > 100 ? Q.best.x : "—"}` : `Record du mois : étage ${Q.best[st.mode] || 0} / 100`;
     const cards = cl.map((c) => { const C = CL()[c]; const sig = E.ascSpell(E.ascSignature(c));
       return `<div class="as-cls"><div class="row">${sym(c)}<b class="grow">${h(C.name)}</b></div>${look(c)}
         <span class="xs"><b>Écho</b> (3 sorts ${h(C.name)}) : ${h(echoTxt(c))}</span>
         ${sig ? `<span class="as-sp" data-tip="${h(spTip(sig))}">${spIco(sig)}<span class="grow"><b class="small">${h(sig.name)}</b><span class="xs muted">Sort signature, jamais remplacé</span></span></span>` : ""}
         <button class="btn primary sm" data-act="as-start" data-v="${c}">Monter avec ${/^[AEIOUÉÈ]/.test(C.name) ? "l'" : "le "}${h(C.name)}</button></div>`; }).join("");
-    return card(`Nouvelle montée · ${BR ? "Brèche de la semaine" : `Tour de ${E.ascMonthName(E.ascMonth())}`}`,
-      `<div class="row between">${seg}<span class="row"><span class="tag soft">${BR ? "Remise à zéro le lundi" : `Remise à zéro dans ${plural(left, "jour")}`}</span><span class="tag">${rec}</span></span></div>
-       <p class="note">Un héros neuf, niveau 1 et sans équipement. Choisis une des 3 classes tirées au sort : elle apporte son sort signature, et son écho si tu gardes 3 de ses sorts.${BR ? ` <b>La Brèche est sans fin</b> : après l'étage 100, chaque étage est un peu plus dur, chacun trouve son mur. Les étages en 5 viennent du Songe (${E.BRECHE_SG.faveur.ic} Faveur onirique ou ${E.BRECHE_SG.archi.ic} Archimonstre). Règle de la semaine sur chaque boss : <b>${wr.ic || ""} ${h(wr.name || "")}</b> (${h(wr.d || "")}).` : ""}</p>
-       ${BR ? `<label class="row xs" ${fastOk ? "" : "data-tip=\"S'ouvre après l'étage 100 en Normal\""}><input type="checkbox" data-act="as-fast" ${st.fast && fastOk ? "checked" : ""} ${fastOk ? "" : "disabled"}> Entrée rapide : commencer à l'étage 101 avec 8 tirages de sorts et ${A.relStart || 0} reliques${fastOk ? "" : " (après l'étage 100 en Normal)"}</label>` : ""}
+    return card(`Nouvelle montée · ${st.mode === "x" ? "Au-delà de la semaine" : `Tour de ${E.ascMonthName(E.ascMonth())}`}`,
+      `<div class="row between">${seg}<span class="row"><span class="tag soft">${st.mode === "x" ? "Remise à zéro le lundi" : `Remise à zéro dans ${plural(left, "jour")}`}</span><span class="tag">${rec}</span></span></div>
+       <p class="note">Un héros neuf, niveau 1 et sans équipement. Choisis une des 3 classes tirées au sort : elle apporte son sort signature, et son écho si tu gardes 3 de ses sorts.${st.mode === "x" ? " L'Au-delà commence à l'étage 101 avec 8 tirages de sorts." : ""}</p>
        <div class="as-g3">${cards}</div>
-       <div class="row between"><span class="xs muted">${st.mode === "d" ? "Difficile : ennemis plus solides. Les classements du mois se jouent ici." : st.mode === "n" ? "Normal : l'étage 100 ouvre l'entrée rapide de la Brèche." : "Les étages 1 à 100 de la Brèche ne coûtent pas de Volonté. Classement de la semaine : ton meilleur étage."}</span>
+       <div class="row between"><span class="xs muted">${st.mode === "d" ? "Difficile : ennemis plus solides. Les classements du mois se jouent ici." : st.mode === "n" ? "Normal : l'étage 100 ouvre l'Au-delà." : "Chaque étage de l'Au-delà est un peu plus dur que le précédent."}</span>
        <button class="btn sm" data-act="as-reroll" ${Q.roll.n >= 1 ? "disabled" : ""}>⟳ Relancer les classes (1 par jour)</button></div>`);
   }
 
@@ -100,7 +99,7 @@
       const cards = P.opts.map((k, i) => { if (k.startsWith("soul:")) { const b = k.slice(5); return `<button class="as-opt soul" data-act="as-pick" data-i="${i}"${slotK ? "" : ` data-ak="${i + 1}"`}>${slotK ? "" : K(i + 1)}<img class="as-soulimg" src="${monImg(b)}" alt=""><span class="grow"><b>Âme : ${h(monName(b))}</b><span class="xs muted">Invocation 3 tours, 50 % de puissance, relance ${A.souls.cd}</span></span></button>`; }
         const x = E.ascSpell(k); const own = R.spells.find((y) => y.k === k); const rar = x ? E.ascRarity(x, E.ascLvl(R.f)) : "c";
         return `<button class="as-opt ${RAR_CLS[rar]}" data-act="as-pick" data-i="${i}"${slotK ? "" : ` data-ak="${i + 1}"`} data-tip="${h(spTip(x))}">${slotK ? "" : K(i + 1)}${spIco(x)}<span class="grow"><b>${h(x ? x.name : k)}</b><span class="xs muted">${h((CL()[x && x.cls] || {}).name || "")} · ${E.ASC_RAR[rar].name}</span><span class="xs">${own ? `Déjà dans ta barre : il passe niveau ${Math.min(A.spellLvMax, (own.lv || 1) + 1)}` : h(spLine(x))}</span></span></button>`; }).join("");
-      return card(P.leg === 2 ? "Faveur onirique : ton sort légendaire" : P.leg ? "Autel maudit : ton sort légendaire" : `Palier de l'étage ${R.f - 1} : un nouveau sort`, `<p class="note">Choisis 1 sort parmi ${P.opts.length}. Un sort que tu as déjà monte de niveau (3 au plus).${full ? " Ta barre est pleine : choisis d'abord le sort à remplacer." : ""}</p>
+      return card(P.leg ? "Autel maudit : ton sort légendaire" : `Palier de l'étage ${R.f - 1} : un nouveau sort`, `<p class="note">Choisis 1 sort parmi ${P.opts.length}. Un sort que tu as déjà monte de niveau (3 au plus).${full ? " Ta barre est pleine : choisis d'abord le sort à remplacer." : ""}</p>
         ${full ? slotsPick(R, "as-rep", slotK) : ""}<div class="as-g3">${cards}</div><div class="row between">${auto}<button class="btn sm" data-act="as-pass" ${NO}>Passer${KI("Échap")}</button></div>`, "as-choice");
     }
     if (P.t === "soul") {
@@ -128,11 +127,6 @@
       return card("Marchand", `<p class="note">Paie avec les Fragments gagnés pendant cette montée (<b>${fmt(R.frag)}</b>).${rel ? " Le marchand propose aussi des reliques, de la rareté de l'étage." : ""}</p><div class="as-g2">${E.ASC_SHOP.map((o, i) => { const price = E.ascShopPrice(R, o); return `<div class="as-offer"><b>${h(o.name)}</b><span class="xs muted grow">${h(o.d)}</span><button class="btn sm" data-act="as-shop" data-i="${i}" data-ak="${i + 1}" ${R.frag >= price && !(o.id === "sursis" && R.boughtSursis) ? "" : "disabled"}>${price} Fragments${i < 9 ? KI(i + 1) : ""}</button></div>`; }).join("")}${rel}</div>
         <div class="row between">${auto}<button class="btn primary sm" data-act="as-pass" ${GO}>Continuer la montée${KI("Entrée")}</button></div>`, "as-choice");
     }
-    if (P.t === "faveur") { // la Brèche (3.0) : un cadeau du Songe, sans combat
-      const x = P.leg && E.ascSpell(P.leg); const o = (i, t, d, ok = true) => `<button class="as-opt" data-act="as-faveur" data-v="${i}" data-ak="${i + 1}" ${ok ? "" : "disabled"}>${K(i + 1)}<span class="grow"><b>${t}</b><span class="xs muted">${d}</span></span></button>`;
-      return card(`${E.BRECHE_SG.faveur.ic} Faveur onirique`, `<p class="note">Le Songe t'offre un cadeau, sans combat. Choisis-en un.</p><div class="as-g3">${o(0, "1 Sursis", `Tu en as ${R.sursis}.`)}${o(1, x ? `Sort légendaire : ${h(x.name)}` : "Sort légendaire", x ? h(spLine(x)) : "Aucun sort à cet étage.", !!x)}${o(2, `${P.ecus || 0} Écus`, "Gardés à la fin de la montée.")}</div>
-        <div class="row between">${auto}<button class="btn sm" data-act="as-pass" ${NO}>Passer${KI("Échap")}</button></div>`, "as-choice");
-    }
     if (P.t === "altar") {
       const x = P.leg && E.ascSpell(P.leg);
       return card("Autel maudit", `<p class="note">Un sort légendaire contre une malédiction : les ennemis ont +20 % de PV pendant 10 étages.</p>${x ? `<div class="as-opt rar-l">${spIco(x)}<span class="grow"><b>${h(x.name)}</b><span class="xs muted">${h((CL()[x.cls] || {}).name || "")} · Légendaire</span><span class="xs">${h(spLine(x))}</span></span></div>` : ""}
@@ -146,14 +140,14 @@
     const fl = E.ascFloor(s, R.mode, f); const cur = f === R.f; const done = f < R.f; const Q = E.ascState(s);
     const wk = Q.wounds[E.ascWoundKey(R.mode, f)];
     const what = fl.t === "boss" ? `<b>Boss : ${h(monName(fl.boss))}</b><span class="tag boss">Boss</span>${!Q.bestiary[fl.boss] ? `<span class="tag soft">Âme à capturer</span>` : ""}`
-      : fl.t === "event" ? `<span class="tag soft">❓ Événement</span>` : fl.t === "shop" ? `<span class="tag soft">🛒 Marchand</span>` : fl.t === "altar" ? `<span class="tag soft">🕯 Autel maudit</span>` : fl.t === "faveur" ? `<span class="tag soft">${E.BRECHE_SG.faveur.ic} Faveur onirique</span>`
-      : `${fl.mobs.slice(0, 3).map((k) => `<img class="as-mini" src="${monImg(k)}" alt="" data-tip="${h(monName(k))}">`).join("")}${fl.archi ? `<span class="tag" data-tip="${h(E.BRECHE_SG.archi.d)}">${E.BRECHE_SG.archi.ic} Archimonstre</span>` : ""}${fl.rule ? ruleTag(fl.rule) : f % 5 === 0 ? `<span class="tag">Palier : sort et relique</span>` : ""}`;
+      : fl.t === "event" ? `<span class="tag soft">❓ Événement</span>` : fl.t === "shop" ? `<span class="tag soft">🛒 Marchand</span>` : fl.t === "altar" ? `<span class="tag soft">🕯 Autel maudit</span>`
+      : `${fl.mobs.slice(0, 3).map((k) => `<img class="as-mini" src="${monImg(k)}" alt="" data-tip="${h(monName(k))}">`).join("")}${fl.rule ? ruleTag(fl.rule) : f % 5 === 0 ? `<span class="tag">Palier : sort et relique</span>` : ""}`;
     const wound = wk && !done ? `<span class="as-hp" data-tip="PV des ennemis gardés des essais précédents"><i style="width:${Math.round((wk.hp.reduce((a, b) => a + b, 0) / Math.max(1, wk.hp.length)) * 100)}%"></i></span>` : "";
     const cost = !done && ["fight", "boss"].includes(fl.t) ? (E.ascCost(s, R.mode, f) ? "1 ✦" : "gratuit") : done ? "✓" : "";
     return `<div class="as-fl ${cur ? "cur" : ""} ${done ? "done" : ""} ${fl.t === "boss" ? "boss" : ""}"><span class="as-n">${f}</span><span class="as-mid">${what}${wound}</span><span class="xs muted">${cost}</span></div>`;
   }
   function towerHtml(s) {
-    const R = E.ascState(s).run; const lo = Math.max(1, R.f - 1); const hi = R.mode === "x" ? R.f + 6 : Math.min(A.floors, R.f + 6);
+    const R = E.ascState(s).run; const lo = Math.max(R.mode === "x" ? 101 : 1, R.f - 1); const hi = R.mode === "x" ? R.f + 6 : Math.min(A.floors, R.f + 6);
     const rows = []; for (let f = hi; f >= lo; f--) rows.push(floorRow(s, R, f));
     return `<div class="as-tower">${rows.join("")}</div>`;
   }
@@ -245,7 +239,7 @@
     const rec = R.recruits.length ? R.recruits.map((x) => `${h(monName(x.key))} (${Math.round(x.hp * 100)} %)`).join(", ") : "aucune";
     const rel = E.REL_SLOTS.map((sl) => relSlot(E.relSlotOf(R, sl), sl)).join(""); // 1.2.x
     return `<section class="panel"><div class="phead"><h2>Ta montée</h2><span class="tag">${E.ASC_MODES[R.mode]}</span></div><div class="pad stack" style="gap:10px">
-      <div class="row">${sym(R.cls)}<span class="grow"><b>${h(C.name)} niveau ${E.ascLvl(R.f)}</b><br><span class="xs muted">Étage ${R.f}${R.mode !== "x" ? " / 100" : ""} · record ${R.mode === "x" ? (E.ascRk(s), Q.rkx.x) || "—" : Q.best[R.mode] || "—"}</span></span></div>
+      <div class="row">${sym(R.cls)}<span class="grow"><b>${h(C.name)} niveau ${E.ascLvl(R.f)}</b><br><span class="xs muted">Étage ${R.f}${R.mode !== "x" ? " / 100" : ""} · record ${Q.best[R.mode] > (R.mode === "x" ? 100 : 0) ? Q.best[R.mode] : "—"}</span></span></div>
       <div class="as-slots">${slots}</div>${ech ? `<div class="row">${ech}</div>` : ""}
       <div class="as-stat"><span class="muted">Reliques</span><b>${E.relWorn(R).length} / ${A.relMax} · perdues à la fin de la montée</b></div>
       <div class="as-slots">${rel}</div>
@@ -288,8 +282,8 @@
       <div class="as-g4">${B.map((b) => { const u = U.find((x) => x.id === "soul:" + b); const has = (Q.souls || []).includes(b);
         return `<div class="as-best ${has ? "on" : ""}"><img src="${monImg(b)}" alt=""><b class="xs">${h(monName(b))}</b><span class="xs muted">vaincu ${Q.bestiary[b]} fois</span>${has ? `<span class="tag good">Dans la pioche</span>` : u ? `<button class="btn sm" data-act="as-unl" data-v="${h(u.id)}" ${Q.frag >= u.price ? "" : "disabled"}>${u.price} Fragments</button>` : ""}</div>`; }).join("")}</div>`;
   }
-  const RK_CATS = [["classe", "Par classe"], ["rapidite", "Rapidité"], ["sursis", "Sans Sursis"], ["puriste", "Puriste"], ["breche", "Brèche"]];
-  const RK_D = { classe: "Meilleur étage en Difficile avec une classe.", rapidite: "Étages 91 à 100 en Difficile, sans auto : le moins de tours de combat.", sursis: "Meilleur étage en Difficile sans utiliser de Sursis.", puriste: "Meilleur étage en Difficile avec seulement des sorts de ta classe.", breche: "Meilleur étage de la Brèche cette semaine." };
+  const RK_CATS = [["classe", "Par classe"], ["rapidite", "Rapidité"], ["sursis", "Sans Sursis"], ["puriste", "Puriste"], ["audela", "Au-delà"]];
+  const RK_D = { classe: "Meilleur étage en Difficile avec une classe.", rapidite: "Étages 91 à 100 en Difficile, sans auto : le moins de tours de combat.", sursis: "Meilleur étage en Difficile sans utiliser de Sursis.", puriste: "Meilleur étage en Difficile avec seulement des sorts de ta classe.", audela: "Meilleur étage de l'Au-delà cette semaine." };
   function rankHtml(s) {
     const Q = E.ascState(s); const K = E.ascRk(s); const cat = st.rk.cat; const myCls = st.rk.k || (s.asc.run && s.asc.run.cls) || Object.keys(K.cls)[0] || "iop";
     const mine = cat === "classe" ? K.cls[myCls] || 0 : cat === "rapidite" ? K.spd : cat === "sursis" ? K.nos : cat === "puriste" ? K.pur : Q.rkx.x;
@@ -302,7 +296,7 @@
     const race = online && !raceFull && !(s.unlocks && s.unlocks.legende11) ? `<p class="note">Course de lancement : les 10 premiers comptes à l'étage 100 en Difficile gagnent le titre « Légende de la 1.1 ». <button class="btn sm" data-act="race-open">Voir la course</button></p>` : ""; // 1.2.3.2
     return `${race}<div class="subtabs">${RK_CATS.map(([k, n]) => `<button data-act="as-rk" data-v="${k}" aria-pressed="${cat === k}">${n}</button>`).join("")}</div>
       ${cat === "classe" ? `<div class="row"><select data-act="as-rkcls" aria-label="Classe">${D.CLASS_ORDER.map((c) => `<option value="${c}" ${c === myCls ? "selected" : ""}>${h(CL()[c].name)}</option>`).join("")}</select></div>` : ""}
-      <p class="note">${RK_D[cat]} Ton score : <b>${fmtS(mine)}</b>. Le top 10 gagne un titre${cat === "breche" ? " et 2 Fioles" : ", 3 Fioles et 100 000 kamas"} au ${cat === "breche" ? "lundi" : "début du mois"} suivant.</p>${list}`;
+      <p class="note">${RK_D[cat]} Ton score : <b>${fmtS(mine)}</b>. Le top 10 gagne un titre${cat === "audela" ? " et 2 Fioles" : ", 3 Fioles et 100 000 kamas"} au ${cat === "audela" ? "lundi" : "début du mois"} suivant.</p>${list}`;
   }
   function histHtml(s) {
     const Q = E.ascState(s); if (!Q.hist.length) return `<p class="empty">Aucune montée finie pour l'instant.</p>`;
@@ -316,11 +310,11 @@
   const TABS = [["prog", "Progression"], ["shop", "Boutique", ["shop", "rel"]], ["best", "Bestiaire"], ["rank", "Classement"]];
   const SUB = { shop: "Écus", rel: "Reliquaire" };
   function tabsHtml(s) {
-    if (st.tab === "hist" || st.tab === "rules" || (st.tab === "rank" && mono())) st.tab = "prog"; // 3.0 : pas de classement du Classique en Monocompte
+    if (st.tab === "hist" || st.tab === "rules") st.tab = "prog";
     const body = st.tab === "shop" ? shopHtml(s) : st.tab === "rel" ? relHtml(s) : st.tab === "best" ? bestHtml(s) : st.tab === "rank" ? rankHtml(s) : progHtml(s);
     const on = (t) => (t[2] || [t[0]]).includes(st.tab); const grp = TABS.find(on);
     const sub = grp && grp[2] ? `<div class="catchips as-sub">${grp[2].map((k) => `<button data-act="as-tab" data-v="${k}" aria-pressed="${st.tab === k}">${SUB[k]}</button>`).join("")}</div>` : "";
-    return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.filter((t) => !(mono() && t[0] === "rank")).map((t) => `<button data-act="as-tab" data-v="${t[0]}" aria-pressed="${on(t)}">${t[1]}</button>`).join("")}</div><button class="btn sm ghost as-help" data-act="as-help" title="Historique et règles de la tour" aria-label="Historique et règles de la tour">?</button></div><div class="pad stack">${sub}${body}</div></section>`;
+    return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.map((t) => `<button data-act="as-tab" data-v="${t[0]}" aria-pressed="${on(t)}">${t[1]}</button>`).join("")}</div><button class="btn sm ghost as-help" data-act="as-help" title="Historique et règles de la tour" aria-label="Historique et règles de la tour">?</button></div><div class="pad stack">${sub}${body}</div></section>`;
   }
   function helpSheet(s) { X().openSheet(`<h2>L'Ascension</h2><h3>Règles</h3>${rulesHtml()}<h3>Historique</h3>${histHtml(s)}<div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 
@@ -338,15 +332,13 @@
   }
 
   /* ---------- la page ---------- */
-  const mono = () => !!(E.isMono && E.isMono(S())); // 3.0 (Mathis : « Brèche dispo en monocompte ») : la Brèche seule, sans classement du Classique
   function page(main) {
-    const s = S(); const Q = E.ascState(s); const R = Q.run; const V3 = !!(s.settings && s.settings.v3);
-    if (V3 && !st.m3) { st.m3 = 1; st.mode = "x"; } // la 3.0 : la page s'appelle la Brèche, elle ouvre sur la Brèche
-    const head = `<div class="pagehead"><h1>${V3 ? "La Brèche" : "L'Ascension"}</h1><span class="small muted">${plural(Q.frag, "Fragment")} · ${plural(Q.ecus, "Écu")}</span></div>`;
+    const s = S(); const Q = E.ascState(s); const R = Q.run;
+    const head = `<div class="pagehead"><h1>L'Ascension</h1><span class="small muted">${plural(Q.frag, "Fragment")} · ${plural(Q.ecus, "Écu")}</span></div>`;
     let body;
     if (!R) body = startHtml(s);
     else body = `${pendHtml(s)}${st.live ? `<section class="panel"><div class="pad stack" id="asArena">${arenaHtml(s)}</div></section>` : readyHtml(s)}
-      <div class="as-side2"><section class="panel"><div class="phead"><h2>${R.mode === "x" ? "La Brèche" : `Tour de ${E.ascMonthName(E.ascMonth())}`}</h2><span class="tag soft">${E.ASC_MODES[R.mode]}</span></div><div class="pad">${towerHtml(s)}</div></section>${runHtml(s)}</div>`;
+      <div class="as-side2"><section class="panel"><div class="phead"><h2>${R.mode === "x" ? "L'Au-delà" : `Tour de ${E.ascMonthName(E.ascMonth())}`}</h2><span class="tag soft">${E.ASC_MODES[R.mode]}</span></div><div class="pad">${towerHtml(s)}</div></section>${runHtml(s)}</div>`;
     main.innerHTML = `${head}<div class="stack">${volHtml(s)}${body}${tabsHtml(s)}</div>`;
     st.key = keyOf(s);
   }
@@ -407,9 +399,9 @@
 
   /* ---------- classements ---------- */
   function rkLoad(force) {
-    if (!(ON && ON.enabled && ON.db) || mono()) return; if (!force && Date.now() - st.rk.at < 60000 && st.rk.rows) return;
+    if (!(ON && ON.enabled && ON.db)) return; if (!force && Date.now() - st.rk.at < 60000 && st.rk.rows) return;
     const s = S(); const cat = st.rk.cat; const K = E.ascRk(s); const k = cat === "classe" ? st.rk.k || (s.asc.run && s.asc.run.cls) || Object.keys(K.cls)[0] || "iop" : "";
-    const m = cat === "breche" ? E.weekIdx() : E.ascMonth(); st.rk.at = Date.now(); st.rk.rows = null; st.rk.err = false;
+    const m = cat === "audela" ? E.weekIdx() : E.ascMonth(); st.rk.at = Date.now(); st.rk.rows = null; st.rk.err = false;
     try { ON.db().from("lb_asc").select("user_id,pseudo,score,r").eq("m", m).eq("cat", cat).eq("k", k).order("r", { ascending: true }).limit(10).then(({ data, error }) => {
       if (error) st.rk.err = true; else st.rk.rows = data || []; if (st.tab === "rank") paint(); }).catch(() => { st.rk.err = true; paint(); }); } catch (e) { st.rk.err = true; }
   }
@@ -424,7 +416,7 @@
       if (r.data.ok) X().toast(`Classement de L'Ascension : +${r.data.fioles} Fioles de Volonté${r.data.kamas ? ` et ${fmt(r.data.kamas)} kamas` : ""}, et ton titre !`, "rare"); }).catch(() => {});
   }
   function race() {
-    const s = S(); if (!s || mono() || !s.asc || !s.asc.d100 || (s.unlocks && s.unlocks.legende11) || !(ON && ON.user && ON.db) || Date.now() - raceAt < 60000) return; raceAt = Date.now();
+    const s = S(); if (!s || !s.asc || !s.asc.d100 || (s.unlocks && s.unlocks.legende11) || !(ON && ON.user && ON.db) || Date.now() - raceAt < 60000) return; raceAt = Date.now();
     try { ON.db().from("firsts").select("key").eq("kind", "race11").eq("user_id", ON.user.id).limit(1).then(({ data }) => {
       if (!data || !data[0]) return; const n = +data[0].key || 1; s.unlocks.legende11 = n; s.titlesExtra = s.titlesExtra || [];
       if (!s.titlesExtra.includes("Légende de la 1.1")) s.titlesExtra.push("Légende de la 1.1"); X().markDirty();
@@ -441,7 +433,7 @@
       case "as-go-page": UI().tab = "asc"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return;
       case "as-mode": st.mode = d.v; paint(); return;
       case "as-reroll": done(E.act(s, "ascReroll")); return;
-      case "as-start": { const r = E.act(s, "ascStart", st.mode, d.v, st.mode === "x" && !!st.fast); st.sel = []; st.rep = -1; st.quit = false; if (done(r)) window.scrollTo(0, 0); return; }
+      case "as-start": { const r = E.act(s, "ascStart", st.mode, d.v); st.sel = []; st.rep = -1; st.quit = false; if (done(r)) window.scrollTo(0, 0); return; }
       case "as-sel": { const i = +d.i; st.sel = st.sel.includes(i) ? st.sel.filter((x) => x !== i) : st.sel.length < A.keep ? st.sel.concat([i]) : st.sel; paint(); return; }
       case "as-go": { const r = E.act(s, "ascChoose", st.sel.slice()); if (!r) st.sel = []; done(r); return; }
       case "as-rep": st.rep = st.rep === +d.i ? -1 : +d.i; paint(); return;
@@ -455,8 +447,6 @@
       case "as-ev": done(E.act(s, "ascChoose", +d.v)); return;
       case "as-shop": { const id = +d.i >= 100 ? relOf(s, +d.i) : null; if (done(E.act(s, "ascChoose", +d.i))) relSnd(s, id); return; }
       case "as-altar": done(E.act(s, "ascChoose", +d.v)); return;
-      case "as-faveur": done(E.act(s, "ascChoose", +d.v)); return;
-      case "as-fast": st.fast = !!(t && t.checked); return;
       case "as-auto": done(E.act(s, "ascSetAuto", d.v === "1")); return;
       case "as-next": { st.wait = 0; liveStart(s); if (st.live) window.scrollTo(0, 0); return; }
       case "as-quit": if (!st.quit) { st.quit = true; paint(); setTimeout(() => { if (st.quit) { st.quit = false; paint(); } }, 5000); return; }

@@ -655,7 +655,8 @@ jobs:
       - name: Idlus 3.0, fermeture de l'Hôtel de vente du Classique (sauvegarde de la base)
         # 3.0 (2B de Mathis, 12/11/2026 : « on enlève définitivement l'hdv », annonces rendues) : à lancer UNE fois au moment de publier la 3.0.
         # Recharge supabase/hdv.sql (Éternel) et sa tranche s1 (drapeau hdv_ferme, refus « fermé »), puis supabase/hdv_fermeture.sql dans
-        # l'Éternel et la Saison 1 : annonces ouvertes rendues aux vendeurs, kamas des offres d'achat rendus. L'HdV de saison du Monocompte ne bouge pas.
+        # l'Éternel et la Saison 1 : annonces ouvertes rendues aux vendeurs, kamas des offres d'achat rendus. Monocompte aussi (Mathis 13/11 « Le fermer aussi ») :
+        # supabase/monocompte.sql (drapeau mono.hdv_ferme, relançable) puis supabase/mono_hdv_fermeture.sql.
         if: inputs.etape == 'hdv-fermer'
         run: |
           echo '== Sauvegarde complète de la base avant fermeture'
@@ -664,7 +665,7 @@ jobs:
           grep -q 'create or replace function s1.hdv_closed' /tmp/hdv_s1.sql || { echo "tranche s1 de l'HdV introuvable" >&2; exit 1; }
           { echo "set search_path = public;"; cat supabase/hdv_fermeture.sql; } > /tmp/ferme_e.sql
           { echo "set search_path = s1, public;"; cat supabase/hdv_fermeture.sql; } > /tmp/ferme_s1.sql
-          for f in supabase/hdv.sql /tmp/hdv_s1.sql /tmp/ferme_e.sql /tmp/ferme_s1.sql; do
+          for f in supabase/hdv.sql /tmp/hdv_s1.sql /tmp/ferme_e.sql /tmp/ferme_s1.sql supabase/monocompte.sql supabase/mono_hdv_fermeture.sql; do
             echo "== $f"
             { echo "set lock_timeout = '3s';"; cat "$f"; } > /tmp/q.sql
             for essai in 1 2 3 4 5 6; do
@@ -674,7 +675,7 @@ jobs:
               exit 1
             done
           done
-          bash tools/serveur/vps_sql.sh lecture "select (select count(*) from public.hdv_listings where status = 'open') as ouvertes_eternel, (select count(*) from s1.hdv_listings where status = 'open') as ouvertes_s1, (select count(*) from public.hdv_ferme) as ferme_eternel, (select count(*) from s1.hdv_ferme) as ferme_s1"
+          bash tools/serveur/vps_sql.sh lecture "select (select count(*) from public.hdv_listings where status = 'open') as ouvertes_eternel, (select count(*) from s1.hdv_listings where status = 'open') as ouvertes_s1, (select count(*) from public.hdv_ferme) as ferme_eternel, (select count(*) from s1.hdv_ferme) as ferme_s1, (select count(*) from mono.hdv where status = 'open') as ouvertes_mono, (select count(*) from mono.hdv_ferme) as ferme_mono"
       - name: Monocompte, supabase/mono_social.sql seul (classements, Couronne, renfort d'un ami)
         # 22/10/2026, ordre écrit de Mathis « installe le message du renfort sur le serveur Monocompte » (ticket #144) :
         # recharge seulement mono_social.sql (fonctions, relançable), après une sauvegarde complète. Ni le Classique ni la fonction « mono ».

@@ -14,7 +14,7 @@
 
   /* ---------- les 8 espaces (question 3) et leurs onglets ; lvl : niveau qui ouvre l'espace (question 4) ---------- */
   const SPACES = [
-    { id: "av", n: "Aventure", ic: "monde", keys: ["world", "asc", "exp", "routines", "dungeons", "defi", "wb", "chev", "xs1"] },
+    { id: "av", n: "Aventure", ic: "monde", keys: ["world", "breche", "asc", "exp", "routines", "dungeons", "defi", "wb", "chev", "xs1"] },
     { id: "he", n: "Équipe", ic: null, keys: ["team", "plan", "maitrise", "garde", "builds"] },
     { id: "sac", n: "Sac", ic: "sac", keys: ["inv", "dofus"] },
     { id: "ec", n: "Artisanat", ic: "metiers", keys: ["metiers", "forge", "grav", "comptoirs"], lvl: 5 },
@@ -25,7 +25,7 @@
   ];
   V3.SPACES = SPACES;
   /* les noms courts des onglets dans la 3.0 */
-  const REN = { hdv: "Échanges", world: "Zones", asc: "Brèche", exp: "Songe infini", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album" };
+  const REN = { hdv: "Échanges", world: "Zones", asc: "Ascension", exp: "Songe infini", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album" };
   V3.ren = REN;
   let ALL = null; // les espaces complets, avant les déblocages par niveau
   const maxLvl = () => X.S.chars.reduce((a, c) => Math.max(a, c.lvl || 1), 1);
@@ -41,7 +41,7 @@
       NAV.forEach((F) => { if (F.season) { season = F; return; } F.pages.forEach((p) => pool.set(p[0], p)); });
       Object.keys(XP3).forEach((k) => { if (!XP3[k].on || XP3[k].on()) pool.set(k, XP3[k].nav); }); // les pages propres à la 3.0
       ALL = { season, spaces: SPACES.map((s) => ({ id: s.id, n: s.n, ic: s.ic, v3lvl: s.lvl || 0, pages: s.keys.filter((k) => pool.has(k)).map((k) => { const p = pool.get(k).slice(); pool.delete(k); if (REN[k]) p[1] = REN[k]; return p; }) })) };
-      // 1B (12/11) : la Brèche est l'Ascension sans fin avec les étages du Songe (js/ascension.js, mode « x ») ; le Songe infini garde son équipe et ses Bribes
+      // 1B (12/11, « avec mon équipe ») : la Brèche est sa propre page (XP3.breche, moteur du Songe) ; l'Ascension reste le mode solo du mois
       const jo = ALL.spaces.find((F) => F.id === "jo"); pool.forEach((p) => jo.pages.push(p.slice())); // une page oubliée reste trouvable dans le Journal
     }
     V3.relock(true);
@@ -136,7 +136,7 @@
     const b = document.getElementById("v3b"), band = document.getElementById("v3band");
     try { if (window.ANIM3 && window.ANIM3.fx && X.S.fight) window.ANIM3.fx(X.S.fight, b); } catch (er) {}
     if (b) { const show = V3.home() || (window.innerWidth >= 1180 && ui.tab !== "combat"); b.hidden = !show; if (show) morphTo(b, V3.boardHtml()); }
-    tutoPaint();
+    tutoPaint(); try { V3.brTick(); } catch (er) {}
     if (band) { const show = !V3.home() && ui.tab !== "combat" && window.innerWidth < 1180; band.hidden = !show; if (show) { const x = V3.bandHtml(); if (band.dataset.h !== x) { band.dataset.h = x; band.innerHTML = x; } } }
   };
   /* barre du bas du téléphone (question 2) : Combat, Aventure, Équipe, Sac, Plus */
@@ -211,7 +211,40 @@
       <div class="v3btq">${L.map((it) => { const own = E.btqHas(X.S, it.id); return `<div class="v3bi r-${it.rar}"><div class="v3bp">${pic(it)}</div><b>${h(it.n)}</b><span class="xs muted">${it.k === "aura" ? "Aura" : "Couleur du pseudo"} · ${h(RN[it.rar] || "")}</span>
         ${own ? `<span class="small">✓ Dans ta Garde-robe</span>` : ui.v3bq === it.id ? `<span class="v3hb"><button class="btn sm primary" data-act="v3-btq" data-v="${h(it.id)}" data-ok="1">Payer ${fmt(it.prix)}</button><button class="btn sm" data-act="v3-btqno">Non</button></span>` : `<button class="btn sm" data-act="v3-btq" data-v="${h(it.id)}" ${k >= it.prix ? "" : "disabled"}>${fmt(it.prix)} kamas</button>`}</div>`; }).join("")}</div></section>`;
   };
+  /* ---------- Aventure › La Brèche (1B de Mathis, « avec mon équipe ») : étages sans fin, moteur du Songe (js/songe.js, E.brStart) ---------- */
+  const BR_T = { fight: ["⚔", "Combat"], hard: ["💀", "Combat redoutable"], archi: ["👁", "Archimonstre"], favor: ["✨", "Faveur onirique"], fount: ["⛲", "Fontaine onirique"], boss: ["👑", "Boss"] };
+  const brRk = { at: 0, rows: null, w: -1 };
+  const brRkLoad = () => {
+    const ON = window.ONLINE; const w = E.weekIdx();
+    if (!(ON && ON.enabled && ON.db) || (ON.monoGame && ON.monoGame()) || (Date.now() - brRk.at < 60000 && brRk.w === w)) return; brRk.at = Date.now(); brRk.w = w;
+    try { ON.db().from("lb_asc").select("pseudo,score,r").eq("m", w).eq("cat", "breche").eq("k", "").order("r", { ascending: true }).limit(10).then(({ data, error }) => { brRk.rows = error ? null : data || []; if (ui.tab === "breche") rePage(); }).catch(() => {}); } catch (e) {}
+  };
+  const brHtml = () => {
+    const S = X.S; const on = E.brOn(S); const songe = E.expActive(S) && !on; const w = E.weekIdx(); const reg = E.brRegne(w); const M = (E.STASIS_MODS || {})[reg.mod] || { name: reg.mod, desc: "" };
+    const wk = E.brWeek(S); const team = E.team(S); const top = team.length ? Math.max(...team.map((c) => c.lvl)) : 0;
+    const rule = `<div class="v3box"><div class="v3n"><b>Règle de la semaine : ${h(M.name)}</b><span class="muted">${h(reg.god)}</span></div><span class="small muted">${h(M.desc)} Sur tous les étages, pour tout le monde.</span></div>`;
+    const rk = (() => { if ((window.ONLINE && window.ONLINE.monoGame && window.ONLINE.monoGame()) || !(window.ONLINE && window.ONLINE.enabled)) return ""; brRkLoad(); const R = brRk.rows;
+      return `<section class="card v3pl"><h2>Classement de la semaine</h2>${R === null ? `<p class="small muted">Chargement…</p>` : R.length ? `<div class="v3tgs">${R.map((x) => `<div class="v3n"><b>${x.r}. ${h(x.pseudo || "?")}</b><span class="num">étage ${fmt(x.score)}</span></div>`).join("")}</div>` : `<p class="small muted">Personne encore cette semaine : à toi !</p>`}<p class="xs muted">Ton meilleur étage de la semaine part avec ta sauvegarde en ligne. Le top 10 gagne le titre « Maître de la Brèche » et 2 Fioles de Volonté le lundi.</p></section>`; })();
+    if (!on) {
+      const err = songe ? "Ton équipe est dans le Songe infini : réveille-la d'abord." : E.expCanStart(S, 0); const L = S.brLast;
+      return `<section class="card v3pl"><h2>La Brèche</h2><p class="small muted">Ton équipe et son équipement, des étages sans fin, les mêmes pour tous cette semaine. Chaque étage est un peu plus dur : chaque équipe trouve son mur. Tous les 10 étages un boss de donjon (Bribes de rêve, un bonus), les étages en 5 viennent du Songe (Faveur onirique ou Archimonstre), une Fontaine de temps en temps. Les PV remontent un peu à chaque étage, et de moitié après un boss.</p>
+        ${rule}<div class="v3hb" style="margin:10px 0"><span class="tag">Record de la semaine : ${wk.d ? `étage ${fmt(wk.d)}` : "—"}</span><span class="tag soft">Record de toujours : ${(S.cnt && S.cnt.brBest) ? `étage ${fmt(S.cnt.brBest)}` : "—"}</span></div>
+        ${L ? `<p class="small">Dernière montée : <b>étage ${fmt(L.d)}</b>${L.bribes ? `, +${fmt(L.bribes)} Bribes de rêve` : ""}${L.loss ? ` · ${h(L.loss.txt)}` : ""}</p>` : ""}
+        <button class="btn primary" data-act="v3-brgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>${err && top < E.EXP_MIN_LVL ? `S'ouvre au niveau ${E.EXP_MIN_LVL}` : "Entrer dans la Brèche"}</button>${err && top >= E.EXP_MIN_LVL ? `<p class="xs muted">${h(err)}</p>` : ""}</section>${rk}`;
+    }
+    const Xb = S.exp; const cur = Xb.at !== null ? Xb.nodes[Xb.at].d : 0; const nx = Xb.pick !== null ? Xb.nodes[Xb.pick] : null; const p = E.expPending(S);
+    const up = []; for (let d = cur + 1; d <= cur + 8; d++) { const n = E.brNode(Xb.w, d); const T = BR_T[n.t] || ["⚔", n.t]; up.push(`<div class="v3n ${nx && nx.d === d ? "v3cur" : ""}"><span>${T[0]} <b>Étage ${d}</b> · ${T[1]}</span><span class="xs muted">stasis ${E.brStasis(d, n.t, Xb.lvl).toFixed(1)}</span></div>`); }
+    return `<section class="card v3pl"><h2>La Brèche · étage ${fmt(nx ? nx.d : cur)}</h2>
+      <div class="v3hb" style="margin-bottom:8px"><span class="tag">PV de l'équipe : ${E.sgAvgHp(S)} %</span><span class="tag soft">${fmt(Xb.pts)} points de rêve</span><span class="tag soft">${Xb.relics.length} bonus</span><span class="tag soft">${Xb.sable} Sable</span><span class="tag soft">record de la semaine : étage ${fmt(wk.d)}</span></div>
+      ${p ? `<div class="v3box"><b>Un choix t'attend</b> <button class="btn sm primary" data-act="sg-reopen">Ouvrir</button></div>` : ""}
+      ${rule}<h3 class="sec">Les prochains étages</h3><div class="v3tgs">${up.join("")}</div>
+      <div class="v3hb" style="margin-top:10px"><button class="btn sm" data-act="nav" data-v="combat">Voir le combat</button>${ui.v3brq ? `<button class="btn sm danger" data-act="v3-brquit" data-ok="1">Oui, sortir (tout le butin est gardé)</button><button class="btn sm" data-act="v3-brno">Non</button>` : `<button class="btn sm" data-act="v3-brquit">Sortir de la Brèche</button>`}</div>
+      <label class="row xs" style="margin-top:8px"><input type="checkbox" data-act="v3-sgauto" ${E.expAutoOn(S) ? "checked" : ""}> Choix automatiques (bonus, Fontaines, Sable)</label></section>${rk}`;
+  };
+  let brKey = "";
+  V3.brTick = () => { if (!V3.on() || ui.tab !== "breche") return; const S = X.S; const Xb = S.exp; const k = E.brOn(S) ? `${Xb.at}|${Xb.pick}|${Xb.pend.length}|${Xb.pts}|${Xb.relics.length}|${E.sgAvgHp(S)}` : `off|${S.brLast ? S.brLast.t : 0}`; if (k !== brKey) { brKey = k; rePage(); } };
   const XP3 = {
+    breche: { nav: ["breche", "Brèche", "monde"], d: "Ton équipe, des étages sans fin, classement de la semaine", html: brHtml, on: () => !!E.brStart },
     boutique3: { nav: ["boutique3", "Boutique", "bourse"], d: "6 apparences par semaine, en kamas", html: btqHtml, on: () => !!E.BTQ },
     hebdo: { nav: ["hebdo", "Semaine", "quetes"], d: "5 objectifs de la semaine et un coffre", html: hebdoHtml, on: () => !!E.HEBDO },
     plan: { nav: ["plan", "Plan de bataille", "combat"], d: "Posture, cible et réflexes de l'équipe", html: planHtml },
@@ -272,6 +305,9 @@
     }
     if (a === "v3-tutogo") { V3.tutoStart(); ui.tab = "combat"; ui.v3det = false; render(); return true; }
     if (a === "v3-fx") { const L = Object.keys(FXN); X.S.settings.a3fx = L[(L.indexOf(V3.fxMode()) + 1) % L.length]; toast(`Effets des sorts : ${FXN[X.S.settings.a3fx].toLowerCase()}.`); saveNow(); V3.tick(true); return true; }
+    if (a === "v3-brgo") { const r = E.act(X.S, "brStart"); if (r) toast(r); else { toast("La Brèche s'ouvre : bonne montée !", "rare"); saveNow(); } rePage(); return true; }
+    if (a === "v3-brno") { ui.v3brq = false; rePage(); return true; }
+    if (a === "v3-brquit") { if (!t.dataset.ok) { ui.v3brq = true; rePage(); return true; } ui.v3brq = false; const r = E.act(X.S, "expQuit"); if (r) toast(r); saveNow(); rePage(); return true; }
     if (a === "v3-btqno") { ui.v3bq = null; rePage(); return true; }
     if (a === "v3-btq") { const id = t.dataset.v; if (!t.dataset.ok) { ui.v3bq = id; rePage(); return true; } ui.v3bq = null; const r = E.btqBuy(X.S, id); if (r.err) toast(r.err); else { toast(`${r.it.n} : dans ta Garde-robe.`, "rare"); saveNow(); } rePage(); return true; }
     if (a === "v3-chload") { if (window.CHANTIER) window.CHANTIER.poll(); return true; }

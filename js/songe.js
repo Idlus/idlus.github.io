@@ -74,7 +74,7 @@
   E.expMonMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1) });
   E.expActive = (S) => !!(S && S.exp && S.exp.on);
   const X_ = (S) => (E.expActive(S) ? S.exp : null);
-  const FIGHT = ["fight", "hard", "archi", "end"];
+  const FIGHT = ["fight", "hard", "archi", "end", "boss"];
   E.sgNode = (X, i) => (X && i !== null && i !== undefined ? X.nodes[i] : null);
   /* un combat du songe est prêt à partir (salle de combat choisie, aucun choix en attente) */
   E.expBusy = (S) => { const X = S && S.exp; const n = X && X.on && !X.pend.length && E.sgNode(X, X.pick); return !!(n && FIGHT.includes(n.t)); };
@@ -242,9 +242,32 @@
     /* au moins un couloir de combat simple en sortant de chaque salle : jamais forcé dans un combat redoutable */
     return N;
   };
+  /* ---------- LA BRÈCHE (Idlus 3.0 : 1B de Mathis, 12/11/2026, « avec mon équipe ») ----------
+     Ton équipe et son équipement montent des étages sans fin, un par un, les mêmes pour tous chaque semaine. Le moteur du Songe
+     (X.breche = 1 sur S.exp) : bonus, points de rêve, Faveurs, Fontaines, Sable de Draconiros. Tous les 10 étages un boss de donjon
+     (Bribes de rêve, un bonus), les étages en 5 viennent du Songe (Faveur onirique ou Archimonstre), la règle de la semaine (un dieu)
+     vaut sur tous les étages. La difficulté monte de E.BR.step stasis par étage : chaque équipe trouve son mur (réglé par
+     node tools/simulate.js --breche). Record et classement de la semaine : l'étage le plus haut franchi. */
+  E.BR = { base: 1.5, step: 0.14, hard: 0.8, archi: 0.5, boss: 0, heal: 15, bossHeal: 50, lvlK: 0.75 };
+  /* le pas monte pour une équipe plus basse (simulation : à équipement égal, une équipe 120 montait presque 2 fois plus haut qu'une 200) */
+  E.brStep = (lvl) => E.BR.step * (1 + E.BR.lvlK * Math.max(0, 200 - (lvl || 200)) / 200);
+  E.brStasis = (d, t, lvl) => E.BR.base + E.brStep(lvl) * (d - 1) + (t === "hard" ? E.BR.hard : t === "archi" ? E.BR.archi : t === "boss" ? E.BR.boss : 0);
+  E.brRegne = (w) => E.EXP_REGNES[hash(`idlus|breche|regne|${w}`) % E.EXP_REGNES.length];
+  E.brNode = (w, d) => {
+    const r = seeded(hash(`idlus|breche|${w}|${d}`)); let t = "fight";
+    if (d % 10 === 0) t = "boss"; else if (d % 10 === 5) t = (Math.floor(d / 10) + hash(`br|${w}`)) % 2 ? "favor" : "archi";
+    else if (d % 20 === 13) t = "fount"; else if (d > 3 && r() < 0.18) t = "hard";
+    return { i: d - 1, d, l: 1, t, pips: t === "fight" ? 1 + (r() < 0.5 ? 1 : 0) : t === "hard" || t === "archi" ? 3 : 0, nx: [d] };
+  };
+  const brEnsure = (X, d) => { while (X.nodes.length < d) X.nodes.push(E.brNode(X.w, X.nodes.length + 1)); };
+  E.brOn = (S) => !!(E.expActive(S) && S.exp.breche);
+  E.brBribes = (d) => Math.round(8 + d * 0.8);
+  E.brWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.brw || G.brw.w !== w) G.brw = { w, d: 0, runs: 0 }; return G.brw; };
+  const brRec = (S, X, d) => { const wk = E.brWeek(S); if (d > wk.d) wk.d = d; S.cnt = S.cnt || {}; if (d > (S.cnt.brBest || 0)) S.cnt.brBest = d; };
+  E.brStart = (S) => E.expStart(S, 0, false, true);
   E.sgPalier = (d) => E.SG_PALIERS.findIndex(([a, b]) => d >= a && d <= b);
   /* salles où l'on peut aller maintenant */
-  E.sgNext = (X) => { if (!X) return []; if (X.at === null) return X.nodes.filter((n) => n.d === 1).map((n) => n.i); return X.nodes[X.at].nx.slice(); };
+  E.sgNext = (X) => { if (!X) return []; if (X.breche) { const d = X.at === null ? 1 : X.nodes[X.at].d + 1; brEnsure(X, d); return [d - 1]; } if (X.at === null) return X.nodes.filter((n) => n.d === 1).map((n) => n.i); return X.nodes[X.at].nx.slice(); };
 
   /* ---------- zones et donjons autour du niveau de l'équipe ---------- */
   const subsNear = (L) => {
@@ -270,7 +293,7 @@
       let subs = subsNear(X.lvl);
       if (n.t === "archi") { const ok = subs.filter((s) => s.monsters.some((m) => MONSTERS[m] && MONSTERS[m].archi)); if (ok.length) subs = ok; }
       const sub = subs[Math.floor(rng() * subs.length)];
-      let k = clamp(Math.round((2 + Math.floor(rng() * 2) + (n.pips > 1 ? 1 : 0)) * (0.3 + team * 0.25)) + (X.regne && X.ii > 0 && X.regne.mod === "nombreux" ? 1 : 0), 1, 8);
+      let k = clamp(Math.round((2 + Math.floor(rng() * 2) + (n.pips > 1 ? 1 : 0)) * (0.3 + team * 0.25)) + (X.regne && (X.ii > 0 || X.breche) && X.regne.mod === "nombreux" ? 1 : 0), 1, 8);
       if (n.t === "hard") k = Math.max(1, k - 1);
       const mons = []; for (let i = 0; i < k; i++) mons.push({ id: sub.monsters[Math.floor(rng() * sub.monsters.length)], lvl: Math.max(1, X.lvl + Math.floor(rng() * 5) - 2) });
       if (n.t === "hard") { const nc = k >= 4 ? 2 : 1; const keys = Object.keys(E.CHAMP_POWERS); for (let i = 0; i < nc; i++) mons[i].champ = keys[Math.floor(rng() * keys.length)]; }
@@ -278,6 +301,7 @@
       c.sub = sub.id; c.mons = mons;
       const mk = Object.keys(E.SG_MINOR); c.minor = mk[Math.floor(rng() * mk.length)];
     }
+    if (n.t === "boss") { const ids = dgsNear(X.lvl); c.did = ids[Math.floor(rng() * ids.length)]; }
     if (n.t === "end") { const ids = dgsNear(X.lvl); c.dgs = [0, 1, 2, 3, 4, 5, 6, 7].map(() => ids[Math.floor(rng() * ids.length)]); }
     n.c = c; return c;
   };
@@ -292,18 +316,19 @@
     return null;
   };
   const queue = (X, p) => { p.at = E.now(); p.id = (X.pseq = (X.pseq || 0) + 1); X.pend.push(p); };
-  E.expStart = (S, ii, fromLoop) => {
+  E.expStart = (S, ii, fromLoop, breche) => {
     ii = clamp(Math.round(+ii || 0), 0, E.SG_INT.length - 1);
     const err = E.expCanStart(S, ii); if (err) return err;
-    if (fromLoop !== true) S.sgLoop = null; // un songe lancé à la main recommence le compte des échecs de la boucle
+    if (breche && S.sgLoop) S.sgLoop = null; else if (fromLoop !== true) S.sgLoop = null; // un songe lancé à la main recommence le compte des échecs de la boucle
     const team = E.team(S); const wasHunt = S.hunting && S.sub ? S.sub : null;
     S.hunting = false; S.fight = null; S.pause = E.PAUSE_MS; S.protector = null;
     const w = E.weekIdx();
     const X = S.exp = {
-      on: true, sg: 1, w, ii, t0: E.now(), lvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), nodes: E.sgMap(w), at: null, pick: null, path: [],
+      on: true, sg: 1, w, ii, t0: E.now(), lvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), nodes: breche ? [] : E.sgMap(w), at: null, breche: breche ? 1 : 0, pick: null, path: [],
       relics: [], minor: {}, pts: E.sgUp(S, "prevoyant") ? 10 : 0, sable: E.sgUp(S, "sablepoche") ? 1 : 0, pend: [], hp: {}, log: [], gobUsed: false,
-      rew: { kamas: 0, xp: 0, dust: 0, res: 0, items: 0 }, bribes: 0, fights: 0, wave: 0, waves: 0, valid: false, resume: wasHunt, retry: 0, regne: E.sgRegne(w),
+      rew: { kamas: 0, xp: 0, dust: 0, res: 0, items: 0 }, bribes: 0, fights: 0, wave: 0, waves: 0, valid: false, resume: wasHunt, retry: 0, regne: breche ? E.brRegne(w) : E.sgRegne(w),
     };
+    if (breche) { brEnsure(X, 1); E.brWeek(S).runs++; S.cnt = S.cnt || {}; S.cnt.brRuns = (S.cnt.brRuns || 0) + 1; note(S, `La Brèche s'ouvre : équipe niveau ${X.lvl}, règle de la semaine : ${X.regne.god}.`, "info"); return null; }
     const wk = E.sgWeek(S); wk.runs++; const G = E.songe(S); G.runs = (G.runs || 0) + 1; S.cnt = S.cnt || {}; S.cnt.expRuns = (S.cnt.expRuns || 0) + 1;
     note(S, `Le songe commence : ${E.SG_INT[ii].name}, équipe niveau ${X.lvl}.`, "info");
     return null;
@@ -352,7 +377,7 @@
   /* l'équipe entre dans la salle choisie */
   const arrive = (S, X) => {
     const n = X.nodes[X.pick]; if (!n) return;
-    X.at = n.i; X.path.push(n.i); X.pick = null; X.log.push({ d: n.d, t: n.t, w: 1 });
+    X.at = n.i; X.path.push(n.i); X.pick = null; X.log.push({ d: n.d, t: n.t, w: 1 }); if (X.breche) { brRec(S, X, n.d); if (X.log.length > 60) X.log.splice(0, X.log.length - 60); if (X.path.length > 60) X.path.splice(0, X.path.length - 60); }
     S.cnt = S.cnt || {}; S.cnt.expFloors = (S.cnt.expFloors || 0) + 1;
     if (E.checkAch) E.checkAch(S);
   };
@@ -402,16 +427,16 @@
   E.expFight = (S, team) => {
     const X = X_(S); if (!X || X.pend.length || X.pick === null) return null;
     const n = X.nodes[X.pick]; if (!n || !FIGHT.includes(n.t)) return null;
-    const c = E.sgRoom(S, X, n); const ME = E.monsterEntity; const mod = X.ii > 0 && X.regne ? X.regne.mod : null;
-    const k = E.sgStasis(X.ii, n.d, n.t, n.t === "end" ? X.wave : 0); const Mm = E.expMonMult(k);
+    const c = E.sgRoom(S, X, n); const ME = E.monsterEntity; const mod = (X.ii > 0 || X.breche) && X.regne ? X.regne.mod : null;
+    const k = X.breche ? E.brStasis(n.d, n.t, X.lvl) : E.sgStasis(X.ii, n.d, n.t, n.t === "end" ? X.wave : 0); const Mm = E.expMonMult(k);
     let mons = [];
-    if (n.t === "end") {
-      const did = c.dgs[(X.wave - 1) % c.dgs.length]; const dg = DUNGEONS[did]; const bm = MONSTERS[dg.boss];
+    if (n.t === "end" || n.t === "boss") {
+      const did = n.t === "boss" ? c.did : c.dgs[(X.wave - 1) % c.dgs.length]; const dg = DUNGEONS[did]; const bm = MONSTERS[dg.boss];
       const boss = ME(dg.boss, Math.max(bm.lvl[0], X.lvl + 2));
       boss.hpMax = boss.hp = Math.round(boss.hpMax * (1 + team.length * 1.1) / 5);
       boss.mech = E.bossMechs(did).slice(); boss.mturn = 0;
       const pool = E.mechPool(dg.lvl); const more = (m) => { const keys = pool.filter((x) => !boss.mech.includes(x)); while (m-- > 0 && keys.length) boss.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); };
-      if (mod === "ruse") more(1); if (X.ii >= 3) more(1); if (X.ii >= 5) boss.phase2 = true;
+      if (mod === "ruse") more(1); if (X.breche ? n.d >= 30 : X.ii >= 3) more(1); if (X.breche ? n.d >= 60 : X.ii >= 5) boss.phase2 = true;
       mons = [boss];
       const extra = clamp(team.length - 1 + (mod === "renforts" ? 2 : 0), 0, 7);
       for (let i = 0; i < extra; i++) mons.push(ME(pick(dg.bossMobs), Math.max(1, X.lvl - Math.floor(rnd() * 3) - 1)));
@@ -426,10 +451,11 @@
       if (mod === "vampires") m.vamp = Math.max(m.vamp || 0, 0.15);
       if (mod === "enrages") m.enrageMod = true;
     });
-    const sub = c.sub ? E.SUBS[c.sub] : null; const INT = E.SG_INT[X.ii];
-    const label = n.t === "end" ? `Fin du rêve · vague ${X.wave} — ${MONSTERS[DUNGEONS[c.dgs[(X.wave - 1) % c.dgs.length]].boss].name}` : `Salle ${n.d} · ${n.t === "hard" ? "Combat redoutable" : n.t === "archi" ? "Archimonstre" : sub ? sub.name : "Combat"}`;
+    const sub = c.sub ? E.SUBS[c.sub] : null; const INT = X.breche ? { loot: clamp(Math.round((k - E.BR.base) * 35), 0, 400) } : E.SG_INT[X.ii];
+    const label = n.t === "boss" ? `Boss — ${MONSTERS[DUNGEONS[c.did].boss].name}` : n.t === "end" ? `Fin du rêve · vague ${X.wave} — ${MONSTERS[DUNGEONS[c.dgs[(X.wave - 1) % c.dgs.length]].boss].name}` : `Salle ${n.d} · ${n.t === "hard" ? "Combat redoutable" : n.t === "archi" ? "Archimonstre" : sub ? sub.name : "Combat"}`;
     const loot = (1 + INT.loot / 100) * (n.t === "archi" ? 2 : 1);
     const mult = { xp: 1 + E.SG_ROOM_REW * n.d, drop: loot * (1 + (fx.drop || 0) / 100), kamas: (1 + INT.loot / 200) * (1 + (fx.kamas || 0) / 100) };
+    if (X.breche) return { mons, label: `La Brèche · étage ${n.d} · ${label.replace(/^Salle \d+ · /, "")}`, exp: { floor: n.d, t: n.t, mult, regne: X.regne ? X.regne.god : "", wave: 0, ii: 0, breche: 1 }, fx };
     return { mons, label: `Songe infini · ${label}`, exp: { floor: n.d, t: n.t, mult, regne: X.regne ? X.regne.god : "", wave: X.wave, ii: X.ii }, fx };
   };
   /* effets cumulés : bonus du songe (reliques) + petits bonus des salles */
@@ -485,6 +511,12 @@
   E.expWin = (S, F) => {
     const X = X_(S); if (!X) return; const n = X.nodes[X.pick]; if (!n) return;
     X.fights++; addRew(X, F); keepHp(X, F);
+    if (n.t === "boss") { // la Brèche : un boss tous les 10 étages, des Bribes de rêve et un bonus
+      X.pts += 10; const b = E.sgGive(S, E.brBribes(n.d)); if (F.rewards) { F.rewards.bribes = b; F.rewards.sgPts = 10; }
+      const r = freeRelics(X, n.d >= 50 && rnd() < 0.5 ? "l" : "r"); if (r.length) takeRelic(S, X, pick(r));
+      heal(S, X, E.BR.bossHeal, true); arrive(S, X); return;
+    }
+    if (X.breche) heal(S, X, E.BR.heal, false); // la Brèche : un peu de PV à chaque étage, le mur vient de la difficulté
     if (n.t !== "end") {
       const pts = E.SG_PTS[n.t] + (n.t === "fight" ? n.pips - 1 : 0); X.pts += pts;
       const c = n.c || {}; const mk = c.minor && E.SG_MINOR[c.minor]; const k = n.t === "hard" || n.t === "archi" ? 2 : 1;
@@ -552,6 +584,13 @@
   };
   const endRun = (S, X, how, manual) => {
     X.on = false; S.fight = null;
+    if (X.breche) { // la Brèche : son propre résumé (le dernier songe reste lisible sur sa page)
+      const d = X.at !== null && X.nodes[X.at] ? X.nodes[X.at].d : 0;
+      S.brLast = { t: E.now(), how, d, rew: X.rew, bribes: X.bribes || 0, fights: X.fights, relics: X.relics.slice(), loss: X.lastLoss || null, lvl: X.lvl, dur: E.now() - X.t0, god: X.regne ? X.regne.god : "" };
+      note(S, how === "away" ? "Tu étais absent : l'équipe est sortie de la Brèche (le butin est gardé) et a chassé pendant ton absence." : `La Brèche : l'équipe s'arrête à l'étage ${d}${d ? ` (record de la semaine : étage ${E.brWeek(S).d})` : ""}, +${X.bribes || 0} Bribes de rêve.`, d >= E.brWeek(S).d && d ? "rare" : "info");
+      if (X.resume && E.SUBS[X.resume]) { S.hunting = true; S.sub = X.resume; S.pause = E.PAUSE_MS; }
+      S.exp = null; E.events.push({ kind: "expend" }); if (E.checkAch) E.checkAch(S); return;
+    }
     if (X.valid) recordWeek(S, X);
     S.cnt = S.cnt || {};
     S.expLast = { t: E.now(), how, ii: X.ii, valid: X.valid, waves: X.waves, d: X.at !== null && X.nodes[X.at] ? X.nodes[X.at].d : 0, rew: X.rew, bribes: X.bribes || 0, fights: X.fights, relics: X.relics.slice(), loss: X.lastLoss || null, lvl: X.lvl, dur: E.now() - X.t0, chest: X.chest || null, leg: X.leg || null, path: X.path.map((i) => X.nodes[i].t) };
@@ -666,7 +705,7 @@
   E.sgOfficial = (claim, best) => Math.max(0, Math.min(claim, best + Math.max(2, Math.ceil(best * 0.25))));
 
   /* ---------- actions officielles ---------- */
-  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetLoop: "songes en boucle", sgLoopStop: "arrêter la boucle des songes", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire", legFuseUp: "fondre les copies d'un légendaire" });
+  Object.assign(E.ACTIONS, { brStart: "entrer dans la Brèche", expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetLoop: "songes en boucle", sgLoopStop: "arrêter la boucle des songes", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire", legFuseUp: "fondre les copies d'un légendaire" });
 
   /* ---------- familier, ornement, succès, bulle de découverte ---------- */
   if (E.PETS && !E.PETS.draconiros_mini) E.PETS.draconiros_mini = { name: "Draconiros miniature", icon: 18048, stats: { pui: 70, cri: 5 }, kind: "zone", lvl: 100, food: "Viande Goûtue", songe: true };

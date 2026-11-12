@@ -1,5 +1,5 @@
 /* supabase/ascension.sql dans un vrai Postgres jetable (jamais la base en ligne) : Idlus 3.0 (1B de Mathis, 12/11/2026),
-   le classement « breche » (meilleur étage de la Brèche de la semaine, dès l'étage 1) rempli par la partie validée,
+   le classement « breche » (meilleur étage de la Brèche de la semaine, avec son équipe) rempli par la partie validée (meta.brk),
    et la contrainte de catégorie mise à jour sur une table qui existait déjà.
    Lancer : IDLUS_PG="postgresql://postgres@/postgres?host=/chemin/du/socket&port=55432" node tests/ascension_sql.test.js
    Sans IDLUS_PG, le test est sauté. La base « idlus_asc_test » est recréée puis effacée. */
@@ -27,13 +27,15 @@ try {
   const U = "00000000-0000-0000-0000-000000000001";
   q(`insert into auth.users values ('${U}'); insert into profiles (id, pseudo) values ('${U}', 'Grimpeur')`);
   const wk = +q(`select asc_week()`);
-  const save = (x) => q(`insert into saves_ok (user_id, data, meta) values ('${U}', '{}', '{"asc": {"m": -1, "w": ${wk}, "x": ${x}}}')
+  const save = (x) => q(`insert into saves_ok (user_id, data, meta) values ('${U}', '{}', '{"brk": {"w": ${wk}, "d": ${x}}}')
     on conflict (user_id) do update set meta = excluded.meta`);
   save(42);
-  assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "42", "étage 42 de la Brèche classé (avant : seulement au-delà de 100)");
+  assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "42", "étage 42 de la Brèche classé");
   save(30); assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "42", "un score plus bas ne remplace pas le record");
   save(130); assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "130");
-  assert.strictEqual(q(`select count(*) from asc_scores where cat = 'audela'`), "0", "plus de score « audela »");
+  q(`update saves_ok set meta = '{"brk": {"w": "x1", "d": 9}}' where user_id = '${U}'`); // résumé bizarre : ignoré, la sauvegarde passe
+  q(`update saves_ok set meta = '{"asc": {"m": -1, "w": ${wk}, "x": 150}}' where user_id = '${U}'`);
+  assert.strictEqual(q(`select score from asc_scores where cat = 'audela' and m = ${wk}`), "150", "l'Au-delà de l'Ascension garde son classement");
   assert.strictEqual(q(`select r from lb_asc where cat = 'breche'`), "1", "classement lisible");
   console.log("ok - ascension_sql : classement de la Brèche (dès l'étage 1, record de la semaine, contrainte mise à jour)");
 } finally { psql(`drop database if exists ${DB}`); }

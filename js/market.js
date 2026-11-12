@@ -101,9 +101,10 @@
      S.hdv.op du Monocompte n'avance pas. Une partie Classique n'applique jamais celles du Monocompte. */
   const srcNow = () => (monoM() ? "mono" : "classic");
   /* Idlus 3.0 (2B de Mathis, 12/11/2026 : « on enlève définitivement l'hdv ») : l'HdV du Classique ferme (supabase/hdv_fermeture.sql
-     rend les annonces et les kamas des offres) ; la page garde les échanges entre joueurs et l'historique. L'HdV de saison du Monocompte reste. */
+     rend les annonces et les kamas des offres) ; la page garde les échanges entre joueurs et l'historique. 13/11 : l'HdV de saison du Monocompte aussi (« Le fermer aussi »,
+     supabase/mono_hdv_fermeture.sql). */
   M.closed = true;
-  const CLOSED = () => !!M.closed && !monoM();
+  const CLOSED = () => !!M.closed;
   const shut = () => { if (!CLOSED()) return false; X().toast("L'Hôtel de vente a fermé avec Idlus 3.0. Les échanges entre joueurs restent : page Échanges."); return true; };
   function apply(ops, quiet, src) {
     const s = S(); if (!s || !ops || !ops.length || !mine()) return 0;

@@ -35,7 +35,7 @@ const A = E.ASC;
   const cl = E.ascClassChoices(S); assert.strictEqual(cl.length, 3); assert.deepStrictEqual(E.ascClassChoices(S), cl, "le tirage ne bouge pas tout seul");
   assert.strictEqual(E.act(S, "ascReroll"), null); assert.ok(typeof E.act(S, "ascReroll") === "string", "1 relance par jour");
   const cl2 = E.ascClassChoices(S);
-  assert.ok(typeof E.act(S, "ascStart", "x", cl2[0], true) === "string", "entrée rapide de la Brèche fermée avant l'étage 100");
+  assert.ok(typeof E.act(S, "ascStart", "x", cl2[0]) === "string", "Au-delà fermé avant l'étage 100");
   assert.strictEqual(E.act(S, "ascStart", "n", cl2[0]), null);
   assert.strictEqual(Q.run.spells.length, 1, "sort signature");
   assert.strictEqual(Q.run.pend.t, "start"); assert.strictEqual(Q.run.pend.opts.length, 6);
@@ -126,42 +126,12 @@ const A = E.ASC;
 // 8. Mode auto : choix faits seuls, −30 % de Fragments ; Au-delà ouvert après l'étage 100, 3 tirages de plus et départ à 101.
 {
   const S = E.newState("X", "iop"); const Q = E.ascState(S); Q.vol = 1e6; Q.best.n = 100;
-  assert.strictEqual(E.act(S, "ascStart", "x", E.ascClassChoices(S)[0], true), null); assert.strictEqual(Q.run.f, 101);
+  assert.strictEqual(E.act(S, "ascStart", "x", E.ascClassChoices(S)[0]), null); assert.strictEqual(Q.run.f, 101);
   let picks = 0; while (Q.run.pend) { E.ascAutoPick(S); picks++; if (picks > 20) break; }
   assert.ok(picks >= 8 && Q.run.spells.length >= 4, "tirages de l'Au-delà : " + picks);
   assert.strictEqual(Q.run.relics.length, 6, "6 reliques de départ dans l'Au-delà"); assert.ok(!Q.run.pend);
   E.ascSetAuto(S, true); const o = E.ascStepFloor(S, true); if (o && o.win) assert.strictEqual(o.frag, Math.round(E.ASC_FRAG(101, false) * A.autoFrag));
   console.log("ok - ascension : auto et Au-delà");
-}
-// 8 bis. La Brèche (3.0, 1B de Mathis) : sans fin dès l'étage 1, étages du Songe en 5, règle de la semaine sur les boss, Monocompte : la Brèche seule.
-{
-  const S = E.newState("B", "iop"); const Q = E.ascState(S); Q.vol = 1e6;
-  assert.strictEqual(E.ASC_MODES.x, "Brèche");
-  assert.strictEqual(E.act(S, "ascStart", "x", E.ascClassChoices(S)[0]), null, "la Brèche s'ouvre à tous"); assert.strictEqual(Q.run.f, 1); assert.strictEqual(Q.run.relics.length, 0);
-  const T = []; for (let f = 5; f <= 205; f += 10) T.push(E.ascFloor(S, "x", f));
-  assert.ok(T.every((x) => x.t === "faveur" || x.archi), "étages en 5 : Faveur onirique ou Archimonstre");
-  assert.ok(T.some((x) => x.t === "faveur") && T.some((x) => x.archi), "les deux sortes d'étages du Songe");
-  T.filter((x) => x.archi).forEach((x) => assert.ok(D.MONSTERS[x.mobs[0]].archiOf, "un vrai archimonstre"));
-  for (let f = 10; f <= 300; f += 10) assert.strictEqual(E.ascFloor(S, "x", f).rule, E.brecheRule(), "règle de la semaine sur le boss " + f);
-  assert.ok(E.ascFloor(S, "x", 250).t, "sans fin : un étage 250");
-  assert.ok(E.ascMult("x", 150).hp > E.ascMult("x", 120).hp * 1.5, "après 100, chaque étage plus dur");
-  assert.strictEqual(E.ascCost(S, "x", 80), 0, "étages 1 à 100 sans Volonté");
-  // Faveur onirique : Sursis, sort légendaire, Écus
-  const R = Q.run; R.pend = null; const fav = T.find((x) => x.t === "faveur"); R.f = fav.f; R.seen = 0; E.ascEnter(S);
-  assert.strictEqual(R.pend.t, "faveur"); const s0 = R.sursis; assert.strictEqual(E.ascChoose(S, 0), null); assert.strictEqual(R.sursis, s0 + 1);
-  R.pend = null; R.seen = 0; E.ascEnter(S); const e0 = R.ecus; const ec = R.pend.ecus; assert.strictEqual(E.ascChoose(S, 2), null); assert.strictEqual(R.ecus, e0 + ec);
-  R.pend = null; R.seen = 0; E.ascEnter(S); if (R.pend.leg) { assert.strictEqual(E.ascChoose(S, 1), null); assert.strictEqual(R.pend.t, "pick"); assert.strictEqual(R.pend.leg, 2); }
-  E.ascQuit(S);
-  // en auto, une montée de la Brèche passe ses étages du Songe
-  E.ascSetAuto(S, true); assert.strictEqual(E.act(S, "ascStart", "x", E.ascClassChoices(S)[0]), null);
-  for (let i = 0; i < 3000 && Q.run && Q.run.f <= 30; i++) E.ascStepFloor(S, true);
-  assert.ok(!Q.run || Q.run.f > 15 || Q.last.top >= 5, "la montée avance");
-  assert.ok(Q.rkx.x >= 5, "record de la semaine : " + Q.rkx.x);
-  if (Q.run) E.ascQuit(S);
-  // Monocompte : seule la Brèche
-  require("../js/mono.js"); const M = E.newState("M", "iop"); M.mono = { saison: 1 };
-  { assert.ok(typeof E.ascCanStart(M, "n") === "string" && typeof E.ascCanStart(M, "d") === "string", "tour du mois fermée en Monocompte"); assert.strictEqual(E.ascCanStart(M, "x"), null); }
-  console.log("ok - ascension : la Brèche (sans fin, étages du Songe, règle de la semaine, Monocompte)");
 }
 // 9. Mode manuel (demande de Mathis) : le combat attend le sort choisi par le joueur, puis reprend.
 {

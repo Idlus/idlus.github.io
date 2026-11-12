@@ -866,6 +866,12 @@ end $$;
 
 -- ---------- outils du marché ----------
 create or replace function mono.err(t text) returns jsonb language sql immutable as $$ select jsonb_build_object('err', t) $$;
+-- Idlus 3.0 (Mathis 13/11/2026, « Le fermer aussi ») : l'HdV de saison ferme comme celui du Classique. supabase/mono_hdv_fermeture.sql
+-- pose le drapeau et rend annonces et kamas des offres ; ensuite plus de mise en vente, d'achat, de nouveau prix ni d'offre d'achat.
+create table if not exists mono.hdv_ferme (id int primary key default 1 check (id = 1), at timestamptz not null default now());
+alter table mono.hdv_ferme enable row level security;
+create or replace function mono.hdv_closed() returns boolean language sql stable security definer set search_path = mono, public as $$ select exists (select 1 from mono.hdv_ferme) $$;
+revoke all on function mono.hdv_closed() from public, anon, authenticated;
 create or replace function mono.pseudo(u uuid) returns text language sql stable security definer set search_path = mono, public as $$ select pseudo from public.profiles where id = u $$;
 -- monde de la saison : 's' saison en cours (ouverte ou en clôture), 'e' Éternel (saison finie)
 create or replace function mono.monde(p_s int) returns text language sql stable set search_path = mono, public
@@ -1022,6 +1028,7 @@ end $$;
 create or replace function public.mono_hdv_list(p_after bigint, p_cat text, p_key text, p_uid bigint, p_lot int, p_n int, p_price bigint, p_name text, p_lvl int, p_slot text, p_saison int default null)
 returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); m text; d jsonb; it jsonb; b text; tax bigint; n int := greatest(1, coalesce(p_n, 1)); c text := p_cat; lid bigint; opid bigint; i int; cl mono.collection; begin
+  if mono.hdv_closed() then return mono.err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   if s is null then return mono.err('Hôtel de vente fermé.'); end if;
   begin d := mono.base(u, s); exception when raise_exception then return mono.err(sqlerrm); end;
   perform mono.verrou(u); m := mono.monde(s);
@@ -1081,6 +1088,7 @@ end $$;
 -- Achat : UNE opération (kamas de l'acheteur et du vendeur, objet, bête, ressources, Éclats ou objet de collection)
 create or replace function public.mono_hdv_buy(p_after bigint, p_id bigint, p_saison int default null) returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); d jsonb; L mono.hdv; who text; begin
+  if mono.hdv_closed() then return mono.err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   if s is null then return mono.err('Hôtel de vente fermé.'); end if;
   begin d := mono.base(u, s); exception when raise_exception then return mono.err(sqlerrm); end;
   if not mono.marche_ouvert(s) then return mono.err('L''hôtel de vente de la saison est fermé.'); end if;
@@ -1111,6 +1119,7 @@ end $$;
 
 create or replace function public.mono_hdv_reprice(p_after bigint, p_id bigint, p_price bigint, p_saison int default null) returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); d jsonb; L mono.hdv; tax bigint; begin
+  if mono.hdv_closed() then return mono.err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   if s is null then return mono.err('Hôtel de vente fermé.'); end if;
   begin d := mono.base(u, s); exception when raise_exception then return mono.err(sqlerrm); end;
   perform mono.verrou(u);
@@ -1167,6 +1176,7 @@ end $$;
 create or replace function public.mono_hdv_order_new(p_after bigint, p_cat text, p_key text, p_qty int, p_price bigint, p_days int, p_name text, p_lvl int, p_slot text, p_saison int default null)
 returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); m text; d jsonb; tot numeric; held bigint; c text := p_cat; begin
+  if mono.hdv_closed() then return mono.err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   if s is null then return mono.err('Hôtel de vente fermé.'); end if;
   begin d := mono.base(u, s); exception when raise_exception then return mono.err(sqlerrm); end;
   perform mono.verrou(u); m := mono.monde(s);
@@ -1197,6 +1207,7 @@ end $$;
 -- Vendre à une offre : UNE opération (kamas, ressources ou Éclats du Temps des deux côtés)
 create or replace function public.mono_hdv_order_fill(p_after bigint, p_id bigint, p_qty int, p_saison int default null) returns jsonb language plpgsql security definer set search_path = mono, public
 as $$ declare u uuid := mono.need(); s int := mono.saison_de(p_saison); d jsonb; O mono.ordres; b text; n int; pay bigint; who text; f0 int; begin
+  if mono.hdv_closed() then return mono.err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   if s is null then return mono.err('Hôtel de vente fermé.'); end if;
   begin d := mono.base(u, s); exception when raise_exception then return mono.err(sqlerrm); end;
   if not mono.marche_ouvert(s) then return mono.err('L''hôtel de vente de la saison est fermé.'); end if;

@@ -6,7 +6,7 @@
 --   sursis   : meilleur étage en Difficile sans utiliser de Sursis
 --   puriste  : meilleur étage en Difficile avec seulement des sorts de sa classe
 --   audela   : meilleur étage de l'Au-delà de la semaine (m = numéro de semaine), jusqu'à la 3.0
---   breche   : Idlus 3.0 (1B de Mathis, 12/11/2026) : meilleur étage de la Brèche de la semaine (l'Au-delà, sans fin dès l'étage 1)
+--   breche   : Idlus 3.0 (1B de Mathis, 12/11/2026, « avec mon équipe ») : meilleur étage de la Brèche de la semaine (js/songe.js, meta.brk)
 -- Mois : année × 12 + mois (UTC), comme E.ascMonth ; semaine : comme E.weekIdx.
 -- Lots (asc_claim, le mois ou la semaine d'après) : top 10 de chaque classement = un titre, 3 Fioles de Volonté et 100 000 kamas
 -- (Au-delà : titre « Maître de l'Au-delà », 2 Fioles). Envoyés par hdv_op comme les lots du Songe infini.
@@ -43,8 +43,7 @@ declare a jsonb := new.meta->'asc'; mo int := asc_month(); wk int := asc_week();
     on conflict (user_id, m, cat, k) do update set score = excluded.score, at = now()
     where (excluded.cat = ''rapidite'' and excluded.score < public.asc_scores.score) or (excluded.cat <> ''rapidite'' and excluded.score > public.asc_scores.score)';
 begin
-  if a is null or jsonb_typeof(a) <> 'object' then return new; end if;
-  if coalesce((a->>'m')::int, -1) = mo then
+  if a is not null and jsonb_typeof(a) = 'object' and coalesce((a->>'m')::int, -1) = mo then
     for c, v in select key, least(greatest(coalesce((value#>>'{}')::int, 0), 0), 100) from jsonb_each(coalesce(a->'cls', '{}'::jsonb)) where key ~ '^[a-z]{2,8}$' loop
       if v > 0 then execute put using new.user_id, mo, 'classe', c, v; end if;
     end loop;
@@ -53,7 +52,11 @@ begin
     v := coalesce((a->>'spd')::int, 0); if v >= 10 then execute put using new.user_id, mo, 'rapidite', '', least(v, 100000); end if; -- 10 étages : au moins 10 tours
   end if;
   if coalesce((a->>'w')::int, -1) = wk then
-    v := least(greatest(coalesce((a->>'x')::int, 0), 0), 10000); if v > 0 then execute put using new.user_id, wk, 'breche', '', v; end if;
+    v := least(greatest(coalesce((a->>'x')::int, 0), 0), 10000); if v > 100 then execute put using new.user_id, wk, 'audela', '', v; end if;
+  end if;
+  -- la Brèche (3.0) : son propre résumé, même sans Ascension
+  if jsonb_typeof(new.meta->'brk') = 'object' and (new.meta->'brk'->>'w') ~ '^\d{1,9}$' and (new.meta->'brk'->>'d') ~ '^\d{1,6}$' and (new.meta->'brk'->>'w')::int = wk then
+    v := least((new.meta->'brk'->>'d')::int, 100000); if v > 0 then execute put using new.user_id, wk, 'breche', '', v; end if;
   end if;
   return new;
 end $$;

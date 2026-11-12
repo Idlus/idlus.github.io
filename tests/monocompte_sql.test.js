@@ -287,5 +287,14 @@ try {
   // compte supprimé : tout son espace Monocompte part avec lui
   q(`delete from auth.users where id = '${U(4)}'`); assert.strictEqual(q(`select count(*) from mono.testeurs where user_id = '${U(4)}'`), "0");
   assert.strictEqual(snap(), before, "schéma public toujours identique");
+  // Idlus 3.0 (Mathis 13/11, « Le fermer aussi ») : fermeture de l'HdV de saison, annonces et kamas des offres rendus, plus de vente ensuite
+  q(`insert into mono.hdv (saison, monde, seller, cat, key, name, qty, price) values (1, 's', '${U(1)}', 'res', 'Laine', 'Laine', 10, 500);
+     insert into mono.ordres (saison, monde, buyer, cat, key, name, qty, price, held, expires_at) values (1, 's', '${U(2)}', 'res', 'Bois', 'Bois', 10, 10, 102, now() + interval '7 days')`);
+  const hid = q(`select max(id) from mono.hdv`);
+  const fe = path.join(ROOT, "supabase", "mono_hdv_fermeture.sql"); file(fe);
+  assert.strictEqual(q(`select count(*) from mono.hdv where status = 'open'`), "0", "HdV du Monocompte : plus d'annonce ouverte");
+  assert.strictEqual(q(`select count(*) from mono.ordres where status = 'open'`), "0", "HdV du Monocompte : plus d'offre ouverte");
+  assert.match(as(2, `select mono_hdv_buy(0, ${hid}, 1)`), /fermé avec Idlus 3.0/, "achat refusé après la fermeture");
+  const n0 = q(`select count(*) from mono.ops`); file(fe); assert.strictEqual(q(`select count(*) from mono.ops`), n0, "fermeture relancée : rien rendu deux fois");
   console.log("ok - monocompte.sql : espace isolé (accès, aucune écriture directe, conflits, reprise, copies 14 jours, Éternel), registre des Éclats (source unique, bornes, quota cumulable, heure de Paris, solde = somme), boutique en une opération, droits partagés, Classique intact");
 } finally { psql(`drop database if exists ${DB}`); }

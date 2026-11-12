@@ -97,7 +97,8 @@
 
   /* ---------- l'en-tête de la page ---------- */
   function render(main) {
-    const s = S(); const on = E.expActive(s); const X_ = s.exp;
+    const s = S(); if (E.brOn && E.brOn(s) && ui.view === "songe") { main.innerHTML = `<div class="pagehead"><h1>Songe infini</h1></div><section class="card"><p>Ton équipe est dans <b>la Brèche</b> (étage ${s.exp.at !== null ? s.exp.nodes[s.exp.at].d : 0}). Le Songe t'attend quand elle en sort.</p><button class="btn primary" data-act="nav" data-v="breche">Voir la Brèche</button></section>`; return; } // 3.0 : la Brèche passe par le moteur du Songe
+    const on = E.expActive(s); const X_ = s.exp;
     const legN = E.LEG_LIST.filter((x) => legOwned(s, x.k)).length;
     const afford = E.SG_SHOP.filter((o) => !(o.once && E.sgOwned(s, o.id)) && E.songe(s).br >= o.price).length + E.sgWeekShop().filter((o) => E.sgWeekLeft(s, o.id) > 0 && E.songe(s).br >= o.price).length; // 1.0.30 : offres de la semaine
     const tab = (v, ic, n, badge) => `<button data-act="sg-view" data-v="${v}" aria-pressed="${ui.view === v}">${uimg(ic, "sgx-ti")}<span>${n}</span>${badge !== "" ? `<em>${badge}</em>` : ""}</button>`;
@@ -244,7 +245,7 @@
     return `<button class="sg-of ${o.sold ? "sold" : ""}" style="--oc:${col}" data-act="${act}" data-i="${i}" ${o.sold ? "disabled" : ""}><span class="orb">${ic}</span><span class="rk">${h(rk)}</span><b>${h(nm)}</b><span class="xs muted">${h(d)}</span>${o.sold && act === "sg-buy" ? `<span class="sg-got">✓ Obtenu</span>` : extra}</button>`;
   };
   function pendHtml(s, p) {
-    const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : null; const room = n ? `Salle ${n.d}` : "";
+    const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : null; const room = n ? `${X_.breche ? "Étage" : "Salle"} ${n.d}` : "";
     const head = (k, t, sub) => `<div class="stack" style="gap:4px"><span class="sg-k">${G("star")} ${h(k)}</span><span class="sg-ttl" style="font-size:24px">${h(t)}</span>${sub ? `<span class="small muted">${sub}</span>` : ""}</div>`;
     const storm = `<button class="sg-btn ghost" data-act="sg-storm" ${X_.pts < E.SG_STORM ? "disabled" : ""}>Tempête astrale · ${E.SG_STORM} points</button>`;
     let body = "";
@@ -509,7 +510,7 @@
   document.addEventListener("scroll", (e) => { const t = e.target; if (t && t.classList && t.classList.contains("sgx-mapscroll") && Math.abs(t.scrollLeft - ui.mapKeep) > 4) ui.mapT = Date.now(); }, true);
 
   /* texte de l'en-tête du combat et de la barre d'état */
-  const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };
+  const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; if (X_.breche) { const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `La Brèche · étage ${n ? n.d : 1}`; } const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };
   if (window.PANEL && window.PANEL.register) window.PANEL.register({ toggle: { id: "sgdemo", n: "Classement du Songe d'exemple (pour voir la page sans serveur)", on: () => !!RANK.demo, set: (v) => { RANK.demo = !!v; } } });
   window.SGUI = { render, act, change, where, combatHtml, legSheet, ui, tile, RANK, rkLoad, submit: sgSubmit, claim: sgClaim };
 })();

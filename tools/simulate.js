@@ -208,6 +208,33 @@ if (flag("songe")) {
   process.exit(0);
 }
 
+/* --breche [--niveaux 60,120,200] (Idlus 3.0) : étage atteint dans la Brèche par niveau d'équipe et profil d'équipement, choix automatiques.
+   Cibles (comme les stasis) : sans équipement ~15-25, bon équipement ~40-55, optimisé ~70-90. Réglage : --br base,step */
+if (flag("breche")) {
+  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/sram.js"); require("../js/songe.js");
+  const lvls = arg("niveaux", "60,120,200").split(",").map(Number); const PROFS = arg("profils", "aucun,bon,optimise").split(",");
+  if (arg("br", "")) { const [b, st] = arg("br").split(",").map(Number); E.BR.base = b; E.BR.step = st; }
+  const XT = { aucun: [15, 25], bon: [40, 55], optimise: [70, 90] };
+  console.log(`La Brèche : étage atteint (moyenne, min-max sur ${CLS.length} équipes × ${TRIES} essais), base ${E.BR.base}, +${E.BR.step} stasis par étage.`);
+  for (const L of lvls) {
+    const line = [];
+    for (const p of PROFS) {
+      const got = [];
+      for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
+        const S = E.newState("Sim", "iop"); S.chars = []; if (process.env.POSTURE) { S.settings.posture = process.env.POSTURE; S.settings.refl = (process.env.REFL || "").split(",").filter(Boolean); }
+        teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
+        S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
+        const err = E.brStart(S); if (err) throw new Error(err); E.expAutoPlay(S, 400); if (E.expActive(S)) E.expQuit(S);
+        got.push((S.brLast && S.brLast.d) || 0);
+      }
+      const avg = got.reduce((a, b) => a + b, 0) / got.length; const [lo, hi] = XT[p] || [0, 1e9];
+      line.push(`${p.padEnd(8)} ${avg.toFixed(0).padStart(3)} (${Math.min(...got)}-${Math.max(...got)}) ${avg >= lo && avg <= hi ? "ok" : avg < lo ? "trop dur" : "trop facile"}`);
+    }
+    console.log(`niveau ${String(L).padStart(3)}  ` + line.join("   "));
+  }
+  process.exit(0);
+}
+
 /* ---------- tableau ---------- */
 const PROFS = [["aucun", "sans équipement", [0, 1]], ["bon", "bon équipement", [5, 7]], ["optimise", "équipe optimisée", [8, 10]]];
 const ONLY = arg("profils", ""); const PRF = ONLY ? PROFS.filter(([p]) => ONLY.split(",").includes(p)) : PROFS;
