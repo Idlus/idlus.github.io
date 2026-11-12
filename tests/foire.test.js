@@ -146,7 +146,7 @@ console.log("Foire du Trool et Comptoirs : tout est bon");
 {
   const S = E.newState("Pouce", "iop"); const G = E.foireState(S);
   S.kamas = 50000 * 10; const r = E.foireOpenN(S, "bois", 10); assert.strictEqual(r.list.length, 10); assert.strictEqual(E.foireLeft(S), F.DAY - 10);
-  S.kamas = 50000 * 3; const r2 = E.foireOpenN(S, "bois", 10); assert.strictEqual(r2.list.length, 3); assert.ok(/50 000/.test(r2.err.replace(/\s/g, " ")), "s'arrête aux kamas");
+  G.n = F.DAY - 3; S.kamas = 50000 * 10; const r2 = E.foireOpenN(S, "bois", 10); assert.strictEqual(r2.list.length, 3); assert.ok(/20 caisses/.test(r2.err), "s'arrête aux ouvertures du jour");
   let forced = 0;
   for (let i = 0; i < 400; i++) { G.n = 0; S.kamas = 50000; G.pity = F.PITY - 1; const L = E.foireOpen(S, "bois").lot; assert.ok(L.r >= 3, "coup de pouce"); assert.strictEqual(G.pity, 0); if (L.pity) forced++; }
   assert.strictEqual(forced, 400); assert.strictEqual(E.foirePityLeft(S), F.PITY);
