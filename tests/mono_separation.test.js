@@ -69,7 +69,8 @@ console.log(`ok - aucune des ${credit.size} fonctions du Classique qui versent d
 /* modules éteints : chacun existe bien dans le jeu (un nom mal écrit ne couperait rien) */
 { const all = files.map((f) => fs.readFileSync(f, "utf8")).join("\n");
   for (const k of E.MONO.CLASSIC_MODS) assert(new RegExp(`window\\.${k} = `).test(all), `module ${k} : introuvable dans js/`); }
-for (const k of ["asc", "wb", "guild", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+for (const k of ["wb", "guild", "cours"]) assert(!E.monoPageOk(k), `page ${k} : fermée en Monocompte`);
+assert(E.monoPageOk("asc"), "page asc : la Brèche (3.0) ouverte en Monocompte");
 assert(E.monoPageOk("foire"), "3.0 (Mathis 12/11) : la Foire (caisses, sans le Jackpot) est ouverte en Monocompte");
 assert(E.monoPageOk("exp"), "2.2.13 : Songe infini ouvert en Monocompte");
 assert(E.monoPageOk("comptoirs"), "2.2.9.10 : Comptoirs ouverts en Monocompte (4 boutiques)");
@@ -147,13 +148,13 @@ function fake() {
       const keys = await navKeys(p);
       const hors = keys.filter((k) => !E.monoPageOk(k));
       if (hors.length) fail(`${w} px : pages hors de la liste blanche dans le menu Monocompte : ` + hors.join(", "));
-      for (const k of ["asc", "wb", "guild", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
+      for (const k of ["wb", "guild", "cours"]) if (keys.includes(k)) fail(`${w} px : page du Classique « ${k} » dans le menu`);
       for (const k of ["world", "dungeons", "team", "inv", "metiers", "pass", "saisonlb", "ladder", "garde"]) if (!keys.includes(k)) fail(`${w} px : page « ${k} » attendue dans le menu Monocompte`);
       const pins = await p.evaluate(() => window.DX.S.settings.pins);
       if (pins.some((k) => !E.monoPageOk(k))) fail(`${w} px : épingles du Classique gardées : ` + JSON.stringify(pins));
       const mods = await p.evaluate((L) => L.filter((k) => window[k]), E.MONO.CLASSIC_MODS);
       if (mods.length) fail(`${w} px : modules du Classique encore actifs : ` + mods.join(", "));
-      for (const k of ["asc", "wb", "guild"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
+      for (const k of ["wb", "guild"]) { const t = await go(p, k); if (t !== "home") fail(`${w} px : page du Classique « ${k} » ouverte par son nom (onglet ${t})`); }
       if (!keys.includes("comptoirs")) fail(`${w} px : Comptoirs attendus dans le menu Monocompte (2.2.9.10)`);
       { const t = await go(p, "comptoirs"); const ids = await p.evaluate(() => [...document.querySelectorAll(".cp-sh")].map((b) => b.dataset.v).join(","));
         if (t !== "comptoirs" || ids !== "prime,cite,temple,koli,songe") fail(`${w} px : Comptoirs du Monocompte (onglet ${t}, boutiques ${ids}) : 5 boutiques, sans Boss des mondes`); await noScroll(p, `${w} px, Comptoirs Monocompte`); }

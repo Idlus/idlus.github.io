@@ -8576,7 +8576,8 @@ set search_path = s1, public;
 --   classe   : meilleur étage en Difficile avec une classe (k = la classe)
 --   sursis   : meilleur étage en Difficile sans utiliser de Sursis
 --   puriste  : meilleur étage en Difficile avec seulement des sorts de sa classe
---   audela   : meilleur étage de l'Au-delà de la semaine (m = numéro de semaine)
+--   audela   : meilleur étage de l'Au-delà de la semaine (m = numéro de semaine), jusqu'à la 3.0
+--   breche   : Idlus 3.0 (1B de Mathis, 12/11/2026) : meilleur étage de la Brèche de la semaine (l'Au-delà, sans fin dès l'étage 1)
 -- Mois : année × 12 + mois (UTC), comme E.ascMonth ; semaine : comme E.weekIdx.
 -- Lots (asc_claim, le mois ou la semaine d'après) : top 10 de chaque classement = un titre, 3 Fioles de Volonté et 100 000 kamas
 -- (Au-delà : titre « Maître de l'Au-delà », 2 Fioles). Envoyés par hdv_op comme les lots du Songe infini.
@@ -8593,6 +8594,8 @@ create table if not exists s1.asc_scores (
   at timestamptz not null default now(),
   primary key (user_id, m, cat, k)
 );
+alter table s1.asc_scores drop constraint if exists asc_scores_cat_check;
+alter table s1.asc_scores add constraint asc_scores_cat_check check (cat in ('rapidite', 'classe', 'sursis', 'puriste', 'audela', 'breche'));
 create index if not exists asc_scores_rank on s1.asc_scores (m, cat, k, score desc);
 alter table s1.asc_scores enable row level security;
 drop policy if exists "ascension lisible" on s1.asc_scores;
@@ -8621,7 +8624,7 @@ begin
     v := coalesce((a->>'spd')::int, 0); if v >= 10 then execute put using new.user_id, mo, 'rapidite', '', least(v, 100000); end if; -- 10 étages : au moins 10 tours
   end if;
   if coalesce((a->>'w')::int, -1) = wk then
-    v := least(greatest(coalesce((a->>'x')::int, 0), 0), 10000); if v > 100 then execute put using new.user_id, wk, 'audela', '', v; end if;
+    v := least(greatest(coalesce((a->>'x')::int, 0), 0), 10000); if v > 0 then execute put using new.user_id, wk, 'breche', '', v; end if;
   end if;
   return new;
 end $$;
@@ -8654,13 +8657,13 @@ begin
   if me is null then return g_err('non connecté'); end if;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   for x in select b.m, b.cat, b.k, b.r from lb_asc b
-           where b.user_id = me and b.r <= 10 and ((b.cat <> 'audela' and b.m between mo - 3 and mo - 1) or (b.cat = 'audela' and b.m between wk - 4 and wk - 1))
+           where b.user_id = me and b.r <= 10 and ((b.cat not in ('audela', 'breche') and b.m between mo - 3 and mo - 1) or (b.cat in ('audela', 'breche') and b.m between wk - 4 and wk - 1))
              and not exists (select 1 from asc_lots a where a.user_id = me and a.m = b.m and a.cat = b.cat and a.k = b.k) loop
     insert into asc_lots (user_id, m, cat, k, r) values (me, x.m, x.cat, x.k, x.r) on conflict do nothing;
     t := case x.cat when 'rapidite' then 'Éclair de l''Ascension' when 'classe' then 'Champion de classe de l''Ascension' when 'sursis' then 'Sans filet'
-                    when 'puriste' then 'Puriste de l''Ascension' else 'Maître de l''Au-delà' end;
+                    when 'puriste' then 'Puriste de l''Ascension' when 'breche' then 'Maître de la Brèche' else 'Maître de l''Au-delà' end;
     titles := array_append(titles, t);
-    if x.cat = 'audela' then f := f + 2; else f := f + 3; k := k + 100000; end if;
+    if x.cat in ('audela', 'breche') then f := f + 2; else f := f + 3; k := k + 100000; end if;
     got := got || jsonb_build_object('m', x.m, 'cat', x.cat, 'k', x.k, 'r', x.r);
   end loop;
   if jsonb_array_length(got) > 0 then

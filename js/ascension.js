@@ -39,7 +39,7 @@
     souls: { turns: 3, pow: 0.5, cd: 4 },
     soulCost: 150,                 // Fragments pour mettre un boss du bestiaire dans la pioche
   };
-  E.ASC_MODES = { n: "Normal", d: "Difficile", x: "Au-delà" };
+  E.ASC_MODES = { n: "Normal", d: "Difficile", x: "Brèche" }; // Idlus 3.0 (1B de Mathis, 12/11/2026) : l'Au-delà devient la Brèche, sans fin dès l'étage 1, avec des étages du Songe
 
   /* ---------- dates : la tour du mois, l'Au-delà de la semaine ---------- */
   E.ascMonth = (t = E.now()) => { const d = new Date(t); return d.getUTCFullYear() * 12 + d.getUTCMonth(); };
@@ -144,6 +144,10 @@
     geants: { name: "Géants", ic: "⛰", d: "Un ennemi de moins, mais +40 % de PV pour les autres." },
   };
   const RULE_POOL = Object.keys(E.ASC_RULES).filter((k) => !E.ASC_RULES[k].hal);
+  /* la Brèche : la règle de la semaine, sur chaque étage de boss (la même pour tous) */
+  E.brecheRule = (w = E.weekIdx()) => { const P = RULE_POOL.filter((k) => k !== "dette"); return P[hash(`idlus|breche|${w}`) % P.length]; };
+  E.BRECHE_SG = { faveur: { name: "Faveur onirique", ic: "✨", d: "Un cadeau du Songe, sans combat : 1 Sursis, un sort légendaire ou des Écus." },
+    archi: { name: "Archimonstre", ic: "👁", d: "Un archimonstre du Songe garde l'étage : Fragments ×2 et 1 Écu en plus." } };
 
   /* ---------- la tour du mois ---------- */
   /* niveau du héros et des monstres à l'étage f (choix : un étage = 2 niveaux, 200 à l'étage 100 et dans l'Au-delà) */
@@ -156,6 +160,10 @@
     if (pool.length < 6) pool = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].boss && MONSTERS[k].img && MONSTERS[k].lvl).sort((x, y) => Math.abs(MONSTERS[x].lvl[0] - b) - Math.abs(MONSTERS[y].lvl[0] - b)).slice(0, 30);
     return (monPools[b] = pool);
   };
+  /* archimonstres de la Brèche : les plus proches du niveau de l'étage */
+  const archiPools = {};
+  const archiPool = (L) => { const b = Math.round(L / 10) * 10; if (archiPools[b]) return archiPools[b];
+    return (archiPools[b] = Object.keys(MONSTERS).filter((k) => { const m = MONSTERS[k]; return m.archiOf && m.img && m.lvl && m.sp; }).sort((x, y) => Math.abs(MONSTERS[x].lvl[0] - b) - Math.abs(MONSTERS[y].lvl[0] - b)).slice(0, 8)); };
   E.ascMonPool = monPool; // 1.2.x : recrue d'un combat (Amulette de l'Appel)
   const bossList = () => Object.keys(DUNGEONS).filter((d) => MONSTERS[DUNGEONS[d].boss]).map((d) => ({ d, boss: DUNGEONS[d].boss, lvl: DUNGEONS[d].lvl })).sort((a, b) => a.lvl - b.lvl);
   E.ascBossFor = (L, r) => { const B = bossList(); const near = B.filter((x) => Math.abs(x.lvl - L) <= 15); const P = near.length ? near : B.slice().sort((a, b) => Math.abs(a.lvl - L) - Math.abs(b.lvl - L)).slice(0, 3); return P[Math.floor(r() * P.length)]; };
@@ -173,6 +181,14 @@
     if (t === "fight") { const P = monPool(lvl); const n = clamp(2 + Math.floor(f / 30) + (r() < 0.35 ? 1 : 0), 2, 5); for (let i = 0; i < n; i++) fl.mobs.push(P[Math.floor(r() * P.length)]); }
     if (t === "boss") { const b = E.ascBossFor(lvl, r); fl.boss = b.boss; fl.did = b.d; const dg = DUNGEONS[b.d]; const P = (dg.bossMobs || []).filter((k) => MONSTERS[k]); const n = 1 + Math.floor(f / 40); for (let i = 0; i < n; i++) fl.mobs.push(P.length ? P[Math.floor(r() * P.length)] : monPool(lvl)[0]); }
     if (t === "event") fl.ev = ["prisoner", "merc", "tame"][Math.floor(r() * 3)];
+    /* la Brèche (clé « x… ») : les étages en 5 sont des étages du Songe (Faveur onirique ou Archimonstre), la règle de la semaine sur les boss */
+    if (key[0] === "x") {
+      if (t === "boss") fl.rule = E.brecheRule(+key.slice(1));
+      if (dec === 5 && t === "fight") {
+        if ((Math.floor(f / 10) + hash(`sg|${key}`)) % 2) { fl.t = "faveur"; fl.mobs = []; }
+        else { const P = archiPool(lvl); if (P.length) { fl.mobs[0] = P[Math.floor(r() * P.length)]; fl.archi = 1; } }
+      }
+    }
     return fl;
   };
   /* le décor d'un étage : la salle du boss qui attend en haut de la dizaine (vraie salle DOFUS, assets/asc) */
@@ -224,16 +240,19 @@
     Q.roll.n++; return null; };
   E.ascCanStart = (S, mode) => { const Q = E.ascState(S);
     if (Q.run) return "Une montée est déjà en cours.";
-    if (mode === "x" && (Q.best0 || 0) < 100 && Q.best.n < 100) return "L'Au-delà s'ouvre après l'étage 100 de la tour en Normal.";
+    if (E.isMono && E.isMono(S) && mode !== "x") return "En Monocompte, seule la Brèche est ouverte."; // 3.0 : la tour du mois et ses coffres restent au Classique
     if (!E.ASC_MODES[mode]) return "Mode inconnu.";
     return null; };
   /* départ : classe choisie parmi les 3 du jour */
-  E.ascStart = (S, mode, cls) => {
+  /* la Brèche : départ à l'étage 1, ou à l'étage 101 avec 8 tirages et 6 reliques (« Entrée rapide ») une fois l'étage 100 du Normal atteint */
+  E.brecheFast = (S) => { const Q = E.ascState(S); return (Q.best0 || 0) >= 100 || Q.best.n >= 100; };
+  E.ascStart = (S, mode, cls, fast) => {
     const Q = E.ascState(S); const err = E.ascCanStart(S, mode); if (err) return err;
     if (!E.ascClassChoices(S).includes(cls)) return "Choisis une des 3 classes proposées.";
-    const sig = E.ascSignature(cls);
-    Q.runs++; Q.run = { mode, cls, f: mode === "x" ? 101 : 1, t0: E.now(), spells: sig ? [{ k: sig, lv: 1, gl: [], sig: 1 }] : [], sursis: A.sursis + ((Q.unl.bonus || {}).sursis ? 1 : 0),
-      recruits: [], soul: null, frag: 0, ecus: 0, auto: 0, fights: 0, used: {}, top: mode === "x" ? 100 : 0, extra: mode === "x" ? 8 : 0, relExtra: mode === "x" ? (A.relStart || 0) : 0, dette: 0, curse: 0, log: [], pend: null, at: E.now(), pause: 0, relics: [] };
+    if (mode === "x" && fast && !E.brecheFast(S)) return "L'entrée rapide s'ouvre après l'étage 100 de la tour en Normal.";
+    const sig = E.ascSignature(cls); const fx = mode === "x" && !!fast;
+    Q.runs++; Q.run = { mode, cls, f: fx ? 101 : 1, t0: E.now(), spells: sig ? [{ k: sig, lv: 1, gl: [], sig: 1 }] : [], sursis: A.sursis + ((Q.unl.bonus || {}).sursis ? 1 : 0),
+      recruits: [], soul: null, frag: 0, ecus: 0, auto: 0, fights: 0, used: {}, top: fx ? 100 : 0, extra: fx ? 8 : 0, relExtra: fx ? (A.relStart || 0) : 0, dette: 0, curse: 0, log: [], pend: null, at: E.now(), pause: 0, relics: [] };
     if (Q.unl.bonus && Q.unl.bonus.glyph) Q.run.glyphs = [pickOf(Object.keys(E.ASC_GLYPHS), seeded(Q.runs * 977))];
     Q.run.pend = { t: "start", opts: E.ascStartChoices(S), at: E.now() };
     return null;
@@ -294,6 +313,10 @@
       const gm = E.relGlyphMax ? E.relGlyphMax(R) : 2; if ((s.gl || []).length >= gm) return `${gm} glyphes au plus par sort.`;
       if (s.gl.includes(P.g)) return "Ce sort a déjà ce glyphe.";
       s.gl.push(P.g); fin(S, R); return null;
+    }
+    if (P.t === "faveur") { // la Brèche : Faveur onirique (0 = 1 Sursis, 1 = un sort légendaire, 2 = des Écus)
+      if (i === 0) R.sursis++; else if (i === 1 && P.leg) { R.pend = { t: "pick", opts: [P.leg], at: E.now(), leg: 2 }; return null; } else if (i === 2) R.ecus += P.ecus || 0; else if (i !== -1) return "Choix inconnu.";
+      fin(S, R); return null;
     }
     if (P.t === "relic") { // 1.2.x : une relique parmi 3 (une par emplacement : la nouvelle remplace l'ancienne) ; −2 = relance (Anneau du Destin)
       if (i === -1) { fin(S, R); return null; } if (i === -2) return E.relReroll(S);
@@ -475,7 +498,7 @@
     const wk = E.ascWoundKey(R.mode, R.f);
     if (res.win) {
       delete Q.wounds[wk];
-      let fr = E.ASC_FRAG(R.f, fl.t === "boss"); if (auto) { fr = Math.round(fr * A.autoFrag); R.auto++; }
+      let fr = E.ASC_FRAG(R.f, fl.t === "boss") * (fl.archi ? 2 : 1); if (fl.archi) R.ecus += 1; if (auto) { fr = Math.round(fr * A.autoFrag); R.auto++; }
       if (E.relFrag) fr = E.relFrag(S, R, fr, fl); // 1.2.x : reliques (Fragments, Écus, trésor)
       R.frag += fr; out.frag = fr;
       if (fl.rule === "dette") R.dette = R.f + 1;
@@ -524,6 +547,8 @@
     else if (fl.t === "shop") { R.pend = { t: "shop", at: E.now() }; if (E.relShopEnter) E.relShopEnter(S, R); }
     else if (fl.t === "altar") { const L = fl.lvl; const P = E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon" && E.ascRarity(x, L) === "l"); const Q2 = P.length ? P : E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon").sort((a, b) => b.lvl - a.lvl).slice(0, 12);
       R.pend = { t: "altar", leg: Q2.length ? Q2[Math.floor(r() * Q2.length)].k : null, at: E.now() }; }
+    else if (fl.t === "faveur") { const L = fl.lvl; const P = E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon" && E.ascRarity(x, L) === "l"); const Q2 = P.length ? P : E.ascSpells().filter((x) => x.lvl <= L && x.kind !== "summon").sort((a, b) => b.lvl - a.lvl).slice(0, 12);
+      R.pend = { t: "faveur", leg: Q2.length ? Q2[Math.floor(r() * Q2.length)].k : null, ecus: 3 + Math.floor(R.f / 20), at: E.now() }; }
   };
   /* étage passé sans combat (événement, marchand, autel) : on monte */
   E.ascLeave = (S) => { const Q = E.ascState(S); const R = Q.run; if (!R || R.pend) return; const fl = E.ascFloor(S, R.mode, R.f); if (["fight", "boss"].includes(fl.t)) return;
@@ -542,7 +567,7 @@
   E.ascQuit = (S) => { const Q = E.ascState(S); if (!Q.run) return "Aucune montée en cours."; E.ascEnd(S, "quit"); return null; };
 
   /* ---------- récompenses (choix 11A : le maximum, sans puissance) ---------- */
-  E.ascTitle = (f, mode) => (mode === "d" ? (f >= 100 ? "Sommet du Difficile" : `Grimpeur aguerri ${f}`) : mode === "x" ? `Au-delà ${f}` : f >= 100 ? "Sommet de l'Ascension" : `Grimpeur des ${f}`);
+  E.ascTitle = (f, mode) => (mode === "d" ? (f >= 100 ? "Sommet du Difficile" : `Grimpeur aguerri ${f}`) : mode === "x" ? `Brèche ${f}` : f >= 100 ? "Sommet de l'Ascension" : `Grimpeur des ${f}`);
   E.ASC_CHEST = [25, 50, 75, 100];
   E.ascMilestone = (S, mode, f) => {
     const Q = E.ascState(S);
@@ -601,6 +626,7 @@
     if (P.t === "event") return E.ascChoose(S, P.ev === "prisoner" ? 1 : P.ev === "merc" && R.frag >= P.price + 40 && R.recruits.length < A.recruitsMax ? 0 : 1); // 1.1.0.1 : pas de mercenaire de plus quand l'équipe a déjà ses recrues (la montée restait bloquée) // l'auto ne libère pas de prisonnier (événement risqué)
     if (P.t === "shop") return E.ascChoose(S, -1);
     if (P.t === "altar") return E.ascChoose(S, 0); // l'auto refuse toujours l'autel
+    if (P.t === "faveur") return E.ascChoose(S, R.sursis < 1 ? 0 : P.leg ? 1 : 2); // la Brèche : un Sursis d'abord, puis le sort légendaire
     return E.ascChoose(S, -1);
   };
   /* résout un étage d'un coup (hors écran ou en auto) ; renvoie le résumé ou un message */

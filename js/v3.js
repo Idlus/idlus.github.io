@@ -25,7 +25,7 @@
   ];
   V3.SPACES = SPACES;
   /* les noms courts des onglets dans la 3.0 */
-  const REN = { hdv: "Échanges", world: "Zones", asc: "Brèche · Tour", exp: "Brèche · Songe", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album" };
+  const REN = { hdv: "Échanges", world: "Zones", asc: "Brèche", exp: "Songe infini", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album" };
   V3.ren = REN;
   let ALL = null; // les espaces complets, avant les déblocages par niveau
   const maxLvl = () => X.S.chars.reduce((a, c) => Math.max(a, c.lvl || 1), 1);
@@ -41,7 +41,7 @@
       NAV.forEach((F) => { if (F.season) { season = F; return; } F.pages.forEach((p) => pool.set(p[0], p)); });
       Object.keys(XP3).forEach((k) => { if (!XP3[k].on || XP3[k].on()) pool.set(k, XP3[k].nav); }); // les pages propres à la 3.0
       ALL = { season, spaces: SPACES.map((s) => ({ id: s.id, n: s.n, ic: s.ic, v3lvl: s.lvl || 0, pages: s.keys.filter((k) => pool.has(k)).map((k) => { const p = pool.get(k).slice(); pool.delete(k); if (REN[k]) p[1] = REN[k]; return p; }) })) };
-      const av = ALL.spaces.find((F) => F.id === "av"); const br = av.pages.filter((p) => p[0] === "asc" || p[0] === "exp"); if (br.length === 1) br[0][1] = "Brèche"; // question 28 : une seule Brèche (Saison 1 et Monocompte : le Songe)
+      // 1B (12/11) : la Brèche est l'Ascension sans fin avec les étages du Songe (js/ascension.js, mode « x ») ; le Songe infini garde son équipe et ses Bribes
       const jo = ALL.spaces.find((F) => F.id === "jo"); pool.forEach((p) => jo.pages.push(p.slice())); // une page oubliée reste trouvable dans le Journal
     }
     V3.relock(true);
