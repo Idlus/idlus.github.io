@@ -21,7 +21,7 @@
     { id: "col", n: "Collection", ic: "dofus", keys: ["album", "pets", "elev", "chasse", "enc"], lvl: 10 },
     { id: "mar", n: "Marché", ic: "bourse", keys: ["cours", "boutique3", "chantier", "echanges", "hdv", "foire"], lvl: 15 },
     { id: "co", n: "Joueurs", ic: "couronne", keys: ["guild", "tour", "koli", "align", "ladder", "amis", "vote"], lvl: 20 },
-    { id: "jo", n: "Journal", ic: "quetes", keys: ["quests", "succes", "carnet"] },
+    { id: "jo", n: "Journal", ic: "quetes", keys: ["hebdo", "quests", "succes", "carnet"] },
   ];
   V3.SPACES = SPACES;
   /* les noms courts des onglets dans la 3.0 */
@@ -109,8 +109,8 @@
     const alert = al ? `<div class="v3al" data-k="al"><span aria-hidden="true">⚠</span><span class="grow">${h(al.txt)}</span><button class="btn sm primary" data-act="nav" data-v="world">Changer de zone</button><button class="btn sm" data-act="v3alok" aria-label="Fermer">✕</button></div>` : "";
     const obj = pin ? `<button class="v3obj" data-act="pingo" data-key="${h(pin.key)}"><span class="grow"><b>Prochain objectif :</b> ${h(pin.t)}</span>${bar(pin.p, "g")}<span class="v3pill">${h(pin.v)}</span></button>` : "";
     const tugs = `<div class="v3tugs"><div class="v3tug a"><i style="width:${ally.toFixed(1)}%"></i><span>Équipe ${Math.round(ally)} %</span></div><div class="v3tug m"><i style="width:${foe.toFixed(1)}%"></i><span>Ennemis ${Math.round(foe)} %</span></div></div>`;
-    const heroRows = (mine.length ? mine : team.map((c) => ({ side: "c", cid: c.id, name: c.name, cls: c.cls, hp: 1, hpMax: 1, alive: true }))).map((e) => `<div class="v3r${e.alive ? "" : " ko"}" data-k="h${e.cid}"><span class="v3p">${hudPic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "K.O."}</span></span>${bar(pct(e.hp, e.hpMax), pct(e.hp, e.hpMax) < 30 ? "r" : "")}${bar(pct(e.dealt || 0, tot), "d")}</span></div>`).join("");
-    const foeRows = foes.length ? foes.map((e, i) => `<div class="v3r${e.alive ? "" : " ko"}${e.alive && (e.boss || i === 0) ? " tg" : ""}" data-k="m${i}"><span class="v3p">${hudPic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "vaincu"}</span></span>${bar(e.alive ? pct(e.hp, e.hpMax) : 0, "m")}</span></div>`).join("") : `<div class="small muted v3e">${live ? "Le combat suivant commence…" : "Aucun ennemi."}</div>`;
+    const heroRows = (mine.length ? mine : team.map((c) => ({ side: "c", cid: c.id, name: c.name, cls: c.cls, hp: 1, hpMax: 1, alive: true }))).map((e) => `<button class="v3r${e.alive ? "" : " ko"}" data-k="h${e.cid}" data-act="teamgo" data-id="${e.cid}" data-v="equip" title="Ouvrir la fiche du héros"><span class="v3p">${hudPic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "K.O."}</span></span>${bar(pct(e.hp, e.hpMax), pct(e.hp, e.hpMax) < 30 ? "r" : "")}${bar(pct(e.dealt || 0, tot), "d")}</span></button>`).join("");
+    const foeRows = foes.length ? foes.map((e, i) => `<button class="v3r${e.alive ? "" : " ko"}${e.alive && (e.boss || i === 0) ? " tg" : ""}" data-k="m${i}" data-act="v3-mon" data-v="${h(String(e.base || ""))}" title="Ouvrir la fiche du monstre"><span class="v3p">${hudPic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "vaincu"}</span></span>${bar(e.alive ? pct(e.hp, e.hpMax) : 0, "m")}</span></button>`).join("") : `<div class="small muted v3e">${live ? "Le combat suivant commence…" : "Aucun ennemi."}</div>`;
     const mom = MOM.length ? MOM.map((m, i) => `<div class="v3m ${m.k}" data-k="mo${i}"><span aria-hidden="true">${m.k === "up" ? "▲" : m.k === "loss" ? "✕" : "✦"}</span><span class="grow">${h(m.t)}</span><span class="xs muted">${ago(m.at)}</span></div>`).join("") : `<div class="small muted v3e">Les butins rares, les boss vaincus et les niveaux s'afficheront ici.</div>`;
     return `${head}${alert}${obj}${tugs}<div class="v3g"><div class="v3box"><h4>Ton équipe<small>barre fine = part des dégâts</small></h4>${heroRows}</div><div class="v3col"><div class="v3box"><h4>Ennemis</h4>${foeRows}</div><div class="v3box"><h4>Ce qui compte<small>les moments importants</small></h4>${mom}</div></div></div>
       <div class="v3k"><div><b>${fmtK(Math.max(0, r.k))}</b><span>kamas / min</span></div><div><b>${(Math.round(r.f * 10) / 10).toLocaleString("fr-FR")}</b><span>combats / min</span></div><div><b>${MOM.filter((m) => m.k === "rare").length}</b><span>butins rares</span></div><div><b>${fmt(team.length)}</b><span>héros en combat</span></div></div>`;
@@ -183,7 +183,17 @@
   };
   const chTop = (st) => `<h3 class="sec">Mécènes de la semaine</h3>${(st.top || []).length ? `<div class="v3tgs">${st.top.map((t, i) => `<div class="v3m${i < 3 ? " rare" : ""}"><b>${i + 1}</b><span class="grow">${h(t.p)}</span><span class="num">${fmt(t.k)}</span></div>`).join("")}</div>` : `<div class="small muted v3e">Personne n'a encore versé cette semaine.</div>`}`;
   V3.chantierPaint = () => { if (V3.on() && ui.tab === "chantier") rePage(); };
+  /* ---------- Journal › Semaine : 5 objectifs et un coffre (js/hebdo.js) ---------- */
+  const hebdoHtml = () => {
+    const L = E.hebdoList(X.S); const W = E.hebdo(X.S); const nDone = L.filter((o) => o.done).length;
+    const C = window.DATA && window.DATA.CONSUMABLES ? window.DATA.CONSUMABLES[E.hebdoChest(X.S)] : null;
+    const mon = new Date(Date.now()); const d = (8 - (mon.getDay() || 7)) % 7 || 7;
+    return `<section class="card v3pl"><h2>Objectifs de la semaine</h2><p class="small muted">5 objectifs, les mêmes pour tout le monde. Les 5 faits : ${C ? h(C.name).toLowerCase() : "un coffre"}. Nouveaux objectifs lundi (dans ${d} jour${d > 1 ? "s" : ""}).</p>
+      <div class="v3tgs">${L.map((o) => `<div class="v3box"><div class="v3n"><b>${o.done ? "✓ " : ""}${h(o.name)}</b><span class="muted num">${fmt(o.v)} / ${fmt(o.goal)}</span></div>${bar(pct(o.v, o.goal), o.done ? "g" : "")}</div>`).join("")}</div>
+      <div class="v3hb" style="margin-top:10px">${W.got ? `<span class="small">Coffre de la semaine pris. À lundi !</span>` : `<button class="btn primary" data-act="v3-hebdo" ${nDone >= L.length ? "" : "disabled"}>${nDone >= L.length ? "Prendre le coffre" : `Encore ${L.length - nDone} objectif${L.length - nDone > 1 ? "s" : ""}`}</button>`}</div></section>`;
+  };
   const XP3 = {
+    hebdo: { nav: ["hebdo", "Semaine", "quetes"], d: "5 objectifs de la semaine et un coffre", html: hebdoHtml, on: () => !!E.HEBDO },
     plan: { nav: ["plan", "Plan de bataille", "combat"], d: "Posture, cible et réflexes de l'équipe", html: planHtml },
     routines: { nav: ["routines", "Routines", "almanax"], d: "Ce que l'équipe fait toute seule", html: routinesHtml },
     chantier: { nav: ["chantier", "Chantier", "pioche"], d: "Les kamas de tout le serveur pour un ×2 XP et butin de 48 h", html: chantierHtml, on: () => !!window.CHANTIER && !!window.ONLINE && window.ONLINE.enabled },
@@ -208,6 +218,8 @@
     if (a && a.startsWith("v3-") && t && (t.tagName === "INPUT" || t.tagName === "SELECT")) return true; // les cases passent par V3.change
     if (a === "v3-post") { const k = t.dataset.v; if (!E.POSTURES[k]) return true; X.S.settings.posture = k; const F = X.S.fight; if (F && !F.over && !F.pvp) { F.post0 = k; F.post = k; } toast(`Posture : ${E.POSTURES[k].n}.`); saveNow(); rePage(); return true; }
     if (a === "v3-focus") { const k = t.dataset.v; if (!FOCUS.some((f) => f[0] === k)) return true; X.S.settings.focus = k; toast(`Cible : ${FOCUS.find((f) => f[0] === k)[1].toLowerCase()}.`); saveNow(); rePage(); return true; }
+    if (a === "v3-mon") { const k = t.dataset.v; if (k && X.monSheet) X.monSheet(k); return true; }
+    if (a === "v3-hebdo") { const r = E.hebdoClaim(X.S); if (r.err) toast(r.err); else { toast(`Coffre de la semaine : ${(window.DATA.CONSUMABLES[r.id] || {}).name || "coffre"} dans ton sac.`, "rare"); saveNow(); } rePage(); return true; }
     if (a === "v3-chload") { if (window.CHANTIER) window.CHANTIER.poll(); return true; }
     if (a === "v3-chno") { ui.v3chc = 0; rePage(); return true; }
     if (a === "v3-chgive") {

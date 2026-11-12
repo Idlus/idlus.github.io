@@ -71,3 +71,5 @@ body.v3 #v3band:not([hidden]){display:flex}
 .v3tg input{margin-top:3px;flex:none}.v3tg span{display:grid;gap:1px;min-width:0}.v3tg small{font-size:11.5px;color:var(--muted)}
 @media (max-width:640px){.v3seg{grid-template-columns:minmax(0,1fr)}}
 .v3al.ok{border-color:#3fa53a;background:rgba(63,165,58,.14)}
+button.v3r{width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:2px;border-radius:10px;cursor:pointer}
+button.v3r:hover{background:rgba(255,255,255,.05)}

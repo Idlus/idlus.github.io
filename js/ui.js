@@ -13684,7 +13684,7 @@ function morphEl(o, n) {
   }
 }
 window.DX = { get S() { return S; }, monoBetaOn: () => MONO_BETA.on, NAV, NAV_DESC, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText, absGap };
-if (window.V3) window.V3.init({ get S() { return S; }, ui, NAV, PAGES, NAV_DESC, IC, char, render, renderNav, toast, saveNow, morphTo, h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, E, DUNGEONS, reload: () => { saveNow(); try { sessionStorage.setItem("idlus-reprise", String(SLOT)); } catch (e) {} location.reload(); } }); // 3.0 (js/v3.js)
+if (window.V3) window.V3.init({ get S() { return S; }, ui, NAV, PAGES, NAV_DESC, IC, char, monSheet: (k) => { if (MONSTERS[k]) openSheet(encMonSheet(k)); }, render, renderNav, toast, saveNow, morphTo, h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, E, DUNGEONS, reload: () => { saveNow(); try { sessionStorage.setItem("idlus-reprise", String(SLOT)); } catch (e) {} location.reload(); } }); // 3.0 (js/v3.js)
 /* lot ergonomie (21/10) : au téléphone, la bulle du chat s'efface quand on descend dans une page (elle cachait des boutons) et revient quand on remonte */
 { let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY || 0; const dn = y > lastY + 6 && y > 120; const up = y < lastY - 6 || y < 120;
   if (dn) document.body.classList.add("scrolldn"); else if (up) document.body.classList.remove("scrolldn"); if (dn || up) lastY = y; }, { passive: true }); }
