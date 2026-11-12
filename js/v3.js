@@ -120,7 +120,7 @@
     const F = X.S.fight; const live = navLiveTxt(); const ents = F && F.ents ? F.ents.filter((e) => !e.summon) : [];
     const mine = ents.filter((e) => e.side === "c"), foes = ents.filter((e) => e.side === "m");
     const s = (L) => L.reduce((a, e) => a + (e.alive ? Math.max(0, e.hp) : 0), 0) / Math.max(1, L.reduce((a, e) => a + e.hpMax, 0)) * 100;
-    return `${med("combat")}<span class="grow"><b>${h(live || "Ton équipe se repose")}</b>${mine.length ? `<span class="v3bb">${bar(s(mine))}${bar(s(foes), "m")}</span>` : ""}</span><span class="v3pill">Combat ›</span>`;
+    return `${med("combat")}<span class="grow"><b>${h(live || "Ton équipe se repose")}</b>${mine.length ? `<span class="v3bb">${bar(s(mine))}${bar(s(foes), "m")}</span>` : ""}</span><span class="v3pill">Voir le combat</span>`;
   };
   let tAt = 0;
   V3.tick = function (force) {
@@ -224,7 +224,7 @@
     ["#v3b [data-act=csetsheet]", "Réglages du combat", "Cible, suivi de niveau et chasse itinérante. Le Plan de bataille est dans Équipe."],
     ["#nav", "8 espaces", "Aventure, Équipe, Sac, Artisanat, Collection, Marché, Joueurs, Journal. De nouveaux espaces s'ouvrent en montant de niveau."],
     ["#v3b .v3obj, #v3b .v3k", "Ton prochain objectif", "Le prochain pas à faire, et tes gains à la minute."],
-    ["#nav", "C'est parti !", "Les objectifs de la semaine sont dans Journal › Semaine. Bonne chasse !"],
+    ["#nav", "C'est parti !", "Les objectifs de la semaine sont dans le Journal, onglet Semaine. Bonne chasse !"],
   ];
   const TUTO_K = 500;
   let tutoEl = null;

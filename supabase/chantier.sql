@@ -81,7 +81,7 @@ declare me uuid := auth.uid(); d jsonb; have numeric; r chantier; mine bigint; c
 begin
   if me is null then return hdv_err('Connecte-toi à un compte (gratuit) pour participer au Chantier.'); end if;
   if p_amount is null or p_amount < 1000 then return hdv_err('Au moins 1 000 kamas.'); end if;
-  perform pg_advisory_xact_lock(hashtextextended('chantier:' || me::text, 0)); -- deux dons en même temps passent l'un après l'autre
+  perform pg_advisory_xact_lock(hashtext('hdv' || me::text)); -- même verrou que l'hôtel de vente : un don et un achat en même temps passent l'un après l'autre
   begin d := hdv_save(me); exception when others then return hdv_err(sqlerrm); end;
   r := chantier_cur();
   select * into r from chantier where wk = r.wk for update;
