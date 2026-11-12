@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.19";
+const GAME_VERSION = "2.2.14.20";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.20", name: "Chaque serveur garde sa partie", items: [
+    "Créer un héros dans l'Éternel depuis l'écran des parties ne peut plus remplacer ta partie de la Saison 1 : le jeu ne te propose plus de serveur où tu as déjà une partie" ] },
   { v: "2.2.14.19", name: "Sécurité renforcée", items: [
     "Le jeu est mieux protégé : ton navigateur n'exécute plus que le code d'Idlus et ne parle qu'à ses serveurs, même si un texte piégé arrivait un jour dans le chat",
     "Les comptes se créent uniquement avec Discord. Rien ne change pour toi : ta connexion et tes parties restent les mêmes" ] },
@@ -3895,9 +3897,15 @@ const hasPublicSave = () => !!SV.store().get("dofousxen-save");
 /* Monocompte : au tout premier lancement, choix du serveur au-dessus du choix du héros ; depuis l'écran des parties, la carte Monocompte y mène directement */
 /* 2.2.0 : à l'ouverture de la Saison 1, un nouveau joueur choisit aussi la partie de saison (proposée d'abord) ; avant, il
    arrivait directement dans l'Éternel quand le Monocompte (bêta fermée) ne lui était pas ouvert. */
-const s1Pick = () => !!(S1.open && ON && ON.s1Srv); // partie de saison : avec le serveur (classements, Fragments)
-const monoPick = () => !SV.local.get(slotKey(MONO_SLOT)) && monoOk();
-const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && (monoPick() || s1Pick());
+/* 12/11/2026 (2.2.14.20, retour d'Eronny) : sa partie de saison a été remplacée par un héros niveau 1. Il avait ouvert une
+   « Nouvelle partie » de l'Éternel depuis l'écran des parties : ce choix du serveur était encore montré, avec la Saison 1
+   cochée d'avance, et « Commencer l'aventure » repartait de zéro dans la partie de saison qu'il avait déjà, envoi en ligne
+   compris. Maintenant : le choix ne se montre plus quand le serveur a déjà été choisi sur l'écran des parties, un serveur où
+   le compte a déjà une partie n'y est plus proposé, et une partie existante n'est jamais remplacée par la création d'un héros. */
+const s1Has = () => !!SV.local.get(slotKey(S1_SLOT)) || !!(MENU.slots.find((x) => x.n === S1_SLOT) || {}).rem;
+const s1Pick = () => !!(S1.open && ON && ON.s1Srv) && !s1Has(); // partie de saison : avec le serveur (classements, Fragments)
+const monoPick = () => !SV.local.get(slotKey(MONO_SLOT)) && !(MENU.slots.find((x) => x.n === MONO_SLOT) || {}).rem && monoOk();
+const srvFirst = () => menuOn() && !TESTMODE && SLOT === 1 && !ui.srvChosen && (monoPick() || s1Pick());
 const startSrvOf = () => ui.startSrv || (s1Pick() ? "s1" : "cl");
 const startMono = () => SLOT === MONO_SLOT || (srvFirst() && startSrvOf() === "mono");
 const MONO_PTS = () => [`<b>Un seul héros</b>, qui part du niveau 1 sans rien`, `Bonus <b>Héros unique</b> : bien équipé, il tient la stasis 7 seul`, `Butin d'équipement ×${E.MONO.lootLow} jusqu'au niveau ${E.MONO.lootLvl}, ${E.MONO.dofus} Dofus portés`, `Groupes en direct, échanges et HdV : avec le serveur Monocompte, bientôt`];
@@ -11439,8 +11447,9 @@ document.addEventListener("click", (ev) => {
     case "mercpick": ui.mercCls = t.dataset.v || null; if (ui.dgSel) dungeonSheet(ui.dgSel); else render(); return;
     case "startsrv": ui.startSrv = ["mono", "s1", "cl"].includes(t.dataset.v) ? t.dataset.v : null; render(); return;
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; }
-      const mono = startMono(); if (mono && SLOT !== MONO_SLOT) { setSlot(MONO_SLOT); setMenuPref({ last: MONO_SLOT }); }
-      if (!mono && srvFirst() && startSrvOf() === "s1") { setSlot(S1_SLOT); setMenuPref({ last: S1_SLOT, lastCl: S1_SLOT }); } // 2.2.0 : nouvelle partie de saison
+      const from = SLOT, mono = startMono(), toS1 = !mono && srvFirst() && startSrvOf() === "s1", to = mono ? MONO_SLOT : toS1 ? S1_SLOT : SLOT;
+      if (to !== from && SV.local.get(slotKey(to))) { toast("Tu as déjà une partie sur ce serveur : elle n'est pas remplacée. Ouvre-la depuis l'écran des parties."); return; } // 12/11 : jamais d'écrasement
+      if (to !== from) { setSlot(to); setMenuPref(to === S1_SLOT ? { last: S1_SLOT, lastCl: S1_SLOT } : { last: to }); } // 2.2.0 : nouvelle partie de saison
       S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) { S.mono.gen = +A.gen || 0; if (A.etat === "ouverte") S.mono.sid = A.id; } } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
@@ -12524,7 +12533,7 @@ async function svPlay(n, which) {
 async function svAct(a, t) {
   const n = +t.dataset.n || 0, sl = MENU.slots.find((x) => x.n === n), si = MENU.slots.indexOf(sl);
   switch (a) {
-    case "sv-play": return svPlay(n, t.dataset.w);
+    case "sv-play": ui.srvChosen = true; return svPlay(n, t.dataset.w); // 12/11 : serveur choisi sur l'écran des parties (srvFirst)
     case "sv-auto": setMenuPref({ auto: !!t.checked }); return;
     case "sv-del": MENU.confirm = "del" + n; return renderMenu();
     case "sv-fresh": MENU.confirm = "fresh" + n; return renderMenu();

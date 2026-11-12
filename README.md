@@ -10,6 +10,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.20 « Chaque serveur garde sa partie »
+- Bug signalé par Eronny (12/11) : en créant une « Nouvelle partie » de l'Éternel depuis l'écran des parties, le choix du serveur de la création du héros réapparaissait avec la Saison 1 cochée d'avance ; « Commencer l'aventure » repartait alors de zéro dans sa partie de saison existante (envoi en ligne compris).
+- js/ui.js : ce choix ne s'affiche plus quand le serveur a été choisi sur l'écran des parties ; un serveur où le compte a déjà une partie (sur l'appareil ou en ligne) n'y est plus proposé ; la création d'un héros refuse de remplacer une partie existante. tests/s1_pas_ecrasee_ui.test.js (PC et téléphone, échouait avant la correction).
+- Étape « enquete-sauvegarde-s1 » (lecture seule) du workflow Serveur OVH : dates, niveaux et kamas des parties et copies du jour d'un joueur sur les deux serveurs.
+
 ## 2.2.14.19 « Sécurité renforcée »
 - Mathis (11/11, « vérifie qu'il n'y ai pas de faille dans le jeu pour accéder a mes données », puis « ok pour csp ») : audit de sécurité (rien ne permettait de lire les données d'un autre joueur ni le panel).
 - index.html : règle CSP (scripts du jeu seulement, connexions vers le serveur OVH et DofusDB seulement) ; les `onerror=`/`onload=` écrits dans le HTML sont remplacés par des attributs (`data-fb`, `data-oe="h"`, `data-dbload`) lus par un gestionnaire unique (js/ui.js). tests/csp.test.js (dans `npm run check`).

@@ -31,7 +31,7 @@
   /* mono = espace Monocompte du serveur (supabase/monocompte.sql, amis.sql, mono_social.sql, mono_bureau.sql, mono_cles.sql et la
      fonction « mono », installés à la main) : actif depuis la bêta 2.1.35. L'accès à la partie 4 passe par le serveur (mono_acces :
      testeurs et clés bêta) ; mono: false remet la partie Monocompte sur l'appareil, sans aucun appel mono_. */
-  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO, mb: !root.__IDLUS_NOMONO } : SERVERS[ON.world];
+  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS, mono: !root.__IDLUS_NOMONO, mb: !root.__IDLUS_NOMONO, s1: !!root.__IDLUS_S1 } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
   ON.mail = SRV.mail;
