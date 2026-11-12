@@ -305,7 +305,9 @@
      revienne (délai dépassé) : l'appareil gardait l'ancienne date et l'envoi suivant croyait qu'un autre appareil avait
      joué (« Deux versions de ta partie »). Chaque envoi porte maintenant un numéro (meta.pid) gardé sur l'appareil :
      si la version en ligne est l'un de nos propres envois, ce n'est pas un conflit. */
-  ON.ownPush = (info, l) => { l = l || ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
+  /* 12/11/2026 (Eronny) : une partie remise par Mathis (meta.remise, panel ou outil) garde la marque du dernier envoi de l'appareil ;
+     elle n'est plus prise pour « un de nos envois » : sinon le jeu resté ouvert la remplaçait aussitôt par sa partie. */
+  ON.ownPush = (info, l) => { l = l || ON.link(); return !!(info && info.meta && info.meta.pid && !info.meta.remise && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
   /* 09/11/2026 (SegFault : « jusqu'à 32 Mbps d'upload » avec deux parties ouvertes) : la partie part compressée (gzip, environ
      4 fois plus légère : 700 Ko → 160 Ko) par la fonction serveur, qui l'écrit avec les mêmes règles (push_save, mono_push) et
      la vérifie dans le même appel. Navigateur sans CompressionStream, fonction pas encore à jour ou en panne : envoi direct comme

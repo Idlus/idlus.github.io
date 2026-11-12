@@ -1,6 +1,13 @@
 {
-  "version": "2.2.14.20",
+  "version": "2.2.14.21",
   "versions": [
+    {
+      "v": "2.2.14.21",
+      "name": "Partie restaurée protégée",
+      "items": [
+        "Quand une partie est remise à une copie par l'équipe, ton jeu resté ouvert ne peut plus la remplacer : il te demande quelle version garder"
+      ]
+    },
     {
       "v": "2.2.14.20",
       "name": "Chaque serveur garde sa partie",

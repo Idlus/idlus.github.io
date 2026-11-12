@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.20";
+const GAME_VERSION = "2.2.14.21";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.2.14.21", name: "Partie restaurée protégée", items: [
+    "Quand une partie est remise à une copie par l'équipe, ton jeu resté ouvert ne peut plus la remplacer : il te demande quelle version garder" ] },
   { v: "2.2.14.20", name: "Chaque serveur garde sa partie", items: [
     "Créer un héros dans l'Éternel depuis l'écran des parties ne peut plus remplacer ta partie de la Saison 1 : le jeu ne te propose plus de serveur où tu as déjà une partie" ] },
   { v: "2.2.14.19", name: "Sécurité renforcée", items: [

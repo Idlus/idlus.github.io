@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 2.2.14.21 « Partie restaurée protégée »
+- 12/11, restauration de la partie S1 d'Eronny : la partie remise gardait la marque du dernier envoi de l'appareil (`meta.pid`) ; son jeu resté ouvert l'a prise pour un de ses envois et l'a remplacée une minute après.
+- js/online.js : `ON.ownPush` ignore une partie marquée `meta.remise` (panel ou outil) : le jeu affiche le conflit au lieu d'écraser. tools/serveur/restaurer_eronny_s1.sql retire aussi `pid` (restauration refaite à 21h08).
+
 ## 2.2.14.20 « Chaque serveur garde sa partie »
 - Bug signalé par Eronny (12/11) : en créant une « Nouvelle partie » de l'Éternel depuis l'écran des parties, le choix du serveur de la création du héros réapparaissait avec la Saison 1 cochée d'avance ; « Commencer l'aventure » repartait alors de zéro dans sa partie de saison existante (envoi en ligne compris).
 - js/ui.js : ce choix ne s'affiche plus quand le serveur a été choisi sur l'écran des parties ; un serveur où le compte a déjà une partie (sur l'appareil ou en ligne) n'y est plus proposé ; la création d'un héros refuse de remplacer une partie existante. tests/s1_pas_ecrasee_ui.test.js (PC et téléphone, échouait avant la correction).
