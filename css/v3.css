@@ -73,3 +73,7 @@ body.v3 #v3band:not([hidden]){display:flex}
 .v3al.ok{border-color:#3fa53a;background:rgba(63,165,58,.14)}
 button.v3r{width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:2px;border-radius:10px;cursor:pointer}
 button.v3r:hover{background:rgba(255,255,255,.05)}
+/* tuto */
+.v3tuto{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100vw - 24px));display:grid;gap:5px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+@media (min-width:1180px){.v3tuto{bottom:20px}}
+.v3hl{outline:3px solid var(--gold);outline-offset:3px;border-radius:12px;transition:outline-color .2s}

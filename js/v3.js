@@ -47,6 +47,7 @@
     V3.relock(true);
     document.body.classList.add("v3");
     if (!ui.v3booted) { ui.v3booted = true; if (ui.tab === "home") ui.tab = "combat"; }
+    if (!X.S.v3tuto) X.S.v3tuto = X.S.v3all ? { done: true, i: 0, paid: 0 } : { i: 0, paid: 0 }; // les anciens comptes le relancent dans Options
     V3.mount();
   };
   let openSig = "";
@@ -127,6 +128,7 @@
     V3.relock(); V3.layout();
     const b = document.getElementById("v3b"), band = document.getElementById("v3band");
     if (b) { const show = V3.home() || (window.innerWidth >= 1180 && ui.tab !== "combat"); b.hidden = !show; if (show) morphTo(b, V3.boardHtml()); }
+    tutoPaint();
     if (band) { const show = !V3.home() && ui.tab !== "combat" && window.innerWidth < 1180; band.hidden = !show; if (show) { const x = V3.bandHtml(); if (band.dataset.h !== x) { band.dataset.h = x; band.innerHTML = x; } } }
   };
   /* barre du bas du téléphone (question 2) : Combat, Aventure, Équipe, Sac, Plus */
@@ -213,6 +215,29 @@
     else return;
     saveNow(); rePage();
   };
+  /* ---------- tuto en 8 étapes (question 13) : l'écran pièce par pièce, 500 kamas par étape ; relançable dans Options › Affichage ---------- */
+  const TUTO = [
+    ["#v3b .v3h", "Le combat est ton accueil", "Ton équipe chasse ici en continu, même quand tu n'es pas là."],
+    ["#v3b .v3tugs", "Qui gagne ?", "La barre verte, c'est ton équipe ; la rouge, les ennemis."],
+    ["#v3b .v3g .v3box", "Tes héros", "La vie de chacun, et la barre fine dorée : sa part des dégâts. Touche un héros pour ouvrir sa fiche."],
+    ["#v3b .v3col .v3box:last-child", "Ce qui compte", "Seulement les moments importants : butins rares, boss vaincus, niveaux."],
+    ["#v3b [data-act=csetsheet]", "Réglages du combat", "Cible, suivi de niveau et chasse itinérante. Le Plan de bataille est dans Équipe."],
+    ["#nav", "8 espaces", "Aventure, Équipe, Sac, Artisanat, Collection, Marché, Joueurs, Journal. De nouveaux espaces s'ouvrent en montant de niveau."],
+    ["#v3b .v3obj, #v3b .v3k", "Ton prochain objectif", "Le prochain pas à faire, et tes gains à la minute."],
+    ["#nav", "C'est parti !", "Les objectifs de la semaine sont dans Journal › Semaine. Bonne chasse !"],
+  ];
+  const TUTO_K = 500;
+  let tutoEl = null;
+  const tutoPaint = () => {
+    const st = X.S && X.S.v3tuto; document.querySelectorAll(".v3hl").forEach((e) => e.classList.remove("v3hl"));
+    if (!V3.on() || !st || st.done || !V3.home()) { if (tutoEl) { tutoEl.remove(); tutoEl = null; } return; }
+    const i = st.i || 0; const T = TUTO[i]; if (!T) return;
+    const el = document.querySelector(T[0]); if (el) el.classList.add("v3hl");
+    if (!tutoEl) { tutoEl = document.createElement("div"); tutoEl.className = "v3tuto"; tutoEl.setAttribute("role", "dialog"); tutoEl.setAttribute("aria-label", "Tuto"); document.body.appendChild(tutoEl); }
+    const x = `<div class="xs muted">Étape ${i + 1} / ${TUTO.length} · +${TUTO_K} kamas</div><b>${h(T[1])}</b><div class="small">${h(T[2])}</div><div class="v3hb"><button class="btn sm primary" data-act="v3-tuto">${i + 1 < TUTO.length ? "Suivant" : "Terminer"}</button><button class="btn sm" data-act="v3-tutox">Passer le tuto</button></div>`;
+    if (tutoEl.dataset.h !== x) { tutoEl.dataset.h = x; tutoEl.innerHTML = x; }
+  };
+  V3.tutoStart = () => { X.S.v3tuto = { i: 0, paid: (X.S.v3tuto && X.S.v3tuto.paid) || 0 }; tutoPaint(); };
   /* actions propres à la 3.0 (appelées par le grand aiguillage de js/ui.js) */
   V3.act = function (a, t) {
     if (a && a.startsWith("v3-") && t && (t.tagName === "INPUT" || t.tagName === "SELECT")) return true; // les cases passent par V3.change
@@ -220,6 +245,14 @@
     if (a === "v3-focus") { const k = t.dataset.v; if (!FOCUS.some((f) => f[0] === k)) return true; X.S.settings.focus = k; toast(`Cible : ${FOCUS.find((f) => f[0] === k)[1].toLowerCase()}.`); saveNow(); rePage(); return true; }
     if (a === "v3-mon") { const k = t.dataset.v; if (k && X.monSheet) X.monSheet(k); return true; }
     if (a === "v3-hebdo") { const r = E.hebdoClaim(X.S); if (r.err) toast(r.err); else { toast(`Coffre de la semaine : ${(window.DATA.CONSUMABLES[r.id] || {}).name || "coffre"} dans ton sac.`, "rare"); saveNow(); } rePage(); return true; }
+    if (a === "v3-tuto" || a === "v3-tutox") {
+      const st = X.S.v3tuto || (X.S.v3tuto = { i: 0, paid: 0 });
+      if (a === "v3-tutox") { st.done = true; tutoPaint(); saveNow(); return true; }
+      const i = st.i || 0; if ((st.paid || 0) <= i) { st.paid = i + 1; X.S.kamas += TUTO_K; } // une seule fois par étape, même relancé
+      st.i = i + 1; if (st.i >= TUTO.length) { st.done = true; toast(`Tuto fini : ${fmt(TUTO_K * TUTO.length)} kamas gagnés en tout. Bonne chasse !`, "rare"); }
+      tutoPaint(); saveNow(); return true;
+    }
+    if (a === "v3-tutogo") { V3.tutoStart(); ui.tab = "combat"; ui.v3det = false; render(); return true; }
     if (a === "v3-chload") { if (window.CHANTIER) window.CHANTIER.poll(); return true; }
     if (a === "v3-chno") { ui.v3chc = 0; rePage(); return true; }
     if (a === "v3-chgive") {

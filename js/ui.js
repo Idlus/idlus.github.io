@@ -10076,7 +10076,7 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Idlus 3.0", "le nouvel écran : le combat au centre, 8 espaces + la Saison", optChk(`data-act="v3try"`, !!S.settings.v3, "Essayer Idlus 3.0", "le jeu se recharge ; décoche pour revenir à l'écran actuel. Ta partie ne change pas")) + optSec("Menus", "",
+  return optSec("Idlus 3.0", "le nouvel écran : le combat au centre, 8 espaces + la Saison", optChk(`data-act="v3try"`, !!S.settings.v3, "Essayer Idlus 3.0", "le jeu se recharge ; décoche pour revenir à l'écran actuel. Ta partie ne change pas") + (S.settings.v3 ? `<button class="btn sm" data-act="v3-tutogo">Revoir le tuto de la 3.0</button>` : "")) + optSec("Menus", "",
       optChk(`data-act="setnavfull"`, navAllOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
     + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
