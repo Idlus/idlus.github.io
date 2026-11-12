@@ -25,7 +25,7 @@
   ];
   V3.SPACES = SPACES;
   /* les noms courts des onglets dans la 3.0 */
-  const REN = { world: "Zones", asc: "Ascension", exp: "Songe infini", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album", hdv: "Hôtel de vente" };
+  const REN = { hdv: "Échanges", world: "Zones", asc: "Ascension", exp: "Songe infini", defi: "Défi", wb: "Boss", chev: "Chevauchée", team: "Héros", inv: "Objets", cours: "Vendre", pets: "Compagnons", elev: "Élevage", chasse: "Champions", ladder: "Classements", tour: "Tournoi", album: "Album" };
   V3.ren = REN;
   let ALL = null; // les espaces complets, avant les déblocages par niveau
   const maxLvl = () => X.S.chars.reduce((a, c) => Math.max(a, c.lvl || 1), 1);
@@ -39,7 +39,7 @@
     if (!ALL) {
       const pool = new Map(); let season = null;
       NAV.forEach((F) => { if (F.season) { season = F; return; } F.pages.forEach((p) => pool.set(p[0], p)); });
-      Object.keys(XP3).forEach((k) => pool.set(k, XP3[k].nav)); // les pages propres à la 3.0
+      Object.keys(XP3).forEach((k) => { if (!XP3[k].on || XP3[k].on()) pool.set(k, XP3[k].nav); }); // les pages propres à la 3.0
       ALL = { season, spaces: SPACES.map((s) => ({ id: s.id, n: s.n, ic: s.ic, v3lvl: s.lvl || 0, pages: s.keys.filter((k) => pool.has(k)).map((k) => { const p = pool.get(k).slice(); pool.delete(k); if (REN[k]) p[1] = REN[k]; return p; }) })) };
       const jo = ALL.spaces.find((F) => F.id === "jo"); pool.forEach((p) => jo.pages.push(p.slice())); // une page oubliée reste trouvable dans le Journal
     }
@@ -159,9 +159,33 @@
       <h3 class="sec">Butin</h3><div class="v3tgs">${tgl("v3-chest", !!st.autoChest, "Ouvrir les coffres", "Les coffres gagnés s'ouvrent tout seuls")}${tgl("recyset", !!R.auto, "Recycler quand le sac est plein", "Suit les règles du Recycleur (Sac › Objets › Recycleur)", 'data-k="auto"')}</div>
       ${sg ? `<h3 class="sec">Songe infini</h3><div class="v3tgs">${tgl("v3-sgauto", E.expAutoOn(X.S), "Choix automatiques", "Le songe choisit seul ses salles et ses bonus")}${tgl("v3-sgloop", E.sgLoopOn ? E.sgLoopOn(X.S) : !!st.sgLoop, "Songes en boucle", "Un nouveau songe repart quand le précédent finit")}</div>` : ""}</section>`;
   };
+  /* ---------- Marché › Chantier du serveur (js/chantier.js, supabase/chantier.sql) ---------- */
+  const dur = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
+  const chantierHtml = () => {
+    const C = window.CHANTIER; const st = C && C.st; const w = C && C.where ? C.where() : null;
+    const head = `<section class="card v3pl"><h2>Chantier du serveur</h2><p class="small muted">Tout le serveur y verse des kamas. Une fois l'objectif atteint : <b>×2 XP et ×2 butin pour tout le serveur pendant 48 h</b> (hors Dofus et runes Ga). Un Chantier par semaine, il rouvre le lundi.</p>`;
+    if (C && C.on()) {
+      return `${head}<div class="v3al ok"><span aria-hidden="true">✦</span><span class="grow">Le ×2 est en cours : encore <b>${dur(C.left())}</b>.</span></div>${st ? chTop(st) : ""}</section>`;
+    }
+    if (!w) return `${head}<div class="empty">Le Chantier se joue avec ta partie en ligne (partie 1, Saison 1 ou Monocompte).</div></section>`;
+    if (!st) return `${head}<div class="empty">Chargement du Chantier… <button class="btn sm" data-act="v3-chload">Réessayer</button></div></section>`;
+    const p = pct(st.total, st.goal); const room = Math.max(0, Math.min(st.cap - st.mine, st.goal - st.total)); const k = Math.floor(X.S.kamas || 0);
+    const steps = [0.01, 0.05, 0.1].map((f) => Math.max(1000, Math.round((st.goal * f) / 1000) * 1000)).concat([Math.min(room, k)]).filter((v, i, L) => v >= 1000 && v <= room && L.indexOf(v) === i);
+    const ask = ui.v3chc ? `<div class="v3al"><span class="grow">Verser <b>${fmt(ui.v3chc)} kamas</b> au Chantier ? Ils ne reviennent pas.</span><button class="btn sm primary" data-act="v3-chgive" data-v="${ui.v3chc}" data-ok="1">Verser</button><button class="btn sm" data-act="v3-chno">Annuler</button></div>` : "";
+    return `${head}<div class="v3box"><h4>Semaine ${h(String(st.wk).split("-")[1] || "")}<small>${st.n} mécène${st.n > 1 ? "s" : ""}</small></h4>
+      <div class="v3n"><b>${fmt(st.total)} / ${fmt(st.goal)} kamas</b><span class="muted">${Math.floor(p)} %</span></div>${bar(p, "g")}
+      <p class="xs muted">Objectif calé sur les kamas des joueurs actifs du serveur. Chacun verse au plus ${fmt(st.cap)} kamas par semaine (40 %) : il faut au moins 3 mécènes.</p></div>
+      ${st.done ? `<div class="empty">Le Chantier de la semaine est fini. Le prochain ouvre lundi.</div>` : `
+      <h3 class="sec">Verser</h3><p class="small">Ta part cette semaine : <b>${fmt(st.mine)}</b> / ${fmt(st.cap)} kamas · tu as ${fmt(k)} kamas.</p>
+      ${ask}<div class="v3hb">${steps.length ? steps.map((v) => `<button class="btn${v === Math.min(room, k) ? " primary" : ""}" data-act="v3-chgive" data-v="${v}" ${v > k ? "disabled" : ""}>${v === room ? "Toute ma part · " : v === k ? "Tous mes kamas · " : ""}${fmt(v)}</button>`).join("") : `<span class="small muted">Ta part de la semaine est versée : merci !</span>`}</div>`}
+      ${chTop(st)}</section>`;
+  };
+  const chTop = (st) => `<h3 class="sec">Mécènes de la semaine</h3>${(st.top || []).length ? `<div class="v3tgs">${st.top.map((t, i) => `<div class="v3m${i < 3 ? " rare" : ""}"><b>${i + 1}</b><span class="grow">${h(t.p)}</span><span class="num">${fmt(t.k)}</span></div>`).join("")}</div>` : `<div class="small muted v3e">Personne n'a encore versé cette semaine.</div>`}`;
+  V3.chantierPaint = () => { if (V3.on() && ui.tab === "chantier") rePage(); };
   const XP3 = {
     plan: { nav: ["plan", "Plan de bataille", "combat"], d: "Posture, cible et réflexes de l'équipe", html: planHtml },
     routines: { nav: ["routines", "Routines", "almanax"], d: "Ce que l'équipe fait toute seule", html: routinesHtml },
+    chantier: { nav: ["chantier", "Chantier", "pioche"], d: "Les kamas de tout le serveur pour un ×2 XP et butin de 48 h", html: chantierHtml, on: () => !!window.CHANTIER && !!window.ONLINE && window.ONLINE.enabled },
   };
   const rePage = () => { if (XP3[ui.tab]) { const m = document.getElementById("main"); if (m) morphTo(m, `${XP3[ui.tab].html()}`); } };
   /* cases à cocher de la 3.0 (événement change de js/ui.js) */
@@ -183,6 +207,14 @@
     if (a && a.startsWith("v3-") && t && (t.tagName === "INPUT" || t.tagName === "SELECT")) return true; // les cases passent par V3.change
     if (a === "v3-post") { const k = t.dataset.v; if (!E.POSTURES[k]) return true; X.S.settings.posture = k; const F = X.S.fight; if (F && !F.over && !F.pvp) { F.post0 = k; F.post = k; } toast(`Posture : ${E.POSTURES[k].n}.`); saveNow(); rePage(); return true; }
     if (a === "v3-focus") { const k = t.dataset.v; if (!FOCUS.some((f) => f[0] === k)) return true; X.S.settings.focus = k; toast(`Cible : ${FOCUS.find((f) => f[0] === k)[1].toLowerCase()}.`); saveNow(); rePage(); return true; }
+    if (a === "v3-chload") { if (window.CHANTIER) window.CHANTIER.poll(); return true; }
+    if (a === "v3-chno") { ui.v3chc = 0; rePage(); return true; }
+    if (a === "v3-chgive") {
+      const v = Math.floor(+t.dataset.v || 0); if (!(v >= 1000)) return true;
+      if (!t.dataset.ok) { ui.v3chc = v; rePage(); return true; }
+      ui.v3chc = 0; window.CHANTIER.give(v).then((r) => { if (r.err) toast(r.err); else toast(`Merci ! ${fmt(r.given)} kamas versés au Chantier.`, "rare"); rePage(); });
+      return true;
+    }
     if (a === "v3det") { ui.v3det = !ui.v3det; render(); return true; }
     if (a === "v3alok") { V3.alert = null; lossRow = 0; V3.tick(true); return true; }
     if (a === "v3try") { X.S.settings.v3 = !X.S.settings.v3; if (X.S.settings.v3) X.S.v3all = X.S.v3all == null ? (maxLvl() >= 20 || (X.S.stats && X.S.stats.fights > 300) ? 1 : 0) : X.S.v3all; X.reload(); return true; }

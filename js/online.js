@@ -434,14 +434,14 @@
   /* ---------- chat et panel admin (0.1.19, supabase/chat.sql) ---------- */
   /* 1.0.11 : une partie solo ne touche jamais à ce que le serveur tient pour la partie 1 (ventes, échanges, guilde,
      Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
-  const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_|vente_sell$|foire_jackpot_buy$)/; // 1.0.30 : vente directe et Jackpot du Trool
+  const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_|vente_sell$|foire_jackpot_buy$|chantier_give$)/; // 1.0.30 : vente directe et Jackpot du Trool
   const MONO_RPC = /^(hdv_(sync|list|buy|cancel|reprice|market|offers|history|mine|bought|order_new|order_cancel|order_fill|orders_list|orders_mine)|trade_(start|state|offer|ok|cancel))$/;
   /* 2.1.37.x : fonctions du serveur Classique qui donnent ou prennent des kamas, objets ou ressources à la partie (registre hdv_ops,
      curseur S.hdv.op), ou qui l'inscrivent dans un système du Classique (guilde, alliance, Percepteurs, Kolizéum, vente directe,
      Foire, pluie de kamas, lots des classements de l'Ascension et du Songe, boss de guilde, codes cadeaux). Jamais depuis une partie
      Monocompte : leurs réponses (« ops ») portaient les opérations du Classique, appliquées à la partie Monocompte, et
      faisaient avancer son curseur. Toute autre fonction qui reçoit p_after (curseur des opérations) hors mono_ est refusée aussi. */
-  const CLASSIC_RPC = /^(hdv_(sync|list|buy|cancel|reprice|mine|bought|order_new|order_cancel|order_fill|orders_mine)|trade_|guild_|gboss_|perco_|prism_|ally_|koli_|brisage_|vente_sell$|foire_jackpot|rain_|adm_rain_|songe_claim$|asc_claim$|defi_guild_prize$|gift_redeem$|gift_mine$|build_publish$)/;
+  const CLASSIC_RPC = /^(hdv_(sync|list|buy|cancel|reprice|mine|bought|order_new|order_cancel|order_fill|orders_mine)|trade_|guild_|gboss_|perco_|prism_|ally_|koli_|brisage_|vente_sell$|foire_jackpot|rain_|adm_rain_|songe_claim$|asc_claim$|defi_guild_prize$|gift_redeem$|gift_mine$|build_publish$|chantier_give$)/;
   ON.classicRpc = (name, args) => !/^mono_/.test(name) && (CLASSIC_RPC.test(name) || !!(args && Object.prototype.hasOwnProperty.call(args, "p_after")));
   /* 22/10 (Mathis, 1A) : une partie Monocompte (emplacement 4 ou Éternel) n'appelle que les fonctions de la liste blanche
      E.MONO.RPC (js/mono.js) ; tout le reste, du Classique ou à venir, est refusé ici sans partir sur le réseau. */
