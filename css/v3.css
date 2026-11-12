@@ -92,3 +92,10 @@ button.v3r:hover{background:rgba(255,255,255,.05)}
 /* scène animée DOFUS 3 (window.ANIM3) : au-dessus des barres ; 180 px dans le panneau PC, 210 px au téléphone */
 .v3scene{position:relative;height:180px;border-radius:14px;overflow:hidden;border:2px solid var(--frame);background:var(--panel2)}
 @media (max-width:640px){.v3scene{height:210px}}
+/* Foire : auras de la Collection du Trool */
+.gr-a-tr_bonbon{--ga:#ff8fd1}.gr-a-tr_fete{--ga:#ffd84a}.gr-a-tr_manege{--ga:#6be0ff}.gr-a-tr_lampion{--ga:#ff9a3c}.gr-a-tr_guimauve{--ga:#f3c4ff}.gr-a-tr_reglisse{--ga:#8a5cff}.gr-a-tr_menthol{--ga:#7affd9}.gr-a-tr_grelot{--ga:#ffe9a8}
+.fo-crate.theme{border-color:var(--r-l,#f4c84a)}
+.fo-coll{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;margin-bottom:6px}
+.fo-cl{display:grid;justify-items:center;gap:2px;text-align:center;padding:6px 4px;border-radius:10px;border:1px solid var(--frame);opacity:.45}
+.fo-cl.on{opacity:1;border-color:var(--r-l,#f4c84a)}.fo-cl.wk{outline:2px dashed var(--gold);outline-offset:-2px}
+.fo-hl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}

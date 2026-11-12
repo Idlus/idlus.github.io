@@ -118,14 +118,15 @@
   }
 
   /* ---------- Caisses du Trool ---------- */
-  const caisse = (id) => F.CAISSES.find((c) => c.id === id) || F.CAISSES[0];
+  const caisse = (id) => (E.foireCaisse ? E.foireCaisse(id) : null) || F.CAISSES.find((c) => c.id === id) || F.CAISSES[0];
+  const allCrates = () => (F.THEME ? F.CAISSES.concat([F.THEME]) : F.CAISSES);
   const kShort = (k) => (k >= 1e6 ? `${(Math.round(k / 1e5) / 10).toLocaleString("fr-FR")} M` : `${fmt(k)} k`);
   /* une case de la bande qui défile : image et nom court du lot */
   function lotCell(lot, win) {
     const R = F.RAR[lot.r]; const C = lot.cons ? D.CONSUMABLES[lot.cons[0]] : null;
-    const img = lot.title ? "assets/ui/couronne.webp" : lot.item ? X().itemImg(lot.item) : lot.res ? X().resImg(lot.res[0]) : C && C.img ? `${window.coIco(C.img)}` : C && C.pimg ? `assets/ui/potions/${C.pimg}.png`
+    const img = lot.look ? "assets/ui/ailes.webp" : lot.title ? "assets/ui/couronne.webp" : lot.item ? X().itemImg(lot.item) : lot.res ? X().resImg(lot.res[0]) : C && C.img ? `${window.coIco(C.img)}` : C && C.pimg ? `assets/ui/potions/${C.pimg}.png`
       : lot.cons ? (/^bonbon/.test(lot.cons[0]) ? "assets/ui/bonbon.webp" : /^parch/.test(lot.cons[0]) ? "assets/ui/parchemin_or.webp" : "assets/ui/cristal.webp") : lot.sab ? "assets/ui/cristal.webp" : lot.key ? "assets/ui/cle.webp" : "assets/ui/kamas.webp";
-    const t = lot.title ? "Titre « " + lot.title + " »" : lot.item ? D.ITEMS[lot.item].name : lot.res ? `${lot.res[0]} ×${fmt(lot.res[1])}` : C ? `${C.name}${lot.cons[1] > 1 ? " ×" + lot.cons[1] : ""}` : lot.sab ? `Sablier ${lot.sab} h` : lot.key ? `${lot.key[1]} clé${lot.key[1] > 1 ? "s" : ""}` : kShort(lot.k);
+    const t = lot.look ? `Aura « ${(F.LOOKS.find((x) => x[0] === lot.look) || [0, lot.look])[1]} »` : lot.title ? "Titre « " + lot.title + " »" : lot.item ? D.ITEMS[lot.item].name : lot.res ? `${lot.res[0]} ×${fmt(lot.res[1])}` : C ? `${C.name}${lot.cons[1] > 1 ? " ×" + lot.cons[1] : ""}` : lot.sab ? `Sablier ${lot.sab} h` : lot.key ? `${lot.key[1]} clé${lot.key[1] > 1 ? "s" : ""}` : kShort(lot.k);
     return `<div class="it${win ? " win" : ""}" style="--r:${R.color}"><img src="${img}" alt="" loading="lazy"><span>${h(t)}</span></div>`;
   }
   const CELL = 68, WIN = 30; // largeur d'une case + écart (62 + 6), position du lot gagné dans la bande
@@ -139,7 +140,7 @@
     return `<div class="small fo-c" id="foRes"><b style="color:${R.color}">${R.name} !</b> ${h(L.txt[0].toUpperCase() + L.txt.slice(1))}</div>`; };
   function cratesHtml() {
     const s = S(); const C = caisse(st.pick); const left = E.foireLeft(s);
-    const cards = F.CAISSES.map((c) => `<button class="fo-crate ${c.id === C.id ? "on" : ""}" data-act="fo-pick" data-v="${c.id}" aria-pressed="${c.id === C.id}"><img src="${window.coIco(c.img)}" alt=""><b class="small">${h(c.name)}</b><span class="xs">${fmt(c.cost)} k</span><span class="xs muted">lots de ${kShort(Math.round(c.cost * F.RAR[0].mult))} à ${kShort(c.cost * F.RAR[4].mult)}</span></button>`).join("");
+    const cards = allCrates().map((c) => `<button class="fo-crate ${c.id === C.id ? "on" : ""}${c.theme ? " theme" : ""}" data-act="fo-pick" data-v="${c.id}" aria-pressed="${c.id === C.id}"><img src="${window.coIco(c.img)}" alt=""><b class="small">${h(c.name)}</b><span class="xs">${fmt(c.cost)} k</span><span class="xs muted">${c.theme ? `Légendaire : aura « ${h(E.foireLookWk()[1])} »` : `lots de ${kShort(Math.round(c.cost * F.RAR[0].mult))} à ${kShort(c.cost * F.RAR[4].mult)}`}</span></button>`).join("");
     const odds = `<div class="fo-odds">${F.RAR.map((r) => `<span style="--r:${r.color}">${r.name}<br>${r.p} %</span>`).join("")}</div>`;
     const can = left > 0 && s.kamas >= C.cost && !st.rolling;
     return `<section class="panel" id="foCrates"><div class="phead"><h2>${X().IC("coffre")} Choisis ta caisse</h2><span class="xs muted">${left ? `encore ${left} ouverture${left > 1 ? "s" : ""} aujourd'hui` : "plus d'ouverture aujourd'hui"}</span></div>
@@ -160,7 +161,7 @@
     const s = S(); const G = E.foireState(s); const d = J.data;
     const head = `<div class="pagehead"><h1>Foire du Trool</h1><span class="small muted"><span class="coin"></span> <b class="num" id="foKamas">${fmt(s.kamas)}</b> kamas</span></div>`;
     const hd = `<div class="fo-hd"><img src="assets/m/129.png" alt=""><div class="stack" style="gap:4px"><b class="fo-t">Caisses et Jackpot du Trool</b><span class="small">Mise des kamas, et repars avec un lot. Les chances sont affichées. Rien ne s'y achète avec de l'argent réel, et on n'y gagne jamais de Dofus.</span><span class="xs muted">Aujourd'hui : ${G.n} partie${G.n > 1 ? "s" : ""} sur ${F.DAY}${d && d.mine ? ` · ${fmt(d.mine)} ticket${d.mine > 1 ? "s" : ""} de Jackpot cette heure` : ""}</span></div></div>`;
-    main.innerHTML = `${head}<div class="stack">${hd}${jackHtml()}${cratesHtml()}${window.DUELUI ? window.DUELUI.html() : ""}${feedHtml()}</div>`;
+    main.innerHTML = `${head}<div class="stack">${hd}${jackHtml()}${heldHtml()}${cratesHtml()}${collHtml()}${window.DUELUI ? window.DUELUI.html() : ""}${feedHtml()}</div>`;
   }
   window.DX.pages.foire = (main) => { if (st.rolling && $("#foRoll")) return; st.rolling = false; page(main); if (online() && Date.now() - J.at > 60000) jLoad().then(paintJack); };
 
@@ -185,21 +186,45 @@
     }));
   }
 
-  /* 3.0 (Foire C) : ×10 d'un coup, les lots en liste (la bande ne défile pas) */
+  /* 3.0 (Foire C, E, F) : ×10 d'un coup ; les lots restent en attente : tout garder, améliorer un lot, ou 10 lots en contrat */
   function openN() {
     const s = S(); if (!s || st.rolling) return;
-    const C = caisse(st.pick); const n = Math.min(F.MULTI, E.foireLeft(s)); const r = E.foireOpenN(s, C.id, n);
+    const C = caisse(st.pick); const n = Math.min(F.MULTI, E.foireLeft(s)); const r = E.foireOpenN(s, C.id, n, true);
     if (r.err && !r.list) { X().toast(r.err); return; }
-    X().markDirty(); st.last = null; paint(); X().renderStatus();
-    const rows = r.list.map((x) => { const R = F.RAR[x.lot.r]; return `<div class="li small"><b style="color:${R.color}">${R.name}${x.lot.pity ? " · coup de pouce" : ""}</b><span class="grow">${h(x.txt)}</span></div>`; }).join("");
-    const mise = C.cost * r.list.length, val = r.list.reduce((a, x) => a + x.lot.v, 0);
-    X().openSheet(`<h2>${r.list.length} × ${h(C.name)}</h2><p class="small muted">Valeur des lots : <b>${fmt(val)}</b> kamas pour ${fmt(mise)} misés.${r.err ? ` ${h(r.err)}` : ""}</p><div class="list">${rows}</div><button class="btn" data-act="closesheet">Fermer</button>`);
+    if (r.err) X().toast(r.err);
+    X().markDirty(); st.last = null; paint(); X().renderStatus(); heldSheet();
+  }
+  const lotLine = (x, i) => { const R = F.RAR[x.lot.r]; return `<div class="li small fo-hl"><b style="color:${R.color}">${R.name}${x.lot.pity ? " · coup de pouce" : x.lot.up ? " · amélioré" : x.lot.contract ? " · contrat" : ""}</b><span class="grow">${h(E.foireLotTxt(x.lot))} <span class="xs muted">${h(caisse(x.c).name)}</span></span>${x.lot.r < 4 ? `<button class="btn xs" data-act="fo-up" data-i="${i}">Améliorer</button>` : ""}<button class="btn xs" data-act="fo-keep1" data-i="${i}">Garder</button></div>`; };
+  function heldHtml() {
+    const s = S(); const H = E.foireHeld(s); if (!H.length) return "";
+    const groups = {}; H.forEach((x) => { if (x.lot.r < 4) { const k = x.c + ":" + x.lot.r; groups[k] = (groups[k] || 0) + 1; } });
+    const ct = Object.entries(groups).filter(([, n]) => n >= F.CONTRACT_N).map(([k]) => { const [c, r] = k.split(":"); return `<button class="btn sm" data-act="fo-contract" data-c="${h(c)}" data-r="${r}">Contrat : ${F.CONTRACT_N} ${F.RAR[+r].name.toLowerCase()}s → 1 ${F.RAR[+r + 1].name.toLowerCase()}</button>`; }).join("");
+    const val = H.reduce((a, x) => a + x.lot.v, 0);
+    return `<section class="panel" id="foHeld"><div class="phead"><h2>Lots en attente <span class="xs muted">${H.length} / ${F.HELD}</span></h2><span class="xs muted">valeur ${fmt(val)} kamas</span></div>
+      <div class="pad stack"><div class="row"><button class="btn primary" data-act="fo-keepall">Tout garder</button>${ct}</div>
+      <span class="xs muted">Améliorer : mise un lot pour viser une rareté plus haute, ${Math.round(F.UP_EDGE * 100)} % de sa valeur revient en moyenne. Contrat : ${F.CONTRACT_N} lots de la même caisse et de la même rareté donnent 1 lot de la rareté au-dessus (complété en kamas).</span>
+      <div class="list">${H.map(lotLine).join("")}</div></div></section>`;
+  }
+  function heldSheet() { const x = heldHtml(); if (!x) { X().closeSheet(); return; } X().openSheet(`<div class="fo-sheet">${x.replace('id="foHeld"', "")}</div><button class="btn" data-act="closesheet">Fermer</button>`); }
+  function upSheet(i) {
+    const s = S(); const x = E.foireHeld(s)[i]; if (!x) return;
+    const opts = F.RAR.map((R, r) => (r > x.lot.r ? `<button class="btn" data-act="fo-upgo" data-i="${i}" data-r="${r}" style="border-color:${R.color}"><b style="color:${R.color}">${R.name}</b> · ${Math.round(E.foireUpChance(s, i, r) * 1000) / 10} % de chance</button>` : "")).join("");
+    X().openSheet(`<h2>Améliorateur</h2><p class="small">Ta mise : <b style="color:${F.RAR[x.lot.r].color}">${F.RAR[x.lot.r].name}</b>, ${h(E.foireLotTxt(x.lot))}.</p><p class="xs muted">Gagné : un lot de la rareté visée (même caisse). Perdu : le lot misé disparaît.</p><div class="stack">${opts}</div><button class="btn" data-act="fo-held">Retour</button>`);
+  }
+  function collHtml() {
+    if (!F.LOOKS) return ""; const s = S(); const C = E.foireColl(s); const mine = E.foireLooks(s); const wk = E.foireLookWk()[0];
+    return `<section class="panel"><div class="phead"><h2>Collection du Trool</h2><span class="xs muted">${C.n} / ${C.of}</span></div><div class="pad"><div class="fo-coll">${F.LOOKS.map(([id, n]) => `<div class="fo-cl${mine.includes(id) ? " on" : ""}${id === wk ? " wk" : ""}"><span class="gr-aura gr-a-${id} mini"></span><span class="xs">${h(n)}${id === wk ? " · cette semaine" : ""}</span></div>`).join("")}</div><span class="xs muted">Une aura par semaine, dans le lot Légendaire de la Caisse de la semaine.</span></div></section>`;
   }
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act; if (!/^fo-/.test(a) || !S()) return;
     if (a === "fo-pick") { if (st.rolling) return; st.pick = t.dataset.v; paint(); return; }
     if (a === "fo-open") { open(); return; }
     if (a === "fo-open10") { openN(); return; }
+    if (a === "fo-held") { heldSheet(); return; }
+    if (a === "fo-keepall" || a === "fo-keep1") { const r = E.foireKeep(S(), a === "fo-keep1" ? +t.dataset.i : null); if (r.err) X().toast(r.err); else X().toast(r.n > 1 ? `${r.n} lots gardés.` : "Lot gardé."); X().markDirty(); X().renderStatus(); paint(); if (a === "fo-keep1") heldSheet(); else X().closeSheet(); return; }
+    if (a === "fo-up") { upSheet(+t.dataset.i); return; }
+    if (a === "fo-upgo") { const r = E.foireUp(S(), +t.dataset.i, +t.dataset.r); if (r.err) { X().toast(r.err); return; } X().toast(r.win ? `Gagné : ${F.RAR[r.lot.r].name.toLowerCase()} !` : "Perdu : le lot misé disparaît.", r.win ? "rare" : undefined); X().markDirty(); paint(); heldSheet(); return; }
+    if (a === "fo-contract") { const r = E.foireContract(S(), t.dataset.c, +t.dataset.r); if (r.err) { X().toast(r.err); return; } X().toast(`Contrat signé : ${F.RAR[r.lot.r].name.toLowerCase()}, ${E.foireLotTxt(r.lot)}.`, "rare"); X().markDirty(); paint(); heldSheet(); return; }
     if (a === "fo-jbuy") { jBuy(Math.max(1, Math.min(100, +t.dataset.n || 1))); return; }
     if (a === "fo-jretry") { J.err = false; jLoad().then(paintJack); return; }
     if (a === "fo-go") { UI().tab = "foire"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return; }

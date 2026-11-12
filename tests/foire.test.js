@@ -153,3 +153,25 @@ console.log("Foire du Trool et Comptoirs : tout est bon");
   G.pity = 5; G.n = 0; S.kamas = 50000; const L = E.foireOpen(S, "bois").lot; assert.strictEqual(G.pity, L.r >= 3 ? 0 : 6);
   console.log("ok - Foire 3.0 : ouvrir ×10 et coup de pouce");
 }
+
+// 3.0 (Foire A, E, F, G) : caisse de la semaine (aura exclusive au Légendaire), lots en attente, améliorateur (95 %), contrat.
+{
+  const S = E.newState("Trool", "iop"); const G = E.foireState(S);
+  // caisse de la semaine : un Légendaire forcé donne l'aura de la semaine, une seule fois
+  const wk = E.foireLookWk()[0]; let got = 0;
+  for (let i = 0; i < 4; i++) { G.n = 0; S.kamas = F.THEME.cost; const L = E.foireLot(S, "theme", Math.random, 0, 4); if (L.look) { assert.strictEqual(L.look, wk); got++; E.foireLooks(S).push(L.look); } else assert.ok(L.k === L.v || L.title === undefined); }
+  assert.strictEqual(got, 1, "l'aura exclusive une seule fois"); assert.deepStrictEqual(E.foireColl(S), { n: 1, of: F.LOOKS.length });
+  // lots en attente : rien n'est versé avant « Garder »
+  G.n = 0; S.kamas = F.THEME.cost * 10; const r = E.foireOpenN(S, "bois", 10, true); assert.strictEqual(r.list.length, 10);
+  const k1 = S.kamas; assert.strictEqual(E.foireHeld(S).length, 10); assert.ok(E.foireKeep(S, 0).ok); assert.strictEqual(E.foireHeld(S).length, 9); assert.ok(S.kamas >= k1);
+  // améliorateur : 95 % de la valeur en moyenne
+  let mise = 0, back = 0; const RNG = 4000;
+  for (let i = 0; i < RNG; i++) { const H = E.foireHeld(S); H.length = 0; H.push({ c: "argent", lot: E.foireLot(S, "argent", Math.random, 0, 0) }); const v = H[0].lot.v; const p = E.foireUpChance(S, 0, 2); const u = E.foireUp(S, 0, 2); mise += v; if (u.win) { back += u.lot.v; assert.strictEqual(u.lot.r, 2); } assert.ok(Math.abs(p - 0.95 * v / Math.round(250000 * F.RAR[2].mult)) < 1e-9); }
+  assert.ok(Math.abs(back / mise - 0.95) < 0.1, "améliorateur : " + back / mise);
+  // contrat : 10 Communs de la même caisse → 1 Peu commun, complété jusqu'à 95 %
+  const H = E.foireHeld(S); H.length = 0; for (let i = 0; i < 10; i++) H.push({ c: "bois", lot: E.foireLot(S, "bois", Math.random, 0, 0) }); H.push({ c: "argent", lot: E.foireLot(S, "argent", Math.random, 0, 0) });
+  const sum = H.slice(0, 10).reduce((a, x) => a + x.lot.v, 0); const c = E.foireContract(S, "bois", 0); assert.ok(c.ok, c.err);
+  assert.strictEqual(c.lot.r, 1); assert.strictEqual(c.lot.v, Math.max(Math.round(50000 * F.RAR[1].mult), Math.round(0.95 * sum))); assert.strictEqual(E.foireHeld(S).length, 2);
+  assert.ok(E.foireContract(S, "bois", 0).err, "il en faut 10");
+  console.log("ok - Foire 3.0 : caisse de la semaine, lots en attente, améliorateur, contrat, collection");
+}

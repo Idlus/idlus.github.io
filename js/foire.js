@@ -47,9 +47,20 @@
     BONBONS: ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur"],
     PITY: 30, // 3.0 (Mathis, Foire D « coup de pouce ») : un lot Épique garanti au bout de 30 caisses sans Épique ni Légendaire
     MULTI: 10, // 3.0 (Foire C) : ouvrir 10 caisses d'un coup
-    DUEL_MULT: [0.35, 0.9, 2, 4, 10], // le Duel de caisses (js/duel.js) n'a pas de coup de pouce : il garde les parts d'avant (89,5 %)
+    DUEL_MULT: [0.35, 0.9, 2, 4, 10],
+    /* 3.0 (Foire A) : la caisse de la semaine ; son lot Légendaire est l'apparence exclusive de la semaine (une aura du Trool),
+       ou des kamas si on l'a déjà. Les 8 auras forment la Collection du Trool (Foire G). */
+    THEME: { id: "theme", name: "Caisse de la semaine", cost: 400000, img: "douze", chest: "coffre_or", theme: true },
+    LOOKS: [["tr_bonbon", "Sucre du Trool", "#ff8fd1"], ["tr_fete", "Fête foraine", "#ffd84a"], ["tr_manege", "Manège", "#6be0ff"], ["tr_lampion", "Lampion", "#ff9a3c"],
+      ["tr_guimauve", "Guimauve", "#f3c4ff"], ["tr_reglisse", "Réglisse", "#8a5cff"], ["tr_menthol", "Menthol", "#7affd9"], ["tr_grelot", "Grelot d'or", "#ffe9a8"]],
+    HELD: 30, // lots en attente au plus (ouvertures ×10 : à garder, à améliorer ou à mettre en contrat)
+    UP_EDGE: 0.95, CONTRACT_N: 10, // Foire F et E : 95 % de la valeur misée revient en moyenne // le Duel de caisses (js/duel.js) n'a pas de coup de pouce : il garde les parts d'avant (89,5 %)
   };
   const F = E.FOIRE;
+  E.foireCaisse = (id) => F.CAISSES.find((x) => x.id === id) || (F.THEME && F.THEME.id === id ? F.THEME : null);
+  E.foireLookWk = () => { const wk = E.hebdoWk ? E.hebdoWk() : Math.floor((Math.floor(E.now() / 86400000) - 4) / 7); return F.LOOKS[((wk % F.LOOKS.length) + F.LOOKS.length) % F.LOOKS.length]; };
+  E.foireLooks = (S) => { const G = E.foireState(S); if (!Array.isArray(G.looks)) G.looks = []; return G.looks; };
+  if (E.GR_AURAS) F.LOOKS.forEach(([id, n]) => { if (!E.GR_AURAS[id]) E.GR_AURAS[id] = { n, rar: "l", req: "Caisse de la semaine à la Foire (lot Légendaire, la semaine où elle est exclusive)", ok: (S) => !!(S.foire && Array.isArray(S.foire.looks) && S.foire.looks.includes(id)) }; });
   /* espérance de la mise rendue en lots (0,895) */
   /* 3.0 : avec le coup de pouce (un Épique au moins à la 30e caisse sans Épique ni Légendaire), calcul exact sur un cycle */
   E.foireRtp = () => {
@@ -96,12 +107,13 @@
 
   /* ---------- un lot ----------
      { r (rareté), v (valeur en kamas), k (kamas), res: [nom, n], cons: [id, n], sab (heures), key: [nom, n], item (modèle), title } */
-  E.foireLot = (S, caisse, rng, minR) => {
-    const C = F.CAISSES.find((x) => x.id === caisse) || F.CAISSES[0];
-    const r = Math.max(rarOf(rng()), minR || 0); const R = F.RAR[r]; const V = Math.round(C.cost * R.mult); const top = topLvl(S);
+  E.foireLot = (S, caisse, rng, minR, exactR) => {
+    const C = E.foireCaisse(caisse) || F.CAISSES[0];
+    const r = exactR != null ? exactR : Math.max(rarOf(rng()), minR || 0); const R = F.RAR[r]; const V = Math.round(C.cost * R.mult); const top = topLvl(S);
     let kind = pickW(F.KINDS[r], rng());
     const lot = { r, v: V, k: 0 }; let goods = 0;
-    if (kind === "title") { if (!(S.titlesExtra || []).includes(F.TITLE)) lot.title = F.TITLE; kind = "k"; }
+    if (kind === "title" && C.theme) { const L = E.foireLookWk(); if (!E.foireLooks(S).includes(L[0])) { lot.look = L[0]; goods = V; } kind = "k"; }
+    else if (kind === "title") { if (!(S.titlesExtra || []).includes(F.TITLE)) lot.title = F.TITLE; kind = "k"; }
     if (kind === "res") {
       const L = resBand(top); const n = L[Math.floor(rng() * L.length)]; const unit = 3 * E.resPrice(n);
       const q = clamp(Math.floor(V / unit), 1, 5000); lot.res = [n, q]; goods = q * unit;
@@ -130,6 +142,7 @@
   };
   E.foireLotTxt = (lot) => {
     const p = [];
+    if (lot.look) { const L = F.LOOKS.find((x) => x[0] === lot.look); p.push(`aura exclusive « ${L ? L[1] : lot.look} »`); }
     if (lot.title) p.push(`titre « ${lot.title} »`);
     if (lot.res) p.push(`${lot.res[1].toLocaleString("fr-FR")} × ${lot.res[0]}`);
     if (lot.cons) p.push(`${lot.cons[1] > 1 ? lot.cons[1] + " × " : ""}${CONSUMABLES[lot.cons[0]].name}`);
@@ -141,6 +154,7 @@
   };
   const give = (S, lot) => {
     if (lot.k > 0) S.kamas += lot.k;
+    if (lot.look) { const L = E.foireLooks(S); if (!L.includes(lot.look)) L.push(lot.look); else S.kamas += lot.v; } // déjà gagnée entre-temps : sa valeur en kamas
     if (lot.title) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(lot.title)) S.titlesExtra.push(lot.title); }
     if (lot.res) E.addRes(S, lot.res[0], lot.res[1]);
     if (lot.cons) E.addCons(S, lot.cons[0], lot.cons[1]);
@@ -150,8 +164,8 @@
   };
 
   /* ---------- ouvrir une caisse ---------- */
-  E.foireOpen = (S, caisse) => {
-    const C = F.CAISSES.find((x) => x.id === caisse); if (!C) return { err: "Caisse inconnue." };
+  E.foireOpen = (S, caisse, hold) => {
+    const C = E.foireCaisse(caisse); if (!C) return { err: "Caisse inconnue." };
     const G = E.foireState(S);
     if (G.n >= F.DAY) return { err: `Tu as ouvert tes ${F.DAY} caisses du jour : le Trool rouvre demain.` };
     if (S.kamas < C.cost) return { err: `Il faut ${C.cost.toLocaleString("fr-FR")} kamas pour la ${C.name}.` };
@@ -159,8 +173,8 @@
     const boost = G.pity + 1 >= F.PITY; // coup de pouce
     const lot = E.foireLot(S, C.id, mkRng(G), boost ? 3 : 0);
     G.pity = lot.r >= 3 ? 0 : G.pity + 1; if (boost) lot.pity = true;
-    give(S, lot);
-    G.tot.n++; G.tot.mise += C.cost; G.tot.k += lot.k;
+    if (hold) { if (!Array.isArray(G.held)) G.held = []; G.held.push({ c: C.id, lot }); } else give(S, lot);
+    G.tot.n++; G.tot.mise += C.cost; if (!hold) G.tot.k += lot.k;
     if (E.dofusQuestEvent) E.dofusQuestEvent(S, "foire", { n: 1 }); // 1.1 : étape du Dofus du Trool
     const txt = E.foireLotTxt(lot);
     G.log.unshift({ t: E.now(), c: C.id, r: lot.r, txt }); G.log = G.log.slice(0, 8);
@@ -170,11 +184,40 @@
 
   E.foirePityLeft = (S) => Math.max(1, F.PITY - E.foireState(S).pity);
   /* ouvrir plusieurs caisses d'un coup (Foire C) : s'arrête aux kamas ou aux ouvertures du jour qui manquent */
-  E.foireOpenN = (S, caisse, n) => {
+  E.foireHeld = (S) => { const G = E.foireState(S); if (!Array.isArray(G.held)) G.held = []; return G.held; };
+  E.foireOpenN = (S, caisse, n, hold) => {
     const out = []; let err = null;
-    for (let i = 0; i < n; i++) { const r = E.foireOpen(S, caisse); if (r.err) { err = r.err; break; } out.push(r); }
+    if (hold) n = Math.min(n, F.HELD - E.foireHeld(S).length); if (n < 1) return { err: "Garde d'abord tes lots en attente." };
+    for (let i = 0; i < n; i++) { const r = E.foireOpen(S, caisse, hold); if (r.err) { err = r.err; break; } out.push(r); }
     return out.length ? { ok: true, list: out, err } : { err: err || "Rien à ouvrir." };
   };
+
+  /* lots en attente : tout garder, ou un seul */
+  E.foireKeep = (S, i) => {
+    const H = E.foireHeld(S); const L = i == null ? H.splice(0, H.length) : H.splice(i, 1); if (!L.length) return { err: "Aucun lot en attente." };
+    const G = E.foireState(S); L.forEach((x) => { give(S, x.lot); G.tot.k += x.lot.k; }); return { ok: true, n: L.length };
+  };
+  /* Foire F, l'améliorateur : un lot en attente misé pour viser une rareté plus haute de la même caisse ;
+     chance = 95 % × valeur misée / valeur visée ; perdu, le lot disparaît */
+  E.foireUpChance = (S, i, r) => { const x = E.foireHeld(S)[i]; if (!x || !(r > x.lot.r) || r > 4) return 0; const C = E.foireCaisse(x.c); return Math.min(0.95, (F.UP_EDGE * x.lot.v) / Math.round(C.cost * F.RAR[r].mult)); };
+  E.foireUp = (S, i, r) => {
+    const H = E.foireHeld(S); const x = H[i]; const p = E.foireUpChance(S, i, r); if (!x || !p) return { err: "Choisis un lot et une rareté plus haute." };
+    const G = E.foireState(S); const rng = mkRng(G); const win = rng() < p;
+    if (win) H[i] = { c: x.c, lot: Object.assign(E.foireLot(S, x.c, rng, 0, r), { up: true }) }; else H.splice(i, 1);
+    return { ok: true, win, p, lot: win ? H[i].lot : null };
+  };
+  /* Foire E, le contrat : 10 lots en attente de la même caisse et de la même rareté → 1 lot de la rareté au-dessus,
+     complété en kamas jusqu'à 95 % de leur valeur (on gagne surtout la rareté : titre, aura exclusive…) */
+  E.foireContract = (S, c, r) => {
+    const H = E.foireHeld(S); if (!(r >= 0 && r < 4)) return { err: "Rareté impossible." };
+    const idx = H.map((x, i) => (x.c === c && x.lot.r === r ? i : -1)).filter((i) => i >= 0).slice(0, F.CONTRACT_N);
+    if (idx.length < F.CONTRACT_N) return { err: `Il faut ${F.CONTRACT_N} lots ${F.RAR[r].name.toLowerCase()}s de la même caisse.` };
+    const sum = idx.reduce((a, i) => a + H[i].lot.v, 0); for (let j = idx.length - 1; j >= 0; j--) H.splice(idx[j], 1);
+    const G = E.foireState(S); const lot = E.foireLot(S, c, mkRng(G), 0, r + 1);
+    const top = Math.max(0, Math.round(F.UP_EDGE * sum) - lot.v); lot.k += top; lot.v += top; lot.contract = true;
+    H.push({ c, lot }); return { ok: true, lot };
+  };
+  E.foireColl = (S) => ({ n: E.foireLooks(S).filter((id) => F.LOOKS.some((x) => x[0] === id)).length, of: F.LOOKS.length });
 
   /* Carnet de bord (js/suivi.js) : les mises et les kamas des lots ont leur case dans le bilan des kamas */
   if (E.ACTIONS && !E.ACTIONS.foireOpen) E.ACTIONS.foireOpen = "ouvrir une Caisse du Trool";
