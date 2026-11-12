@@ -300,7 +300,7 @@
   /* S.settings.miniFight (Options › Affichage) : false = jamais ; S.settings.mfFold : bande du téléphone repliée */
   function mini() {
     const St = S(), F = St && St.fight, ui = UI();
-    const on = !!(St && F && F.ents && St.settings.miniFight !== false && ui.tab !== "combat" && !ui.watch && mfLive(St));
+    const on = !!(St && F && F.ents && St.settings.miniFight !== false && ui.tab !== "combat" && !ui.watch && mfLive(St)) && !(window.V3 && window.V3.on()); // 3.0 : le bandeau du combat est dans js/v3.js
     const phone = mqPhone.matches;
     let box = $("#navmf"); let st = $("#mfstrip");
     if (!box && on && !phone) { const f = $("#nav .sn-frow") || $("#nav .sn-fight"); if (f) { f.insertAdjacentHTML("afterend", `<button id="navmf" class="navmf" data-act="nav" data-v="combat" title="Ouvrir le combat" hidden></button>`); box = $("#navmf"); } }

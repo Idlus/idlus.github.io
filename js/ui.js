@@ -3534,7 +3534,8 @@ function renderNav() {
   const menuOn = !fight && k !== "home" && !famOn(F0) && !famOn(FH);
   const mb = (key, n, ic, on, b) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""}>${icon(ic)}<span>${n}</span>${b || ""}</button>`;
   const restDot = NAV.some((F) => F !== F0 && F !== FH && famCount(F).n) || !!B.comptoirs;
-  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
+  let mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
+  if (window.V3 && window.V3.on()) mob = window.V3.mobHtml(k, fight, famOn, famBadge, icon);
   nav.className = "main sidenav" + (fight ? " infight" : "");
   const keep = [".sn-side"].map((c) => { const n = nav.querySelector(c); return n ? n.scrollTop : 0; }); // 1.2.9.3 : le menu se redessine pendant les combats, il garde sa position de défilement
   nav.innerHTML = side + mob;
@@ -9775,7 +9776,8 @@ function render() {
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (S && S1_OFF.includes(ui.tab) && E.isS1c && E.isS1c(S)) ui.tab = "home"; // 2.2.0 : pas d'Ascension en saison
   if (S.mono && E.monoPageOk && !E.monoPageOk(ui.tab)) ui.tab = "home"; // Monocompte : page hors de la liste blanche (lien, épingle, ancien onglet)
-  if (ui.tab === "home") renderHome();
+  if (window.V3 && window.V3.home()) $("#main").innerHTML = ""; // 3.0 : le combat est l'accueil, son tableau est dans #v3b (js/v3.js)
+  else if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
   else if (ui.tab === "team" || ui.tab === "heroes") {
@@ -9805,6 +9807,7 @@ function render() {
   pageTabs(); tabsKeep();
   backChip();
   tipTick();
+  if (window.V3 && window.V3.on()) window.V3.tick(true);
 }
 /* 2.1.20 : « Retour aux Dofus » (idée d'Hayabusa) : un « Y aller » depuis la page Dofus ou les Quêtes garde la page d'origine ;
    une pastille en bas de l'écran y ramène (même Dofus, même défilement) pour choisir la ressource suivante. Elle part quand on y revient. */
@@ -10073,7 +10076,7 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Menus", "",
+  return optSec("Idlus 3.0", "le nouvel écran : le combat au centre, 8 espaces + la Saison", optChk(`data-act="v3try"`, !!S.settings.v3, "Essayer Idlus 3.0", "le jeu se recharge ; décoche pour revenir à l'écran actuel. Ta partie ne change pas")) + optSec("Menus", "",
       optChk(`data-act="setnavfull"`, navAllOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
     + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
@@ -11441,6 +11444,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("chp-")) { if (S && window.CHAMPUI) window.CHAMPUI.act(a, t); return; } // refonte du Champion (js/champui.js)
   if (a && a.startsWith("al-")) { if (S && window.ALIGNUI) window.ALIGNUI.act(a, t); return; } // 1.0.30 : alignement (js/alignui.js)
   if (a && a.startsWith("du-")) { if (S && window.DOFUI) window.DOFUI.act(a, t); return; } // 1.0.33 : page Dofus (js/dofusui.js)
+  if (a && S && window.V3 && window.V3.act(a, t)) return; // 3.0 (js/v3.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -13511,7 +13515,7 @@ function loop() {
     S.lastTick = E.now(); S.devAt = Date.now(); // 2.2.10.2 : heure de l'appareil à côté (absGap)
     lootUpCheck();
     sinceSave += raw; sinceView += dt;
-    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
+    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (window.V3) window.V3.ev(ev); if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
         if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && !S.settings.keyToastOff && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
         const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
@@ -13524,7 +13528,8 @@ function loop() {
     const kl = $("#stKills"); if (kl) setTxt(kl, fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0)));
     if (ui.tab !== "combat" && window.FORMUI) window.FORMUI.loop(); // 1.0.30 : petit module de combat (ses propres éléments seulement)
     liveColTick(); // 2.1.34 (1B) : colonne « Combat en direct » des grands écrans
-    if (ui.tab === "combat") updateCombat(false);
+    if (window.V3 && window.V3.on()) window.V3.tick();
+    if (ui.tab === "combat" && !(window.V3 && window.V3.home())) updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(true); }
@@ -13585,6 +13590,7 @@ function bootGame(pushNow) {
     if (S.mono && !S.mono.eternel && S.mono.gen == null && monoSrvSaison()) S.mono.gen = monoGenOf(S); // 2.1.35.2 : génération de la partie (remise à zéro)
     if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
     if (S.mono) monoNav(); else s1Seal();
+    if (window.V3) window.V3.boot(); // 3.0 : les 8 espaces + la Saison (js/v3.js), si « Essayer Idlus 3.0 » est coché
     if (SLOT === S1_SLOT && E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} // 9A : exclusifs de l'Éternel portés en saison (js/garderobe.js)
     else if (!S.mono && E.vitImport) try { const St = SV.peek(slotKey(S1_SLOT)).state; E.vitImport(S, St); if (E.cardImport) E.cardImport(S, St); } catch (e) {} // lots 4 et 6 : vitrine et album de saison liés au compte (js/vitrine.js, js/cartes.js)
     setTheme(S.settings.theme || "dark");
@@ -13677,6 +13683,7 @@ function morphEl(o, n) {
   }
 }
 window.DX = { get S() { return S; }, monoBetaOn: () => MONO_BETA.on, NAV, NAV_DESC, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText, absGap };
+if (window.V3) window.V3.init({ get S() { return S; }, ui, NAV, render, renderNav, toast, saveNow, morphTo, h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, E, DUNGEONS, reload: () => { saveNow(); try { sessionStorage.setItem("idlus-reprise", String(SLOT)); } catch (e) {} location.reload(); } }); // 3.0 (js/v3.js)
 /* lot ergonomie (21/10) : au téléphone, la bulle du chat s'efface quand on descend dans une page (elle cachait des boutons) et revient quand on remonte */
 { let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY || 0; const dn = y > lastY + 6 && y > 120; const up = y < lastY - 6 || y < 120;
   if (dn) document.body.classList.add("scrolldn"); else if (up) document.body.classList.remove("scrolldn"); if (dn || up) lastY = y; }, { passive: true }); }
@@ -13773,7 +13780,7 @@ document.addEventListener("dragend", () => { if (ihpDrag) { ihpDrag = null; ihpC
    et le butin récent (▲ = mieux pour un héros). Le chat s'ouvre dessous la première fois. Sur la page Combat, seul le chat reste.
    Option : S.settings.liveCol. Rien ne change sous 1600 px ni au téléphone. */
 const LC_MQ = window.matchMedia ? window.matchMedia("(min-width: 1600px)") : null;
-const liveColOn = () => !!(S && LC_MQ && LC_MQ.matches && S.settings.liveCol !== false);
+const liveColOn = () => !!(S && LC_MQ && LC_MQ.matches && S.settings.liveCol !== false) && !(window.V3 && window.V3.on()); // 3.0 : le combat est déjà au centre
 let lcAt = 0, lcLootAt = 0;
 function liveColTick(force) {
   const on = liveColOn(); const B = document.body; let el = $("#livecol");

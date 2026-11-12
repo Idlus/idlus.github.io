@@ -1,0 +1,63 @@
+/* ---------- Idlus 3.0 « Un écran de jeu » (js/v3.js) : seulement quand « Essayer Idlus 3.0 » est coché (body.v3) ---------- */
+#v3b,#v3band{display:none}
+body.v3 #v3b:not([hidden]){display:grid}
+body.v3 .v3b{gap:10px;align-content:start;min-width:0;container-type:inline-size}
+body.v3 .navmf,body.v3 #nav .navmf{display:none!important}
+body.v3.v3home #main,body.v3.v3home #subnav{display:none}
+body.v3.v3home .app{max-width:1180px}
+body.v3.v3det #v3b{display:none!important}
+body.v3 #v3band:not([hidden]){display:flex}
+.v3band{width:100%;align-items:center;gap:10px;margin:0 0 10px;padding:6px 10px;border:2px solid var(--frame);border-radius:14px;background:var(--panel2);color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.v3band .med{flex:none}.v3band b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v3band .grow{min-width:0;flex:1}.v3bb{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:3px}
+.v3pill{flex:none;border:2px solid var(--gold);color:var(--gold2);border-radius:99px;padding:1px 9px;font-weight:900;font-size:12px;white-space:nowrap}
+:root:not([data-theme="dark"]) .v3pill{color:var(--frame)}
+.v3h{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;justify-content:space-between}
+.v3h h1{margin:0;font-size:26px;line-height:1.1}.v3t{min-width:0}
+.v3hb{display:flex;gap:6px;flex-wrap:wrap}
+.v3al{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:2px solid #e06a2a;background:rgba(224,106,42,.14);border-radius:12px;padding:7px 10px;font-weight:800;font-size:13px}
+.v3obj{display:flex;gap:8px;align-items:center;border:2px solid var(--gold);background:var(--panel2);border-radius:12px;padding:6px 10px;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer;min-width:0}
+.v3obj .grow{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v3obj .v3bar{flex:0 0 90px}
+.v3tugs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.v3tug{position:relative;height:28px;border-radius:10px;border:2px solid var(--frame);background:var(--panel2);overflow:hidden}
+.v3tug i{position:absolute;top:0;bottom:0;transition:width .25s}.v3tug.a i{left:0;background:linear-gradient(180deg,#7ee36a,#3e9e3a)}.v3tug.m i{right:0;background:linear-gradient(180deg,#ff7d6e,#b8322a)}
+.v3tug span{position:absolute;top:50%;transform:translateY(-50%);font-weight:900;font-size:13px;color:#fff;text-shadow:0 1px 2px #000}.v3tug.a span{left:8px}.v3tug.m span{right:8px}
+.v3g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:start}
+.v3col{display:grid;gap:8px;min-width:0}
+.v3box{border:2px solid var(--frame);border-radius:14px;background:var(--panel);padding:8px;display:grid;gap:5px;min-width:0}
+.v3box h4{margin:0 0 2px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);display:flex;justify-content:space-between;gap:6px}
+:root:not([data-theme="dark"]) .v3box h4{color:var(--frame)}
+.v3box h4 small{letter-spacing:0;text-transform:none;color:var(--muted);font-weight:700}
+.v3r{display:flex;gap:8px;align-items:center;min-width:0}.v3r.ko{opacity:.45}
+.v3r.tg .v3n b{color:var(--gold2)}:root:not([data-theme="dark"]) .v3r.tg .v3n b{color:#b0402e}
+.v3p{flex:none;width:34px;height:34px;border-radius:50%;overflow:hidden;border:2px solid var(--frame);background:var(--panel2);display:grid;place-items:center}
+.v3p img{width:30px;height:30px;object-fit:contain}
+.v3n{display:flex;justify-content:space-between;gap:6px;font-size:12.5px}.v3n b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v3bar{display:block;height:7px;border-radius:4px;background:rgba(0,0,0,.35);overflow:hidden;margin-top:2px}
+.v3bar b{display:block;height:100%;background:linear-gradient(180deg,#8ff07a,#3fa53a);transition:width .25s}
+.v3bar.r b{background:linear-gradient(180deg,#ffb36b,#e06a2a)}.v3bar.m b{background:linear-gradient(180deg,#ff8a7a,#c23a2e)}
+.v3bar.d{height:3px}.v3bar.d b{background:var(--gold)}.v3bar.g b{background:linear-gradient(180deg,var(--gold2),var(--gold))}
+.v3m{display:flex;gap:7px;align-items:center;border:1px solid var(--frame);border-radius:10px;padding:4px 8px;font-size:12.5px;font-weight:700;min-width:0}
+.v3m .grow{min-width:0;flex:1}.v3m.rare{border-color:#a970d8}.v3m.up{border-color:#3fa53a}.v3m.loss{border-color:#c23a2e}
+.v3e{padding:4px 2px}
+.v3k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.v3k div{border:2px solid var(--frame);border-radius:12px;background:var(--panel);text-align:center;padding:5px 2px}
+.v3k b{display:block;font-size:17px;font-variant-numeric:tabular-nums}.v3k span{font-size:11px;color:var(--muted);font-weight:700}
+@container (max-width:600px){
+  .v3g{grid-template-columns:minmax(0,1fr)}
+  .v3k{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v3h h1{font-size:22px}
+}
+@media (max-width:640px){
+  .v3g{grid-template-columns:minmax(0,1fr)}
+  .v3k{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v3h h1{font-size:22px}
+}
+/* PC large : le combat au centre, l'espace ouvert dans un panneau à droite (question 1) */
+@media (min-width:1180px){
+  body.v3.v3pan .app{max-width:none;display:grid;grid-template-columns:minmax(420px,1fr) minmax(0,720px);grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
+  body.v3.v3pan #status{grid-area:st}body.v3.v3pan #topchips{grid-area:tc}body.v3.v3pan #subnav{grid-area:sub;min-width:0}
+  body.v3.v3pan #main{grid-area:main;min-width:0}body.v3.v3pan .footer{grid-area:ft}
+  body.v3.v3pan #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
+  body.v3.v3pan #v3band{display:none!important}
+}
