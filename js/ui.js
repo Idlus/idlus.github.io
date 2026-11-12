@@ -8292,7 +8292,7 @@ function resTabHtml() {
     <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>${PK.bar}`;
 }
-const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
+const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled && !(window.MARKET.closed && window.MARKET.closed())); // 3.0 (2B) : HdV du Classique fermé
 /* 1.0.30.7 : la fiche d'une ressource vendue en entier reste ouverte une minute, avec le résultat de la vente (avant : elle disparaissait, « rien ne se passe ») */
 const resKept = (n) => !!(window.VENTEUI && window.VENTEUI.kept(n));
 const VDB = (n) => !!(window.VENTEUI && window.VENTEUI.has(n)); // 1.0.30 : encadré « Vente directe » de la fiche (js/venteui.js)

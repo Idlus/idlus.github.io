@@ -183,7 +183,7 @@
         ${(M.st || 1) < cap ? `<button class="btn sm ${v.ess >= E.ESS_STAR && !pol ? "primary" : ""}" data-act="el-polish" data-uid="${M.uid}" ${v.ess >= E.ESS_STAR && !pol ? "" : "disabled"} data-tip="${pol ? "Déjà polie aujourd'hui" : "Une étoile par jour et par monture"}">+1 étoile · ${fmt(E.ESS_STAR)}</button>` : ""}
         ${!balWhy && !balFull ? `<button class="btn sm" data-act="el-bal" data-uid="${M.uid}" data-h="4">Balade 4 h</button><button class="btn sm" data-act="el-bal" data-uid="${M.uid}" data-h="8">Balade 8 h</button>` : ""}
         <button class="btn sm" data-act="el-free" data-uid="${M.uid}" ${E.inPair(s, M.uid) || E.onBalade(s, M.uid) ? "disabled" : ""}>Relâcher · +${fmt(E.releaseEss(M))} Essence</button>
-        ${window.MARKET && !E.mountBusy(s, M) ? `<button class="btn sm" data-act="hdvbeast" data-c="mt" data-uid="${M.uid}">Vendre à l'HdV</button>` : ""}</div>
+        ${window.MARKET && !(window.MARKET.closed && window.MARKET.closed()) && !E.mountBusy(s, M) ? `<button class="btn sm" data-act="hdvbeast" data-c="mt" data-uid="${M.uid}">Vendre à l'HdV</button>` : ""}</div>
       ${M.b ? `<div class="xs muted">Achetée : elle ne compte ni au carnet de l'éleveur ni au classement d'élevage. Ses petits, eux, comptent.</div>` : ""}
       <div class="xs muted">Réserve : ${essTxt(v.ess)}</div>
       <div><button class="btn" data-act="closesheet">Fermer</button></div></div>`);

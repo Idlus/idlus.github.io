@@ -79,6 +79,13 @@ alter table public.trades enable row level security;
 -- ---------- outils internes ----------
 create or replace function public.hdv_err(t text) returns jsonb language sql immutable as $$ select jsonb_build_object('err', t) $$;
 
+-- Idlus 3.0 (2B de Mathis, 12/11/2026 : « on enlève définitivement l'hdv ») : l'Hôtel de vente ferme. supabase/hdv_fermeture.sql
+-- pose le drapeau, rend les annonces ouvertes à leurs vendeurs et les kamas des offres d'achat ; ensuite plus de mise en vente,
+-- d'achat, de nouveau prix ni d'offre d'achat. Les échanges entre joueurs (trade_*) et le Cours des ressources restent.
+create table if not exists public.hdv_ferme (id int primary key default 1 check (id = 1), at timestamptz not null default now());
+alter table public.hdv_ferme enable row level security;
+create or replace function public.hdv_closed() returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from hdv_ferme) $$;
+
 -- Partie en ligne d'un joueur autorisé à échanger, sinon une erreur lisible.
 create or replace function public.hdv_save(p_user uuid) returns jsonb language plpgsql stable security definer set search_path = public
 as $$
@@ -200,6 +207,7 @@ returns jsonb language plpgsql security definer set search_path = public
 as $$
 declare me uuid := auth.uid(); d jsonb; it jsonb; b text; tax bigint; n int := greatest(1, coalesce(p_n, 1)); tpl text;
 begin
+  if hdv_closed() then return hdv_err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   if p_price is null or p_price < 1 or p_price > 2000000000 then return hdv_err('Prix invalide.'); end if;
@@ -240,6 +248,7 @@ create or replace function public.hdv_buy(p_after bigint, p_id bigint) returns j
 as $$
 declare me uuid := auth.uid(); d jsonb; L hdv_listings; who text;
 begin
+  if hdv_closed() then return hdv_err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   select * into L from hdv_listings where id = p_id for update;
@@ -270,6 +279,7 @@ create or replace function public.hdv_reprice(p_after bigint, p_id bigint, p_pri
 as $$
 declare me uuid := auth.uid(); d jsonb; L hdv_listings; tax bigint;
 begin
+  if hdv_closed() then return hdv_err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   if p_price is null or p_price < 1 or p_price > 2000000000 then return hdv_err('Prix invalide.'); end if;
@@ -509,6 +519,7 @@ returns jsonb language plpgsql security definer set search_path = public
 as $$
 declare me uuid := auth.uid(); d jsonb; tot numeric; held bigint;
 begin
+  if hdv_closed() then return hdv_err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   perform hdv_order_expire();
@@ -546,6 +557,7 @@ create or replace function public.hdv_order_fill(p_after bigint, p_id bigint, p_
 as $$
 declare me uuid := auth.uid(); d jsonb; O hdv_orders; b text; n int; pay bigint; who text;
 begin
+  if hdv_closed() then return hdv_err('L''Hôtel de vente a fermé avec Idlus 3.0 : tes annonces et tes kamas t''ont été rendus.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   select * into O from hdv_orders where id = p_id for update;

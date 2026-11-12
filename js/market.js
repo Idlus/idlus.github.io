@@ -100,6 +100,11 @@
      directe, Foire, pluie, guilde, Percepteurs, Ascension, Songe…) restent sur le serveur pour la partie Classique, et le curseur
      S.hdv.op du Monocompte n'avance pas. Une partie Classique n'applique jamais celles du Monocompte. */
   const srcNow = () => (monoM() ? "mono" : "classic");
+  /* Idlus 3.0 (2B de Mathis, 12/11/2026 : « on enlève définitivement l'hdv ») : l'HdV du Classique ferme (supabase/hdv_fermeture.sql
+     rend les annonces et les kamas des offres) ; la page garde les échanges entre joueurs et l'historique. L'HdV de saison du Monocompte reste. */
+  M.closed = true;
+  const CLOSED = () => !!M.closed && !monoM();
+  const shut = () => { if (!CLOSED()) return false; X().toast("L'Hôtel de vente a fermé avec Idlus 3.0. Les échanges entre joueurs restent : page Échanges."); return true; };
   function apply(ops, quiet, src) {
     const s = S(); if (!s || !ops || !ops.length || !mine()) return 0;
     if ((src || "classic") !== (E.isMono(s) ? "mono" : "classic") || (src === "mono" && !monoM())) return 0;
@@ -182,12 +187,14 @@
     const s = S();
     const login = mine() ? "" : ON.user && ON.solo && ON.solo() ? X().soloPanel("l'Hôtel de vente") : guest("acheter, vendre et échanger avec les autres joueurs");
     const panel = s && s.panelUsed ? `<p class="note">Partie retouchée par le panel de test : tu peux regarder, mais pas vendre ni acheter.</p>` : "";
+    if (CLOSED() && ["buy", "sell", "ord"].includes(M.tab)) M.tab = "mine";
+    const shutP = CLOSED() ? `<div class="panel"><div class="pad"><b>L'Hôtel de vente a fermé avec Idlus 3.0.</b><br><span class="small muted">Tes annonces sont revenues dans ton sac et les kamas de tes offres d'achat t'ont été rendus. Les échanges entre joueurs restent : « Proposer un échange » ci-dessus. Tes anciennes ventes et achats restent lisibles ici.</span></div></div>` : "";
     const body = M.tab === "sell" ? sellHtml() : M.tab === "mine" ? mineHtml() : M.tab === "log" ? logHtml() : M.tab === "ord" ? ordHtml() : buyHtml();
     const oOpen = M.oMine ? M.oMine.filter((x) => x.st === "open").length : null;
-    return `<div class="pagehead"><h1>Hôtel de vente</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s ? s.kamas : 0)}</b> kamas</span></div>
-      <nav class="subtabs">${[["buy", "Acheter"], ["sell", "Vendre"], ["ord", `Offres d'achat${oOpen !== null ? ` · ${oOpen} / ${OMAX}` : ""}`], ["mine", `Mes ventes et achats${newSales() ? ` <span class="mknew">${newSales()}</span>` : ""}`], ["log", "Historique"]].map(([id, n]) => `<button data-act="mk-tab" data-v="${id}" aria-pressed="${M.tab === id}">${n}</button>`).join("")}
+    return `<div class="pagehead"><h1>${CLOSED() ? "Échanges" : "Hôtel de vente"}</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s ? s.kamas : 0)}</b> kamas</span></div>
+      <nav class="subtabs">${[["buy", "Acheter"], ["sell", "Vendre"], ["ord", `Offres d'achat${oOpen !== null ? ` · ${oOpen} / ${OMAX}` : ""}`], ["mine", `Mes ventes et achats${newSales() ? ` <span class="mknew">${newSales()}</span>` : ""}`], ["log", "Historique"]].filter(([id]) => !CLOSED() || id === "mine" || id === "log").map(([id, n]) => `<button data-act="mk-tab" data-v="${id}" aria-pressed="${M.tab === id}">${n}</button>`).join("")}
       ${mine() ? `<button class="btn sm mktrade" data-act="mk-trade-ask">${X().G("chat")} ${M.trade && M.trade.st === "open" ? "Échange en cours" : "Proposer un échange"}</button>` : ""}</nav>
-      <div class="stack">${login}${panel}${body}</div>`;
+      <div class="stack">${login}${shutP}${panel}${body}</div>`;
   }
   /* 0.1.19.4 : pas de compte obligatoire. Sans compte on regarde les prix ; on propose le compte, sans mur. */
   const guest = (what) => `<div class="panel"><div class="pad row between"><span><b>Crée ton compte pour ${what}</b><br><span class="small muted">C'est gratuit, et ta partie de cet appareil te suit sur ton compte. En attendant, tu peux regarder les prix.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>`;
@@ -826,15 +833,15 @@
   const markSeen = () => { const s = S(); if (s) { s.hdv = s.hdv || { op: 0, log: [] }; s.hdv.seen = Date.now(); } };
 
   /* 0.1.37 : « Vendre à l'HdV » depuis le trop-plein ouvre la mise en vente de cet objet */
-  const sellItem = (uid) => { M.tab = "sell"; M.sCat = "eq"; M.sSel = String(uid); M.price = ""; M.n = 1; M.lot = 1; const it = S() && S().items[uid]; if (it) priceHint("eq", it.tpl); if (M.mine === null && mine()) loadMine(); };
+  const sellItem = (uid) => { if (shut()) return; M.tab = "sell"; M.sCat = "eq"; M.sSel = String(uid); M.price = ""; M.n = 1; M.lot = 1; const it = S() && S().items[uid]; if (it) priceHint("eq", it.tpl); if (M.mine === null && mine()) loadMine(); };
   /* 2.1.30 : « Vendre à l'HdV » depuis la fiche d'une monture ou d'un familier */
-  const sellBeast = (cat, uid) => { const x = sellable(cat).find((y) => y.uid === uid); M.tab = "sell"; M.sCat = cat; M.sSel = x ? String(uid) : null; M.price = ""; M.n = 1; M.lot = 1; if (x) priceHint(cat, x.key); if (M.mine === null && mine()) loadMine(); };
+  const sellBeast = (cat, uid) => { if (shut()) return; const x = sellable(cat).find((y) => y.uid === uid); M.tab = "sell"; M.sCat = cat; M.sSel = x ? String(uid) : null; M.price = ""; M.n = 1; M.lot = 1; if (x) priceHint(cat, x.key); if (M.mine === null && mine()) loadMine(); };
   /* 0.1.38 : « Vendre à l'HdV » depuis une ressource de l'inventaire */
-  const sellRes = (key) => { const c = E.isKey(key) ? "clef" : "res"; const n = (S() && S().res[key]) || 0; M.tab = "sell"; M.sCat = c; M.sSel = key; M.price = ""; M.n = 1; M.lot = n >= 100 ? 100 : n >= 10 ? 10 : 1; priceHint("res", key); if (M.mine === null && mine()) loadMine(); };
+  const sellRes = (key) => { if (shut()) return; const c = E.isKey(key) ? "clef" : "res"; const n = (S() && S().res[key]) || 0; M.tab = "sell"; M.sCat = c; M.sSel = key; M.price = ""; M.n = 1; M.lot = n >= 100 ? 100 : n >= 10 ? 10 : 1; priceHint("res", key); if (M.mine === null && mine()) loadMine(); };
   /* 0.1.41 : « Offre d'achat HdV » depuis les métiers et la forgemagie (ressource ou rune qui manque) */
-  const orderFor = (cat, key, qty) => { M.tab = "ord"; M.oView = "mine"; oPick(cat, key, qty || 0); if (M.oMine === null && mine()) loadOMine(); };
+  const orderFor = (cat, key, qty) => { if (shut()) return; M.tab = "ord"; M.oView = "mine"; oPick(cat, key, qty || 0); if (M.oMine === null && mine()) loadOMine(); };
   /* 2.2.11 : depuis la fiche d'une carte de l'album : la vendre, ou la chercher à l'achat */
-  const sellCard = (key) => { M.tab = "sell"; M.sCat = "card"; M.sSel = key; M.price = ""; M.n = 1; M.lot = 1; priceHint("card", key); if (M.mine === null && mine()) loadMine(); };
-  const buyCard = (key) => { M.tab = "buy"; M.q = ""; M.fam = "card"; M.sub = ""; M.list = null; M.sel = null; search().then(() => { if ((M.list || []).some((x) => x.key === key)) pick(key); }); };
-  window.MARKET = { start, newSales, sellItem, sellBeast, sellRes, sellCard, buyCard, orderFor, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
+  const sellCard = (key) => { if (shut()) return; M.tab = "sell"; M.sCat = "card"; M.sSel = key; M.price = ""; M.n = 1; M.lot = 1; priceHint("card", key); if (M.mine === null && mine()) loadMine(); };
+  const buyCard = (key) => { if (shut()) return; M.tab = "buy"; M.q = ""; M.fam = "card"; M.sub = ""; M.list = null; M.sel = null; search().then(() => { if ((M.list || []).some((x) => x.key === key)) pick(key); }); };
+  window.MARKET = { start, newSales, sellItem, sellBeast, sellRes, sellCard, buyCard, orderFor, canSell: (key) => !CLOSED() && !blocked("res", key), closed: CLOSED, render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
 })();

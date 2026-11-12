@@ -1071,9 +1071,13 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     { const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`builds : fiche trop large sur téléphone : ${w}px`); }
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/build-fiche-mob.png", fullPage: true });
     await page.setViewportSize({ width: 1280, height: 800 }); await page.evaluate(() => { window.DX.ui.bdOpen = null; window.DX.ui.tab = "admin"; window.DX.render(); });
-    // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
+    // 7e0. Idlus 3.0 (2B) : l'HdV du Classique fermé, la page s'appelle Échanges (échanges entre joueurs et historique), plus de bouton de vente
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
-    await navClick(page, "hdv");
+    await navClick(page, "hdv"); await page.waitForTimeout(300);
+    { const t = await page.evaluate(() => ({ h: document.querySelector("#main h1").textContent, tabs: [...document.querySelectorAll("#main .subtabs [data-act=mk-tab]")].map((x) => x.dataset.v), can: window.MARKET.canSell("Laine de Bouftou") }));
+      if (t.h !== "Échanges" || t.tabs.join() !== "mine,log" || t.can) fail("HdV fermé (3.0) : " + JSON.stringify(t)); }
+    // 7e. hôtel de vente (le code sert encore à l'HdV de saison du Monocompte) : achat d'un objet, il arrive dans le sac et les kamas baissent
+    await page.evaluate(() => { window.MARKET.M.closed = false; window.MARKET.M.tab = "buy"; window.MARKET.M.list = null; window.DX.ui.tab = "hdv"; window.DX.render(); });
     await page.waitForSelector('.mktr2[data-k]', { timeout: 8000 });
     if (!(await page.$(".mkdot.good"))) fail("hôtel de vente : repère de prix absent");
     await page.click('.mktr2[data-k]');

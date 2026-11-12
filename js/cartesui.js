@@ -72,7 +72,7 @@
   function see(id) { const s = S(), e = E(), c = e.carte(id), M = e.cardMine(s); if (!c) return; const own = !!M.o[id], S1 = e.cardOn && e.cardOn(s);
     const L = e.CARTES, i = L.indexOf(c), p = e.CARTE_CRAFT[c.rar], ok = S1 && !own && e.cardDust(s) >= p, dbl = own ? M.o[id] - 1 : 0;
     const dg = (window.DATA && window.DATA.DUNGEONS || {})[id], R = e.CARTE_RAR[c.rar];
-    const MK = !!(window.MARKET && window.MARKET.sellCard), lock = S1 && e.cardTradeLock ? e.cardTradeLock(s) : null;
+    const MK = !!(window.MARKET && window.MARKET.sellCard && !(window.MARKET.closed && window.MARKET.closed())), lock = S1 && e.cardTradeLock ? e.cardTradeLock(s) : null;
     const rows = [[c.rar === "h" ? "Héros" : "Boss", c.rar === "h" ? h(c.d) : `${h(c.n)}, niveau ${c.lvl}`]];
     if (dg) rows.push(["Donjon", h(c.d)]);
     rows.push(["Dans ton album", own ? `${M.o[id]} exemplaire${M.o[id] > 1 ? "s" : ""}${M.b[id] ? " · brillante ✦" : ""}` : "pas encore"]);
