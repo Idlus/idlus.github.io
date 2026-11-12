@@ -77,3 +77,18 @@ button.v3r:hover{background:rgba(255,255,255,.05)}
 .v3tuto{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:min(420px,calc(100vw - 24px));display:grid;gap:5px;background:var(--panel);color:var(--ink);border:2px solid var(--gold);border-radius:14px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 @media (min-width:1180px){.v3tuto{bottom:20px}}
 .v3hl{outline:3px solid var(--gold);outline-offset:3px;border-radius:12px;transition:outline-color .2s}
+/* Boutique de la semaine (js/boutique.js) */
+.gr-a-bt_corail{--ga:#ff7a6b}.gr-a-bt_menthe{--ga:#7affc8}.gr-a-bt_lavande{--ga:#b9a2ff}.gr-a-bt_ambre{--ga:#ffb347}.gr-a-bt_azur{--ga:#4fb6ff}.gr-a-bt_rubis{--ga:#ff3f6b}.gr-a-bt_jade{--ga:#3fd99a}.gr-a-bt_aurore{--ga:#ff9de2}.gr-a-bt_nuit{--ga:#7d5cff}.gr-a-bt_soleil{--ga:#ffe066}.gr-a-bt_abysse{--ga:#22e0ff}.gr-a-bt_brasier{--ga:#ff5a1f}
+.gr-pc-bt_peche{color:#ffb39a}
+.gr-pc-bt_lagon{color:#5fe0d0}
+.gr-pc-bt_prune{color:#c77dff}
+.gr-pc-bt_cerise{color:#ff5d8f}
+.gr-pc-bt_aube{background:linear-gradient(90deg,#ffd6a5,#ff9de2,#b9a2ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gr-pc-bt_ocean{background:linear-gradient(90deg,#d9fbff,#4fb6ff,#7d5cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.v3btq{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.v3bi{display:grid;gap:4px;justify-items:center;text-align:center;border:2px solid var(--frame);border-radius:14px;background:var(--panel2);padding:10px 8px}
+.v3bi.r-r{border-color:var(--r-r,#4ea3ff)}.v3bi.r-e{border-color:var(--r-e,#b77cff)}.v3bi.r-l{border-color:var(--r-l,#f4c84a)}
+.v3bp{height:48px;display:grid;place-items:center}.v3bpc{font-size:16px}
+/* scène animée DOFUS 3 (window.ANIM3) : au-dessus des barres ; 180 px dans le panneau PC, 210 px au téléphone */
+.v3scene{position:relative;height:180px;border-radius:14px;overflow:hidden;border:2px solid var(--frame);background:var(--panel2)}
+@media (max-width:640px){.v3scene{height:210px}}

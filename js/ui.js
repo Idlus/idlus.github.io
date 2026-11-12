@@ -13672,6 +13672,7 @@ function morphKids(a, b) {
   while (a.childNodes.length > nk.length) a.removeChild(a.lastChild);
 }
 function morphEl(o, n) {
+  if (o.hasAttribute("data-morph-keep")) return; // 3.0 : la scène animée (window.ANIM3) se dessine seule, le redessin n'y touche pas
   const focused = o === document.activeElement;
   if (focused && o.nodeName === "SELECT") return; // liste déroulante ouverte : on n'y touche pas
   const field = o.nodeName === "INPUT" || o.nodeName === "TEXTAREA" || o.nodeName === "SELECT";

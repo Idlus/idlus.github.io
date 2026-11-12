@@ -96,6 +96,9 @@
   /* visuels DOFUS 3 animés (5A, livrés avec la 3.0 par un autre lot) : un module window.ANIM3 pourra donner son propre portrait
      (ANIM3.pic(ent) → HTML, ou rien pour garder l'image actuelle) et réagir aux sorts (ANIM3.fx(F)) ; rien d'autre à changer ici */
   const pic = (e) => { try { const A = window.ANIM3; const x = A && A.pic ? A.pic(e) : null; if (x) return x; } catch (er) {} return hudPic(e); };
+  /* effets des sorts sur la scène (4C) : au choix du joueur ; lu par window.ANIM3 avec V3.fxMode() */
+  const FXN = { all: "Tous", big: "Gros sorts", none: "Aucun" };
+  V3.fxMode = () => { const m = X && X.S && X.S.settings && X.S.settings.a3fx; return FXN[m] ? m : "all"; };
   const bar = (p, cls) => `<i class="v3bar ${cls || ""}"><b style="width:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></b></i>`;
   V3.boardHtml = function () {
     const F = X.S.fight; const team = E.team(X.S); const live = navLiveTxt();
@@ -109,14 +112,15 @@
     const r = rate();
     const al = V3.alert;
     const head = `<div class="v3h"><div class="v3t"><h1>${h(title())}</h1><div class="small muted">${live ? h(live) : "Choisis une zone pour repartir chasser"}${F && !F.over ? ` · tour ${F.round}` : ""}</div></div>
-      <div class="v3hb"><button class="btn sm" data-act="csetsheet">${G("gear")} Réglages du combat</button><button class="btn sm" data-act="v3det">Vue détaillée</button>${live ? "" : `<button class="btn sm primary" data-act="nav" data-v="world">Choisir une zone</button>`}</div></div>`;
+      <div class="v3hb"><button class="btn sm" data-act="csetsheet">${G("gear")} Réglages du combat</button>${window.ANIM3 ? `<button class="btn sm" data-act="v3-fx" title="Effets des sorts sur la scène">Effets : ${FXN[V3.fxMode()]}</button>` : ""}<button class="btn sm" data-act="v3det">Vue détaillée</button>${live ? "" : `<button class="btn sm primary" data-act="nav" data-v="world">Choisir une zone</button>`}</div></div>`;
     const alert = al ? `<div class="v3al" data-k="al"><span aria-hidden="true">⚠</span><span class="grow">${h(al.txt)}</span><button class="btn sm primary" data-act="nav" data-v="world">Changer de zone</button><button class="btn sm" data-act="v3alok" aria-label="Fermer">✕</button></div>` : "";
     const obj = pin ? `<button class="v3obj" data-act="pingo" data-key="${h(pin.key)}"><span class="grow"><b>Prochain objectif :</b> ${h(pin.t)}</span>${bar(pin.p, "g")}<span class="v3pill">${h(pin.v)}</span></button>` : "";
     const tugs = `<div class="v3tugs"><div class="v3tug a"><i style="width:${ally.toFixed(1)}%"></i><span>Équipe ${Math.round(ally)} %</span></div><div class="v3tug m"><i style="width:${foe.toFixed(1)}%"></i><span>Ennemis ${Math.round(foe)} %</span></div></div>`;
     const heroRows = (mine.length ? mine : team.map((c) => ({ side: "c", cid: c.id, name: c.name, cls: c.cls, hp: 1, hpMax: 1, alive: true }))).map((e) => `<button class="v3r${e.alive ? "" : " ko"}" data-k="h${e.cid}" data-act="teamgo" data-id="${e.cid}" data-v="equip" title="Ouvrir la fiche du héros"><span class="v3p">${pic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "K.O."}</span></span>${bar(pct(e.hp, e.hpMax), pct(e.hp, e.hpMax) < 30 ? "r" : "")}${bar(pct(e.dealt || 0, tot), "d")}</span></button>`).join("");
     const foeRows = foes.length ? foes.map((e, i) => `<button class="v3r${e.alive ? "" : " ko"}${e.alive && (e.boss || i === 0) ? " tg" : ""}" data-k="m${i}" data-act="v3-mon" data-v="${h(String(e.base || ""))}" title="Ouvrir la fiche du monstre"><span class="v3p">${pic(e)}</span><span class="grow"><span class="v3n"><b>${h(e.name)}</b><span class="muted">${e.alive ? Math.round(pct(e.hp, e.hpMax)) + " %" : "vaincu"}</span></span>${bar(e.alive ? pct(e.hp, e.hpMax) : 0, "m")}</span></button>`).join("") : `<div class="small muted v3e">${live ? "Le combat suivant commence…" : "Aucun ennemi."}</div>`;
     const mom = MOM.length ? MOM.map((m, i) => `<div class="v3m ${m.k}" data-k="mo${i}"><span aria-hidden="true">${m.k === "up" ? "▲" : m.k === "loss" ? "✕" : "✦"}</span><span class="grow">${h(m.t)}</span><span class="xs muted">${ago(m.at)}</span></div>`).join("") : `<div class="small muted v3e">Les butins rares, les boss vaincus et les niveaux s'afficheront ici.</div>`;
-    return `${head}${alert}${obj}${tugs}<div class="v3g"><div class="v3box"><h4>Ton équipe<small>barre fine = part des dégâts</small></h4>${heroRows}</div><div class="v3col"><div class="v3box"><h4>Ennemis</h4>${foeRows}</div><div class="v3box"><h4>Ce qui compte<small>les moments importants</small></h4>${mom}</div></div></div>
+    const A3 = window.ANIM3; const scene = A3 ? `<div id="a3scene" class="v3scene" data-k="scene" data-morph-keep aria-hidden="true"></div>` : "";
+    return `${head}${alert}${obj}${scene}${tugs}<div class="v3g"><div class="v3box"><h4>Ton équipe<small>barre fine = part des dégâts</small></h4>${heroRows}</div><div class="v3col"><div class="v3box"><h4>Ennemis</h4>${foeRows}</div><div class="v3box"><h4>Ce qui compte<small>les moments importants</small></h4>${mom}</div></div></div>
       <div class="v3k"><div><b>${fmtK(Math.max(0, r.k))}</b><span>kamas / min</span></div><div><b>${(Math.round(r.f * 10) / 10).toLocaleString("fr-FR")}</b><span>combats / min</span></div><div><b>${MOM.filter((m) => m.k === "rare").length}</b><span>butins rares</span></div><div><b>${fmt(team.length)}</b><span>héros en combat</span></div></div>`;
   };
   V3.bandHtml = function () {
@@ -198,7 +202,17 @@
       <div class="v3tgs">${L.map((o) => `<div class="v3box"><div class="v3n"><b>${o.done ? "✓ " : ""}${h(o.name)}</b><span class="muted num">${fmt(o.v)} / ${fmt(o.goal)}</span></div>${bar(pct(o.v, o.goal), o.done ? "g" : "")}</div>`).join("")}</div>
       <div class="v3hb" style="margin-top:10px">${W.got ? `<span class="small">Coffre de la semaine pris. À lundi !</span>` : `<button class="btn primary" data-act="v3-hebdo" ${nDone >= L.length ? "" : "disabled"}>${nDone >= L.length ? "Prendre le coffre" : `Encore ${L.length - nDone} objectif${L.length - nDone > 1 ? "s" : ""}`}</button>`}</div></section>`;
   };
+  /* ---------- Marché › Boutique de la semaine (js/boutique.js) ---------- */
+  const btqHtml = () => {
+    const L = E.btqWeek(); const k = Math.floor(X.S.kamas || 0); const RN = E.GR_RAR || {};
+    const d = (8 - (new Date().getDay() || 7)) % 7 || 7;
+    const pic = (it) => it.k === "aura" ? `<span class="gr-aura gr-a-${h(it.id)} mini"></span>` : `<b class="gr-pc gr-pc-${h(it.id)} v3bpc">${h(X.S.name || "Pseudo")}</b>`;
+    return `<section class="card v3pl"><h2>Boutique de la semaine</h2><p class="small muted">6 apparences, payées en kamas, rien qui change les combats. Elles vont dans ta Garde-robe. Nouvelle Boutique lundi (dans ${d} jour${d > 1 ? "s" : ""}).</p>
+      <div class="v3btq">${L.map((it) => { const own = E.btqHas(X.S, it.id); return `<div class="v3bi r-${it.rar}"><div class="v3bp">${pic(it)}</div><b>${h(it.n)}</b><span class="xs muted">${it.k === "aura" ? "Aura" : "Couleur du pseudo"} · ${h(RN[it.rar] || "")}</span>
+        ${own ? `<span class="small">✓ Dans ta Garde-robe</span>` : ui.v3bq === it.id ? `<span class="v3hb"><button class="btn sm primary" data-act="v3-btq" data-v="${h(it.id)}" data-ok="1">Payer ${fmt(it.prix)}</button><button class="btn sm" data-act="v3-btqno">Non</button></span>` : `<button class="btn sm" data-act="v3-btq" data-v="${h(it.id)}" ${k >= it.prix ? "" : "disabled"}>${fmt(it.prix)} kamas</button>`}</div>`; }).join("")}</div></section>`;
+  };
   const XP3 = {
+    boutique3: { nav: ["boutique3", "Boutique", "bourse"], d: "6 apparences par semaine, en kamas", html: btqHtml, on: () => !!E.BTQ },
     hebdo: { nav: ["hebdo", "Semaine", "quetes"], d: "5 objectifs de la semaine et un coffre", html: hebdoHtml, on: () => !!E.HEBDO },
     plan: { nav: ["plan", "Plan de bataille", "combat"], d: "Posture, cible et réflexes de l'équipe", html: planHtml },
     routines: { nav: ["routines", "Routines", "almanax"], d: "Ce que l'équipe fait toute seule", html: routinesHtml },
@@ -257,6 +271,9 @@
       tutoPaint(); saveNow(); return true;
     }
     if (a === "v3-tutogo") { V3.tutoStart(); ui.tab = "combat"; ui.v3det = false; render(); return true; }
+    if (a === "v3-fx") { const L = Object.keys(FXN); X.S.settings.a3fx = L[(L.indexOf(V3.fxMode()) + 1) % L.length]; toast(`Effets des sorts : ${FXN[X.S.settings.a3fx].toLowerCase()}.`); saveNow(); V3.tick(true); return true; }
+    if (a === "v3-btqno") { ui.v3bq = null; rePage(); return true; }
+    if (a === "v3-btq") { const id = t.dataset.v; if (!t.dataset.ok) { ui.v3bq = id; rePage(); return true; } ui.v3bq = null; const r = E.btqBuy(X.S, id); if (r.err) toast(r.err); else { toast(`${r.it.n} : dans ta Garde-robe.`, "rare"); saveNow(); } rePage(); return true; }
     if (a === "v3-chload") { if (window.CHANTIER) window.CHANTIER.poll(); return true; }
     if (a === "v3-chno") { ui.v3chc = 0; rePage(); return true; }
     if (a === "v3-chgive") {
