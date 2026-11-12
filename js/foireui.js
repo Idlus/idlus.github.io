@@ -29,7 +29,7 @@
   const acct = () => !!(online() && ON.user && ON.profile && ON.link().uid === ON.user.id && !(ON.solo && ON.solo()));
   const noFn = (e) => /function|does not exist|could not find|schema cache|PGRST202/i.test(String(e || ""));
   function jLoad() {
-    if (!online()) return Promise.resolve(false);
+    if (!online() || (ON.monoPart && ON.monoPart())) return Promise.resolve(false); // 3.0 : la Foire s'ouvre au Monocompte, son Jackpot reste au Classique
     if (J.loading) return J.loading;
     J.loading = ON.rpc("foire_jackpot").then((r) => {
       J.loading = null;
@@ -144,7 +144,8 @@
     const can = left > 0 && s.kamas >= C.cost && !st.rolling;
     return `<section class="panel" id="foCrates"><div class="phead"><h2>${X().IC("coffre")} Choisis ta caisse</h2><span class="xs muted">${left ? `encore ${left} ouverture${left > 1 ? "s" : ""} aujourd'hui` : "plus d'ouverture aujourd'hui"}</span></div>
       <div class="pad stack"><div class="fo-crates">${cards}</div>${rollHtml(st.rolling)}${resHtml()}${odds}
-      <div class="row fo-c"><button class="btn primary" id="foGo" data-act="fo-open" ${can ? "" : "disabled"}>Ouvrir la ${h(C.name)} · ${kShort(C.cost)}</button></div>
+      <div class="row fo-c"><button class="btn primary" id="foGo" data-act="fo-open" ${can ? "" : "disabled"}>Ouvrir la ${h(C.name)} · ${kShort(C.cost)}</button>${F.MULTI && left >= 2 ? `<button class="btn" data-act="fo-open10" ${can && s.kamas >= C.cost * 2 ? "" : "disabled"}>Ouvrir ×${Math.min(F.MULTI, left)} · ${kShort(C.cost * Math.min(F.MULTI, left))}</button>` : ""}</div>
+      ${F.PITY ? `<span class="xs fo-c">Coup de pouce : un lot <b style="color:${F.RAR[3].color}">Épique</b> au moins, au plus tard dans <b>${E.foirePityLeft(s)}</b> caisse${E.foirePityLeft(s) > 1 ? "s" : ""}.</span>` : ""}
       <span class="xs muted fo-c">${!left ? `Le Trool rouvre ses caisses demain (${F.DAY} par jour).` : s.kamas < C.cost ? `Il te manque ${fmt(C.cost - s.kamas)} kamas.` : `Chaque rareté vaut une part de la mise : ×${String(F.RAR[0].mult).replace(".", ",")} à ×${F.RAR[4].mult}. En moyenne, ${Math.round(E.foireRtp() * 100)} % de la mise revient en lots.`}</span></div></section>`;
   }
   function feedHtml() {
@@ -184,10 +185,21 @@
     }));
   }
 
+  /* 3.0 (Foire C) : ×10 d'un coup, les lots en liste (la bande ne défile pas) */
+  function openN() {
+    const s = S(); if (!s || st.rolling) return;
+    const C = caisse(st.pick); const n = Math.min(F.MULTI, E.foireLeft(s)); const r = E.foireOpenN(s, C.id, n);
+    if (r.err && !r.list) { X().toast(r.err); return; }
+    X().markDirty(); st.last = null; paint(); X().renderStatus();
+    const rows = r.list.map((x) => { const R = F.RAR[x.lot.r]; return `<div class="li small"><b style="color:${R.color}">${R.name}${x.lot.pity ? " · coup de pouce" : ""}</b><span class="grow">${h(x.txt)}</span></div>`; }).join("");
+    const mise = C.cost * r.list.length, val = r.list.reduce((a, x) => a + x.lot.v, 0);
+    X().openSheet(`<h2>${r.list.length} × ${h(C.name)}</h2><p class="small muted">Valeur des lots : <b>${fmt(val)}</b> kamas pour ${fmt(mise)} misés.${r.err ? ` ${h(r.err)}` : ""}</p><div class="list">${rows}</div><button class="btn" data-act="closesheet">Fermer</button>`);
+  }
   document.addEventListener("click", (ev) => {
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act; if (!/^fo-/.test(a) || !S()) return;
     if (a === "fo-pick") { if (st.rolling) return; st.pick = t.dataset.v; paint(); return; }
     if (a === "fo-open") { open(); return; }
+    if (a === "fo-open10") { openN(); return; }
     if (a === "fo-jbuy") { jBuy(Math.max(1, Math.min(100, +t.dataset.n || 1))); return; }
     if (a === "fo-jretry") { J.err = false; jLoad().then(paintJack); return; }
     if (a === "fo-go") { UI().tab = "foire"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return; }

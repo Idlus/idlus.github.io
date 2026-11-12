@@ -96,7 +96,7 @@
      tests/mono_separation.test.js échoue si un nouvel appel au serveur n'est rangé ni ici ni dans M.CLASSIC_RPC. */
   M.PAGES = new Set(["home", "havre", "combat", "world", "dungeons", "defi", "enc", "team", "heroes", "maitrise", "ren", "grav", "inv", "dofus", "pets",
     "chasse", "metiers", "forge", "hdv", "koli", "align", "quests", "succes", "carnet", "guide", "amis", "ladder", "sugg", "bug", "archis", "admin",
-    "fragments", "boutique", "pass", "manche", "guerre", "album", "garde", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau", "vote", "builds", "elev", "comptoirs", "exp", "plan", "routines", "chantier"]); // 04/11 : vote sur Dofus Fan Games, récompense versée au Monocompte ; 2.2.2.9 : la Garde-robe (oubliée de la liste) ; 2.2.4.1 : Builds, avec ses propres builds (mono_builds_*, js/builds.js)
+    "fragments", "boutique", "pass", "manche", "guerre", "album", "garde", "eternel", "archives", "saisonlb", "mutation", "serment", "bilan", "bureau", "vote", "builds", "elev", "comptoirs", "exp", "plan", "routines", "chantier", "foire"]); // 3.0 (Mathis 12/11) : Chantier et Foire (caisses, sans le Jackpot du Classique) aussi en Monocompte // 04/11 : vote sur Dofus Fan Games, récompense versée au Monocompte ; 2.2.2.9 : la Garde-robe (oubliée de la liste) ; 2.2.4.1 : Builds, avec ses propres builds (mono_builds_*, js/builds.js)
   // 2.2.9.10 (Mathis, carte « Menu Économie, page complète ») : Économie › Comptoirs en Monocompte, 4 boutiques (js/comptoirs.js, E.cptShops)
   // 05/11 (Mathis, carte « Ouvrir l'Élevage complet ») : Héros › Élevage aussi en Monocompte (sans classement ni annonces du Classique)
   // 2.2.13 (#183, Nerisia ; Mathis, carte « Rouvrir le Songe en Mono ») : Aventure › Songe infini en Monocompte (songes, Bribes, Marché onirique, légendaires ; sans le classement du Classique)
@@ -106,7 +106,7 @@
   M.FN = new Set(["mono", "vote"]); // fonctions du serveur (functions.invoke) : « record » est celle du Classique ; « vote » verse à la partie ouverte (04/11)
   E.monoRpcOk = (name) => M.RPC.test(String(name || ""));
   /* modules du Classique éteints dans une partie Monocompte (window.X = null : leurs encarts, minuteurs et appels ne partent pas) */
-  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "WBUI", "ASCUI", "FOIREUI", "VENTEUI", "GIGA", "DGRANK"];
+  M.CLASSIC_MODS = ["GUILD", "CHASSE", "ALLY", "PLUIE", "WBUI", "ASCUI", "VENTEUI", "GIGA", "DGRANK"];
 
   /* dans le jeu (une partie par page) : la partie Monocompte limite l'équipe à 1 héros et les emplacements de Dofus à 3 */
   E.monoBoot = (S) => { if (!E.isMono(S)) return; E.HERO_MAX = 1; E.TEAM_MAX = 1; if (E.KOLI) E.KOLI.size = 1; /* Kolizéum en 1 contre 1 */ if (DOFUS_SLOTS.length > M.dofus) DOFUS_SLOTS.splice(M.dofus); };

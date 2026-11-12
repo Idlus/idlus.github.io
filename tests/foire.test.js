@@ -11,7 +11,7 @@ let t = Date.UTC(2030, 0, 8, 10, 0); E.setClock(() => t);
 /* ======================= Caisses du Trool ======================= */
 // 1. Chances affichées (100 %), la maison garde environ 10 % des mises.
 assert.strictEqual(F.RAR.reduce((a, r) => a + r.p, 0), 100);
-assert.ok(Math.abs(E.foireRtp() - 0.895) < 1e-9, "89,5 % de la mise revient en lots");
+assert.ok(Math.abs(E.foireRtp() - 0.896) < 0.002, "89,6 % de la mise revient en lots, coup de pouce compris : " + E.foireRtp());
 assert.deepStrictEqual(F.CAISSES.map((c) => c.cost), [50000, 250000, 1000000]);
 console.log("ok - chances et part de la maison");
 
@@ -22,7 +22,7 @@ for (const lvl of [20, 100, 200]) for (const C of F.CAISSES) {
   const S = E.newState("Foire", "iop"); S.chars[0].lvl = lvl; S.quest.step = 10; E.sab(S);
   const N = 6000; const rar = [0, 0, 0, 0, 0]; let mise = 0, val = 0, k = 0;
   for (let i = 0; i < N; i++) {
-    E.foireState(S).n = 0; S.kamas = C.cost; if (S.sablier) S.sablier.r = 0;
+    E.foireState(S).n = 0; E.foireState(S).pity = 0; S.kamas = C.cost; if (S.sablier) S.sablier.r = 0; // chances affichées, sans le coup de pouce
     const r = E.foireOpen(S, C.id); assert.ok(r.ok, r.err); const L = r.lot;
     assert.strictEqual(S.kamas, L.k, "la mise est retirée, les kamas du lot versés");
     mise += C.cost; val += L.v; k += L.k; rar[L.r]++;
@@ -141,3 +141,15 @@ console.log("ok - offre de la semaine");
 }
 console.log("ok - point du menu");
 console.log("Foire du Trool et Comptoirs : tout est bon");
+
+// 3.0 (Foire C et D) : ouvrir ×10 (s'arrête aux kamas ou aux ouvertures du jour) ; un Épique au moins à la 30e caisse sans Épique.
+{
+  const S = E.newState("Pouce", "iop"); const G = E.foireState(S);
+  S.kamas = 50000 * 10; const r = E.foireOpenN(S, "bois", 10); assert.strictEqual(r.list.length, 10); assert.strictEqual(E.foireLeft(S), F.DAY - 10);
+  S.kamas = 50000 * 3; const r2 = E.foireOpenN(S, "bois", 10); assert.strictEqual(r2.list.length, 3); assert.ok(/50 000/.test(r2.err.replace(/\s/g, " ")), "s'arrête aux kamas");
+  let forced = 0;
+  for (let i = 0; i < 400; i++) { G.n = 0; S.kamas = 50000; G.pity = F.PITY - 1; const L = E.foireOpen(S, "bois").lot; assert.ok(L.r >= 3, "coup de pouce"); assert.strictEqual(G.pity, 0); if (L.pity) forced++; }
+  assert.strictEqual(forced, 400); assert.strictEqual(E.foirePityLeft(S), F.PITY);
+  G.pity = 5; G.n = 0; S.kamas = 50000; const L = E.foireOpen(S, "bois").lot; assert.strictEqual(G.pity, L.r >= 3 ? 0 : 6);
+  console.log("ok - Foire 3.0 : ouvrir ×10 et coup de pouce");
+}

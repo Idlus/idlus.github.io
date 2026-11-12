@@ -24,7 +24,7 @@
     DAY: 20,
     TITLE: "Chouchou du Trool",
     RAR: [
-      { id: "commun", name: "Commun", color: "#9aa3ad", p: 60, mult: 0.35 },
+      { id: "commun", name: "Commun", color: "#9aa3ad", p: 60, mult: 0.275 }, // 3.0 : 0,35 → 0,275 pour payer le coup de pouce (la maison garde toujours 10,5 %)
       { id: "peu", name: "Peu commun", color: "#4f9de8", p: 25, mult: 0.9 },
       { id: "rare", name: "Rare", color: "#9b59e8", p: 10, mult: 2 },
       { id: "epique", name: "Épique", color: "#e04fb0", p: 4, mult: 4 },
@@ -45,10 +45,20 @@
     ],
     REF: { bonbon: 15000, parch: 20000, sab: 100000, potion: 100000, keyLvl: 400, keyMin: 8000 },
     BONBONS: ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur"],
+    PITY: 30, // 3.0 (Mathis, Foire D « coup de pouce ») : un lot Épique garanti au bout de 30 caisses sans Épique ni Légendaire
+    MULTI: 10, // 3.0 (Foire C) : ouvrir 10 caisses d'un coup
+    DUEL_MULT: [0.35, 0.9, 2, 4, 10], // le Duel de caisses (js/duel.js) n'a pas de coup de pouce : il garde les parts d'avant (89,5 %)
   };
   const F = E.FOIRE;
   /* espérance de la mise rendue en lots (0,895) */
-  E.foireRtp = () => F.RAR.reduce((a, r) => a + (r.p / 100) * r.mult, 0);
+  /* 3.0 : avec le coup de pouce (un Épique au moins à la 30e caisse sans Épique ni Légendaire), calcul exact sur un cycle */
+  E.foireRtp = () => {
+    const lo = F.RAR.slice(0, 3), hi = F.RAR.slice(3); const pl = lo.reduce((a, r) => a + r.p, 0) / 100, q = pl;
+    const mLo = lo.reduce((a, r) => a + r.p * r.mult, 0) / 100 / pl, mHi = hi.reduce((a, r) => a + r.p * r.mult, 0) / 100 / (1 - pl);
+    const mF = hi.reduce((a, r, i) => a + (i === 0 ? (lo.reduce((b, x) => b + x.p, 0) + r.p) : r.p) * r.mult, 0) / 100; // rareté tirée, au moins Épique
+    const nLo = (q * (1 - Math.pow(q, F.PITY - 1))) / (1 - q), qq = Math.pow(q, F.PITY - 1);
+    return (mLo * nLo + mHi * (1 - qq) + mF * qq) / (nLo + 1);
+  };
 
   /* ---------- état dans la partie (migration 1.0.30 : créé s'il manque, sans E.VERSION) ---------- */
   const today = () => (E.defiDay ? E.defiDay() : Math.floor(E.now() / 86400000));
@@ -59,6 +69,7 @@
     if (G.day !== today()) { G.day = today(); G.n = 0; }
     if (!Array.isArray(G.log)) G.log = [];
     if (!G.tot || typeof G.tot !== "object") G.tot = { n: 0, mise: 0, k: 0 };
+    if (!(G.pity >= 0)) G.pity = 0; // caisses ouvertes depuis le dernier lot Épique ou Légendaire
     return G;
   };
   E.foireLeft = (S) => Math.max(0, F.DAY - E.foireState(S).n);
@@ -85,9 +96,9 @@
 
   /* ---------- un lot ----------
      { r (rareté), v (valeur en kamas), k (kamas), res: [nom, n], cons: [id, n], sab (heures), key: [nom, n], item (modèle), title } */
-  E.foireLot = (S, caisse, rng) => {
+  E.foireLot = (S, caisse, rng, minR) => {
     const C = F.CAISSES.find((x) => x.id === caisse) || F.CAISSES[0];
-    const r = rarOf(rng()); const R = F.RAR[r]; const V = Math.round(C.cost * R.mult); const top = topLvl(S);
+    const r = Math.max(rarOf(rng()), minR || 0); const R = F.RAR[r]; const V = Math.round(C.cost * R.mult); const top = topLvl(S);
     let kind = pickW(F.KINDS[r], rng());
     const lot = { r, v: V, k: 0 }; let goods = 0;
     if (kind === "title") { if (!(S.titlesExtra || []).includes(F.TITLE)) lot.title = F.TITLE; kind = "k"; }
@@ -145,7 +156,9 @@
     if (G.n >= F.DAY) return { err: `Tu as ouvert tes ${F.DAY} caisses du jour : le Trool rouvre demain.` };
     if (S.kamas < C.cost) return { err: `Il faut ${C.cost.toLocaleString("fr-FR")} kamas pour la ${C.name}.` };
     S.kamas -= C.cost; G.n++;
-    const lot = E.foireLot(S, C.id, mkRng(G));
+    const boost = G.pity + 1 >= F.PITY; // coup de pouce
+    const lot = E.foireLot(S, C.id, mkRng(G), boost ? 3 : 0);
+    G.pity = lot.r >= 3 ? 0 : G.pity + 1; if (boost) lot.pity = true;
     give(S, lot);
     G.tot.n++; G.tot.mise += C.cost; G.tot.k += lot.k;
     if (E.dofusQuestEvent) E.dofusQuestEvent(S, "foire", { n: 1 }); // 1.1 : étape du Dofus du Trool
@@ -153,6 +166,14 @@
     G.log.unshift({ t: E.now(), c: C.id, r: lot.r, txt }); G.log = G.log.slice(0, 8);
     E.note(S, `${C.name} : ${F.RAR[lot.r].name.toLowerCase()}, ${txt}.`, "info"); // pas de bulle : la page montre le lot au bout du défilement
     return { ok: true, lot, txt, caisse: C };
+  };
+
+  E.foirePityLeft = (S) => Math.max(1, F.PITY - E.foireState(S).pity);
+  /* ouvrir plusieurs caisses d'un coup (Foire C) : s'arrête aux kamas ou aux ouvertures du jour qui manquent */
+  E.foireOpenN = (S, caisse, n) => {
+    const out = []; let err = null;
+    for (let i = 0; i < n; i++) { const r = E.foireOpen(S, caisse); if (r.err) { err = r.err; break; } out.push(r); }
+    return out.length ? { ok: true, list: out, err } : { err: err || "Rien à ouvrir." };
   };
 
   /* Carnet de bord (js/suivi.js) : les mises et les kamas des lots ont leur case dans le bilan des kamas */

@@ -44,7 +44,7 @@
     const mise = C.cost * rounds; S.kamas -= mise; G.n += rounds; st.day++;
     const bots = DL.BOTS.slice(); const seats = [{ n: "Toi", me: true, lots: [], v: 0 }];
     for (let i = 0; i < foes; i++) { const b = bots.splice(Math.floor(rng() * bots.length), 1)[0]; seats.push({ n: b.n, m: b.m, lots: [], v: 0 }); }
-    for (let r = 0; r < rounds; r++) seats.forEach((x) => { const k = rarOf(rng()); x.lots.push(k); x.v += Math.round(C.cost * F.RAR[k].mult); });
+    for (let r = 0; r < rounds; r++) seats.forEach((x) => { const k = rarOf(rng()); x.lots.push(k); x.v += Math.round(C.cost * (F.DUEL_MULT ? F.DUEL_MULT[k] : F.RAR[k].mult)); });
     const top = Math.max(...seats.map((x) => x.v)); let win = seats.map((x, i) => (x.v === top ? i : -1)).filter((i) => i >= 0);
     if (win.length > 1) { const best = (i) => Math.max(...seats[i].lots); const b = Math.max(...win.map(best)); win = win.filter((i) => best(i) === b); }
     const pot = seats.reduce((a, x) => a + x.v, 0); const gain = win.includes(0) ? Math.floor(pot / win.length) : 0;
