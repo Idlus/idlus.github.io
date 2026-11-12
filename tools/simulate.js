@@ -135,7 +135,7 @@ const giveRen = (S) => { if (!REN) return; S.chars.forEach((c) => { c.ren = REN;
 /* ---------- une tentative de donjon ---------- */
 function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
-  const S = E.newState("Sim", "iop"); S.chars = [];
+  const S = E.newState("Sim", "iop"); S.chars = []; if (process.env.POSTURE) { S.settings.posture = process.env.POSTURE; S.settings.refl = (process.env.REFL || "").split(",").filter(Boolean); } // 3.0 : Plan de bataille
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
   S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
   if (FURN) {
@@ -159,7 +159,7 @@ if (arg("chasse", "")) {
     const subs = arg("zones", "") ? arg("zones").split(",") : Object.keys(E.SUBS).filter((k) => E.SUBS[k].lvl && Math.abs((E.SUBS[k].lvl[0] + E.SUBS[k].lvl[1]) / 2 - L) <= 6).slice(0, 4); // --zones id1,id2 : ces sous-zones-là
     let win = 0, lose = 0, kam = 0;
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
-      const S = E.newState("Sim", "iop"); S.chars = [];
+      const S = E.newState("Sim", "iop"); S.chars = []; if (process.env.POSTURE) { S.settings.posture = process.env.POSTURE; S.settings.refl = (process.env.REFL || "").split(",").filter(Boolean); } // 3.0 : Plan de bataille
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
       S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
       E.startHunt(S, sid); let last = null; const k0 = S.kamas;
@@ -192,7 +192,7 @@ if (flag("songe")) {
       for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
         let top = -1;
         for (let ii = 0; ii < E.SG_INT.length; ii++) {
-          const S = E.newState("Sim", "iop"); S.chars = [];
+          const S = E.newState("Sim", "iop"); S.chars = []; if (process.env.POSTURE) { S.settings.posture = process.env.POSTURE; S.settings.refl = (process.env.REFL || "").split(",").filter(Boolean); } // 3.0 : Plan de bataille
           teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
           S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
           E.songe(S).unl = 7; const err = E.expStart(S, ii); if (err) throw new Error(err);

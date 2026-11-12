@@ -1569,6 +1569,20 @@
     mons.forEach((m) => { if (X.shield0) m.shield = Math.max(m.shield || 0, Math.round(m.hpMax * X.shield0 / 100)); });
     return mons;
   };
+  /* 3.0 « Plan de bataille » (maquette validée 11/11, réponses 1-26 A) : une posture pour toute l'équipe, contre la PvE seulement.
+     d : dégâts faits, t : dégâts reçus. Réglées par simulation (tools/sim_posture.js) pour rester un choix, pas un bonus gratuit. */
+  E.POSTURES = { as: { n: "Assaut", d: 1.12, t: 1.2 }, eq: { n: "Équilibre", d: 1, t: 1 }, re: { n: "Rempart", d: 0.8, t: 0.88 } };
+  /* réflexes : la posture change seule pendant le combat ; « bascule » revient à la posture choisie quand la raison disparaît */
+  E.REFLEXES = { low: { n: "Rempart quand l'équipe faiblit", d: "Sous 35 % de vie d'équipe, passe en Rempart" }, prep: { n: "Rempart avant un coup du boss", d: "Quand un boss prépare un gros coup, passe en Rempart le temps de l'encaisser" } };
+  E.reflexes = (F) => {
+    if (!F || F.pvp || !F.refl || !F.refl.length) return;
+    const hs = F.ents.filter((e) => e.side === "c" && !e.summon); const hp = hs.reduce((a, e) => a + (e.alive ? Math.max(0, e.hp) : 0), 0) / Math.max(1, hs.reduce((a, e) => a + e.hpMax, 0));
+    const boss = F.ents.find((e) => e.side === "m" && e.boss && e.alive);
+    let p = F.post0;
+    if (F.refl.includes("prep") && boss && E.bossForecast) { try { if (E.bossForecast(F).some((x) => x.kind === "hit" && x.in <= 1)) p = "re"; } catch (e) { /* pas de prévision pour ce boss */ } }
+    if (F.refl.includes("low") && hp < 0.35) p = "re";
+    if (p !== F.post) { F.post = p; F.log.push({ txt: `Réflexe : posture ${E.POSTURES[p].n}`, cls: "sys" }); if (F.log.length > 40) F.log.shift(); }
+  };
   E.startFight = (S) => {
     const team = E.team(S); if (!team.length) return null;
     const IX = E.idolFx(S, S.dungeon);
@@ -1627,6 +1641,7 @@
     var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
+    F.post0 = F.post = E.POSTURES[S.settings && S.settings.posture] ? S.settings.posture : "eq"; F.refl = (S.settings && S.settings.refl) || []; // 3.0 : Plan de bataille
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     if (S.dungeon && S.dungeon.rules) { F.defiRules = true; F.defiHero = S.dungeon.hero || []; } // 1.1 (série 4) : règles héroïques à +150
     F.chals = S.dungeon && S.dungeon.rules ? E.fixedChals(F, S.dungeon.rules) : pickChallenges(S, F, (S.dungeon ? 2 : 1) + E.almMult(S, "chal1"));
@@ -1725,6 +1740,7 @@
     if (F && src && E.legPre) { v = E.legPre(F, src, tgt, v); if (v <= 0) return 0; } // 0.1.48 : légendaires (esquive, garde, miroir)
     if (F && src && E.dofpPre) { v = E.dofpPre(F, src, tgt, v); if (v <= 0) return 0; } // 1.0.16 : passifs des Dofus (marque, défenses)
     if (F && src && E.petPre && (F.petAura || tgt.pet)) { v = E.petPre(F, src, tgt, v); if (v <= 0) return 0; } // 1.1 : familiers (esquive, racines, aura)
+    if (F && F.post && !F.pvp) { const P = E.POSTURES[F.post] || E.POSTURES.eq; if (src && src.side === "c") v *= P.d; if (isHero(F, tgt)) v *= P.t; } // 3.0 : posture du Plan de bataille
     v = Math.max(1, Math.round(v));
     if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
       const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
@@ -2584,7 +2600,7 @@
       return checkEnd(S);
     }
     F.seq++; if (F.fx.length > 80) F.fx.splice(0, F.fx.length - 80);
-    if (F.oi >= F.order.length) { F.round++; newRound(F); if (E.roundHook) E.roundHook(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite.");
+    if (F.oi >= F.order.length) { F.round++; newRound(F); if (E.roundHook) E.roundHook(F); E.reflexes(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite.");
       const lim = F.bossIdx !== undefined ? E.STASIS_TL.boss : E.STASIS_TL.room; if (F.stasis >= 9 && F.round > lim) return endFight(S, false, `Stasis 9 : le temps est écoulé (${lim} tours maximum dans cette salle).`); }
     const e = F.ents[F.order[F.oi++]];
     if (!e || !e.alive) return E.step(S);
