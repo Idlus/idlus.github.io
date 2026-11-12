@@ -36,7 +36,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, enquete-sauvegarde-s1, alleger-services, rallumer-services]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, enquete-sauvegarde-s1, restaurer-eronny-s1-essai, restaurer-eronny-s1, alleger-services, rallumer-services]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -242,6 +242,18 @@ jobs:
           f="$RUNNER_TEMP/restaurer_justever.sql"
           sed "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'REMETS JUSTEVER AU 17/10'|" tools/serveur/restaurer_justever.sql > "$f"
           grep -qx "\\\\set CONFIRMATION 'REMETS JUSTEVER AU 17/10'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+          bash tools/serveur/vps_sql.sh fichier "$f"
+      - name: Eronny, partie S1 remise à sa copie du 11/11 23h02 (essai, rien n'est changé)
+        if: inputs.etape == 'restaurer-eronny-s1-essai'
+        run: bash tools/serveur/vps_sql.sh fichier tools/serveur/restaurer_eronny_s1.sql
+      - name: Eronny, partie S1 remise à sa copie du 11/11 23h02 (pour de vrai, seulement avec l'accord écrit de Mathis)
+        if: inputs.etape == 'restaurer-eronny-s1'
+        run: |
+          echo '== Partie actuelle mise de côté sur le serveur (fichier, rien n'est affiché)'
+          bash tools/serveur/vps_sql.sh commande "set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/eronny-s1-avant-restauration-\$(date +%Y-%m-%d-%H%M).txt; docker exec supabase-db psql -U postgres -At -c \"select s.data from s1.saves s join public.profiles p on p.id = s.user_id where lower(p.pseudo) = 'eronny'\" > \$f; ls -l \$f; [ \$(stat -c %s \$f) -gt 10000 ] || { echo 'copie trop petite' >&2; exit 1; }"
+          f="$RUNNER_TEMP/restaurer_eronny_s1.sql"
+          sed "s|^\\\\set CONFIRMATION 'non'$|\\\\set CONFIRMATION 'REMETS ERONNY AU 11/11'|" tools/serveur/restaurer_eronny_s1.sql > "$f"
+          grep -qx "\\\\set CONFIRMATION 'REMETS ERONNY AU 11/11'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
           bash tools/serveur/vps_sql.sh fichier "$f"
       - name: Maîtrise retirée des classements (essai, rien n'est changé)
         if: inputs.etape == 'maitrise-reset-essai'
