@@ -5,14 +5,17 @@
 (function () {
   const V3 = (window.V3 = {});
   let X = null; // le contexte de js/ui.js (V3.init), qui garde ses variables pour lui
-  let h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, morphTo, toast, saveNow, render, renderNav, E, DUNGEONS, NAV, ui;
-  V3.init = function (ctx) { X = ctx; ({ h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, morphTo, toast, saveNow, render, renderNav, E, DUNGEONS, NAV, ui } = ctx); };
+  let h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, morphTo, toast, saveNow, render, renderNav, E, DUNGEONS, NAV, ui, PAGES, NAV_DESC, IC;
+  V3.init = function (ctx) {
+    X = ctx; ({ h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, morphTo, toast, saveNow, render, renderNav, E, DUNGEONS, NAV, ui, PAGES, NAV_DESC, IC } = ctx);
+    Object.keys(XP3).forEach((k) => { if (PAGES && !PAGES[k]) PAGES[k] = (m) => { m.innerHTML = XP3[k].html(); }; if (NAV_DESC) NAV_DESC[k] = XP3[k].d; });
+  };
   V3.on = () => !!(X && X.S && X.S.settings && X.S.settings.v3);
 
   /* ---------- les 8 espaces (question 3) et leurs onglets ; lvl : niveau qui ouvre l'espace (question 4) ---------- */
   const SPACES = [
-    { id: "av", n: "Aventure", ic: "monde", keys: ["world", "dungeons", "asc", "exp", "defi", "chev", "xs1", "wb"] },
-    { id: "he", n: "Équipe", ic: null, keys: ["team", "maitrise", "garde", "builds"] },
+    { id: "av", n: "Aventure", ic: "monde", keys: ["world", "dungeons", "asc", "exp", "defi", "chev", "xs1", "wb", "routines"] },
+    { id: "he", n: "Équipe", ic: null, keys: ["team", "plan", "maitrise", "garde", "builds"] },
     { id: "sac", n: "Sac", ic: "sac", keys: ["inv", "dofus"] },
     { id: "ec", n: "Artisanat", ic: "metiers", keys: ["metiers", "forge", "grav", "comptoirs"], lvl: 5 },
     { id: "col", n: "Collection", ic: "dofus", keys: ["album", "pets", "elev", "chasse", "enc"], lvl: 10 },
@@ -36,6 +39,7 @@
     if (!ALL) {
       const pool = new Map(); let season = null;
       NAV.forEach((F) => { if (F.season) { season = F; return; } F.pages.forEach((p) => pool.set(p[0], p)); });
+      Object.keys(XP3).forEach((k) => pool.set(k, XP3[k].nav)); // les pages propres à la 3.0
       ALL = { season, spaces: SPACES.map((s) => ({ id: s.id, n: s.n, ic: s.ic, v3lvl: s.lvl || 0, pages: s.keys.filter((k) => pool.has(k)).map((k) => { const p = pool.get(k).slice(); pool.delete(k); if (REN[k]) p[1] = REN[k]; return p; }) })) };
       const jo = ALL.spaces.find((F) => F.id === "jo"); pool.forEach((p) => jo.pages.push(p.slice())); // une page oubliée reste trouvable dans le Journal
     }
@@ -132,8 +136,53 @@
     const rest = !fight && k !== "home" && !on("av") && !on("he") && !on("sac");
     return `<div class="sn-mob"><button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb(F("av"))}${mb(F("he"), "team")}${mb(F("sac"), "inv")}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${rest ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Plus</span></button></div>`;
   };
+  /* ---------- Plan de bataille (question 11) : posture, cible, réflexes ; Routines (question 12) : l'automatisme en un endroit ---------- */
+  const FOCUS = [["auto", "Les dangereux d'abord", "Soigneurs, chefs, invocateurs et protecteurs"], ["low", "Le plus faible", "Achève vite un monstre blessé"], ["boss", "Le boss", "Tout sur le chef du groupe"], ["adds", "Les sbires d'abord", "Nettoie le groupe, puis le boss"], ["prep", "Qui prépare un coup", "Coupe le monstre qui charge une attaque"]];
+  const POST_D = { as: "+12 % de dégâts infligés, +20 % de dégâts reçus. Pour les chasses faciles.", eq: "Aucun bonus, aucun malus.", re: "−20 % de dégâts infligés, −12 % de dégâts reçus. Pour tenir face aux gros boss." };
+  const tgl = (act, on, n, d, extra) => `<label class="v3tg"><input type="checkbox" data-act="${act}" ${extra || ""} ${on ? "checked" : ""}><span><b>${h(n)}</b><small>${h(d)}</small></span></label>`;
+  const planHtml = () => {
+    const st = X.S.settings; const post = E.POSTURES[st.posture] ? st.posture : "eq"; const refl = Array.isArray(st.refl) ? st.refl : [];
+    const F = X.S.fight; const now = F && !F.over && F.post && F.post !== F.post0 ? E.POSTURES[F.post] : null;
+    return `<section class="card v3pl"><h2>Plan de bataille</h2><p class="small muted">Trois réglages pour toute l'équipe. Ils comptent dès le prochain combat, partout sauf contre d'autres joueurs.</p>
+      <h3 class="sec">Posture</h3><div class="v3seg" role="radiogroup" aria-label="Posture">${Object.entries(E.POSTURES).map(([k, P]) => `<button class="v3sb${k === post ? " on" : ""}" role="radio" aria-checked="${k === post}" data-act="v3-post" data-v="${k}"><b>${h(P.n)}</b><small>${h(POST_D[k])}</small></button>`).join("")}</div>
+      ${now ? `<div class="small v3e">En ce moment : <b>${h(now.n)}</b> (réflexe)</div>` : ""}
+      <h3 class="sec">Cible</h3><div class="v3seg c">${FOCUS.map(([k, n, d]) => `<button class="v3sb${(st.focus || "auto") === k ? " on" : ""}" role="radio" aria-checked="${(st.focus || "auto") === k}" data-act="v3-focus" data-v="${k}"><b>${h(n)}</b><small>${h(d)}</small></button>`).join("")}</div>
+      <p class="xs muted">Les bombes et les totems passent toujours avant. Un sort réglé sur une autre cible garde la sienne.</p>
+      <h3 class="sec">Réflexes <small class="muted">${refl.length} / 2</small></h3><div class="v3tgs">${Object.entries(E.REFLEXES).map(([k, R]) => tgl("v3-refl", refl.includes(k), R.n, R.d, `data-v="${k}"`)).join("")}</div>
+      <h3 class="sec">Challenges</h3><div class="v3tgs">${tgl("chalai", !!st.chalAI, "Respecter les challenges", "L'IA évite les actions qui feraient échouer les challenges du combat")}</div></section>`;
+  };
+  const routinesHtml = () => {
+    const st = X.S.settings; const R = (E.recyCfg && E.recyCfg(X.S)) || {};
+    const sg = typeof E.expAutoOn === "function";
+    return `<section class="card v3pl"><h2>Routines</h2><p class="small muted">Ce que ton équipe fait toute seule, même quand tu n'es pas là.</p>
+      <h3 class="sec">Chasse</h3><div class="v3tgs">${tgl("autozone", !!st.autoZone, "Suivre mon niveau", "Monte de sous-zone quand tout va bien, redescend après plusieurs défaites")}${tgl("roam", !!st.roam, "Chasse itinérante", `Part vers une zone qui a 2 étoiles de plus (XP et butin −${Math.round((E.ROAM_MALUS || 0) * 100)} %)`)}</div>
+      <h3 class="sec">Butin</h3><div class="v3tgs">${tgl("v3-chest", !!st.autoChest, "Ouvrir les coffres", "Les coffres gagnés s'ouvrent tout seuls")}${tgl("recyset", !!R.auto, "Recycler quand le sac est plein", "Suit les règles du Recycleur (Sac › Objets › Recycleur)", 'data-k="auto"')}</div>
+      ${sg ? `<h3 class="sec">Songe infini</h3><div class="v3tgs">${tgl("v3-sgauto", E.expAutoOn(X.S), "Choix automatiques", "Le songe choisit seul ses salles et ses bonus")}${tgl("v3-sgloop", E.sgLoopOn ? E.sgLoopOn(X.S) : !!st.sgLoop, "Songes en boucle", "Un nouveau songe repart quand le précédent finit")}</div>` : ""}</section>`;
+  };
+  const XP3 = {
+    plan: { nav: ["plan", "Plan de bataille", "combat"], d: "Posture, cible et réflexes de l'équipe", html: planHtml },
+    routines: { nav: ["routines", "Routines", "almanax"], d: "Ce que l'équipe fait toute seule", html: routinesHtml },
+  };
+  const rePage = () => { if (XP3[ui.tab]) { const m = document.getElementById("main"); if (m) morphTo(m, `${XP3[ui.tab].html()}`); } };
+  /* cases à cocher de la 3.0 (événement change de js/ui.js) */
+  V3.change = function (a, t) {
+    const st = X.S.settings;
+    if (a === "v3-refl") {
+      const L = Array.isArray(st.refl) ? st.refl.filter((k) => E.REFLEXES[k]) : []; const k = t.dataset.v; if (!E.REFLEXES[k]) return;
+      const i = L.indexOf(k); if (t.checked && i < 0) { if (L.length >= 2) { t.checked = false; toast("Deux réflexes au plus."); return; } L.push(k); } else if (!t.checked && i >= 0) L.splice(i, 1);
+      st.refl = L; if (X.S.fight && !X.S.fight.pvp) X.S.fight.refl = L.slice();
+      toast(t.checked ? `Réflexe actif : ${E.REFLEXES[k].n}.` : "Réflexe retiré.");
+    } else if (a === "v3-chest") { st.autoChest = !!t.checked; if (st.autoChest && E.openAllChests) E.openAllChests(X.S, true); toast(st.autoChest ? "Les coffres s'ouvrent tout seuls." : "Les coffres attendent dans le sac."); }
+    else if (a === "v3-sgauto") { E.expSetAuto(X.S, t.checked); }
+    else if (a === "v3-sgloop") { E.sgSetLoop(X.S, t.checked); }
+    else return;
+    saveNow(); rePage();
+  };
   /* actions propres à la 3.0 (appelées par le grand aiguillage de js/ui.js) */
   V3.act = function (a, t) {
+    if (a && a.startsWith("v3-") && t && (t.tagName === "INPUT" || t.tagName === "SELECT")) return true; // les cases passent par V3.change
+    if (a === "v3-post") { const k = t.dataset.v; if (!E.POSTURES[k]) return true; X.S.settings.posture = k; const F = X.S.fight; if (F && !F.over && !F.pvp) { F.post0 = k; F.post = k; } toast(`Posture : ${E.POSTURES[k].n}.`); saveNow(); rePage(); return true; }
+    if (a === "v3-focus") { const k = t.dataset.v; if (!FOCUS.some((f) => f[0] === k)) return true; X.S.settings.focus = k; toast(`Cible : ${FOCUS.find((f) => f[0] === k)[1].toLowerCase()}.`); saveNow(); rePage(); return true; }
     if (a === "v3det") { ui.v3det = !ui.v3det; render(); return true; }
     if (a === "v3alok") { V3.alert = null; lossRow = 0; V3.tick(true); return true; }
     if (a === "v3try") { X.S.settings.v3 = !X.S.settings.v3; if (X.S.settings.v3) X.S.v3all = X.S.v3all == null ? (maxLvl() >= 20 || (X.S.stats && X.S.stats.fights > 300) ? 1 : 0) : X.S.v3all; X.reload(); return true; }

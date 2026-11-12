@@ -61,3 +61,12 @@ body.v3 #v3band:not([hidden]){display:flex}
   body.v3.v3pan #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
   body.v3.v3pan #v3band{display:none!important}
 }
+/* Plan de bataille et Routines */
+.v3pl h3.sec small{font-weight:700}
+.v3seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3seg.c{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.v3sb{display:grid;gap:2px;text-align:left;border:2px solid var(--frame);border-radius:12px;background:var(--panel2);color:var(--ink);font:inherit;padding:7px 9px;cursor:pointer;min-width:0}
+.v3sb small{font-size:11.5px;color:var(--muted);line-height:1.3}.v3sb.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.v3tgs{display:grid;gap:6px}
+.v3tg{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--frame);border-radius:10px;padding:7px 9px;cursor:pointer}
+.v3tg input{margin-top:3px;flex:none}.v3tg span{display:grid;gap:1px;min-width:0}.v3tg small{font-size:11.5px;color:var(--muted)}
+@media (max-width:640px){.v3seg{grid-template-columns:minmax(0,1fr)}}
