@@ -512,5 +512,5 @@
   /* texte de l'en-tête du combat et de la barre d'état */
   const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; if (X_.breche) { const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `La Brèche · étage ${n ? n.d : 1}`; } const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };
   if (window.PANEL && window.PANEL.register) window.PANEL.register({ toggle: { id: "sgdemo", n: "Classement du Songe d'exemple (pour voir la page sans serveur)", on: () => !!RANK.demo, set: (v) => { RANK.demo = !!v; } } });
-  window.SGUI = { render, act, change, where, combatHtml, legSheet, ui, tile, RANK, rkLoad, submit: sgSubmit, claim: sgClaim };
+  window.SGUI = { pend: pendHtml, render, act, change, where, combatHtml, legSheet, ui, tile, RANK, rkLoad, submit: sgSubmit, claim: sgClaim };
 })();

@@ -188,7 +188,7 @@ if (flag("songe")) {
   for (const L of lvls) {
     const line = [];
     for (const p of PROFS) {
-      const got = [];
+      const got = [], pals = [];
       for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
         let top = -1;
         for (let ii = 0; ii < E.SG_INT.length; ii++) {
@@ -219,16 +219,16 @@ if (flag("breche")) {
   for (const L of lvls) {
     const line = [];
     for (const p of PROFS) {
-      const got = [];
+      const got = [], pals = [];
       for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
         const S = E.newState("Sim", "iop"); S.chars = []; if (process.env.POSTURE) { S.settings.posture = process.env.POSTURE; S.settings.refl = (process.env.REFL || "").split(",").filter(Boolean); }
         teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
         S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); giveGrav(S); giveMt(S); tagRows(S);
         const err = E.brStart(S); if (err) throw new Error(err); E.expAutoPlay(S, 400); if (E.expActive(S)) E.expQuit(S);
-        got.push((S.brLast && S.brLast.d) || 0);
+        got.push((S.brLast && S.brLast.d) || 0); pals.push((E.brWeek(S).pal || []).length); // 3.0.4 : paliers de la semaine obtenus
       }
       const avg = got.reduce((a, b) => a + b, 0) / got.length; const [lo, hi] = XT[p] || [0, 1e9];
-      line.push(`${p.padEnd(8)} ${avg.toFixed(0).padStart(3)} (${Math.min(...got)}-${Math.max(...got)}) ${avg >= lo && avg <= hi ? "ok" : avg < lo ? "trop dur" : "trop facile"}`);
+      line.push(`${p.padEnd(8)} ${avg.toFixed(0).padStart(3)} (${Math.min(...got)}-${Math.max(...got)}) ${avg >= lo && avg <= hi ? "ok" : avg < lo ? "trop dur" : "trop facile"}, paliers ${(pals.reduce((a, b) => a + b, 0) / pals.length).toFixed(1)}/5`);
     }
     console.log(`niveau ${String(L).padStart(3)}  ` + line.join("   "));
   }

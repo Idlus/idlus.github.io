@@ -217,33 +217,68 @@
   };
   /* ---------- Aventure › La Brèche (1B de Mathis, « avec mon équipe ») : étages sans fin, moteur du Songe (js/songe.js, E.brStart) ---------- */
   const BR_T = { fight: ["⚔", "Combat"], hard: ["💀", "Combat redoutable"], archi: ["👁", "Archimonstre"], favor: ["✨", "Faveur onirique"], fount: ["⛲", "Fontaine onirique"], boss: ["👑", "Boss"] };
-  const brRk = { at: 0, rows: null, w: -1 };
+  const brRk = { at: 0, rows: null, me: null, w: -1 };
   const brRkLoad = () => {
     const ON = window.ONLINE; const w = E.weekIdx();
     if (!(ON && ON.enabled && ON.db) || (ON.monoGame && ON.monoGame()) || (Date.now() - brRk.at < 60000 && brRk.w === w)) return; brRk.at = Date.now(); brRk.w = w;
-    try { ON.db().from("lb_asc").select("pseudo,score,r").eq("m", w).eq("cat", "breche").eq("k", "").order("r", { ascending: true }).limit(10).then(({ data, error }) => { brRk.rows = error ? null : data || []; if (ui.tab === "breche") rePage(); }).catch(() => {}); } catch (e) {}
+    try { const q = () => ON.db().from("lb_asc").select("user_id,pseudo,score,r").eq("m", w).eq("cat", "breche").eq("k", "");
+      Promise.all([q().order("r", { ascending: true }).limit(3), ON.user ? q().eq("user_id", ON.user.id).maybeSingle() : Promise.resolve({ data: null })])
+        .then(([A, B]) => { brRk.rows = A.error ? null : A.data || []; brRk.me = (B && B.data) || null; if (ui.tab === "breche") rePage(); }).catch(() => {}); } catch (e) {}
   };
+  /* 3.0.4 : la page de la Brèche d'après la maquette (Mathis 13/11 : 1A le puits, 2A les paliers, 3B pas de mur estimé, 4A la course sur la page, 5A top 3 et ta place) */
+  const brLeft = () => { const ms = Math.max(0, E.weekEnd() - E.now()); const d = Math.floor(ms / 86400000), hh = Math.floor((ms % 86400000) / 3600000); return d ? `${d} j ${hh} h` : `${Math.max(1, hh)} h`; };
+  const brBoss = (w, lvl, d) => { const id = E.brBossAt ? E.brBossAt(w, lvl, d) : null; const g = id && DUNGEONS[id]; const M = (window.DATA && window.DATA.MONSTERS) || {}; return g ? (M[g.boss] && M[g.boss].name) || g.name : "Boss de donjon"; };
+  const brDur = (ms) => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.max(1, m)} min`; };
+  const brHero = (reg, M, extra) => `<header class="brx-hero"><span class="brx-lab">Cette semaine · Règne de ${h(reg.god)}</span>${extra || `<h2>La Brèche</h2><span class="small">Finit dans ${brLeft()}. Ton équipe descend étage par étage, un boss de donjon tous les 10 étages.</span>`}
+    <div class="brx-rule"><b>Règle de la semaine · ${h(M.name)}</b><span class="small">${h(M.desc)} Sur tous les étages, pour tout le monde.</span></div></header>`;
+  const brWell = (S, wk, lvl) => {
+    const best = (S.cnt && S.cnt.brBest) || 0; const R = brRk.rows; const top = R && R[0] ? R[0] : null; const w = E.weekIdx();
+    const hi = Math.max(50, Math.ceil((Math.max(best, wk.d, top ? top.score : 0) + 1) / 10) * 10); const lo = Math.max(10, Math.min(hi - 60, Math.floor(Math.max(0, wk.d - 15) / 10) * 10));
+    const rows = []; for (let d = lo; d <= hi; d += 10) rows.push([d, "boss", "Boss de donjon", brBoss(w, lvl, d)]);
+    if (top && top.score) rows.push([top.score, "top", "Le plus bas du serveur", top.pseudo || "?"]);
+    if (best) rows.push([best, "best", "Ton record de toujours", "toutes semaines"]);
+    rows.push([wk.d, "me", "Ta semaine", wk.d ? "depuis lundi" : "pas encore de course"]);
+    const K = { me: 0, best: 1, top: 2, boss: 3 }; rows.sort((a, b) => b[0] - a[0] || K[a[1]] - K[b[1]]);
+    return `<section class="card brx-well"><h3>Le puits</h3>${rows.map(([d, k, t, s]) => `<div class="brx-fl ${k}"><span class="n">${fmt(d)}</span><i></i><span class="t"><b>${h(t)}</b><small>${h(s)}</small></span></div>`).join("")}</section>`;
+  };
+  const brTiers = (wk) => `<section class="card brx-box"><h3>Paliers de la semaine</h3><p class="xs muted">Une fois par semaine, dès que le boss de l'étage tombe.</p>${(E.BR_PAL || []).map(([f, r]) => { const got = (wk.pal || []).includes(f); const near = !got && wk.d >= f - 10;
+      return `<div class="brx-tier ${got ? "got" : near ? "near" : ""}"><span class="e">Étage ${f}</span><b>${h(E.brPalTxt(r))}</b><span class="s">${got ? "✓ pris" : near ? `encore ${f - wk.d}` : "à atteindre"}</span></div>`; }).join("")}</section>`;
+  const brRank = (wk) => { if ((window.ONLINE && window.ONLINE.monoGame && window.ONLINE.monoGame()) || !(window.ONLINE && window.ONLINE.enabled)) return ""; brRkLoad(); const R = brRk.rows, me = brRk.me;
+    const row = (x, mine) => `<div class="brx-rk ${mine ? "me" : x.r <= 3 ? "p" + x.r : ""}"><b>${x.r}</b><span>${mine ? "Toi" : h(x.pseudo || "?")}</span><b>${fmt(x.score)}</b></div>`;
+    const meIn = me && R && R.some((x) => x.user_id === me.user_id);
+    return `<section class="card brx-box"><h3>Classement de la semaine</h3>${R === null ? `<p class="small muted">Chargement…</p>` : R.length ? R.map((x) => row(x, me && x.user_id === me.user_id)).join("") + (me && !meIn ? `<div class="brx-rk gap"><b>…</b><span></span><span></span></div>${row(me, true)}` : !me ? `<p class="xs muted">${wk.d ? "Ton étage part avec ta sauvegarde en ligne." : "Pas encore classé cette semaine."}</p>` : "") : `<p class="small muted">Personne encore cette semaine : à toi !</p>`}
+      <p class="xs muted">Le top 10 gagne le titre « Maître de la Brèche » et 2 Fioles de Volonté le lundi.</p></section>`; };
   const brHtml = () => {
     const S = X.S; const on = E.brOn(S); const songe = E.expActive(S) && !on; const w = E.weekIdx(); const reg = E.brRegne(w); const M = (E.STASIS_MODS || {})[reg.mod] || { name: reg.mod, desc: "" };
-    const wk = E.brWeek(S); const team = E.team(S); const top = team.length ? Math.max(...team.map((c) => c.lvl)) : 0;
-    const rule = `<div class="v3box"><div class="v3n"><b>Règle de la semaine : ${h(M.name)}</b><span class="muted">${h(reg.god)}</span></div><span class="small muted">${h(M.desc)} Sur tous les étages, pour tout le monde.</span></div>`;
-    const rk = (() => { if ((window.ONLINE && window.ONLINE.monoGame && window.ONLINE.monoGame()) || !(window.ONLINE && window.ONLINE.enabled)) return ""; brRkLoad(); const R = brRk.rows;
-      return `<section class="card v3pl"><h2>Classement de la semaine</h2>${R === null ? `<p class="small muted">Chargement…</p>` : R.length ? `<div class="v3tgs">${R.map((x) => `<div class="v3n"><b>${x.r}. ${h(x.pseudo || "?")}</b><span class="num">étage ${fmt(x.score)}</span></div>`).join("")}</div>` : `<p class="small muted">Personne encore cette semaine : à toi !</p>`}<p class="xs muted">Ton meilleur étage de la semaine part avec ta sauvegarde en ligne. Le top 10 gagne le titre « Maître de la Brèche » et 2 Fioles de Volonté le lundi.</p></section>`; })();
+    const wk = E.brWeek(S); const team = E.team(S); const top = team.length ? Math.max(...team.map((c) => c.lvl)) : 0; const lvl = team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : 1;
+    const best = (S.cnt && S.cnt.brBest) || 0;
     if (!on) {
       const err = songe ? "Ton équipe est dans le Songe infini : réveille-la d'abord." : E.expCanStart(S, 0); const L = S.brLast;
-      return `<section class="card v3pl"><h2>La Brèche</h2><p class="small muted">Ton équipe et son équipement, des étages sans fin, les mêmes pour tous cette semaine. Chaque étage est un peu plus dur : chaque équipe trouve son mur. Tous les 10 étages un boss de donjon (Bribes de rêve, un bonus), les étages en 5 viennent du Songe (Faveur onirique ou Archimonstre), une Fontaine de temps en temps. Les PV remontent un peu à chaque étage, et de moitié après un boss.</p>
-        ${rule}<div class="v3hb" style="margin:10px 0"><span class="tag">Record de la semaine : ${wk.d ? `étage ${fmt(wk.d)}` : "—"}</span><span class="tag soft">Record de toujours : ${(S.cnt && S.cnt.brBest) ? `étage ${fmt(S.cnt.brBest)}` : "—"}</span></div>
-        ${L ? `<p class="small">Dernière montée : <b>étage ${fmt(L.d)}</b>${L.bribes ? `, +${fmt(L.bribes)} Bribes de rêve` : ""}${L.loss ? ` · ${h(L.loss.txt)}` : ""}</p>` : ""}
-        <button class="btn primary" data-act="v3-brgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>${err && top < E.EXP_MIN_LVL ? `S'ouvre au niveau ${E.EXP_MIN_LVL}` : "Entrer dans la Brèche"}</button>${err && top >= E.EXP_MIN_LVL ? `<p class="xs muted">${h(err)}</p>` : ""}</section>${rk}`;
+      const last = L ? `<section class="card brx-box"><span class="brx-lab m">Ta dernière course</span><b>Étage ${fmt(L.d)}${L.how === "away" ? " · sortie pendant ton absence" : ""}</b>
+        <span class="small muted">${brDur(L.dur || 0)} · ${fmt(L.fights || 0)} combats · ${(L.relics || []).length} bonus · ${fmt(L.bribes || 0)} Bribes de rêve</span>${L.loss ? `<div class="brx-hint">${h(L.loss.txt)}</div>` : ""}</section>` : "";
+      return `<div class="brx">${brHero(reg, M)}
+        <div class="brx-stats"><div class="me"><b>${wk.d ? fmt(wk.d) : "—"}</b><span>ta semaine</span></div><div class="best"><b>${best ? fmt(best) : "—"}</b><span>ton record</span></div><div><b>${fmt(wk.runs || 0)}</b><span>${(wk.runs || 0) > 1 ? "courses" : "course"} cette semaine</span></div></div>
+        <button class="btn primary brx-go" data-act="v3-brgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>${err && top < E.EXP_MIN_LVL ? `S'ouvre au niveau ${E.EXP_MIN_LVL}` : "Entrer dans la Brèche"}</button>${err && top >= E.EXP_MIN_LVL ? `<p class="xs muted">${h(err)}</p>` : ""}
+        <div class="brx-cols"><div class="brx-col">${last}${brTiers(wk)}</div><div class="brx-col">${brWell(S, wk, lvl)}${brRank(wk)}</div></div>
+        <p class="xs muted">Ton équipe et son équipement, les mêmes étages pour tous cette semaine. Chaque étage est un peu plus dur : chaque équipe trouve son mur. Les étages en 5 viennent du Songe (Faveur onirique ou Archimonstre), une Fontaine de temps en temps. Les PV remontent un peu à chaque étage, et de moitié après un boss.</p></div>`;
     }
-    const Xb = S.exp; const cur = Xb.at !== null ? Xb.nodes[Xb.at].d : 0; const nx = Xb.pick !== null ? Xb.nodes[Xb.pick] : null; const p = E.expPending(S);
-    const up = []; for (let d = cur + 1; d <= cur + 8; d++) { const n = E.brNode(Xb.w, d); const T = BR_T[n.t] || ["⚔", n.t]; up.push(`<div class="v3n ${nx && nx.d === d ? "v3cur" : ""}"><span>${T[0]} <b>Étage ${d}</b> · ${T[1]}</span><span class="xs muted">stasis ${E.brStasis(d, n.t, Xb.lvl).toFixed(1)}</span></div>`); }
-    return `<section class="card v3pl"><h2>La Brèche · étage ${fmt(nx ? nx.d : cur)}</h2>
-      <div class="v3hb" style="margin-bottom:8px"><span class="tag">PV de l'équipe : ${E.sgAvgHp(S)} %</span><span class="tag soft">${fmt(Xb.pts)} points de rêve</span><span class="tag soft">${Xb.relics.length} bonus</span><span class="tag soft">${Xb.sable} Sable</span><span class="tag soft">record de la semaine : étage ${fmt(wk.d)}</span></div>
-      ${p ? `<div class="v3box"><b>Un choix t'attend</b> <button class="btn sm primary" data-act="sg-reopen">Ouvrir</button></div>` : ""}
-      ${rule}<h3 class="sec">Les prochains étages</h3><div class="v3tgs">${up.join("")}</div>
-      <div class="v3hb" style="margin-top:10px"><button class="btn sm" data-act="nav" data-v="combat">Voir le combat</button>${ui.v3brq ? `<button class="btn sm danger" data-act="v3-brquit" data-ok="1">Oui, sortir (tout le butin est gardé)</button><button class="btn sm" data-act="v3-brno">Non</button>` : `<button class="btn sm" data-act="v3-brquit">Sortir de la Brèche</button>`}</div>
-      <label class="row xs" style="margin-top:8px"><input type="checkbox" data-act="v3-sgauto" ${E.expAutoOn(S) ? "checked" : ""}> Choix automatiques (bonus, Fontaines, Sable)</label></section>${rk}`;
+    const Xb = S.exp; const cur = Xb.at !== null ? Xb.nodes[Xb.at].d : 0; const nx = Xb.pick !== null ? Xb.nodes[Xb.pick] : null; const p = E.expPending(S); const fl = nx ? nx.d : cur + 1;
+    const base = Math.floor((fl - 1) / 10) * 10; const bossD = base + 10; const nextPal = (E.BR_PAL || []).map((x) => x[0]).find((f) => !(wk.pal || []).includes(f));
+    const seg = []; for (let d = base + 1; d <= bossD; d++) seg.push(`<i class="${d <= cur ? "done" : d === fl ? "cur" : d === bossD ? "boss" : ""}"></i>`);
+    const up = []; for (let d = cur + 1; d <= cur + 8; d++) { const n = E.brNode(Xb.w, d); const T = BR_T[n.t] || ["⚔", n.t]; up.push(`<div class="brx-nx t-${n.t} ${nx && nx.d === d ? "cur" : ""}"><b>étage ${d}</b><i></i><span>${n.t === "boss" ? `Boss : ${h(brBoss(Xb.w, Xb.lvl, d))}` : T[1]}</span><small>stasis ${E.brStasis(d, n.t, Xb.lvl).toFixed(1)}</small></div>`); }
+    const hpRows = team.map((c) => { const v = Xb.hp[c.id] === undefined ? 100 : Math.max(0, Math.round(Xb.hp[c.id])); return `<div class="brx-hp ${v < 30 ? "low" : v < 60 ? "mid" : ""}"><span>${h(c.name)}</span><span class="bar"><i style="width:${v}%"></i></span><span>${v} %</span></div>`; }).join("");
+    const rel = Xb.relics.map((id) => { const r = E.EXP_RELICS[id]; return r ? `<span class="small"><b>${h(r.name)}</b> · ${h(r.desc)}</span>` : ""; }).join("") || `<span class="small muted">Pas encore de bonus : le premier vient avec le boss de l'étage 10.</span>`;
+    const pend = p && window.SGUI && window.SGUI.pend ? `<section class="brx-pick">${window.SGUI.pend(S, p)}</section>` : p ? `<div class="v3box"><b>Un choix t'attend</b> <button class="btn sm primary" data-act="sg-reopen">Ouvrir</button></div>` : "";
+    return `<div class="brx run">${brHero(reg, M, `<div class="brx-head"><h2>Étage ${fmt(fl)}</h2><span class="small">record de la semaine : ${wk.d ? `étage ${fmt(wk.d)}` : "—"}${nextPal ? ` · prochain palier : étage ${nextPal}` : ""}</span></div>
+      <div class="brx-seg" aria-label="Étages ${base + 1} à ${bossD}">${seg.join("")}</div><div class="brx-head xs"><span>${base + 1}</span><span>boss au ${bossD} : ${h(brBoss(Xb.w, Xb.lvl, bossD))}</span></div>`)}
+      ${pend}
+      <div class="brx-cols"><div class="brx-col"><section class="card brx-box"><h3>La suite</h3>${up.join("")}</section></div>
+        <div class="brx-col"><section class="card brx-box"><span class="brx-lab m">Ton équipe · ${E.sgAvgHp(S)} % de PV</span>${hpRows}</section>
+          <section class="card brx-box"><span class="brx-lab m">Tes bonus (${Xb.relics.length})</span>${rel}</section>
+          <section class="card brx-box"><span class="brx-lab m">Cette course</span><span class="small">${fmt(Xb.bribes || 0)} Bribes de rêve · ${Math.floor(cur / 10)} boss vaincu${cur >= 20 ? "s" : ""}</span><span class="small">${brDur(E.now() - Xb.t0)} · ${fmt(Xb.fights)} combats · ${fmt(Xb.pts)} points de rêve · ${Xb.sable} Sable</span></section>
+          <label class="row xs"><input type="checkbox" data-act="v3-sgauto" ${E.expAutoOn(S) ? "checked" : ""}> Choix automatiques (bonus, Fontaines, Sable)</label>
+          <div class="v3hb"><button class="btn sm" data-act="nav" data-v="combat">Voir le combat</button>${ui.v3brq ? `<button class="btn sm danger" data-act="v3-brquit" data-ok="1">Oui, sortir (tout le butin est gardé)</button><button class="btn sm" data-act="v3-brno">Non</button>` : `<button class="btn sm danger" data-act="v3-brquit">Quitter la Brèche</button>`}</div></div></div>
+      ${brRank(wk)}</div>`;
   };
   let brKey = "";
   V3.brTick = () => { if (!V3.on() || ui.tab !== "breche") return; const S = X.S; const Xb = S.exp; const k = E.brOn(S) ? `${Xb.at}|${Xb.pick}|${Xb.pend.length}|${Xb.pts}|${Xb.relics.length}|${E.sgAvgHp(S)}` : `off|${S.brLast ? S.brLast.t : 0}`; if (k !== brKey) { brKey = k; rePage(); } };

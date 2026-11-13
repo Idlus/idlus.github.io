@@ -263,7 +263,15 @@
   E.brOn = (S) => !!(E.expActive(S) && S.exp.breche);
   E.brBribes = (d) => Math.round(8 + d * 0.8);
   E.brWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.brw || G.brw.w !== w) G.brw = { w, d: 0, runs: 0 }; return G.brw; };
-  const brRec = (S, X, d) => { const wk = E.brWeek(S); if (d > wk.d) wk.d = d; S.cnt = S.cnt || {}; if (d > (S.cnt.brBest || 0)) S.cnt.brBest = d; };
+  /* 3.0.4 (maquette de la Brèche, 2A de Mathis) : paliers de la semaine, une récompense par palier et par semaine, donnée dès que le boss
+     de l'étage est vaincu. Petites (une semaine = 5 lots au plus) : 150 Bribes et 3 coffres pour une équipe qui passe le boss du 50 */
+  E.BR_PAL = [[10, { br: 30 }], [20, { chest: "coffre_argent" }], [30, { chest: "coffre_or" }], [40, { br: 120 }], [50, { chest: "coffre_obsidienne" }]];
+  E.brPalTxt = (r) => (r.br ? `${r.br} Bribes de rêve` : (D.CONSUMABLES[r.chest] && D.CONSUMABLES[r.chest].name) || r.chest);
+  const brPal = (S, wk) => { wk.pal = wk.pal || []; E.BR_PAL.forEach(([f, r]) => { if (wk.d < f || wk.pal.includes(f)) return; wk.pal.push(f);
+    if (r.br) E.sgGive(S, r.br); if (r.chest) E.addCons(S, r.chest, 1); note(S, `Palier de la Brèche (étage ${f}) : ${E.brPalTxt(r)}.`, "rare"); }); };
+  const brRec = (S, X, d) => { const wk = E.brWeek(S); if (d > wk.d) wk.d = d; S.cnt = S.cnt || {}; if (d > (S.cnt.brBest || 0)) S.cnt.brBest = d; brPal(S, wk); };
+  /* le donjon dont vient le boss d'un étage (même tirage que E.sgRoom, pour une équipe de ce niveau) */
+  E.brBossAt = (w, lvl, d) => { const ids = dgsNear(lvl); const rng = seeded(hash(`idlus|songe|${w}|${lvl}|${d - 1}|0`)); return ids[Math.floor(rng() * ids.length)]; };
   E.brStart = (S) => E.expStart(S, 0, false, true);
   E.sgPalier = (d) => E.SG_PALIERS.findIndex(([a, b]) => d >= a && d <= b);
   /* salles où l'on peut aller maintenant */
