@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.7";
+const GAME_VERSION = "3.1.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.0", name: "Une interface au propre", items: [
+    "Le combat devient un bandeau en haut de chaque page, et la page prend toute la largeur",
+    "Une seule barre en haut pour tout le monde ; « Affichage détaillé » ne change plus que les pages",
+    "Chaque page a le même cadre : son titre, une ligne d'explication, le Guide et l'épingle à droite ; les onglets d'une page sont soulignés",
+    "Écran de combat : une rangée fixe Réglages, Fiche du donjon, Vue détaillée, Quitter ou Rentrer",
+    "Téléphone : la barre du bas devient Havre-Sac, Aventure, Combat, Équipe, Plus ; le Sac rejoint l'Équipe (onglet Objets)",
+    "PC : le chat s'ouvre en colonne à droite et pousse la page au lieu de la cacher" ] },
   { v: "3.0.7", name: "La Brèche repart de zéro", items: [
     "Désolé : un bug de la Brèche (bonus sans plafond, corrigé en 3.0.6) a faussé le classement. Les records de la Brèche, de la semaine et de toujours, repartent de zéro",
     "Les paliers déjà reçus cette semaine restent à toi ; une course commencée avant la mise à jour ne compte plus pour le record" ] },
@@ -3582,6 +3589,11 @@ function renderNav() {
     const tabs = null; // 2.1.40 (Mathis 1A des onglets) : les pages rangées ensemble sont des onglets de la page (pageTabs), plus de 2e rangée
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
+  if (strip && window.V3 && window.V3.on()) { /* 3.1 (Mathis 7A) : le même cadre sur chaque page : titre, une ligne d'explication, actions à droite */
+    const pg = navPage(kk) || navPage(k); const pinned = pins.includes(kk);
+    strip = strip.replace(/<button class="sn-guide"[\s\S]*?<\/button>/, "").replace(/<button class="sn-star[\s\S]*?<\/button>/, "");
+    strip += `<header class="v3ph"><div class="v3ph-t"><h1>${h(pg ? pg[1] : curFam.n)}</h1>${NAV_DESC[kk] || NAV_DESC[k] ? `<p>${h(NAV_DESC[kk] || NAV_DESC[k])}</p>` : ""}</div><span class="v3ph-a"><button class="btn sm" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?<span class="v3ph-l"> Guide</span></button>${curFam.season ? "" : `<button class="btn sm sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page"}">${pinned ? "★" : "☆"}<span class="v3ph-l">${pinned ? " Épinglée" : " Épingler"}</span></button>`}</span></header>`;
+  }
   const oSt = sub.querySelector(".sn-strip"), oL = oSt && sub.dataset.k === k ? oSt.scrollLeft : 0; sub.dataset.k = k; // 3.0.3 (Tocqueville) : même page, le bandeau garde sa position
   sub.innerHTML = strip;
   { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (st && oL) st.scrollLeft = oL; else if (c && st.scrollWidth > st.clientWidth) { const L0 = st.getBoundingClientRect().left - st.scrollLeft, at = (b) => b.getBoundingClientRect().left - L0; const want = at(c) - st.clientWidth / 2 + c.offsetWidth / 2; let x = 0; [...st.children].forEach((b) => { if (b.offsetWidth && at(b) - 6 <= want && at(b) <= at(c)) x = Math.max(x, at(b) - 6); }); st.scrollLeft = Math.max(0, x); } } // téléphone : la page en cours reste visible, et le bandeau commence au début d'un onglet (3.0.1) // téléphone : la page en cours reste visible dans le bandeau
@@ -3688,9 +3700,10 @@ function updNavLive() {
    (objectifs suivis, événements, annonce de Xener, nouveautés) ; le portrait ouvre le compte (serveur, sauvegarde, son, bonus).
    Options › Affichage › « Affichage détaillé » remet l'ancienne barre et sa ligne de pastilles. */
 const detailOn = () => !!(S && S.settings.detail);
+const barOne = () => !!S && ((window.V3 && window.V3.on()) || !detailOn()); // 3.1 (Mathis 2A) : une seule barre du haut pour tout le monde ; « Affichage détaillé » ne touche plus que les pages
 function statusHtml() {
   if (!S) return "";
-  if (detailOn()) return statusHtmlFull();
+  if (!barOne()) return statusHtmlFull();
   const where = E.expActive(S) ? (window.SGUI ? window.SGUI.where(S) : "Songe infini") : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const sea = S.mono ? `<span class="it monob" data-tip="${h(`Serveur Monocompte, ${seasonName()} : un seul héros, tout le monde repart de 0. Bonus Héros unique en donjon : +${E.MONO.hp} % de PV, dégâts subis réduits, +${E.MONO.dmg} % de dégâts.`)}">⭐<b class="hide-sm">&nbsp;${h(seasonName())}</b></span>` : "";
   const dust = (S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip hide-sm" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : "";
@@ -3725,7 +3738,7 @@ function accPanelHtml() {
 /* la cloche : #topchips (pastilles de tous les modules) et #annbar deviennent son panneau ; le chiffre compte ce qu'il y a dedans */
 function tbBellSync() {
   const tc = $("#topchips"), an = $("#annbar"); if (!tc) return;
-  const one = !!S && !detailOn(); document.body.classList.toggle("tb1", one); document.body.classList.toggle("bellopen", one && ui.tbOpen === "bell");
+  const one = barOne(); document.body.classList.toggle("tb1", one); document.body.classList.toggle("bellopen", one && ui.tbOpen === "bell");
   if (an) { if (one && an.parentNode !== tc) tc.prepend(an); else if (!one && an.parentNode === tc) tc.after(an); }
   const n = one ? tc.querySelectorAll(".tchip, .annbar, .updbar").length : 0; const b = $("#tbBellN");
   if (b) { b.hidden = !n; b.textContent = n > 9 ? "9+" : String(n); }
@@ -9765,7 +9778,7 @@ function renderUpdBar() {
   if (S && E.honorCls && S.honorHide !== E.honorIdx()) { const k = E.honorCls(), C = CLASSES[k], hh = Math.max(1, Math.ceil((E.honorEnd() - E.now()) / 3600e3)), left = hh >= 24 ? `${Math.floor(hh / 24)} j` : `${hh} h`, mine = S.chars.some((c) => c.cls === k);
     html += tchip({ k: "ev", ico: `<img src="${symImg(k)}" alt="" style="width:18px;height:18px">`, t: `${h(C.name)} à l'honneur`, d: `+${E.HONOR_PCT} % XP et butin`, s: `+${E.HONOR_PCT} % · ${left}`, tip: `La classe à l'honneur : cette semaine, les héros ${h(C.name)} gagnent +${E.HONOR_PCT} % d'XP (Maîtrise comprise), et une équipe avec au moins un ${h(C.name)} a +${E.HONOR_PCT} % de butin. ${mine ? "Tu en as un !" : "Tu n'en as pas encore."} Encore ${left}, puis une autre classe peu jouée prend le relais.`, x: `data-act="honorhide"`, xt: "Masquer cette semaine" }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
-  if (S && !detailOn() && S.seenVersion !== GAME_VERSION) html += tchip({ k: "sys", ico: G("sparkle"), t: `Nouveautés ${h(GAME_VERSION)}`, d: "ce qui a changé", go: `data-act="changelog"`, tip: "Voir les nouveautés de la mise à jour" }); // 2.1.40 (3A) : la pastille des nouveautés passe dans la cloche
+  if (barOne() && S.seenVersion !== GAME_VERSION) html += tchip({ k: "sys", ico: G("sparkle"), t: `Nouveautés ${h(GAME_VERSION)}`, d: "ce qui a changé", go: `data-act="changelog"`, tip: "Voir les nouveautés de la mise à jour" }); // 2.1.40 (3A) : la pastille des nouveautés passe dans la cloche
   if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
   if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }
@@ -10117,9 +10130,9 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return (window.V3 && window.V3.on() ? optSec("Idlus 3.0", "le combat au centre, 8 espaces + la Saison", `<button class="btn sm" data-act="v3-tutogo">Revoir le tuto de la 3.0</button>`) : "") + optSec("Menus", "",
+  return (window.V3 && window.V3.on() ? optSec("Idlus 3.0", "le combat en accueil, 7 espaces + la Saison", `<button class="btn sm" data-act="v3-tutogo">Revoir le tuto de la 3.0</button>`) : "") + optSec("Menus", "",
       optChk(`data-act="setnavfull"`, navAllOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
-    + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
+    + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "l'accueil complet du Havre-Sac, toutes les explications en haut des pages et les listes complètes") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
       optChk(`data-act="seteco"`, ecoOn(), "Économie de batterie", "coupe les animations, le fond animé, les effets de combat et les chiffres de dégâts qui volent ; le jeu avance exactement pareil")
     + (ecoOn() ? `<p class="xs muted opteco" style="margin:2px 0 0">Activée : les réglages Animations, Mouvements réduits, Ambiance animée et Effets de décor ci-dessous sont mis en pause, et retrouvent leur valeur quand tu la coupes. Le panneau Statistiques du combat se met à jour toutes les 5 secondes.</p>` : ""))
@@ -11679,7 +11692,7 @@ document.addEventListener("click", (ev) => {
     case "sabgo": sabGo(d.v); return;
     case "sabbuy": { const r = E.horlogerBuy(S); if (r) { toast(r); return; } toast("Fiole de temps achetée : elle est dans ton sac (Utiliser pour +1 h, ou à vendre à l'hôtel de vente)."); dirty = true; renderStatus(); sabSheet(); return; }
     case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % E.sabMaxSpd(S)) + 1);
-      else if (t.closest("#status") && !detailOn() && +v === E.sab(S).spd) { ui.sabOpen = !ui.sabOpen; renderStatus(); return; } // 2.2.3 (3A) : la vitesse choisie ouvre les autres
+      else if (t.closest("#status") && barOne() && +v === E.sab(S).spd) { ui.sabOpen = !ui.sabOpen; renderStatus(); return; } // 2.2.3 (3A) : la vitesse choisie ouvre les autres
       ui.sabOpen = false; // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3 (→ ×4 au niveau 50 de la Maîtrise du temps)
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": reloadTo(false); return; // 1.0.11 : on revient directement dans la partie en cours

@@ -18,8 +18,7 @@
   /* ---------- les 8 espaces (question 3) et leurs onglets ; lvl : niveau qui ouvre l'espace (question 4) ---------- */
   const SPACES = [
     { id: "av", n: "Aventure", ic: "monde", keys: ["world", "breche", "asc", "exp", "routines", "dungeons", "defi", "wb", "chev", "xs1"] },
-    { id: "he", n: "Équipe", ic: null, keys: ["team", "plan", "maitrise", "garde", "builds"] },
-    { id: "sac", n: "Sac", ic: "sac", keys: ["inv", "dofus"] },
+    { id: "he", n: "Équipe", ic: null, keys: ["team", "inv", "plan", "maitrise", "garde", "dofus", "builds"] }, // 3.1 (Mathis 4A) : le Sac rejoint l'Équipe
     { id: "ec", n: "Artisanat", ic: "metiers", keys: ["metiers", "forge", "grav", "comptoirs"], lvl: 5 },
     { id: "col", n: "Collection", ic: "dofus", keys: ["album", "pets", "elev", "chasse", "enc"], lvl: 10 },
     { id: "mar", n: "Marché", ic: "bourse", keys: ["cours", "boutique3", "chantier", "echanges", "hdv", "foire"], lvl: 15 },
@@ -70,7 +69,7 @@
     let b = document.getElementById("v3b");
     if (!b) { b = document.createElement("section"); b.id = "v3b"; b.className = "v3b"; b.setAttribute("aria-label", "Combat en direct"); app.insertBefore(b, document.getElementById("main")); }
     let band = document.getElementById("v3band");
-    if (!band) { band = document.createElement("button"); band.id = "v3band"; band.className = "v3band"; band.dataset.act = "nav"; band.dataset.v = "combat"; app.insertBefore(band, document.getElementById("main")); }
+    if (!band) { band = document.createElement("div"); band.id = "v3band"; band.className = "v3band"; band.dataset.act = "nav"; band.dataset.v = "combat"; band.setAttribute("role", "region"); band.setAttribute("aria-label", "Combat en cours"); app.insertBefore(band, document.getElementById("subnav")); } // 3.1 (1A) : le bandeau du combat en haut de chaque page, sur PC comme au téléphone
   };
   V3.home = () => V3.on() && ui.tab === "combat" && !ui.v3det; // le tableau remplace la page de combat détaillée
   V3.layout = function () {
@@ -115,7 +114,7 @@
     const r = rate();
     const al = V3.alert;
     const head = `<div class="v3h"><div class="v3t"><h1>${h(title())}</h1><div class="small muted">${live ? h(live) : "Choisis une zone pour repartir chasser"}${F && !F.over ? ` · tour ${F.round}` : ""}</div></div>
-      <div class="v3hb"><button class="btn sm" data-act="csetsheet">${G("gear")} Réglages du combat</button>${window.ANIM3 ? `<button class="btn sm" data-act="v3-fx" title="Effets des sorts sur la scène">Effets : ${FXN[V3.fxMode()]}</button>` : ""}<button class="btn sm" data-act="v3det">Vue détaillée</button>${(() => { const S = X.S; if (!team.length || E.expActive(S)) return ""; if (S.dungeon) { const ask = ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000; return `<button class="btn sm danger" data-act="navquit">${ask ? "Sûr ? La clé est perdue" : "Quitter le donjon"}</button>`; } return S.hunting && S.sub ? `<button class="btn sm" data-act="navquit">Rentrer</button>` : ""; })()}${live ? "" : `<button class="btn sm primary" data-act="nav" data-v="world">Choisir une zone</button>`}</div></div>`;
+      <div class="v3hb"><button class="btn sm" data-act="csetsheet">${G("gear")} Réglages du combat</button>${window.ANIM3 ? `<button class="btn sm" data-act="v3-fx" title="Effets des sorts sur la scène">Effets : ${FXN[V3.fxMode()]}</button>` : ""}<button class="btn sm" data-act="v3det">Vue détaillée</button>${X.S.dungeon && !X.S.dungeon.defi && !E.expActive(X.S) ? `<button class="btn sm" data-act="dgopen" data-id="${h(X.S.dungeon.id)}">Fiche du donjon</button>` : ""}${quitBtn()}${live ? "" : `<button class="btn sm primary" data-act="nav" data-v="world">Choisir une zone</button>`}</div></div>`;
     const alert = al ? `<div class="v3al" data-k="al"><span aria-hidden="true">⚠</span><span class="grow">${h(al.txt)}</span><button class="btn sm primary" data-act="nav" data-v="world">Changer de zone</button><button class="btn sm" data-act="v3alok" aria-label="Fermer">✕</button></div>` : "";
     const obj = pin ? `<button class="v3obj" data-act="pingo" data-key="${h(pin.key)}"><span class="grow"><b>Prochain objectif :</b> ${h(pin.t)}</span>${bar(pin.p, "g")}<span class="v3pill">${h(pin.v)}</span></button>` : "";
     const tugs = `<div class="v3tugs"><div class="v3tug a"><i style="width:${ally.toFixed(1)}%"></i><span>Équipe ${Math.round(ally)} %</span></div><div class="v3tug m"><i style="width:${foe.toFixed(1)}%"></i><span>Ennemis ${Math.round(foe)} %</span></div></div>`;
@@ -126,30 +125,32 @@
     return `${head}${alert}${obj}${scene}${tugs}<div class="v3g"><div class="v3box"><h4>Ton équipe<small>barre fine = part des dégâts</small></h4>${heroRows}</div><div class="v3col"><div class="v3box"><h4>Ennemis</h4>${foeRows}</div><div class="v3box"><h4>Ce qui compte<small>les moments importants</small></h4>${mom}</div></div></div>
       <div class="v3k"><div><b>${fmtK(Math.max(0, r.k))}</b><span>kamas / min</span></div><div><b>${(Math.round(r.f * 10) / 10).toLocaleString("fr-FR")}</b><span>combats / min</span></div><div><b>${MOM.filter((m) => m.k === "rare").length}</b><span>butins rares</span></div><div><b>${fmt(team.length)}</b><span>héros en combat</span></div></div>`;
   };
+  /* 3.1 (5A) : quitter le donjon (2 clics, la clé est perdue) ou rentrer de la chasse, au même endroit sur le tableau et dans le bandeau */
+  const quitBtn = (short) => { const S = X.S; if (!E.team(S).length || E.expActive(S)) return ""; if (S.dungeon) { const ask = ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000; return `<button class="btn sm danger" data-act="navquit">${ask ? "Sûr ? La clé est perdue" : short ? "Quitter" : "Quitter le donjon"}</button>`; } return S.hunting && S.sub ? `<button class="btn sm" data-act="navquit">Rentrer</button>` : ""; };
   V3.bandHtml = function () {
     const F = X.S.fight; const live = navLiveTxt(); const ents = F && F.ents ? F.ents.filter((e) => !e.summon) : [];
     const mine = ents.filter((e) => e.side === "c"), foes = ents.filter((e) => e.side === "m");
     const s = (L) => L.reduce((a, e) => a + (e.alive ? Math.max(0, e.hp) : 0), 0) / Math.max(1, L.reduce((a, e) => a + e.hpMax, 0)) * 100;
-    return `${med("combat")}<span class="grow"><b>${h(live || "Ton équipe se repose")}</b>${mine.length ? `<span class="v3bb">${bar(s(mine))}${bar(s(foes), "m")}</span>` : ""}</span><span class="v3pill">Voir le combat</span>`;
+    return `${med("combat")}<span class="grow"><b>${h(live || "Ton équipe se repose")}</b>${mine.length ? `<span class="v3bb">${bar(s(mine))}${bar(s(foes), "m")}</span>` : ""}</span><span class="v3bk"><button class="btn sm" data-act="nav" data-v="combat">Voir le combat</button>${quitBtn(true)}</span>`;
   };
   let tAt = 0;
   V3.tick = function (force) {
     if (!V3.on()) return; const now = performance.now(); if (!force && now - tAt < 300) return; tAt = now;
     V3.relock(); V3.layout();
     const b = document.getElementById("v3b"), band = document.getElementById("v3band");
-    const wide = window.innerWidth >= 1180 && !document.body.classList.contains("chat-open"); // 3.0.1 : chat ouvert = pas de colonne du combat
+    const wide = false; // 3.1 (Mathis 1A) : plus de colonne du combat à côté des pages, la page prend toute la largeur et le combat est un bandeau en haut
     try { if (window.ANIM3 && window.ANIM3.fx && X.S.fight) window.ANIM3.fx(X.S.fight, b); } catch (er) {}
     if (b) { const show = V3.home() || (wide && ui.tab !== "combat"); b.hidden = !show; if (show) morphTo(b, V3.boardHtml()); }
     tutoPaint(); try { V3.brTick(); } catch (er) {}
     if (band) { const show = !V3.home() && ui.tab !== "combat" && !wide; band.hidden = !show; if (show) { const x = V3.bandHtml(); if (band.dataset.h !== x) { band.dataset.h = x; band.innerHTML = x; } } }
   };
-  /* barre du bas du téléphone (question 2) : Combat, Aventure, Équipe, Sac, Plus */
+  /* barre du bas du téléphone (3.1, Mathis 4A) : Havre-Sac, Aventure, Combat au centre, Équipe, Plus */
   V3.mobHtml = function (k, fight, famOn, famBadge, icon) {
     const F = (id) => NAV.find((x) => x.id === id);
     const mb = (F0, key) => F0 ? `<button data-act="nav" data-v="${key || F0.pages[0][0]}" data-nk="${key || F0.pages[0][0]}" ${famOn(F0) ? 'aria-current="page"' : ""}>${icon(F0.ic)}<span>${h(F0.n)}</span>${famBadge(F0)}</button>` : "";
     const on = (id) => famOn(F(id) || {});
-    const rest = !fight && k !== "home" && !on("av") && !on("he") && !on("sac");
-    return `<div class="sn-mob"><button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb(F("av"))}${mb(F("he"), "team")}${mb(F("sac"), "inv")}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${rest ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Plus</span></button></div>`;
+    const rest = !fight && k !== "home" && !on("av") && !on("he");
+    return `<div class="sn-mob"><button data-act="nav" data-v="home" data-nk="home" ${k === "home" ? 'aria-current="page"' : ""}>${icon("logo")}<span>Havre-Sac</span></button>${mb(F("av"))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb(F("he"), "team")}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${rest ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Plus</span></button></div>`;
   };
   /* ---------- Plan de bataille (question 11) : posture, cible, réflexes ; Routines (question 12) : l'automatisme en un endroit ---------- */
   const FOCUS = [["auto", "Les dangereux d'abord", "Soigneurs, chefs, invocateurs et protecteurs"], ["low", "Le plus faible", "Achève vite un monstre blessé"], ["boss", "Le boss", "Tout sur le chef du groupe"], ["adds", "Les sbires d'abord", "Nettoie le groupe, puis le boss"], ["prep", "Qui prépare un coup", "Coupe le monstre qui charge une attaque"]];
@@ -312,7 +313,7 @@
     ["#v3b .v3g .v3box", "Tes héros", "La vie de chacun, et la barre fine dorée : sa part des dégâts. Touche un héros pour ouvrir sa fiche."],
     ["#v3b .v3col .v3box:last-child", "Ce qui compte", "Seulement les moments importants : butins rares, boss vaincus, niveaux."],
     ["#v3b [data-act=csetsheet]", "Réglages du combat", "Cible, suivi de niveau et chasse itinérante. Le Plan de bataille est dans Équipe."],
-    ["#nav", "8 espaces", "Aventure, Équipe, Sac, Artisanat, Collection, Marché, Joueurs, Journal. De nouveaux espaces s'ouvrent en montant de niveau."],
+    ["#nav", "7 espaces", "Aventure, Équipe (avec le Sac), Artisanat, Collection, Marché, Joueurs, Journal. De nouveaux espaces s'ouvrent en montant de niveau."],
     ["#v3b .v3obj, #v3b .v3k", "Ton prochain objectif", "Le prochain pas à faire, et tes gains à la minute."],
     ["#nav", "C'est parti !", "Les objectifs de la semaine sont dans le Journal, onglet Semaine. Bonne chasse !"],
   ];

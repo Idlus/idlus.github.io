@@ -125,8 +125,8 @@
       ["p", "Le jeu tient en **5 familles** : Aventure, Héros, Économie, Joueurs et Journal. Les pages d'une famille sont des **onglets** en haut de chaque page ; les pages proches sont réunies dans une seule (Hôtel de vente et Cours des ressources, Forgemagie et Gravure, Familiers et Élevage, Quêtes, Succès et Ornements, Classements et Builds)."],
       ["ul", [
         "**Sur PC** : une colonne d'icônes à gauche avec Combat, Havre-Sac, les familles, puis Options et Aide en bas. **Passe la souris sur une famille** : la liste de ses pages s'ouvre à côté, un clic y va. Un clic sur la famille rouvre la dernière page visitée.",
-        "**Grand écran** : le menu, la page, puis à droite le combat en direct, la quête suivie et le chat. Avec le chat ouvert, la page se resserre au lieu d'être recouverte.",
-        "**Au téléphone** : Havre-Sac, Aventure, Combat, Héros et **Menu** en bas de l'écran. Menu montre la recherche, les familles en grandes tuiles et tes épinglés.",
+        "**Le combat** est un bandeau en haut de chaque page (« Voir le combat », « Quitter » ou « Rentrer »), et la page prend toute la largeur. Avec le chat ouvert, la page se resserre au lieu d'être recouverte.",
+        "**Au téléphone** : Havre-Sac, Aventure, Combat, Équipe et **Plus** en bas de l'écran. Plus montre les autres espaces et tes épinglés.",
         "**Toutes les pages d'un coup** : le bouton **Tout** du menu (PC) ou **Toutes les pages** dans Menu (téléphone) montre chaque famille avec toutes ses pages. Le choix est gardé (aussi dans Options › Affichage).",
         "**En Monocompte** : l'entrée **Saison** réunit Progression, Défis, Guerre, Boutique et Classements de la saison.",
       ]],

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.0 « Une interface au propre »
+- Mathis (13/11, maquette https://claude.ai/artifact/SBLHHVDvXxdirhjxpxH6WX) : 1A 2A 3A 4A 5A 6A 7A. js/v3.js : bandeau #v3band sur chaque page hors combat (PC compris, `wide` toujours faux), plus de colonne de combat à 1180 px ; `quitBtn()` partagé (tableau et bandeau) ; tête du tableau avec « Fiche du donjon » ; espaces sans « Sac » (Objets, Plan, Maîtrise, Garde-robe, Dofus, Builds dans Équipe) ; barre du téléphone Havre-Sac, Aventure, Combat, Équipe, Plus. js/ui.js : `barOne()` (barre unique en V3 même avec Affichage détaillé), en-tête de page `.v3ph` (titre, NAV_DESC, Guide et épingle) sous le bandeau des onglets. css/v3.css : onglets de page soulignés, chat en colonne de 860 à 1099 px, cadre `.v3ph`.
+
 ## 3.0.7 « La Brèche repart de zéro »
 - Mathis (13/11) : « remet à zéro les records de brèche avec une excuse ». js/songe.js `E.BR_RZ` : une fois par partie (E.songe), record de la semaine (`brw.d`) et de toujours (`cnt.brBest`) à 0, paliers reçus gardés ; une course commencée avant (`X.rz` absent) ne compte plus. js/verify.js : `meta.brk.z = 1`. supabase/ascension.sql (et tranche s1) : le classement n'accepte que `z = 1`. Étape serveur « breche-zero » (tools/serveur/breche_zero.sql) : copie des lignes dans `asc_scores_breche_1311`, puis suppression du classement « breche » (Éternel et Saison 1).
 

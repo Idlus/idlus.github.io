@@ -1,6 +1,18 @@
 {
-  "version": "3.0.7",
+  "version": "3.1.0",
   "versions": [
+    {
+      "v": "3.1.0",
+      "name": "Une interface au propre",
+      "items": [
+        "Le combat devient un bandeau en haut de chaque page, et la page prend toute la largeur",
+        "Une seule barre en haut pour tout le monde ; « Affichage détaillé » ne change plus que les pages",
+        "Chaque page a le même cadre : son titre, une ligne d'explication, le Guide et l'épingle à droite ; les onglets d'une page sont soulignés",
+        "Écran de combat : une rangée fixe Réglages, Fiche du donjon, Vue détaillée, Quitter ou Rentrer",
+        "Téléphone : la barre du bas devient Havre-Sac, Aventure, Combat, Équipe, Plus ; le Sac rejoint l'Équipe (onglet Objets)",
+        "PC : le chat s'ouvre en colonne à droite et pousse la page au lieu de la cacher"
+      ]
+    },
     {
       "v": "3.0.7",
       "name": "La Brèche repart de zéro",

@@ -9,7 +9,8 @@ body.v3.v3det #v3b{display:none!important}
 body.v3 #v3band:not([hidden]){display:flex}
 .v3band{width:100%;align-items:center;gap:10px;margin:0 0 10px;padding:6px 10px;border:2px solid var(--frame);border-radius:14px;background:var(--panel2);color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
 .v3band .med{flex:none}.v3band b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.v3band .grow{min-width:0;flex:1}.v3bb{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:3px}
+.v3band .grow{min-width:0;flex:1}.v3bk{display:flex;gap:6px;flex:none}
+@media (max-width:640px){.v3bk [data-v=combat]{display:none}}.v3bb{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:3px}
 .v3pill{flex:none;border:2px solid var(--gold);color:var(--gold2);border-radius:99px;padding:1px 9px;font-weight:900;font-size:12px;white-space:nowrap}
 :root:not([data-theme="dark"]) .v3pill{color:var(--frame)}
 .v3h{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;justify-content:space-between}
@@ -53,16 +54,7 @@ body.v3 #v3band:not([hidden]){display:flex}
   .v3k{grid-template-columns:repeat(2,minmax(0,1fr))}
   .v3h h1{font-size:22px}
 }
-/* PC large : le combat au centre, l'espace ouvert dans un panneau à droite (question 1) */
-@media (min-width:1180px){
-  body.v3.v3pan:not(.chat-open) .app{max-width:none;display:grid;grid-template-columns:minmax(380px,1fr) minmax(0,2fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
-  body.v3.v3pan:not(.chat-open) #status{grid-area:st}body.v3.v3pan:not(.chat-open) #topchips{grid-area:tc}body.v3.v3pan:not(.chat-open) #subnav{grid-area:sub;min-width:0}
-  body.v3.v3pan:not(.chat-open) #main{grid-area:main;min-width:0}body.v3.v3pan:not(.chat-open) .footer{grid-area:ft}
-  body.v3.v3pan:not(.chat-open) #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
-  body.v3.v3pan:not(.chat-open) #v3band{display:none!important}
-  /* 3.0.1 : sur PC, les onglets de l'espace passent à la ligne au lieu d'être coupés */
-  body.v3.v3pan:not(.chat-open) #subnav .sn-strip{flex-wrap:wrap;overflow-x:visible;-webkit-mask-image:none;mask-image:none;padding-right:6px}
-}
+/* 3.1 (Mathis 1A) : plus de colonne du combat à côté des pages ; le bandeau du combat est en haut de chaque page */
 /* 3.0.1 : téléphone, le bandeau des onglets s'arrête toujours au début d'un onglet (jamais un onglet coupé à gauche) */
 body.v3 #subnav .sn-strip{scroll-snap-type:x proximity;scroll-padding-left:6px}body.v3 #subnav .sn-strip>*{scroll-snap-align:start}
 /* Plan de bataille et Routines */
@@ -109,7 +101,8 @@ nav.subnav .sn-strip .navcoin,nav.subnav .sn-tabs .navcoin{position:static;displ
 body.v3 #main{container:v3m/inline-size}
 /* 3.0.1 (Mathis : « le tchat coupe les menus ») : chat ouvert sur PC, la page prend toute la place à côté du chat
    et le combat passe dans le bandeau du haut, comme sur téléphone ; entre 1100 et 1279 px, le chat ne recouvre plus la page */
-@media (min-width:1100px) and (max-width:1279px){body.v3.chat-open .app{margin-right:400px}}
+/* 3.1 (Mathis 6A) : sur tout PC, le chat est une colonne à droite qui pousse la page (dès 1100 px : style.css) ; entre 860 et 1099 px, une colonne plus étroite */
+@media (min-width:860px) and (max-width:1099px){body.v3.chat-open .app{margin-left:0;margin-right:326px;max-width:none}body.v3.chat-open #chat.chat{top:16px;bottom:16px;right:8px;width:310px;height:auto}}
 /* 3.0.4 : la Brèche d'après la maquette (1A puits, 2A paliers, 4A la course sur la page, 5A top 3 et ta place) */
 .brx{display:grid;gap:12px;min-width:0}
 .brx h2,.brx h3{margin:0}
@@ -161,3 +154,18 @@ body.v3 #main{container:v3m/inline-size}
 .brx-hp.mid .bar i{background:var(--gold)}.brx-hp.low .bar i{background:#d24a3a}
 /* 3.0.5 (signalé par Getget) : téléphone avec « Affichage détaillé », le logo du Havre-Sac reste dans la barre du haut (le menu du bas n'a pas de Havre-Sac) */
 @media (max-width:859px){body.v3 .status .brand{display:inline-flex;align-items:center}}
+/* 3.1 (Mathis 3A) : deux niveaux de menu au plus. Les onglets d'une page (fiche du héros, sac, quêtes…) deviennent une rangée
+   d'onglets soulignés, plus discrète que le bandeau de l'espace : on voit tout de suite lequel est le menu et lequel est dans la page */
+body.v3 #main .subtabs{gap:2px;border-bottom:2px solid var(--frame);margin-bottom:12px}
+body.v3 #main .subtabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;margin-bottom:-2px;padding:7px 12px;color:var(--muted);box-shadow:none;transform:none}
+body.v3 #main .subtabs button:hover{color:var(--ink);box-shadow:none;transform:none}
+body.v3 #main .subtabs button[aria-pressed="true"]{background:none;color:var(--ink);border-bottom-color:var(--action)}
+/* 3.1 (Mathis 7A) : le cadre commun des pages */
+body.v3 nav.subnav{overflow:visible;border-radius:0}
+body.v3 .v3ph{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 2px 4px;flex-wrap:wrap}
+body.v3 .v3ph-t{min-width:0;flex:1 1 260px}
+body.v3 .v3ph h1{margin:0;font-size:1.35rem;line-height:1.2;color:var(--ink)}
+body.v3 .v3ph p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+body.v3 .v3ph-a{display:flex;gap:6px;flex:none}
+body.v3 .v3ph .sn-star.on{color:var(--gold,#e8c35a)}
+@media (max-width:640px){body.v3 .v3ph{margin:10px 2px 2px;flex-wrap:nowrap;align-items:flex-start}body.v3 .v3ph-t{flex:1 1 0}body.v3 .v3ph-l{display:none}body.v3 .v3ph-a .btn{min-width:34px}body.v3 .v3ph h1{font-size:1.15rem}body.v3 .v3ph p{font-size:.82rem}body.v3 .v3ph-a .btn{padding:4px 8px}}
