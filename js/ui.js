@@ -21,11 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.0";
+const GAME_VERSION = "3.0.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.0.1", name: "Le nouvel écran pour tous", items: [
+    "Le nouvel écran de la 3.0 devient l'écran du jeu pour tout le monde : le combat au centre et 8 espaces. L'ancien écran est retiré",
+    "Les objectifs de la semaine comptent pour tous les joueurs",
+    "Le tuto de la 3.0 se relance dans Options › Affichage" ] },
   { v: "3.0.0", name: "Idlus 3.0", items: [
-    "Nouvel écran à essayer (Options › Affichage › « Essayer Idlus 3.0 ») : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas, tu peux revenir à l'écran actuel quand tu veux",
+    "Nouvel écran : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas",
     "La Brèche (Aventure) : des étages sans fin avec ton équipe, un boss tous les 10 étages, une règle différente chaque semaine et un classement de la semaine. L'Ascension reste le mode solo du mois",
     "Objectifs de la semaine (Journal › Semaine) : 5 objectifs, les mêmes pour tout le monde, et un coffre quand ils sont faits",
     "Chantier du serveur (Marché) : tout le serveur verse des kamas ; objectif atteint = ×2 XP et ×2 butin pour tout le monde pendant 48 h",
@@ -3560,7 +3564,7 @@ function renderNav() {
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   sub.innerHTML = strip;
-  { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.offsetWidth / 2; } // téléphone : la page en cours reste visible dans le bandeau
+  { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) { const L0 = st.getBoundingClientRect().left - st.scrollLeft, at = (b) => b.getBoundingClientRect().left - L0; const want = at(c) - st.clientWidth / 2 + c.offsetWidth / 2; let x = 0; [...st.children].forEach((b) => { if (b.offsetWidth && at(b) - 6 <= want && at(b) <= at(c)) x = Math.max(x, at(b) - 6); }); st.scrollLeft = Math.max(0, x); } } // téléphone : la page en cours reste visible, et le bandeau commence au début d'un onglet (3.0.1) // téléphone : la page en cours reste visible dans le bandeau
   stripTabs(); // 2.2.3 (4A)
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
   [".sn-side"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
@@ -10085,7 +10089,7 @@ function applyDisplay() {
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Idlus 3.0", "le nouvel écran : le combat au centre, 8 espaces + la Saison", optChk(`data-act="v3try"`, !!S.settings.v3, "Essayer Idlus 3.0", "le jeu se recharge ; décoche pour revenir à l'écran actuel. Ta partie ne change pas") + (S.settings.v3 ? `<button class="btn sm" data-act="v3-tutogo">Revoir le tuto de la 3.0</button>` : "")) + optSec("Menus", "",
+  return (window.V3 && window.V3.on() ? optSec("Idlus 3.0", "le combat au centre, 8 espaces + la Saison", `<button class="btn sm" data-act="v3-tutogo">Revoir le tuto de la 3.0</button>`) : "") + optSec("Menus", "",
       optChk(`data-act="setnavfull"`, navAllOn(), "Toutes les pages dans le menu", "le menu montre chaque famille avec toutes ses pages, à un clic (aussi avec le bouton « Tout » du menu)") // 2.1.40.1
     + optChk(`data-act="setdetail"`, detailOn(), "Affichage détaillé", "remet l'ancienne barre du haut avec toutes ses pastilles, l'accueil complet du Havre-Sac et les explications en haut des pages") // 2.1.40 (Mathis 4A)
     ) + optSec("Batterie", "",
@@ -11465,7 +11469,7 @@ document.addEventListener("click", (ev) => {
       const from = SLOT, mono = startMono(), toS1 = !mono && srvFirst() && startSrvOf() === "s1", to = mono ? MONO_SLOT : toS1 ? S1_SLOT : SLOT;
       if (to !== from && SV.local.get(slotKey(to))) { toast("Tu as déjà une partie sur ce serveur : elle n'est pas remplacée. Ouvre-la depuis l'écran des parties."); return; } // 12/11 : jamais d'écrasement
       if (to !== from) { setSlot(to); setMenuPref(to === S1_SLOT ? { last: S1_SLOT, lastCl: S1_SLOT } : { last: to }); } // 2.2.0 : nouvelle partie de saison
-      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) { S.mono.gen = +A.gen || 0; if (A.etat === "ouverte") S.mono.sid = A.id; } } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+      S = E.newState(name.slice(0, 20), ui.startCls); if (SLOT === S1_SLOT && E.s1cStart) { E.s1cStart(S); if (E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} } /* Classique · Saison 1 (js/saisonc.js) */ s1Seal(); if (mono) { E.monoStart(S); { const A = monoSrvSaison(); if (A) { S.mono.gen = +A.gen || 0; if (A.etat === "ouverte") S.mono.sid = A.id; } } E.monoBoot(S); monoNav(); const L = monoLegacyRead(); if (E.monoApplyLegacy(S, L)) setTimeout(() => toast("Tes titres et apparences des saisons passées sont là."), 1500); } S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); if (window.V3) window.V3.boot(); /* 3.0.1 : le nouvel écran dès la première partie */ render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
@@ -13600,7 +13604,7 @@ function bootGame(pushNow) {
     if (S.mono && !S.mono.eternel && S.mono.gen == null && monoSrvSaison()) S.mono.gen = monoGenOf(S); // 2.1.35.2 : génération de la partie (remise à zéro)
     if (S.mono && E.monoBoot) E.monoBoot(S); // Monocompte : un héros, 3 Dofus (js/mono.js)
     if (S.mono) monoNav(); else s1Seal();
-    if (window.V3) window.V3.boot(); // 3.0 : les 8 espaces + la Saison (js/v3.js), si « Essayer Idlus 3.0 » est coché
+    if (window.V3) window.V3.boot(); // 3.0 : les 8 espaces + la Saison (js/v3.js), pour tout le monde depuis la 3.0.1
     if (SLOT === S1_SLOT && E.grExcl) try { E.grExcl(S, SV.peek(slotKey(1)).state); } catch (e) {} // 9A : exclusifs de l'Éternel portés en saison (js/garderobe.js)
     else if (!S.mono && E.vitImport) try { const St = SV.peek(slotKey(S1_SLOT)).state; E.vitImport(S, St); if (E.cardImport) E.cardImport(S, St); } catch (e) {} // lots 4 et 6 : vitrine et album de saison liés au compte (js/vitrine.js, js/cartes.js)
     setTheme(S.settings.theme || "dark");

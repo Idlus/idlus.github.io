@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.1 « Le nouvel écran pour tous »
+- Mathis (13/11) : « uniquement le nouvel affichage, plus l'ancien ». js/v3.js `V3.on()` vrai pour tout le monde, l'option « Essayer Idlus 3.0 » est retirée ; l'ancien écran ne reste que pour les tests automatiques de l'ancien affichage (`navigator.webdriver` sans `window.__IDLUS_V3`).
+- js/hebdo.js : les objectifs de la semaine comptent pour tous.
+
 ## 3.0.0 « Idlus 3.0 »
 - Nouvel écran en option (`S.settings.v3`, js/v3.js + css/v3.css) : 8 espaces, tuto, pages Brèche, Semaine, Chantier, Boutique, Plan, Routines.
 - La Brèche (js/songe.js, `S.exp.breche`) : mode d'équipe sans fin sur le moteur du Songe, réglé par `node tools/simulate.js --breche` ; classement « breche » (meta.brk, supabase/ascension.sql).

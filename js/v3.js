@@ -1,6 +1,6 @@
 /* Idlus 3.0 « Un écran de jeu » (maquette validée par Mathis le 11-12/11/2026, réponses 1 à 31) :
    le combat reste au centre, les 41 pages deviennent 8 espaces + la Saison, ouverts dans un panneau à droite (PC)
-   ou en plein écran avec un bandeau du combat (téléphone). D'abord en option « Essayer Idlus 3.0 » (Options › Affichage).
+   ou en plein écran avec un bandeau du combat (téléphone). Pour tout le monde depuis la 3.0.1 (d'abord en option à la 3.0.0).
    Ce fichier est chargé avant js/ui.js : il n'utilise ses fonctions (NAV, S, ui, render…) qu'au moment de l'appel. */
 (function () {
   const V3 = (window.V3 = {});
@@ -10,7 +10,10 @@
     X = ctx; ({ h, fmt, fmtK, pct, med, G, hudPic, navLiveTxt, morphTo, toast, saveNow, render, renderNav, E, DUNGEONS, NAV, ui, PAGES, NAV_DESC, IC } = ctx);
     Object.keys(XP3).forEach((k) => { if (PAGES && !PAGES[k]) PAGES[k] = (m) => { m.innerHTML = XP3[k].html(); }; if (NAV_DESC) NAV_DESC[k] = XP3[k].d; });
   };
-  V3.on = () => !!(X && X.S && X.S.settings && X.S.settings.v3);
+  /* 3.0.1 (Mathis 13/11 : « uniquement le nouvel affichage, plus l'ancien ») : la 3.0 pour tout le monde, l'option est retirée.
+     L'ancien écran ne reste que pour les tests automatiques de l'ancien affichage (navigateur piloté, sans window.__IDLUS_V3). */
+  V3.classic = () => !!(typeof navigator !== "undefined" && navigator.webdriver && !window.__IDLUS_V3);
+  V3.on = () => !!(X && X.S) && !V3.classic();
 
   /* ---------- les 8 espaces (question 3) et leurs onglets ; lvl : niveau qui ouvre l'espace (question 4) ---------- */
   const SPACES = [
@@ -320,6 +323,7 @@
     }
     if (a === "v3det") { ui.v3det = !ui.v3det; render(); return true; }
     if (a === "v3alok") { V3.alert = null; lossRow = 0; V3.tick(true); return true; }
+    if (a === "v3try" && !V3.classic()) return true; // l'option n'existe plus
     if (a === "v3try") { X.S.settings.v3 = !X.S.settings.v3; if (X.S.settings.v3) X.S.v3all = X.S.v3all == null ? (maxLvl() >= 20 || (X.S.stats && X.S.stats.fights > 300) ? 1 : 0) : X.S.v3all; X.reload(); return true; }
     return false;
   };

@@ -55,12 +55,16 @@ body.v3 #v3band:not([hidden]){display:flex}
 }
 /* PC large : le combat au centre, l'espace ouvert dans un panneau à droite (question 1) */
 @media (min-width:1180px){
-  body.v3.v3pan .app{max-width:none;display:grid;grid-template-columns:minmax(420px,1fr) minmax(0,720px);grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
+  body.v3.v3pan .app{max-width:none;display:grid;grid-template-columns:minmax(380px,1fr) minmax(0,2fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
   body.v3.v3pan #status{grid-area:st}body.v3.v3pan #topchips{grid-area:tc}body.v3.v3pan #subnav{grid-area:sub;min-width:0}
-  body.v3.v3pan #main{grid-area:main;min-width:0}body.v3.v3pan .footer{grid-area:ft}
+  body.v3.v3pan #main{grid-area:main;min-width:0;container:v3m/inline-size} /* 3.0.1 : css/v3cq.css (tools/v3_cq.js) */body.v3.v3pan .footer{grid-area:ft}
   body.v3.v3pan #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
   body.v3.v3pan #v3band{display:none!important}
+  /* 3.0.1 : sur PC, les onglets de l'espace passent à la ligne au lieu d'être coupés */
+  body.v3.v3pan #subnav .sn-strip{flex-wrap:wrap;overflow-x:visible;-webkit-mask-image:none;mask-image:none;padding-right:6px}
 }
+/* 3.0.1 : téléphone, le bandeau des onglets s'arrête toujours au début d'un onglet (jamais un onglet coupé à gauche) */
+body.v3 #subnav .sn-strip{scroll-snap-type:x proximity;scroll-padding-left:6px}body.v3 #subnav .sn-strip>*{scroll-snap-align:start}
 /* Plan de bataille et Routines */
 .v3pl h3.sec small{font-weight:700}
 .v3seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3seg.c{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
@@ -99,3 +103,5 @@ button.v3r:hover{background:rgba(255,255,255,.05)}
 .fo-cl{display:grid;justify-items:center;gap:2px;text-align:center;padding:6px 4px;border-radius:10px;border:1px solid var(--frame);opacity:.45}
 .fo-cl.on{opacity:1;border-color:var(--r-l,#f4c84a)}.fo-cl.wk{outline:2px dashed var(--gold);outline-offset:-2px}
 .fo-hl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+/* 3.0.1 : la pièce « à prendre » d'un onglet se pose après son nom au lieu de le couvrir */
+nav.subnav .sn-strip .navcoin,nav.subnav .sn-tabs .navcoin{position:static;display:inline-block;margin-left:2px;flex:none}

@@ -67,6 +67,7 @@
     const lo = FAST && dpr > 1; const wd = lo ? Math.ceil(W) : cv.width, ht = lo ? Math.ceil(H) : cv.height; // pendant un déplacement : le ciel en basse définition, net dès l'arrêt
     if (!key || key !== BK || !OFF || OFF.width !== wd) { if (!OFF || OFF.width !== wd || OFF.height !== ht) { OFF = document.createElement("canvas"); OFF.width = wd; OFF.height = ht; }
       const g0 = g, d0 = dpr; g = OFF.getContext("2d"); if (lo) dpr = 1; st.hov = null; try { drawBase(); } finally { g = g0; dpr = d0; st.hov = hv; } BK = key; }
+    if (!OFF.width || !OFF.height || !cv.width || !cv.height) return; // 3.0.1 : page quittée avant le dessin (toile de taille 0)
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(OFF, 0, 0, cv.width, cv.height); g.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (hv != null && hv !== st.sel) hoverLayer(hv);
     tip(hv != null ? hv : matchMedia("(hover: hover)").matches ? null : st.sel);

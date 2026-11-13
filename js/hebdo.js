@@ -1,7 +1,7 @@
 /* ============================================================================
    OBJECTIFS DE LA SEMAINE — Idlus 3.0 (Mathis 12/11/2026, « I3 ») : 5 objectifs par semaine (lundi, heure de Paris),
    tirés parmi 9 sortes à partir du numéro de la semaine (les mêmes pour tout le monde), et un coffre quand les 5 sont faits.
-   Comptés par les événements du jeu (E.emit), seulement quand la 3.0 est cochée. Pas de DOM ici (chargé aussi par les tests).
+   Comptés par les événements du jeu (E.emit), pour tout le monde. Pas de DOM ici (chargé aussi par les tests).
    Page : Journal › Semaine (js/v3.js).
    ========================================================================== */
 (function (root) {
@@ -29,7 +29,7 @@
     while (out.length < H.N && L.length) { x = (Math.imul(x ^ (x >>> 15), 2246822507) + 0x9e3779b9) >>> 0; out.push(L.splice(x % L.length, 1)[0]); }
     return out;
   };
-  E.hebdoOn = (S) => !!(S && S.settings && S.settings.v3);
+  E.hebdoOn = (S) => !!S && !(root.V3 && root.V3.classic && root.V3.classic()); // 3.0.1 : pour tout le monde (3.0.0 : seulement avec l'option)
   E.hebdo = (S) => {
     const wk = E.hebdoWk();
     if (!S.hebdo || typeof S.hebdo !== "object" || S.hebdo.wk !== wk) S.hebdo = { wk, ids: pick(wk), n: {}, got: false };

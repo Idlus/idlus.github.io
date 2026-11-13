@@ -1,11 +1,20 @@
 {
-  "version": "3.0.0",
+  "version": "3.0.1",
   "versions": [
+    {
+      "v": "3.0.1",
+      "name": "Le nouvel écran pour tous",
+      "items": [
+        "Le nouvel écran de la 3.0 devient l'écran du jeu pour tout le monde : le combat au centre et 8 espaces. L'ancien écran est retiré",
+        "Les objectifs de la semaine comptent pour tous les joueurs",
+        "Le tuto de la 3.0 se relance dans Options › Affichage"
+      ]
+    },
     {
       "v": "3.0.0",
       "name": "Idlus 3.0",
       "items": [
-        "Nouvel écran à essayer (Options › Affichage › « Essayer Idlus 3.0 ») : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas, tu peux revenir à l'écran actuel quand tu veux",
+        "Nouvel écran : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas",
         "La Brèche (Aventure) : des étages sans fin avec ton équipe, un boss tous les 10 étages, une règle différente chaque semaine et un classement de la semaine. L'Ascension reste le mode solo du mois",
         "Objectifs de la semaine (Journal › Semaine) : 5 objectifs, les mêmes pour tout le monde, et un coffre quand ils sont faits",
         "Chantier du serveur (Marché) : tout le serveur verse des kamas ; objectif atteint = ×2 XP et ×2 butin pour tout le monde pendant 48 h",
