@@ -126,6 +126,10 @@
   E.songe = (S) => {
     if (!S.songe || typeof S.songe !== "object") S.songe = { br: 0, tot: 0, ups: {}, unl: 0, best: null, wk: null, runs: 0 };
     const G = S.songe; if (!G.ups) G.ups = {}; if (G.unl === undefined) G.unl = 0;
+    /* 3.0.7 (Mathis 13/11 : « remet à zéro les records de brèche avec une excuse ») : records de la Brèche faussés par le bug de la 3.0.4
+       (bonus sans plafond, corrigé en 3.0.6) remis à zéro une fois : record de la semaine et record de toujours. Les paliers déjà reçus
+       cette semaine restent reçus. Une course commencée avant ne compte plus (X.rz). Le classement n'accepte que les résumés marqués z = 1. */
+    if (G.brz !== E.BR_RZ) { G.brz = E.BR_RZ; if (G.brw) { G.brw.d = 0; G.brw.rz = E.BR_RZ; } S.cnt = S.cnt || {}; S.cnt.brBest = 0; }
     return G;
   };
   E.sgUp = (S, id) => !!(S.songe && S.songe.ups && S.songe.ups[id]);
@@ -261,6 +265,7 @@
      à 10 fois sa valeur (dégâts +30 %, PV +40 %, dégâts subis -20 %…) : une course normale (50 à 100 étages) n'y arrive presque pas. */
   E.BR_MINOR_CAP = 10;
   E.brMinorCap = (m) => { const o = {}; for (const k in m || {}) { const b = E.SG_MINOR[k]; o[k] = b ? Math.min(m[k], b[0] * E.BR_MINOR_CAP) : m[k]; } return o; };
+  E.BR_RZ = 1; // 3.0.7 : remise à zéro des records de la Brèche (voir E.songe)
   E.brRegne = (w) => E.EXP_REGNES[hash(`idlus|breche|regne|${w}`) % E.EXP_REGNES.length];
   E.brNode = (w, d) => {
     const r = seeded(hash(`idlus|breche|${w}|${d}`)); let t = "fight";
@@ -271,14 +276,14 @@
   const brEnsure = (X, d) => { while (X.nodes.length < d) X.nodes.push(E.brNode(X.w, X.nodes.length + 1)); };
   E.brOn = (S) => !!(E.expActive(S) && S.exp.breche);
   E.brBribes = (d) => Math.round(8 + d * 0.8);
-  E.brWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.brw || G.brw.w !== w) G.brw = { w, d: 0, runs: 0 }; return G.brw; };
+  E.brWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.brw || G.brw.w !== w) G.brw = { w, d: 0, runs: 0, rz: E.BR_RZ }; return G.brw; };
   /* 3.0.4 (maquette de la Brèche, 2A de Mathis) : paliers de la semaine, une récompense par palier et par semaine, donnée dès que le boss
      de l'étage est vaincu. Petites (une semaine = 5 lots au plus) : 150 Bribes et 3 coffres pour une équipe qui passe le boss du 50 */
   E.BR_PAL = [[10, { br: 30 }], [20, { chest: "coffre_argent" }], [30, { chest: "coffre_or" }], [40, { br: 120 }], [50, { chest: "coffre_obsidienne" }]];
   E.brPalTxt = (r) => (r.br ? `${r.br} Bribes de rêve` : (D.CONSUMABLES[r.chest] && D.CONSUMABLES[r.chest].name) || r.chest);
   const brPal = (S, wk) => { wk.pal = wk.pal || []; E.BR_PAL.forEach(([f, r]) => { if (wk.d < f || wk.pal.includes(f)) return; wk.pal.push(f);
     if (r.br) E.sgGive(S, r.br); if (r.chest) E.addCons(S, r.chest, 1); note(S, `Palier de la Brèche (étage ${f}) : ${E.brPalTxt(r)}.`, "rare"); }); };
-  const brRec = (S, X, d) => { const wk = E.brWeek(S); if (d > wk.d) wk.d = d; S.cnt = S.cnt || {}; if (d > (S.cnt.brBest || 0)) S.cnt.brBest = d; brPal(S, wk); };
+  const brRec = (S, X, d) => { if (X.rz !== E.BR_RZ) return; const wk = E.brWeek(S); if (d > wk.d) wk.d = d; S.cnt = S.cnt || {}; if (d > (S.cnt.brBest || 0)) S.cnt.brBest = d; brPal(S, wk); };
   /* le donjon dont vient le boss d'un étage (même tirage que E.sgRoom, pour une équipe de ce niveau) */
   E.brBossAt = (w, lvl, d) => { const ids = dgsNear(lvl); const rng = seeded(hash(`idlus|songe|${w}|${lvl}|${d - 1}|0`)); return ids[Math.floor(rng() * ids.length)]; };
   E.brStart = (S) => E.expStart(S, 0, false, true);
@@ -341,7 +346,7 @@
     S.hunting = false; S.fight = null; S.pause = E.PAUSE_MS; S.protector = null;
     const w = E.weekIdx();
     const X = S.exp = {
-      on: true, sg: 1, w, ii, t0: E.now(), lvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), nodes: breche ? [] : E.sgMap(w), at: null, breche: breche ? 1 : 0, pick: null, path: [],
+      on: true, sg: 1, w, ii, t0: E.now(), lvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), nodes: breche ? [] : E.sgMap(w), at: null, breche: breche ? 1 : 0, rz: breche ? E.BR_RZ : 0, pick: null, path: [],
       relics: [], minor: {}, pts: E.sgUp(S, "prevoyant") ? 10 : 0, sable: E.sgUp(S, "sablepoche") ? 1 : 0, pend: [], hp: {}, log: [], gobUsed: false,
       rew: { kamas: 0, xp: 0, dust: 0, res: 0, items: 0 }, bribes: 0, fights: 0, wave: 0, waves: 0, valid: false, resume: wasHunt, retry: 0, regne: breche ? E.brRegne(w) : E.sgRegne(w),
     };

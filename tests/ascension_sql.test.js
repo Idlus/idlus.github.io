@@ -27,8 +27,9 @@ try {
   const U = "00000000-0000-0000-0000-000000000001";
   q(`insert into auth.users values ('${U}'); insert into profiles (id, pseudo) values ('${U}', 'Grimpeur')`);
   const wk = +q(`select asc_week()`);
-  const save = (x) => q(`insert into saves_ok (user_id, data, meta) values ('${U}', '{}', '{"brk": {"w": ${wk}, "d": ${x}}}')
+  const save = (x, z) => q(`insert into saves_ok (user_id, data, meta) values ('${U}', '{}', '{"brk": {"w": ${wk}, "d": ${x}${z === 0 ? "" : `, "z": 1`}}}')
     on conflict (user_id) do update set meta = excluded.meta`);
+  save(3860, 0); assert.strictEqual(q(`select count(*) from asc_scores where cat = 'breche'`), "0", "3.0.7 : record sans z (d'avant la remise à zéro) refusé");
   save(42);
   assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "42", "étage 42 de la Brèche classé");
   save(30); assert.strictEqual(q(`select score from asc_scores where cat = 'breche' and m = ${wk}`), "42", "un score plus bas ne remplace pas le record");

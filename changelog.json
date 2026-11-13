@@ -1,6 +1,14 @@
 {
-  "version": "3.0.6",
+  "version": "3.0.7",
   "versions": [
+    {
+      "v": "3.0.7",
+      "name": "La Brèche repart de zéro",
+      "items": [
+        "Désolé : un bug de la Brèche (bonus sans plafond, corrigé en 3.0.6) a faussé le classement. Les records de la Brèche, de la semaine et de toujours, repartent de zéro",
+        "Les paliers déjà reçus cette semaine restent à toi ; une course commencée avant la mise à jour ne compte plus pour le record"
+      ]
+    },
     {
       "v": "3.0.6",
       "name": "La Brèche a un fond",

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.6";
+const GAME_VERSION = "3.0.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.0.7", name: "La Brèche repart de zéro", items: [
+    "Désolé : un bug de la Brèche (bonus sans plafond, corrigé en 3.0.6) a faussé le classement. Les records de la Brèche, de la semaine et de toujours, repartent de zéro",
+    "Les paliers déjà reçus cette semaine restent à toi ; une course commencée avant la mise à jour ne compte plus pour le record" ] },
   { v: "3.0.6", name: "La Brèche a un fond", items: [
     "La Brèche : les petits bonus gagnés à chaque combat plafonnent (10 fois leur valeur) ; après des centaines d'étages, ils rendaient l'équipe intouchable (signalé par luz)",
     "La Brèche : au-delà de la stasis 10 (vers l'étage 60), les monstres gagnent PV et dégâts comme en donjon : chaque équipe trouve son mur",

@@ -36,7 +36,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, enquete-sauvegarde-s1, restaurer-eronny-s1-essai, restaurer-eronny-s1, alleger-services, rallumer-services, chantier-installer, hdv-fermer]
+        options: [verifier, vote-cle, vote-cle-ji, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait, maitrise-reset-essai, maitrise-reset, bouclier-diagnostic, enquete-joueur, enquete-3-serveurs, enquete-stasis, francois-0411-essai, francois-0411, premiers-dofus, releve-equilibrage, restaurer-justever-essai, restaurer-justever, monocompte-installer, monocompte-remise-zero, monocompte-maj, monocompte-panel, monocompte-fonction, monocompte-separation, monocompte-bouclier-etat, enquete-absence, monocompte-social, rendre-xp-metier-essai, rendre-xp-metier, saison1-installer, saison1-etat, monocompte-saison1, saison1-date, monocompte-campagne, monocompte-builds, panel-parties, codes-suspects, sauvegarde-base, boucle-enquete, chat-par-serveur, jackpot-serveur, hauts-faits-serveur, envois-discord, relais-discord, audit-securite, droits-ecriture, inscription-telephone, consommation, taille-sauvegardes, enquete-sauvegarde-s1, restaurer-eronny-s1-essai, restaurer-eronny-s1, alleger-services, rallumer-services, chantier-installer, hdv-fermer, breche-zero-essai, breche-zero]
         default: verifier
       pseudo:
         description: "Pseudo du joueur (étapes enquete-joueur et rendre-xp-metier)"
@@ -655,6 +655,33 @@ jobs:
             done
           done
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.proname = 'chantier_give') as chantier_give, (select count(*) from pg_proc where proname = 'mono_chantier_give') as mono_chantier_give"
+      - name: Idlus 3.0.7, remise à zéro du classement de la Brèche (sauvegarde de la base)
+        # Mathis 13/11/2026 : « remet à zéro les records de brèche avec une excuse ». Recharge les déclencheurs (ascension.sql et sa tranche s1 :
+        # seuls les records marqués z = 1, envoyés par la 3.0.7, comptent), puis tools/serveur/breche_zero.sql (copie des lignes, suppression).
+        if: inputs.etape == 'breche-zero-essai' || inputs.etape == 'breche-zero'
+        run: |
+          if [ "${{ inputs.etape }}" = breche-zero ]; then
+            echo '== Sauvegarde complète de la base'
+            bash tools/serveur/vps_sql.sh commande 'set -euo pipefail; mkdir -p /opt/idlus/sauvegardes; f=/opt/idlus/sauvegardes/avant-breche-zero-$(date +%Y-%m-%d-%H%M).sql.gz; docker exec supabase-db pg_dumpall -U postgres --clean --if-exists | gzip > $f.part; mv $f.part $f; ls -la $f'
+            awk '/^-- =+ supabase\/ascension\.sql =+$/{on=1} on{print} on&&/^reset search_path;$/{exit}' supabase/saison1.sql > /tmp/asc_s1.sql
+            grep -q "brk'->>'z'" /tmp/asc_s1.sql || { echo "tranche s1 de l'Ascension sans z" >&2; exit 1; }
+            for f in supabase/ascension.sql /tmp/asc_s1.sql; do
+              echo "== $f"
+              { echo "set lock_timeout = '3s';"; cat "$f"; } > /tmp/q.sql
+              for essai in 1 2 3 4 5 6; do
+                if bash tools/serveur/vps_sql.sh fichier /tmp/q.sql > /tmp/r.txt 2>&1; then echo "OK (essai $essai)"; break; fi
+                tail -c 800 /tmp/r.txt; echo
+                if grep -qiE 'lock timeout|deadlock' /tmp/r.txt && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+                exit 1
+              done
+            done
+            f="$RUNNER_TEMP/breche_zero.sql"
+            sed "s/^\\\\set CONFIRMATION 'non'$/\\\\set CONFIRMATION 'REMETS LA BRECHE A ZERO'/" tools/serveur/breche_zero.sql > "$f"
+            grep -q "REMETS LA BRECHE A ZERO'$" "$f" || { echo "confirmation non posée" >&2; exit 1; }
+            bash tools/serveur/vps_sql.sh fichier "$f"
+          else
+            bash tools/serveur/vps_sql.sh fichier tools/serveur/breche_zero.sql
+          fi
       - name: Idlus 3.0, fermeture de l'Hôtel de vente du Classique (sauvegarde de la base)
         # 3.0 (2B de Mathis, 12/11/2026 : « on enlève définitivement l'hdv », annonces rendues) : à lancer UNE fois au moment de publier la 3.0.
         # Recharge supabase/hdv.sql (Éternel) et sa tranche s1 (drapeau hdv_ferme, refus « fermé »), puis supabase/hdv_fermeture.sql dans

@@ -55,7 +55,7 @@ begin
     v := least(greatest(coalesce((a->>'x')::int, 0), 0), 10000); if v > 100 then execute put using new.user_id, wk, 'audela', '', v; end if;
   end if;
   -- la Brèche (3.0) : son propre résumé, même sans Ascension
-  if jsonb_typeof(new.meta->'brk') = 'object' and (new.meta->'brk'->>'w') ~ '^\d{1,9}$' and (new.meta->'brk'->>'d') ~ '^\d{1,6}$' and (new.meta->'brk'->>'w')::int = wk then
+  if jsonb_typeof(new.meta->'brk') = 'object' and (new.meta->'brk'->>'w') ~ '^\d{1,9}$' and (new.meta->'brk'->>'d') ~ '^\d{1,6}$' and (new.meta->'brk'->>'w')::int = wk and (new.meta->'brk'->>'z') = '1' then -- 3.0.7 : seulement les records d'après la remise à zéro
     v := least((new.meta->'brk'->>'d')::int, 100000); if v > 0 then execute put using new.user_id, wk, 'breche', '', v; end if;
   end if;
   return new;

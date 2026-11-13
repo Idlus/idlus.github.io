@@ -31,5 +31,13 @@ assert.ok(top >= 10, "un boss franchi : étage " + top); assert.strictEqual(E.br
 assert.ok(E.songe(S).br > 0, "Bribes de rêve du boss");
 if (E.brOn(S)) E.expQuit(S);
 assert.ok(!E.expActive(S) && S.brLast && S.brLast.d === top && !S.expLast, "sortie : résumé de la Brèche à part");
-const m = V.summary(E, S); assert.deepStrictEqual(m.brk, { w, d: top }, "résumé envoyé au classement");
+const m = V.summary(E, S); assert.deepStrictEqual(m.brk, { w, d: top, z: 1 }, "résumé envoyé au classement (z : après la remise à zéro de la 3.0.7)");
 console.log(`ok - la Brèche : étages sans fin (boss tous les 10, Songe en 5), règle de la semaine, record étage ${top}, Bribes, résumé à part`);
+// 3.0.7 (Mathis 13/11) : remise à zéro des records faussés, une seule fois ; une course commencée avant ne compte plus
+{
+  const T = E.newState("Z", "iop"); T.songe = { br: 0, tot: 0, ups: {}, unl: 0, brw: { w, d: 3860, runs: 3, pal: [10, 20] } }; T.cnt = { brBest: 3860 };
+  assert.strictEqual(V.summary(E, T).brk, null, "ancien record : pas envoyé au classement");
+  E.songe(T); assert.strictEqual(T.songe.brw.d, 0); assert.strictEqual(T.cnt.brBest, 0); assert.deepStrictEqual(T.songe.brw.pal, [10, 20], "paliers reçus gardés");
+  T.songe.brw.d = 12; E.songe(T); assert.strictEqual(T.songe.brw.d, 12, "une seule fois");
+  console.log("ok - 3.0.7 : records de la Brèche remis à zéro une fois, paliers gardés, anciens résumés refusés");
+}

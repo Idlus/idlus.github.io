@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.7 « La Brèche repart de zéro »
+- Mathis (13/11) : « remet à zéro les records de brèche avec une excuse ». js/songe.js `E.BR_RZ` : une fois par partie (E.songe), record de la semaine (`brw.d`) et de toujours (`cnt.brBest`) à 0, paliers reçus gardés ; une course commencée avant (`X.rz` absent) ne compte plus. js/verify.js : `meta.brk.z = 1`. supabase/ascension.sql (et tranche s1) : le classement n'accepte que `z = 1`. Étape serveur « breche-zero » (tools/serveur/breche_zero.sql) : copie des lignes dans `asc_scores_breche_1311`, puis suppression du classement « breche » (Éternel et Saison 1).
+
 ## 3.0.6 « La Brèche a un fond »
 - luz (13/11) : étage 3860, 1er du classement, « Pas de connexion au serveur ». Cause : js/songe.js, les petits bonus des salles (`X.minor`, E.SG_MINOR) s'additionnaient à chaque combat sans plafond (dégâts subis en moins, résistances) ; en plus les PV des monstres ne montaient qu'en ligne droite au-delà de la stasis 10, et `X.nodes` gardait chaque étage (partie trop lourde). Corrigé : `E.brMinorCap` (10 × la valeur), `E.brMonMult` (comme E.stasisMult), étages passés remplacés par 0. Simulation (`--breche`) inchangée pour les équipes normales. Le record de la semaine de luz n'est pas touché sans l'accord de Mathis.
 
