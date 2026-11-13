@@ -21,6 +21,12 @@ assert.strictEqual(E.act(S, "brStart"), null); assert.ok(E.brOn(S)); assert.stri
 assert.ok(typeof E.expStart(S, 0) === "string", "pas de songe pendant la Brèche");
 let sd = 7; E.setRng(() => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }); E.expAutoPlay(S, 25);
 const top = E.brOn(S) ? S.exp.nodes[S.exp.at].d : S.brLast.d;
+if (E.brOn(S) && S.exp.at >= 2) assert.ok(S.exp.nodes.slice(0, S.exp.at - 1).every((n) => n === 0), "3.0.6 : les étages passés ne restent pas dans la partie");
+// 3.0.6 (luz, étage 3860) : les petits bonus plafonnent, les monstres gagnent PV et dégâts au-delà de la stasis 10
+assert.deepStrictEqual(E.brMinorCap({ dr: 4000, res: 9000, dmg: 6, x: 1 }), { dr: 20, res: 30, dmg: 6, x: 1 }, "petits bonus plafonnés");
+if (E.brOn(S)) { const R0 = S.exp.relics, M0 = S.exp.minor; S.exp.relics = []; S.exp.minor = { dr: 4000 }; assert.strictEqual(E.expFx(S).dr, 20, "plafond appliqué à une course en cours"); S.exp.relics = R0; S.exp.minor = M0; }
+assert.deepStrictEqual(E.brMonMult(8), E.expMonMult(8), "rien ne change jusqu'à la stasis 10");
+assert.ok(E.brMonMult(60).hp > 50 * E.expMonMult(60).hp, "au-delà, les PV montent comme en donjon");
 assert.ok(top >= 10, "un boss franchi : étage " + top); assert.strictEqual(E.brWeek(S).d, top, "record de la semaine");
 assert.ok(E.songe(S).br > 0, "Bribes de rêve du boss");
 if (E.brOn(S)) E.expQuit(S);

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.6 « La Brèche a un fond »
+- luz (13/11) : étage 3860, 1er du classement, « Pas de connexion au serveur ». Cause : js/songe.js, les petits bonus des salles (`X.minor`, E.SG_MINOR) s'additionnaient à chaque combat sans plafond (dégâts subis en moins, résistances) ; en plus les PV des monstres ne montaient qu'en ligne droite au-delà de la stasis 10, et `X.nodes` gardait chaque étage (partie trop lourde). Corrigé : `E.brMinorCap` (10 × la valeur), `E.brMonMult` (comme E.stasisMult), étages passés remplacés par 0. Simulation (`--breche`) inchangée pour les équipes normales. Le record de la semaine de luz n'est pas touché sans l'accord de Mathis.
+
 ## 3.0.5 « Le Havre-Sac revient »
 - Getget (13/11) : téléphone + Affichage détaillé, plus de Havre-Sac (la barre détaillée cache le logo, le menu du bas de la 3.0 n'a pas de Havre-Sac). css/v3.css : le logo reste visible sous 860 px. Le tableau de combat (js/v3.js boardHtml) n'avait pas « Quitter le donjon » / « Rentrer » : bouton navquit à côté de « Vue détaillée ».
 

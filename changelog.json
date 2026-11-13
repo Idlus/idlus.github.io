@@ -1,6 +1,15 @@
 {
-  "version": "3.0.5",
+  "version": "3.0.6",
   "versions": [
+    {
+      "v": "3.0.6",
+      "name": "La Brèche a un fond",
+      "items": [
+        "La Brèche : les petits bonus gagnés à chaque combat plafonnent (10 fois leur valeur) ; après des centaines d'étages, ils rendaient l'équipe intouchable (signalé par luz)",
+        "La Brèche : au-delà de la stasis 10 (vers l'étage 60), les monstres gagnent PV et dégâts comme en donjon : chaque équipe trouve son mur",
+        "La Brèche : les étages déjà passés ne sont plus gardés dans la partie, qui restait trop lourde à envoyer au serveur"
+      ]
+    },
     {
       "v": "3.0.5",
       "name": "Le Havre-Sac revient",

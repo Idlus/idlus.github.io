@@ -252,6 +252,15 @@
   /* le pas monte pour une équipe plus basse (simulation : à équipement égal, une équipe 120 montait presque 2 fois plus haut qu'une 200) */
   E.brStep = (lvl) => E.BR.step * (1 + E.BR.lvlK * Math.max(0, 200 - (lvl || 200)) / 200);
   E.brStasis = (d, t, lvl) => E.BR.base + E.brStep(lvl) * (d - 1) + (t === "hard" ? E.BR.hard : t === "archi" ? E.BR.archi : t === "boss" ? E.BR.boss : 0);
+  /* 3.0.6 (luz à l'étage 3860, 13/11) : au-delà de la stasis 10, les PV des monstres de la Brèche ne montaient que de 12 % par stasis
+     (en ligne droite) : une équipe qui tue tout avant d'être touchée ne trouvait jamais son mur. Comme les donjons (E.stasisMult) :
+     PV et dégâts × E.STASIS_UP par stasis au-delà de 10. Rien ne change jusqu'à l'étage 60 environ (stasis 10). */
+  E.brMonMult = (k) => { const up = Math.pow(E.STASIS_UP || 1.12, Math.max(0, k - 10)); return { hp: (1 + 0.12 * (Math.min(k, 10) - 1)) * up, dmg: Math.pow(1.2, Math.min(k, 10) - 1) * up }; };
+  /* 3.0.6 (luz, la vraie cause) : les petits bonus des salles (E.SG_MINOR) s'ajoutaient sans fin : après des centaines d'étages,
+     +2 % de dégâts subis en moins et +3 % de résistances par combat rendaient l'équipe intouchable. Dans la Brèche, chacun plafonne
+     à 10 fois sa valeur (dégâts +30 %, PV +40 %, dégâts subis -20 %…) : une course normale (50 à 100 étages) n'y arrive presque pas. */
+  E.BR_MINOR_CAP = 10;
+  E.brMinorCap = (m) => { const o = {}; for (const k in m || {}) { const b = E.SG_MINOR[k]; o[k] = b ? Math.min(m[k], b[0] * E.BR_MINOR_CAP) : m[k]; } return o; };
   E.brRegne = (w) => E.EXP_REGNES[hash(`idlus|breche|regne|${w}`) % E.EXP_REGNES.length];
   E.brNode = (w, d) => {
     const r = seeded(hash(`idlus|breche|${w}|${d}`)); let t = "fight";
@@ -385,7 +394,7 @@
   /* l'équipe entre dans la salle choisie */
   const arrive = (S, X) => {
     const n = X.nodes[X.pick]; if (!n) return;
-    X.at = n.i; X.path.push(n.i); X.pick = null; X.log.push({ d: n.d, t: n.t, w: 1 }); if (X.breche) { brRec(S, X, n.d); if (X.log.length > 60) X.log.splice(0, X.log.length - 60); if (X.path.length > 60) X.path.splice(0, X.path.length - 60); }
+    X.at = n.i; X.path.push(n.i); X.pick = null; X.log.push({ d: n.d, t: n.t, w: 1 }); if (X.breche) { brRec(S, X, n.d); for (let j = X.at - 2; j >= 0 && X.nodes[j]; j--) X.nodes[j] = 0; /* 3.0.6 : les étages passés ne restent plus dans la partie (3860 étages pesaient trop lourd à l'envoi) */ if (X.log.length > 60) X.log.splice(0, X.log.length - 60); if (X.path.length > 60) X.path.splice(0, X.path.length - 60); }
     S.cnt = S.cnt || {}; S.cnt.expFloors = (S.cnt.expFloors || 0) + 1;
     if (E.checkAch) E.checkAch(S);
   };
@@ -436,7 +445,7 @@
     const X = X_(S); if (!X || X.pend.length || X.pick === null) return null;
     const n = X.nodes[X.pick]; if (!n || !FIGHT.includes(n.t)) return null;
     const c = E.sgRoom(S, X, n); const ME = E.monsterEntity; const mod = (X.ii > 0 || X.breche) && X.regne ? X.regne.mod : null;
-    const k = X.breche ? E.brStasis(n.d, n.t, X.lvl) : E.sgStasis(X.ii, n.d, n.t, n.t === "end" ? X.wave : 0); const Mm = E.expMonMult(k);
+    const k = X.breche ? E.brStasis(n.d, n.t, X.lvl) : E.sgStasis(X.ii, n.d, n.t, n.t === "end" ? X.wave : 0); const Mm = X.breche ? E.brMonMult(k) : E.expMonMult(k);
     let mons = [];
     if (n.t === "end" || n.t === "boss") {
       const did = n.t === "boss" ? c.did : c.dgs[(X.wave - 1) % c.dgs.length]; const dg = DUNGEONS[did]; const bm = MONSTERS[dg.boss];
@@ -471,7 +480,7 @@
     const X = S.exp; const fx = {}; if (!X) return fx;
     const add = (f) => { for (const k in f) fx[k] = (fx[k] || 0) + f[k]; };
     X.relics.forEach((id, i) => { const r = E.EXP_RELICS[id]; if (!r) return; if (r.fx.mirror) { const p = E.EXP_RELICS[X.relics[i - 1]]; if (p && !p.fx.mirror && !p.fx.sable) add(p.fx); } else if (!r.fx.sable) add(r.fx); });
-    add(X.minor || {});
+    add(X.breche ? E.brMinorCap(X.minor) : X.minor || {});
     return fx;
   };
   E.expFxTxt = (fx) => {
@@ -528,7 +537,7 @@
     if (n.t !== "end") {
       const pts = E.SG_PTS[n.t] + (n.t === "fight" ? n.pips - 1 : 0); X.pts += pts;
       const c = n.c || {}; const mk = c.minor && E.SG_MINOR[c.minor]; const k = n.t === "hard" || n.t === "archi" ? 2 : 1;
-      if (mk) X.minor[c.minor] = (X.minor[c.minor] || 0) + mk[0] * k;
+      if (mk) X.minor[c.minor] = (X.minor[c.minor] || 0) + mk[0] * k; if (mk && X.breche) X.minor = E.brMinorCap(X.minor);
       if (F.rewards) { F.rewards.sgPts = pts; if (mk) F.rewards.sgMinor = `+${mk[0] * k} % ${mk[1]}`; }
       if (n.t === "archi" || n.t === "hard") { const r = freeRelics(X, n.t === "archi" ? "r" : rnd() < 0.5 ? "r" : "c"); if (r.length) takeRelic(S, X, pick(r)); }
       if (n.t === "archi" && E.dofusQuestEvent) E.dofusQuestEvent(S, "songe", { k: "archi" }); // 1.1 : étape du Dofus Onirique
