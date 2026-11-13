@@ -10,6 +10,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.0 « Idlus 3.0 »
+- Nouvel écran en option (`S.settings.v3`, js/v3.js + css/v3.css) : 8 espaces, tuto, pages Brèche, Semaine, Chantier, Boutique, Plan, Routines.
+- La Brèche (js/songe.js, `S.exp.breche`) : mode d'équipe sans fin sur le moteur du Songe, réglé par `node tools/simulate.js --breche` ; classement « breche » (meta.brk, supabase/ascension.sql).
+- Objectifs de la semaine (js/hebdo.js), Boutique de la semaine (js/boutique.js), Foire complète (js/foire.js), postures et réflexes (engine.js).
+- Chantier du serveur (js/chantier.js, supabase/chantier.sql, supabase/mono_chantier.sql ; étape « chantier-installer »).
+- Fermeture de l'HdV Classique et Monocompte (js/market.js `M.closed`, supabase/hdv_fermeture.sql, supabase/mono_hdv_fermeture.sql ; étape « hdv-fermer », une seule fois).
+
 ## 2.2.14.21 « Partie restaurée protégée »
 - 12/11, restauration de la partie S1 d'Eronny : la partie remise gardait la marque du dernier envoi de l'appareil (`meta.pid`) ; son jeu resté ouvert l'a prise pour un de ses envois et l'a remplacée une minute après.
 - js/online.js : `ON.ownPush` ignore une partie marquée `meta.remise` (panel ou outil) : le jeu affiche le conflit au lieu d'écraser. tools/serveur/restaurer_eronny_s1.sql retire aussi `pid` (restauration refaite à 21h08).

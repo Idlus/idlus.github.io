@@ -1,6 +1,20 @@
 {
-  "version": "2.2.14.21",
+  "version": "3.0.0",
   "versions": [
+    {
+      "v": "3.0.0",
+      "name": "Idlus 3.0",
+      "items": [
+        "Nouvel écran à essayer (Options › Affichage › « Essayer Idlus 3.0 ») : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas, tu peux revenir à l'écran actuel quand tu veux",
+        "La Brèche (Aventure) : des étages sans fin avec ton équipe, un boss tous les 10 étages, une règle différente chaque semaine et un classement de la semaine. L'Ascension reste le mode solo du mois",
+        "Objectifs de la semaine (Journal › Semaine) : 5 objectifs, les mêmes pour tout le monde, et un coffre quand ils sont faits",
+        "Chantier du serveur (Marché) : tout le serveur verse des kamas ; objectif atteint = ×2 XP et ×2 butin pour tout le monde pendant 48 h",
+        "Boutique de la semaine (Marché) : 6 apparences (auras, couleurs de pseudo) à acheter en kamas, renouvelées chaque lundi",
+        "Foire complète : caisse à thème, contrats, améliorateur, collection, ouverture ×10 et Épique garanti au bout de 30 caisses",
+        "Postures et réflexes pour régler le comportement de tes héros en combat",
+        "L'Hôtel de vente ferme (Classique et Monocompte) : tes objets en vente et les kamas de tes offres d'achat te sont rendus. Les échanges entre joueurs restent ouverts"
+      ]
+    },
     {
       "v": "2.2.14.21",
       "name": "Partie restaurée protégée",

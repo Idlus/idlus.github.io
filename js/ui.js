@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.2.14.21";
+const GAME_VERSION = "3.0.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.0.0", name: "Idlus 3.0", items: [
+    "Nouvel écran à essayer (Options › Affichage › « Essayer Idlus 3.0 ») : le combat au centre, 8 espaces et un tuto. Ta partie ne change pas, tu peux revenir à l'écran actuel quand tu veux",
+    "La Brèche (Aventure) : des étages sans fin avec ton équipe, un boss tous les 10 étages, une règle différente chaque semaine et un classement de la semaine. L'Ascension reste le mode solo du mois",
+    "Objectifs de la semaine (Journal › Semaine) : 5 objectifs, les mêmes pour tout le monde, et un coffre quand ils sont faits",
+    "Chantier du serveur (Marché) : tout le serveur verse des kamas ; objectif atteint = ×2 XP et ×2 butin pour tout le monde pendant 48 h",
+    "Boutique de la semaine (Marché) : 6 apparences (auras, couleurs de pseudo) à acheter en kamas, renouvelées chaque lundi",
+    "Foire complète : caisse à thème, contrats, améliorateur, collection, ouverture ×10 et Épique garanti au bout de 30 caisses",
+    "Postures et réflexes pour régler le comportement de tes héros en combat",
+    "L'Hôtel de vente ferme (Classique et Monocompte) : tes objets en vente et les kamas de tes offres d'achat te sont rendus. Les échanges entre joueurs restent ouverts" ] },
   { v: "2.2.14.21", name: "Partie restaurée protégée", items: [
     "Quand une partie est remise à une copie par l'équipe, ton jeu resté ouvert ne peut plus la remplacer : il te demande quelle version garder" ] },
   { v: "2.2.14.20", name: "Chaque serveur garde sa partie", items: [
