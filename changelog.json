@@ -1,6 +1,13 @@
 {
-  "version": "3.0.1",
+  "version": "3.0.2",
   "versions": [
+    {
+      "v": "3.0.2",
+      "name": "Le chat à côté",
+      "items": [
+        "Sur PC, quand le chat est ouvert, la page prend toute la place à côté de lui et le combat passe dans le bandeau du haut : plus de menus coupés ni recouverts par le chat"
+      ]
+    },
     {
       "v": "3.0.1",
       "name": "Le nouvel écran pour tous",

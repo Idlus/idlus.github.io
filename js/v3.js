@@ -137,10 +137,11 @@
     if (!V3.on()) return; const now = performance.now(); if (!force && now - tAt < 300) return; tAt = now;
     V3.relock(); V3.layout();
     const b = document.getElementById("v3b"), band = document.getElementById("v3band");
+    const wide = window.innerWidth >= 1180 && !document.body.classList.contains("chat-open"); // 3.0.1 : chat ouvert = pas de colonne du combat
     try { if (window.ANIM3 && window.ANIM3.fx && X.S.fight) window.ANIM3.fx(X.S.fight, b); } catch (er) {}
-    if (b) { const show = V3.home() || (window.innerWidth >= 1180 && ui.tab !== "combat"); b.hidden = !show; if (show) morphTo(b, V3.boardHtml()); }
+    if (b) { const show = V3.home() || (wide && ui.tab !== "combat"); b.hidden = !show; if (show) morphTo(b, V3.boardHtml()); }
     tutoPaint(); try { V3.brTick(); } catch (er) {}
-    if (band) { const show = !V3.home() && ui.tab !== "combat" && window.innerWidth < 1180; band.hidden = !show; if (show) { const x = V3.bandHtml(); if (band.dataset.h !== x) { band.dataset.h = x; band.innerHTML = x; } } }
+    if (band) { const show = !V3.home() && ui.tab !== "combat" && !wide; band.hidden = !show; if (show) { const x = V3.bandHtml(); if (band.dataset.h !== x) { band.dataset.h = x; band.innerHTML = x; } } }
   };
   /* barre du bas du téléphone (question 2) : Combat, Aventure, Équipe, Sac, Plus */
   V3.mobHtml = function (k, fight, famOn, famBadge, icon) {

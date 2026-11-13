@@ -55,13 +55,13 @@ body.v3 #v3band:not([hidden]){display:flex}
 }
 /* PC large : le combat au centre, l'espace ouvert dans un panneau à droite (question 1) */
 @media (min-width:1180px){
-  body.v3.v3pan .app{max-width:none;display:grid;grid-template-columns:minmax(380px,1fr) minmax(0,2fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
-  body.v3.v3pan #status{grid-area:st}body.v3.v3pan #topchips{grid-area:tc}body.v3.v3pan #subnav{grid-area:sub;min-width:0}
-  body.v3.v3pan #main{grid-area:main;min-width:0;container:v3m/inline-size} /* 3.0.1 : css/v3cq.css (tools/v3_cq.js) */body.v3.v3pan .footer{grid-area:ft}
-  body.v3.v3pan #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
-  body.v3.v3pan #v3band{display:none!important}
+  body.v3.v3pan:not(.chat-open) .app{max-width:none;display:grid;grid-template-columns:minmax(380px,1fr) minmax(0,2fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:"st st" "tc tc" "b sub" "b main" "ft ft";column-gap:14px;align-items:start}
+  body.v3.v3pan:not(.chat-open) #status{grid-area:st}body.v3.v3pan:not(.chat-open) #topchips{grid-area:tc}body.v3.v3pan:not(.chat-open) #subnav{grid-area:sub;min-width:0}
+  body.v3.v3pan:not(.chat-open) #main{grid-area:main;min-width:0}body.v3.v3pan:not(.chat-open) .footer{grid-area:ft}
+  body.v3.v3pan:not(.chat-open) #v3b{grid-area:b;position:sticky;top:calc(var(--sth,60px) + 8px);max-height:calc(100vh - var(--sth,60px) - 16px);overflow-y:auto;scrollbar-width:thin}
+  body.v3.v3pan:not(.chat-open) #v3band{display:none!important}
   /* 3.0.1 : sur PC, les onglets de l'espace passent à la ligne au lieu d'être coupés */
-  body.v3.v3pan #subnav .sn-strip{flex-wrap:wrap;overflow-x:visible;-webkit-mask-image:none;mask-image:none;padding-right:6px}
+  body.v3.v3pan:not(.chat-open) #subnav .sn-strip{flex-wrap:wrap;overflow-x:visible;-webkit-mask-image:none;mask-image:none;padding-right:6px}
 }
 /* 3.0.1 : téléphone, le bandeau des onglets s'arrête toujours au début d'un onglet (jamais un onglet coupé à gauche) */
 body.v3 #subnav .sn-strip{scroll-snap-type:x proximity;scroll-padding-left:6px}body.v3 #subnav .sn-strip>*{scroll-snap-align:start}
@@ -105,3 +105,8 @@ button.v3r:hover{background:rgba(255,255,255,.05)}
 .fo-hl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 /* 3.0.1 : la pièce « à prendre » d'un onglet se pose après son nom au lieu de le couvrir */
 nav.subnav .sn-strip .navcoin,nav.subnav .sn-tabs .navcoin{position:static;display:inline-block;margin-left:2px;flex:none}
+/* 3.0.1 : les pages suivent leur mise en page « écran étroit » selon leur vraie largeur (css/v3cq.css, tools/v3_cq.js) */
+body.v3 #main{container:v3m/inline-size}
+/* 3.0.1 (Mathis : « le tchat coupe les menus ») : chat ouvert sur PC, la page prend toute la place à côté du chat
+   et le combat passe dans le bandeau du haut, comme sur téléphone ; entre 1100 et 1279 px, le chat ne recouvre plus la page */
+@media (min-width:1100px) and (max-width:1279px){body.v3.chat-open .app{margin-right:400px}}

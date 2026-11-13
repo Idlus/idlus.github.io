@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.2 « Le chat à côté »
+- Mathis (13/11) : « il faut modifier le tchat aussi sinon ça coupe les menus ». css/v3.css : la grille combat + panneau seulement sans chat ouvert ; chat ouvert, la page est seule (bandeau du combat en haut, js/v3.js `wide`) ; entre 1100 et 1279 px, la page laisse 400 px au chat. #main est le conteneur des règles « écran étroit » partout (css/v3cq.css).
+
 ## 3.0.1 « Le nouvel écran pour tous »
 - Mathis (13/11) : « uniquement le nouvel affichage, plus l'ancien ». js/v3.js `V3.on()` vrai pour tout le monde, l'option « Essayer Idlus 3.0 » est retirée ; l'ancien écran ne reste que pour les tests automatiques de l'ancien affichage (`navigator.webdriver` sans `window.__IDLUS_V3`).
 - js/hebdo.js : les objectifs de la semaine comptent pour tous.
