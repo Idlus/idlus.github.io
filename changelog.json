@@ -1,6 +1,13 @@
 {
-  "version": "3.0.2",
+  "version": "3.0.3",
   "versions": [
+    {
+      "v": "3.0.3",
+      "name": "Le défilement reste",
+      "items": [
+        "Un clic dans une page ne fait plus revenir les listes et le bandeau des onglets tout en haut ou tout à gauche : ils restent où tu étais (signalé par Tocqueville)"
+      ]
+    },
     {
       "v": "3.0.2",
       "name": "Le chat à côté",

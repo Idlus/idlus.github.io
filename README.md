@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.3 « Le défilement reste »
+- Un clic dans une page ne fait plus revenir les listes et le bandeau des onglets en haut ou à gauche (signalé par Tocqueville).
+
 ## 3.0.2 « Le chat à côté »
 - Mathis (13/11) : « il faut modifier le tchat aussi sinon ça coupe les menus ». css/v3.css : la grille combat + panneau seulement sans chat ouvert ; chat ouvert, la page est seule (bandeau du combat en haut, js/v3.js `wide`) ; entre 1100 et 1279 px, la page laisse 400 px au chat. #main est le conteneur des règles « écran étroit » partout (css/v3cq.css).
 

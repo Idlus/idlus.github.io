@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.2";
+const GAME_VERSION = "3.0.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.0.3", name: "Le défilement reste", items: [
+    "Un clic dans une page ne fait plus revenir les listes et le bandeau des onglets tout en haut ou tout à gauche : ils restent où tu étais (signalé par Tocqueville)" ] },
   { v: "3.0.2", name: "Le chat à côté", items: [
     "Sur PC, quand le chat est ouvert, la page prend toute la place à côté de lui et le combat passe dans le bandeau du haut : plus de menus coupés ni recouverts par le chat" ] },
   { v: "3.0.1", name: "Le nouvel écran pour tous", items: [
@@ -3565,8 +3567,9 @@ function renderNav() {
     const tabs = null; // 2.1.40 (Mathis 1A des onglets) : les pages rangées ensemble sont des onglets de la page (pageTabs), plus de 2e rangée
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
+  const oSt = sub.querySelector(".sn-strip"), oL = oSt && sub.dataset.k === k ? oSt.scrollLeft : 0; sub.dataset.k = k; // 3.0.3 (Tocqueville) : même page, le bandeau garde sa position
   sub.innerHTML = strip;
-  { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) { const L0 = st.getBoundingClientRect().left - st.scrollLeft, at = (b) => b.getBoundingClientRect().left - L0; const want = at(c) - st.clientWidth / 2 + c.offsetWidth / 2; let x = 0; [...st.children].forEach((b) => { if (b.offsetWidth && at(b) - 6 <= want && at(b) <= at(c)) x = Math.max(x, at(b) - 6); }); st.scrollLeft = Math.max(0, x); } } // téléphone : la page en cours reste visible, et le bandeau commence au début d'un onglet (3.0.1) // téléphone : la page en cours reste visible dans le bandeau
+  { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (st && oL) st.scrollLeft = oL; else if (c && st.scrollWidth > st.clientWidth) { const L0 = st.getBoundingClientRect().left - st.scrollLeft, at = (b) => b.getBoundingClientRect().left - L0; const want = at(c) - st.clientWidth / 2 + c.offsetWidth / 2; let x = 0; [...st.children].forEach((b) => { if (b.offsetWidth && at(b) - 6 <= want && at(b) <= at(c)) x = Math.max(x, at(b) - 6); }); st.scrollLeft = Math.max(0, x); } } // téléphone : la page en cours reste visible, et le bandeau commence au début d'un onglet (3.0.1) // téléphone : la page en cours reste visible dans le bandeau
   stripTabs(); // 2.2.3 (4A)
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
   [".sn-side"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
@@ -9780,13 +9783,14 @@ function checkNewVersion() {
 }
 /* 1.0.30 : pages tenues par d'autres fichiers (js/comptoirsui.js, js/foireui.js, js/venteui.js) : DX.pages[clé] = (main) => … */
 const PAGES = {};
-let pageSeen = null;
+let pageSeen = null, scLast = "";
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
   if (S.navv !== 3) { S.navv = 3; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 puis 2.1.40 : nouveau menu, bulle pour les parties déjà commencées
   clearDonePins(); document.body.classList.toggle("dense", !detailOn()); if (window.AMB && ambWas !== ambPage()) applyAmbiance(); renderNav(); renderStatus(); renderUpdBar(); // 2.1.40 (4A) : pages resserrées sauf « Affichage détaillé »
+  const scSig = scrSig(), scKeep = scSig === scLast ? scrSnap($("#main")) : null; scLast = scSig; // 3.0.3 : même page, les listes qui défilent gardent leur position
   if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (S && S1_OFF.includes(ui.tab) && E.isS1c && E.isS1c(S)) ui.tab = "home"; // 2.2.0 : pas d'Ascension en saison
@@ -9819,11 +9823,18 @@ function render() {
   else if (ui.tab === "pets" && window.COLL) window.COLL.render($("#main")); // 1.0.30 : Familiers et montures (js/collui.js)
   else if (PAGES[ui.tab]) PAGES[ui.tab]($("#main")); // 1.0.30 : Comptoirs, Foire du Trool, Cours des ressources
   else { ui.tab = "home"; renderHome(); }
-  pageTabs(); tabsKeep();
+  pageTabs(); tabsKeep(); if (scKeep) scrBack($("#main"), scKeep);
   backChip();
   tipTick();
   if (window.V3 && window.V3.on()) window.V3.tick(true);
 }
+/* 3.0.3 (signalé par Tocqueville) : un clic redessine la page ; les listes et rangées qui défilent à l'intérieur (haut ou gauche) gardent leur position
+   tant qu'on reste sur la même vue. Repérées par balise + 1re classe + rang, comme les fenêtres (sheetScrolls) */
+const scrSig = () => [ui.tab, navKey(), ui.zoneView, ui.tview, ui.qt, ui.inv, ui.world, ui.hero, ui.cid].join("|");
+const scrK = (el) => el.tagName + "." + (el.classList[0] || "");
+const scrOk = (el) => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+function scrSnap(root) { const out = new Map(), seen = {}; if (!root) return out; root.querySelectorAll("*").forEach((el) => { if (!scrOk(el)) return; const k = scrK(el), i = (seen[k] = (seen[k] || 0) + 1); if (el.scrollTop > 0 || el.scrollLeft > 0) out.set(k + "#" + i, [el.scrollTop, el.scrollLeft]); }); return out; }
+function scrBack(root, snap) { if (!root || !snap.size) return; const seen = {}; root.querySelectorAll("*").forEach((el) => { if (!scrOk(el)) return; const k = scrK(el), i = (seen[k] = (seen[k] || 0) + 1), v = snap.get(k + "#" + i); if (!v) return; if (v[0] && !el.scrollTop) el.scrollTop = v[0]; if (v[1] && !el.scrollLeft) el.scrollLeft = v[1]; }); }
 /* 2.1.20 : « Retour aux Dofus » (idée d'Hayabusa) : un « Y aller » depuis la page Dofus ou les Quêtes garde la page d'origine ;
    une pastille en bas de l'écran y ramène (même Dofus, même défilement) pour choisir la ressource suivante. Elle part quand on y revient. */
 const BACK_FROM = { dofus: "Retour aux Dofus", quests: "Retour aux quêtes" };
