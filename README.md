@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.0.5 « Le Havre-Sac revient »
+- Getget (13/11) : téléphone + Affichage détaillé, plus de Havre-Sac (la barre détaillée cache le logo, le menu du bas de la 3.0 n'a pas de Havre-Sac). css/v3.css : le logo reste visible sous 860 px. Le tableau de combat (js/v3.js boardHtml) n'avait pas « Quitter le donjon » / « Rentrer » : bouton navquit à côté de « Vue détaillée ».
+
 ## 3.0.4 « La Brèche se remplit »
 - Mathis (13/11, maquette https://claude.ai/artifact/KGfcwwoSnctAxt3prngcTa) : 1A 2A 3B 4A 5A. js/v3.js brHtml (puits, paliers, dernière course, top 3 + ta place, course sur la page avec le choix en attente via SGUI.pend), js/songe.js E.BR_PAL (paliers de la semaine, `wk.pal`) et E.brBossAt, css/v3.css `.brx-*`. Simulation (`node tools/simulate.js --breche`) : bon équipement ~4 paliers sur 5, sans équipement ~0.
 

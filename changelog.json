@@ -1,6 +1,14 @@
 {
-  "version": "3.0.4",
+  "version": "3.0.5",
   "versions": [
+    {
+      "v": "3.0.5",
+      "name": "Le Havre-Sac revient",
+      "items": [
+        "Téléphone avec « Affichage détaillé » : le logo du Havre-Sac est de retour en haut à gauche (signalé par Getget)",
+        "Écran de combat : le bouton « Quitter le donjon » (deux clics, la clé est perdue) et « Rentrer » sont de retour à côté de « Vue détaillée », sur téléphone comme sur PC (signalé par Getget)"
+      ]
+    },
     {
       "v": "3.0.4",
       "name": "La Brèche se remplit",

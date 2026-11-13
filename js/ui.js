@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.4";
+const GAME_VERSION = "3.0.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.0.5", name: "Le Havre-Sac revient", items: [
+    "Téléphone avec « Affichage détaillé » : le logo du Havre-Sac est de retour en haut à gauche (signalé par Getget)",
+    "Écran de combat : le bouton « Quitter le donjon » (deux clics, la clé est perdue) et « Rentrer » sont de retour à côté de « Vue détaillée », sur téléphone comme sur PC (signalé par Getget)" ] },
   { v: "3.0.4", name: "La Brèche se remplit", items: [
     "Nouvelle page de la Brèche : le puits des étages (les boss, ta semaine, ton record et le plus bas du serveur), ta dernière course et le top 3 avec ta place",
     "Paliers de la semaine aux étages 10, 20, 30, 40 et 50 : Bribes de rêve et coffres, une fois par semaine, dès que le boss tombe",

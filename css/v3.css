@@ -159,3 +159,5 @@ body.v3 #main{container:v3m/inline-size}
 .brx-hp span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brx-hp span:last-child{text-align:right;color:var(--muted)}
 .brx-hp .bar{height:8px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden}.brx-hp .bar i{display:block;height:100%;border-radius:99px;background:#6cc04a}
 .brx-hp.mid .bar i{background:var(--gold)}.brx-hp.low .bar i{background:#d24a3a}
+/* 3.0.5 (signalé par Getget) : téléphone avec « Affichage détaillé », le logo du Havre-Sac reste dans la barre du haut (le menu du bas n'a pas de Havre-Sac) */
+@media (max-width:859px){body.v3 .status .brand{display:inline-flex;align-items:center}}
