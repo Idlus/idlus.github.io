@@ -1,6 +1,14 @@
 {
-  "version": "3.1.9",
+  "version": "3.1.10",
   "versions": [
+    {
+      "v": "3.1.10",
+      "name": "Retour à la nouvelle vue",
+      "items": [
+        "Combat : dans la vue détaillée, un bouton « ← Nouvelle vue » ramène au tableau de la 3.0 ; avant, il fallait recharger la page (signalé par SegFault)",
+        "Le bouton Combat du menu ramène aussi à la nouvelle vue"
+      ]
+    },
     {
       "v": "3.1.9",
       "name": "Les espaces à venir",

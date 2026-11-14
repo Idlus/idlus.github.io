@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.10 « Retour à la nouvelle vue »
+- Question de SegFault (14/11, Éternel, niv. 200) : « pas moyen de passer de la vue de combat détaillée à la nouvelle vue ? ». Bug : le bouton « Vue détaillée » de la 3.0 n'avait pas de retour, il fallait recharger la page. La vue détaillée a maintenant un bouton « ← Nouvelle vue » (js/ui.js `renderCombat`), et le bouton Combat du menu ramène aussi au tableau. Test : tests/vue_combat_retour_ui.test.js.
+
 ## 3.1.9 « Les espaces à venir »
 - Question de Mathis (14/11) : « il manque plein d'onglets en Saison 1 ? ». Pas un bug : la 3.0 ouvre les espaces au niveau du meilleur héros (Artisanat 5, Collection 10, Marché 15, Joueurs 20 ; tout ouvert pour les anciens comptes `v3all` et le Monocompte), mais les espaces fermés étaient invisibles. js/v3.js `V3.lockHtml` (rail, menu complet « Bientôt », menu Plus du téléphone) les montre grisés avec « niv. X » ; un clic (`v3lock`, `V3.lockTell`) dit le niveau et les pages. La Saison 1 n'a en plus pas L'Ascension (choix 19A).
 

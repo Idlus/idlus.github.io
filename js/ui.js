@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.9";
+const GAME_VERSION = "3.1.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.10", name: "Retour à la nouvelle vue", items: [
+    "Combat : dans la vue détaillée, un bouton « ← Nouvelle vue » ramène au tableau de la 3.0 ; avant, il fallait recharger la page (signalé par SegFault)",
+    "Le bouton Combat du menu ramène aussi à la nouvelle vue" ] },
   { v: "3.1.9", name: "Les espaces à venir", items: [
     "Menu : les espaces pas encore ouverts (Artisanat, Collection, Marché, Joueurs) restent visibles, grisés, avec le niveau qui les ouvre (5, 10, 15 et 20). Un clic dit ce qu'ils contiennent",
     "Une partie neuve, en Saison 1 comme ailleurs, voit ainsi tout ce qui l'attend au lieu de croire qu'il manque des onglets" ] },
@@ -5334,7 +5337,7 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1>${dg && !XP && !S.dungeon.defi ? `<div class="ac-rate xs cdgrate" id="cdgrate">${dgRateLine(E.dgChainRate(S))}</div>` : ""}</div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
-      <span class="cset">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</span><button class="btn sm csetbtn" data-act="csetsheet">${G("gear")} Réglages</button>
+      ${window.V3 && window.V3.on() && ui.v3det ? `<button class="btn sm primary cv3back" data-act="v3det" data-tip="Revenir au tableau de combat de la 3.0 (les personnages, le résumé et les boutons)">← Nouvelle vue</button>` : ""}<span class="cset">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</span><button class="btn sm csetbtn" data-act="csetsheet">${G("gear")} Réglages</button>
       ${XP ? "" : dg ? `${S.dungeon.defi ? "" : `<button class="btn sm cdgfiche" data-act="dgopen" data-id="${S.dungeon.id}" data-tip="Sceaux, classement, butin et sorts du boss">${IC("coffre")} Fiche du donjon</button>`}<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   ${XP && window.SGUI ? window.SGUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
@@ -11881,7 +11884,7 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
-    case "nav": if (d.v === "maitrise" && d.mtc && window.MAITUI) { const mc = S.chars.find((x) => String(x.id) === d.mtc); if (mc) { MAITUI.st.cid = mc.id; MAITUI.st.view = null; MAITUI.st.z = 0; } } // 2.0.6 : ouvre l'arbre du héros de la fiche
+    case "nav": if (d.v === "combat" && t.closest("#nav,#subnav")) ui.v3det = false; /* 3.1.10 : le menu Combat ramène à la nouvelle vue */ if (d.v === "maitrise" && d.mtc && window.MAITUI) { const mc = S.chars.find((x) => String(x.id) === d.mtc); if (mc) { MAITUI.st.cid = mc.id; MAITUI.st.view = null; MAITUI.st.z = 0; } } // 2.0.6 : ouvre l'arbre du héros de la fiche
       if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (navSheet(d.v)) return; if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
