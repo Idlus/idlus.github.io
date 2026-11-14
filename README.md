@@ -10,6 +10,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.7 « Un Recycleur plus fin »
+- Idée Discord de SegFault (2 000+ Rayonnants), maquette choisie par Mathis 1A 2A 3B : le Recycleur a deux cadres de règles, objets normaux et Rayonnants (niveau `rLvl`, jet de base `rQ`, bonus Rayonnant sous `rBon` %), meilleur Rayonnant de chaque objet gardé (`rKeep`), case Parfaits à part (`perf`). L'ancienne case `rare` est reprise dans les nouveaux réglages (`E.recyCfg`). Confirmation détaillée quand des Rayonnants partent. Le recyclage automatique suit aussi les règles des Rayonnants (3B).
+- Correction (`E.isPerfect`) : un Rayonnant se compare à son propre maximum (max + bonus) ; avant, environ 1 Rayonnant sur 4 comptait comme Parfait sans jet à 100 %.
+
 ## 3.1.6 « Zones de chasse favorites »
 - Idée Discord de SegFault : étoile ☆ sur chaque sous-zone (liste des régions, section Favoris, fiche de zone), section « ★ Favoris » en haut de la page Monde (carte et liste, tous filtres de niveaux). js/ui.js : `favPanel`, `subRow`, `favBtn`, action `favzone` ; sauvegarde `S.favZones` (12 au plus), rien côté serveur.
 

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.6";
+const GAME_VERSION = "3.1.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.7", name: "Un Recycleur plus fin", guide: "inventaire", items: [
+    "Recycleur : les Rayonnants ont maintenant leurs propres règles (niveau, jet, bonus Rayonnant sous +X %), à côté de celles des objets normaux. Une seule règle qui correspond suffit (merci SegFault)",
+    "Le meilleur Rayonnant de chaque objet est toujours gardé (case cochée de base), et la confirmation montre les plus beaux Rayonnants qui partent. Le recyclage automatique suit aussi les règles des Rayonnants",
+    "Correction : un Rayonnant ne compte plus comme Parfait (+2 %) juste grâce à son bonus. Il faut un jet à 100 % avant le bonus, comme pour les autres objets" ] },
   { v: "3.1.6", name: "Zones de chasse favorites", items: [
     "Zones favorites : l'étoile ☆ d'une zone de chasse l'ajoute en haut de la page Monde, dans la section « Favoris », quel que soit le filtre de niveaux (12 au plus). Merci SegFault",
     "La fiche d'une zone a aussi son bouton « Ajouter aux favoris »" ] },
@@ -8588,10 +8592,13 @@ function recyData() {
   const uids = E.recyList(S, R); const est = E.recyEstimate(S, uids);
   const by = {}; const show = []; uids.forEach((u) => { const it = S.items[u]; if (by[it.tpl]) { by[it.tpl].n++; return; } by[it.tpl] = { tpl: it.tpl, n: 1 }; show.push(by[it.tpl]); });
   show.sort((a, b) => b.n - a.n || ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
-  const rare = uids.filter((u) => E.recyRare(S.items[u])).length;
-  return (recyMemo = { key, at: Date.now(), uids, est, show, rare });
+  const rare = uids.filter((u) => E.recyRare(S.items[u])).length; const nRad = uids.filter((u) => S.items[u].radiant).length;
+  const precious = nRad ? uids.map((u) => S.items[u]).filter((it) => it.radiant).sort((a, b) => b.radiant + E.itemQuality(b) * 20 - a.radiant - E.itemQuality(a) * 20).slice(0, 4) : []; // 2A : les plus beaux qui partent
+  return (recyMemo = { key, at: Date.now(), uids, est, show, rare, nRad, precious });
 }
 function recyHtml() {
+  const cb = (k, on) => `<input type="checkbox" data-act="recyset" data-k="${k}" ${on ? "checked" : ""}>`;
+  const nb = (k, v, w, mn, mx) => `<input type="number" min="${mn}" max="${mx}" data-act="recynum" data-k="${k}" value="${v}" style="width:${w}px">`;
   const R = E.recyCfg(S); const d = recyData(); const lvl = E.recyLvl(S, R); const n = E.itemCount(S); const cap = E.itemCap(S); const pct = Math.min(100, Math.round(n / cap * 100));
   const nR = Object.values(d.est.got).reduce((a, b) => a + b, 0);
   const top = Object.entries(d.est.got).sort((a, b) => E.runeInfo(b[0]).weight * b[1] - E.runeInfo(a[0]).weight * a[1]).slice(0, 6);
@@ -8599,19 +8606,27 @@ function recyHtml() {
   return `<section class="panel"><div class="phead"><h2>♻ Recycleur</h2><span class="xs muted num">Sac : ${fmt(n)} / ${fmt(cap)}</span></div>
     <div class="pad stack" style="gap:10px">
       <div class="recybar"><span style="width:${pct}%"></span></div>
-      <span class="small muted">Choisis ce qui ne te sert plus : le Recycleur brise tout le sac d'un coup, en runes, comme le brisage. Une seule règle suffit. Jamais touchés : objets portés, cadenas, tenues, exo, forgemagés, Dofus et trophées${R.rare ? "" : ", ni les Rayonnants et Parfaits (sauf si tu coches la case plus bas)"}.</span>
-      <div class="recyf">
-        <label><input type="checkbox" data-act="recyset" data-k="lvlOn" ${R.lvlOn ? "checked" : ""}><span>Objets de niveau <input type="number" min="0" max="200" step="10" data-act="recynum" data-k="lvl" value="${R.lvl > 0 ? R.lvl : ""}" placeholder="${lvl}" style="width:64px"> ou moins <span class="xs muted">${R.lvl > 0 ? "" : "(vide : 30 niveaux sous ton héros le plus faible)"}</span></span></label>
-        <label><input type="checkbox" data-act="recyset" data-k="qOn" ${R.qOn ? "checked" : ""}><span>Objets au jet sous <input type="number" min="1" max="100" step="5" data-act="recynum" data-k="q" value="${R.q}" style="width:56px"> %</span></label>
-        <label><input type="checkbox" data-act="recyset" data-k="dup" ${R.dup ? "checked" : ""}><span>Doublons : garder seulement le meilleur exemplaire de chaque objet</span></label>
-        <label><input type="checkbox" data-act="recyset" data-k="keepSets" ${R.keepSets ? "checked" : ""}><span>Garder un exemplaire de chaque objet de panoplie, quelles que soient les règles</span></label>
-        <label><input type="checkbox" data-act="recyset" data-k="rare" ${R.rare ? "checked" : ""}><span>Inclure les <b>Rayonnants</b> et les <b>Parfaits</b> (jet à 100 %) <span class="xs muted">(les objets portés, verrouillés ou en tenue restent protégés)</span></span></label>
+      <span class="small muted">Choisis ce qui ne te sert plus : le Recycleur brise tout le sac d'un coup, en runes, comme le brisage. Les objets normaux et les Rayonnants ont chacun leurs règles. Jamais touchés : objets portés, cadenas, tenues, exo, forgemagés, Dofus et trophées.</span>
+      <div class="recyfam">
+        <div class="recyf"><div class="recyfh"><b>Objets normaux</b><span class="xs muted">recyclé si au moins une règle correspond</span></div>
+          <label>${cb("lvlOn", R.lvlOn)}<span>Niveau <input type="number" min="0" max="200" step="10" data-act="recynum" data-k="lvl" value="${R.lvl > 0 ? R.lvl : ""}" placeholder="${lvl}" style="width:64px"> ou moins ${R.lvl > 0 ? "" : `<span class="xs muted">(vide : 30 niveaux sous ton héros le plus faible)</span>`}</span></label>
+          <label>${cb("qOn", R.qOn)}<span>Jet sous ${nb("q", R.q, 56, 1, 100)} %</span></label>
+          <label>${cb("dup", R.dup)}<span>Doublons : garder seulement le meilleur exemplaire</span></label></div>
+        <div class="recyf radf ${R.rad ? "" : "off"}"><div class="recyfh"><label>${cb("rad", R.rad)}<b>✦ Rayonnants</b></label><span class="xs muted">${R.rad ? "recyclé si au moins une règle correspond" : "protégés : coche pour en recycler"}</span></div>
+          <label>${cb("rLvlOn", R.rLvlOn)}<span>Niveau <input type="number" min="0" max="200" step="10" data-act="recynum" data-k="rLvl" value="${R.rLvl > 0 ? R.rLvl : ""}" placeholder="${lvl}" style="width:64px"> ou moins</span></label>
+          <label>${cb("rQOn", R.rQOn)}<span>Jet sous ${nb("rQ", R.rQ, 56, 1, 100)} %</span></label>
+          <label>${cb("rBonOn", R.rBonOn)}<span>Bonus Rayonnant sous +${nb("rBon", R.rBon, 52, 11, 50)} % <span class="xs muted">(de +10 à +50 %)</span></span></label>
+          <label class="keep">${cb("rKeep", R.rKeep)}<span>🔒 Toujours garder le meilleur Rayonnant de chaque objet</span></label></div>
       </div>
-      <div class="recyprev"><div class="grow"><div class="small"><b class="num">${fmt(N)}</b> objet${N > 1 ? "s" : ""} ${N > 1 ? "seront recyclés" : "sera recyclé"}${N ? ` (${d.show.length} modèle${d.show.length > 1 ? "s" : ""})` : ""}</div>
+      <div class="recyf">
+        <label>${cb("keepSets", R.keepSets)}<span>Garder un exemplaire de chaque objet de panoplie, quelles que soient les règles</span></label>
+        <label>${cb("perf", R.perf)}<span>Inclure les <b>Parfaits</b> (jet à 100 %)</span></label>
+      </div>
+      <div class="recyprev"><div class="grow"><div class="small"><b class="num">${fmt(N)}</b> objet${N > 1 ? "s" : ""} ${N > 1 ? "seront recyclés" : "sera recyclé"}${N ? ` (${d.show.length} modèle${d.show.length > 1 ? "s" : ""})` : ""}${d.nRad ? ` : <span class="num">${fmt(N - d.nRad)}</span> normaux, <span class="num radc">✦ ${fmt(d.nRad)}</span> Rayonnant${d.nRad > 1 ? "s" : ""}` : ""}</div>
         ${N ? `<div class="invgrid invsmall recygrid">${d.show.slice(0, 18).map((g) => `<span class="itile ${rarCls(g.tpl)}" title="${h(ITEMS[g.tpl].name)}">${im(itemImg(g.tpl), "", ITEMS[g.tpl].name)}<span class="ilvl">${ITEMS[g.tpl].lvl}</span>${g.n > 1 ? `<span class="icount">×${fmt(g.n)}</span>` : ""}</span>`).join("")}${d.show.length > 18 ? `<span class="xs muted" style="align-self:center">+${d.show.length - 18}</span>` : ""}</div>` : `<div class="empty">Aucun objet ne correspond à ces réglages.</div>`}</div>
         ${N ? `<div class="recygain"><div class="xs muted">Tu recevras environ</div><div class="recybig"><b class="num">${fmt(nR)}</b> runes</div><div class="recyrunes">${top.map(([k, q]) => `<span class="tag soft">${sIco(E.runeInfo(k).stat)} ${h(E.runeName(k))} ×${fmt(q)}</span>`).join("")}</div><div class="xs muted">Poids total ≈ ${fmt(d.est.weight)}. Même calcul et même coefficient que le brisage (−3 % par objet brisé).</div></div>` : ""}</div>
-      <div class="row">${ui.confirm === "recy" ? `<span class="small">Recycler ${fmt(N)} objet${N > 1 ? "s" : ""}${d.rare ? `, dont <b>${fmt(d.rare)} Rayonnant${d.rare > 1 ? "s" : ""} ou Parfait${d.rare > 1 ? "s" : ""}</b>` : ""} ? C'est définitif.</span><button class="btn sm danger" data-act="recygo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn primary grow" data-act="recyask" ${N ? "" : "disabled"}>♻ Recycler ${fmt(N)} objet${N > 1 ? "s" : ""}</button>`}</div>
-      <label class="small recyauto"><input type="checkbox" data-act="recyset" data-k="auto" ${R.auto ? "checked" : ""}><span><b>Recyclage automatique</b> : quand le sac est plein, les nouveaux objets qui correspondent à ces réglages sont recyclés au lieu d'aller au trop-plein.</span></label>
+      ${ui.confirm === "recy" && d.nRad ? `<div class="recyconf"><div class="small"><b>Recycler ${fmt(N)} objet${N > 1 ? "s" : ""} ?</b> C'est définitif.</div><div class="recysplit"><span class="tag soft num">${fmt(N - d.nRad)} objet${N - d.nRad > 1 ? "s" : ""} normaux</span><span class="tag radt num">✦ ${fmt(d.nRad)} Rayonnant${d.nRad > 1 ? "s" : ""}</span></div><div class="xs muted">Les plus beaux Rayonnants qui partent :</div><div class="recyprec">${d.precious.map((it) => `<span class="recypi"><span class="itile ${rarCls(it.tpl)}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}<span class="ilvl">${ITEMS[it.tpl].lvl}</span></span><span class="xs"><b>${h(ITEMS[it.tpl].name)}</b><br>✦ +${it.radiant} % · jet ${Math.round(E.itemQuality(it) * 100)} %</span></span>`).join("")}</div><div class="row"><button class="btn sm danger" data-act="recygo">Oui, recycler aussi ${fmt(d.nRad)} Rayonnant${d.nRad > 1 ? "s" : ""}</button><button class="btn sm" data-act="cancel">Annuler</button></div></div>` : `<div class="row">${ui.confirm === "recy" ? `<span class="small">Recycler ${fmt(N)} objet${N > 1 ? "s" : ""}${d.rare ? `, dont <b>${fmt(d.rare)} Parfait${d.rare > 1 ? "s" : ""}</b>` : ""} ? C'est définitif.</span><button class="btn sm danger" data-act="recygo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn primary grow" data-act="recyask" ${N ? "" : "disabled"}>♻ Recycler ${fmt(N)} objet${N > 1 ? "s" : ""}</button>`}</div>`}
+      <label class="small recyauto"><input type="checkbox" data-act="recyset" data-k="auto" ${R.auto ? "checked" : ""}><span><b>Recyclage automatique</b> : quand le sac est plein, les nouveaux objets qui correspondent à ces réglages sont recyclés au lieu d'aller au trop-plein${R.rad ? ", <b>Rayonnants compris</b> (selon leurs règles)" : ""}.</span></label>
       <label class="small recyauto"><input type="checkbox" data-act="recyset" data-k="craft" ${R.craft ? "checked" : ""}><span><b>Recycler aussitôt à la fabrication</b> : garder les <input type="number" min="1" max="99" data-act="recynum" data-k="keep" value="${R.keep}" style="width:52px"> meilleurs exemplaires de chaque objet fabriqué et recycler les autres. La fabrication ne s'arrête plus quand le sac est plein.</span></label>
     </div></section>`;
 }
@@ -12189,7 +12204,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
   else if (a === "flt") { fltOf(t.dataset.ctx)[t.dataset.k] = t.value; }
   else if (a === "recyset") { E.recyCfg(S)[t.dataset.k] = t.checked; recyMemo = null; if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); }
-  else if (a === "recynum") { const R = E.recyCfg(S); const k = t.dataset.k; const v = Math.floor(+t.value) || 0; R[k] = k === "lvl" ? Math.max(0, Math.min(200, v)) : k === "q" ? Math.max(1, Math.min(100, v || 50)) : Math.max(1, Math.min(99, v || 1)); if (k === "lvl" && R[k] > 0) R.lvlOn = true; if (k === "q") R.qOn = true; recyMemo = null; if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); }
+  else if (a === "recynum") { const R = E.recyCfg(S); const k = t.dataset.k; const v = Math.floor(+t.value) || 0; R[k] = k === "lvl" || k === "rLvl" ? Math.max(0, Math.min(200, v)) : k === "q" || k === "rQ" ? Math.max(1, Math.min(100, v || 50)) : k === "rBon" ? Math.max(11, Math.min(50, v || 20)) : Math.max(1, Math.min(99, v || 1)); if (k === "lvl" && R[k] > 0) R.lvlOn = true; if (k === "q") R.qOn = true; if (k === "rLvl" && R[k] > 0) R.rLvlOn = true; if (k === "rQ") R.rQOn = true; if (k === "rBon") R.rBonOn = true; recyMemo = null; if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); }
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }

@@ -1,6 +1,16 @@
 {
-  "version": "3.1.6",
+  "version": "3.1.7",
   "versions": [
+    {
+      "v": "3.1.7",
+      "name": "Un Recycleur plus fin",
+      "guide": "inventaire",
+      "items": [
+        "Recycleur : les Rayonnants ont maintenant leurs propres règles (niveau, jet, bonus Rayonnant sous +X %), à côté de celles des objets normaux. Une seule règle qui correspond suffit (merci SegFault)",
+        "Le meilleur Rayonnant de chaque objet est toujours gardé (case cochée de base), et la confirmation montre les plus beaux Rayonnants qui partent. Le recyclage automatique suit aussi les règles des Rayonnants",
+        "Correction : un Rayonnant ne compte plus comme Parfait (+2 %) juste grâce à son bonus. Il faut un jet à 100 % avant le bonus, comme pour les autres objets"
+      ]
+    },
     {
       "v": "3.1.6",
       "name": "Zones de chasse favorites",

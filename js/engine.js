@@ -636,27 +636,41 @@
      keepSets : le meilleur exemplaire de chaque objet de panoplie est toujours gardé. auto : quand le sac déborde, les objets qui
      correspondent sont recyclés au lieu d'aller au trop-plein. craft + keep : à la fabrication, garder les keep meilleurs exemplaires
      de l'objet et recycler les autres aussitôt (la fabrication ne s'arrête plus quand le sac est plein). */
-  E.RECY_DEF = { lvlOn: true, lvl: 0, qOn: false, q: 50, dup: true, keepSets: true, auto: false, craft: false, keep: 1, rare: false };
+  /* 3.1.7 (idée de SegFault, choix de Mathis 1A 2A 3B, 14/11) : les Rayonnants ont leurs propres règles (rad + niveau rLvl, jet rQ,
+     bonus Rayonnant sous rBon %), le meilleur Rayonnant de chaque objet est gardé (rKeep), les Parfaits ont leur case (perf).
+     L'ancienne case « rare » (Rayonnants et Parfaits avec les mêmes règles) est reprise telle quelle dans les nouveaux réglages. */
+  E.RECY_DEF = { lvlOn: true, lvl: 0, qOn: false, q: 50, dup: true, keepSets: true, auto: false, craft: false, keep: 1,
+    rad: false, rLvlOn: true, rLvl: 0, rQOn: false, rQ: 50, rBonOn: true, rBon: 20, rKeep: true, perf: false };
   E.recyCfg = (S) => {
     const st = S.settings || (S.settings = {}); if (!st.recy || typeof st.recy !== "object") st.recy = {};
+    if (st.recy.rare !== undefined) { const o = st.recy; if (o.rare === true && o.rad === undefined) Object.assign(o, { rad: true, rLvlOn: !!o.lvlOn, rLvl: o.lvl || 0, rQOn: !!o.qOn, rQ: o.q || 50, rBonOn: false, rKeep: false, perf: true }); delete o.rare; }
     for (const k in E.RECY_DEF) if (st.recy[k] === undefined) st.recy[k] = E.RECY_DEF[k];
     return st.recy;
   };
   E.recyLvl = (S, R) => { if (R.lvl > 0) return R.lvl; const team = E.team ? E.team(S) : []; return team.length ? Math.max(0, Math.min(...team.map((c) => c.lvl)) - 30) : 0; };
-  /* jamais recyclés : portés, cadenas, tenues, Rayonnants, exo, Parfaits, forgemagés, transcendés, Dofus, trophées et légendaires.
-     2.2.12.3 (retour de Nerisia) : la case « rare » (décochée par défaut) laisse passer les Rayonnants et les Parfaits ; le reste reste protégé. */
+  /* jamais recyclés : portés, cadenas, tenues, exo, forgemagés, transcendés, Dofus, trophées et légendaires.
+     Rayonnants : seulement si leur cadre est coché (rad) ; Parfaits : seulement avec la case perf. Un Rayonnant est « Parfait » ici
+     si son jet de base (avant le bonus Rayonnant) est à 100 %. */
   E.recyRare = (it) => !!(it && (it.radiant || E.isPerfect(it)));
   E.recySafe = (S, it, R) => {
     const T = ITEMS[it && it.tpl]; if (!T || T.slot === "dofus" || T.trophy || T.leg) return true;
     if (it.exo || it.locked || it.fm || it.trans || E.equippedBy(S, it.uid) || E.inGear(S, it.uid)) return true;
-    return !(R && R.rare) && E.recyRare(it);
+    if (it.radiant) return !(R && R.rad) || (!R.perf && E.itemQuality(it) >= 0.999);
+    return !(R && R.perf) && E.isPerfect(it);
   };
   const recyRank = (a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a) || a.uid - b.uid;
-  E.recyBest = (S) => { const by = {}; for (const u in S.items) { const it = S.items[u]; const b = by[it.tpl]; if (!b || recyRank(it, b) < 0) by[it.tpl] = it; } const o = {}; for (const t in by) o[t] = by[t].uid; return o; };
+  const radRank = (a, b) => b.radiant - a.radiant || E.itemQuality(b) - E.itemQuality(a) || a.uid - b.uid;
+  /* meilleur exemplaire de chaque objet (o[tpl]) et meilleur Rayonnant de chaque objet (o.rad[tpl], plus gros bonus puis meilleur jet) */
+  E.recyBest = (S) => { const by = {}, rb = {}; for (const u in S.items) { const it = S.items[u]; const b = by[it.tpl]; if (!b || recyRank(it, b) < 0) by[it.tpl] = it;
+      if (it.radiant) { const r = rb[it.tpl]; if (!r || radRank(it, r) < 0) rb[it.tpl] = it; } }
+    const o = {}; for (const t in by) o[t] = by[t].uid; const rad = {}; for (const t in rb) rad[t] = rb[t].uid; Object.defineProperty(o, "rad", { value: rad }); return o; };
   E.recyMatch = (S, it, R, best, lvl) => {
     if (E.recySafe(S, it, R)) return false; const T = ITEMS[it.tpl]; const top = best[it.tpl] === it.uid;
     if (R.keepSets && T.set && top) return false;
-    return (R.lvlOn && T.lvl <= lvl) || (R.qOn && E.itemQuality(it) * 100 < R.q) || (R.dup && !top);
+    const q = E.itemQuality(it) * 100;
+    if (it.radiant) { if (R.rKeep && best.rad && best.rad[it.tpl] === it.uid) return false;
+      return (R.rLvlOn && T.lvl <= (R.rLvl > 0 ? R.rLvl : lvl)) || (R.rQOn && q < R.rQ) || (R.rBonOn && it.radiant < R.rBon); }
+    return (R.lvlOn && T.lvl <= lvl) || (R.qOn && q < R.q) || (R.dup && !top);
   };
   E.recyList = (S, R = E.recyCfg(S)) => { const best = E.recyBest(S); const lvl = E.recyLvl(S, R); return Object.values(S.items).filter((it) => E.recyMatch(S, it, R, best, lvl)).map((it) => it.uid); };
   const recyAdd = (got, r) => { if (r && typeof r === "object") for (const k in r) got[k] = (got[k] || 0) + r[k]; };
@@ -4015,7 +4029,10 @@
   E.PERFECT_PCT = 2;
   E.isPerfect = (it) => {
     const T = ITEMS[it.tpl]; if (!T || T.trophy) return false; let n = 0;
-    for (const k in T.stats) { const [, mx] = T.stats[k]; if (mx <= 0) continue; n++; if ((it.stats[k] || 0) < mx) return false; }
+    /* 3.1.7 (bug vu par Mathis, 14/11) : un Rayonnant se compare à SON maximum (max + bonus Rayonnant). Avant, le bonus seul poussait les
+       lignes au-dessus du max normal : environ 1 Rayonnant sur 4 comptait comme Parfait (+2 %) sans avoir un jet à 100 %. */
+    const rb = it.radiant ? 1 + it.radiant / 100 : 1;
+    for (const k in T.stats) { const [, mx0] = T.stats[k]; if (mx0 <= 0) continue; n++; const mx = rb > 1 && !E.RADIANT_SKIP[k] ? Math.ceil(mx0 * rb) : mx0; if ((it.stats[k] || 0) < mx) return false; }
     return n > 0;
   };
   /* +2 % sur chaque caractéristique positive (au moins +1), sauf PA, PM, Portée et Invocations (1.0.29.1 : un Gelano parfait comptait 2 PA) */

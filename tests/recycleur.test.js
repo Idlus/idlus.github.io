@@ -34,13 +34,13 @@ console.log("ok - sac de 4 000 places");
   assert.ok(L.includes(h1.uid) && !L.includes(h2.uid), "doublon haut niveau : seul le meilleur reste");
   [lk, rad, fm, pf].forEach((x) => assert.ok(!L.includes(x.uid), "cadenas, Rayonnant, forgemagé et Parfait jamais recyclés"));
   S.chars[0].equip.coiffe = a.uid; assert.ok(!E.recyList(S).includes(a.uid), "porté : gardé"); delete S.chars[0].equip.coiffe;
-  // 2.2.12.3 (Nerisia) : case « Inclure les Rayonnants et les Parfaits », décochée par défaut ; cadenas, forgemagé et porté restent gardés
-  assert.strictEqual(R.rare, false, "protection par défaut");
-  R.rare = true; { const LR = E.recyList(S); assert.ok(LR.includes(rad.uid) && LR.includes(pf.uid), "case cochée : Rayonnant et Parfait bas niveau recyclés");
+  // 3.1.7 (1A) : Rayonnants protégés tant que leur cadre n'est pas coché ; Parfaits avec leur propre case
+  assert.strictEqual(R.rad, false, "Rayonnants protégés par défaut"); assert.strictEqual(R.perf, false, "Parfaits protégés par défaut");
+  R.rad = true; R.perf = true; R.rKeep = false; { const LR = E.recyList(S); assert.ok(LR.includes(rad.uid) && LR.includes(pf.uid), "cases cochées : Rayonnant et Parfait bas niveau recyclés");
     assert.ok(!LR.includes(lk.uid) && !LR.includes(fm.uid), "cadenas et forgemagé toujours gardés");
     const pr = mk(S, low, 1); pr.radiant = 10; S.chars[0].equip.coiffe = pr.uid; assert.ok(!E.recyList(S).includes(pr.uid), "Rayonnant porté : gardé");
     delete S.chars[0].equip.coiffe; delete S.items[pr.uid]; }
-  R.rare = false;
+  R.rad = false; R.perf = false; R.rKeep = true;
   R.keepSets = false; assert.ok(E.recyList(S).includes(s2.uid), "sans la case panoplie : recyclé");
   R.lvlOn = false; R.dup = false; assert.strictEqual(E.recyList(S).length, 0, "aucune règle : rien");
   R.qOn = true; R.q = 50; const LQ = E.recyList(S); assert.ok(LQ.includes(h1.uid) && !LQ.includes(h2.uid), "jet sous 50 %");
@@ -55,6 +55,36 @@ console.log("ok - sac de 4 000 places");
   [s2, h2, lk, rad, fm, pf].forEach((x) => assert.ok(S.items[x.uid], "gardé"));
 }
 console.log("ok - règles et recyclage du sac");
+
+// 1 bis. 3.1.7 (idée de SegFault, 1A 2A 3B) : règles propres aux Rayonnants, meilleur Rayonnant gardé, ancienne case reprise, Parfaits corrigés
+{
+  const S = team(200); const R = E.recyCfg(S); Object.assign(R, { lvlOn: false, qOn: false, dup: false, keepSets: false });
+  const rmk = (tpl, f, bon) => { const it = mk(S, tpl, f); it.roll = Object.assign({}, it.stats); it.radiant = bon; for (const k in it.stats) if (it.stats[k] > 0 && !E.RADIANT_SKIP[k]) it.stats[k] = Math.ceil(it.stats[k] * (1 + bon / 100)); return it; };
+  const n1 = mk(S, high, 0.5); const r1 = rmk(high, 0.5, 15), r2 = rmk(high, 0.95, 45), r3 = rmk(low, 0.5, 40);
+  assert.strictEqual(E.recyList(S).length, 0, "aucune règle");
+  R.rad = true; R.rLvlOn = false; R.rQOn = false; R.rBonOn = true; R.rBon = 30; R.rKeep = true;
+  let L = E.recyList(S); assert.ok(L.includes(r1.uid) && !L.includes(r2.uid) && !L.includes(r3.uid) && !L.includes(n1.uid), "bonus sous +30 % : seul le petit Rayonnant part");
+  R.rKeep = false; R.rBon = 50; L = E.recyList(S); assert.ok(L.includes(r1.uid) && L.includes(r2.uid) && L.includes(r3.uid), "sans garder le meilleur : tous sous +50 %");
+  R.rKeep = true; L = E.recyList(S); assert.ok(!L.includes(r2.uid) && !L.includes(r3.uid) && L.includes(r1.uid), "meilleur Rayonnant de chaque objet gardé");
+  R.rBonOn = false; R.rLvlOn = true; R.rLvl = 100; R.rKeep = false; L = E.recyList(S); assert.ok(L.includes(r3.uid) && !L.includes(r1.uid), "niveau des Rayonnants à part");
+  R.rLvlOn = false; R.rQOn = true; R.rQ = 90; L = E.recyList(S); assert.ok(L.includes(r1.uid) && !L.includes(r2.uid), "jet de base (avant bonus) des Rayonnants");
+  R.lvlOn = true; R.lvl = 200; R.rad = false; L = E.recyList(S); assert.ok(L.includes(n1.uid) && !L.includes(r1.uid), "règles normales : les Rayonnants n'en font pas partie");
+  // Parfaits : un Rayonnant au jet de base 100 % est Parfait, un Rayonnant moyen ne l'est plus (bug : le bonus poussait les lignes au max)
+  const rp = rmk(high, 1, 30); assert.ok(E.isPerfect(rp), "Rayonnant au jet parfait : Parfait"); assert.ok(!E.isPerfect(r2), "Rayonnant à 95 % + bonus : pas Parfait");
+  R.rad = true; R.rLvlOn = true; R.rLvl = 200; R.rQOn = false; assert.ok(!E.recyList(S).includes(rp.uid), "Rayonnant parfait protégé sans la case Parfaits");
+  R.perf = true; assert.ok(E.recyList(S).includes(rp.uid), "case Parfaits : recyclé");
+  // ancienne case « rare » reprise
+  const T = team(150); T.settings.recy = { lvlOn: true, lvl: 120, qOn: true, q: 40, dup: true, keepSets: true, rare: true };
+  const C = E.recyCfg(T); assert.ok(C.rare === undefined && C.rad && C.perf && C.rLvlOn && C.rLvl === 120 && C.rQOn && C.rQ === 40 && !C.rBonOn && !C.rKeep, "ancienne case reprise");
+  const U = team(150); U.settings.recy = { rare: false }; const C2 = E.recyCfg(U); assert.ok(C2.rare === undefined && !C2.rad && !C2.perf, "ancienne case décochée : protégés");
+  // 3B : le recyclage automatique suit aussi les règles des Rayonnants
+  const A = team(150); for (let i = E.itemCount(A); i < E.itemCap(A); i++) mk(A, high, 0.9);
+  Object.assign(E.recyCfg(A), { auto: true, dup: false, rad: true, rLvlOn: false, rBonOn: true, rBon: 30, rKeep: false });
+  const ra = mk(A, high, 0.5); ra.radiant = 12; const rb = mk(A, high, 0.5); rb.radiant = 44; E.bagFlush(A);
+  assert.ok(!A.items[ra.uid] && !(A.over || []).some((o) => o.uid === ra.uid), "Rayonnant faible recyclé automatiquement");
+  assert.ok((A.over || []).some((o) => o.uid === rb.uid), "beau Rayonnant : trop-plein");
+}
+console.log("ok - règles des Rayonnants (1A 2A 3B) et Parfaits");
 
 // 2. recyclage automatique : sac plein, ce qui correspond est recyclé au lieu d'aller au trop-plein
 {

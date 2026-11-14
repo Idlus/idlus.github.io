@@ -6732,3 +6732,12 @@ body.kbd nav.main,body.kbd .mfstrip,body.kbd #backchip,body.kbd .dropbn,body.kbd
 .dfcard .dfplay{flex:none;font-weight:800;background:linear-gradient(#d6f56f,#a2d332);color:#1b2a05;border-radius:9px;padding:6px 12px;box-shadow:0 3px 0 #5d7d14}
 .dfcard:hover{filter:brightness(1.08)}
 @media (max-width:600px){.dfcard{margin:12px 8px 4px}.dfcard small{font-size:12px}}
+/* 3.1.7 : Recycleur en deux cadres (objets normaux / Rayonnants) et confirmation détaillée */
+.recyfam{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:700px){.recyfam{grid-template-columns:1fr}}
+.recyfh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:14px;margin-bottom:2px}.recyfh label{font-size:14px!important}
+.radf{border-color:color-mix(in srgb,#f5d76e 55%,transparent)!important;background:color-mix(in srgb,#f5d76e 6%,transparent)}.radf b{color:#f5d76e}
+.radf.off>label{opacity:.45}.radf .keep{margin-top:4px;padding-top:6px;border-top:1px dashed var(--line)}
+.radc{color:#f5d76e;font-weight:800}.tag.radt{background:color-mix(in srgb,#f5d76e 18%,transparent);color:#f5d76e;font-weight:800}
+.recyconf{display:grid;gap:8px;padding:12px;border-radius:12px;border:2px solid #e2675a;background:color-mix(in srgb,#e2675a 10%,transparent)}
+.recysplit{display:flex;gap:6px;flex-wrap:wrap}.recyprec{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.recypi{display:flex;gap:8px;align-items:center}.recypi .itile{width:52px;height:52px;flex:none}
