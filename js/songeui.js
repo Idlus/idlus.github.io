@@ -452,7 +452,7 @@
   const ours = () => !!$("#sheet .sg-sheet");
   const openPend = (s, p) => { ui.pend = p.id; X().openSheet(pendHtml(s, p)); };
   const after = (r, re = true) => { if (r) { X().toast(r); return false; } X().markDirty(); if (re) X().render(); return true; };
-  const nextSheet = (s) => { const p = E.expPending(s); if (p) openPend(s, p); else { X().closeSheet(); X().render(); } };
+  const nextSheet = (s) => { const p = E.expPending(s); if (p) { ui.hold = p.id; openPend(s, p); } else { X().closeSheet(); X().render(); } };
   const choose = (s, ...a) => { const r = E.act(s, "expChoose", ...a); if (r) { X().toast(r); return; } X().markDirty(); nextSheet(s); };
   function act(a, t) {
     const s = S(); const d = t.dataset;
@@ -467,7 +467,7 @@
       case "sg-auto": after(E.act(s, "expSetAuto", t.checked), false); return;
       case "sg-loop": after(E.act(s, "sgSetLoop", t.checked), false); return;
       case "sg-loopstop": { E.act(s, "sgLoopStop"); X().markDirty(); X().closeSheet(); X().toast("Boucle arrêtée : l'équipe reste à la chasse."); return; }
-      case "sg-reopen": { const p = E.expPending(s); if (p) openPend(s, p); return; }
+      case "sg-reopen": { const p = E.expPending(s); if (p) { ui.hold = p.id; openPend(s, p); } return; } // 3.1.3 : fiche ouverte par le joueur = le choix auto attend
       case "sg-pick": choose(s, +d.i); return;
       case "sg-no": choose(s, "no"); return;
       case "sg-storm": { const r = E.act(s, "expChoose", "storm"); if (r) { X().toast(r); return; } X().markDirty(); const p = E.expPending(s); if (p) openPend(s, p); return; }
@@ -497,8 +497,8 @@
     const on = E.expActive(s); const p = on ? E.expPending(s) : null;
     const busy = $("#sheet").innerHTML && !ours();
     if (!ui.init) { ui.init = true; ui.end = s.expLast ? s.expLast.t : 0; if (p) ui.pend = 0; }
-    if (p && !busy && ui.pend !== p.id) openPend(s, p);
-    else if (p && ours()) { const el = $("#sgTimer"); if (el) el.textContent = `choix auto dans ${Math.max(0, Math.ceil((E.EXP_AUTO_MS - (E.now() - p.at)) / 1000))} s`; const sh = $("#sheet .sg-sheet"); if (sh && !sh.classList.contains("end") && sh.dataset.pend !== String(p.id)) openPend(s, p); }
+    if (p && !busy && ui.pend !== p.id && !E.expAutoOn(s)) openPend(s, p); // 3.1.3 : avec Auto (1,5 s), plus de fiche qui clignote à chaque choix
+    else if (p && ours()) { const held = ui.hold === p.id; if (held) p.at = E.now(); const el = $("#sgTimer"); if (el) el.textContent = held ? "choix auto en pause : la fiche est ouverte" : `choix auto dans ${Math.max(0, Math.ceil((E.EXP_AUTO_MS - (E.now() - p.at)) / 1000))} s`; const sh = $("#sheet .sg-sheet"); if (sh && !sh.classList.contains("end") && sh.dataset.pend !== String(p.id)) openPend(s, p); }
     else if (!p && ours() && !$("#sheet .sg-sheet.end")) { X().closeSheet(); if (window.DX.ui.tab === "exp") X().render(); }
     if (on && s.exp.loop && ui.loopT !== s.exp.t0) { ui.loopT = s.exp.t0; if ($("#sheet .sg-sheet.end")) X().closeSheet(); } // 2.2.11 : la boucle relance, le récap se ferme
     { const el = $("#sgLoopT"); const ms = E.sgLoopLeft(s); if (el && ms !== null) el.textContent = `Prochain songe dans ${Math.ceil(ms / 1000)} s`; }

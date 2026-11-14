@@ -55,8 +55,11 @@
   E.SG_PTS = { fight: 3, hard: 6, archi: 8, favor: 2, gob: 3 };
   E.SG_STORM = 6;              // Tempête astrale : relancer les vœux
   E.SG_BET = 10;               // mise du Gobledore
-  E.EXP_AUTO_MS = 5000;        // choix automatique (faveur, fontaine, vague…) après ce délai (2.1.40.8 : 20 s → 5 s, retour de Ley)
-  E.EXP_DOOR_MS = 5000;        // choix automatique du couloir (2.1.40.8 : 30 s → 5 s)
+  /* 3.1.3 (SegFault, Aglouglou) : 5 s → 1,5 s. Avec une équipe forte, l'attente faisait jusqu'à 85 % du songe automatique. Simulation
+     (Rêve en boucle, 3 h, 4 équipes) : +7 à +16 % de kamas et d'XP par heure, le songe manuel restant le plus rapide. Avec Auto,
+     les fiches de choix ne s'ouvrent plus d'elles-mêmes (bouton « Un choix t'attend » sur la page) : décocher Auto pour choisir. */
+  E.EXP_AUTO_MS = 1500;        // choix automatique (faveur, fontaine, vague…) après ce délai (2.1.40.8 : 20 s → 5 s, retour de Ley)
+  E.EXP_DOOR_MS = 1500;        // choix automatique du couloir (2.1.40.8 : 30 s → 5 s)
   /* 2.2.11 « Songes en boucle » (idée d'Aglouglou, choix A de Mathis, 06/11) : la case « En boucle » relance la même intensité
      E.SG_LOOP_MS après le réveil ; elle s'arrête après E.SG_LOOP_FAILS songes de suite non validés, ou quand le joueur se réveille
      lui-même. Une absence d'au moins E.SG_AWAY_S en plein songe réveille l'équipe et l'absence compte comme de la chasse. */

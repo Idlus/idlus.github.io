@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.3 « Le Songe ne traîne plus »
+- Retour Discord de SegFault (+1 Aglouglou) : 40 s en manuel contre 4 min 40 en automatique. js/songe.js : `E.EXP_AUTO_MS` et `E.EXP_DOOR_MS` 5 s → 1,5 s (simulation Rêve en boucle, 3 h, 4 équipes : +7 à +16 % de kamas et d'XP par heure ; hors-ligne et rejeu du classement inchangés). js/songeui.js : avec Auto, la fiche de choix ne s'ouvre plus seule ; ouverte par le joueur (`ui.hold`), le choix auto attend.
+
 ## 3.1.2 « Exos de forgemagie jusqu'au bout »
 - Forgemagie : exo et over atteignables jusqu'au maximum affiché (chance qui descend jusqu'à 3 % au lieu de 0 % vers la moitié, choix A de Mathis). Un objet trop chargé (plus de 130 % de son poids) refuse l'exo avec une explication.
 
