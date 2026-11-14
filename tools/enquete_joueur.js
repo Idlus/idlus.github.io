@@ -54,6 +54,16 @@ const sum = (label, txt, at) => {
     D.forEach((d, i) => { if (d && typeof d === "object" && Object.keys(d).length) console.log(`    jour ${i0 + i} (${new Date((i0 + i) * 86400000).toISOString().slice(5, 10)}) : ${Object.entries(d).map(([k, v]) => `${k} ${fm(v)}`).join(", ")}`); });
     (C.mom || []).slice(0, 8).forEach((m) => console.log(`    moment ${new Date(m.t).toISOString().slice(5, 16)} ${m.k} : ${String(m.txt).slice(0, 100)}`));
   }
+  // 14/11 (Chantier ×2) : XP heure par heure (dernières 36 h, heure UTC, « h » = hors ligne), rendement moyen des zones et bonus en cours
+  if (C && C.h && C.h.i0 != null && /en ligne/.test(label)) {
+    const H = C.h; const n = H.xp.length;
+    console.log("  XP par heure (UTC) :");
+    for (let i = Math.max(0, n - 36); i < n; i++) console.log(`    ${new Date((H.i0 + i) * 3600000).toISOString().slice(5, 13)}h : XP ${fm(H.xp[i])} · combats ${H.f ? H.f[i] : "?"} · en ligne ${fm(H.on ? H.on[i] / 60 : 0)} min${H.off && H.off[i] ? " · hors ligne" : ""}`);
+  }
+  if (/en ligne/.test(label)) {
+    console.log(`  zone : ${raw.sub} · chasse ${!!raw.hunting} · donjon ${raw.dungeon ? raw.dungeon.id : "non"} · boosts ${JSON.stringify(raw.boosts || null)}`);
+    Object.entries(raw.zoneStats || {}).sort((a, b) => (b[1].s || 0) - (a[1].s || 0)).slice(0, 5).forEach(([z, v]) => console.log(`    zone ${z} : ${fm(v.f)} combats sur ${h1((v.s || 0) / 3600)} h · XP/h moyen ${fm(v.s ? v.xp / v.s * 3600 : 0)}`));
+  }
   return { at: new Date(at).getTime(), B, top: Math.max(1, ...(raw.chars || []).map((c) => c.lvl || 1)), pt };
 };
 
