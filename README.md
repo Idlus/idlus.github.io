@@ -10,6 +10,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.4 « L'objet suivi arrive bien »
+- Ticket #198 (hattoryz) : l'objet suivi tombé (jauge pleine ou tirage normal) pouvait être brisé aussitôt par le tri automatique (doublon, jet bas) ou partir au Recycleur / trop-plein, donc le joueur ne recevait rien. js/engine.js : `E.dropGive(…, suivi)` le verrouille (`locked`), saute `applyAuto` et lance le grand pop-up ; `S.track.n` / `S.track.at` comptent chaque obtention ; `E.trackPct` arrondi vers le bas. js/ui.js : fiche « Obtenu N fois », pop-up « Objet suivi obtenu ». Tests : tests/drops2.test.js, tests/objet_suivi_ui.test.js.
 ## 3.1.3 « Le Songe ne traîne plus »
 - Retour Discord de SegFault (+1 Aglouglou) : 40 s en manuel contre 4 min 40 en automatique. js/songe.js : `E.EXP_AUTO_MS` et `E.EXP_DOOR_MS` 5 s → 1,5 s (simulation Rêve en boucle, 3 h, 4 équipes : +7 à +16 % de kamas et d'XP par heure ; hors-ligne et rejeu du classement inchangés). js/songeui.js : avec Auto, la fiche de choix ne s'ouvre plus seule ; ouverte par le joueur (`ui.hold`), le choix auto attend.
 

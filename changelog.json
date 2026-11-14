@@ -1,6 +1,15 @@
 {
-  "version": "3.1.3",
+  "version": "3.1.4",
   "versions": [
+    {
+      "v": "3.1.4",
+      "name": "L'objet suivi arrive bien",
+      "items": [
+        "Objet suivi : quand il tombe (jauge pleine ou coup de chance), il n'est plus brisé par le tri automatique, le Recycleur ou le sac plein : il arrive verrouillé dans le sac",
+        "Un grand message annonce l'objet suivi obtenu, et sa fiche dit combien de fois tu l'as eu",
+        "La jauge n'affiche plus 100 % juste avant que l'objet tombe"
+      ]
+    },
     {
       "v": "3.1.3",
       "name": "Le Songe ne traîne plus",

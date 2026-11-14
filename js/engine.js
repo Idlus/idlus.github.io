@@ -2922,8 +2922,10 @@
         if (!ITEMS[tpl]) return;
         const p = Math.min(100, rate * E.ITEM_DROP_SCALE * E.dropLvlMult(ITEMS[tpl].lvl) * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1) * (S.mono && E.monoItem ? E.monoItem(S, ITEMS[tpl]) : 1)); let n = 0; // Monocompte : butin d'équipement du héros seul ; 2.2.5 (1B) : rythme selon le niveau de l'objet
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
-        if (trk && trk.tpl === tpl) { if (n) trk.g = 0; else { trk.g = (trk.g || 0) + Math.min(1, p / 100 * rolls); if (trk.g >= E.TRACK_CAP) { n = 1; trk.g = 0; trk.n = (trk.n || 0) + 1; note(S, `Objet suivi garanti : ${ITEMS[tpl].name} !`, "rare"); } } }
-        for (let ii = 0; ii < n; ii++) E.dropGive(S, tpl, m, opts, out);
+        let suivi = false; // 3.1.4 (ticket #198) : l'objet suivi qui tombe n'est jamais brisé ni vendu par le tri automatique, et il est annoncé
+        if (trk && trk.tpl === tpl) { if (!n) { trk.g = (trk.g || 0) + Math.min(1, p / 100 * rolls); if (trk.g >= E.TRACK_CAP) n = 1; }
+          if (n) { suivi = true; trk.g = 0; trk.n = (trk.n || 0) + 1; trk.at = Date.now(); note(S, `Objet suivi obtenu : ${ITEMS[tpl].name} (dans le sac) !`, "rare"); } }
+        for (let ii = 0; ii < n; ii++) E.dropGive(S, tpl, m, opts, out, suivi);
       });
       // clés de donjon
       if (!opts.dungeon && sub && sub.dungeon && sub.monsters.includes(m.base || m.key)) (sub.dungeons || [sub.dungeon]).forEach((did) => {
@@ -3006,14 +3008,15 @@
   E.superbeP = (k) => 0.03 + Math.max(0, Math.min(5, (k || 0) - 10)) * 0.01;
   E.dropTier = (k) => { const x = rnd(); let a = 0; for (const t of E.DROP_TIERS) { a += t.id === 2 ? E.superbeP(k) : t.p; if (x < a) return t; } return null; };
   /* un équipement lâché par un monstre (jet, palier, Encyclopédie, annonce, règles automatiques) */
-  E.dropGive = (S, tpl, m, opts, out) => {
+  E.dropGive = (S, tpl, m, opts, out, suivi) => {
     if (m) (S.seenDrops[m.key] = S.seenDrops[m.key] || {})[tpl] = 1;
     const neu = !(E.itemDex ? E.itemDex(S) : S.itemDex || {})[tpl];
     const tr = E.dropTier(opts.dungeon ? opts.stasis : 0);
     const it = E.rollItem(S, tpl, { archi: m && m.archi, champ: m && m.champ, floor: tr ? tr.floor : 0 }); if (tr) it.tier = tr.id;
     const mon = m ? m.base || m.key : null;
-    if ((neu || it.tier === 2) && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon, tier: it.tier || 0, neu }); // 7B : grand pop-up pour un nouvel objet ou un Superbe
-    const auto = E.applyAuto(S, it);
+    if ((neu || it.tier === 2 || suivi) && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon, tier: it.tier || 0, neu, suivi: !!suivi }); // 7B : grand pop-up pour un nouvel objet ou un Superbe ; 3.1.4 : ou l'objet suivi
+    if (suivi) it.locked = true; // 3.1.4 : verrouillé (cadenas) : ni tri automatique, ni Recycleur, ni trop-plein ne le brisent
+    const auto = suivi ? null : E.applyAuto(S, it);
     if (auto) out.auto = (out.auto || 0) + 1; else { out.items.push(it.uid); if (!opts.offline && E.onDrop) E.onDrop(S, it, mon); } // 7B : petit bandeau
     return it;
   };
@@ -3022,7 +3025,7 @@
   E.TRACK_CAP = 2;
   E.trackSet = (S, tpl) => { if (!tpl) { delete S.track; return null; } const T = ITEMS[tpl]; if (!T || T.slot === "dofus" || T.leg || T.trophy) return "Cet objet ne peut pas être suivi.";
     if (S.track && S.track.tpl === tpl) return null; S.track = { tpl, g: 0 }; return null; };
-  E.trackPct = (S) => (S.track ? Math.min(100, Math.round((S.track.g || 0) / E.TRACK_CAP * 100)) : 0);
+  E.trackPct = (S) => (S.track ? Math.min(100, Math.floor((S.track.g || 0) / E.TRACK_CAP * 100)) : 0);
   /* 4B : fusion des doublons. Un doublon sacrifié donne à une ligne du meilleur exemplaire la meilleure des deux valeurs,
      jamais au-delà d'1 point sous le maximum (le Parfait reste à la Forgemagie). Coût : 100 kamas par niveau de l'objet. */
   E.fuseCost = (tpl) => Math.max(1000, ((ITEMS[tpl] || {}).lvl || 1) * 100);

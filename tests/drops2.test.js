@@ -39,4 +39,14 @@ console.log("ok - jauge du boss");
   while (k < exp * 2.2 && !got) { k++; const r = E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], { offline: true }); got = r.items.filter((u) => S.items[u].tpl === tpl).length; }
   assert.ok(got && k <= Math.ceil(exp * 2) + 1, `garanti avant 2× le temps moyen (${k} / ${exp.toFixed(0)})`); assert.strictEqual(S.track.g, 0); }
 console.log("ok - objet suivi");
+// 3.1.4 (ticket #198) : l'objet suivi qui tombe n'est pas brisé par le tri automatique (doublon / jet bas) et arrive verrouillé
+{ const S = mk(); const mon = Object.keys(MONSTERS).find((k) => !MONSTERS[k].boss && (MONSTERS[k].items || []).some(([t, p]) => ITEMS[t] && ITEMS[t].lvl < 60 && p < 0.05));
+  const [tpl, p] = MONSTERS[mon].items.find(([t, p]) => ITEMS[t] && ITEMS[t].lvl < 60 && p < 0.05);
+  const old = E.rollItem(S, tpl, { floor: 1 }); S.items[old.uid] = S.items[old.uid] || old; // un exemplaire parfait déjà au sac
+  S.settings.auto = { recycle: true, action: "break", q: 101, low: 0, lowLvl: 0 };
+  assert.strictEqual(E.trackSet(S, tpl), null); const exp = 100 / (p * 4); let k = 0, got = [];
+  while (k < exp * 2.2 && !got.length) { k++; const r = E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], { offline: true }); got = r.items.filter((u) => S.items[u] && S.items[u].tpl === tpl); }
+  assert.ok(got.length, "l'objet suivi arrive dans le sac malgré le tri automatique"); assert.ok(S.items[got[0]].locked, "verrouillé"); assert.strictEqual(S.track.n, 1);
+  S.track.g = E.TRACK_CAP * 0.999; assert.ok(E.trackPct(S) < 100, "la jauge n'affiche 100 % que quand il tombe"); }
+console.log("ok - objet suivi protégé du tri automatique");
 console.log("drops2.test.js : tout est bon");

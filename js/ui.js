@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.3";
+const GAME_VERSION = "3.1.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.4", name: "L'objet suivi arrive bien", items: [
+    "Objet suivi : quand il tombe (jauge pleine ou coup de chance), il n'est plus brisé par le tri automatique, le Recycleur ou le sac plein : il arrive verrouillé dans le sac",
+    "Un grand message annonce l'objet suivi obtenu, et sa fiche dit combien de fois tu l'as eu",
+    "La jauge n'affiche plus 100 % juste avant que l'objet tombe" ] },
   { v: "3.1.3", name: "Le Songe ne traîne plus", items: [
     "Songe infini en automatique : le jeu choisit maintenant après 1,5 s au lieu de 5 s (couloir, faveur, fontaine, vague suivante). Merci SegFault et Aglouglou",
     "Avec Auto, les fiches de choix ne s'ouvrent plus toutes seules : « Un choix t'attend » sur la page, et le choix auto attend tant que tu gardes la fiche ouverte. Décoche Auto pour tout choisir toi-même" ] },
@@ -9949,7 +9953,7 @@ function celeHtml(ev) {
   if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
   if (ev.t === "dropit") { const T = ITEMS[ev.tpl]; if (!T) return ""; /* 1.0.15 : équipement jamais obtenu */
-    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} ${ev.tier === 2 ? "Équipement Superbe" : "Nouvel équipement"}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">niveau ${T.lvl}${ev.tier === 2 ? " · chaque ligne au moins à 80 %" : ""}${ev.neu !== false ? " · nouveau dans l'Encyclopédie" : ""}${MONSTERS[ev.mon] ? ` · ${h(MONSTERS[ev.mon].name)}` : ""}</div>`; }
+    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} ${ev.suivi ? "Objet suivi obtenu" : ev.tier === 2 ? "Équipement Superbe" : "Nouvel équipement"}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">niveau ${T.lvl}${ev.suivi ? " · dans ton sac" : ""}${ev.tier === 2 ? " · chaque ligne au moins à 80 %" : ""}${ev.neu !== false ? " · nouveau dans l'Encyclopédie" : ""}${MONSTERS[ev.mon] ? ` · ${h(MONSTERS[ev.mon].name)}` : ""}</div>`; }
   if (ev.t === "exo") { const T = ITEMS[ev.tpl]; if (!T) return "";
     return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Forgemagie exotique</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+1 ${h(STATS[ev.stat].name)} · niveau ${T.lvl}</div>`; }
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
@@ -10315,7 +10319,7 @@ function searchGo(r) {
 }
 /* fiche d'un objet, possédé ou non : ce qu'il donne et où le trouver */
 function trackBox(tpl, src) { const T = ITEMS[tpl]; if (!T || T.dofus || T.leg || T.trophy || !src.some((x) => x.k !== "craft")) return ""; const on = S.track && S.track.tpl === tpl; // 2.2.5 (6C)
-  return `<div class="trackbox">${on ? `<div class="row between small"><b>◎ Objet suivi</b><span class="num">jauge ${E.trackPct(S)} %</span></div><div class="bar"><i style="width:${E.trackPct(S)}%"></i></div><div class="xs muted">Chances normales, mais garanti quand la jauge est pleine : au plus le double du temps moyen. La jauge avance à chaque monstre qui peut le lâcher et repart à zéro quand il tombe.</div><div class="row"><button class="btn sm" data-act="trackitem" data-tpl="" data-v="${tpl}">Ne plus suivre</button></div>` : `<div class="row between small" style="gap:8px;flex-wrap:wrap"><span><b>◎ Suivre cet objet</b><br><span class="xs muted">Garanti au plus tard au double du temps moyen de drop. Un seul objet suivi à la fois${S.track && ITEMS[S.track.tpl] ? ` (aujourd'hui : ${h(ITEMS[S.track.tpl].name)})` : ""}.</span></span><button class="btn sm primary" data-act="trackitem" data-tpl="${tpl}" data-v="${tpl}">Suivre</button></div>`}</div>`; }
+  return `<div class="trackbox">${on ? `<div class="row between small"><b>◎ Objet suivi</b><span class="num">jauge ${E.trackPct(S)} %</span></div><div class="bar"><i style="width:${E.trackPct(S)}%"></i></div><div class="xs muted">Chances normales, mais garanti quand la jauge est pleine : au plus le double du temps moyen. La jauge avance à chaque monstre qui peut le lâcher et repart à zéro quand il tombe. Il arrive alors dans ton sac, verrouillé (le tri automatique ne le brise pas).</div>${S.track.n ? `<div class="xs"><b>Obtenu ${fmt(S.track.n)} fois</b>${S.track.at ? ` · dernier ${h(agoTxt(S.track.at))}` : ""} · regarde dans ton sac.</div>` : ""}<div class="row"><button class="btn sm" data-act="trackitem" data-tpl="" data-v="${tpl}">Ne plus suivre</button></div>` : `<div class="row between small" style="gap:8px;flex-wrap:wrap"><span><b>◎ Suivre cet objet</b><br><span class="xs muted">Garanti au plus tard au double du temps moyen de drop. Un seul objet suivi à la fois${S.track && ITEMS[S.track.tpl] ? ` (aujourd'hui : ${h(ITEMS[S.track.tpl].name)})` : ""}.</span></span><button class="btn sm primary" data-act="trackitem" data-tpl="${tpl}" data-v="${tpl}">Suivre</button></div>`}</div>`; }
 function itemSheet(tpl) {
   const T = ITEMS[tpl]; if (!T) return; if (T.leg && window.SGUI) { window.SGUI.legSheet(S, T.leg); return; } /* 0.1.48 : fiche légendaire */ const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
   const lines = src.map((x) => {
