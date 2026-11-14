@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.8";
+const GAME_VERSION = "3.1.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.9", name: "Les espaces à venir", items: [
+    "Menu : les espaces pas encore ouverts (Artisanat, Collection, Marché, Joueurs) restent visibles, grisés, avec le niveau qui les ouvre (5, 10, 15 et 20). Un clic dit ce qu'ils contiennent",
+    "Une partie neuve, en Saison 1 comme ailleurs, voit ainsi tout ce qui l'attend au lieu de croire qu'il manque des onglets" ] },
   { v: "3.1.8", name: "Le ×2 du Chantier bien visible", items: [
     "Correction : le ×2 XP et butin du Chantier compte aussi pour les gains d'absence calculés à l'ouverture du jeu (avant, ils passaient sans le ×2). Une absence à moitié pendant le bonus gagne la moitié du ×2. Merci Aglouglou",
     "L'XP/h et les ressources/h de la zone suivent maintenant ta dernière heure de jeu (avant : une moyenne depuis ta première visite, où un bonus ne se voyait presque pas), avec un petit ×2 à côté de l'XP/h pendant le Chantier" ] },
@@ -3608,12 +3611,12 @@ function renderNav() {
   const sideFull = `<div class="sn-side sn-full"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""> idlus</button><button class="sn-mini" data-act="navall" aria-pressed="true" title="Menu réduit : revenir au menu en icônes" aria-label="Menu réduit">«</button></div>
       <div class="sn-frow"><button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span class="sn-l">Combat<small id="navlive"${live ? "" : " hidden"}>${h(live)}</small></span></button>${navQuitBtn()}</div>
       ${fb("home", "Havre-Sac", "logo", k === "home" && !fight)}
-      ${NAV.map((F) => `<div class="sn-g">${h(F.season ? seasonName() : F.n)}</div>${navFamPages(F).map((p) => fb(p[0], p[1], p[2], !fight && (k === p[0] || kk === p[0]), badge(p[0]))).join("")}`).join("")}
+      ${NAV.map((F) => `<div class="sn-g">${h(F.season ? seasonName() : F.n)}</div>${navFamPages(F).map((p) => fb(p[0], p[1], p[2], !fight && (k === p[0] || kk === p[0]), badge(p[0]))).join("")}`).join("")}${window.V3 && window.V3.lockHtml("full") ? `<div class="sn-g">Bientôt</div>${window.V3.lockHtml("full")}` : ""}
       <span class="sn-grow"></span><div class="sn-g">Aide et réglages</div>
       <button data-act="options">${G("gear")}<span class="sn-l">Options</span></button><button data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Aide</span></button></div>`;
   const side = full ? sideFull : `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
       ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea", SEA.id) : ""}<i class="rl-sep"></i>
-      ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}
+      ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}${window.V3 ? window.V3.lockHtml("rail") : ""}
       <span class="sn-grow"></span>${rlFoot}</div>`;
   if (curFam && !fight && k !== "home") { if (!ui.famLast) ui.famLast = {}; ui.famLast[curFam.id] = kk; }
   ui.navJust = null;
@@ -3701,7 +3704,7 @@ function navMenuSheet() {
     ${q ? "" : `<button class="btn sm ghost ns-alltg" data-act="navfull" aria-pressed="${navFullOn()}">${navFullOn() ? "Menu par familles" : "Toutes les pages"}</button>`}
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
       : navFullOn() ? `${NAV.map((F) => `<h3>${icon(F.ic)} ${h(F.season ? seasonName() : F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`
-      : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
+      : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}${window.V3 ? window.V3.lockHtml("sheet") : ""}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* 2.2.14.18 « Ombrelune Studio » (Mathis 5A + 5C) : signature du studio et carte « Découvre aussi Diablofus » */
@@ -11888,6 +11891,7 @@ document.addEventListener("click", (ev) => {
       else { navGo("quests"); ui.qt = t; }
       closeSheet(); window.scrollTo(0, 0); break; }
     case "nsfam": { const F = NAV.find((x) => x.id === d.v); if (!F) return; const op = nsOpen(F, navFam(navKey())); (ui.nsFams || (ui.nsFams = {}))[d.v] = !op; const sc = $("#sheet .sheet"); const y = sc ? sc.scrollTop : 0; navMenuSheet(); const sc2 = $("#sheet .sheet"); if (sc2) sc2.scrollTop = y; return; }
+    case "v3lock": if (window.V3) window.V3.lockTell(d.v); return; // 3.1.9 : espace encore fermé
     case "navmenu": ui.navQ = ""; if (window.CHAT && window.CHAT.close && matchMedia("(max-width:859px)").matches) window.CHAT.close(); navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois

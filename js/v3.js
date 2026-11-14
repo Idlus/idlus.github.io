@@ -62,6 +62,23 @@
     if (!quiet && was) { const nw = open.filter((F) => !was.split(",").includes(F.id)); nw.forEach((F) => toast(`Nouvel espace : ${F.n}`, "rare")); if (typeof renderNav === "function") renderNav(); }
   };
   V3.locked = () => (ALL ? ALL.spaces.filter((F) => F.pages.length && V3.lockOf(F)).map((F) => [F.n, F.v3lvl]) : []);
+  /* 3.1.9 (Mathis 14/11 : « il manque plein d'onglets en Saison 1 ? ») : les espaces encore fermés restent visibles, grisés, avec leur niveau.
+     kind : "rail" (menu en icônes du PC), "full" (menu complet du PC), "sheet" (menu Plus du téléphone) */
+  V3.lockHtml = function (kind) {
+    if (!ALL || !V3.on()) return "";
+    const L = ALL.spaces.filter((F) => F.pages.length && V3.lockOf(F)); if (!L.length) return "";
+    const ico = (ic) => (ic ? med(ic) : "");
+    const tip = (F) => h(`${F.n} s'ouvre quand un de tes héros atteint le niveau ${F.v3lvl} : ${F.pages.map((p) => p[1]).join(", ")}`);
+    return L.map((F) => kind === "rail"
+      ? `<button class="rl-i v3lk" data-act="v3lock" data-v="${F.id}" title="${tip(F)}" aria-label="${tip(F)}">${ico(F.ic)}<span class="rl-l">${h(F.n)}</span><small class="v3lkn">🔒 niv. ${F.v3lvl}</small></button>`
+      : kind === "full"
+      ? `<button class="v3lk" data-act="v3lock" data-v="${F.id}" title="${tip(F)}">${ico(F.ic)}<span class="sn-l">${h(F.n)}</span><small class="v3lkn">🔒 niv. ${F.v3lvl}</small></button>`
+      : `<button class="ns-ft v3lk" data-act="v3lock" data-v="${F.id}" title="${tip(F)}">${ico(F.ic)}<span><b>${h(F.n)}</b><small>🔒 S'ouvre au niveau ${F.v3lvl}</small></span></button>`).join("");
+  };
+  V3.lockTell = function (id) {
+    const F = ALL && ALL.spaces.find((x) => x.id === id); if (!F) return;
+    toast(`${F.n} s'ouvre quand un de tes héros atteint le niveau ${F.v3lvl} (${F.pages.map((p) => p[1]).join(", ")}).`);
+  };
 
   /* ---------- l'écran : un tableau de combat au centre (questions 1, 7 à 10) ---------- */
   V3.mount = function () {

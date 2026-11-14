@@ -181,3 +181,10 @@ body.v3 .qj-fam3 button{flex:none;flex-direction:row;background:none;border:0;bo
 body.v3 .qj-fam3 button[aria-pressed="true"]{background:none;color:var(--ink);border-bottom-color:var(--action)}
 body.v3 .qj-chips{display:flex!important;flex-wrap:wrap;gap:6px}
 body.v3 .qj-chips button{flex:none}
+/* 3.1.9 : espaces encore fermés, grisés avec leur niveau (menu en icônes, menu complet, menu Plus du téléphone) */
+#nav .v3lk,.ns-ft.v3lk{opacity:.5;filter:grayscale(1);cursor:help}
+#nav .v3lk:hover,.ns-ft.v3lk:hover{opacity:.75}
+#nav .v3lk .v3lkn{display:block;font-size:10px;line-height:1.1;color:var(--muted);white-space:nowrap}
+#nav .sn-full .v3lk .v3lkn{display:inline;margin-left:auto;padding-left:6px}
+#nav .sn-rail .rl-i.v3lk{padding:4px 2px;gap:1px;font-size:10.5px}
+#nav .sn-rail .rl-i.v3lk .med{width:26px;height:26px}#nav .sn-rail .rl-i.v3lk .med img{width:18px;height:18px}

@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.9 « Les espaces à venir »
+- Question de Mathis (14/11) : « il manque plein d'onglets en Saison 1 ? ». Pas un bug : la 3.0 ouvre les espaces au niveau du meilleur héros (Artisanat 5, Collection 10, Marché 15, Joueurs 20 ; tout ouvert pour les anciens comptes `v3all` et le Monocompte), mais les espaces fermés étaient invisibles. js/v3.js `V3.lockHtml` (rail, menu complet « Bientôt », menu Plus du téléphone) les montre grisés avec « niv. X » ; un clic (`v3lock`, `V3.lockTell`) dit le niveau et les pages. La Saison 1 n'a en plus pas L'Ascension (choix 19A).
+
 ## 3.1.8 « Le ×2 du Chantier bien visible »
 - Retour d'Aglouglou (14/11, Éternel, niv. 200) : « j'ai l'impression d'avoir le même taux par heure qu'avant le Chantier ». Vérifié sur sa partie (lecture seule) : le ×2 s'appliquait bien en jeu (heures de 08 h à 10 h UTC 2 à 3 fois au-dessus de la veille). Deux défauts : (1) à l'ouverture de la page, l'absence était calculée avant la première réponse du serveur (4 s), donc sans le ×2 ; js/chantier.js garde le dernier Chantier connu (`idlus-chantier-bonus`, début et fin par serveur, `E.chEnd`) et, hors ligne, le ×2 vaut au prorata de l'absence couverte (`E.chFrac`). (2) L'XP/h de la zone était une moyenne depuis la première visite : js/engine.js `E.ZONE_WIN_S` (1 h de jeu) allège les anciens combats ; pastille ×2 sur l'XP/h pendant le Chantier (`chX2`), ligne dans la liste des bonus. Test : tests/chantier_x2.test.js. tools/enquete_joueur.js montre l'XP heure par heure et le rendement des zones.
 

@@ -1,6 +1,14 @@
 {
-  "version": "3.1.8",
+  "version": "3.1.9",
   "versions": [
+    {
+      "v": "3.1.9",
+      "name": "Les espaces à venir",
+      "items": [
+        "Menu : les espaces pas encore ouverts (Artisanat, Collection, Marché, Joueurs) restent visibles, grisés, avec le niveau qui les ouvre (5, 10, 15 et 20). Un clic dit ce qu'ils contiennent",
+        "Une partie neuve, en Saison 1 comme ailleurs, voit ainsi tout ce qui l'attend au lieu de croire qu'il manque des onglets"
+      ]
+    },
     {
       "v": "3.1.8",
       "name": "Le ×2 du Chantier bien visible",
