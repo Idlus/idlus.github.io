@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.2 « Exos de forgemagie jusqu'au bout »
+- Forgemagie : exo et over atteignables jusqu'au maximum affiché (chance qui descend jusqu'à 3 % au lieu de 0 % vers la moitié, choix A de Mathis). Un objet trop chargé (plus de 130 % de son poids) refuse l'exo avec une explication.
+
 ## 3.1.1 « Les dernières finitions »
 - Mathis (14/11) : « corrige les limites aussi ». js/v3.js `V3.dedupe` (MutationObserver sur #main et #subnav) : le premier titre h1/h2 de la page qui répète le cadre `.v3ph` reçoit `.v3dup` (masqué), le cadre prend le nom le plus long. js/ui.js : le cadre nomme la page ouverte (`navPage(k)` avant `navPage(kk)`). css/v3.css : Journal des quêtes sans colonne `.qj-journal` en V3, familles en onglets soulignés, pages en pastilles.
 

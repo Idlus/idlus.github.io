@@ -59,6 +59,7 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 - Visuels DOFUS 3 uniquement (pas de dessins faits main), thème Émeraude par défaut, musique originale.
 - Équilibrage vérifié par simulation (sans équipement jusqu'à la stasis 4, bon équipement 6-7, équipes optimisées 10). Préférer les changements de sorts et de mécaniques aux bonus en pourcentage par classe.
+- Forgemagie (14/11, choix A, 3.1.2) : exo et over atteignables jusqu'au maximum affiché, chance qui descend jusqu'à 3 % au dernier point (avant : 0 % dès 50-60 %).
 - Pas de version bêta séparée : tests (PC 1280 px, téléphone 390 px) puis publication directe sur `main`, note Discord et annonce en jeu sans redemander (22/10).
 - Serveur, base de données, sauvegardes des joueurs, remises à zéro, posts X : les mots écrits de Mathis sont obligatoires.
 - Seul Mathis décide qui triche ; le Bouclier est la seule protection des sauvegardes.

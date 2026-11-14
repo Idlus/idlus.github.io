@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.1";
+const GAME_VERSION = "3.1.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.2", name: "Exos de forgemagie jusqu'au bout", items: [
+    "Forgemagie : un exo (Chance, Initiative, Dommages de poussée…) et l'over peuvent maintenant atteindre le maximum affiché ; la chance baisse jusqu'à 3 % au dernier point au lieu de tomber à 0 % vers la moitié (merci SegFault et Nerisia)",
+    "Un objet trop chargé (plus de 130 % de son poids) affiche pourquoi l'exo ne passe plus, au lieu de brûler la rune à 0 %" ] },
   { v: "3.1.1", name: "Les dernières finitions", items: [
     "Plus de titre en double sous le cadre des pages (Donjons, Boss des mondes, Songe infini, Routines, Plan de bataille…) ; le cadre prend le nom le plus précis",
     "Le cadre donne le nom de l'onglet ouvert (Succès, Gravure runique, Élevage…) au lieu de celui de la page voisine",

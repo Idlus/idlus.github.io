@@ -1,6 +1,14 @@
 {
-  "version": "3.1.1",
+  "version": "3.1.2",
   "versions": [
+    {
+      "v": "3.1.2",
+      "name": "Exos de forgemagie jusqu'au bout",
+      "items": [
+        "Forgemagie : un exo (Chance, Initiative, Dommages de poussée…) et l'over peuvent maintenant atteindre le maximum affiché ; la chance baisse jusqu'à 3 % au dernier point au lieu de tomber à 0 % vers la moitié (merci SegFault et Nerisia)",
+        "Un objet trop chargé (plus de 130 % de son poids) affiche pourquoi l'exo ne passe plus, au lieu de brûler la rune à 0 %"
+      ]
+    },
     {
       "v": "3.1.1",
       "name": "Les dernières finitions",

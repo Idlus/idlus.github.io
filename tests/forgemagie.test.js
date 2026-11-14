@@ -202,3 +202,10 @@ const near = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m} : ${a} au lieu
   const V = E.breakValue(all, rows); assert.strictEqual(V.cov, 1); near(V.v, rows.reduce((x, r) => x + r.ra + r.pa + r.s, 0), "valeur au prix connu");
   assert.deepStrictEqual(E.breakValue({}, rows), { v: 0, cov: 0, d: false }, "sans prix : rien"); }
 console.log("ok - 1.0.30 « Forge » : forgemagie dure près du maximum, coefficient de 10 % à 200 %, soft reset des jets (activé en 1.0.30.1), atelier de brisage");
+// 3.1.2 : le maximum affiché (exo et over) est atteignable : la chance descend jusqu'à oMin, pas à 0 % vers 50-60 %
+{ for (const L of [0.7, 1, 1.2]) for (let nv = 1; nv <= 20; nv++) assert.ok(E.fmOdds(L, nv, 0, 20, "", true).sc > 0, `exo ${nv}/20, charge ${L}`);
+  const lo = E.fmOdds(1, 20, 0, 20, "", true).sc, mid = E.fmOdds(1, 10, 0, 20, "", true).sc, hi = E.fmOdds(1, 2, 0, 20, "", true).sc;
+  assert.ok(hi > mid && mid > lo && lo >= E.FM_ODDS.oMin - 1e-9, "de plus en plus dur, plancher 3 %");
+  assert.ok(E.fmOdds(1, 505, 300, 505, "ra", false, 200).sc > 0, "over au maximum : possible");
+  assert.strictEqual(E.fmOdds(1.35, 5, 0, 20, "", true).sc, 0, "objet trop chargé : plus de succès"); }
+console.log("ok - 3.1.2 : exo et over atteignables jusqu'au maximum affiché");

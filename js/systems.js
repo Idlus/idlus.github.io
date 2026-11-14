@@ -798,7 +798,7 @@
     max = Math.max(1, max); return { cur, max, load: cur / max };
   };
   E.fmCap = (T, k) => { const s = T.stats[k]; if (s) return s[1] > 0 ? Math.max(s[1], Math.floor(E.OVER_W / STATS[k].w)) : 0; return Math.max(1, Math.floor(E.EXO_STAT_W / STATS[k].w)); };
-  E.FM_ODDS = { sc: 0.66, scLoad: 0.7, scNear: 0.1, ec: 0.07, ecLoad: 0.3, oSc: 0.3, oScSlope: 0.5, oScLoad: 0.5, oEc: 0.3, oEcSlope: 0.4, oTop: 1.3 };
+  E.FM_ODDS = { sc: 0.66, scLoad: 0.7, scNear: 0.1, ec: 0.07, ecLoad: 0.3, oSc: 0.3, oScSlope: 0.5, oScLoad: 0.5, oEc: 0.3, oEcSlope: 0.4, oTop: 1.3, oMin: 0.03 };
   /* 1.0.30 « Forge » (choix 36A de Mathis) : près du jet maximum, la forgemagie devient dure, comme dans DOFUS. Quand la rune mène une
      caractéristique au-dessus de 80 % de sa fourchette (du jet min au jet max, over compris), succès critique ×0,25 et échec critique
      +20 points (≈ 350 runes pour passer un objet niv. 200 Parfait, 80 avant). La Renaissance des métiers s'ajoute ensuite (E.fmRenOdds). Rien ne change sur les objets : les Parfaits le restent. */
@@ -807,7 +807,9 @@
   E.fmOdds = (load, nv, mx, cap, tier, exoStat, mn) => {
     const O = E.FM_ODDS; let sc, ec;
     if (!exoStat && nv <= mx) { sc = O.sc - Math.max(0, load - 0.6) * O.scLoad - (mx > 0 && nv / mx > 0.9 ? O.scNear : 0); ec = O.ec + Math.max(0, load - 0.7) * O.ecLoad; }
-    else { const base = exoStat ? 0 : mx; const o = (nv - base) / Math.max(1, cap - base); sc = O.oSc - o * O.oScSlope - Math.max(0, load - 0.9) * O.oScLoad; ec = O.oEc + o * O.oEcSlope; }
+    else { const base = exoStat ? 0 : mx; const o = Math.min(1, (nv - base) / Math.max(1, cap - base)); sc = Math.max(O.oMin, O.oSc - o * (O.oSc - O.oMin) - Math.max(0, load - 0.9) * O.oScLoad); ec = O.oEc + o * O.oEcSlope; }
+    /* 3.1.2 : over et exo descendent jusqu'à oMin (3 %) au maximum affiché, au lieu de tomber à 0 % vers 50-60 % de la fourchette
+       (signalé par SegFault : exo Chance bloqué à 10 sur 20). Seule la surcharge de l'objet (oTop) coupe encore le succès critique. */
     if (!exoStat && mx > 0 && nv > E.fmHardAt(mn === undefined ? mx : Math.min(mn, mx), mx)) { sc *= E.FM_HARD.sc; ec += E.FM_HARD.ec; } // 1.0.30 : près du maximum
     sc *= clamp((O.oTop - load) / 0.2, 0, 1); // au-delà de 130 % du poids de l'objet, plus de succès critique
     const tp = tier === "ra" ? 0.8 : tier === "pa" ? 0.9 : 1;
@@ -838,6 +840,7 @@
     const well = it.well || 0;
     if (!has && well < w) return { ok: false, why: `Exo de ${STATS[k].name} : il faut ${Math.ceil(w)} de reliquat (l'objet en a ${Math.round(well)}).`, exoStat: true, cur, cap };
     const W = E.fmWeights(it); const o = malus ? { sc: 0.7, sn: 0.25, ec: 0.05 } : has ? E.fmRenOdds(E.fmOdds(W.load, nv, mx, cap, ri.tier, false, mn), E.fmRen(S, job)) : E.fmOdds(W.load, nv, mx, cap, ri.tier, true);
+    if (!has && o.sc <= 0) return { ok: false, why: `Objet trop chargé (plus de ${Math.round(E.FM_ODDS.oTop * 100)} % de son poids) : l'exo ne passe plus.`, exoStat: true, cur, cap }; // 3.1.2 : pas de rune brûlée à 0 %
     return { ok: true, stat: k, cur, add, nv, mn, mx, cap, w, sc: o.sc, sn: o.sn, ec: o.ec, chance: o.sc + o.sn, over: has && mx > 0 && nv > mx, exoStat: !has, malus, load: W.load, well, wellOk: well >= w, kamas: 0, job,
       hard: has && !malus && mx > 0 && nv > E.fmHardAt(Math.min(mn, mx), mx) }; // 1.0.30 : rune dans la zone dure (près du maximum)
   };
