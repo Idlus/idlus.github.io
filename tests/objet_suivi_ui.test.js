@@ -47,9 +47,9 @@ const server = http.createServer((req, res) => {
         S.settings.auto = { recycle: true, action: "break", q: 101, low: 0, lowLvl: 0 };
         E.trackSet(S, tpl); S.track.g = E.TRACK_CAP - 1e-9; let got = [];
         for (let i = 0; i < 50 && !got.length; i++) { const o = E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], {}); got = o.items.filter((u) => S.items[u] && S.items[u].tpl === tpl); }
-        return { tpl, n: got.length, locked: got.length ? !!S.items[got[0]].locked : false }; });
+        return { tpl, n: got.length, locked: got.length ? !S.items[got[0]].locked && !!S.items[got[0]].suivi : false }; });
       if (!r.n) fail(`${w} px : l'objet suivi n'arrive pas dans le sac`);
-      else if (!r.locked) fail(`${w} px : l'objet suivi n'est pas verrouillé`);
+      else if (!r.locked) fail(`${w} px : l'objet suivi n'est pas protégé (ou porte un cadenas)`);
       await page.waitForTimeout(1200);
       const cele = await page.evaluate(() => document.body.textContent.includes("Objet suivi obtenu"));
       if (!cele) fail(`${w} px : pas de grand message « Objet suivi obtenu »`);

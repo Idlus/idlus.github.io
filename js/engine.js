@@ -654,7 +654,7 @@
   E.recyRare = (it) => !!(it && (it.radiant || E.isPerfect(it)));
   E.recySafe = (S, it, R) => {
     const T = ITEMS[it && it.tpl]; if (!T || T.slot === "dofus" || T.trophy || T.leg) return true;
-    if (it.exo || it.locked || it.fm || it.trans || E.equippedBy(S, it.uid) || E.inGear(S, it.uid)) return true;
+    if (it.exo || it.locked || it.suivi || it.fm || it.trans || E.equippedBy(S, it.uid) || E.inGear(S, it.uid)) return true;
     if (it.radiant) return !(R && R.rad) || (!R.perf && E.itemQuality(it) >= 0.999);
     return !(R && R.perf) && E.isPerfect(it);
   };
@@ -2994,7 +2994,7 @@
   E.autoNConds = (A) => (A && A.action !== "none" ? 1 : 0) + (A && A.low > 0 ? 1 : 0) + (A && A.lowLvl > 1 ? 1 : 0);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
-    const A = S.settings.auto; if (!A || it.radiant || it.tier === 2 || it.locked || E.inGear(S, it.uid)) return null; // 2.2.5 : un Superbe n'est jamais brisé automatiquement
+    const A = S.settings.auto; if (!A || it.radiant || it.tier === 2 || it.locked || it.suivi || E.inGear(S, it.uid)) return null; // 2.2.5 : un Superbe n'est jamais brisé automatiquement
     if (A.recycle) {
       const q = E.itemQuality(it);
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
@@ -3029,7 +3029,7 @@
     const it = E.rollItem(S, tpl, { archi: m && m.archi, champ: m && m.champ, floor: tr ? tr.floor : 0 }); if (tr) it.tier = tr.id;
     const mon = m ? m.base || m.key : null;
     if ((neu || it.tier === 2 || suivi) && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon, tier: it.tier || 0, neu, suivi: !!suivi }); // 7B : grand pop-up pour un nouvel objet ou un Superbe ; 3.1.4 : ou l'objet suivi
-    if (suivi) it.locked = true; // 3.1.4 : verrouillé (cadenas) : ni tri automatique, ni Recycleur, ni trop-plein ne le brisent
+    if (suivi) it.suivi = 1; // 3.1.4 ; 3.1.11 (retour de SegFault) : plus de cadenas, une simple protection : ni tri automatique ni Recycleur ne le brisent, le joueur peut le briser ou le vendre lui-même
     const auto = suivi ? null : E.applyAuto(S, it);
     if (auto) out.auto = (out.auto || 0) + 1; else { out.items.push(it.uid); if (!opts.offline && E.onDrop) E.onDrop(S, it, mon); } // 7B : petit bandeau
     return it;

@@ -1,6 +1,14 @@
 {
-  "version": "3.1.10",
+  "version": "3.1.11",
   "versions": [
+    {
+      "v": "3.1.11",
+      "name": "Objet suivi sans cadenas",
+      "items": [
+        "L'objet suivi obtenu n'est plus verrouillé : il reste protégé du tri automatique et du Recycleur, mais tu peux le briser, le vendre ou l'échanger sans enlever de cadenas (merci SegFault)",
+        "Les objets déjà verrouillés par la 3.1.4 gardent leur cadenas : un clic sur le cadenas l'enlève"
+      ]
+    },
     {
       "v": "3.1.10",
       "name": "Retour à la nouvelle vue",

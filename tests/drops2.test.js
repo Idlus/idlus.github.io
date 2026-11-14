@@ -46,7 +46,7 @@ console.log("ok - objet suivi");
   S.settings.auto = { recycle: true, action: "break", q: 101, low: 0, lowLvl: 0 };
   assert.strictEqual(E.trackSet(S, tpl), null); const exp = 100 / (p * 4); let k = 0, got = [];
   while (k < exp * 2.2 && !got.length) { k++; const r = E.giveRewards(S, [{ key: mon, lvl: 50, name: "x" }], { offline: true }); got = r.items.filter((u) => S.items[u] && S.items[u].tpl === tpl); }
-  assert.ok(got.length, "l'objet suivi arrive dans le sac malgré le tri automatique"); assert.ok(S.items[got[0]].locked, "verrouillé"); assert.strictEqual(S.track.n, 1);
+  assert.ok(got.length, "l'objet suivi arrive dans le sac malgré le tri automatique"); assert.ok(!S.items[got[0]].locked && S.items[got[0]].suivi, "protégé sans cadenas"); assert.ok(E.recySafe(S, S.items[got[0]], { auto: true }), "le Recycleur le garde"); assert.strictEqual(S.track.n, 1);
   S.track.g = E.TRACK_CAP * 0.999; assert.ok(E.trackPct(S) < 100, "la jauge n'affiche 100 % que quand il tombe"); }
 console.log("ok - objet suivi protégé du tri automatique");
 console.log("drops2.test.js : tout est bon");
