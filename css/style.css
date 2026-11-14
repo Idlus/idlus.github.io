@@ -1099,6 +1099,15 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .subrow.weak{opacity:.5}
 .subrow.weak:hover{opacity:.85}
 .sr-name{display:flex;align-items:center;gap:6px;min-width:0}
+/* 3.1.2 : zones favorites */
+.srfav{flex:none;align-self:center;font-size:20px;line-height:1;padding:6px 4px;color:var(--muted);opacity:.55;cursor:pointer;border-radius:8px}
+.srfav:hover,.srfav:focus-visible{opacity:1;color:var(--gold)}
+.srfav.on{color:var(--gold);opacity:1}
+.subrow.locked .srfav{cursor:pointer}
+.favp .phead h2{color:var(--gold)}
+.srreg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+@media (max-width:600px){.favhint{display:none}}
+.favbtn.on{border-color:var(--gold);color:var(--gold)}
 .sr-name .uico{width:18px;height:18px;flex:none}
 .sr-sub .tag{flex:none;font-size:11px;padding:1px 7px} /* 1.0.12.8 : « Meilleure zone » sous le nom, qui n'est plus coupé */
 .zf-prog{display:flex;align-items:center;gap:4px}

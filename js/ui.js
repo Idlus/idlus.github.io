@@ -4459,7 +4459,7 @@ function worldHtml() {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
     const carte = mapView() === "carte" && window.CARTE;
     const hs = S.hunting && !S.dungeon && E.SUBS[S.sub]; // 2.1.40.6 (idée de Bellito) : un bouton en haut mène à la chasse en cours
-    body = (hs ? `<div class="row gohunt-row"><button class="btn sm gohunt" data-act="gohunt"><i class="hdot"></i>Aller à ma chasse : <b>${h(hs.name)}</b></button></div>` : "") + (window.PORTUI ? window.PORTUI.card() : "") + tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    body = (hs ? `<div class="row gohunt-row"><button class="btn sm gohunt" data-act="gohunt"><i class="hdot"></i>Aller à ma chasse : <b>${h(hs.name)}</b></button></div>` : "") + (window.PORTUI ? window.PORTUI.card() : "") + tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + (window.ALLY ? window.ALLY.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>` + favPanel()
       + (carte ? worldMapHtml(t) : (window.CARTE ? `<div class="row wm-back"><button class="btn sm" data-act="mapview" data-v="carte">${IC("monde")} Voir la carte</button></div>` : "") + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`));
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
@@ -4595,16 +4595,33 @@ function zonePanel(z, tier = -1, open = false) {
     <span class="zf-meta">${window.ALLY ? window.ALLY.foldTag(z) : ""}${window.CHASSE ? window.CHASSE.foldTag(z) : ""}${hunting ? `<span class="tag hunt">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
   if (!open) return `<section class="panel zonefoldp">${head}</section>`;
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
-    <div class="subrows">${subs.map((s) => {
+    <div class="subrows">${subs.map((s) => subRow(s, best)).join("")}</div></section>`;
+}
+/* 3.1.2 : zones de chasse favorites (idée de SegFault) : une étoile sur chaque sous-zone, la section « Favoris » en haut de la carte */
+const FAV_MAX = 12;
+const favList = () => (Array.isArray(S.favZones) ? S.favZones : []).filter((id) => E.SUBS[id]);
+const isFav = (sid) => favList().includes(sid);
+function favBtn(sid, big) {
+  const on = isFav(sid);
+  return big ? `<button class="btn sm favbtn ${on ? "on" : ""}" data-act="favzone" data-id="${sid}" aria-pressed="${on}">${on ? "★ Dans les favoris" : "☆ Ajouter aux favoris"}</button>`
+    : `<span class="srfav ${on ? "on" : ""}" role="button" data-act="favzone" data-id="${sid}" aria-pressed="${on}" aria-label="${on ? "Retirer des favoris" : "Ajouter aux favoris"}" data-tip="${on ? "Retirer des favoris" : "Ajouter aux favoris : la zone apparaît en haut de la carte"}">${on ? "★" : "☆"}</span>`;
+}
+function favPanel() {
+  const L = favList(); if (!L.length) return "";
+  const best = bestSub();
+  return `<section class="panel favp"><div class="phead"><h2>★ Favoris</h2><span class="xs muted">${L.length} zone${L.length > 1 ? "s" : ""}<span class="favhint"> · l'étoile ☆ d'une zone l'ajoute ou la retire</span></span></div>
+    <div class="subrows">${L.map((id) => subRow(E.SUBS[id], best, true)).join("")}</div></section>`;
+}
+function subRow(s, best, fav) {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
       if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)} : objet du Bricoleur ou arme du Sculpteur)</span></span></div>`;
       const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.5;
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
-        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${petMark(s.id)}</span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${petMark(s.id)}</span>${fav ? `<span class="xs muted srreg">${h((ZONES.find((z) => z.id === s.zone) || {}).name || "")}</span>` : ""}
           <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")} Meilleure zone</span>` : ""}</span>
-          ${window.CHASSE ? window.CHASSE.subChip(s.id) : ""}${here ? `<span class="tag hunt" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
-      </button>`; }).join("")}</div></section>`;
+          ${window.CHASSE ? window.CHASSE.subChip(s.id) : ""}${here ? `<span class="tag hunt" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>${favBtn(s.id)}
+      </button>`;
 }
 /* 1.1 : le familier de la sous-zone et ses traces (1 sur 1 500 après 600 traces) */
 const petZoneLine = (sid) => { const id = E.petSubs && E.petSubs[sid]; if (!id || !E.PETS[id]) return ""; const p = E.PETS[id]; const own = E.petOwned(S, id); const t = Math.floor(E.petTraces(S, sid));
@@ -4669,7 +4686,7 @@ function zoneViewHtml(sid) {
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}${window.DECORS ? window.DECORS.html({ sub: s.id }) : ""}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">${window.ALLY ? window.ALLY.zoneBox(sid) : ""}${window.CHASSE ? window.CHASSE.zoneBox(sid) : ""}
-      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}
+      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}${favBtn(sid, true)}
         <span class="small muted">${E.team(S).length} héros${E.synergy(S) ? ` · Synergie +${E.synergy(S)} %` : ""} · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
@@ -11739,6 +11756,9 @@ document.addEventListener("click", (ev) => {
     case "stophunt": msg(E.stopHunt(S)); break;
     case "navquit": { const q = navQuitKind(); if (q === "dg") { if (!(ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000)) { ui.navQuitAsk = Date.now(); renderNav(); return; } ui.navQuitAsk = 0; E.leaveDungeon(S); toast(S.hunting && S.sub ? `Donjon quitté : l'équipe reprend la chasse (${E.SUBS[S.sub].name}).` : "Donjon quitté."); } else if (q === "hunt") toast(E.stopHunt(S) || "L'équipe rentre au Havre-Sac."); break; }
     case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+    case "favzone": { if (!E.SUBS[d.id]) return; const L = favList(); const k = L.indexOf(d.id); // 3.1.2 : zones favorites (sauvegardées dans la partie)
+      if (k >= 0) L.splice(k, 1); else { if (L.length >= FAV_MAX) { toast(`${FAV_MAX} favoris au plus : retire d'abord une zone.`); return; } L.push(d.id); }
+      S.favZones = L; dirty = true; toast(k >= 0 ? `${E.SUBS[d.id].name} retirée des favoris.` : `${E.SUBS[d.id].name} ajoutée aux favoris : elle apparaît en haut de la carte.`); break; }
     case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
     /* Chasse aux Percepteurs (js/chasse.js) : de la carte vers l'onglet de la guilde, et retour */
     case "hc-hunt": if (window.GUILD) Object.assign(window.GUILD.G, { tab: "chasse", atk: null, view: null }); ui.tab = "guild"; window.scrollTo(0, 0); break;
