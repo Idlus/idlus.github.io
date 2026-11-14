@@ -11,10 +11,28 @@
   const C = (window.CHANTIER = { st: null, off: 0, last: 0, busy: false, seen: null });
   /* le ×2 : jamais en plus d'un événement ×2 de Mathis (pas de ×4) */
   E.chUntil = 0;
+  /* 3.1.8 (retour d'Aglouglou, 14/11) : au chargement de la page, le gain hors ligne était calculé avant la première
+     réponse du serveur (4 s), donc sans le ×2. Le dernier Chantier connu est gardé sur l'appareil (début et fin du bonus,
+     par serveur) et, hors ligne, le ×2 vaut pour la part de l'absence couverte par le bonus (comme les potions d'XP). */
+  const KEY = "idlus-chantier-bonus";
+  const memo = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } };
+  const win = () => { const w = C.where && C.where(); const m = w ? memo()[w] : null; const b = m ? Date.parse(m.b) : 0; return b ? { a: Date.parse(m.d) || b - 48 * 3600e3, b } : null; };
+  E.chEnd = () => { if (E.chUntil) return E.chUntil; const W = win(); return W ? W.b : 0; };
+  E.chFrac = null; // part de l'absence couverte par le bonus, pendant le calcul hors ligne
   const ev0 = E.evMult;
-  if (ev0 && !ev0.ch) { E.evMult = (kind, t) => ev0(kind, t) * ((kind === "xp" || kind === "drop") && (t || E.now()) < E.chUntil && !(E.eventOn && E.eventOn(t)) ? 2 : 1); E.evMult.ch = true; }
-  C.on = () => E.now() < E.chUntil;
-  C.left = () => Math.max(0, E.chUntil - E.now());
+  if (ev0 && !ev0.ch) { E.evMult = (kind, t) => ev0(kind, t) * ((kind === "xp" || kind === "drop") && !(E.eventOn && E.eventOn(t)) ? (E.chFrac != null && !t ? 1 + E.chFrac : (t || E.now()) < E.chEnd() ? 2 : 1) : 1); E.evMult.ch = true; }
+  const cu0 = E.catchUpGen;
+  if (cu0 && !cu0.ch) {
+    E.catchUpGen = function* (S, seconds) {
+      if (E.chFrac != null) return yield* cu0(S, seconds);
+      const now = E.now(), from = now - seconds * 1000, W = win(), b = E.chUntil || (W ? W.b : 0), a = W ? W.a : b - 48 * 3600e3;
+      E.chFrac = b && seconds > 0 ? Math.max(0, Math.min(now, b) - Math.max(from, a)) / (seconds * 1000) : 0;
+      try { return yield* cu0(S, seconds); } finally { E.chFrac = null; }
+    };
+    E.catchUpGen.ch = true;
+  }
+  C.on = () => E.now() < E.chEnd();
+  C.left = () => Math.max(0, E.chEnd() - E.now());
 
   const ON = window.ONLINE;
   if (!ON || !ON.enabled) return;
@@ -27,6 +45,7 @@
     const now = Date.parse(C.st.now) || Date.now(); C.off = now - Date.now();
     const b = C.st.bonus ? Date.parse(C.st.bonus) : 0;
     E.chUntil = b > now ? E.now() + (b - now) : 0;
+    { const w = C.where(); if (w) { const m = memo(); if (b) { m[w] = { d: C.st.done, b: C.st.bonus }; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {} } } }
     let seen = C.seen; try { seen = localStorage.getItem("idlus-chantier-vu"); } catch (e) {}
     if (E.chUntil && seen !== C.st.bonus && window.DX && window.DX.social) { C.seen = C.st.bonus; try { localStorage.setItem("idlus-chantier-vu", C.st.bonus); } catch (e) {} window.DX.social.toast("Chantier du serveur fini : ×2 XP et ×2 butin pour tout le monde pendant 48 h !", "rare"); }
   };

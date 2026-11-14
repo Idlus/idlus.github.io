@@ -1,6 +1,14 @@
 {
-  "version": "3.1.7",
+  "version": "3.1.8",
   "versions": [
+    {
+      "v": "3.1.8",
+      "name": "Le ×2 du Chantier bien visible",
+      "items": [
+        "Correction : le ×2 XP et butin du Chantier compte aussi pour les gains d'absence calculés à l'ouverture du jeu (avant, ils passaient sans le ×2). Une absence à moitié pendant le bonus gagne la moitié du ×2. Merci Aglouglou",
+        "L'XP/h et les ressources/h de la zone suivent maintenant ta dernière heure de jeu (avant : une moyenne depuis ta première visite, où un bonus ne se voyait presque pas), avec un petit ×2 à côté de l'XP/h pendant le Chantier"
+      ]
+    },
     {
       "v": "3.1.7",
       "name": "Un Recycleur plus fin",

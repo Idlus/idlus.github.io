@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.7";
+const GAME_VERSION = "3.1.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.8", name: "Le ×2 du Chantier bien visible", items: [
+    "Correction : le ×2 XP et butin du Chantier compte aussi pour les gains d'absence calculés à l'ouverture du jeu (avant, ils passaient sans le ×2). Une absence à moitié pendant le bonus gagne la moitié du ×2. Merci Aglouglou",
+    "L'XP/h et les ressources/h de la zone suivent maintenant ta dernière heure de jeu (avant : une moyenne depuis ta première visite, où un bonus ne se voyait presque pas), avec un petit ×2 à côté de l'XP/h pendant le Chantier" ] },
   { v: "3.1.7", name: "Un Recycleur plus fin", guide: "inventaire", items: [
     "Recycleur : les Rayonnants ont maintenant leurs propres règles (niveau, jet, bonus Rayonnant sous +X %), à côté de celles des objets normaux. Une seule règle qui correspond suffit (merci SegFault)",
     "Le meilleur Rayonnant de chaque objet est toujours gardé (case cochée de base), et la confirmation montre les plus beaux Rayonnants qui partent. Le recyclage automatique suit aussi les règles des Rayonnants",
@@ -4139,7 +4142,7 @@ function homeHtml() {
     : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && sub ? `Chasse : <b>${h(sub.name)}</b> <span class="xs muted">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const rate = !S.dungeon && S.sub ? E.zoneRate(S, S.sub) : null;
   /* 1.0.1 « Encadré de chasse » : la zone en titre, 4 tuiles de rendement, le dernier combat */
-  const kt = rate ? `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(rate.xpH), "XP/h"], ["kamas", IC("kamas"), fmtK(rate.kH), "kamas/h"], ["res", IC("sac"), fmtK(rate.rH), "ressources/h"], ["win", IC("trophee"), `${Math.round(rate.winRate * 100)} %`, "victoires"]].map(([k, i, v, l]) => `<div class="k k-${k}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>` : "";
+  const kt = rate ? `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(rate.xpH), `XP/h${chX2()}`], ["kamas", IC("kamas"), fmtK(rate.kH), "kamas/h"], ["res", IC("sac"), fmtK(rate.rH), "ressources/h"], ["win", IC("trophee"), `${Math.round(rate.winRate * 100)} %`, "victoires"]].map(([k, i, v, l]) => `<div class="k k-${k}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>` : "";
   const H0 = (S.hunting || S.dungeon) && S.history && S.history[0];
   /* Saison 1, lot 7 (9A) : le compteur du dernier combat, la part des dégâts de chaque héros (et ses soins) d'un coup d'œil */
   const lfMeter = (L) => { const tot = L.reduce((a, x) => a + (x.d || 0), 0) || 1, top = L.slice().sort((a, b) => b.d - a.d).slice(0, 8);
@@ -4343,7 +4346,7 @@ function altarHtml() {
 }
 function bonusBox() {
   const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
-  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2${E.EVENT.mt ? ", Maîtrise comprise" : " (pas l'XP de Maîtrise au niveau 200)"}` : "", E.honorCls ? `${CLASSES[E.honorCls()].name} à l'honneur : +${E.HONOR_PCT} % XP (ses héros) et butin (équipe avec un ${CLASSES[E.honorCls()].name})` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const extra = [E.REN_XP && ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : "", syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2${E.EVENT.mt ? ", Maîtrise comprise" : " (pas l'XP de Maîtrise au niveau 200)"}` : "", window.CHANTIER && window.CHANTIER.on && window.CHANTIER.on() && !E.eventOn() ? `Chantier du serveur : XP et butin ×2, Maîtrise comprise (encore ${Math.max(1, Math.ceil(window.CHANTIER.left() / 3600e3))} h)` : "", E.honorCls ? `${CLASSES[E.honorCls()].name} à l'honneur : +${E.HONOR_PCT} % XP (ses héros) et butin (équipe avec un ${CLASSES[E.honorCls()].name})` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
   const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
   return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
@@ -4430,11 +4433,13 @@ function atelierSheet() {
     </div>
     <div class="row"><button class="btn primary" data-act="atgo" ${a.cid != null && a.rec ? "" : "disabled"}>Lancer</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
+/* 3.1.8 : le ×2 du Chantier en cours, montré à côté de l'XP/h (déjà compris dans les chiffres, mesurés sur la dernière heure) */
+function chX2() { const C = window.CHANTIER; return C && C.on && C.on() ? ` <em class="chx2" data-tip="Chantier du serveur : ×2 XP et butin, déjà compris dans ce chiffre">×2</em>` : ""; }
 /* 1.0.25.1 « XP/h en donjon » : mêmes tuiles que l'encadré de chasse, mesurées sur l'enchaînement de donjons en cours */
 const dec1 = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
 const DGT = { xp: "XP gagnée par heure par toute l'équipe, sur cet enchaînement", kamas: "Kamas gagnés par heure, sur cet enchaînement", dg: "Donjons terminés par heure (une clé par donjon)", dust: "Poussières de stasis gagnées par heure" };
 function dgRateTiles(r) {
-  return `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(r.xpH), "XP/h"], ["kamas", IC("kamas"), fmtK(r.kH), "kamas/h"], ["dg", IC("cle"), r.runs ? dec1(r.runH) : "–", "donjons/h"], ["dust", IC("poussiere"), r.runs ? fmtK(r.pH) : "–", `poussières<span class="hide-sm">/h</span>`]].map(([k, i, v, l]) => `<div class="k k-${k}" data-tip="${h(DGT[k])}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>`;
+  return `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(r.xpH), `XP/h${chX2()}`], ["kamas", IC("kamas"), fmtK(r.kH), "kamas/h"], ["dg", IC("cle"), r.runs ? dec1(r.runH) : "–", "donjons/h"], ["dust", IC("poussiere"), r.runs ? fmtK(r.pH) : "–", `poussières<span class="hide-sm">/h</span>`]].map(([k, i, v, l]) => `<div class="k k-${k}" data-tip="${h(DGT[k])}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>`;
 }
 function dgRateLine(r) {
   if (!r) return `<span class="muted">Rendement affiché après le premier combat du donjon.</span>`;

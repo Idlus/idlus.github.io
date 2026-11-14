@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.8 « Le ×2 du Chantier bien visible »
+- Retour d'Aglouglou (14/11, Éternel, niv. 200) : « j'ai l'impression d'avoir le même taux par heure qu'avant le Chantier ». Vérifié sur sa partie (lecture seule) : le ×2 s'appliquait bien en jeu (heures de 08 h à 10 h UTC 2 à 3 fois au-dessus de la veille). Deux défauts : (1) à l'ouverture de la page, l'absence était calculée avant la première réponse du serveur (4 s), donc sans le ×2 ; js/chantier.js garde le dernier Chantier connu (`idlus-chantier-bonus`, début et fin par serveur, `E.chEnd`) et, hors ligne, le ×2 vaut au prorata de l'absence couverte (`E.chFrac`). (2) L'XP/h de la zone était une moyenne depuis la première visite : js/engine.js `E.ZONE_WIN_S` (1 h de jeu) allège les anciens combats ; pastille ×2 sur l'XP/h pendant le Chantier (`chX2`), ligne dans la liste des bonus. Test : tests/chantier_x2.test.js. tools/enquete_joueur.js montre l'XP heure par heure et le rendement des zones.
+
 ## 3.1.7 « Un Recycleur plus fin »
 - Idée Discord de SegFault (2 000+ Rayonnants), maquette choisie par Mathis 1A 2A 3B : le Recycleur a deux cadres de règles, objets normaux et Rayonnants (niveau `rLvl`, jet de base `rQ`, bonus Rayonnant sous `rBon` %), meilleur Rayonnant de chaque objet gardé (`rKeep`), case Parfaits à part (`perf`). L'ancienne case `rare` est reprise dans les nouveaux réglages (`E.recyCfg`). Confirmation détaillée quand des Rayonnants partent. Le recyclage automatique suit aussi les règles des Rayonnants (3B).
 - Correction (`E.isPerfect`) : un Rayonnant se compare à son propre maximum (max + bonus) ; avant, environ 1 Rayonnant sur 4 comptait comme Parfait sans jet à 100 %.

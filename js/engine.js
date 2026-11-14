@@ -3197,6 +3197,9 @@
     if (zkey) {
       const z = S.zoneStats[zkey] = S.zoneStats[zkey] || { f: 0, w: 0, s: 0, xp: 0, k: 0, r: 0, i: 0 };
       z.f++; z.w += win ? 1 : 0; z.s += F.dur + E.PAUSE_MS / 1000; z.xp += xpTot; z.k += r.kamas; z.r += nres; z.i += r.items.length;
+      /* 3.1.8 (retour d'Aglouglou, 14/11) : le rendement suit la dernière heure de jeu dans la zone (avant : moyenne depuis la première visite,
+         un bonus comme le ×2 du Chantier n'y paraissait presque pas après des dizaines d'heures dans la même zone) */
+      if (z.s > E.ZONE_WIN_S) { const q = E.ZONE_WIN_S / z.s; ["f", "w", "s", "xp", "k", "r", "i"].forEach((k) => (z[k] *= q)); }
       // 0.1.34 : réussite récente (moyenne glissante, ≈ 10 derniers combats) et niveau moyen de l'équipe à ce moment-là
       const tm = E.team(S); z.lv = tm.length ? Math.round(tm.reduce((a, c) => a + c.lvl, 0) / tm.length) : 0;
       z.ew = z.ew === undefined ? (z.f > 1 ? (z.w - (win ? 1 : 0)) / (z.f - 1) * 0.9 + (win ? 0.1 : 0) : win ? 1 : 0) : z.ew * 0.9 + (win ? 0.1 : 0);
@@ -3204,6 +3207,7 @@
   };
   /* 0.1.34 : difficulté d'une zone d'après les derniers combats de l'équipe (null : pas assez de combats, ou l'équipe a pris 5 niveaux depuis) */
   E.ZONE_DIFF = { min: 5, easy: 0.97, hard: 0.9, stale: 5 };
+  E.ZONE_WIN_S = 3600; // 3.1.8 : fenêtre du rendement de zone (secondes de jeu)
   E.zoneDiff = (S, zkey) => {
     const z = S.zoneStats && S.zoneStats[zkey]; if (!z || z.f < E.ZONE_DIFF.min) return null;
     const tm = E.team(S); const avg = tm.length ? tm.reduce((a, c) => a + c.lvl, 0) / tm.length : 0;
