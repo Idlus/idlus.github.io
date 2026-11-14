@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.4";
+const GAME_VERSION = "3.1.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.5", name: "Ta tête et tes couleurs", items: [
+    "Changer de tête ou de couleurs marche à nouveau avec une coiffe ou une cape portée (signalé par Ondwuin)",
+    "La plupart des coiffes et capes ne savent se dessiner qu'avec la tête et les couleurs d'origine : choisis « Ma tête et mes couleurs » ou « Mon objet » dans Héros › Apparence",
+    "Les petites pastilles de couleur des palettes s'affichent de nouveau en entier" ] },
   { v: "3.1.4", name: "L'objet suivi arrive bien", items: [
     "Objet suivi : quand il tombe (jauge pleine ou coup de chance), il n'est plus brisé par le tri automatique, le Recycleur ou le sac plein : il arrive verrouillé dans le sac",
     "Un grand message annonce l'objet suivi obtenu, et sa fiche dit combien de fois tu l'as eu",
@@ -3064,13 +3068,17 @@ function lookUrl(c, opts = {}) {
      les 64 d'ITEM_SKINS, ou une autre choisie exprès) : une apparence que seul DofusDB sait dessiner fait dessiner le héros
      par DofusDB, avec la tête et les couleurs d'origine de sa classe ; celles de NO_LOOK (sans apparence connue) ne se voient pas */
   const worn = []; let dbOnly = false;
+  /* 3.1.5 (ticket #199, signalé par Ondwuin) : la plupart des coiffes et capes (presque toutes au-delà du niveau 50) ne savent
+     se dessiner qu'avec la tête et les couleurs d'origine de la classe : changer de tête ou de couleurs ne changeait rien.
+     c.lookPrio = "tete" : le héros montre sa tête et ses couleurs, et ces coiffes et capes-là ne se voient pas (Apparence › Sur le héros) */
+  const prio = c.lookPrio === "tete" && c.cls !== "forge";
   /* 2.2.10 : opts.worn = coiffe et cape d'un autre joueur (fiche publique), sans lire la partie ouverte */
   const wornTpl = (sl) => (opts.worn ? opts.worn.find((t) => ITEMS[t] && ITEMS[t].slot === sl) || null : E.shownTpl(S, c, sl));
   if (!opts.bare && (S || opts.worn)) ["coiffe", "cape"].forEach((sl) => { const tpl = wornTpl(sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
     if (!/^i\d+$/.test(tpl)) return; // 1.0.30.2 : objets propres au jeu (légendaires du Songe « leg_… ») : pas d'apparence DofusDB (avant : demande « itemIds[]=NaN » refusée)
-    if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (!(LK.NO_LOOK || []).includes(tpl)) { dbOnly = true; worn.push(+tpl.slice(1)); } });
+    if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (!(LK.NO_LOOK || []).includes(tpl)) { if (prio) return; dbOnly = true; worn.push(+tpl.slice(1)); } });
   /* Saison 1, lot 3 : bouclier d'apparat (js/garderobe.js) : DofusDB le dessine dans la main du héros, avec la tête et les couleurs de sa classe */
-  if (!opts.bare && S && E.grWorn && !opts.worn) { const sh = opts.shield !== undefined ? opts.shield : E.grWorn(S, c).shield; if (sh) { worn.push(+sh); dbOnly = true; } }
+  if (!opts.bare && S && E.grWorn && !opts.worn && !prio) { const sh = opts.shield !== undefined ? opts.shield : E.grWorn(S, c).shield; if (sh) { worn.push(+sh); dbOnly = true; } }
   if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
   if (dbOnly) return dbLook(c.cls, sx, worn);
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
@@ -3081,6 +3089,14 @@ function lookUrl(c, opts = {}) {
   /* coiffes, capes et couleurs : le moteur de rendu d'Ankama refuse les images demandées depuis idlus.github.io (403) ;
      celui de DofusDB lit la même description d'apparence (tête, couleurs, objets portés) et dessine pareil */
   return `https://renderer.dofusdb.fr/look/${hex}/full/1/300_300.png`;
+}
+/* 3.1.5 : coiffe, cape ou bouclier d'apparat portés que DofusDB ne sait dessiner qu'avec la tête et les couleurs d'origine (noms) */
+function lookBlockers(c) {
+  if (!S || c.cls === "forge" || !LK.CLASS_LOOKS[c.cls]) return [];
+  const out = [];
+  ["coiffe", "cape"].forEach((sl) => { const tpl = E.shownTpl(S, c, sl); if (!tpl || !/^i\d+$/.test(tpl) || LK.ITEM_SKINS[tpl] || (LK.NO_LOOK || []).includes(tpl)) return; out.push((ITEMS[tpl] && ITEMS[tpl].name) || sl); });
+  if (E.grWorn && E.grWorn(S, c).shield) out.push("bouclier d'apparat");
+  return out;
 }
 /* Forgelance : avec ses numéros d'apparence, le moteur de rendu dessine un casque et pose la tête à côté du corps.
    DofusDB sait le dessiner correctement (tête par défaut, couleurs d'origine) à partir d'un jeton qu'il fabrique pour la classe
@@ -3109,11 +3125,21 @@ function lookSheet(c) {
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
     ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.filter((p) => !p.lock || S.unlocks[p.lock]).map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${lookPrioHtml(c)}
     ${window.CHROMA ? window.CHROMA.dyeHtml(c) : ""}
     ${frameHtml(c)}
     ${wardrobeHtml(c)}
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
+/* 3.1.5 : choix entre la tête et les couleurs du héros et une coiffe ou cape qui ne sait pas les garder */
+function lookPrioHtml(c) {
+  const B = lookBlockers(c); if (!B.length) return "";
+  const t = c.lookPrio === "tete", list = B.map((n) => `<b>${h(n)}</b>`).join(", ").replace(/, ([^,]*)$/, " et $1");
+  return `<div class="small"><b>Sur le héros</b> <span class="seg">${[["tete", "Ma tête et mes couleurs"], ["objet", B.length > 1 ? "Mes objets" : "Mon objet"]].map(([v, n]) => `<button data-act="lookprio" data-v="${v}" aria-pressed="${(v === "tete") === t}">${n}</button>`).join("")}</span>
+    <p class="xs muted">${list} ${B.length > 1 ? "ne peuvent" : "ne peut"} se dessiner qu'avec la tête et les couleurs d'origine de la classe. ${t ? `Ton héros montre sa tête et ses couleurs ; ${B.length > 1 ? "ces objets ne se voient" : "cet objet ne se voit"} pas.` : "Choisis « Ma tête et mes couleurs » pour voir ta tête et tes couleurs à la place."}</p></div>`;
+}
+/* changer de tête ou de couleurs alors qu'un objet porté les cache : on montre la tête et les couleurs (et on le dit) */
+function lookPrioAuto(c) { if (c.lookPrio === "tete") return; const B = lookBlockers(c); if (!B.length) return; c.lookPrio = "tete"; toast(`${B.join(", ")} : caché${B.length > 1 ? "s" : ""} sur ce héros pour montrer sa tête et ses couleurs (Héros › Apparence › Sur le héros pour ${B.length > 1 ? "les" : "le"} remettre).`); }
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" data-fr="${c.frPreview ? c.frame : E.heroFrame(S, c)}" ${c.frame === "align" && S.align ? ` data-side="${S.align.side}"` : ""} style="--cc:${CLASSES[c.cls].color}${c.frame === "guilde" ? guildCol() : ""}">${headTag(c.cls, c.sex, c.name)}</span>`;
 /* 1.0.15 : cadre de guilde aux couleurs de la guilde */
 const guildCol = () => (S.guild && S.guild.col ? `;--gcol:${/^#[0-9a-f]{3,8}$/i.test(S.guild.col) ? S.guild.col : "#c9962e"}` : "");
@@ -11675,8 +11701,9 @@ document.addEventListener("click", (ev) => {
     case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
     case "setframe": { const r = E.act(S, "setFrame", ui.lookCid, d.v || null); if (r) { toast(r, "warn"); return; } dirty = true; lookSheet(char(ui.lookCid)); render(); return; }
     case "frwhere": { const F = E.SFRAMES[d.v]; if (F) toast(`${F.name(S)} : ${F.req}.`); return; }
-    case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
-    case "lookpal": { const pl = LK.PALETTES.find((p) => p.id === d.v); if (pl && pl.lock && !S.unlocks[pl.lock]) return; const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
+    case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; lookPrioAuto(x); dirty = true; lookSheet(x); render(); return; }
+    case "lookprio": { const x = char(ui.lookCid); if (d.v === "tete") x.lookPrio = "tete"; else delete x.lookPrio; dirty = true; lookSheet(x); render(); return; }
+    case "lookpal": { const pl = LK.PALETTES.find((p) => p.id === d.v); if (pl && pl.lock && !S.unlocks[pl.lock]) return; const x = char(ui.lookCid); x.palette = d.v; lookPrioAuto(x); dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { if (window.BUGS) { window.BUGS.open(); return; } const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
@@ -13348,7 +13375,7 @@ function fpActs(u, p, mono) {
 }
 function fpHead(o) {
   const C = CLASSES[o.cls];
-  const look = C ? lookImg({ cls: o.cls, sex: o.sx, head: o.hd || 0, palette: o.pal, name: "" }, "fp-look", { worn: (o.gear || []).filter((t) => ITEMS[t]) }) : "";
+  const look = C ? lookImg({ cls: o.cls, sex: o.sx, head: o.hd || 0, palette: o.pal, lookPrio: o.lp ? "tete" : undefined, name: "" }, "fp-look", { worn: (o.gear || []).filter((t) => ITEMS[t]) }) : "";
   const side = o.camp !== undefined ? o.camp : window.ALIGNUI ? window.ALIGNUI.sideOf(o.u, o.p) : null, A = side && E.ALIGN[side];
   const bd = [fpOnline(o.u) ? `<span class="fp-b on"><i class="fp-dot"></i>En ligne</span>` : "", C ? `<span class="fp-b">${h(C.name)} niv. ${fmt(o.lvl || 1)}</span>` : "",
     A ? `<span class="fp-b camp ${side}"><img src="assets/i/${A.badge}.png" alt="">${h(A.name)}${o.arang ? ` · rang ${o.arang}` : ""}</span>` : ""].concat(o.badges || []).filter(Boolean);
@@ -13381,7 +13408,7 @@ async function lbProfile(u, mode) {
     if ((recs || []).length) tiles.push([`Stasis ${recs[0].k}`, "meilleur donjon"]);
     if (smt) tiles.push([`⏳ ${Math.min(50, +smt.smt)}`, "Maîtrise du temps"]);
     openSheet(`${ban ? `<div class="pban" style="background-image:url(${E.banUrl(ban)})" role="img" aria-label="${h(E.BANNERS[ban].n)}"></div>` : ""}
-      ${fpHead({ u, p: p.pseudo, cls: mh.cls || p.main, lvl: p.main_lvl || mh.lvl, sx: mh.sx, hd: mh.hd, pal: mh.pal, gear: mh.gear, title: mh.tt, extra: gldH, tiles })}
+      ${fpHead({ u, p: p.pseudo, cls: mh.cls || p.main, lvl: p.main_lvl || mh.lvl, sx: mh.sx, hd: mh.hd, pal: mh.pal, lp: mh.lp, gear: mh.gear, title: mh.tt, extra: gldH, tiles })}
       ${fpActs(u, p.pseudo, false)}
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}${x.mt ? ` · ✦${x.mt}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}${window.CHROMA ? `<div id="lbChroma" class="stack" style="gap:6px"></div>` : ""}

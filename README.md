@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.5 « Ta tête et tes couleurs »
+- Ondwuin (ticket #199, 13/11) : changer de tête ou de couleurs ne faisait rien. Cause : js/ui.js `lookUrl`, une coiffe, une cape (hors ITEM_SKINS, soit presque toutes au-delà du niveau 50) ou un bouclier d'apparat fait dessiner le héros par DofusDB avec la tête et les couleurs d'origine. Corrigé : `c.lookPrio = "tete"` montre la tête et les couleurs (ces objets-là ne se voient pas) ; choix « Sur le héros » dans la fiche Apparence (`lookPrioHtml`, `lookBlockers`), mis tout seul quand on change de tête ou de couleurs (`lookPrioAuto`, avec un message). Fiche publique : `lp` (js/verify.js). css/style.css : les pastilles des palettes ne prennent plus le style des interrupteurs `.sw`. Test : tests/apparence_tete_ui.test.js.
+
 ## 3.1.4 « L'objet suivi arrive bien »
 - Ticket #198 (hattoryz) : l'objet suivi tombé (jauge pleine ou tirage normal) pouvait être brisé aussitôt par le tri automatique (doublon, jet bas) ou partir au Recycleur / trop-plein, donc le joueur ne recevait rien. js/engine.js : `E.dropGive(…, suivi)` le verrouille (`locked`), saute `applyAuto` et lance le grand pop-up ; `S.track.n` / `S.track.at` comptent chaque obtention ; `E.trackPct` arrondi vers le bas. js/ui.js : fiche « Obtenu N fois », pop-up « Objet suivi obtenu ». Tests : tests/drops2.test.js, tests/objet_suivi_ui.test.js.
 ## 3.1.3 « Le Songe ne traîne plus »

@@ -704,7 +704,7 @@ a.btn{text-decoration:none}
 .palpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .palpick button{display:flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--ink);padding:4px 10px 4px 6px;font-weight:700;cursor:pointer}
 .palpick button.on{border-color:var(--gold)}
-.palpick .sw{display:flex}.palpick .sw i{width:10px;height:14px}.palpick .sw i:first-child{border-radius:4px 0 0 4px}.palpick .sw i:last-child{border-radius:0 4px 4px 0}
+.palpick .sw{display:flex;width:auto;height:auto;background:none;border:0;border-radius:0;margin:0}.palpick .sw i{position:static;width:10px;height:14px;border-radius:0;transition:none}.palpick .sw i:first-child{border-radius:4px 0 0 4px}.palpick .sw i:last-child{border-radius:0 4px 4px 0}
 @media (max-width:640px){.arena .ent.hero .lookwrap{height:92px;width:70px}.arena .ent.hero .look{height:108px;width:108px;margin-bottom:-10px}.headpick{grid-template-columns:repeat(4,1fr)}}
 
 /* ===================== 3.1.2 — thème « Émeraude » (couleurs du logo DOFUS 3) ===================== */

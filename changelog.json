@@ -1,6 +1,15 @@
 {
-  "version": "3.1.4",
+  "version": "3.1.5",
   "versions": [
+    {
+      "v": "3.1.5",
+      "name": "Ta tête et tes couleurs",
+      "items": [
+        "Changer de tête ou de couleurs marche à nouveau avec une coiffe ou une cape portée (signalé par Ondwuin)",
+        "La plupart des coiffes et capes ne savent se dessiner qu'avec la tête et les couleurs d'origine : choisis « Ma tête et mes couleurs » ou « Mon objet » dans Héros › Apparence",
+        "Les petites pastilles de couleur des palettes s'affichent de nouveau en entier"
+      ]
+    },
     {
       "v": "3.1.4",
       "name": "L'objet suivi arrive bien",
