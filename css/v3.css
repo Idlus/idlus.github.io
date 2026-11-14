@@ -169,3 +169,15 @@ body.v3 .v3ph p{margin:2px 0 0;color:var(--muted);font-size:.9rem}
 body.v3 .v3ph-a{display:flex;gap:6px;flex:none}
 body.v3 .v3ph .sn-star.on{color:var(--gold,#e8c35a)}
 @media (max-width:640px){body.v3 .v3ph{margin:10px 2px 2px;flex-wrap:nowrap;align-items:flex-start}body.v3 .v3ph-t{flex:1 1 0}body.v3 .v3ph-l{display:none}body.v3 .v3ph-a .btn{min-width:34px}body.v3 .v3ph h1{font-size:1.15rem}body.v3 .v3ph p{font-size:.82rem}body.v3 .v3ph-a .btn{padding:4px 8px}}
+/* 3.1.1 : le titre de la page qui répète le cadre commun est masqué (V3.dedupe) */
+body.v3 #main .v3dup{display:none!important}
+/* 3.1.1 (3A, limite de la 3.1) : le Journal des quêtes n'a plus sa colonne de menu à gauche : ses familles et ses pages
+   sont deux petites rangées en haut de la page, sur PC comme au téléphone */
+body.v3 .qj-lay{grid-template-columns:minmax(0,1fr)}
+body.v3 .qj-journal{display:none}
+body.v3 .qj-m{display:grid;gap:8px}
+body.v3 .qj-fam3{display:flex!important;gap:2px;border-bottom:2px solid var(--frame);overflow-x:auto;scrollbar-width:none}
+body.v3 .qj-fam3 button{flex:none;flex-direction:row;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;margin-bottom:-2px;padding:7px 12px;color:var(--muted);font-size:14px}
+body.v3 .qj-fam3 button[aria-pressed="true"]{background:none;color:var(--ink);border-bottom-color:var(--action)}
+body.v3 .qj-chips{display:flex!important;flex-wrap:wrap;gap:6px}
+body.v3 .qj-chips button{flex:none}

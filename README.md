@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.1 « Les dernières finitions »
+- Mathis (14/11) : « corrige les limites aussi ». js/v3.js `V3.dedupe` (MutationObserver sur #main et #subnav) : le premier titre h1/h2 de la page qui répète le cadre `.v3ph` reçoit `.v3dup` (masqué), le cadre prend le nom le plus long. js/ui.js : le cadre nomme la page ouverte (`navPage(k)` avant `navPage(kk)`). css/v3.css : Journal des quêtes sans colonne `.qj-journal` en V3, familles en onglets soulignés, pages en pastilles.
+
 ## 3.1.0 « Une interface au propre »
 - Mathis (13/11, maquette https://claude.ai/artifact/SBLHHVDvXxdirhjxpxH6WX) : 1A 2A 3A 4A 5A 6A 7A. js/v3.js : bandeau #v3band sur chaque page hors combat (PC compris, `wide` toujours faux), plus de colonne de combat à 1180 px ; `quitBtn()` partagé (tableau et bandeau) ; tête du tableau avec « Fiche du donjon » ; espaces sans « Sac » (Objets, Plan, Maîtrise, Garde-robe, Dofus, Builds dans Équipe) ; barre du téléphone Havre-Sac, Aventure, Combat, Équipe, Plus. js/ui.js : `barOne()` (barre unique en V3 même avec Affichage détaillé), en-tête de page `.v3ph` (titre, NAV_DESC, Guide et épingle) sous le bandeau des onglets. css/v3.css : onglets de page soulignés, chat en colonne de 860 à 1099 px, cadre `.v3ph`.
 

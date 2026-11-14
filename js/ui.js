@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.0";
+const GAME_VERSION = "3.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.1", name: "Les dernières finitions", items: [
+    "Plus de titre en double sous le cadre des pages (Donjons, Boss des mondes, Songe infini, Routines, Plan de bataille…) ; le cadre prend le nom le plus précis",
+    "Le cadre donne le nom de l'onglet ouvert (Succès, Gravure runique, Élevage…) au lieu de celui de la page voisine",
+    "Quêtes : plus de colonne de menu à gauche sur PC ; les familles et leurs pages sont deux rangées en haut, comme au téléphone" ] },
   { v: "3.1.0", name: "Une interface au propre", items: [
     "Le combat devient un bandeau en haut de chaque page, et la page prend toute la largeur",
     "Une seule barre en haut pour tout le monde ; « Affichage détaillé » ne change plus que les pages",
@@ -3590,9 +3594,9 @@ function renderNav() {
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   if (strip && window.V3 && window.V3.on()) { /* 3.1 (Mathis 7A) : le même cadre sur chaque page : titre, une ligne d'explication, actions à droite */
-    const pg = navPage(kk) || navPage(k); const pinned = pins.includes(kk);
+    const pg = navPage(k) || navPage(kk); const pinned = pins.includes(kk);
     strip = strip.replace(/<button class="sn-guide"[\s\S]*?<\/button>/, "").replace(/<button class="sn-star[\s\S]*?<\/button>/, "");
-    strip += `<header class="v3ph"><div class="v3ph-t"><h1>${h(pg ? pg[1] : curFam.n)}</h1>${NAV_DESC[kk] || NAV_DESC[k] ? `<p>${h(NAV_DESC[kk] || NAV_DESC[k])}</p>` : ""}</div><span class="v3ph-a"><button class="btn sm" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?<span class="v3ph-l"> Guide</span></button>${curFam.season ? "" : `<button class="btn sm sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page"}">${pinned ? "★" : "☆"}<span class="v3ph-l">${pinned ? " Épinglée" : " Épingler"}</span></button>`}</span></header>`;
+    strip += `<header class="v3ph"><div class="v3ph-t"><h1>${h(pg ? pg[1] : curFam.n)}</h1>${NAV_DESC[k] || NAV_DESC[kk] ? `<p>${h(NAV_DESC[k] || NAV_DESC[kk])}</p>` : ""}</div><span class="v3ph-a"><button class="btn sm" data-act="gd-open" title="Guide de cette page" aria-label="Guide de cette page">?<span class="v3ph-l"> Guide</span></button>${curFam.season ? "" : `<button class="btn sm sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page"}">${pinned ? "★" : "☆"}<span class="v3ph-l">${pinned ? " Épinglée" : " Épingler"}</span></button>`}</span></header>`;
   }
   const oSt = sub.querySelector(".sn-strip"), oL = oSt && sub.dataset.k === k ? oSt.scrollLeft : 0; sub.dataset.k = k; // 3.0.3 (Tocqueville) : même page, le bandeau garde sa position
   sub.innerHTML = strip;

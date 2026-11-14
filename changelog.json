@@ -1,6 +1,15 @@
 {
-  "version": "3.1.0",
+  "version": "3.1.1",
   "versions": [
+    {
+      "v": "3.1.1",
+      "name": "Les dernières finitions",
+      "items": [
+        "Plus de titre en double sous le cadre des pages (Donjons, Boss des mondes, Songe infini, Routines, Plan de bataille…) ; le cadre prend le nom le plus précis",
+        "Le cadre donne le nom de l'onglet ouvert (Succès, Gravure runique, Élevage…) au lieu de celui de la page voisine",
+        "Quêtes : plus de colonne de menu à gauche sur PC ; les familles et leurs pages sont deux rangées en haut, comme au téléphone"
+      ]
+    },
     {
       "v": "3.1.0",
       "name": "Une interface au propre",

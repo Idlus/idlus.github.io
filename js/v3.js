@@ -50,7 +50,7 @@
     document.body.classList.add("v3");
     if (!ui.v3booted) { ui.v3booted = true; if (ui.tab === "home") ui.tab = "combat"; }
     if (!X.S.v3tuto) X.S.v3tuto = X.S.v3all ? { done: true, i: 0, paid: 0 } : { i: 0, paid: 0 }; // les anciens comptes le relancent dans Options
-    V3.mount();
+    V3.mount(); V3.dedupe();
   };
   let openSig = "";
   V3.relock = function (quiet) {
@@ -71,6 +71,22 @@
     let band = document.getElementById("v3band");
     if (!band) { band = document.createElement("div"); band.id = "v3band"; band.className = "v3band"; band.dataset.act = "nav"; band.dataset.v = "combat"; band.setAttribute("role", "region"); band.setAttribute("aria-label", "Combat en cours"); app.insertBefore(band, document.getElementById("subnav")); } // 3.1 (1A) : le bandeau du combat en haut de chaque page, sur PC comme au téléphone
   };
+  /* 3.1.1 (Mathis « corrige les limites aussi ») : sous le cadre commun (.v3ph), le gros titre propre à la page faisait doublon
+     (« Donjons » deux fois, « Boss » puis « Boss des mondes »…). Le premier titre de la page qui dit la même chose est masqué, et le
+     cadre prend le nom le plus précis. Rejoué à chaque changement de la page (rendu complet ou redessin partiel). */
+  const dNorm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^(le |la |les |l')/, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const dedupe = () => {
+    const t = document.querySelector("#subnav .v3ph h1"), m = document.getElementById("main"); if (!t || !m) return;
+    const base = t.dataset.base || t.textContent; t.dataset.base = base; const a = dNorm(base); let name = base;
+    const hd = [...m.querySelectorAll("h1, h2")].find((e) => !e.closest(".brx-hero, .v3b, .sheet") && (e.offsetParent || e.classList.contains("v3dup")));
+    if (hd) { const txt = hd.textContent.trim(), b = dNorm(txt); const same = !!a && !!b && b.length <= 40 && (a === b || b.includes(a) || a.includes(b));
+      hd.classList.toggle("v3dup", same); if (same && txt.length > base.length) name = txt.replace(/\s+/g, " "); }
+    if (t.textContent !== name) t.textContent = name;
+  };
+  let dObs = null, dQ = false;
+  V3.dedupe = () => { if (!V3.on()) return; dedupe();
+    if (!dObs && typeof MutationObserver === "function") { dObs = new MutationObserver(() => { if (dQ) return; dQ = true; Promise.resolve().then(() => { dQ = false; try { dedupe(); } catch (e) {} }); });
+      ["main", "subnav"].forEach((id) => { const n = document.getElementById(id); if (n) dObs.observe(n, { childList: true, subtree: true }); }); } };
   V3.home = () => V3.on() && ui.tab === "combat" && !ui.v3det; // le tableau remplace la page de combat détaillée
   V3.layout = function () {
     if (!V3.on()) return; const B = document.body;
