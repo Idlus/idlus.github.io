@@ -52,6 +52,7 @@
 @container v3m (max-width:640px){.room header{cursor:pointer}.room:not(.open)>:not(header){display:none}.room.open .msum{display:none}.room.open .chev{transform:rotate(180deg)}.hvsum{grid-template-columns:repeat(3,1fr)}.rooms,.mlist{grid-template-columns:1fr}}
 @container v3m (max-width:520px){.maptiers .seg{border-radius:14px}.maptiers .seg button{padding:4px 7px}}
 @container v3m (max-width:600px){.zonefold{grid-template-columns:1fr auto;row-gap:2px}.zonefold .zf-meta{grid-column:1;grid-row:2}.zonefold .chev{grid-column:2;grid-row:1}}
+@container v3m (max-width:600px){.favhint{display:none}}
 @container v3m (max-width:859px){nav.main.fams>button{font-size:10.5px;padding:4px 0}
   nav.main.fams .med{width:30px;height:30px}nav.main.fams .med img{width:22px;height:22px}
   nav.main .navfight{display:flex}
