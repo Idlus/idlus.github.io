@@ -1,6 +1,14 @@
 {
-  "version": "3.1.5",
+  "version": "3.1.6",
   "versions": [
+    {
+      "v": "3.1.6",
+      "name": "Zones de chasse favorites",
+      "items": [
+        "Zones favorites : l'étoile ☆ d'une zone de chasse l'ajoute en haut de la page Monde, dans la section « Favoris », quel que soit le filtre de niveaux (12 au plus). Merci SegFault",
+        "La fiche d'une zone a aussi son bouton « Ajouter aux favoris »"
+      ]
+    },
     {
       "v": "3.1.5",
       "name": "Ta tête et tes couleurs",

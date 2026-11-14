@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.1.6 « Zones de chasse favorites »
+- Idée Discord de SegFault : étoile ☆ sur chaque sous-zone (liste des régions, section Favoris, fiche de zone), section « ★ Favoris » en haut de la page Monde (carte et liste, tous filtres de niveaux). js/ui.js : `favPanel`, `subRow`, `favBtn`, action `favzone` ; sauvegarde `S.favZones` (12 au plus), rien côté serveur.
+
 ## 3.1.5 « Ta tête et tes couleurs »
 - Ondwuin (ticket #199, 13/11) : changer de tête ou de couleurs ne faisait rien. Cause : js/ui.js `lookUrl`, une coiffe, une cape (hors ITEM_SKINS, soit presque toutes au-delà du niveau 50) ou un bouclier d'apparat fait dessiner le héros par DofusDB avec la tête et les couleurs d'origine. Corrigé : `c.lookPrio = "tete"` montre la tête et les couleurs (ces objets-là ne se voient pas) ; choix « Sur le héros » dans la fiche Apparence (`lookPrioHtml`, `lookBlockers`), mis tout seul quand on change de tête ou de couleurs (`lookPrioAuto`, avec un message). Fiche publique : `lp` (js/verify.js). css/style.css : les pastilles des palettes ne prennent plus le style des interrupteurs `.sw`. Test : tests/apparence_tete_ui.test.js.
 

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.5";
+const GAME_VERSION = "3.1.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.1.6", name: "Zones de chasse favorites", items: [
+    "Zones favorites : l'étoile ☆ d'une zone de chasse l'ajoute en haut de la page Monde, dans la section « Favoris », quel que soit le filtre de niveaux (12 au plus). Merci SegFault",
+    "La fiche d'une zone a aussi son bouton « Ajouter aux favoris »" ] },
   { v: "3.1.5", name: "Ta tête et tes couleurs", items: [
     "Changer de tête ou de couleurs marche à nouveau avec une coiffe ou une cape portée (signalé par Ondwuin)",
     "La plupart des coiffes et capes ne savent se dessiner qu'avec la tête et les couleurs d'origine : choisis « Ma tête et mes couleurs » ou « Mon objet » dans Héros › Apparence",
@@ -4633,7 +4636,7 @@ function zonePanel(z, tier = -1, open = false) {
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
     <div class="subrows">${subs.map((s) => subRow(s, best)).join("")}</div></section>`;
 }
-/* 3.1.2 : zones de chasse favorites (idée de SegFault) : une étoile sur chaque sous-zone, la section « Favoris » en haut de la carte */
+/* 3.1.6 : zones de chasse favorites (idée de SegFault) : une étoile sur chaque sous-zone, la section « Favoris » en haut de la carte */
 const FAV_MAX = 12;
 const favList = () => (Array.isArray(S.favZones) ? S.favZones : []).filter((id) => E.SUBS[id]);
 const isFav = (sid) => favList().includes(sid);
@@ -11793,7 +11796,7 @@ document.addEventListener("click", (ev) => {
     case "stophunt": msg(E.stopHunt(S)); break;
     case "navquit": { const q = navQuitKind(); if (q === "dg") { if (!(ui.navQuitAsk && Date.now() - ui.navQuitAsk < 5000)) { ui.navQuitAsk = Date.now(); renderNav(); return; } ui.navQuitAsk = 0; E.leaveDungeon(S); toast(S.hunting && S.sub ? `Donjon quitté : l'équipe reprend la chasse (${E.SUBS[S.sub].name}).` : "Donjon quitté."); } else if (q === "hunt") toast(E.stopHunt(S) || "L'équipe rentre au Havre-Sac."); break; }
     case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
-    case "favzone": { if (!E.SUBS[d.id]) return; const L = favList(); const k = L.indexOf(d.id); // 3.1.2 : zones favorites (sauvegardées dans la partie)
+    case "favzone": { if (!E.SUBS[d.id]) return; const L = favList(); const k = L.indexOf(d.id); // 3.1.6 : zones favorites (sauvegardées dans la partie)
       if (k >= 0) L.splice(k, 1); else { if (L.length >= FAV_MAX) { toast(`${FAV_MAX} favoris au plus : retire d'abord une zone.`); return; } L.push(d.id); }
       S.favZones = L; dirty = true; toast(k >= 0 ? `${E.SUBS[d.id].name} retirée des favoris.` : `${E.SUBS[d.id].name} ajoutée aux favoris : elle apparaît en haut de la carte.`); break; }
     case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
