@@ -8,6 +8,7 @@ const { api, norm, guildId } = require("./discord_api.js");
   let msgs = [], before = "";
   for (let i = 0; i < 5; i++) { const page = await api("GET", `/channels/${ch.id}/messages?limit=100${before}`); if (!page.length) break; msgs = msgs.concat(page); before = "&before=" + page[page.length - 1].id; }
   console.log(`#${ch.name} : ${msgs.length} messages lus, sondages : ${msgs.filter((x) => x.poll).map((x) => x.poll.question.text).slice(0, 5).join(" | ")}`);
+  msgs.forEach((x) => console.log(`  · ${x.timestamp.slice(0, 16)} ${x.author.username}${x.author.bot ? " (robot)" : ""} type ${x.type} poll ${!!x.poll} : ${(x.content || "").replace(/\n/g, " ").slice(0, 90)}`));
   const m = msgs.find((x) => x.poll && x.poll.question && x.poll.question.text.startsWith(q));
   if (!m) { console.log("Sondage introuvable"); return; }
   const counts = {}; ((m.poll.results && m.poll.results.answer_counts) || []).forEach((a) => (counts[a.id] = a.count));
