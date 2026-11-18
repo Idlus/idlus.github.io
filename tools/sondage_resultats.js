@@ -3,8 +3,11 @@ const { api, norm, guildId } = require("./discord_api.js");
 (async () => {
   const q = process.argv[2] || "", salon = process.argv[3] || "sondages";
   const gid = await guildId(); const chans = await api("GET", `/guilds/${gid}/channels`);
-  const ch = chans.find((c) => norm(c.name) === norm(salon) && c.type === 0);
-  const msgs = await api("GET", `/channels/${ch.id}/messages?limit=100`);
+  console.log("Salons proches :", chans.filter((c) => /sondage/i.test(norm(c.name))).map((c) => c.name + " (" + c.type + ")").join(", "));
+  const ch = chans.find((c) => norm(c.name) === norm(salon) && c.type === 0) || chans.find((c) => /sondage/i.test(norm(c.name)) && c.type === 0);
+  let msgs = [], before = "";
+  for (let i = 0; i < 5; i++) { const page = await api("GET", `/channels/${ch.id}/messages?limit=100${before}`); if (!page.length) break; msgs = msgs.concat(page); before = "&before=" + page[page.length - 1].id; }
+  console.log(`#${ch.name} : ${msgs.length} messages lus, sondages : ${msgs.filter((x) => x.poll).map((x) => x.poll.question.text).slice(0, 5).join(" | ")}`);
   const m = msgs.find((x) => x.poll && x.poll.question && x.poll.question.text.startsWith(q));
   if (!m) { console.log("Sondage introuvable"); return; }
   const counts = {}; ((m.poll.results && m.poll.results.answer_counts) || []).forEach((a) => (counts[a.id] = a.count));
