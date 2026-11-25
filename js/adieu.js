@@ -8,8 +8,8 @@
   "use strict";
   const E = root.ENGINE; if (!E || E.ADIEU) return;
   E.ADIEU = {
-    // Fenêtre de l'événement (heure de Paris) : du jeudi 26/11 à 20 h au jeudi 3/12 à 20 h. À décaler si la publication bouge.
-    from: Date.UTC(2026, 10, 26, 19, 0), to: Date.UTC(2026, 11, 3, 19, 0),
+    // Fenêtre de l'événement (heure de Paris) : du mercredi 25/11 à 11 h (dès la publication, choix de Mathis) au mercredi 2/12 à 12 h.
+    from: Date.UTC(2026, 10, 25, 10, 0), to: Date.UTC(2026, 11, 2, 11, 0),
     GOALS: [
       { id: "win", n: "Gagner 300 combats", goal: 300 },
       { id: "dungeon", n: "Finir 5 donjons", goal: 5 },
