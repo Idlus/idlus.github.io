@@ -15,7 +15,7 @@ La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvo
 - Page « Diablofus » (`js/relais.js`, `DX.pages.diablofus`) dans le rail PC, le menu complet, le menu du téléphone, Aide et la recherche ; bannière fermable sur l'accueil (`S.settings.relaisBanX`). Images dans `assets/relais/`.
 - Récompenses de Vétéran (2A, 3A+B) : Bronze (héros niv. 50) titre « Vétéran d'Idlus » + 300 Ogrines, Argent (niv. 200) ornement « Feuille d'Idlus » + 700, Or (stasis 6 ou 6 Dofus) auréole « Émeraude d'Idlus » + 1 500. `E.veteranOf` (`js/adieu.js`).
 - Code personnel (4A) : fonction record, mode `{ veteran: 1 }` : relit les parties validées des trois serveurs (`veteran_parties`), garde la meilleure, écrit `public.veterans` (`veteran_set`, palier jamais en baisse) et rend le code `IDLUS-XXXX-XXXX-XXXX`. Diablofus lit le palier avec `veteran_lookup(code)` (anon, palier et défi seulement). `supabase/relais.sql`.
-- Défi d'adieu (5C, `js/adieu.js`) : 7 jours (`E.ADIEU.from/to`), 5 objectifs comptés par `E.emit` ; réussi = `S.adieu.done`, lu par le serveur ; titre « Témoin du Dernier Portail » dans Diablofus.
+- Défi d'adieu (5C, `js/adieu.js`) : 14 jours (`E.ADIEU.from/to`), 5 objectifs comptés par `E.emit` ; réussi = `S.adieu.done`, lu par le serveur ; titre « Témoin du Dernier Portail » dans Diablofus.
 - Annonce (6A) : mode entretien annoncé dès l'ouverture du défi.
 - Tests : `tests/adieu.test.js`.
 

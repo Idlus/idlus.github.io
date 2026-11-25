@@ -4,7 +4,7 @@
    - Récompenses de Vétéran (2A, 3A+B) : 3 paliers ; chaque palier donne un cosmétique ET des Ogrines dans Diablofus.
    - Code personnel (4A) : calculé par le serveur (fonction record, mode « veteran », supabase/relais.sql) ; à coller dans
      Diablofus › Options › Compte › Code cadeau. Le même code donne la suite quand le palier monte.
-   - Défi d'adieu (5C) : 7 jours, 5 objectifs (js/adieu.js).
+   - Défi d'adieu (5C) : 14 jours, 5 objectifs (js/adieu.js).
    ========================================================================== */
 (function (root) {
   "use strict";
@@ -48,12 +48,12 @@
   }
   function adieuHtml(s) {
     const A = E().ADIEU, ph = E().adieuPhase(), now = E().now();
-    const head = `<div><h2>Défi d'adieu</h2><div class="sub">${ph === "avant" ? `Du ${h(quand(A.from))} au ${h(quand(A.to))} · 5 objectifs` : ph === "en cours" ? `7 jours · 5 objectifs · encore ${reste(A.to - now)}` : "Terminé"}</div></div>`;
+    const head = `<div><h2>Défi d'adieu</h2><div class="sub">${ph === "avant" ? `Du ${h(quand(A.from))} au ${h(quand(A.to))} · 5 objectifs` : ph === "en cours" ? `14 jours · 5 objectifs · encore ${reste(A.to - now)}` : "Terminé"}</div></div>`;
     const L = E().adieuList(s), n = L.filter((o) => o.done).length;
     const list = `<div class="rx-obj">${L.map((o) => `<div><span class="ck ${o.done ? "on" : ""}" aria-hidden="true">${o.done ? "✓" : "·"}</span><span class="grow">${h(o.name)}</span><span class="xs">${nf(o.v)} / ${nf(o.goal)}</span></div>`).join("")}</div>`;
     const done = E().adieuDone(s);
     const foot = `<div class="rx-rw">${'<span class="ic" aria-hidden="true">🏷️</span>'}<span><small>Récompense Diablofus (${n} / 5)</small><span class="rx-title">${h(A.TITLE)}</span></span>${done ? '<span class="rx-st on">Réussi</span>' : ""}</div>`;
-    const note = ph === "avant" ? "Les objectifs se comptent seulement pendant les 7 jours, sur la partie que tu joues." : ph === "en cours" ? "Comptés sur la partie que tu joues. Après le défi, Idlus passe en mode entretien : le jeu reste en ligne et tes sauvegardes sont gardées." : "Merci d'avoir joué ! Idlus reste en ligne, en mode entretien.";
+    const note = ph === "avant" ? "Les objectifs se comptent seulement pendant les 14 jours, sur la partie que tu joues." : ph === "en cours" ? "Comptés sur la partie que tu joues. Après le défi, Idlus passe en mode entretien : le jeu reste en ligne et tes sauvegardes sont gardées." : "Merci d'avoir joué ! Idlus reste en ligne, en mode entretien.";
     return `<section class="rx-ev" id="rx-ev">${head}${list}${foot}<p class="sub">${h(note)}</p></section>`;
   }
   function codeHtml() {

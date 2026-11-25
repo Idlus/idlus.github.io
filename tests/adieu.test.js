@@ -1,4 +1,4 @@
-/* 3.2 « Passage de relais vers Diablofus » (js/adieu.js) : Défi d'adieu (5 objectifs comptés seulement pendant les 7 jours)
+/* 3.2 « Passage de relais vers Diablofus » (js/adieu.js) : Défi d'adieu (5 objectifs comptés seulement pendant les 14 jours)
    et palier de Vétéran d'une partie (2A). Lancer : node tests/adieu.test.js */
 "use strict";
 const assert = require("assert");
@@ -25,4 +25,4 @@ S3.chars[0].lvl = 200; assert.strictEqual(E.veteranOf(S3).palier, 2);
 S3.stasis = { x: { max: 6 } }; assert.strictEqual(E.veteranOf(S3).palier, 3);
 // la partie garde le défi (sérialisation)
 const back = E.deserialize(E.serialize ? E.serialize(S) : JSON.stringify(S)); assert.ok(E.adieuDone(back), "S.adieu survit à la sauvegarde");
-console.log("ok - Défi d'adieu (fenêtre de 7 jours, 5 objectifs) et paliers de Vétéran");
+console.log("ok - Défi d'adieu (fenêtre de 14 jours, 5 objectifs) et paliers de Vétéran");

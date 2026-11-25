@@ -1,6 +1,6 @@
 /* ============================================================================
    DÉFI D'ADIEU — passage de relais vers Diablofus (Mathis 25/11/2026, maquette « Relais vers Diablofus », choix 5C) :
-   7 jours, 5 objectifs personnels comptés par les événements du jeu (E.emit), pour tout le monde et sur les trois serveurs.
+   14 jours, 5 objectifs personnels comptés par les événements du jeu (E.emit), pour tout le monde et sur les trois serveurs.
    Les 5 faits : titre « Témoin du Dernier Portail » dans Diablofus (le serveur lit S.adieu.done dans la partie validée,
    supabase/functions/record, mode « veteran »). Pas de DOM ici (chargé aussi par les tests). Page : js/relais.js.
    ========================================================================== */
@@ -8,8 +8,8 @@
   "use strict";
   const E = root.ENGINE; if (!E || E.ADIEU) return;
   E.ADIEU = {
-    // Fenêtre de l'événement (heure de Paris) : du mercredi 25/11 à 11 h (dès la publication, choix de Mathis) au mercredi 2/12 à 12 h.
-    from: Date.UTC(2026, 10, 25, 10, 0), to: Date.UTC(2026, 11, 2, 11, 0),
+    // Fenêtre de l'événement (heure de Paris) : du mercredi 25/11 à 11 h (dès la publication, choix de Mathis) au mercredi 9/12 à 12 h (14 jours, Mathis « plus long »).
+    from: Date.UTC(2026, 10, 25, 10, 0), to: Date.UTC(2026, 11, 9, 11, 0),
     GOALS: [
       { id: "win", n: "Gagner 300 combats", goal: 300 },
       { id: "dungeon", n: "Finir 5 donjons", goal: 5 },
