@@ -483,6 +483,8 @@
 @container v3m (max-width:600px){.fp-hero{grid-template-columns:96px minmax(0,1fr);padding:8px 10px;gap:10px}.fp-lk{height:110px}.fp-lk .fp-look{max-height:110px;max-width:96px}}
 @container v3m (max-width:600px){.dfcard{margin:12px 8px 4px}.dfcard small{font-size:12px}}
 @container v3m (max-width:700px){.recyfam{grid-template-columns:1fr}}
+@container v3m (max-width:700px){.rx-3,.rx-tiers{grid-template-columns:1fr}.rx-hero{min-height:210px}
+  .rx-ban{flex-wrap:wrap;gap:6px 10px;padding:10px 12px}.rx-ban img.l{height:30px}.rx-ban .rx-bt{flex:1 1 100%;order:2;padding-right:0}.rx-ban .rx-go{order:3;flex:1;text-align:center}.rx-ban .rx-x{position:absolute;top:6px;right:8px}.rx-ban b{font-size:16px}.rx-ban small{font-size:12px}}
 @container v3m (max-width:859px){.qj-lay{grid-template-columns:1fr}
   .qj-journal{display:none}
   .qj-m{display:grid;gap:8px}}

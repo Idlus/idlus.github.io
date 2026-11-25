@@ -6,6 +6,8 @@ Légende : **[fait]** vérifié dans le code ou les relevés du serveur, **[hyp.
 
 *Dernière mise à jour : 22/10/2026 (soir), version en ligne 2.1.39.1.*
 
+> **25/11/2026 : fin du développement actif.** Mathis clôt Idlus pour se consacrer à Diablofus (22/11). Version 3.2.0 « Idlus passe le relais » (choix 1A 2A 3A+B 4A 5C 6A) : page Diablofus, récompenses de Vétéran dans Diablofus (3 paliers calculés par le serveur, code personnel), Défi d'adieu de 7 jours, puis **mode entretien** : jeu en ligne sur les trois serveurs, sauvegardes gardées, seulement les bugs graves. Mesure du résultat : nombre de codes entrés dans Diablofus (`veteran_stats()` côté Idlus, `idlus_veterans` côté Diablofus). Les sections ci-dessous décrivent l'état d'octobre.
+
 ## 1. Objectif
 
 - Un jeu navigateur idle / autobattler inspiré de DOFUS, agréable, techniquement fiable, et à terme économiquement rentable.

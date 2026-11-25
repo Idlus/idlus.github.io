@@ -16,7 +16,7 @@ for (const m of navSrc.matchAll(/n: "([^"]+)", ic: [^,]+, pages: ([^\n]+)/g)) GR
 assert.deepStrictEqual(Object.keys(GROUPS), ["Aventure", "Héros", "Économie", "Joueurs", "Journal"], "les 5 familles du menu (2.1.40) sont lues");
 // 2.1.40 : le bouton Aide (NAV_HELP) et, en Monocompte, l'entrée Saison (pages posées par monoNav0 et js/monoplusui.js)
 { const hs = ui.slice(ui.indexOf("const NAV_HELP = ["), ui.indexOf(";", ui.indexOf("const NAV_HELP = ["))); GROUPS.Aide = [...hs.matchAll(/\["[a-z]+", "([^"]+)"/g)].map((x) => x[1]); }
-assert.deepStrictEqual(GROUPS.Aide, ["Guide", "Suggestions", "Signaler un bug"], "le bouton Aide est lu");
+assert.deepStrictEqual(GROUPS.Aide, ["Diablofus", "Guide", "Suggestions", "Signaler un bug"], "le bouton Aide est lu"); // 3.2.0 : page Diablofus (passage de relais)
 GROUPS.Saison = ["Pass de saison", "Carnet des Fragments", "Défi de la manche", "Guerre et Boss de saison", "Boutique temporelle", "Classements de saison", "Mutation de la semaine", "Serment de fer", "Bilan de saison", "Éternel", "Boutique d'Archives"];
 GROUPS.Aventure.push("Combat"); // bouton Combat à part (barre du bas du téléphone)
 // les onglets de la fiche d'un héros s'écrivent « Héros › Sorts » : la barre du bas du téléphone a un bouton Héros

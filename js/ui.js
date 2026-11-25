@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.11";
+const GAME_VERSION = "3.2.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.2.0", name: "Idlus passe le relais à Diablofus", items: [
+    "Nouvelle page Diablofus (menu, Aide, recherche) et une bannière sur l'accueil : le nouveau jeu du créateur d'Idlus, un action-RPG en temps réel, gratuit sur PC",
+    "Récompenses de Vétéran : 3 paliers selon ta progression, tous serveurs confondus (Bronze : un héros niveau 50 ; Argent : niveau 200 ; Or : stasis 6 ou 6 Dofus). Chaque palier donne dans Diablofus un cosmétique (titre, ornement de nom, auréole) et des Ogrines (300, 700, 1 500)",
+    "Ton code personnel se trouve sur la page Diablofus : à coller dans Diablofus › Options › Compte › Code cadeau. Le palier est calculé par le serveur ; si tu montes plus tard, le même code donne la suite",
+    "Défi d'adieu, 7 jours : 5 objectifs (combats, donjons, boss, coffres, visite de la page) pour le titre « Témoin du Dernier Portail » dans Diablofus",
+    "Après le Défi d'adieu, Idlus passe en mode entretien : le jeu reste en ligne sur ses trois serveurs, tes sauvegardes sont gardées et les bugs graves seront corrigés" ] },
   { v: "3.1.11", name: "Objet suivi sans cadenas", items: [
     "L'objet suivi obtenu n'est plus verrouillé : il reste protégé du tri automatique et du Recycleur, mais tu peux le briser, le vendre ou l'échanger sans enlever de cadenas (merci SegFault)",
     "Les objets déjà verrouillés par la 3.1.4 gardent leur cadenas : un clic sur le cadenas l'enlève" ] },
@@ -3365,7 +3371,7 @@ const NAV = [
   { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
 ];
 /* bouton Aide (bas du menu, Menu du téléphone) : pages hors des familles, toujours trouvées par la recherche ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js */
-const NAV_HELP = [["guide", "Guide", "almanax"], ["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]];
+const NAV_HELP = [["diablofus", "Diablofus", "diablofus"], ["guide", "Guide", "almanax"], ["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]];
 /* Monocompte : le Pass de saison (js/monopassui.js) et les pages de la saison forment l'entrée Saison (monoNav0) */
 /* 22/10 (Mathis, « 1A » : rien du Classique en Monocompte, même en lecture) : le menu ne garde que les pages de la liste blanche
    E.MONO.PAGES (js/mono.js) et les modules du Classique sont éteints pour cette page (changer de partie recharge la page) */
@@ -3403,7 +3409,7 @@ const SEASON_GRP = [["Progression", ["pass", "fragments"]], ["Défis", ["manche"
 const seasonGroups = () => SEASON_GRP.map(([n, L]) => [n, L.filter((k) => navPage(k))]).filter(([, L]) => L.length);
 const seasonName = () => (S && S.mono ? (E.monoEternal(S) ? "Éternel" : E.monoSeasonDef(S.mono.s).nom) : "Saison");
 /* une ligne par page pour la recherche et le mode icônes */
-const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", chev: "Saison 1 : les 4 Cavaliers à la suite, 3 essais par semaine", xs1: "Saison 1 : 3 expéditions par manche, règles et classement", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", garde: "Auras, boucliers, compagnons, décors, titres et couleurs", album: "Une carte par boss de donjon, boosters de saison", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", tour: "5 équipes par guilde, tableau le samedi, finale le dimanche", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les builds des joueurs : vrais jets, exos et sorts", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", vote: "Un vote par heure : Sablier et kamas", admin: "Le panneau de Xener" };
+const NAV_DESC = { diablofus: "Le nouveau jeu du créateur : tes récompenses de Vétéran et le Défi d'adieu", home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", align: "Bonta ou Brâkmar : honneur, rangs, régions, Arsenal", wb: "Un boss pour tout le serveur", chev: "Saison 1 : les 4 Cavaliers à la suite, 3 essais par semaine", xs1: "Saison 1 : 3 expéditions par manche, règles et classement", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", garde: "Auras, boucliers, compagnons, décors, titres et couleurs", album: "Une carte par boss de donjon, boosters de saison", maitrise: "Arbre de Maîtrise après le niveau 200 et Bestiaire", grav: "Graver l'équipement avec des runes et des kamas", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guide: "Le détail de chaque fonctionnalité", guild: "Ta guilde et ton alliance", tour: "5 équipes par guilde, tableau le samedi, finale le dimanche", amis: "Tes amis, leurs invitations et leurs renforts", ladder: "Les meilleurs du serveur", builds: "Les builds des joueurs : vrais jets, exos et sorts", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", archis: "Les âmes capturées et la quête du Dofus Ocre", vote: "Un vote par heure : Sablier et kamas", admin: "Le panneau de Xener" };
 const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"], forge: ["grav"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes ; 2.1.40 : Gravure dans Forgemagie ; 2.2.3.4 : Builds redevient une page du menu (Mathis : « mettre en valeur l'onglet build »)
 /* 2.1.4 (Mathis) : des fenêtres qu'on peut épingler comme une page ; elles s'ouvrent par-dessus la page affichée */
 const NAV_SHEETS = { archis: [["archis", "Album des archimonstres", "dofus"], () => archiSheet()] };
@@ -3616,12 +3622,12 @@ function renderNav() {
   const fb = (key, n, ic, on, b, cls) => `<button class="${cls || ""}" data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""} title="${h(NAV_DESC[key] || n)}">${icon(ic)}<span class="sn-l">${h(n)}</span>${b || ""}</button>`;
   const sideFull = `<div class="sn-side sn-full"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""> idlus</button><button class="sn-mini" data-act="navall" aria-pressed="true" title="Menu réduit : revenir au menu en icônes" aria-label="Menu réduit">«</button></div>
       <div class="sn-frow"><button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span class="sn-l">Combat<small id="navlive"${live ? "" : " hidden"}>${h(live)}</small></span></button>${navQuitBtn()}</div>
-      ${fb("home", "Havre-Sac", "logo", k === "home" && !fight)}
+      ${fb("home", "Havre-Sac", "logo", k === "home" && !fight)}${fb("diablofus", "Diablofus", "diablofus", k === "diablofus" && !fight)}
       ${NAV.map((F) => `<div class="sn-g">${h(F.season ? seasonName() : F.n)}</div>${navFamPages(F).map((p) => fb(p[0], p[1], p[2], !fight && (k === p[0] || kk === p[0]), badge(p[0]))).join("")}`).join("")}${window.V3 && window.V3.lockHtml("full") ? `<div class="sn-g">Bientôt</div>${window.V3.lockHtml("full")}` : ""}
       <span class="sn-grow"></span><div class="sn-g">Aide et réglages</div>
       <button data-act="options">${G("gear")}<span class="sn-l">Options</span></button><button data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b><span class="sn-l">Aide</span></button></div>`;
   const side = full ? sideFull : `<div class="sn-side sn-rail"><button class="rl-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button>
-      ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea", SEA.id) : ""}<i class="rl-sep"></i>
+      ${rlFight}${rl("home", "Havre-Sac", "logo", k === "home" && !fight)}${SEA ? rl(famPage(SEA), SEA.n === "Saison" ? seasonName() : SEA.n, SEA.ic, seaOn, famBadge(SEA), "rl-sea", SEA.id) : ""}${rl("diablofus", "Diablofus", "diablofus", k === "diablofus" && !fight, "", "rl-df")}<i class="rl-sep"></i>
       ${NAV.filter((F) => !F.season).map((F) => rl(famPage(F), F.n, F.ic, !fight && k !== "home" && curFam === F, famBadge(F), "", F.id)).join("")}${window.V3 ? window.V3.lockHtml("rail") : ""}
       <span class="sn-grow"></span>${rlFoot}</div>`;
   if (curFam && !fight && k !== "home") { if (!ui.famLast) ui.famLast = {}; ui.famLast[curFam.id] = kk; }
@@ -3711,6 +3717,7 @@ function navMenuSheet() {
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
       : navFullOn() ? `${NAV.map((F) => `<h3>${icon(F.ic)} ${h(F.season ? seasonName() : F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`
       : `${SEA ? ft(SEA, "sea") : ""}<div class="ns-fams">${NAV.filter((F) => !F.season).map((F) => ft(F)).join("")}${window.V3 ? window.V3.lockHtml("sheet") : ""}</div>${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles ns-pins">${pins.map(tile).join("")}</div>` : ""}`}
+    ${q ? "" : `<button class="ns-df${k === "diablofus" ? " cur" : ""}" data-act="nav" data-v="diablofus" data-nk="diablofus">${med("diablofus")}<span><b>Diablofus</b><small>${h(NAV_DESC.diablofus)}</small></span><i class="chev">›</i></button>`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="navhelp"><b class="sn-gq" aria-hidden="true">?</b> Aide</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* 2.2.14.18 « Ombrelune Studio » (Mathis 5A + 5C) : signature du studio et carte « Découvre aussi Diablofus » */
@@ -3727,7 +3734,7 @@ function helpSheet() {
     ${row('data-act="nav" data-v="sugg"', med("idee"), "Suggestions", h(NAV_DESC.sugg))}
     ${row('data-act="nav" data-v="bug"', med("bug"), "Signaler un bug", h(NAV_DESC.bug))}
     <a class="hp-row" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow"><b>Discord idlus</b><small>Annonces, aide, builds et idées</small></span><i class="chev">›</i></a>
-    <a class="hp-row" href="${DIABLOFUS_URL}" target="_blank" rel="noopener"><img class="med" src="assets/ui/diablofus.webp" alt=""><span class="grow"><b>Diablofus</b><small>L'action-RPG du même studio, sur PC</small></span><i class="chev">›</i></a>
+    <button class="hp-row" data-act="nav" data-v="diablofus"><img class="med" src="assets/ui/diablofus.webp" alt=""><span class="grow"><b>Diablofus</b><small>Récompenses de Vétéran et Défi d'adieu</small></span><i class="chev">›</i></button>
     <div class="row" style="justify-content:center">${studioSign()}</div>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
@@ -4088,7 +4095,7 @@ function consHtml() {
 }
 /* soft = rafraîchissement automatique de la boucle (toutes les 3 s) : mise à jour ciblée (morphTo) au lieu de tout redessiner */
 function renderHome(soft) {
-  const html = homeHtml() + (ui.home !== "havre" && ui.home !== "expe" ? `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>` + (window.VOTE ? window.VOTE.line() : "") : ""); // 02/11 : vote sur Dofus Fan Games (js/vote.js)
+  const html = (ui.home !== "havre" && ui.home !== "expe" && window.RELAIS ? window.RELAIS.banner() : "") + homeHtml() + (ui.home !== "havre" && ui.home !== "expe" ? `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>` + (window.VOTE ? window.VOTE.line() : "") : ""); // 02/11 : vote sur Dofus Fan Games (js/vote.js)
   if (soft) morphTo($("#main"), html); else $("#main").innerHTML = html;
 }
 /* 0.1.42 « Accueil du jour » : bandeau (zone, rendement, têtes des héros), zone conseillée, tuiles « Aujourd'hui »,

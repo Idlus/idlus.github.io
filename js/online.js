@@ -403,6 +403,16 @@
     if (!sb || !ON.user) return null;
     try { const { data } = await withTimeout(sb.functions.invoke("record", { body: s1b({ verif: 1 }) }), 10000); return data || null; } catch (e) { return null; }
   };
+  /* Passage de relais vers Diablofus (25/11/2026, 4A) : palier de Vétéran calculé par le serveur sur les parties validées
+     des trois serveurs, et code personnel à entrer dans Diablofus (js/relais.js, supabase/relais.sql). */
+  ON.veteran = async () => {
+    if (!sb || !ON.user) return { ok: false, err: "non connecté" };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { veteran: 1 } }), 30000);
+      if (error) { let b = null; try { b = await error.context.json(); } catch (e) {} return b || { ok: false, err: "serveur indisponible" }; }
+      return data || { ok: false, err: "serveur indisponible" };
+    } catch (e) { return { ok: false, err: "serveur indisponible" }; }
+  };
   /* ---------- classements (étape 3) ---------- */
   // partie Classique · Saison 1 : les modules qui lisent par ON.db().from / .rpc visent aussi l'espace de saison
   let s1db = null;

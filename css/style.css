@@ -6742,3 +6742,61 @@ body.kbd nav.main,body.kbd .mfstrip,body.kbd #backchip,body.kbd .dropbn,body.kbd
 .recyconf{display:grid;gap:8px;padding:12px;border-radius:12px;border:2px solid #e2675a;background:color-mix(in srgb,#e2675a 10%,transparent)}
 .recysplit{display:flex;gap:6px;flex-wrap:wrap}.recyprec{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
 .recypi{display:flex;gap:8px;align-items:center}.recypi .itile{width:52px;height:52px;flex:none}
+
+/* 3.2 « Passage de relais vers Diablofus » (Mathis 25/11/2026, 1A 2A 3A+B 4A 5C) : bannière d'accueil, page Diablofus (js/relais.js) */
+.rx-ban{display:flex;align-items:center;gap:14px;padding:12px 16px;margin:0 0 14px;border-radius:16px;color:#fbf3e6;background:linear-gradient(105deg,rgba(20,6,2,.92),rgba(84,24,8,.8) 55%,rgba(150,52,14,.6)),url(../assets/relais/d-4-boss.webp) center/cover;border:2px solid #e07a2c;box-shadow:0 6px 18px rgba(0,0,0,.3);position:relative}
+.rx-ban img.l{height:46px;width:auto;flex:none}
+.rx-ban .rx-bt{flex:1;min-width:0}
+.rx-ban b{display:block;font-family:var(--font-title);font-weight:400;font-size:19px;color:#ffd07a;line-height:1.2}
+.rx-ban small{display:block;font-size:13px;color:#f2d9c2}
+.rx-x{flex:none;border:0;background:transparent;color:#f2d9c2;opacity:.7;font-size:17px;cursor:pointer;padding:2px 6px;border-radius:8px}
+.rx-x:hover{opacity:1}
+.rx-go{flex:none;display:inline-block;font:inherit;font-weight:900;background:linear-gradient(#d6f56f,#a2d332);color:#1b2a05;border-radius:10px;padding:8px 14px;box-shadow:0 3px 0 #5d7d14;border:0;white-space:nowrap;cursor:pointer;text-decoration:none}
+.rx-go:hover{filter:brightness(1.06)}
+.rx-pg{display:grid;gap:14px}
+.rx-hero{position:relative;border-radius:18px;overflow:hidden;border:3px solid #e07a2c;min-height:250px;display:grid;align-content:end;padding:18px;background:linear-gradient(180deg,rgba(10,4,2,.1),rgba(16,5,2,.92) 78%),url(../assets/relais/d-4-boss.webp) center/cover}
+.rx-hero img.l{width:min(330px,70%);height:auto;filter:drop-shadow(0 4px 10px #000)}
+.rx-hero p{color:#f6e4cf;margin:6px 0 12px;max-width:560px;font-size:15px}
+.rx-hero .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.rx-url{color:#f2d9c2;font-size:13px}
+.rx-tag{position:absolute;top:12px;right:12px;background:#ffd07a;color:#3a1206;font-weight:900;font-size:12px;border-radius:99px;padding:3px 10px}
+.rx-sec{background:var(--panel);border:2px solid var(--frame);border-radius:16px;padding:14px 16px;display:grid;gap:10px}
+.rx-sec h2{font-size:21px}
+.rx-sec .sub{color:var(--muted);font-size:13.5px;margin-top:-4px}
+.rx-sec .row{display:flex;gap:10px;flex-wrap:wrap}
+.rx-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rx-c{background:var(--panel2);border-radius:12px;overflow:hidden;display:grid}
+.rx-c img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.rx-c div{padding:8px 10px;font-size:13px}.rx-c b{display:block;font-size:14px}
+.rx-tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rx-t{background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:6px;align-content:start}
+.rx-t.ok{border-color:var(--action)}
+.rx-t .h{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.rx-t .h b{font-family:var(--font-title);font-weight:400;font-size:17px;color:var(--title)}
+.rx-st{font-size:11.5px;font-weight:900;border-radius:99px;padding:2px 8px;background:var(--panel3);color:var(--muted);white-space:nowrap}
+.rx-t.ok .rx-st,.rx-st.on{background:var(--action);color:var(--action-ink)}
+.rx-crit{font-size:13px;color:var(--muted);margin:0}
+.rx-bar{height:8px;border-radius:99px;background:var(--hp-bg);overflow:hidden}.rx-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--action2),var(--action))}
+.rx-rw{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.rx-rw small{display:block;font-size:11.5px;color:var(--muted)}
+.rx-rw .ic{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--panel3);font-size:16px}
+.rx-title{font-weight:900;color:#ffd07a;background:#2a1208;border:1px solid #e07a2c;border-radius:6px;padding:0 6px;font-size:12.5px}
+.rx-orn{font-weight:900;background:linear-gradient(90deg,#8fdc6a,#e2f5ae,#6fbf4a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rx-aur{flex:none;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,transparent 42%,#8fdc6a 46%,#b3e05c 56%,transparent 64%);box-shadow:0 0 10px #8fdc6a}
+.rx-og{color:#4a9fe0;font-weight:900}
+:root[data-theme="dark"] .rx-og,:root[data-theme="emerald"] .rx-og{color:#7cc7ff}
+.rx-code{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rx-code code{font:900 19px/1 var(--font-body);letter-spacing:1.5px;background:var(--panel3);border:2px dashed var(--gold);border-radius:10px;padding:10px 14px;color:var(--title);user-select:all;word-break:break-all}
+.rx-steps{margin:0;padding-left:20px;display:grid;gap:3px;font-size:13.5px}
+.rx-ev{border-radius:16px;border:3px solid #9b4dff;background:linear-gradient(160deg,#1d0f2e,#120a1c 60%,#0d100b);padding:14px 16px;display:grid;gap:10px;color:#f1e8ff}
+.rx-ev h2{color:#e3c8ff;font-size:22px;text-shadow:0 2px 0 rgba(0,0,0,.6)}
+.rx-ev .sub{color:#c7b2e6;font-size:13.5px;margin:0}
+.rx-ev .rx-rw small{color:#c7b2e6}
+.rx-obj{display:grid;gap:6px}.rx-obj div{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.06);border-radius:10px;padding:7px 10px;font-size:13.5px}
+.rx-obj .ck{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;background:rgba(255,255,255,.12);font-size:12px;flex:none}.rx-obj .ck.on{background:#8fdc6a;color:#13200a}
+.ns-df{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 0;padding:9px 12px;border-radius:14px;border:2px solid #e07a2c;background:linear-gradient(110deg,#3a1206,#6b2310 55%,#a33a12);color:#fbf3e6;font:inherit;text-align:left;cursor:pointer}
+.ns-df b{display:block;color:#ffd07a}.ns-df small{display:block;font-size:12px;color:#f2d9c2}.ns-df>span{flex:1;min-width:0}
+@media (max-width:700px){
+  .rx-3,.rx-tiers{grid-template-columns:1fr}.rx-hero{min-height:210px}
+  .rx-ban{flex-wrap:wrap;gap:6px 10px;padding:10px 12px}.rx-ban img.l{height:30px}.rx-ban .rx-bt{flex:1 1 100%;order:2;padding-right:0}.rx-ban .rx-go{order:3;flex:1;text-align:center}.rx-ban .rx-x{position:absolute;top:6px;right:8px}.rx-ban b{font-size:16px}.rx-ban small{font-size:12px}
+}

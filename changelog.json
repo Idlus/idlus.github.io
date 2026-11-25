@@ -1,6 +1,17 @@
 {
-  "version": "3.1.11",
+  "version": "3.2.0",
   "versions": [
+    {
+      "v": "3.2.0",
+      "name": "Idlus passe le relais à Diablofus",
+      "items": [
+        "Nouvelle page Diablofus (menu, Aide, recherche) et une bannière sur l'accueil : le nouveau jeu du créateur d'Idlus, un action-RPG en temps réel, gratuit sur PC",
+        "Récompenses de Vétéran : 3 paliers selon ta progression, tous serveurs confondus (Bronze : un héros niveau 50 ; Argent : niveau 200 ; Or : stasis 6 ou 6 Dofus). Chaque palier donne dans Diablofus un cosmétique (titre, ornement de nom, auréole) et des Ogrines (300, 700, 1 500)",
+        "Ton code personnel se trouve sur la page Diablofus : à coller dans Diablofus › Options › Compte › Code cadeau. Le palier est calculé par le serveur ; si tu montes plus tard, le même code donne la suite",
+        "Défi d'adieu, 7 jours : 5 objectifs (combats, donjons, boss, coffres, visite de la page) pour le titre « Témoin du Dernier Portail » dans Diablofus",
+        "Après le Défi d'adieu, Idlus passe en mode entretien : le jeu reste en ligne sur ses trois serveurs, tes sauvegardes sont gardées et les bugs graves seront corrigés"
+      ]
+    },
     {
       "v": "3.1.11",
       "name": "Objet suivi sans cadenas",

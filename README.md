@@ -10,6 +10,15 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
 
+## 3.2.0 « Idlus passe le relais à Diablofus »
+- Demande de Mathis (22/11) : clore le développement d'Idlus pour se consacrer à Diablofus. Maquette « Relais vers Diablofus », choix du 25/11 : 1A 2A 3A+B 4A 5C 6A.
+- Page « Diablofus » (`js/relais.js`, `DX.pages.diablofus`) dans le rail PC, le menu complet, le menu du téléphone, Aide et la recherche ; bannière fermable sur l'accueil (`S.settings.relaisBanX`). Images dans `assets/relais/`.
+- Récompenses de Vétéran (2A, 3A+B) : Bronze (héros niv. 50) titre « Vétéran d'Idlus » + 300 Ogrines, Argent (niv. 200) ornement « Feuille d'Idlus » + 700, Or (stasis 6 ou 6 Dofus) auréole « Émeraude d'Idlus » + 1 500. `E.veteranOf` (`js/adieu.js`).
+- Code personnel (4A) : fonction record, mode `{ veteran: 1 }` : relit les parties validées des trois serveurs (`veteran_parties`), garde la meilleure, écrit `public.veterans` (`veteran_set`, palier jamais en baisse) et rend le code `IDLUS-XXXX-XXXX-XXXX`. Diablofus lit le palier avec `veteran_lookup(code)` (anon, palier et défi seulement). `supabase/relais.sql`.
+- Défi d'adieu (5C, `js/adieu.js`) : 7 jours (`E.ADIEU.from/to`), 5 objectifs comptés par `E.emit` ; réussi = `S.adieu.done`, lu par le serveur ; titre « Témoin du Dernier Portail » dans Diablofus.
+- Annonce (6A) : mode entretien annoncé dès l'ouverture du défi.
+- Tests : `tests/adieu.test.js`.
+
 ## 3.1.11 « Objet suivi sans cadenas »
 - Retour Discord de SegFault (14/11) : le cadenas automatique de la 3.1.4 était pénible. js/engine.js : l'objet suivi obtenu reçoit `it.suivi = 1` au lieu de `locked` ; `E.applyAuto` et `E.recySafe` (Recycleur automatique et en lot) le gardent ; vente, bris et échange à la main restent libres. Tests : tests/drops2.test.js, tests/objet_suivi_ui.test.js.
 

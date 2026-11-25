@@ -54,11 +54,12 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { saison?: number; push?: any; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string; tournoi?: any } = {};
+  let body: { veteran?: number; saison?: number; push?: any; verif?: number; did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string; tournoi?: any } = {};
   try { body = await readBody(req); } catch (_) { /* corps vide */ }
   /* Saison 1, lot 0b : partie Classique · Saison 1 (saison: 1) : tout ce que la fonction lit et écrit est dans l'espace « s1 »
      (supabase/saison1.sql), sauf le compte et ce qui reste commun (profils, chat, admins, codes cadeaux). */
   const db = body.saison === 1 ? seasonDb(db0) : db0;
+  if (body.veteran) return veteran(db0, user.id);
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));
@@ -657,4 +658,27 @@ async function validate(db: any, uid: string, force: boolean): Promise<Record<st
 async function okSave(db: any, uid: string) {
   try { await validate(db, uid, true); } catch (_) { /* on garde la partie validée d'avant */ }
   return db.from("saves_ok").select("data").eq("user_id", uid).maybeSingle();
+}
+
+/* Passage de relais vers Diablofus (25/11/2026, choix 2A 4A 5C) : le palier de Vétéran se calcule ICI, sur les parties validées
+   du compte (Éternel, Saison 1, Monocompte ; la meilleure compte), jamais sur ce que le jeu annonce. Le Défi d'adieu réussi
+   est lu dans les mêmes parties. Rend le code personnel à entrer dans Diablofus (supabase/relais.sql). */
+// deno-lint-ignore no-explicit-any
+async function veteran(db: any, uid: string) {
+  const now = Date.now();
+  if (now - (lastTry.get(uid + ":vet") || 0) < 20000) return json({ ok: false, err: "trop tôt", retry: 20 }, 429);
+  lastTry.set(uid + ":vet", now);
+  const { data: rows, error } = await db.rpc("veteran_parties", { p_user: uid });
+  if (error) return json({ ok: false, err: "serveur indisponible" }, 500);
+  let best = { palier: 0, lvl: 1, dof: 0, stz: 0, srv: "" }, adieu = false;
+  for (const r of (rows || []) as { srv: string; data: string }[]) {
+    try {
+      const S = E.deserialize(r.data); E.events.length = 0;
+      const v = E.veteranOf(S); if (v.adieu) adieu = true;
+      if (v.palier > best.palier || (v.palier === best.palier && v.lvl > best.lvl)) best = { palier: v.palier, lvl: v.lvl, dof: v.dof, stz: v.stz, srv: r.srv };
+    } catch (_) { /* partie illisible : ignorée */ }
+  }
+  const { data: out, error: e2 } = await db.rpc("veteran_set", { p_user: uid, p_palier: best.palier, p_adieu: adieu, p_detail: best });
+  if (e2 || !out) return json({ ok: false, err: "serveur indisponible" }, 500);
+  return json({ ok: true, code: out.code, palier: out.palier, adieu: out.adieu, parties: (rows || []).length, best });
 }
