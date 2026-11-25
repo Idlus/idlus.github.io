@@ -21,14 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.2.0";
+const GAME_VERSION = "3.2.0.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.2.0.1", name: "Défi d'adieu relevé", items: [
+    "Défi d'adieu : objectifs doublés (600 combats, 10 donjons, 40 boss, 6 coffres et la visite de la page Diablofus), jusqu'au mercredi 2 décembre à 12 h" ] },
   { v: "3.2.0", name: "Idlus passe le relais à Diablofus", items: [
     "Nouvelle page Diablofus (menu, Aide, recherche) et une bannière sur l'accueil : le nouveau jeu du créateur d'Idlus, un action-RPG en temps réel, gratuit sur PC",
     "Récompenses de Vétéran : 3 paliers selon ta progression, tous serveurs confondus (Bronze : un héros niveau 50 ; Argent : niveau 200 ; Or : stasis 6 ou 6 Dofus). Chaque palier donne dans Diablofus un cosmétique (titre, ornement de nom, auréole) et des Ogrines (300, 700, 1 500)",
     "Ton code personnel se trouve sur la page Diablofus : à coller dans Diablofus › Options › Compte › Code cadeau. Le palier est calculé par le serveur ; si tu montes plus tard, le même code donne la suite",
-    "Défi d'adieu, 14 jours : 5 objectifs (combats, donjons, boss, coffres, visite de la page) pour le titre « Témoin du Dernier Portail » dans Diablofus",
+    "Défi d'adieu, 7 jours : 5 objectifs (combats, donjons, boss, coffres, visite de la page) pour le titre « Témoin du Dernier Portail » dans Diablofus",
     "Après le Défi d'adieu, Idlus passe en mode entretien : le jeu reste en ligne sur ses trois serveurs, tes sauvegardes sont gardées et les bugs graves seront corrigés" ] },
   { v: "3.1.11", name: "Objet suivi sans cadenas", items: [
     "L'objet suivi obtenu n'est plus verrouillé : il reste protégé du tri automatique et du Recycleur, mais tu peux le briser, le vendre ou l'échanger sans enlever de cadenas (merci SegFault)",

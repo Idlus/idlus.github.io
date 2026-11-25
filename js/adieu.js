@@ -1,6 +1,6 @@
 /* ============================================================================
    DÉFI D'ADIEU — passage de relais vers Diablofus (Mathis 25/11/2026, maquette « Relais vers Diablofus », choix 5C) :
-   14 jours, 5 objectifs personnels comptés par les événements du jeu (E.emit), pour tout le monde et sur les trois serveurs.
+   7 jours, 5 objectifs personnels comptés par les événements du jeu (E.emit), pour tout le monde et sur les trois serveurs.
    Les 5 faits : titre « Témoin du Dernier Portail » dans Diablofus (le serveur lit S.adieu.done dans la partie validée,
    supabase/functions/record, mode « veteran »). Pas de DOM ici (chargé aussi par les tests). Page : js/relais.js.
    ========================================================================== */
@@ -8,13 +8,13 @@
   "use strict";
   const E = root.ENGINE; if (!E || E.ADIEU) return;
   E.ADIEU = {
-    // Fenêtre de l'événement (heure de Paris) : du mercredi 25/11 à 11 h (dès la publication, choix de Mathis) au mercredi 9/12 à 12 h (14 jours, Mathis « plus long »).
-    from: Date.UTC(2026, 10, 25, 10, 0), to: Date.UTC(2026, 11, 9, 11, 0),
+    // Fenêtre de l'événement (heure de Paris) : du mercredi 25/11 à 11 h (dès la publication, choix de Mathis) au mercredi 2/12 à 12 h ; objectifs doublés en 3.2.0.1 (Mathis « plus long », choix 7 jours + objectifs ×2).
+    from: Date.UTC(2026, 10, 25, 10, 0), to: Date.UTC(2026, 11, 2, 11, 0),
     GOALS: [
-      { id: "win", n: "Gagner 300 combats", goal: 300 },
-      { id: "dungeon", n: "Finir 5 donjons", goal: 5 },
-      { id: "boss", n: "Vaincre 20 boss", goal: 20 },
-      { id: "chest", n: "Ouvrir 3 coffres", goal: 3 },
+      { id: "win", n: "Gagner 600 combats", goal: 600 },
+      { id: "dungeon", n: "Finir 10 donjons", goal: 10 },
+      { id: "boss", n: "Vaincre 40 boss", goal: 40 },
+      { id: "chest", n: "Ouvrir 6 coffres", goal: 6 },
       { id: "visit", n: "Visiter la page Diablofus", goal: 1 },
     ],
     TITLE: "Témoin du Dernier Portail",
