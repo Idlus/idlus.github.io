@@ -4,28 +4,30 @@
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
 const RA = "https://re-arise.pages.dev"; // Re:Arise, le deuxième jeu du studio (dépôt Mathiss29/re-arise)
+const DF = "https://diablofus.com", SSF = "https://mathiss29.github.io/sac-sans-fond/", STUDIO = "https://ombrelune-studio.github.io";
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, MANAGE_MSG: 1n << 13n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
 const SERVER = "Ombrelune Studio";
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
 const WELCOME = `# Bienvenue chez Ombrelune Studio !
-🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux de fan gratuits. Ce serveur réunit ses jeux : **idlus**, **Re:Arise** et bientôt **Diablofus**.
+🌙 **Ombrelune Studio**, c'est le petit studio de Mathis (Xener), qui crée des jeux gratuits dans le navigateur. Tous nos jeux sur une page : ${STUDIO}
 
-⚔️ **idlus**, inspiré de DOFUS : monte une équipe parmi les 19 classes et affronte donjons et boss jusqu'à la stasis 15, même quand tu n'es pas là. Serveurs : Éternel, Saison 1 (tout le monde repart de zéro) et Monocompte (un seul héros).
-🎮 ${GAME} · connecte-toi avec Discord (facultatif) pour garder ta partie partout, le chat, l'Hôtel des ventes, les guildes, le Kolizéum et les classements.
-📣 Nouvelles : <#NEWSIDLUS> · notes : <#UPDATES> · feuille de route : <#ROADMAP> · sondages : <#POLLS> · votes : <#VOTES>
-🐞 Bug : <#BUGS> (bouton « Signaler un bug » dans Options) · 💡 idées : <#IDEAS>, votez avec 👍
+🔥 **Diablofus : Les Douze Enfers**, le jeu principal du studio : un action-RPG en temps réel dans le Monde des Douze, seul ou à plusieurs. Version 0.6.1 : jusqu'au niveau 90, 9 classes, d'Incarnam à la Baie de Sufokia.
+🎮 ${DF} · gratuit, sur PC (clavier et souris). Tout est dans <#1568634063189704846>.
 
-🌑 **Re:Arise**, inspiré de Solo Leveling : incarne Sung Jinwoo depuis le double donjon, relève les ennemis vaincus en ombres et mène ton armée. 1.0 bêta : 8 chapitres, jusqu'au Portail rouge.
-🎮 ${RA} · gratuit, dans le navigateur, installable sur PC et téléphone. Tout est expliqué dans <#PRESRA>.
+🎒 **Sac sans Fond**, le nouveau jeu : lâche tes héros, ramasse une pluie de butin et remplis le vieux sac du mage jusqu'à la Déchirure. Version 1.0.3.
+🎮 ${SSF} · gratuit, dans le navigateur. Parles-en dans <#CHATSSF>.
 
-🔥 **Diablofus : Les Douze Enfers**, le prochain jeu, en préparation : suis son avancement dans <#1568634063189704846>.
+⚔️ **idlus**, l'idle inspiré de DOFUS, est en mode entretien : le jeu reste en ligne avec tes sauvegardes, seuls les bugs graves sont corrigés. Jusqu'au 2/12 à 12 h, le **Défi d'adieu** donne des récompenses pour Diablofus (page Diablofus du jeu).
+🎮 ${GAME} · <#ROADMAP> · bugs : <#BUGS>
+
+🌑 **Re:Arise**, inspiré de Solo Leveling : relève tes ennemis en ombres. Voir <#PRESRA>.
 
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT> (ou <#OFFTOPIC> pour le reste). Les grosses nouvelles du studio : <#NEWS>.
 
-🎭 **Tes rôles** : clique sur **Salons et rôles** en haut de la liste des salons pour être prévenu des nouveautés de chaque jeu et afficher ta classe ou ton ombre préférée. Modifiable à tout moment.
+🎭 **Tes rôles** : choisis-les dans **Salons et rôles**, en haut de la liste des salons (notifications de chaque jeu, classe préférée).
 
-*Projets de fan non officiels : idlus et Diablofus n'ont aucun lien avec Ankama, ni Re:Arise avec les ayants droit de Solo Leveling.*`;
+*Jeux de fan non officiels : Diablofus et idlus n'ont aucun lien avec Ankama, ni Re:Arise avec les ayants droit de Solo Leveling. Sac sans Fond est une création originale du studio.*`;
 const RULES = `# Règles du serveur
 **1.** Respecte tout le monde : pas d'insultes, de harcèlement ni de propos discriminatoires.
 **2.** Pas de spam, de flood ni de mentions en masse.
@@ -37,20 +39,19 @@ const RULES = `# Règles du serveur
 
 En cas de souci, mentionne un @Modérateur. Bon jeu ! ⚔️`;
 const ROADMAP = `# Feuille de route d'idlus
-Sans dates : chaque partie sort quand elle est prête.
+**🌙 idlus est en mode entretien depuis le 25/11.** Mathis se consacre maintenant à **Diablofus** (<#1568634063189704846>).
+• Le jeu reste en ligne, gratuit, et tes sauvegardes sont gardées sur les trois serveurs (Éternel, Saison 1 et Monocompte).
+• Plus de nouveau contenu : seuls les bugs graves sont corrigés. Signale-les dans <#BUGS>.
+• **Défi d'adieu** jusqu'au 2/12 à 12 h : les paliers Bronze, Argent et Or donnent un code cadeau pour Diablofus (page **Diablofus** dans le menu du jeu).
 
-**✅ Déjà dans le jeu**
-• Trois serveurs : l'**Éternel** (tes parties d'avant la saison, pour toujours), la **Saison 1** « Les Fragments du Temps » (tout le monde repart de zéro, avec ses classements) et le **Monocompte** (un seul héros, avec le défi Serment de fer)
+**✅ Tout ce qu'il y a dans le jeu**
 • Niveaux 1 à 200, les 19 classes (changement de classe possible), stasis 1 à 15, boss ultimes et boss ultime de la semaine
 • Dofus et leurs quêtes, Maîtrise, Ascension (Éternel), Songe infini et objets légendaires, défi du jour, Almanax
 • Familiers, montures et élevage, forgemagie, métiers, récolte et apprentis, Havre-Sac, album de cartes
 • En ligne : chat (Général commun aux trois serveurs), Hôtel des ventes, bourse aux cartes, guildes, alliances, alignements, Kolizéum, boss des mondes, classements
 • Votes pour idlus : du Sablier et des kamas à chaque vote (<#VOTES>)
 
-**🔨 En préparation**
-• La suite de la Saison 1 et son équilibrage, au fil de vos retours
-• De nouvelles cartes de héros, dont des cartes de joueurs de la communauté
-• Vos idées les plus votées dans <#IDEAS> et les sondages de <#POLLS>`;
+Merci à tous d'avoir joué et fait vivre idlus ! 💚`;
 const PRES_RA = `# Re:Arise
 🌑 **Re:Arise** est un idle game de fan inspiré de **Solo Leveling**. Tu incarnes Sung Jinwoo, le chasseur le plus faible, depuis le double donjon. Le Système te fait monter de niveau ; plus tard, tu relèves les ennemis vaincus en **ombres** (maintiens le bouton **ARISE**) et ton armée se bat avec toi, même quand tu n'es pas là.
 
@@ -79,6 +80,15 @@ Le jeu suit l'histoire de Solo Leveling, un chapitre par arc. Sans dates : chaqu
 • La suite de l'histoire, en commençant par le Château des démons
 • L'équilibrage de la bêta, grâce à vos retours dans <#BALANCERA>
 • Vos idées les plus votées dans <#IDEASRA>`;
+const PRES_SSF = `# Sac sans Fond
+🎒 **Le vieux sac du mage n'a pas de fond.** Lâche tes héros (archers, chevaliers, mages, bardes…), ramasse une pluie de butin et remplis le sac jusqu'à la Déchirure, puis améliore ta compagnie dans un grand arbre de compétences pour aller toujours plus loin.
+
+🎮 **Jouer** : ${SSF}
+Gratuit, directement dans le navigateur. Version 1.0.3.
+
+💬 Tes réactions, tes questions, tes records et les bugs que tu trouves : <#CHATSSF>.
+
+*Sac sans Fond est une création originale d'Ombrelune Studio.*`;
 const BETA_TXT = `# Version de test
 La version de test séparée est fermée depuis le 14/10 : les nouveautés arrivent maintenant directement dans le jeu (${GAME}), annoncées dans <#UPDATES>.
 Ces salons restent ouverts pour l'historique. Tes retours sur les nouveautés sont toujours les bienvenus dans <#BETAFB>, <#BUGS> ou <#IDEAS>.`;
@@ -133,24 +143,28 @@ Dans le jeu : **Joueurs › Voter pour Idlus**.
 Vote depuis le même appareil et le même réseau que le jeu, puis clique « Récupérer ». Voter reste libre : rien n'est réservé aux votants.`;
 const PLAN = [ // old : anciens noms de la catégorie (elle est renommée au lieu d'en créer une nouvelle)
   { cat: "🌙 Ombrelune Studio", old: ["📌 Bienvenue"], lock: true, chans: [
-    { key: "WELCOME", name: "bienvenue", topic: "Présentation du studio, de ses jeux et liens utiles", text: WELCOME },
+    { key: "WELCOME", name: "bienvenue", topic: "Présentation du studio et de ses jeux : Diablofus, Sac sans Fond, idlus, Re:Arise", text: WELCOME },
     { key: "RULES", name: "règles", topic: "À lire avant de participer", text: RULES },
     { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'Ombrelune Studio et de ses jeux" } ] },
   { cat: "💬 Communauté", chans: [
     { key: "CHAT", name: "général", topic: "Discussion libre entre joueurs de tous les jeux du studio" },
     { key: "OFFTOPIC", name: "hors-sujet", topic: "Tout ce qui n'a rien à voir avec les jeux : films, mangas, autres jeux, la vie…" },
     { key: "VOICE", name: "Général", type: VOICE } ] },
+  // 28/11 : le troisième jeu du studio
+  { cat: "🎒 Sac sans Fond", chans: [
+    { key: "PRESSSF", name: "présentation-sac-sans-fond", lock: true, topic: "Sac sans Fond, le nouveau jeu du studio : présentation et lien pour jouer", text: PRES_SSF },
+    { key: "CHATSSF", name: "discussion-sac-sans-fond", topic: "Réactions, questions, records et bugs de Sac sans Fond" } ] },
   { cat: "⚔️ idlus", old: ["📢 Infos"], chans: [
     { key: "NEWSIDLUS", name: "annonces-idlus", lock: true, topic: "Les nouvelles d'idlus : podium de la semaine, boss des mondes, tweets…" },
     { key: "UPDATES", name: "note-de-mise-a-jour", lock: true, topic: "Notes de chaque mise à jour d'idlus, publiées automatiquement" },
-    { key: "ROADMAP", name: "feuille-de-route", lock: true, topic: "Ce qui est déjà dans idlus et ce qui arrive", text: ROADMAP },
+    { key: "ROADMAP", name: "feuille-de-route", lock: true, topic: "idlus en mode entretien : ce qui reste, ce qui est dans le jeu", text: ROADMAP },
     { key: "ALMANAX", name: "almanax", lock: true, topic: "Le bonus et l'offrande du jour d'idlus, publiés chaque matin" },
     // 05/11 (Mathis « prépare le salon votes ») : chaque vote sur Jeux Indé y est annoncé par le webhook Discord du site (posé par Mathis)
     { key: "VOTES", name: "votes", lock: true, topic: "Les votes pour idlus en direct. Vote toi aussi : Joueurs › Voter pour Idlus dans le jeu", text: VOTES_TXT },
     { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs d'idlus" },
     { key: "BUILDS", name: "builds-et-équipes", topic: "Partage tes compositions (bouton « Partager le build » dans le jeu)" },
     { key: "SHOTS", name: "captures", topic: "Montre tes héros, trophées et ton Havre-Sac. Les aperçus des prochaines nouveautés arrivent aussi ici" },
-    { key: "POLLS", name: "sondages", topic: "Les sondages d'idlus : votez pour orienter les prochaines mises à jour" } ] },
+    { key: "POLLS", name: "sondages", topic: "Les anciens sondages d'idlus (le jeu est en mode entretien)" } ] },
   { cat: "🛠️ Retours idlus", old: ["🛠️ Retours"], chans: [
     { key: "BUGS", name: "bugs", type: FORUM, topic: "Un fil par bug : ce que tu faisais, ce qui s'est passé, une capture si possible.",
       tags: [["Ouvert", "🔴"], ["En cours", "🟡"], ["Corrigé", "🟢"], ["Pas un bug", "⚪"]] },
